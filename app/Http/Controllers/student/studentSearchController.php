@@ -334,11 +334,11 @@ class studentSearchController extends Controller
         $extraSearchArray = [];
         $extraSearchArray['tblstudent_enrollment.sub_institute_id'] = $sub_institute_id;
         $extraSearchArray['tblstudent_enrollment.syear'] = $syear;
-        $extraSearchArray['tblstudent.status'] = 1;
+        //$extraSearchArray['tblstudent.status'] = 1;
     
         $query = tblstudentModel::selectRaw('tblstudent.id,tblstudent.enrollment_no,CONCAT_WS(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) as student_name,tblstudent.id')
             ->join('tblstudent_enrollment', 'tblstudent.id', '=', 'tblstudent_enrollment.student_id')
-            ->whereRaw('tblstudent_enrollment.end_date is NULL')
+            //->whereRaw('tblstudent_enrollment.end_date is NULL')
             ->where($extraSearchArray);
     
         // Check if search value contains spaces
