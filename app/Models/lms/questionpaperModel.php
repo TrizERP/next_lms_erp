@@ -32,6 +32,10 @@ class questionpaperModel extends Model
         'created_by',
         'sub_institute_id',
         'syear',
-        'exam_type'
+        'exam_type',
+        'ai_generated',
+        'difficulty_distribution',
+        'taxonomy_distribution',
+        'sections_config'
     ];
 }

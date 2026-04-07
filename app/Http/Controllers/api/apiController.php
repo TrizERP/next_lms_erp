@@ -17,6 +17,7 @@ class apiController extends Controller
     public function login(Request $request, JwtToken $jwt)
     {
         $send_data = [];
+        $mobile = request()->input('mobile');
         $response = ['status' => '0', 'message' => 'No Student Found', 'data' => $send_data];
         $validator = Validator::make($request->all(), [
             'mobile' => 'required|numeric',
@@ -48,37 +49,36 @@ class apiController extends Controller
                 "tblstudent.gender",
                 "school_setup.is_lms",
             ];
-//            $student_syear = 2023;
-            $data = DB::table("tblstudent")
+
+            $data = DB::table('tblstudent')
                 ->join('school_setup', 'school_setup.id', '=', 'tblstudent.sub_institute_id')
-                ->join('tblstudent_enrollment', 'tblstudent_enrollment.student_id', '=', 'tblstudent.id')
+                ->join('tblstudent_enrollment', function ($join) {
+                    $join->on('tblstudent_enrollment.student_id', '=', 'tblstudent.id')
+                         ->whereNull('tblstudent_enrollment.end_date');
+                })
                 ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
                 ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
                 ->join('sms_api_details', 'sms_api_details.sub_institute_id', '=', 'school_setup.id')
-                ->orWhere([
-                    "tblstudent.mobile"         => $_REQUEST['mobile'],
-                    "tblstudent.mother_mobile"  => $_REQUEST['mobile'],
-                    "tblstudent.student_mobile" => $_REQUEST['mobile'],
-                ])
-                ->where([
-                    "sms_api_details.is_active" => "1", 
-//                    'school_setup.syear' => 'tblstudent_enrollment.syear'
-                ])
-                ->whereRaw('tblstudent_enrollment.end_date is NULL')
+                ->where(function ($query) use ($mobile) {
+                    $query->where('tblstudent.mobile', $mobile)
+                          ->orWhere('tblstudent.mother_mobile', $mobile)
+                          ->orWhere('tblstudent.student_mobile', $mobile);
+                })
+                ->where('sms_api_details.is_active', 1)
+                ->whereNotIn('tblstudent.sub_institute_id', [254])
+                ->whereColumn('school_setup.syear', 'tblstudent_enrollment.syear')
                 ->get($select);
 
             if (isset($data[0])) {
-            	//Start Added by rajesh 02-04-2024 same OTP send in exist mobile
             	if($data[0]->otp == null || $data[0]->otp == ''){
                 	$otp = rand(100000, 999999);
             	}else{
             		$otp = $data[0]->otp;
             	}
-				//End Added by rajesh 02-04-2024 same OTP send in exist mobile
                 
                 $sub_institute_id = $data[0]->sub_institute_id;
-                $sub_Array = [328,329,330,331,333,61];
-                if ($_REQUEST['mobile'] == '9979176562' || $_REQUEST['mobile'] == '9824154142') {
+                $sub_Array = [328,329,330,331,333,61,336,337,338,339,340,341];
+                if ($mobile == '9979176562' || $mobile == '9824154142') {
                     $otp = "123456";
                 } else if(in_array($sub_institute_id, $sub_Array)){
                     $otp = date('dmy', strtotime($data[0]->dob));
@@ -94,24 +94,24 @@ class apiController extends Controller
                         $text = "OTP for login is ".$otp." and is valid for 5 minutes";
                     }
 
-                    $res = $this->sendSMS($_REQUEST['mobile'], $text, $sub_institute_id);
+                    $res = $this->sendSMS($mobile, $text, $sub_institute_id);
                     if ($res["error"] == 1) {
                         $errorMessage = "Please add api details first.";
                         if ($res["error"] == $errorMessage) {
                             //$otp = "123456";
                             $otp = date('dmy', strtotime($data[0]->dob));
                         }
-
                     }
                 }
 
-                $data = DB::table("tblstudent")
-                    ->orWhere([
-                        "tblstudent.mobile"         => $_REQUEST['mobile'],
-                        "tblstudent.mother_mobile"  => $_REQUEST['mobile'],
-                        "tblstudent.student_mobile" => $_REQUEST['mobile'],
-                    ])
-                    ->update(["tblstudent.otp" => $otp]);
+                $data = DB::table('tblstudent')
+                    ->whereNotIn('sub_institute_id', [254])
+                    ->where(function ($query) use ($mobile) {
+                        $query->where('mobile', $mobile)
+                              ->orWhere('mother_mobile', $mobile)
+                              ->orWhere('student_mobile', $mobile);
+                    })
+                    ->update(['otp' => $otp]);
 
                 $response['status'] = '1';
                 $response['message'] = 'success';
@@ -122,7 +122,6 @@ class apiController extends Controller
 
         return json_encode($response);
     }
-
 
     public function teacherlogin(Request $request)
     {
@@ -161,7 +160,7 @@ class apiController extends Controller
                 $otp = rand(100000, 999999);
 
                 $sub_institute_id = $data['sub_institute_id'];
-                $sub_Array = [328,329,330,331,333,61];
+                $sub_Array = [328,329,330,331,333,61,336,337,338,339,340,341];
                 if ($_REQUEST['mobile'] == '9979176562' || $_REQUEST['mobile'] == '9824154142') {
                     $otp = "123456";
                 }else if(in_array($sub_institute_id, $sub_Array)){
@@ -200,7 +199,6 @@ class apiController extends Controller
 
         return json_encode($response);
     }
-
 
     public function check_otp(Request $request, JwtToken $jwt)
     {
@@ -287,7 +285,7 @@ class apiController extends Controller
                 $studentData[] = $this->studentData(0,$_REQUEST,$otherExists_student_ids, $otherExists_sub_institute_ids);
             }
 
-            $data=$findStudent= [];
+            $data=$findStudent=[];
            
             foreach ($studentData as $key => $value) {
                 foreach ($value as $key1 => $value1) {
@@ -871,5 +869,93 @@ if(in_array($sub_institute_id, $cn))
         }
 
         return json_encode($res);
+    }
+
+    public function login_hills(Request $request, JwtToken $jwt)
+    {
+        $send_data = [];
+        $mobile = request()->input('mobile');
+        $response = ['status' => '0', 'message' => 'No Student Found', 'data' => $send_data];
+        $validator = Validator::make($request->all(), [
+            'mobile' => 'required|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            $response['status'] = '0';
+            $response['message'] = $validator->messages();
+        } else {
+            $select = [
+                "tblstudent.id",
+                "tblstudent.enrollment_no",
+                "tblstudent.first_name",
+                "tblstudent.middle_name",
+                "tblstudent.last_name",
+                "tblstudent.sub_institute_id",
+                "tblstudent.mobile",
+                "tblstudent.otp",
+                "tblstudent_enrollment.roll_no",
+                "standard.name as std_name",
+                "division.name as division",
+                "tblstudent.dob",
+            ];
+
+            $data = DB::table('tblstudent')
+                ->join('school_setup', 'school_setup.id', '=', 'tblstudent.sub_institute_id')
+                ->join('tblstudent_enrollment', function ($join) {
+                    $join->on('tblstudent_enrollment.student_id', '=', 'tblstudent.id')
+                         ->whereNull('tblstudent_enrollment.end_date');
+                })
+                ->join('standard', 'standard.id', '=', 'tblstudent_enrollment.standard_id')
+                ->join('division', 'division.id', '=', 'tblstudent_enrollment.section_id')
+                ->join('sms_api_details', 'sms_api_details.sub_institute_id', '=', 'school_setup.id')
+                ->where(function ($query) use ($mobile) {
+                    $query->where('tblstudent.mobile', $mobile)
+                          ->orWhere('tblstudent.mother_mobile', $mobile)
+                          ->orWhere('tblstudent.student_mobile', $mobile);
+                })
+                ->where('sms_api_details.is_active', 1)
+                ->where('tblstudent.sub_institute_id', 254)
+                ->whereColumn('school_setup.syear', 'tblstudent_enrollment.syear')
+                ->select($select)
+                ->get();
+
+            if (isset($data[0])) {
+                //if($data[0]->otp == null || $data[0]->otp == ''){
+                    $otp = rand(100000, 999999);
+                //}else{
+
+                //}
+                
+                $sub_institute_id = $data[0]->sub_institute_id;
+
+                if ($mobile == '9979176562' || $mobile == '9974463770') {
+                    $otp = "123456";
+                }else{
+                    $text = "OTP for login is ".$otp." and is valid for 5 minutes";
+                    $res = $this->sendSMS($mobile,$text,$sub_institute_id);
+                    if ($res["error"] == 1) {
+                        $errorMessage = "Please add api details first.";
+                        if ($res["error"] == $errorMessage) {
+                            //$otp = "123456";
+                            $otp = date('dmy', strtotime($data[0]->dob));
+                        }
+                    }
+                }
+
+                $data = DB::table('tblstudent')
+                    ->where('sub_institute_id', 254)
+                    ->where(function ($query) use ($mobile) {
+                        $query->where('mobile', $mobile)
+                              ->orWhere('mother_mobile', $mobile)
+                              ->orWhere('student_mobile', $mobile);
+                    })
+                    ->update(['otp' => $otp]);
+
+                $response['status'] = '1';
+                $response['message'] = 'success';
+            }
+            return json_encode($response);
+        }
+        return json_encode($response);
     }
 }

@@ -385,6 +385,8 @@ class tbluserController extends Controller
         ->get()
         ->toArray();
 
+        // return $res;
+
         return is_mobile($type, "user/edit_user", $res, "view");
     }
 

@@ -40,7 +40,8 @@ trait Helpers
             '2022'=>'2022-2023',
             '2023'=>'2023-2024',
             '2024'=>'2024-2025',
-            '2025'=>'2025-2026'
+            '2025'=>'2025-2026',
+            '2026'=>'2026-2027'
         ];
     }
 
@@ -116,9 +117,9 @@ trait Helpers
             ? round((100 * $obt / $total), 0) 
             : 0;
         
-        /*if (!is_numeric($mark) || $mark === null || $mark === '') {
-            $mark = 0; // default value if mark is invalid
-        }*/
+        if ($obt == 0 && $total == 0){
+            return '-';
+        }
         
         //$mark = round(($mark / 2), 0);
 

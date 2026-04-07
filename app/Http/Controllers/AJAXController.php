@@ -726,6 +726,10 @@ class AJAXController extends Controller
         $student_id = $request->student_id;
         $last_syear = (session()->get('syear')-1);
 
+        //ADDED BY RAJESH 04-04-2026
+        $syear = session()->get('syear');
+        $sub_institute_id = session()->get('sub_institute_id');
+
         if (empty($months)) {
             return "";
             exit;
@@ -736,7 +740,43 @@ class AJAXController extends Controller
             "0" => $student_id,
         );
 
-        $year_arr2 = FeeMonthId($last_syear); //for current year
+$std = DB::table('tblstudent_enrollment as a')
+    ->where('a.sub_institute_id', $sub_institute_id)
+    ->where('a.syear', $syear)
+    ->where('a.student_id', $student_id)
+    ->value('a.standard_id');
+
+$data = DB::table('tblstudent_enrollment as a')
+    ->select('a.syear', 'a.standard_id')
+    ->join('standard as s', 's.id', '=', 'a.standard_id')
+    ->whereNull('a.end_date')
+    ->where('a.sub_institute_id', $sub_institute_id)
+    ->where('a.student_id', $student_id)
+    ->where('a.standard_id', '<', (int)$std)
+    ->orderBy('a.syear', 'desc')
+    ->get()->toArray();
+
+    $previous_standard = [];
+
+    foreach ($data as $row) {
+        $previous_standard[] = [
+            'last_syear'             => $row->syear,
+            'last_std'               => $row->standard_id,
+        ];
+    }    
+
+    $year_arr2 = [];
+
+foreach ($previous_standard as $item) {
+
+    $year_arr2_results = FeeMonthId($item['last_syear']);
+    if (!empty($year_arr2_results)) {
+        $year_arr2 = $year_arr2 + $year_arr2_results;
+    }
+}
+
+//echo "<pre>";print_r($year_arr2);exit;
+        // $year_arr2 = FeeMonthId($last_syear);
 
         $currunt_month = date('m');
         $last_y_month_id = $currunt_month . (session()->get('syear') - 1);
@@ -761,11 +801,57 @@ class AJAXController extends Controller
 //         }
         
         $other_bk_off_month_wise2 = $reg_bk_off2 = $other_bk_off2 = $head_wise_fees2 = array();
-        if(session()->get('sub_institute_id')!=48 && session()->get('sub_institute_id')!=61){
+        if(session()->get('sub_institute_id')!=61){
             $other_bk_off_month_wise2 = OtherBreackOfMonth($stu_arr,$last_syear); //for previous year
             $reg_bk_off2 = FeeBreackoff($stu_arr,'',$last_syear); //for previous year
             $other_bk_off2 = OtherBreackOff($stu_arr, $search_ids2,'','','',$last_syear); //for previous year
-            $head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear);//for previous year
+        
+        $head_wise_fees2 = [];
+
+            foreach ($previous_standard as $item) {
+            
+                $merged_head_results = FeeBreakoffHeadWise(
+                    $stu_arr,
+                    '',
+                    '',
+                    '',
+                    $item['last_syear']
+                );
+            
+                if (!empty($merged_head_results)) {
+            
+                    foreach ($merged_head_results as $row) {
+            
+                        $id = $row['id'];
+            
+                        // If first record for this ID → set full data
+                        if (!isset($head_wise_fees2[$id])) {
+                            $head_wise_fees2[$id] = $row;
+                        } else {
+            
+                            // ────────────────
+                            // MERGE ONLY BREAKOFF
+                            // ────────────────
+                            if (!empty($row['breakoff'])) {
+            
+                                // Initialize breakoff if missing
+                                if (!isset($head_wise_fees2[$id]['breakoff'])) {
+                                    $head_wise_fees2[$id]['breakoff'] = [];
+                                }
+            
+                                // Flat merge → newer breakoff replaces older breakoff
+                                $head_wise_fees2[$id]['breakoff'] =
+                                    array_replace(
+                                        $head_wise_fees2[$id]['breakoff'],
+                                        $row['breakoff']
+                                    );
+                            }
+                        }
+                    }
+                }
+            }
+            
+            //$head_wise_fees2 = FeeBreakoffHeadWise($stu_arr,'','','',$last_syear);//for previous year
         }
      
         $till_now_breckoff = $till_now_breckoff2 = array();

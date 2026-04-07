@@ -39,6 +39,7 @@ Route::post('incoming-message',[\App\Http\Controllers\WhatsappController::class,
 
 Route::controller(apiController::class)->group(function () {
     Route::post('login', 'login');
+    Route::post('login_hills', 'login_hills');
     Route::post('check_otp', 'check_otp');
     Route::post('homescreen', 'homescreen');
     Route::post('teacherlogin', 'teacherlogin');
