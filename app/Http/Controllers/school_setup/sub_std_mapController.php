@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use function App\Helpers\ValidateInsertData;
 use Illuminate\Support\Facades\Storage;
+use function App\Helpers\neo4jCreateNode;
+use function App\Helpers\neo4jCreateRelationship;
+use App\Services\Neo4jService;
+
+
 
 class sub_std_mapController extends Controller
 {
@@ -84,94 +89,126 @@ class sub_std_mapController extends Controller
         return is_mobile($type, 'school_setup/add_sub_std', $data, "view");
     }
 
-    public function store(Request $request)
-    {
-        // echo "<pre>";print_r($request->all());exit;
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear'); // added on 15-03-2025
-        $user_id = $request->session()->get('user_id'); // added on 15-03-2025
-        $standard_id = $request->get('standard_id');
 
-        $file_folder = $ext = $size = $newfilename = "";
-        if ($request->hasFile('display_image')) {
-            $img = $request->file('display_image');
-            $filename = $img->getClientOriginalName();
-            $ext = $img->getClientOriginalExtension();
-            $size = $img->getSize();
-            $newfilename = 'SubStdMap_'.date('Y-m-d_h-i-s').'.'.$ext;
-            $file_folder = '/SubStdMapping';
-            //$img->move(public_path().'/lms_content_file/',$newfilename);
-            // $img->storeAs('public/SubStdMapping/', $newfilename); 20-05-24
-            Storage::disk('digitalocean')->putFileAs('public/SubStdMapping/', $img, $newfilename, 'public');
-        }
-        // echo "<pre>";print_r($request->optional_type);exit;
+public function store(Request $request)
+{
+    $sub_institute_id = $request->session()->get('sub_institute_id');
+    $syear = $request->session()->get('syear');
+    $user_id = $request->session()->get('user_id');
+    $standard_id = $request->get('standard_id');
 
-        foreach ($standard_id as $key => $stdval) {
-            sub_std_mapModel::updateOrCreate(
+    if (!is_array($standard_id)) {
+        $standard_id = [$standard_id];
+    }
+
+    $file_folder = $ext = $size = $newfilename = "";
+
+    // ================= FILE UPLOAD =================
+    if ($request->hasFile('display_image')) {
+        $img = $request->file('display_image');
+        $ext = $img->getClientOriginalExtension();
+        $newfilename = 'SubStdMap_' . date('Y-m-d_h-i-s') . '.' . $ext;
+        $file_folder = '/SubStdMapping';
+
+        Storage::disk('digitalocean')
+            ->putFileAs('public/SubStdMapping/', $img, $newfilename, 'public');
+    }
+
+    DB::beginTransaction();
+
+    try {
+
+        foreach ($standard_id as $stdval) {
+
+            // ================= SQL =================
+            $record = sub_std_mapModel::updateOrCreate(
                 [
-                    'standard_id' => $stdval,
-                    'subject_id'  => $request->get('subject_id'),
+                    'standard_id'      => $stdval,
+                    'subject_id'       => $request->get('subject_id'),
+                    'sub_institute_id' => $sub_institute_id
                 ],
                 [
-                    // dd($request->get('allow_content'));
                     'standard_id'      => $stdval,
                     'subject_id'       => $request->get('subject_id'),
                     'display_name'     => $request->get('display_name'),
-                    'allow_grades'     => $request->get('allow_grades') != "" ? $request->get('allow_grades') : "",
-                    'elective_subject' => $request->get('elective_subject') != "" ? $request->get('elective_subject') : "No",
-                    'allow_content'    => $request->get('allow_content') != "" ? $request->get('allow_content') : "",
+                    'allow_grades'     => $request->get('allow_grades') ?? "",
+                    'elective_subject' => $request->get('elective_subject') ?? "No",
+                    'allow_content'    => $request->get('allow_content') ?? "",
                     'subject_category' => $request->get('subject_category'),
-                    'display_image'    => $file_folder.'/'.$newfilename,
+                    'display_image'    => $newfilename,
                     'sub_institute_id' => $sub_institute_id,
-                    'sort_order'       => $request->get('sort_order'),
-                    'status'           => "1",
-                    "load"             => $request->get('load'),
-                    'optional_type'    => ($request->optional_type!='') ? $request->optional_type : null,
+                    'created_by'       => $user_id
                 ]
             );
 
-            // 15-03-2025 hills optional subject syear wise 
-            if($request->optional_type!=''){
+            // ======================================================
+            // ✅ NEO4J (CORRECT)
+            // ======================================================
 
-                $dataArr = [
-                    'syear'=>$syear,
-                    'subject_id'=>$request->subject_id,
-                    'standard_id'=>$stdval,
-                    'optional_type'=>$request->optional_type,
-                    'sub_institute_id'=>$sub_institute_id
-                ];
-                // check subject and standard already exists in table or not
-                $checkExists = DB::table('subject_optional_type')->where($dataArr)->first();
+            try {
 
-                if(empty($checkExists) && !isset($checkExists->optional_type)){
-                    $dataArr['created_by'] = $user_id;
-                    $dataArr['created_at'] = now();
-                    DB::table('subject_optional_type')->insert($dataArr);
-                }
+                // 🔹 STANDARD NODE
+                neo4jCreateNode(
+                    'Standard',
+                    ['stId' => (int)$stdval],
+                    [
+                        'standard_id' => (int)$stdval,
+                        'name' => 'Standard ' . $stdval,
+                        'displayLabel' => 'Standard:' . $stdval,
+                        'sub_institute_id' => (int)$sub_institute_id
+                    ]
+                );
+
+                // 🔹 SUBJECT NODE
+                neo4jCreateNode(
+                    'Subject',
+                    ['subId' => (int)$request->get('subject_id')],
+                    [
+                        'subject_id' => (int)$request->get('subject_id'),
+                        'subject_name' => $request->get('display_name') ?? 'Subject',
+                        'standard_id' => (int)$stdval,
+                        'displayLabel' => 'Subject:' . ($request->get('display_name') ?? 'Subject'),
+                        'sub_institute_id' => (int)$sub_institute_id
+                    ]
+                );
+
+                // 🔹 RELATION: Standard → HAS_SUBJECT → Subject
+                neo4jCreateRelationship(
+                    'Standard',
+                    ['stId' => (int)$stdval],
+                    'HAS_SUBJECT',
+                    'Subject',
+                    ['subId' => (int)$request->get('subject_id')]
+                );
+
+                \Log::info('✅ Neo4j Standard-Subject Created', [
+                    'stId' => $stdval,
+                    'subId' => $request->get('subject_id')
+                ]);
+
+            } catch (\Exception $e) {
+                \Log::error('❌ Neo4j Error: ' . $e->getMessage());
             }
-            // 15-03-2025 end 
-
-            // $insert_data[] = array(
-            //     'standard_id' => $stdval,
-            //     'subject_id' => $request->get('subject_id'),
-            //     'display_name' => $request->get('display_name'),
-            //     'allow_grades' => $request->get('allow_grades') != "" ? $request->get('allow_grades') : "" ,
-            //     'elective_subject' => $request->get('elective_subject') != "" ? $request->get('elective_subject') : "" ,
-            //     'sub_institute_id' => $sub_institute_id,
-            //     'status' => "1",            
-            // );  
         }
-        //sub_std_mapModel::insert($insert_data);         
-        $res = [
-            "status_code" => 1,
-            "message"     => "Subject-Standard Mapping Added Successfully",
-        ];
 
-        $type = $request->input('type');
+        DB::commit();
 
-        return is_mobile($type, "sub_std_map.index", $res, "redirect");
+    } catch (\Exception $e) {
+        DB::rollBack();
+
+        \Log::error('❌ SQL Error: ' . $e->getMessage());
+
+        return back()->with([
+            'status_code' => 0,
+            'message' => 'Error saving data'
+        ]);
     }
 
+    return redirect()->back()->with([
+        'status_code' => 1,
+        'message' => 'Standard-Subject Mapping Saved Successfully'
+    ]);
+}
     public function edit(Request $request, $id)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -335,3 +372,4 @@ class sub_std_mapController extends Controller
         return $data[0]['total'];
     }
 }
+

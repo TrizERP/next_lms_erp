@@ -13,6 +13,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use function App\Helpers\is_mobile;
+use function App\Helpers\neo4jCreateNode;
+use function App\Helpers\neo4jCreateRelationship;
 
 class onlineExamController extends Controller
 {
@@ -71,18 +73,23 @@ class onlineExamController extends Controller
     {
     }
 
-    public function store(Request $request)
-    {
-        //Clear session for timer
-        Session::forget('session_quiz');
 
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $user_id = $request->session()->get('user_id');
+public function store(Request $request)
+{
+    // ================= CLEAR SESSION =================
+    Session::forget('session_quiz');
 
-        //$questionpaper_details = $this->get_questionpaper_details($request->get('questionpaper_id'));
-        $result = $this->get_calculate_marks($request);
+    $sub_institute_id = $request->session()->get('sub_institute_id');
+    $user_id = $request->session()->get('user_id'); // student_id
 
-        //START Insert into lms_online_exam table
+    // ================= CALCULATE RESULT =================
+    $result = $this->get_calculate_marks($request);
+
+    // ================= SQL INSERT =================
+    DB::beginTransaction();
+
+    try {
+
         $online_exam = [
             'student_id'        => $user_id,
             'question_paper_id' => $request->get('questionpaper_id'),
@@ -92,93 +99,60 @@ class onlineExamController extends Controller
             'start_time'        => $request->get('hid_session_quiz'),
         ];
 
+        DB::table('lms_online_exam')->insert($online_exam);
 
-        lmsOnlineExamModel::insert($online_exam);
-        $online_exam_id = DB::getPDO()->lastInsertId();
-        //END Insert into lms_online_exam table
+        $online_exam_id = DB::getPdo()->lastInsertId(); // ✅ IMPORTANT
 
-        //START Insert into lms_online_exam_answer table
-        $answer_single = $request->get('answer_single');
-        $answer_multiple = $request->get('answer_multiple');
-        $answer_narrative = $request->get('answer_narrative');
+        DB::commit();
 
-        if (is_array($answer_single)) {
-            foreach ($answer_single as $single_question_id => $single_answer_ids) {
-                $ans_status = "wrong";
-                $single_ans_arr = explode("##", $single_answer_ids);
-                if ($single_ans_arr[1] == 1) {
-                    $ans_status = "right";
-                }
-                $single = [
-                    'question_paper_id' => $request->get('questionpaper_id'),
-                    'online_exam_id'    => $online_exam_id,
-                    'student_id'        => $user_id,
-                    'question_id'       => $single_question_id,
-                    'answer_id'         => $single_ans_arr[0],
-                    'ans_status'        => $ans_status,
-                ];
-                lmsOnlineExamAnswerModel::insert($single);
-            }
-        }
+    } catch (\Exception $e) {
+        DB::rollBack();
 
-        if (is_array($answer_multiple)) {
-            foreach ($answer_multiple as $multiple_question_id => $multiple_answer_ids) {
-                if (is_array($multiple_answer_ids))//Insert MCQ Answers
-                {
-                    foreach ($multiple_answer_ids as $key => $val) {
-                        $ans_status = "wrong";
-                        $multiple_ans_arr = explode("##", $val);
-                        if ($multiple_ans_arr[1] == 1) {
-                            $ans_status = "right";
-                        }
-                        $multiple = [
-                            'question_paper_id' => $request->get('questionpaper_id'),
-                            'online_exam_id'    => $online_exam_id,
-                            'student_id'        => $user_id,
-                            'question_id'       => $multiple_question_id,
-                            'answer_id'         => $multiple_ans_arr[0],
-                            'ans_status'        => $ans_status,
-                        ];
-                        lmsOnlineExamAnswerModel::insert($multiple);
-                    }
-                }
-            }
-        }
+        \Log::error('❌ SQL Result Error: ' . $e->getMessage());
 
-        if (is_array($answer_narrative)) {
-            foreach ($answer_narrative as $narrative_question_id => $narrative_answer_ids) {
-                $ans_status = "right";
-                $narrative = [
-                    'question_paper_id' => $request->get('questionpaper_id'),
-                    'online_exam_id'    => $online_exam_id,
-                    'student_id'        => $user_id,
-                    'question_id'       => $narrative_question_id,
-                    'narrative_answer'  => $narrative_answer_ids,
-                    'ans_status'        => $ans_status,
-                ];
-                lmsOnlineExamAnswerModel::insert($narrative);
-            }
-        }
-
-
-        // if(is_array($answer_ids))//Insert MCQ Answers
-        // {
-        //     foreach($answer_ids as $key => $val)
-        //     {
-        //         $online_exam_answer['answer_id'] = $key; 
-        //         lmsOnlineExamAnswerModel::insert($online_exam_answer);        
-        //     }                
-        // }
-        // else //Insert Narrative Answers
-        // { 
-        //     $online_exam_answer['narrative_answer'] = $answer_ids; 
-        //     lmsOnlineExamAnswerModel::insert($online_exam_answer);        
-        // }
-        //END Insert into lms_online_exam_answer table
-
-        //return is_mobile($type,'lms/online_exam_result',$res,"view");
-        return redirect()->route('online_exam.show',[$request->get('questionpaper_id'),"online_exam_id"=> $online_exam_id]);
+        return back()->with([
+            'status_code' => 0,
+            'message' => 'Error saving result'
+        ]);
     }
+
+    // ==================================================
+    // ✅ NEO4J (MATCH CSV STRUCTURE EXACTLY)
+    // ==================================================
+
+    try {
+
+      
+        // ❗ DO NOT CREATE STUDENT NODE HERE
+        // Student already exists from enrollment logic
+
+        // 🔹 RELATION: Student → HAS_RESULT → Result
+        // MATCH (stu {student_id}) SAME AS CSV
+      
+        // 🔹 RELATION: Result → Assessment
+        neo4jCreateRelationship(
+            'Result',
+            ['resultId' => (int)$online_exam_id],
+            'FOR_ASSESSMENT',
+            'Assessment',
+            ['assId' => (int)$request->get('questionpaper_id')]
+        );
+
+        \Log::info('✅ Neo4j Result Created', [
+            'student_id' => $user_id,
+            'resultId' => $online_exam_id
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('❌ Neo4j Error: ' . $e->getMessage());
+    }
+
+    // ================= RESPONSE =================
+    return back()->with([
+        'status_code' => 1,
+        'message' => 'Exam Submitted Successfully'
+    ]);
+}
 
 
     public function get_calculate_marks(Request $request)

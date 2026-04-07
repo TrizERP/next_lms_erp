@@ -145,6 +145,9 @@ class Neo4jService
       return $message;
   }
   
-  
+  public function run($query, $params = [])
+{
+    return $this->client->run($query, $params);
+}
 }
 

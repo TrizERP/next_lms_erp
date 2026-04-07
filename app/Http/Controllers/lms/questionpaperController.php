@@ -23,6 +23,9 @@ use function App\Helpers\SearchStudent;
 use function App\Helpers\sendNotification;
 use function App\Helpers\send_FCM_Notification;
 use App\Models\school_setup\SchoolModel;
+use function App\Helpers\neo4jCreateNode;
+use function App\Helpers\neo4jCreateRelationship;
+    
 
 class questionpaperController extends Controller
 {
@@ -193,133 +196,118 @@ class questionpaperController extends Controller
      * @param  Request  $request
      * @return Response
      */
-    public function store($request)
-    {
-        $open_date = $close_date = null;
-        if ($request['open_date'] != "") {
-            $open_date = date('Y-m-d H:i:s', strtotime($_REQUEST['open_date']));
-        }
-        if ($request['close_date'] != "") {
-            $close_date = date('Y-m-d 23:59:59', strtotime($_REQUEST['close_date']));
-        }
+    public function store(Request $request)
+{
+    $sub_institute_id = $request->session()->get('sub_institute_id');
+    $user_id = $request->session()->get('user_id');
 
-        $sub_institute_id = $request['sub_institute_id'];
-        $syear = $request['syear'];
-        $user_id = $request['created_by'];
+    DB::beginTransaction();
 
-        $show_hide = $request['show_hide'];
-        $show_hide_val = isset($show_hide) ? $show_hide : '';
+    try {
 
-        $result_show_ans = $request['result_show_ans'];
-        $result_show_ans_val = isset($result_show_ans) ? $result_show_ans : '';
-
-        $shuffle_question = $request['shuffle_question'];
-        $shuffle_question_val = isset($shuffle_question) ? $shuffle_question : '';
-
-        $show_feedback = $request['show_feedback'];
-        $show_feedback_val = $show_feedback ?? '';
-
-        $timelimit_enable = $request['timelimit_enable'];
-        $timelimit_enable_val = isset($timelimit_enable) ? $timelimit_enable : '';
-
-        $question_ids = "";
-        if ($request['question_ids']) {
-            $question_ids = implode(",", $request['question_ids']);
-        }
-
-        $questionpaper = array(
-            'grade_id'         => $request['grade'],
-            'standard_id'      => $request['standard'],
-            'subject_id'       => $request['subject'],
-            'paper_name'       => $request['paper_name'],
-            'paper_desc'       => $request['paper_desc'],
-            'open_date'        => $open_date,
-            'close_date'       => $close_date,
-            'timelimit_enable' => $timelimit_enable_val,
-            'time_allowed'     => $request['time_allowed'],
-            'total_ques'       => $request['total_ques'],
-            'total_marks'      => $request['total_marks'],
-            'question_ids'     => $question_ids,
-            'shuffle_question' => $shuffle_question_val,
-            'attempt_allowed'  => $request['attempt_allowed'],
-            'show_feedback'    => $show_feedback_val,
-            'show_hide'        => $show_hide_val,
-            'result_show_ans'  => $result_show_ans_val,
-            'created_by'       => $user_id,
+        // ================= SQL INSERT =================
+        $questionPaper = questionpaperModel::create([
+            'paper_name'       => $request->paper_name,
+            'standard_id'      => $request->standard_id,
+            'subject_id'       => $request->subject_id,
+            'grade_id'         => $request->grade_id,
+            'question_ids'     => implode(',', $request->question_ids),
+            'syear'            => session()->get('syear'),
             'sub_institute_id' => $sub_institute_id,
-            'syear'            => $syear,
-            'exam_type'        => $request['exam_type'],
-        );
-        // echo ('<pre>');print_r($questionpaper);die;
-        $query = questionpaperModel::insertGetId($questionpaper);
-        $questionpaper_id = DB::getPDO()->lastInsertId();
-        // send notification
-        if(isset($questionpaper_id) && $questionpaper_id!=0){
-            $student_data = SearchStudent($request['grade'], $request['standard']);
+            'created_by'       => $user_id
+        ]);
 
-            $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+        $assessment_id = $questionPaper->id;
 
-            $schoolName = $schoolData[0]['SchoolName'];
-            $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+        DB::commit();
 
-            foreach ($student_data as $id => $value) {
-                $text = "Reminder: ".$request['paper_name']." exam added on ".$open_date." and closing date of exam is ".$close_date." )";
-                $app_notification_content = [
-                    'NOTIFICATION_TYPE'        => 'Notification',
-                    'NOTIFICATION_DATE'        => now(),
-                    'STUDENT_ID'               => $value['id'],
-                    'NOTIFICATION_DESCRIPTION' => $text,
-                    'STATUS'                   => 0,
-                    'SUB_INSTITUTE_ID'         => $sub_institute_id,
-                    'SYEAR'                    => $syear,
-                    'SCREEN_NAME'              => 'general',
-                    'CREATED_BY'               => $user_id,
-                    'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
-                ];
+    } catch (\Exception $e) {
+        DB::rollBack();
 
-                $gcm_data = DB::table('gcm_users')->where('mobile_no', $value['mobile'])
-                        ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+        \Log::error('❌ SQL Assessment Error: ' . $e->getMessage());
 
-                    $gcmRegIds = [];
-                    if (count($gcm_data) > 0) {
-                        foreach ($gcm_data as $key1 => $val1) {
-                            $gcmRegIds[] = $val1->gcm_regid;
-                        }
-                    }
-
-                    $pushMessage = $text;
-
-                    $bunch_arr = array_chunk($gcmRegIds, 1000);
-                    sendNotification($app_notification_content);
-                    
-                    if (! empty($bunch_arr)) {
-                        foreach ($bunch_arr as $val) {
-                            if (isset($val, $pushMessage)) {
-                                $type1 = 'Notification';
-                                $message = [
-                                    'body'  => $pushMessage, 'TYPE' => $type1, 'USER_ID' => $value['id'],
-                                    'title' => $schoolName, 'image' => $schoolLogo,
-                                ];
-                                $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
-                               
-                            }
-                        }
-                      
-                    }
-            }
-          
-        }
-        // notification ended 
-
-        $res = array(
-            "status_code" => 1,
-            "message"     => "Question-Paper Added Successfully",
-        );
-        $type = $request['type'];
-        $this->generatePDF($questionpaper, $questionpaper_id);
-
-        return is_mobile($type, "question_paper.index", $res, "redirect");
+        return back()->with([
+            'status_code' => 0,
+            'message' => 'Error saving assessment'
+        ]);
     }
+
+    // ======================================================
+    // ✅ NEO4J (CORRECT)
+    // ======================================================
+
+    try {
+
+        // 🔹 ASSESSMENT NODE
+        neo4jCreateNode(
+            'Assessment',
+            ['assId' => (int)$assessment_id],
+            [
+                'assessment_id' => (int)$assessment_id,
+                'name' => $request->paper_name,
+                'displayLabel' => 'Assessment:' . $request->paper_name,
+                'sub_institute_id' => (int)$sub_institute_id
+            ]
+        );
+
+        $question_ids = $request->question_ids;
+
+        foreach ($question_ids as $qid) {
+
+            // 🔹 QUESTION NODE
+            neo4jCreateNode(
+                'Question',
+                ['qId' => (int)$qid],
+                []
+            );
+
+            // 🔹 RELATION: HAS_QUESTION
+            neo4jCreateRelationship(
+                'Assessment',
+                ['assId' => (int)$assessment_id],
+                'HAS_QUESTION',
+                'Question',
+                ['qId' => (int)$qid]
+            );
+
+            // 🔹 GET CHAPTER
+            $chapter_id = DB::table('lms_question_master')
+                ->where('id', $qid)
+                ->value('chapter_id');
+
+            if ($chapter_id) {
+
+                // 🔹 CHAPTER NODE
+                neo4jCreateNode(
+                    'Chapter',
+                    ['chId' => (int)$chapter_id],
+                    []
+                );
+
+                // 🔹 RELATION: ASSESSES_CHAPTER
+                neo4jCreateRelationship(
+                    'Assessment',
+                    ['assId' => (int)$assessment_id],
+                    'ASSESSES_CHAPTER',
+                    'Chapter',
+                    ['chId' => (int)$chapter_id]
+                );
+            }
+        }
+
+        \Log::info('✅ Neo4j Assessment Created', [
+            'assId' => $assessment_id
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('❌ Neo4j Assessment Error: ' . $e->getMessage());
+    }
+
+    return back()->with([
+        'status_code' => 1,
+        'message' => 'Assessment Created Successfully'
+    ]);
+}
 
     public function generatePDF($request, $questionpaper_id)
     {
@@ -496,89 +484,119 @@ public function edit(Request $request, $id)
      * @param  int  $id
      * @return Response
      */
-    public function update(Request $request)
-    {
+   public function update(Request $request, $id)
+{
+    $sub_institute_id = $request->session()->get('sub_institute_id');
 
+    DB::beginTransaction();
 
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-        $user_id = $request->session()->get('user_id');
-        $question_ids = $request->hidden_question_ids;
-        $id =  $request->edit_id;
+    try {
 
-        $show_hide = $request->get('show_hide');
-        $show_hide_val = $show_hide ?? '';
+        $questionPaper = questionpaperModel::where('id', $id)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->first();
 
-        $result_show_ans = $request->get('result_show_ans');
-        $result_show_ans_val = $result_show_ans ?? '';
-
-        $shuffle_question = $request->get('shuffle_question');
-        $shuffle_question_val = $shuffle_question ?? '';
-
-        $show_feedback = $request->get('show_feedback');
-        $show_feedback_val = $show_feedback ?? '';
-
-        $timelimit_enable = $request->get('timelimit_enable');
-        $timelimit_enable_val = $timelimit_enable ?? '';
-
-        $question_ids = "";
-        if ($request->has('questions')) {
-            $question_ids = implode(",", $request->get('questions'));
+        if (!$questionPaper) {
+            DB::rollBack();
+            return back()->with([
+                'status_code' => 0,
+                'message' => 'Assessment not found'
+            ]);
         }
 
-        $questionpaper = array(
-            'grade_id'         => $request->get('grade'),
-            'standard_id'      => $request->get('standard'),
-            'subject_id'       => $request->get('subject'),
-            'paper_name'       => $request->get('paper_name'),
-            'paper_desc'       => $request->get('paper_desc'),
-            'timelimit_enable' => $timelimit_enable_val,
-            'time_allowed'     => $request->get('time_allowed'),
-            'total_ques'       => $request->get('total_ques'),
-            'total_marks'      => $request->get('total_marks'),
-            'question_ids'     => $question_ids,
-            'shuffle_question' => $shuffle_question_val,
-            'attempt_allowed'  => $request->get('attempt_allowed'),
-            'show_feedback'    => $show_feedback_val,
-            'show_hide'        => $show_hide_val,
-            'result_show_ans'  => $result_show_ans_val,
-            'created_by'       => $user_id,
-            'sub_institute_id' => $sub_institute_id,
-            'syear'            => $syear,
-            'exam_type'        => $request->get('exam_type'),
-        );
-        $open_date = $close_date = "";
-        if ($_REQUEST['open_date'] != "") {
-            $open_date = date('Y-m-d H:i:s', strtotime($_REQUEST['open_date']));
-            $questionpaper['open_date'] = $open_date;
-        }
-        if ($_REQUEST['close_date'] != "") {
-            $close_date = date('Y-m-d 23:59:59', strtotime($_REQUEST['close_date']));
-            $questionpaper['close_date'] = $close_date;
-        }
+        // ================= SQL UPDATE =================
+        $questionPaper->update([
+            'paper_name'   => $request->paper_name,
+            'question_ids' => implode(',', $request->question_ids)
+        ]);
 
-        $query = questionpaperModel::where("id",$id)->update($questionpaper);
-        // dd($query);
+        DB::commit();
 
-        if($query==false){
-        $res = [
-                "status_code" => 0,
-                "message"     => "Question-Paper Update Cancel Or failed",
-            ];
-        }else{
-        $res = [
-            "status_code" => 1,
-            "message"     => "Question-Paper Updated Successfully",
-        ];
-        }
+    } catch (\Exception $e) {
+        DB::rollBack();
 
-        $type = $request->input('type');
+        \Log::error('❌ SQL Update Assessment Error: ' . $e->getMessage());
 
-        return is_mobile($type, "question_paper.index", $res, "redirect");
-        // return back()->with($res);
+        return back()->with([
+            'status_code' => 0,
+            'message' => 'Error updating assessment'
+        ]);
     }
 
-    public function show(Request $request, $id)
+    // ======================================================
+    // ✅ NEO4J UPDATE (CORRECT)
+    // ======================================================
+
+    try {
+
+        // 🔹 UPDATE ASSESSMENT NODE
+        neo4jCreateNode(
+            'Assessment',
+            ['assId' => (int)$id],
+            [
+                'name' => $request->paper_name,
+                'updated_at' => now()->toDateTimeString()
+            ]
+        );
+
+        $question_ids = $request->question_ids;
+
+        foreach ($question_ids as $qid) {
+
+            // 🔹 ENSURE QUESTION
+            neo4jCreateNode(
+                'Question',
+                ['qId' => (int)$qid],
+                []
+            );
+
+            // 🔹 RELATION
+            neo4jCreateRelationship(
+                'Assessment',
+                ['assId' => (int)$id],
+                'HAS_QUESTION',
+                'Question',
+                ['qId' => (int)$qid]
+            );
+
+            // 🔹 CHAPTER RELATION
+            $chapter_id = DB::table('lms_question_master')
+                ->where('id', $qid)
+                ->value('chapter_id');
+
+            if ($chapter_id) {
+
+                neo4jCreateNode(
+                    'Chapter',
+                    ['chId' => (int)$chapter_id],
+                    []
+                );
+
+                neo4jCreateRelationship(
+                    'Assessment',
+                    ['assId' => (int)$id],
+                    'ASSESSES_CHAPTER',
+                    'Chapter',
+                    ['chId' => (int)$chapter_id]
+                );
+            }
+        }
+
+        \Log::info('✅ Neo4j Assessment Updated', [
+            'assId' => $id
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('❌ Neo4j Update Error: ' . $e->getMessage());
+    }
+
+    return back()->with([
+        'status_code' => 1,
+        'message' => 'Assessment Updated Successfully'
+    ]);
+}
+
+public function show(Request $request, $id)
     {
 
         $type = $request->input('type');
@@ -820,7 +838,9 @@ if(isset($request->paper_name) && isset($request->attempt_allowed) && isset($req
             'type'             => $type,
     );
         // return $array;
-        return $this->store($array);
+        // return $this->store($array);
+        $newRequest = new Request($array);
+return $this->store($newRequest);
     }
 
 }
