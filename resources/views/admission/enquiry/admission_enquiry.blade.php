@@ -65,6 +65,13 @@
                     <div class="row">
                         @php
                             $readonly = 'readonly';
+                            $class="hide";
+                            $oldAdmissionInstitutes = [47,48,49,62,69,72,195,201,202,203,204,233,254];
+                            if(in_array($_REQUEST['sub_institute_id'],$oldAdmissionInstitutes))
+                            {
+                                $class="show";
+                            }
+                            $unmandatoryFileds = ['category','previous_school_name','previous_standard','send_sms','remarks','source_of_enquiry','followup_date'];
                         @endphp
                         <input type="hidden" value="{{ $_REQUEST['type'] }}" name="type">
                         <input type="hidden" value="{{ $_REQUEST['sub_institute_id'] }}" name="sub_institute_id">
@@ -100,18 +107,38 @@
                             <!--  pattern="/^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$/" -->
                             <input type="email" id='email' name="email" class="form-control" required>
                         </div>
+                        <div class="col-md-3 form-group">
+                            <label>Admission Standard </label>
+                            <select id='admission_standard' name="admission_standard" required class="form-control"
+                                onchange="display_link(this.value);add_data();">
+                                <option value=""> Select Standard </option>
+                                @foreach ($data['standard'] as $key => $value)
+                                    <option value="{{ $value['id'] }}"> {{ $value['name'] }} </option>
+                                @endforeach
+                            </select>
+                            <input type="hidden" name="hidden_std_id" id="hidden_std_id" value="">
+                        </div>
 
+                        <div class="col-md-3 form-group">
+                            <label>Date of Birth </label>
+                            <input type="date" onchange="calculate_age(this.value);" id='date_of_birth' required
+                                name="date_of_birth" class="form-control" autocomplete="off">
+                        </div>
+                        <div class="col-md-3 form-group">
+                            <label>Age </label>
+                            <input type="text" id='age' name="age" class="form-control">
+                            <span class="error_message" style="color:red;"></span>
+                        </div>
                         <div class="col-md-3 form-group">
                             <label>Address </label>
                             <textarea id='address' name="address" class="form-control" required></textarea>
                         </div>
-
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 {{$class}} form-group">
                             <label>Previous School's Name </label>
                             <input type="text" id='previous_school_name' name="previous_school_name"
                                 class="form-control" required>
                         </div>
-                        <div class="col-md-3 form-group">
+                        <div class="col-md-3 {{$class}} form-group">
                             <label>Previous Standard </label>
                             <select id='previous_standard' name="previous_standard" class="form-control" required>
                                 <option value=""> Select Standard </option>
@@ -121,24 +148,24 @@
                             </select>
                         </div>
                         <!-- added d-none class 2025-02-18  -->
-                        <div class="col-md-3 form-group d-none">
+                        <div class="col-md-3 {{$class}} form-group d-none">
                             <label>Followup Date </label>
                             <input type="date" id='followup_date' name="followup_date" class="form-control"
                                 autocomplete="off" value="{{ date('Y-m-d') }}">
                             <span id="followup_date_span"></span>
                         </div>
                         <!-- added d-none class 2025-02-18  -->
-                        <div class="col-md-3 form-group d-none">
+                        <div class="col-md-3 {{$class}} form-group d-none">
                             <label>Remarks </label>
                             <input type="text" id='remarks' name="remarks" class="form-control">
                         </div>
                         <!-- added d-none class 2025-02-18  -->
-                        <div class="col-md-3 form-group d-none">
+                        <div class="col-md-3 {{$class}} form-group d-none">
                             <label>Source of enquiry </label>
                             <input type="text" id='source_of_enquiry' name="source_of_enquiry" class="form-control">
                         </div>
                         <!-- added d-none class 2025-02-18  -->
-                        <div class="col-md-3 form-group d-none">
+                        <div class="col-md-3 {{$class}} form-group d-none">
                             <label>Category </label>
                             <select id='category' name="category" class="form-control">
                                 <option value=""> Select Category </option>
@@ -161,7 +188,7 @@
                             </div>
                         </div>
                         <!-- added d-none class 2025-02-18  -->
-                        <div class="col-md-3 form-group d-none">
+                        <div class="col-md-3 {{$class}} form-group d-none">
                             <label>Send Sms </label>
                             <select id='send_sms' name="send_sms" onchange="showMessageBox(this.value);"
                                 class="form-control">
@@ -265,28 +292,6 @@
                             </div>
                         @endif
 
-                        <div class="col-md-3 form-group">
-                            <label>Admission Standard </label>
-                            <select id='admission_standard' name="admission_standard" required class="form-control"
-                                onchange="display_link(this.value);add_data();">
-                                <option value=""> Select Standard </option>
-                                @foreach ($data['standard'] as $key => $value)
-                                    <option value="{{ $value['id'] }}"> {{ $value['name'] }} </option>
-                                @endforeach
-                            </select>
-                            <input type="hidden" name="hidden_std_id" id="hidden_std_id" value="">
-                        </div>
-
-                        <div class="col-md-3 form-group">
-                            <label>Date of Birth </label>
-                            <input type="date" onchange="calculate_age(this.value);" id='date_of_birth' required
-                                name="date_of_birth" class="form-control" autocomplete="off">
-                        </div>
-                        <div class="col-md-3 form-group">
-                            <label>Age </label>
-                            <input type="text" id='age' name="age" class="form-control">
-                            <span class="error_message" style="color:red;"></span>
-                        </div>
                         @if (in_array($_REQUEST['sub_institute_id'], ['1', '254']))
                             <div class="col-md-3 form-group">
                                 <label>Father's Mobile No. </label>
@@ -295,6 +300,16 @@
                             <div class="col-md-3 form-group">
                                 <label>Mother's Mobile No. </label>
                                 <input type="text" id='mobile_number_mother' name="mobile_number_mother" pattern="[1-9]{1}[0-9]{9}" maxlength="10" class="form-control" required>
+                            </div>
+                            <!-- Payment Type Section -->
+                            <div class="col-md-3 form-group">
+                                <label for="payment">Select Payment Type</label>
+                                <select id="payment_type" name="payment_type" class="form-control" required>
+                                    <option value="">Select</option>
+                                    <option value="cash">Cash</option>
+                                    <option value="online">Online</option>
+                                </select>
+                                <span class="cashPay" style="color:green">Please Save To get Token!</span>
                             </div>
                         @endif
                         @if (in_array(Session::get('sub_institute_id'), ['201', '202', '203', '204', '324', '326', '327']))
@@ -310,16 +325,6 @@
                                 <textarea id='fees_remark' name="fees_remark" class="form-control" style="display: none;"></textarea>
                             </div>
                         @endif
-                        <!-- Payment Type Section -->
-                        <div class="col-md-3 form-group">
-                            <label for="payment">Select Payment Type</label>
-                            <select id="payment_type" name="payment_type" class="form-control" required>
-                                <option value="">Select</option>
-                                <option value="cash">Cash</option>
-                                <option value="online">Online</option>
-                            </select>
-                            <span class="cashPay" style="color:green">Please Save To get Token!</span>
-                        </div>
 <!--                        
                         <div class="col-md-3 paymentData">
                             <div class="onlinePay">

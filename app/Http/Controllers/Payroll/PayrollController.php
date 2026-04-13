@@ -1905,7 +1905,7 @@ class PayrollController extends Controller
                 }
                 //START FOR PT CALCULATE AS PER DAYS 15-09-2025
                 elseif($getEligible->pt_deduction=="Y" && $value['deduction'][3]=="PT"){
-                    $deduction = Helpers::getPT($totalallowance,$getEligible->gender);
+                    $deduction = Helpers::getPT($totalallowance,$getEligible->gender,$request->month);
                 }
                 // 2024-10-11 if total is 0 all values will be 0
                 if($totalDay==0){
