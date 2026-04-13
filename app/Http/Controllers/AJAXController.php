@@ -740,21 +740,22 @@ class AJAXController extends Controller
             "0" => $student_id,
         );
 
-$std = DB::table('tblstudent_enrollment as a')
-    ->where('a.sub_institute_id', $sub_institute_id)
-    ->where('a.syear', $syear)
-    ->where('a.student_id', $student_id)
-    ->value('a.standard_id');
-
-$data = DB::table('tblstudent_enrollment as a')
-    ->select('a.syear', 'a.standard_id')
+    $data = DB::table('tblstudent_enrollment as a')
+    ->select('a.syear', 'a.standard_id', 's.marking_period_id')
     ->join('standard as s', 's.id', '=', 'a.standard_id')
+    ->join('tblstudent_enrollment as b', function ($join) use ($syear) {
+        $join->on('b.student_id', '=', 'a.student_id')
+             ->on('b.sub_institute_id', '=', 'a.sub_institute_id')
+             ->on('b.standard_id', '=', 'a.standard_id')
+             ->where('b.syear', '<', $syear);
+    })
     ->whereNull('a.end_date')
     ->where('a.sub_institute_id', $sub_institute_id)
     ->where('a.student_id', $student_id)
-    ->where('a.standard_id', '<', (int)$std)
     ->orderBy('a.syear', 'desc')
-    ->get()->toArray();
+    ->distinct('a.syear', 'a.standard_id') // ✅ avoids duplicate rows due to self-join
+    ->get()
+    ->toArray();
 
     $previous_standard = [];
 
