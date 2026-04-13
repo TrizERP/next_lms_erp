@@ -491,28 +491,22 @@ class fees_collect_controller extends Controller
             $other_bk_off_month_wise2 = OtherBreackOfMonth($stu_arr,$last_syear,$sub_institute_id);   // for previous year
             $other_bk_off_month_head_wise2 = OtherBreackOfMonthHead($stu_arr, $search_ids,$last_syear,$sub_institute_id); // for previous year
 
-$standard = DB::table('standard as s')
-    ->join('tblstudent_enrollment as t', function ($join) {
-        $join->on('t.standard_id', '=', 's.id')
-             ->on('t.sub_institute_id', '=', 's.sub_institute_id');
-    })
-    ->where('t.syear', $syear)
-    ->where('s.sub_institute_id', $sub_institute_id)
-    ->where('t.student_id', $stu_arr[0])
-    ->select('s.id as standard_id')
-    ->first();
-    $std = $standard->standard_id;
-
-$data = DB::table('tblstudent_enrollment as a')
+    $data = DB::table('tblstudent_enrollment as a')
     ->select('a.syear', 'a.standard_id', 's.marking_period_id')
     ->join('standard as s', 's.id', '=', 'a.standard_id')
+    ->join('tblstudent_enrollment as b', function ($join) use ($syear) {
+        $join->on('b.student_id', '=', 'a.student_id')
+             ->on('b.sub_institute_id', '=', 'a.sub_institute_id')
+             ->on('b.standard_id', '=', 'a.standard_id')
+             ->where('b.syear', '<', $syear);
+    })
     ->whereNull('a.end_date')
     ->where('a.sub_institute_id', $sub_institute_id)
     ->where('a.student_id', $stu_arr[0])
-    ->where('a.standard_id', '<', $std)
-    ->orderBy('s.sort_order', 'asc')
+    ->orderBy('a.syear', 'desc')
+    ->distinct('a.syear', 'a.standard_id') // ✅ avoids duplicate rows due to self-join
     ->get()
-    ->toArray();
+    ->toArray();   
 
 $previous_standard = [];
 $year_arr2 = [];
@@ -2207,29 +2201,22 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
         $student_id = $id;
 
-    // If $std not passed, fetch it
-    if (empty($std)) {
-        $std = DB::table('tblstudent_enrollment as a')
-            ->where('a.sub_institute_id', $sub_institute_id)
-            ->where('a.syear', $syear)
-            ->where('a.student_id', $student_id)
-            ->value('a.standard_id');
-    }
-
-    // Safety check (avoid error)
-    if (empty($std)) {
-        return []; // or handle as needed
-    }
-
-$data = DB::table('tblstudent_enrollment as a')
-    ->select('a.syear', 'a.standard_id')
+    $data = DB::table('tblstudent_enrollment as a')
+    ->select('a.syear', 'a.standard_id', 's.marking_period_id')
     ->join('standard as s', 's.id', '=', 'a.standard_id')
+    ->join('tblstudent_enrollment as b', function ($join) use ($syear) {
+        $join->on('b.student_id', '=', 'a.student_id')
+             ->on('b.sub_institute_id', '=', 'a.sub_institute_id')
+             ->on('b.standard_id', '=', 'a.standard_id')
+             ->where('b.syear', '<', $syear);
+    })
     ->whereNull('a.end_date')
     ->where('a.sub_institute_id', $sub_institute_id)
     ->where('a.student_id', $student_id)
-    ->where('a.standard_id', '<', (int)$std)
     ->orderBy('a.syear', 'desc')
-    ->get()->toArray();
+    ->distinct('a.syear', 'a.standard_id') // ✅ avoids duplicate rows due to self-join
+    ->get()
+    ->toArray();
 
     $previous_standard = [];
 
