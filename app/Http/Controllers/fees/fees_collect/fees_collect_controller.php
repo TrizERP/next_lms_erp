@@ -3174,6 +3174,17 @@ foreach ($previous_standard as $item) {
             $fees_data = $this->getBk($request, $student_id);
             //echo "<pre>";
             //print_r($fees_data);
+// Append Previous Fees
+if (!empty($fees_data['previous_fees']['Previous Fees']) 
+    && $fees_data['previous_fees']['Previous Fees'] != 0
+    && in_array($sub_institute_id, [76])) {
+    
+    $new_pending_arr[] = (object)[
+        'month'  => 'Previous Fees',
+        'remain' => $fees_data['previous_fees']['Previous Fees'],
+        'PayNow' => $online_link
+    ];
+}            
             if (isset($fees_data['total_fees'])) {
                 foreach ($fees_data['total_fees'] as $key => $val) {
                     unset($val['bk']);
