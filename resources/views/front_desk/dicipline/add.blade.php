@@ -39,6 +39,7 @@
 									<th>Mobile</th>
 									<th>Select</th>
 									<th class="text-left">Message</th>
+									<th>FLAG</th>
 								</tr>
 							</thead>
                             @php
@@ -65,17 +66,29 @@
                                         @endforeach
                                     </select>
                                 </td>
-                                <td>
-                                    @if(in_array(session()->get('sub_institute_id'),[195]))  
-                                        <!-- <select class="form-control" name="{{ 'values[text]['.$col_arr['student_id'].']'}}" id="messageSelect-{{$col_arr['student_id']}}">
-                                            <option value="">Please Select Title</option>
-                                        </select> -->
-                                        <input type="text" list="messageSelect-{{$col_arr['student_id']}}" class="form-control interest-input" name="{{ 'values[text]['.$col_arr['student_id'].']'}}" autocomplete="off">
-                                        <datalist id="messageSelect-{{$col_arr['student_id']}}"></datalist>
-                                    @else 
-                                        <textarea name="{{ 'values[text]['.$col_arr['student_id'].']'}}" class="form-control resizableVertical"></textarea>
-                                    @endif
-                                </td>
+                                 <td>
+                                     @if(in_array(session()->get('sub_institute_id'),[195]))
+                                         <!-- <select class="form-control" name="{{ 'values[text]['.$col_arr['student_id'].']'}}" id="messageSelect-{{$col_arr['student_id']}}">
+                                             <option value="">Please Select Title</option>
+                                         </select> -->
+                                         <input type="text" list="messageSelect-{{$col_arr['student_id']}}" class="form-control interest-input" name="{{ 'values[text]['.$col_arr['student_id'].']'}}" autocomplete="off">
+                                         <datalist id="messageSelect-{{$col_arr['student_id']}}"></datalist>
+                                     @else
+                                         <textarea name="{{ 'values[text]['.$col_arr['student_id'].']'}}" class="form-control resizableVertical"></textarea>
+                                     @endif
+                                 </td>
+                                 <td>
+                                     <div class="flag-options">
+                                          <label>
+                                              <input type="radio" name="{{ 'values[flag]['.$col_arr['student_id'].']'}}" value="1" style="display:none;">
+                                              <i class="fa fa-flag" style="color: grey; cursor: pointer;"></i>
+                                          </label>
+                                          <label>
+                                              <input type="radio" name="{{ 'values[flag]['.$col_arr['student_id'].']'}}" value="-1" style="display:none;">
+                                              <i class="fa fa-flag" style="color: grey; cursor: pointer;"></i>
+                                          </label>
+                                     </div>
+                                 </td>
                             </tr>
                             @endforeach
                         </table>
@@ -173,6 +186,16 @@ $(document).ready(function() {
 
 } );
 
+$('.flag-options label').on('click', function() {
+    var $container = $(this).closest('.flag-options');
+    $container.find('i').css('color', 'grey');
+    var value = $(this).find('input').val();
+    if (value == '1') {
+        $(this).find('i').css('color', 'green');
+    } else if (value == '-1') {
+        $(this).find('i').css('color', 'red');
+    }
+});
 
 </script>
 

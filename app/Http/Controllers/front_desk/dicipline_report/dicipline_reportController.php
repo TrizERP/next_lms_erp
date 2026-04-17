@@ -117,10 +117,22 @@ class dicipline_reportController extends Controller
             $res['status_code'] = 0;
             $res['message'] = "No student Found";
         }else{
-            // get decipline data 
+            // get decipline data with flag and remarks
             $student_ids = array_column($studentLists, 'id');
-            $deciplineData = DB::table('dicipline')->selectRaw('*,id as des_id')->whereIn('student_id', $student_ids)->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->orderBy('date_', 'desc')->get()->toArray();
+            $query = DB::table('dicipline')->selectRaw('*,id as des_id')->whereIn('student_id', $student_ids)->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear]);
+
+            // Apply date filtering if provided
+            if (!empty($from_date)) {
+                $query->where('date_', '>=', $from_date);
+            }
+            if (!empty($to_date)) {
+                $query->where('date_', '<=', $to_date);
+            }
+
+            $deciplineData = $query->orderBy('date_', 'desc')->get()->toArray();
+
             $studentArr = [];
+            $studentSummary = [];
 
             foreach ($deciplineData as $key => $value) {
                 $student_id = $value->student_id;
@@ -128,8 +140,34 @@ class dicipline_reportController extends Controller
                     return $item['id'] == $student_id;
                 }));
                 $studentData = isset($filteredData[0]) ? $filteredData[0] : '';
+
+                // Calculate flag text
+                $flag_text = '';
+                if ($value->flag == 1) $flag_text = 'Positive';
+                elseif ($value->flag == -1) $flag_text = 'Negative';
+
+                $value->flag_text = $flag_text;
                 $studentArr[] = array_merge((array)$value, $studentData);
+
+                // Build summary for each student
+                if (!isset($studentSummary[$student_id])) {
+                    $studentSummary[$student_id] = [
+                        'student_name' => $studentData ? $studentData['first_name'] . ' ' . $studentData['last_name'] : '',
+                        'total_points' => 0,
+                        'positive_count' => 0,
+                        'negative_count' => 0,
+                        'entries' => []
+                    ];
+                }
+
+                $studentSummary[$student_id]['total_points'] += $value->flag;
+                $studentSummary[$student_id]['entries'][] = (array)$value;
+
+                if ($value->flag == 1) $studentSummary[$student_id]['positive_count']++;
+                elseif ($value->flag == -1) $studentSummary[$student_id]['negative_count']++;
             }
+
+            $res['student_summary'] = array_values($studentSummary);
         }
 
         $res['data'] = $studentArr;
