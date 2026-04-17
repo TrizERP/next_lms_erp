@@ -240,10 +240,16 @@ class PayrollController extends Controller
 
                         // check allowance if allowance make it gross Salary
                         if($getPayrollType->payroll_type==1){
-                            // for PT Deduction 
-                            $totalGrossSalary +=$amount;
+                            
+                            // for PT & ESIC Deduction
+                            $GrossSalaryArray = ['BASIC','GRADE PAY','D.A','HRA','OTHER ALLOW'];
+                            if(in_array($payroll_type_name,$GrossSalaryArray)){
+                                $totalGrossSalary +=$amount;
+                            }
+
                             // for PF Deduction 
-                            if($payroll_type_name=="BASIC" || $payroll_type_name=="D.A" || $payroll_type_name=="GRADE PAY"){
+                            $AllowanceArray = ['BASIC','GRADE PAY','D.A'];
+                            if(in_array($payroll_type_name,$AllowanceArray)){
                                 $totalAllowance += $amount;
                             }
                         }
@@ -265,7 +271,7 @@ class PayrollController extends Controller
                 
                 // PT Calculation
                 if($pt_deduction == 'Y')
-                    $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender) : $getPTFlat; // getPtFlat is for set flat amounts
+                    $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender,$state = null) : $getPTFlat; // getPtFlat is for set flat amounts
                 // 13-08-2024 end 
                 // echo "<pre>";print_r($getPF);
                 // echo "<pre>";print_r($getPT);
@@ -1224,7 +1230,11 @@ class PayrollController extends Controller
             $employeeData['deduction'] =  $employeeSalaryData->total_deduction;
             $employeeData['net_salary'] =  $employeeSalaryData->total_payment;
             $employeeSalaryDetails = json_decode($employeeSalaryData->employee_salary_data, true);
-            $employeeSalaryStructureDetails = json_decode($employeeSalaryStructure->employee_salary_data, true);
+            //$employeeSalaryStructureDetails = json_decode($employeeSalaryStructure->employee_salary_data, true);
+            $employeeSalaryStructureDetails = json_decode(
+											    $employeeSalaryStructure->employee_salary_data ?? '{}',
+											    true
+											);
             $actualpayment = 0;
             $allowancekey = -1;
             $deductionkey = 0;
@@ -1804,7 +1814,7 @@ class PayrollController extends Controller
 
         $preparPayrollType = [];
         
-        $totaldeduction = $totalallowance = 0;
+        $totaldeduction = $totalallowance = $grossallowance = 0;
         foreach ($payrollTypes as $payrollType) {
             // for allowance
 
@@ -1861,10 +1871,17 @@ class PayrollController extends Controller
 
                 $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
 
+                // for PF Deduction 
                 if(in_array($value['allowance'][3],["BASIC","GRADE PAY","D.A"])){
                     $totalSal= ($totalSal+$allowence);
                 }
-                $totalallowance = $totalallowance + $allowence;
+
+                // for PT & ESIC Deduction
+                if(in_array($value['allowance'][3],['BASIC','GRADE PAY','D.A','HRA','OTHER ALLOW'])){
+                    $grossallowance += $allowence;
+                }
+
+                $totalallowance += $allowence;
             }
           
             // for deduction
@@ -1895,7 +1912,7 @@ class PayrollController extends Controller
                     }
                 }
                 elseif($getEligible->esic_deduction=="Y" && $value['deduction'][3]=="ESIC"){
-                    $deduction = Helpers::getESIC($totalallowance);//$totalSal
+                    $deduction = Helpers::getESIC($grossallowance);//$totalSal
                 }
                 else if($value['deduction'][1] == 1 && !$deductionName && $value['deduction'][3]!="PF" && $value['deduction'][4]==0){
                     $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
@@ -1905,7 +1922,7 @@ class PayrollController extends Controller
                 }
                 //START FOR PT CALCULATE AS PER DAYS 15-09-2025
                 elseif($getEligible->pt_deduction=="Y" && $value['deduction'][3]=="PT"){
-                    $deduction = Helpers::getPT($totalallowance,$getEligible->gender,$request->month);
+                    $deduction = Helpers::getPT($grossallowance,$getEligible->gender,$request->month);
                 }
                 // 2024-10-11 if total is 0 all values will be 0
                 if($totalDay==0){

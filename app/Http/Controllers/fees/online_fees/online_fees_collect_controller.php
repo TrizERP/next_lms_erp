@@ -2753,7 +2753,7 @@ if (Str::startsWith($order_id, 'pay_')) {
         $medium_data = DB::select("SELECT a.*,e.grade_id,
             CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name,
             t.mobile,
-            CONCAT_WS('_',t.first_name,t.middle_name,t.last_name,t.uniqueid) AS uniqueid,
+            CONCAT_WS('_',t.first_name,t.middle_name,t.last_name,t.enrollment_no) AS uniqueid,
             t.email
             FROM tblstudent_enrollment e
             INNER JOIN academic_section a ON e.grade_id = a.id

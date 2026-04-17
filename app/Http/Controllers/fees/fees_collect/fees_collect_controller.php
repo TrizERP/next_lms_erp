@@ -2752,10 +2752,11 @@ foreach ($previous_standard as $item) {
             $full_bk_new2 = array_merge($reg_month_wise2, $other_bk_off2);
             $previous = array_sum($full_bk2);
             // if previous fees has discount then minus it from previous remain fees 2024-10-10
+            /* Hide by Rajesh 15-04-2026 becoz previous = minus amount
             if(!empty($discount_arr2)){
                 $pdiscount=array_sum($discount_arr2);
                 $previous = $previous - $pdiscount; 
-            }
+            }*/
 
             if($previous > 0){
             $full_bk['Previous Fees'] = $previous;
@@ -3177,14 +3178,15 @@ foreach ($previous_standard as $item) {
 // Append Previous Fees
 if (!empty($fees_data['previous_fees']['Previous Fees']) 
     && $fees_data['previous_fees']['Previous Fees'] != 0
-    && in_array($sub_institute_id, [76])) {
+    && in_array($sub_institute_id, [76])
+) {
     
     $new_pending_arr[] = (object)[
         'month'  => 'Previous Fees',
         'remain' => $fees_data['previous_fees']['Previous Fees'],
         'PayNow' => $online_link
     ];
-}            
+}
             if (isset($fees_data['total_fees'])) {
                 foreach ($fees_data['total_fees'] as $key => $val) {
                     unset($val['bk']);

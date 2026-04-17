@@ -25,7 +25,7 @@
                             <input type="hidden" name="amount" value="{{ $data['amount'] }}">
                             <input type="hidden" name="order_id" value="{{ $data['order_id'] }}">
                             <input type="hidden" name="name" value="{{ $data['student_name'] }}">
-                            <input type="hidden" name="description" value="School Fees Payment">
+                            <input type="hidden" name="description" value="{{ $data['medium'] }}">
 
                             {{-- Include fallback query parameters for callback --}}
                             <input type="hidden" name="callback_url"
