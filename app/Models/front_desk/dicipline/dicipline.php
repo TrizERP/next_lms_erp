@@ -15,6 +15,7 @@ class dicipline extends Model
         'name',
         'dicipline',
         'message',
+        'flag',
         'date_',
         'sub_institute_id',
         'created_by',
