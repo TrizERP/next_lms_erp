@@ -17,15 +17,15 @@
                     </div>
                     <div class="card-body text-center">
                         <h6>{{ $data['student_name'] }}</h6>
-                        <p><strong> {{ $data['medium'] }}</strong></p>
+                        <p><strong>Medium:</strong> {{ $data['medium'] }}</p>
                         <p><strong>Amount:</strong> ₹{{ number_format($data['amount']/100, 2) }}</p>
 
                         <form method="POST" action="https://api.razorpay.com/v1/checkout/embedded">
                             <input type="hidden" name="key_id" value="{{ $data['key'] }}">
                             <input type="hidden" name="amount" value="{{ $data['amount'] }}">
                             <input type="hidden" name="order_id" value="{{ $data['order_id'] }}">
-                            <input type="hidden" name="name" value="{{ $data['medium'] }} {{$data['student_name'] }}">
-                            <input type="hidden" name="description" value="{{ $data['student_name'] }}">
+                            <input type="hidden" name="name" value="{{ $data['student_name'] }}">
+                            <input type="hidden" name="description" value="{{ $data['medium'] }}">
 
                             {{-- Include fallback query parameters for callback --}}
                             <input type="hidden" name="callback_url"
