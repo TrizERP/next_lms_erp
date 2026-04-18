@@ -3272,8 +3272,8 @@ if (!empty($fees_data['previous_fees']['Previous Fees'])
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
         $receipt_no = $request->input('receipt_no');
-        $syear = $request->session()->get('syear');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->syear ?? session()->get('syear');
+        $sub_institute_id = $request->sub_institute_id ?? session()->get('sub_institute_id');
 
         $extra_fp = "  AND fp.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fp.sub_institute_id = '" . $sub_institute_id . "' AND fp.is_deleted = 'N' ";
 
