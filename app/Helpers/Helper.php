@@ -2951,13 +2951,18 @@ if (!function_exists('get_string')) {
     }
 
     if(!function_exists('getTableFieldFromId')){
-        function getTableFieldFromId($tableName, $fieldName, $id,$fromField='')
+        function getTableFieldFromId($tableName, $fieldName, $id,$fromField='',$filters=[])
         {
             $result = DB::table($tableName)
                 ->when($fromField != '', function ($q) use ($fromField,$id) {
                     $q->where($fromField, $id);
                 },function($q) use ($id){
                     $q->where('id', $id);
+                })
+                ->when($filters != [], function ($q) use ($filters) {
+                    foreach($filters as $key => $value){
+                        $q->where($key, $value);
+                    }
                 })
                 ->pluck($fieldName)
                 ->first();
