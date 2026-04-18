@@ -1,87 +1,12 @@
-<!-- Side panel -->
- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-<div id="conversationAI" class="side-panel">
-    <div class="side-panel-content">
-        <div class="side-panel-header">
-            <div class="d-flex align-items-center gap-2">
-                <i class="fas fa-robot text-purple-600"></i>
-                <h5 class="mb-0">Data Copilot</h5>
-            </div>
-            <button type="button" class="close" id="closeConversationAI">
-                <span aria-hidden="true">&times;</span>
-            </button>
-        </div>
-        <div class="side-panel-body">
-            <!-- Messages Container -->
-            <div id="chatMessages" class="d-flex flex-column gap-3 overflow-auto" style="max-height: calc(100vh - 250px);">
-                <!-- Initial bot message -->
-                <div class="d-flex gap-3">
-                    <div class="flex-shrink-0">
-                        <div class="w-8 h-8 rounded-circle d-flex align-items-center justify-content-center bg-blue-100">
-                            <i class="fas fa-robot text-blue-600"></i>
-                        </div>
-                    </div>
-                    <div class="d-flex flex-column gap-2">
-                        <div class="bg-gray-100 text-gray-800 rounded-3 px-3 py-2">
-                            Hello! 👋 I'm your AI Data Assistant. I can help you analyze data, generate SQL queries, and provide insights. What would you like to know?
-                        </div>
-                        <span class="text-xs text-gray-500 px-1">
-                            {{ now()->format('h:i A') }}
-                        </span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Loading Indicator (Hidden by default) -->
-            <div id="loadingIndicator" class="d-flex gap-3" style="display: none !important;">
-                <div class="flex-shrink-0">
-                    <div class="w-8 h-8 rounded-circle d-flex align-items-center justify-content-center bg-gradient-to-br from-blue-500 to-purple-500 text-white">
-                        <i class="fas fa-robot"></i>
-                    </div>
-                </div>
-                <div class="bg-white rounded-3 px-3 py-2 border border-gray-200 d-flex align-items-center gap-2">
-                    <div class="d-flex gap-1">
-                        <div class="loading-dot" style="--delay: 0s"></div>
-                        <div class="loading-dot" style="--delay: 0.1s"></div>
-                        <div class="loading-dot" style="--delay: 0.2s"></div>
-                    </div>
-                    <span class="text-sm text-gray-600 font-medium">Analyzing your data...</span>
-                </div>
-            </div>
-        </div>
-        <div class="side-panel-footer">
-            <!-- Save JD Button -->
-            <div id="saveJDBtn" class="d-flex justify-content-end mb-2">
-                <!-- <button type="button" id="saveJDBtn" class="btn btn-sm btn-primary">
-                    Save JD
-                </button> -->
-            </div>
-
-            <!-- Input Area -->
-            <div class="bg-gray-50 border rounded-3 p-2">
-                <div class="input-group">
-                    <textarea 
-                        id="chatInput" 
-                        class="form-control border-0 bg-transparent" 
-                        placeholder="Ask a question..." 
-                        rows="1"
-                        style="resize: none; max-height: 120px;"
-                    ></textarea>
-                    <button id="sendButton" class="btn btn-primary btn-sm rounded-circle ms-2" type="button">
-                        <i class="fas fa-paper-plane"></i>
-                    </button>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mt-2 px-1">
-                    <span class="text-xs text-gray-500">
-                        AI-generated content may be incorrect
-                    </span>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 <style>
+    .modal-backdrop.show, .modal-backdrop.fade{
+       opacity: 0 !important;
+       display: none !important;
+    }
+  
+    .d-flex .flex-column .gap-1{
+        width: 95%;
+    }
     .side-panel {
         position: fixed;
         top: 0;
@@ -89,388 +14,926 @@
         width: 400px;
         height: 100%;
         background: #fff;
-        box-shadow: -2px 0 8px rgba(0,0,0,0.15);
-        transition: right 0.3s ease;
+        box-shadow: -2px 0 12px rgba(0, 0, 0, 0.08);
+        transition: right 0.35s cubic-bezier(.4, 0, .2, 1), width 0.35s cubic-bezier(.4, 0, .2, 1);
         z-index: 1050;
     }
+
+    .side-panel.expanded {
+        width: 70vw !important;
+        right: 0;
+    }
+
     .side-panel.open {
         right: 0;
     }
-    .side-panel-content {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-    .side-panel-header {
-        display: flex;
-        justify-content: space-between;
+
+    .avatar {
+        display: inline-flex;
         align-items: center;
-        padding: 1rem;
-        border-bottom: 1px solid #dee2e6;
+        justify-content: center;
+        font-size: 1rem;
+        width: 2rem;
+        height: 2rem;
     }
-    .side-panel-body {
-        flex: 1;
-        padding: 1rem;
-        overflow-y: auto;
+
+    .avatar-sm {
+        width: 1.75rem;
+        height: 1.75rem;
+        font-size: 0.875rem;
     }
-    .side-panel-footer {
-        padding: 1rem;
-        border-top: 1px solid #dee2e6;
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #0d6efd, #6610f2);
     }
-    
-    /* Loading dots animation */
+
+    .user-message {
+        background-color: #0d6efd;
+        color: #fff;
+        border-radius: 1rem 1rem 0.25rem 1rem;
+        box-shadow: 0 2px 4px rgba(13, 110, 253, .25);
+    }
+
+    .bot-message {
+        background-color: #f8f9fa;
+        color: #212529;
+        border-radius: 1rem 1rem 1rem 0.25rem;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, .06);
+    }
+
     .loading-dot {
         width: 8px;
         height: 8px;
-        background-color: #3b82f6;
+        background-color: #0d6efd;
         border-radius: 50%;
         animation: bounce 1.4s infinite ease-in-out both;
         animation-delay: var(--delay);
     }
-    
+
     @keyframes bounce {
-        0%, 80%, 100% {
-            transform: scale(0);
-        }
-        40% {
-            transform: scale(1);
-        }
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1); }
+    }
+
+    .side-panel-body::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .side-panel-body::-webkit-scrollbar-thumb {
+        background: #ced4da;
+        border-radius: 3px;
+    }
+
+    .side-panel-body::-webkit-scrollbar-thumb:hover {
+        background: #adb5bd;
+    }
+
+    .custom-side-modal, .details-modal, .intent-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1060;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.5);
     }
     
-    /* User message styling */
-    .user-message {
-        background-color: #3b82f6 !important;
-        color: white !important;
-        margin-left: auto;
+    .custom-side-modal.show, .details-modal.show, .intent-modal.show {
+        display: flex;
     }
     
-    /* Bot message styling */
-    .bot-message {
-        background-color: #f3f4f6 !important;
-        color: #374151 !important;
+    .custom-modal-content, .details-modal-content, .intent-modal-content {
+        position: relative;
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 20px 35px -10px rgba(0, 0, 0, 0.3);
+        animation: modalFadeIn 0.25s ease-out;
+        overflow: hidden;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
     }
     
-    /* SQL code block */
-    .sql-block {
-        background-color: #1f2937;
-        color: #10b981;
-        font-family: 'Courier New', monospace;
-        font-size: 0.875rem;
-        border-radius: 0.75rem;
-        border: 1px solid #374151;
-        overflow-x: auto;
+    .details-modal-content, .intent-modal-content {
+        min-width: 300px;
     }
     
-    /* Table badge */
-    .table-badge {
-        background-color: #dbeafe;
-        color: #1e40af;
-        border: 1px solid #93c5fd;
-        font-size: 0.75rem;
+    @keyframes modalFadeIn {
+        from { opacity: 0; transform: scale(0.95); }
+        to { opacity: 1; transform: scale(1); }
+    }
+    
+    .custom-modal-header, .details-modal-header, .intent-modal-header {
+        padding: 1rem 1.25rem;
+        background: linear-gradient(135deg, #f8f9fa, #fff);
+        border-bottom: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .custom-modal-header h5, .details-modal-header h5, .intent-modal-header h5 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1e293b;
+    }
+    
+    .custom-modal-body, .details-modal-body, .intent-modal-body {
+        padding: 1.25rem;
+    }
+    
+    .intent-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .intent-item {
+        padding: 10px 12px;
+        background: #f8f9fa;
+        border-radius: 8px;
+        border-left: 3px solid #0d6efd;
+        font-size: 0.85rem;
+        color: #2c3e50;
+    }
+    
+    .intent-category {
+        font-weight: 700;
+        color: #0d6efd;
+        margin-bottom: 4px;
+        font-size: 0.8rem;
+        text-transform: uppercase;
+    }
+    
+    .custom-modal-footer, .details-modal-footer, .intent-modal-footer {
+        padding: 0.75rem 1rem;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        justify-content: center;
+        gap: 0.75rem;
+        background: #fafbfc;
+    }
+    
+    .btn-custom-primary {
+        background: linear-gradient(135deg, #0d6efd, #6610f2);
+        border: none;
+        color: white;
+        padding: 0.35rem 1rem;
+        border-radius: 40px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-custom-primary:hover {
+        background: linear-gradient(135deg, #0b5ed7, #5a0fc2);
+        transform: translateY(-1px);
+    }
+    
+    .btn-custom-secondary {
+        background: transparent;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        padding: 0.35rem 1rem;
+        border-radius: 40px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-custom-secondary:hover {
+        background: #f1f5f9;
+        border-color: #94a3b8;
+    }
+
+    .side-panel-content {
+        transition: all 0.2s ease;
+        height: 100%;
+        position: relative;
+    }
+
+    .icon-btn {
+        background: transparent;
+        border: none;
+        color: white;
+        transition: transform 0.2s, background 0.2s;
+        border-radius: 8px;
+        width: 32px;
+        height: 32px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
+
+    .icon-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.05);
+    }
+
+    .enrollment-input-group {
+        margin-top: 8px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+    }
+    
+    .student-detail-card {
+        background: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+        width: 95%;
+    }
+    
+    .student-detail-header {
+        background: linear-gradient(135deg, #0d6efd, #6610f2);
+        color: white;
+        padding: 12px 16px;
+    }
+    
+    .student-detail-header h6 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1rem;
+    }
+    
+    .student-detail-body {
+        padding: 16px;
+    }
+    
+    .detail-item {
+        display: flex;
+        padding: 8px 0;
+        border-bottom: 1px solid #e9ecef;
+    }
+    
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+    
+    .detail-label {
+        width: 120px;
+        font-weight: 600;
+        color: #495057;
+        font-size: 0.85rem;
+    }
+    
+    .detail-value {
+        flex: 1;
+        color: #212529;
+        font-size: 0.85rem;
+    }
+    
+    .modern-fees-card {
+        flex: 1;
+        min-width: 250px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        cursor: pointer;
+        border: 1px solid #e9ecef;
+    }
+    
+    .modern-fees-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    }
+    
+    .fees-card-header {
+        text-align: center;
+        margin-bottom: 16px;
+        padding-bottom: 12px;
+        border-bottom: 2px solid #e9ecef;
+    }
+    
+    .fees-card-header-title {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #1a1a2e;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .fees-amount-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    
+    .fees-amount-label {
+        font-size: 0.7rem;
+        color: #6c757d;
+        margin-bottom: 4px;
+    }
+    
+    .fees-amount-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+    
+    .fees-amount-value-lg {
+        font-size: 1.5rem;
+        font-weight: 800;
+    }
+    
+    .totals-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+        margin: 20px 0 24px 0;
+        padding: 16px;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border-radius: 20px;
+        border: 1px solid #e9ecef;
+    }
+    
+    .fees-card-wrapper {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin: 16px 0;
+    }
+    
+    .text-success { color: #28a745; }
+    .text-warning { color: #ffc107; }
+    .text-info { color: #17a2b8; }
+    .text-primary { color: #0d6efd; }
+    .fw-bold { font-weight: 700; }
+    
+    .dropdown-menu {
+        position: absolute;
+        z-index: 1000;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        min-width: 150px;
+        padding: 8px 0;
+    }
+    
+    .dropdown-item {
+        display: block;
+        padding: 8px 16px;
+        color: #2c3e50;
+        text-decoration: none;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    
+    .dropdown-item:hover {
+        background: #f8f9fa;
     }
 </style>
 
+<div id="conversationAI" class="side-panel" style="border-radius:25px;">
+    <div class="side-panel-content d-flex flex-column h-100">
+        <div class="side-panel-header d-flex justify-content-between align-items-center p-3 border-bottom bg-gradient-primary text-white" style="border-top-left-radius:25px; border-top-right-radius:25px;">
+            <div class="d-flex align-items-center gap-2">
+                <div class="border rounded-circle p-2 bg-white text-blue">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 8V4H8"></path>
+                        <rect width="16" height="12" x="4" y="8" rx="2"></rect>
+                        <path d="M2 14h2"></path>
+                        <path d="M20 14h2"></path>
+                        <path d="M15 13v2"></path>
+                        <path d="M9 13v2"></path>
+                    </svg>
+                </div>
+                <h5 class="mt-2 ml-2 mb-0 fw-semibold">Conversational AI</h5>
+            </div>
+            <div class="d-flex gap-1">
+                <div class="dropdown">
+                    <button type="button" class="icon-btn dropdown-toggle" id="optionsDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Options">
+                        <span class="mdi mdi-dots-vertical" style="font-size: 1.2rem;color:white"></span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="optionsDropdownBtn">
+                        <li><a class="dropdown-item" href="#" id="detailsOption">Details</a></li>
+                        <li><a class="dropdown-item" href="#" id="intentListsOption">Intent Lists</a></li>
+                    </ul>
+                </div>
+                <button type="button" class="icon-btn" id="expandPanelBtn" title="Expand">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
+                    </svg>
+                </button>
+                <button type="button" class="icon-btn" id="newConversationBtn" title="New Conversation">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                    </svg>
+                </button>
+                <button type="button" class="icon-btn" id="closeConversationAI" aria-label="Close">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="side-panel-body flex-fill p-3 overflow-auto">
+            <div id="chatMessages" class="d-flex flex-column gap-3"></div>
+            <div id="loadingIndicator" class="gap-2" style="display: none;">
+                <div class="flex-shrink-0 bg-blue-100">
+                    <div class="avatar avatar-sm bg-gradient-primary text-white rounded-circle">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 8V4H8"></path>
+                            <rect width="16" height="12" x="4" y="8" rx="2"></rect>
+                            <path d="M2 14h2"></path>
+                            <path d="M20 14h2"></path>
+                            <path d="M15 13v2"></path>
+                            <path d="M9 13v2"></path>
+                        </svg>
+                    </div>
+                </div>
+                <div class="bg-white rounded-3 px-3 py-2 border d-flex align-items-center gap-2 shadow-sm">
+                    <div class="d-flex gap-1">
+                        <div class="loading-dot" style="--delay: 0s"></div>
+                        <div class="loading-dot" style="--delay: 0.1s"></div>
+                        <div class="loading-dot" style="--delay: 0.2s"></div>
+                    </div>
+                    <span class="text-muted fw-medium small">Analyzing your data...</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="side-panel-footer p-3 border-top bg-light">
+            <div id="saveJDBtn" class="d-flex justify-content-end mb-2"></div>
+            <div class="bg-white border rounded-3 p-2 shadow-sm" style="border-radius:25px;">
+                <div class="input-group" style="display:block;text-align:right;">
+                    <textarea id="chatInput" class="form-control border-0 bg-transparent shadow-none" placeholder="Type your message here..." rows="4" style="resize: none; max-height: 120px; border: 1px solid #ced4da; outline: none;width: 100%;" onfocus="this.style.borderColor='#0d6efd';" onblur="this.style.borderColor='#ced4da';"></textarea>
+                    <button id="voiceActor" class="btn btn-secondary btn-sm rounded-circle ms-2" type="button"><i class="fas fa-microphone"></i></button>
+                    <button id="sendButton" class="btn btn-primary btn-sm rounded-circle ms-2" type="button">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- New Conversation Modal -->
+<div id="customSideModal" class="custom-side-modal">
+    <div class="custom-modal-content">
+        <div class="custom-modal-header">
+            <h5><i class="fas fa-comment-plus me-2" style="color: #0d6efd;"></i> New Conversation</h5>
+            <button type="button" class="btn-close btn-close-sm" id="closeModalBtn" aria-label="Close" style="border:none !important;background:transparent !important;">×</button>
+        </div>
+        <div class="custom-modal-body">
+            <div class="modal-icon"><i class="fas fa-comment-dots"></i></div>
+            <p>Start a new conversation?</p>
+            <small>This will clear the current chat history.</small>
+        </div>
+        <div class="custom-modal-footer">
+            <button type="button" class="btn-custom-secondary" id="cancelModalBtn">Cancel</button>
+            <button type="button" class="btn-custom-primary" id="confirmNewChatModal">Yes, Start New</button>
+        </div>
+    </div>
+</div>
+
+<!-- Details Modal -->
+<div id="detailsModal" class="details-modal">
+    <div class="details-modal-content">
+        <div class="details-modal-header">
+            <h5><i class="fas fa-info-circle me-2" style="color: #0d6efd;"></i> System Details</h5>
+            <button type="button" class="btn-close btn-close-sm" id="closeDetailsModalBtn" aria-label="Close" style="border:none !important;background:transparent !important;">×</button>
+        </div>
+        <div class="details-modal-body">
+            <p><strong>Conversational AI Assistant</strong></p>
+            <p>Version: 1.0.0</p>
+            <p>Features:</p>
+            <ul>
+                <li>Student Details Query</li>
+                <li>Fees Details Query</li>
+                <li>Admission Details Query</li>
+                <li>Remaining Fees Query</li>
+                <li>Paid Fees Query</li>
+                <li>Database Query Support</li>
+            </ul>
+            <p><strong>How to use:</strong></p>
+            <p>Type your query naturally. Example: "Show student details", "Get fees details", "Show admission details"</p>
+        </div>
+        <div class="details-modal-footer">
+            <button type="button" class="btn-custom-primary" id="closeDetailsBtn">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Intent Lists Modal -->
+<div id="intentModal" class="intent-modal">
+    <div class="intent-modal-content">
+        <div class="intent-modal-header">
+            <h5><i class="fas fa-list me-2" style="color: #0d6efd;"></i> Available Intents</h5>
+            <button type="button" class="btn-close btn-close-sm" id="closeIntentModalBtn" aria-label="Close" style="border:none !important;background:transparent !important;">×</button>
+        </div>
+        <div class="intent-modal-body">
+            <div class="intent-list" id="intentListContent">
+                <!-- Intent list will be populated from controller via AJAX -->
+                <div class="text-center">Loading intents...</div>
+            </div>
+        </div>
+        <div class="intent-modal-footer">
+            <button type="button" class="btn-custom-primary" id="closeIntentBtn">Close</button>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://kit.fontawesome.com/a5f8a6d7d6.js" crossorigin="anonymous"></script>
+
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // DOM Elements
-    const chatPanel = document.getElementById('conversationAI');
-    const chatMessages = document.getElementById('chatMessages');
-    const chatInput = document.getElementById('chatInput');
-    const sendButton = document.getElementById('sendButton');
-    const loadingIndicator = document.getElementById('loadingIndicator');
-    const saveJDBtn = document.getElementById('saveJDBtn');
-    
-    // State
-    let messages = [{
-        id: '1',
-        type: 'bot',
-        content: "Hello! 👋 I'm your AI Data Assistant. I can help you analyze data, generate SQL queries, and provide insights. What would you like to know?",
-        timestamp: new Date()
-    }];
-    let sessionId = `session_${Date.now()}`;
-    let conversationId = null;
-    
-    // Auto-resize textarea
-    chatInput.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = Math.min(this.scrollHeight, 120) + 'px';
-    });
-    
-    // Enter key to send (Shift+Enter for new line)
-    chatInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
-        }
-    });
-    
-    // Send button click
-    sendButton.addEventListener('click', sendMessage);
-    
-    // Save JD button
-    saveJDBtn.addEventListener('click', function() {
-        console.log("Save JD clicked");
-        // Future: Add save JD logic here
-    });
-    
-    // Open/close panel event listeners
-    document.getElementById('openConversationAI').addEventListener('click', function() {
-        chatPanel.classList.add('open');
-        chatInput.focus();
-    });
-    
-    document.getElementById('closeConversationAI').addEventListener('click', function() {
-        chatPanel.classList.remove('open');
-    });
-    
-    document.getElementById('closeFooterBtn').addEventListener('click', function() {
-        chatPanel.classList.remove('open');
-    });
-    
-    // Functions
-    function sendMessage() {
-        const content = chatInput.value.trim();
-        if (!content) return;
+    $(document).ready(function() {
+        var $chatPanel = $('#conversationAI');
+        var $chatMessages = $('#chatMessages');
+        var $chatInput = $('#chatInput');
+        var $sendButton = $('#sendButton');
+        var $loadingIndicator = $('#loadingIndicator');
+        var $expandBtn = $('#expandPanelBtn');
+        var $newConvBtn = $('#newConversationBtn');
         
-        // Add user message
-        const userMessage = {
-            id: Date.now().toString(),
-            type: 'user',
-            content: content,
-            timestamp: new Date()
-        };
+        var $customModal = $('#customSideModal');
+        var $closeModalBtn = $('#closeModalBtn');
+        var $cancelModalBtn = $('#cancelModalBtn');
+        var $confirmNewChatModal = $('#confirmNewChatModal');
         
-        messages.push(userMessage);
-        addMessageToDOM(userMessage);
-        chatInput.value = '';
-        chatInput.style.height = 'auto';
+        var $detailsModal = $('#detailsModal');
+        var $closeDetailsModalBtn = $('#closeDetailsModalBtn');
+        var $closeDetailsBtn = $('#closeDetailsBtn');
         
-        // Show loading indicator
-        loadingIndicator.style.display = 'flex';
-        
-        // Scroll to bottom
-        scrollToBottom();
-        
-        // Send to backend
-        fetch('https://hp-frontend-three.vercel.app/api/chat', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                query: content,
-                sessionId: sessionId,
-                conversationHistory: messages.slice(-6).map(m => ({
-                    role: m.type === 'user' ? 'user' : 'assistant',
-                    content: m.content
-                }))
-            })
-        })
-        .then(response => {
-            if (!response.ok) throw new Error('Network response was not ok');
-            return response.json();
-        })
-        .then(data => {
-            // Hide loading indicator
-            loadingIndicator.style.display = 'none';
+        var $intentModal = $('#intentModal');
+        var $closeIntentModalBtn = $('#closeIntentModalBtn');
+        var $closeIntentBtn = $('#closeIntentBtn');
+
+        var messages = [];
+        var sessionId = 'session_' + Date.now();
+        var pendingEnrollmentAction = null;
+        var isExpanded = false;
+        var currentEnrollmentInputId = null;
+
+        function resetConversation() {
+            messages = [];
+            $chatMessages.empty();
+            pendingEnrollmentAction = null;
+            currentEnrollmentInputId = null;
             
-            // Add bot message
-            const botMessage = {
-                id: data.id || generateUUID(),
-                type: 'bot',
-                content: data.answer || "I couldn't process that request. Please try rephrasing your question.",
-                timestamp: new Date(),
-                conversationId: data.conversationId,
-                metadata: {
-                    sql: data.sql,
-                    tablesUsed: data.tables_used,
-                    insights: data.insights,
-                    canEscalate: data.canEscalate
-                }
-            };
-            
-            if (data.conversationId) {
-                conversationId = data.conversationId;
-            }
-            
-            messages.push(botMessage);
-            addMessageToDOM(botMessage);
-            scrollToBottom();
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            loadingIndicator.style.display = 'none';
-            
-            // Add error message
-            const errorMessage = {
-                id: (Date.now() + 1).toString(),
-                type: 'bot',
-                content: 'Sorry, I encountered an error while processing your request. Please check your connection and try again.',
-                timestamp: new Date(),
-                metadata: {
-                    canEscalate: true
-                }
-            };
-            
-            messages.push(errorMessage);
-            addMessageToDOM(errorMessage);
-            scrollToBottom();
-        });
-    }
-    
-    function addMessageToDOM(message) {
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `d-flex gap-3 ${message.type === 'user' ? 'flex-row-reverse' : ''}`;
-        
-        // Avatar
-        const avatarDiv = document.createElement('div');
-        avatarDiv.className = `flex-shrink-0 w-8 h-8 rounded-circle d-flex align-items-center justify-content-center ${
-            message.type === 'user' ? 'bg-gray-200' : 'bg-blue-100'
-        }`;
-        
-        const avatarIcon = document.createElement('i');
-        avatarIcon.className = message.type === 'user' 
-            ? 'fas fa-user text-gray-600' 
-            : 'fas fa-robot text-blue-600';
-        avatarDiv.appendChild(avatarIcon);
-        
-        // Message content container
-        const contentDiv = document.createElement('div');
-        contentDiv.className = `d-flex flex-column gap-2 ${message.type === 'user' ? 'align-items-end' : ''}`;
-        
-        // Message bubble
-        const bubbleDiv = document.createElement('div');
-        bubbleDiv.className = `${message.type === 'user' ? 'user-message' : 'bot-message'} rounded-3 px-3 py-2`;
-        bubbleDiv.textContent = message.content;
-        
-        contentDiv.appendChild(bubbleDiv);
-        
-        // Metadata: Tables used
-        if (message.metadata?.tablesUsed && message.metadata.tablesUsed.length > 0) {
-            const tablesDiv = document.createElement('div');
-            tablesDiv.className = 'd-flex gap-2 flex-wrap';
-            
-            message.metadata.tablesUsed.forEach(table => {
-                const badge = document.createElement('span');
-                badge.className = 'table-badge d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill';
-                badge.innerHTML = `<i class="fas fa-database"></i> ${table}`;
-                tablesDiv.appendChild(badge);
-            });
-            
-            contentDiv.appendChild(tablesDiv);
-        }
-        
-        // Metadata: SQL Query
-        if (message.metadata?.sql) {
-            const sqlDetails = document.createElement('details');
-            sqlDetails.className = 'w-full cursor-pointer';
-            
-            const summary = document.createElement('summary');
-            summary.className = 'text-gray-600 hover:text-blue-600 fw-medium d-flex align-items-center gap-2';
-            summary.innerHTML = `
-                <i class="fas fa-database"></i>
-                View SQL Query
-                <span class="text-gray-400">▾</span>
+            var welcomeHtml = `
+                <div class="flex flex-col items-center justify-center py-4 space-y-4">
+                    <div style="display: flex; justify-content: center; align-items: center; width: 100%;">
+                        <div class="bg-gradient-primary" style="border-radius: 25%; padding: 20px; border: 1px solid #cbd5e1; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); display: inline-flex; align-items: center; justify-content: center;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: block; margin: 0 auto;">
+                                <path d="M12 8V4H8"></path>
+                                <rect width="16" height="12" x="4" y="8" rx="2"></rect>
+                                <path d="M2 14h2"></path>
+                                <path d="M20 14h2"></path>
+                                <path d="M15 13v2"></path>
+                                <path d="M9 13v2"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="text-center m-3">
+                        <h4 class="font-semibold text-gray-800">Conversational AI</h4>
+                    </div>
+                </div>
+                <div class="d-flex gap-2 mb-3">
+                    <div class="flex-shrink-0 avatar avatar-sm bg-primary-subtle text-primary rounded-circle">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center flex-shrink-0" style="width: 2rem; height: 2rem; background-color: #dbeafe;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bot w-4 h-4 text-blue-600">
+                                <path d="M12 8V4H8"></path>
+                                <rect width="16" height="12" x="4" y="8" rx="2"></rect>
+                                <path d="M2 14h2"></path>
+                                <path d="M20 14h2"></path>
+                                <path d="M15 13v2"></path>
+                                <path d="M9 13v2"></path>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column gap-1">
+                        <div class="bot-message px-3 py-2">Hello! I am Conversational AI, your assistant to help you with your queries. How can I assist you today?</div>
+                    </div>
+                </div>
             `;
-            
-            const sqlPre = document.createElement('pre');
-            sqlPre.className = 'sql-block mt-2 p-3';
-            sqlPre.textContent = formatSQL(message.metadata.sql);
-            
-            sqlDetails.appendChild(summary);
-            sqlDetails.appendChild(sqlPre);
-            contentDiv.appendChild(sqlDetails);
+            $chatMessages.append(welcomeHtml);
+            scrollToBottom();
         }
-        
-        // Feedback buttons (for bot messages)
-        if (message.type === 'bot' && message.metadata?.canEscalate) {
-            const feedbackDiv = document.createElement('div');
-            feedbackDiv.className = 'd-flex gap-2 pt-1';
+
+        function loadIntents() {
+            $.ajax({
+                url: "{{route('getIntentsList')}}",
+                method: "GET",
+                success: function(response) {
+                    var html = '<div class="intent-list">';
+                    if (response.intents && response.intents.length > 0) {
+                        response.intents.forEach(function(intent) {
+                            html += '<div class="intent-item">' + intent + '</div>';
+                        });
+                    } else {
+                        html += '<div class="text-muted">No intents available</div>';
+                    }
+                    html += '</div>';
+                    $('#intentListContent').html(html);
+                },
+                error: function() {
+                    $('#intentListContent').html('<div class="text-danger">Failed to load intents</div>');
+                }
+            });
+        }
+
+        function addMessageToDOM(message) {
+            var $messageDiv = $('<div>').addClass('d-flex gap-2 ' + (message.type === 'user' ? 'flex-row-reverse' : ''));
+
+            var avatarHtml = message.type === 'user' 
+                ? `<div class="flex-shrink-0 avatar avatar-sm bg-secondary-subtle text-secondary rounded-circle d-flex align-items-center justify-content-center" style="width: 2rem; height: 2rem; background-color: #e9ecef;"><i class="fas fa-user text-secondary"></i></div>`
+                : `<div class="flex-shrink-0 avatar avatar-sm bg-primary-subtle text-primary rounded-circle d-flex align-items-center justify-content-center" style="width: 2rem; height: 2rem; background-color: #dbeafe;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"></path><rect width="16" height="12" x="4" y="8" rx="2"></rect><path d="M2 14h2"></path><path d="M20 14h2"></path><path d="M15 13v2"></path><path d="M9 13v2"></path></svg></div>`;
             
-            // Thumbs up
-            const thumbsUpBtn = document.createElement('button');
-            thumbsUpBtn.className = 'btn btn-sm p-1 rounded-circle';
-            thumbsUpBtn.innerHTML = '<i class="fas fa-thumbs-up"></i>';
-            thumbsUpBtn.title = 'Helpful';
-            thumbsUpBtn.onclick = () => submitFeedback(message.id, 1);
+            var $avatarDiv = $(avatarHtml);
+            var $contentDiv = $('<div>').addClass('d-flex flex-column gap-1 ' + (message.type === 'user' ? 'align-items-end' : ''));
+            var $bubbleDiv = $('<div>').addClass((message.type === 'user' ? 'user-message' : 'bot-message') + ' px-3 py-2');
             
-            // Thumbs down
-            const thumbsDownBtn = document.createElement('button');
-            thumbsDownBtn.className = 'btn btn-sm p-1 rounded-circle';
-            thumbsDownBtn.innerHTML = '<i class="fas fa-thumbs-down"></i>';
-            thumbsDownBtn.title = 'Not helpful';
-            thumbsDownBtn.onclick = () => submitFeedback(message.id, -1);
+            if (message.type === 'bot' && message.isHtml) {
+                $bubbleDiv.html(message.content);
+            } else {
+                $bubbleDiv.text(message.content);
+            }
+            $contentDiv.append($bubbleDiv);
+
+            if (message.metadata && message.metadata.sql) {
+                var $sqlDetails = $('<details>').addClass('w-100 mt-2');
+                $sqlDetails.append($('<summary>').addClass('text-muted fw-medium d-flex align-items-center gap-2 small').html('<i class="fas fa-code"></i> View SQL Query <i class="fas fa-chevron-down text-gray-400 ms-auto"></i>'));
+                $sqlDetails.append($('<pre>').addClass('sql-block mt-2').text(formatSQL(message.metadata.sql)));
+                $contentDiv.append($sqlDetails);
+            }
+
+            $contentDiv.append($('<span>').addClass('text-muted small mt-1').text(formatTime(message.timestamp)));
+            $messageDiv.append($avatarDiv).append($contentDiv);
+            $chatMessages.append($messageDiv);
+            scrollToBottom();
+        }
+
+        function fetchStudentData(enrollmentNo, actionType, callback) {
+            $.ajax({
+                url: "{{route('genkitDetailsAPI')}}",
+                method: "GET",
+                data: { enrollment_no: enrollmentNo, action_type: actionType },
+                success: function(response) { callback(null, response); },
+                error: function(xhr) { callback("Error fetching data", null); }
+            });
+        }
+
+        function fetchMockQueries(sentence, callback) {
+            $.ajax({
+                url: "{{route('MockQueriesAPI')}}",
+                method: "GET",
+                data: { sentence: sentence },
+                success: function(response) { 
+                    var htmlContent = response.html || '<div class="text-muted p-2">No data available for this query.</div>';
+                    callback(null, htmlContent); 
+                },
+                error: function(xhr) { 
+                    callback("Error fetching mock data. Please try again later.", null); 
+                }
+            });
+        }
+
+        function sendMessage(userContent) {
+            var content = userContent.trim();
+            if (!content) return;
+
+            var userMessage = {
+                id: Date.now().toString(),
+                type: 'user',
+                content: content,
+                timestamp: new Date(),
+                metadata: {}
+            };
+            messages.push(userMessage);
+            addMessageToDOM(userMessage);
+            $chatInput.val('').css('height', 'auto');
+            scrollToBottom();
+
+            if (pendingEnrollmentAction && /^\d+$/.test(content)) {
+                var action = pendingEnrollmentAction;
+                var enrollmentNumber = content;
+                pendingEnrollmentAction = null;
+                $loadingIndicator.show();
+                
+                fetchStudentData(enrollmentNumber, action, function(err, result) {
+                    $loadingIndicator.hide();
+                    var botHtml = err ? '<div class="text-danger p-2">Sorry, unable to retrieve data. Please try again later.</div>' : (result.html || '<div class="text-muted p-2">No data available.</div>');
+                    
+                    var botMessage = {
+                        id: generateUUID(),
+                        type: 'bot',
+                        content: botHtml,
+                        timestamp: new Date(),
+                        metadata: { canEscalate: true },
+                        isHtml: true
+                    };
+                    messages.push(botMessage);
+                    addMessageToDOM(botMessage);
+                    scrollToBottom();
+                });
+                return;
+            }
+
+            var studentKeywords = ["student detail", "student details", "fees details", "fees detail", "fee details", "fee detail", "admission details", "admission detail","remain fees","fees remain","paid fees","fees paid"];
+            var matchedKeyword = studentKeywords.find(kw => content.toLowerCase().includes(kw));
             
-            feedbackDiv.appendChild(thumbsUpBtn);
-            feedbackDiv.appendChild(thumbsDownBtn);
-            
-            // Escalate button
-            if (!conversationId && userId) {
-                const escalateBtn = document.createElement('button');
-                escalateBtn.className = 'btn btn-sm btn-outline-warning ms-auto';
-                escalateBtn.textContent = 'Escalate';
-                escalateBtn.onclick = () => showEscalationModal();
-                feedbackDiv.appendChild(escalateBtn);
+            if (matchedKeyword) {
+                var detectedAction = "student_details";
+                if (content.toLowerCase().includes("remain") && content.toLowerCase().includes("fees")) {
+                    detectedAction = "remain_fees";
+                } else if (content.toLowerCase().includes("paid") && content.toLowerCase().includes("fees")) {
+                    detectedAction = "paid_fees";
+                } else if (content.toLowerCase().includes("fees") || content.toLowerCase().includes("fee") && (content.toLowerCase().includes("detail") || content.toLowerCase().includes("details"))) {
+                    detectedAction = "fees_details";
+                } else if (content.toLowerCase().includes("admission") || content.toLowerCase().includes("admissions") && (content.toLowerCase().includes("detail") || content.toLowerCase().includes("details"))) {
+                    detectedAction = "admission_details";
+                }
+                
+                pendingEnrollmentAction = detectedAction;
+                var uniqueId = 'enrollmentInput_' + Date.now();
+                currentEnrollmentInputId = uniqueId;
+                
+                var inputHtml = `
+                    <div>
+                        <span class="mb-2 d-block">Please provide the student enrollment number:</span>
+                        <div class="enrollment-input-group">
+                            <input type="text" id="${uniqueId}" class="form-control form-control-sm" placeholder="Enter enrollment no." style="max-width:200px;" />
+                            <button type="button" class="submit-enrollment-btn btn btn-primary btn-sm rounded-pill" data-input-id="${uniqueId}"><i class="fas fa-check"></i></button>
+                        </div>
+                    </div>
+                `;
+                
+                var botAskMessage = {
+                    id: generateUUID(),
+                    type: 'bot',
+                    content: inputHtml,
+                    timestamp: new Date(),
+                    metadata: { canEscalate: false },
+                    isHtml: true
+                };
+                messages.push(botAskMessage);
+                addMessageToDOM(botAskMessage);
+                
+                setTimeout(function() {
+                    $(document).off('click', '.submit-enrollment-btn').on('click', '.submit-enrollment-btn', function() {
+                        var inputId = $(this).data('input-id');
+                        var enrollmentVal = $('#' + inputId).val().trim();
+                        if (enrollmentVal && /^\d+$/.test(enrollmentVal)) {
+                            sendMessage(enrollmentVal);
+                        } else {
+                            var errorBot = {
+                                id: generateUUID(),
+                                type: 'bot',
+                                content: "Please enter a valid numeric enrollment number.",
+                                timestamp: new Date(),
+                                metadata: { canEscalate: false },
+                                isHtml: false
+                            };
+                            messages.push(errorBot);
+                            addMessageToDOM(errorBot);
+                        }
+                    });
+                    
+                    $(document).off('keypress', '#' + uniqueId).on('keypress', '#' + uniqueId, function(e) {
+                        if (e.key === 'Enter') {
+                            $(this).closest('.enrollment-input-group').find('.submit-enrollment-btn').click();
+                        }
+                    });
+                }, 100);
+                return;
             }
             
-            contentDiv.appendChild(feedbackDiv);
+            $loadingIndicator.show();
+            
+            fetchMockQueries(content, function(err, htmlContent) {
+                $loadingIndicator.hide();
+                
+                var botResponseText = "";
+                var metadata = { sql: null, canEscalate: false };
+                var isHtmlResponse = false;
+                
+                if (err) {
+                    botResponseText = err;
+                } else {
+                    botResponseText = htmlContent;
+                    isHtmlResponse = true;
+                }
+                
+                var botMessage = {
+                    id: generateUUID(),
+                    type: 'bot',
+                    content: botResponseText,
+                    timestamp: new Date(),
+                    metadata: metadata,
+                    isHtml: isHtmlResponse
+                };
+                messages.push(botMessage);
+                addMessageToDOM(botMessage);
+                scrollToBottom();
+            });
+        }
+
+        function formatSQL(sql) {
+            return sql.replace(/\b(SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|INNER|OUTER|GROUP BY|ORDER BY|HAVING|LIMIT)\b/gi, '\n$1').replace(/,/g, ',\n  ').trim();
         }
         
-        // Timestamp
-        const timestampSpan = document.createElement('span');
-        timestampSpan.className = 'text-xs text-gray-500 px-1';
-        timestampSpan.textContent = formatTime(message.timestamp);
+        function formatTime(date) {
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function scrollToBottom() {
+            $('.side-panel-body').scrollTop($('.side-panel-body')[0].scrollHeight);
+        }
+
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16 | 0;
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
+        }
+
+        function showModal(modal) { modal.addClass('show'); }
+        function hideModal(modal) { modal.removeClass('show'); }
+
+        // New Conversation Modal Events
+        $newConvBtn.on('click', function() { showModal($customModal); });
+        $closeModalBtn.on('click', function() { hideModal($customModal); });
+        $cancelModalBtn.on('click', function() { hideModal($customModal); });
+        $confirmNewChatModal.on('click', function() { resetConversation(); hideModal($customModal); });
         
-        contentDiv.appendChild(timestampSpan);
-        
-        // Assemble message
-        messageDiv.appendChild(avatarDiv);
-        messageDiv.appendChild(contentDiv);
-        
-        chatMessages.appendChild(messageDiv);
-    }
-    
-    function formatSQL(sql) {
-        return sql
-            .replace(/\b(SELECT|FROM|WHERE|JOIN|LEFT|RIGHT|INNER|OUTER|GROUP BY|ORDER BY|HAVING|LIMIT)\b/gi, '\n$1')
-            .replace(/,/g, ',\n  ')
-            .trim();
-    }
-    
-    function formatTime(date) {
-        return date.toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit'
+        // Details Modal Events
+        $('#detailsOption').on('click', function(e) {
+            e.preventDefault();
+            showModal($detailsModal);
         });
-    }
-    
-    function scrollToBottom() {
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-    
-    function generateUUID() {
-        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-            const r = Math.random() * 16 | 0;
-            const v = c === 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
+        $closeDetailsModalBtn.on('click', function() { hideModal($detailsModal); });
+        $closeDetailsBtn.on('click', function() { hideModal($detailsModal); });
+        
+        // Intent Modal Events
+        $('#intentListsOption').on('click', function(e) {
+            e.preventDefault();
+            loadIntents();
+            showModal($intentModal);
         });
-    }
-    
-    function submitFeedback(messageId, rating) {
-        // Implement feedback submission
-        console.log('Feedback submitted:', { messageId, rating, conversationId });
-    }
-    
-    function showEscalationModal() {
-        // Implement escalation modal
-        console.log('Show escalation modal');
-    }
-    
-    // Global function to open chatbot from anywhere
-    window.openChatbot = function() {
-        chatPanel.classList.add('open');
-        chatInput.focus();
-    };
-});
+        $closeIntentModalBtn.on('click', function() { hideModal($intentModal); });
+        $closeIntentBtn.on('click', function() { hideModal($intentModal); });
+        
+        // Close modals when clicking outside
+        $customModal.on('click', function(e) { if ($(e.target).is($customModal)) hideModal($customModal); });
+        $detailsModal.on('click', function(e) { if ($(e.target).is($detailsModal)) hideModal($detailsModal); });
+        $intentModal.on('click', function(e) { if ($(e.target).is($intentModal)) hideModal($intentModal); });
+
+        $expandBtn.on('click', function() {
+            if (!isExpanded) {
+                $chatPanel.addClass('expanded').addClass('open');
+                isExpanded = true;
+            } else {
+                $chatPanel.removeClass('expanded');
+                isExpanded = false;
+            }
+        });
+
+        $(document).on('click', '#openConversationAI', function() {
+            $chatPanel.addClass('open');
+            $chatInput.focus();
+        });
+        
+        $('#closeConversationAI').on('click', function() {
+            $chatPanel.removeClass('open').removeClass('expanded');
+            isExpanded = false;
+        });
+        
+        $sendButton.on('click', function() { sendMessage($chatInput.val()); });
+        
+        $chatInput.on('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage($chatInput.val());
+            }
+        });
+        
+        $chatInput.on('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+        
+        $('#voiceActor').on('click', function() { alert("Voice input feature coming soon!"); });
+        
+        resetConversation();
+        
+        window.openChatbot = function() { 
+            $chatPanel.addClass('open'); 
+            $chatInput.focus(); 
+        };
+    });
 </script>
