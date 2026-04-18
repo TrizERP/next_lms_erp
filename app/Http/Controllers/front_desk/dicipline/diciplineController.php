@@ -15,7 +15,7 @@ use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 use function App\Helpers\sendNotification;
 use Illuminate\Support\Facades\Session;
-use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer;
 
 class diciplineController extends Controller
 {
@@ -338,23 +338,20 @@ class diciplineController extends Controller
         <p>This is to inform you about a discipline entry for your child:</p>
         <ul>
             <li><strong>Student Name:</strong> {$student->first_name} {$student->middle_name} {$student->last_name}</li>
-            <li><strong>Class:</strong> [Class details would be added here]</li>
-            <li><strong>Date:</strong> " . date('Y-m-d') . "</li>
-            <li><strong>Discipline Type:</strong> [Type]</li>
+            <li><strong>Date:</strong> " . date('d-m-Y') . "</li>
             <li><strong>Message:</strong> {$message}</li>
             <li><strong>FLAG:</strong> {$flag_text} ({$flag})</li>
         </ul>
-        <p>Please contact the school for more details.</p>
         <p>Regards,<br>School Administration</p>
         ";
 
         try {
-            $mail = new PHPMailer();
+            $mail = new PHPMailer\PHPMailer();
             $mail->IsSMTP();
             $mail->isHTML(true);
             $mail->SMTPDebug = 0;
             $mail->SMTPAuth = true;
-            $mail->SMTPSecure = "ssl";
+            $mail->SMTPSecure = "tls";
             $mail->Host = $smtp_details->server_address;
             $mail->Port = $smtp_details->port;
 
@@ -362,12 +359,22 @@ class diciplineController extends Controller
             $mail->Password = $smtp_details->password;
             $mail->SetFrom($smtp_details->gmail, 'School Administration');
             $mail->AddReplyTo($smtp_details->gmail, 'School Administration');
-            $mail->AddAddress('rajeshrafaliya@gmail.com');
+            $mail->AddAddress($student->email);
             $mail->Subject = $subject;
             $mail->Body = $body;
             $mail->AltBody = strip_tags($body);
 
-            $mail->Send();
+            if (! $mail->Send()) {
+                $res = [
+                    "status_code" => 0,
+                    "message"     => "There is some error , while sending mail" . $mail->ErrorInfo,
+                ];
+            } else {
+                $res = [
+                    "status_code" => 1,
+                    "message"     => "Email Sent",
+                ];
+            }
 
             // Log the email sent
             DB::table('email_sent_parents')->insert([
@@ -384,6 +391,6 @@ class diciplineController extends Controller
         } catch (\Exception $e) {
             // Log error if needed
         }
+        return response()->json($res);
     }
-
 }

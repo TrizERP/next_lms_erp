@@ -12,7 +12,7 @@
                     
                 </div>
                 @endif
-                @if(session()->get('sub_institute_id') == 195)
+                @if(in_array(session()->get('sub_institute_id'),[195,254,1]))
                 <div class="row mb-2">
                     <div class="col-md-12 text-right">
                         <a href="{{ route('dicipline-Master.index') }}" class="btn btn-primary" target="_blank">Add Master</a>
