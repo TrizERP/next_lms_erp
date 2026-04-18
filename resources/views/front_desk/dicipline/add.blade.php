@@ -67,7 +67,7 @@
                                     </select>
                                 </td>
                                  <td>
-                                     @if(in_array(session()->get('sub_institute_id'),[195]))
+                                     @if(in_array(session()->get('sub_institute_id'),[195,254,1]))
                                          <!-- <select class="form-control" name="{{ 'values[text]['.$col_arr['student_id'].']'}}" id="messageSelect-{{$col_arr['student_id']}}">
                                              <option value="">Please Select Title</option>
                                          </select> -->
@@ -132,7 +132,7 @@
         });
     });
 
-    @if(in_array(session()->get('sub_institute_id'),[195]))  
+    @if(in_array(session()->get('sub_institute_id'),[195,254,1]))  
     $('.titleSelect').on('change', function () {
         var selectedValue = $(this).val();
         var id = $(this).find(':selected').data('id');
