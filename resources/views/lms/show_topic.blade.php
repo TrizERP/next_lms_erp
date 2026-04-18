@@ -124,7 +124,11 @@
                                                                  alt="{{ $cval['title'] }}" 
                                                                  class="img-fluid"
                                                                  style="width: 100%; height: 100%; object-fit: cover;">
-                                                        @elseif($cval['file_type'] == "pdf" || $cval['file_type'] == "link")
+                                                        @elseif($cval['file_type'] == "pdf")
+                                                            <a target="_blank" href="{{ Storage::disk('digitalocean')->url('public'.$cval['file_folder'].'/'.$cval['filename']) }}" class="view-box d-flex justify-content-center w-100 h-100">
+                                                                <i class="mdi mdi-file-pdf-box" style="font-size: 48px; color: #666;"></i>
+                                                            </a>
+                                                        @elseif($cval['file_type'] == "link")
                                                             <a target="_blank" href="{{$cval['filename']}}" class="view-box d-flex justify-content-center w-100 h-100">
                                                                 <i class="mdi mdi-file-link" style="font-size: 48px; color: #666;"></i>
                                                             </a>
@@ -140,9 +144,12 @@
                                                         @endif
                                                     </div>
                                                     
-                                                    @if($cval['file_type'] == "pdf" || $cval['file_type'] == "link")
-                                                        <a href="{{$cval['filename']}}" target="_blank"
-                                                           class="view-box">
+                                                    @if($cval['file_type'] == "pdf")
+                                                        <a href="{{ Storage::disk('digitalocean')->url('public'.$cval['file_folder'].'/'.$cval['filename']) }}" target="_blank" class="view-box">
+                                                            <i class="mdi mdi-eye-outline"></i>
+                                                        </a>
+                                                    @elseif($cval['file_type'] == "link")
+                                                    	<a href="{{$cval['filename']}}" target="_blank" class="view-box">
                                                             <i class="mdi mdi-eye-outline"></i>
                                                         </a>
                                                     @else
@@ -262,8 +269,12 @@
                                             }
                                         @endphp
                                         <div class="video-box mb-2" style="{{$blur_content_style}}">
-                                            @if($cval['file_type'] == "pdf" || $cval['file_type'] == "link")
-                                                <a target="_blank" href="{{$cval['filename']}}" class="view-box d-flex justify-content-center w-100 h-100">
+                                            @if($cval['file_type'] == "pdf")
+                                                <a target="_blank" href="{{ Storage::disk('digitalocean')->url('public'.$cval['file_folder'].'/'.$cval['filename']) }}" class="view-box d-flex justify-content-center w-100 h-100">
+                                                    <i class="mdi mdi-file-pdf-box"></i>
+                                                </a>
+                                            @elseif($cval['file_type'] == "link")
+                                            	<a target="_blank" href="{{$cval['filename']}}" class="view-box d-flex justify-content-center w-100 h-100">
                                                     <i class="mdi mdi-file-link"></i>
                                                 </a>
                                             @elseif($cval['file_type'] == "image")
@@ -537,8 +548,12 @@
                                             <div id="collapse{{str_replace(' ', '', $category)}}" class="collapse" aria-labelledby="heading{{$category}}" data-parent="#accordion">
                                                 @foreach($contentItems as $cval)
                                                     <div class="video-box mb-2">
-                                                        @if($cval['file_type'] == "pdf" || $cval['file_type'] == "link")
-                                                            <a target="_blank" href="{{$cval['filename']}}" class="view-box d-flex justify-content-center w-100 h-100">
+                                                        @if($cval['file_type'] == "pdf")
+                                                            <a target="_blank" href="{{ Storage::disk('digitalocean')->url('public'.$cval['file_folder'].'/'.$cval['filename']) }}" class="view-box d-flex justify-content-center w-100 h-100">
+                                                                <i class="mdi mdi-file-pdf-box"></i>
+                                                            </a>
+                                                        @elseif($cval['file_type'] == "link")
+                                                        	<a target="_blank" href="{{$cval['filename']}}" class="view-box d-flex justify-content-center w-100 h-100">
                                                                 <i class="mdi mdi-file-link"></i>
                                                             </a>
                                                         @elseif($cval['file_type'] == "image")

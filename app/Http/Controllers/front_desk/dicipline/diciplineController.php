@@ -15,6 +15,7 @@ use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 use function App\Helpers\sendNotification;
 use Illuminate\Support\Facades\Session;
+use PHPMailer\PHPMailer\PHPMailer;
 
 class diciplineController extends Controller
 {
@@ -167,6 +168,7 @@ class diciplineController extends Controller
                 'name'             => $name,
                 'dicipline'        => $_REQUEST['values']['dd'][$stu_id],
                 'message'          => $_REQUEST['values']['text'][$stu_id],
+                'flag'             => $_REQUEST['values']['flag'][$stu_id] ?? 0,
                 'date_'            => date('Y-m-d'),
                 'sub_institute_id' => $sub_institute_id,
                 'created_by'       => $user_id,
@@ -178,11 +180,21 @@ class diciplineController extends Controller
             }
 
             //START Send Notification Code
+            $flag_text = '';
+            $flag_value = $_REQUEST['values']['flag'][$stu_id] ?? 0;
+            if($flag_value == 1) $flag_text = 'Positive';
+            elseif($flag_value == -1) $flag_text = 'Negative';
+
+            $notification_desc = $_REQUEST['values']['text'][$stu_id];
+            if(!empty($flag_text)) {
+                $notification_desc .= " (FLAG: {$flag_text})";
+            }
+
             $app_notification_content = [
                 'NOTIFICATION_TYPE'        => 'Student Remarks',
                 'NOTIFICATION_DATE'        => date('Y-m-d'),
                 'STUDENT_ID'               => $stu_id,
-                'NOTIFICATION_DESCRIPTION' => $_REQUEST['values']['text'][$stu_id],
+                'NOTIFICATION_DESCRIPTION' => $notification_desc,
                 'STATUS'                   => 0,
                 'SUB_INSTITUTE_ID'         => $sub_institute_id,
                 'SYEAR'                    => $syear,
@@ -191,6 +203,10 @@ class diciplineController extends Controller
             ];
             sendNotification($app_notification_content);
             //END Send Notification Code
+
+            //START Send Parent Email Notification
+            $this->sendParentEmailNotification($stu_id, $flag_value, $_REQUEST['values']['text'][$stu_id], $sub_institute_id, $syear);
+            //END Send Parent Email Notification
         }
         $res = [
             "status_code" => 1,
@@ -278,7 +294,7 @@ class diciplineController extends Controller
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {
             
             $data = DB::table("dicipline")
-                ->selectRaw('dicipline as discipline,message,date_ AS discipline_date')
+                ->selectRaw('dicipline as discipline,message,date_ AS discipline_date,flag')
                 ->where("syear", "=", $syear)
                 ->where("sub_institute_id", "=", $sub_institute_id)
                 ->where("student_id", "=", $student_id)
@@ -293,6 +309,81 @@ class diciplineController extends Controller
         }
 
         return json_encode($res);
+    }
+
+    private function sendParentEmailNotification($student_id, $flag, $message, $sub_institute_id, $syear)
+    {
+        // Get student details
+        $student = DB::table('tblstudent')->where('id', $student_id)->first();
+        if (!$student || empty($student->email)) {
+            return; // No email to send
+        }
+
+        // Get SMTP details
+        $smtp_details = DB::table('smtp_details')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->first();
+
+        if (!$smtp_details) {
+            return; // No SMTP config
+        }
+
+        $flag_text = '';
+        if ($flag == 1) $flag_text = 'Positive';
+        elseif ($flag == -1) $flag_text = 'Negative';
+
+        $subject = "Discipline Notification for {$student->first_name} {$student->last_name}";
+        $body = "
+        <p>Dear Parent,</p>
+        <p>This is to inform you about a discipline entry for your child:</p>
+        <ul>
+            <li><strong>Student Name:</strong> {$student->first_name} {$student->middle_name} {$student->last_name}</li>
+            <li><strong>Class:</strong> [Class details would be added here]</li>
+            <li><strong>Date:</strong> " . date('Y-m-d') . "</li>
+            <li><strong>Discipline Type:</strong> [Type]</li>
+            <li><strong>Message:</strong> {$message}</li>
+            <li><strong>FLAG:</strong> {$flag_text} ({$flag})</li>
+        </ul>
+        <p>Please contact the school for more details.</p>
+        <p>Regards,<br>School Administration</p>
+        ";
+
+        try {
+            $mail = new PHPMailer();
+            $mail->IsSMTP();
+            $mail->isHTML(true);
+            $mail->SMTPDebug = 0;
+            $mail->SMTPAuth = true;
+            $mail->SMTPSecure = "ssl";
+            $mail->Host = $smtp_details->server_address;
+            $mail->Port = $smtp_details->port;
+
+            $mail->Username = $smtp_details->gmail;
+            $mail->Password = $smtp_details->password;
+            $mail->SetFrom($smtp_details->gmail, 'School Administration');
+            $mail->AddReplyTo($smtp_details->gmail, 'School Administration');
+            $mail->AddAddress('rajeshrafaliya@gmail.com');
+            $mail->Subject = $subject;
+            $mail->Body = $body;
+            $mail->AltBody = strip_tags($body);
+
+            $mail->Send();
+
+            // Log the email sent
+            DB::table('email_sent_parents')->insert([
+                'SYEAR' => $syear,
+                'EMAIL' => $student->email,
+                'SUBJECT' => $subject,
+                'EMAIL_TEXT' => $body,
+                'ATTECHMENT' => '',
+                'USER_ID' => session()->get('user_id', 0),
+                'IP' => $_SERVER['REMOTE_ADDR'] ?? '',
+                'sub_institute_id' => $sub_institute_id,
+                'CREATED_AT' => now(),
+            ]);
+        } catch (\Exception $e) {
+            // Log error if needed
+        }
     }
 
 }

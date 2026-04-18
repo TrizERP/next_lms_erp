@@ -491,28 +491,22 @@ class fees_collect_controller extends Controller
             $other_bk_off_month_wise2 = OtherBreackOfMonth($stu_arr,$last_syear,$sub_institute_id);   // for previous year
             $other_bk_off_month_head_wise2 = OtherBreackOfMonthHead($stu_arr, $search_ids,$last_syear,$sub_institute_id); // for previous year
 
-$standard = DB::table('standard as s')
-    ->join('tblstudent_enrollment as t', function ($join) {
-        $join->on('t.standard_id', '=', 's.id')
-             ->on('t.sub_institute_id', '=', 's.sub_institute_id');
-    })
-    ->where('t.syear', $syear)
-    ->where('s.sub_institute_id', $sub_institute_id)
-    ->where('t.student_id', $stu_arr[0])
-    ->select('s.id as standard_id')
-    ->first();
-    $std = $standard->standard_id;
-
-$data = DB::table('tblstudent_enrollment as a')
+    $data = DB::table('tblstudent_enrollment as a')
     ->select('a.syear', 'a.standard_id', 's.marking_period_id')
     ->join('standard as s', 's.id', '=', 'a.standard_id')
+    ->join('tblstudent_enrollment as b', function ($join) use ($syear) {
+        $join->on('b.student_id', '=', 'a.student_id')
+             ->on('b.sub_institute_id', '=', 'a.sub_institute_id')
+             ->on('b.standard_id', '=', 'a.standard_id')
+             ->where('b.syear', '<', $syear);
+    })
     ->whereNull('a.end_date')
     ->where('a.sub_institute_id', $sub_institute_id)
     ->where('a.student_id', $stu_arr[0])
-    ->where('a.standard_id', '<', $std)
-    ->orderBy('s.sort_order', 'asc')
+    ->orderBy('a.syear', 'desc')
+    ->distinct('a.syear', 'a.standard_id') // ✅ avoids duplicate rows due to self-join
     ->get()
-    ->toArray();
+    ->toArray();   
 
 $previous_standard = [];
 $year_arr2 = [];
@@ -815,8 +809,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $receipt_id = $receipt_id_arr[0];
                 $insert_arr = array(
                     'student_id' => $stu_arr[0],
+                    'standard_id' => $standard_ids[$month_id] ?? $_REQUEST['standard_id'],
                     'month_id' => $month_id,
-                    'syear' => $syear,
+                    'syear' => $syears[$month_id] ?? $syear,
                     'sub_institute_id' => $sub_institute_id,
                     'payment_mode' => $_REQUEST['PAYMENT_MODE'],
                     'created_date' => date('Y-m-d H:i:s'),
@@ -2206,29 +2201,22 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
 
         $student_id = $id;
 
-    // If $std not passed, fetch it
-    if (empty($std)) {
-        $std = DB::table('tblstudent_enrollment as a')
-            ->where('a.sub_institute_id', $sub_institute_id)
-            ->where('a.syear', $syear)
-            ->where('a.student_id', $student_id)
-            ->value('a.standard_id');
-    }
-
-    // Safety check (avoid error)
-    if (empty($std)) {
-        return []; // or handle as needed
-    }
-
-$data = DB::table('tblstudent_enrollment as a')
-    ->select('a.syear', 'a.standard_id')
+    $data = DB::table('tblstudent_enrollment as a')
+    ->select('a.syear', 'a.standard_id', 's.marking_period_id')
     ->join('standard as s', 's.id', '=', 'a.standard_id')
+    ->join('tblstudent_enrollment as b', function ($join) use ($syear) {
+        $join->on('b.student_id', '=', 'a.student_id')
+             ->on('b.sub_institute_id', '=', 'a.sub_institute_id')
+             ->on('b.standard_id', '=', 'a.standard_id')
+             ->where('b.syear', '<', $syear);
+    })
     ->whereNull('a.end_date')
     ->where('a.sub_institute_id', $sub_institute_id)
     ->where('a.student_id', $student_id)
-    ->where('a.standard_id', '<', (int)$std)
     ->orderBy('a.syear', 'desc')
-    ->get()->toArray();
+    ->distinct('a.syear', 'a.standard_id') // ✅ avoids duplicate rows due to self-join
+    ->get()
+    ->toArray();
 
     $previous_standard = [];
 
@@ -2764,10 +2752,11 @@ foreach ($previous_standard as $item) {
             $full_bk_new2 = array_merge($reg_month_wise2, $other_bk_off2);
             $previous = array_sum($full_bk2);
             // if previous fees has discount then minus it from previous remain fees 2024-10-10
+            /* Hide by Rajesh 15-04-2026 becoz previous = minus amount
             if(!empty($discount_arr2)){
                 $pdiscount=array_sum($discount_arr2);
                 $previous = $previous - $pdiscount; 
-            }
+            }*/
 
             if($previous > 0){
             $full_bk['Previous Fees'] = $previous;
@@ -3186,6 +3175,18 @@ foreach ($previous_standard as $item) {
             $fees_data = $this->getBk($request, $student_id);
             //echo "<pre>";
             //print_r($fees_data);
+// Append Previous Fees
+if (!empty($fees_data['previous_fees']['Previous Fees']) 
+    && $fees_data['previous_fees']['Previous Fees'] != 0
+    && in_array($sub_institute_id, [76])
+) {
+    
+    $new_pending_arr[] = (object)[
+        'month'  => 'Previous Fees',
+        'remain' => $fees_data['previous_fees']['Previous Fees'],
+        'PayNow' => $online_link
+    ];
+}
             if (isset($fees_data['total_fees'])) {
                 foreach ($fees_data['total_fees'] as $key => $val) {
                     unset($val['bk']);

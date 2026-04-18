@@ -66,7 +66,7 @@ trait Helpers
         return $PF;
     }
 
-    public static function getPT($totalAllowance,$gender="") {
+    public static function getPT($totalAllowance,$gender="",$feb) {
         // Sum of all allowance plus
         $PT = 0;
         if($totalAllowance > 0){
@@ -86,6 +86,9 @@ trait Helpers
                 $PT = 200;
             }
         }
+        if($PT == 200 && $feb == 'Feb')
+            $PT = 300;
+
         return $PT;
     }
     public static function getMarkGrade($obt,$total)

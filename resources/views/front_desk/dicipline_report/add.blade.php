@@ -86,36 +86,83 @@
                                                     
                             <table class="table table-stripped" id="example">
                                 <thead>                                    
-                                    <tr>
-                                        <th>No</th>
-                                        <th>Student Name</th>
-                                        <th>Std</th>
-                                        <th>Div</th>
-                                        <th>Mobile</th>
-                                        <th>Dicipline</th>
-                                        <th>Message</th>
-                                        <th class="text-left">Name</th>
-                                        <th>Date</th>
-                                    </tr>
+                                     <tr>
+                                         <th>No</th>
+                                         <th>Student Name</th>
+                                         <th>Std</th>
+                                         <th>Div</th>
+                                         <th>Mobile</th>
+                                         <th>Dicipline</th>
+                                         <th>Message</th>
+                                         <th>FLAG</th>
+                                         <th>Name</th>
+                                         <th>Date</th>
+                                     </tr>
                                 </thead>
                                 <tbody>                                    
-                                    @foreach ($data['data'] as $id=>$col_arr)
-                                    <tr>
-                                        <td>{{ $id+1 }}</td>
-                                        <td>{{ App\Helpers\sortStudentName("",$col_arr['first_name'],$col_arr['middle_name'],$col_arr['last_name']) }}</td>
-                                        <td>{{ $col_arr['standard_name'] }}</td>
-                                        <td>{{ $col_arr['division_name'] }}</td>
-                                        <td>{{ $col_arr['mobile'] }}</td>
-                                        <td>{{ $col_arr['dicipline'] }}</td>
-                                        <td>{{ $col_arr['message'] }}</td>
-                                        <td>{{ $col_arr['name'] }}</td>
-                                        <td>{{ $col_arr['date_'] }}</td>
-                                    </tr>
-                                    @endforeach
+                                     @foreach ($data['data'] as $id=>$col_arr)
+                                     <tr>
+                                         <td>{{ $id+1 }}</td>
+                                         <td>{{ App\Helpers\sortStudentName("",$col_arr['first_name'],$col_arr['middle_name'],$col_arr['last_name']) }}</td>
+                                         <td>{{ $col_arr['standard_name'] }}</td>
+                                         <td>{{ $col_arr['division_name'] }}</td>
+                                         <td>{{ $col_arr['mobile'] }}</td>
+                                         <td>{{ $col_arr['dicipline'] }}</td>
+                                         <td>{{ $col_arr['message'] }}</td>
+                                         <td style="text-align: center;">
+                                             @if($col_arr['flag'] == 1)
+                                                 <i class="fa fa-flag" style="color: green;"></i>
+                                             @elseif($col_arr['flag'] == 0)
+                                                 <i class="fa fa-flag" style="color: grey;"></i>
+                                             @elseif($col_arr['flag'] == -1)
+                                                 <i class="fa fa-flag" style="color: red;"></i>
+                                             @else
+                                                 -
+                                             @endif
+                                         </td>
+                                         <td>{{ $col_arr['name'] }}</td>
+                                         <td>{{ $col_arr['date_'] }}</td>
+                                     </tr>
+                                     @endforeach
                                 </tbody>
-                            </table>
-                        </div>
-                </div>
+                             </table>
+                         </div>
+
+                         @if(isset($data['student_summary']) && count($data['student_summary']) > 0)
+                         <div class="table-responsive mt-4">
+                             <h4>Student Discipline Summary</h4>
+                             <table class="table table-bordered">
+                                 <thead>
+                                     <tr>
+                                         <th>Student Name</th>
+                                         <th>Total</th>
+                                         <th style="text-align: center;"><i class="fa fa-flag" style="color: green;"></i></th>
+                                         <th style="text-align: center;"><i class="fa fa-flag" style="color: red;"></i></th>
+                                     </tr>
+                                 </thead>
+                                 <tbody>
+                                     @foreach($data['student_summary'] as $summary)
+                                     <tr>
+                                         <td>{{ $summary['student_name'] }}</td>
+                                         <td>
+                                             <span class="badge {{ $summary['total_points'] > 0 ? 'badge-success' : ($summary['total_points'] < 0 ? 'badge-danger' : 'badge-warning') }}">
+                                                 {{ $summary['total_points'] }}
+                                             </span>
+                                         </td>
+<td style="text-align: center;">
+    {!! $summary['positive_count'] != 0 ? '<span class="badge badge-success">'.$summary['positive_count'].'</span>' : '' !!}
+</td>
+
+<td style="text-align: center;">
+    {!! $summary['negative_count'] != 0 ? '<span class="badge badge-danger">'.$summary['negative_count'].'</span>' : '' !!}
+</td>
+                                     </tr>
+                                     @endforeach
+                                 </tbody>
+                             </table>
+                         </div>
+                         @endif
+                 </div>
             </div>
             @if (count($errors) > 0)
             <div class="alert alert-danger">

@@ -1929,6 +1929,7 @@ exit; */
                 "bank_branch" => "",
                 "send_sms"=>$send_sms,
                 "inprocess"=>$inProcess, // added on 29-04-2025 for ssmission 
+                "pan_card" => $fees_bk_data["stu_data"]["pan_card"], // added on 27-12-2025 for ssmission by rajesh
                 "submit" => "Save",
             );
             // echo '<pre>';
@@ -2750,15 +2751,14 @@ if (Str::startsWith($order_id, 'pay_')) {
 
         // Get student data
         $medium_data = DB::select("SELECT a.*,e.grade_id,
-            CONCAT_WS(' ',t.first_name,t.middle_name,t.last_name) AS student_name,
+            CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name,
             t.mobile,
-            s.SchoolName AS uniqueid,
+            CONCAT_WS('_',t.first_name,t.middle_name,t.last_name,t.enrollment_no) AS uniqueid,
             t.email
             FROM tblstudent_enrollment e
             INNER JOIN academic_section a ON e.grade_id = a.id
             INNER JOIN tblstudent t ON t.id=e.student_id
             INNER JOIN fees_online_maping fom ON fom.syear=e.syear AND fom.sub_institute_id=e.sub_institute_id
-            INNER JOIN school_setup s ON s.Id=e.sub_institute_id
             WHERE e.student_id = ? ORDER BY e.syear DESC LIMIT 1", [$student_id]);
 
         if (empty($medium_data)) {

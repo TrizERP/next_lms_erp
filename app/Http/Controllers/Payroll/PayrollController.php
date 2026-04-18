@@ -240,10 +240,16 @@ class PayrollController extends Controller
 
                         // check allowance if allowance make it gross Salary
                         if($getPayrollType->payroll_type==1){
-                            // for PT Deduction 
-                            $totalGrossSalary +=$amount;
+                            
+                            // for PT & ESIC Deduction
+                            $GrossSalaryArray = ['BASIC','GRADE PAY','D.A','HRA','OTHER ALLOW'];
+                            if(in_array($payroll_type_name,$GrossSalaryArray)){
+                                $totalGrossSalary +=$amount;
+                            }
+
                             // for PF Deduction 
-                            if($payroll_type_name=="BASIC" || $payroll_type_name=="D.A" || $payroll_type_name=="GRADE PAY"){
+                            $AllowanceArray = ['BASIC','GRADE PAY','D.A'];
+                            if(in_array($payroll_type_name,$AllowanceArray)){
                                 $totalAllowance += $amount;
                             }
                         }
@@ -265,7 +271,7 @@ class PayrollController extends Controller
                 
                 // PT Calculation
                 if($pt_deduction == 'Y')
-                    $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender) : $getPTFlat; // getPtFlat is for set flat amounts
+                    $getPT = ($hasPT == 2) ? Helpers::getPT($totalGrossSalary,$gender,$state = null) : $getPTFlat; // getPtFlat is for set flat amounts
                 // 13-08-2024 end 
                 // echo "<pre>";print_r($getPF);
                 // echo "<pre>";print_r($getPT);
@@ -1153,89 +1159,17 @@ class PayrollController extends Controller
 
     }
 
-    public function monthlyPayrollPdf(Request $request, $id, $month, $year, $pdfType='')
+    public function monthlyPayrollPdf(Request $request,$id, $month, $year,$pdfType='')
     {
-        // For GET requests without session, try to get sub_institute_id from query string or employee
+
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        
-        // If no session, try to get from query params
-        if (!$sub_institute_id && $request->has('sub_institute_id')) {
-            $sub_institute_id = $request->get('sub_institute_id');
-        }
-        
-        // If still no sub_institute_id, try to get from the employee record
-        if (!$sub_institute_id) {
-            $employee = DB::table('tbluser')->where('id', $id)->first();
-            $sub_institute_id = $employee->sub_institute_id ?? null;
-        }
-        
-        // If still no sub_institute_id, return error
-        if (!$sub_institute_id) {
-            return response()->json(['error' => 'Institution not found. Please login again.'], 400);
-        }
-        
         $syear = $request->session()->get('syear');
-        if (!$syear) {
-            $syear = $year; // Use the year from URL as fallback
-        }
         
-        // Debug: log the parameters being used
-        // Log::info("PDF Request: id=$id, month=$month, year=$year, sub_institute_id=$sub_institute_id, syear=$syear");
-        
-        $employeeSalaryData = EmployeeMonthlySalaryData::with('getUser')->where([
-            ['employee_id', $id],
-            ['sub_institute_id', $sub_institute_id],
-            ['month', $month],
-            ['year', $year]
-        ])->first();
+        $employeeSalaryData = EmployeeMonthlySalaryData::with('getUser')->where([['employee_id', $id],[ 'sub_institute_id', $sub_institute_id],['month', $month],['year', $year]])->first();
 
-        // If no data found, try with different year formats (for Jan, Feb, Mar - might need +1 year)
-        if (!$employeeSalaryData && in_array($month, ['Jan', 'Feb', 'Mar'])) {
-            $altYear = $year + 1;
-            $employeeSalaryData = EmployeeMonthlySalaryData::with('getUser')->where([
-                ['employee_id', $id],
-                ['sub_institute_id', $sub_institute_id],
-                ['month', $month],
-                ['year', $altYear]
-            ])->first();
-            if ($employeeSalaryData) {
-                $year = $altYear; // Use the found year
-            }
-        }
+        $employeeSalaryStructure = EmployeeSalaryStructure::where([['employee_id', $id],[ 'sub_institute_id', $sub_institute_id],[ 'year', $syear]])->first();
 
-        // If still no data, return a proper error message
-        if (!$employeeSalaryData) {
-            // Return a JSON error response instead of redirecting
-            if ($request->expectsJson() || $request->ajax()) {
-                return response()->json([
-                    'error' => 'No salary data found for this employee for the specified month and year.',
-                    'debug' => [
-                        'employee_id' => $id,
-                        'month' => $month,
-                        'year' => $year,
-                        'sub_institute_id' => $sub_institute_id
-                    ]
-                ], 404);
-            }
-            return redirect()->back()->with('error', 'No salary data found for this employee for the specified month ('.$month.') and year ('.$year.'). Please save the payroll first.');
-        }
-
-        $employeeSalaryStructure = EmployeeSalaryStructure::where([
-            ['employee_id', $id],
-            ['sub_institute_id', $sub_institute_id],
-            ['year', $syear]
-        ])->first();
-
-        // If no salary structure, try with the year from URL
-        if (!$employeeSalaryStructure) {
-            $employeeSalaryStructure = EmployeeSalaryStructure::where([
-                ['employee_id', $id],
-                ['sub_institute_id', $sub_institute_id],
-                ['year', $year]
-            ])->first();
-        }
-
-        $get_school_name = DB::table('school_setup')->select('SchoolName', 'ReceiptHeader')->where(['id' => $sub_institute_id])->first();
+        $get_school_name = DB::table('school_setup')->select('ReceiptHeader')->where(['id' => $sub_institute_id])->first();
 
         $get_user_detail = DB::table('tbluser as ts')
             ->selectRaw('ts.*,tum.name as profile_name')
@@ -1296,12 +1230,11 @@ class PayrollController extends Controller
             $employeeData['deduction'] =  $employeeSalaryData->total_deduction;
             $employeeData['net_salary'] =  $employeeSalaryData->total_payment;
             $employeeSalaryDetails = json_decode($employeeSalaryData->employee_salary_data, true);
-            
-            // Check if salary structure exists before decoding
-            $employeeSalaryStructureDetails = [];
-            if ($employeeSalaryStructure && isset($employeeSalaryStructure->employee_salary_data)) {
-                $employeeSalaryStructureDetails = json_decode($employeeSalaryStructure->employee_salary_data, true);
-            }
+            //$employeeSalaryStructureDetails = json_decode($employeeSalaryStructure->employee_salary_data, true);
+            $employeeSalaryStructureDetails = json_decode(
+											    $employeeSalaryStructure->employee_salary_data ?? '{}',
+											    true
+											);
             $actualpayment = 0;
             $allowancekey = -1;
             $deductionkey = 0;
@@ -1326,132 +1259,36 @@ class PayrollController extends Controller
             $salaryData = array_chunk($salaryData,2);
                 //            return $salaryData;
             $employeeData['salary_data'] = $salaryData;
-            $employeeData['school_name'] = $get_school_name->SchoolName ?? '';
-            $employeeData['school_details'] = $get_school_name ?? null;
+            $employeeData['school_name'] = $get_school_name;
             $employeeData['ruppee_in_word']= $this->displaywords($employeeData['net_salary']);
 
 
             $employeeData['total_actual_payment'] = $actualpayment;
-            $templateHTML = $this->getHTML($sub_institute_id,$employeeData);
-            // return $templateHTML;
-            // echo "<pre>";print_r($templateHTML);exit;
-            
-            // Generate PDF directly from HTML string - more reliable than blade view
-            $pdf = PDF::loadHTML($templateHTML);
-            $pdf->setPaper('A4', 'portrait');
+            // echo "<pre>";print_r($employeeData);exit;
 
-            $pdfContent = $pdf->output();
-            $fileName = ($pdfType=='storeDoc'?'emp_'.$id.'_payslip':'salary_slip_'.$id).'_'.$month.'_'.$year.'.pdf';
-            $file_path = 'public/staff_document/'.$fileName;
+            view()->share('employeeData',$employeeData);
+            $pdf = PDF::loadView('payroll.monthly_payroll_report.employeeSalaryPdf');
 
-            Storage::disk('digitalocean')->delete($file_path);
-            Storage::disk('digitalocean')->put($file_path, $pdfContent, 'public', ['Cache-Control'=>'max-age=0,no-cache,no-store']);
+            if($pdfType=='storeDoc'){
+                $pdfContent = $pdf->output();
+                $fileName = 'emp_' . $id . '_payslip_'.$month.'_'.$year.'.pdf';
+                $file_path = 'public/staff_document/' . $fileName;
+                if (Storage::disk('digitalocean')->exists($file_path)) {
+                    Storage::disk('digitalocean')->delete($file_path);
+                }
 
-            $pdfData = [
-                'document_title'=> ($pdfType=='storeDoc'?'Payslip':'Salary Slip').' '.$month.' '.$year,
-                'sub_institute_id'=>$sub_institute_id,
-                'document_type_id'=>56,
-                'user_id'=>$id,
-                'file_name'=>$fileName,
-                'updated_at'=>now()
-            ];
+                // Storage::disk('digitalocean')->put($file_path, $pdfContent, 'public');
+                Storage::disk('digitalocean')->put($file_path, $pdfContent, 'public', ['Cache-Control' => 'max-age=0, no-cache, no-store']);
 
-            DB::table('staff_document')
-                ->updateOrInsert(
-                    ['sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$id,'file_name'=>$fileName],
-                    $pdfData + ['created_at'=>now()]
-                );
-
-            return $pdfType=='storeDoc'
-                ? $fileName
-                : response()->make($pdfContent, 200, [
-                    'Content-Type'=>'application/pdf',
-                    'Content-Disposition'=>'attachment; filename="'.$fileName.'"'
-                  ]);
+                return $fileName;
+            }else{
+                return $pdf->download('salary.pdf');
+            }
         } else if($pdfType!='storeDoc'){
             return redirect()->back();
         }
     }
 
-    public function getHTML($sub_institute_id,$employeeData){
-        $templateHTML = '';
-        
-        // First try to get template for the specific sub_institute_id
-        $template = DB::table('template_master')
-            ->where('sub_institute_id', $sub_institute_id)
-            ->where('module_name', 'salary')
-            ->first();
-
-        if(!$template){
-             $template = DB::table('template_master')
-            ->where('sub_institute_id', 0)
-            ->where('module_name', 'salary')
-            ->first();
-        }
-        $templateHTML = $template->html_content ?? '';
-        // return $employeeData['name'];
-        
-        $templateHTML = str_replace(htmlspecialchars("<<school_name>>"), ($employeeData['school_name'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<salary_month>>"), ($employeeData['month'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<salary_year>>"), ($employeeData['year'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<employee_name>>"), ($employeeData['name'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<employee_code>>"), ($employeeData['emp_code'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<employee_designation>>"), ($employeeData['designation'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<joining_date>>"), ($employeeData['join_date'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<bank_account_number>>"), ($employeeData['bank_ac_no'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<total_present_days>>"), ($employeeData['total_day'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<pf_number>>"), ($employeeData['pf_no'] ?? ''), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<leave_without_pay>>"), ($employeeData['leave_without_pay'] ?? 0), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<gross_actual_salary>>"), ($employeeData['total_actual_payment'] ?? 0), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<gross_current_salary>>"), ($employeeData['total_payment'] ?? 0), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<total_deduction>>"), ($employeeData['deduction'] ?? 0), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<net_salary>>"), ($employeeData['net_salary'] ?? 0), $templateHTML);
-        $templateHTML = str_replace(htmlspecialchars("<<net_salary_in_words>>"), ($employeeData['ruppee_in_word'] ?? ''), $templateHTML);
-       
-        $tbody = '';
-        foreach ($employeeData['salary_data'] as $employeeSalary) {
-            $tbody .= '<tr>';
-            // first column group (allowance or empty)
-            if (isset($employeeSalary[0][3]) && $employeeSalary[0][3] === 'allowance') {
-                $tbody .= '<td>&nbsp;&nbsp;' . e($employeeSalary[0][0]) . '</td>';
-                $tbody .= '<td align="right">' . e($employeeSalary[0][1]) . '</td>';
-                $tbody .= '<td align="right">' . e($employeeSalary[0][2]) . '</td>';
-            } else {
-                $tbody .= '<td>&nbsp;&nbsp;-</td>';
-                $tbody .= '<td align="right">-</td>';
-                $tbody .= '<td align="right">-</td>';
-            }
-
-            // second column group (deduction or second allowance)
-            if (isset($employeeSalary[1])) {
-                if (isset($employeeSalary[1][3]) && $employeeSalary[1][3] === 'allowance') {
-                    // second allowance requires a new row
-                    $tbody .= '<td>&nbsp;&nbsp;-</td>';
-                    $tbody .= '<td align="right">-</td>';
-                    $tbody .= '</tr><tr>';
-                    $tbody .= '<td>&nbsp;&nbsp;' . e($employeeSalary[1][0]) . '</td>';
-                    $tbody .= '<td align="right">' . e($employeeSalary[1][1]) . '</td>';
-                    $tbody .= '<td align="right">' . e($employeeSalary[1][2]) . '</td>';
-                    $tbody .= '<td>&nbsp;&nbsp;-</td>';
-                    $tbody .= '<td align="right">-</td>';
-                } elseif (isset($employeeSalary[1][3]) && $employeeSalary[1][3] === 'deduction') {
-                    $tbody .= '<td>&nbsp;&nbsp;' . e($employeeSalary[1][0]) . '</td>';
-                    $tbody .= '<td align="right">' . e($employeeSalary[1][2]) . '</td>';
-                } else {
-                    $tbody .= '<td>&nbsp;&nbsp;-</td>';
-                    $tbody .= '<td align="right">-</td>';
-                }
-            } else {
-                $tbody .= '<td>&nbsp;&nbsp;-</td>';
-                $tbody .= '<td align="right">-</td>';
-            }
-            $tbody .= '</tr>';
-        }
-        $templateHTML = str_replace(htmlspecialchars("<<table_body>>"), ($tbody ?? ''), $templateHTML);
-
-        // table_body
-        return $templateHTML;
-    }
     public function displaywords($num){
         $num    = ( string ) ( ( int ) $num );
 
@@ -1977,7 +1814,7 @@ class PayrollController extends Controller
 
         $preparPayrollType = [];
         
-        $totaldeduction = $totalallowance = 0;
+        $totaldeduction = $totalallowance = $grossallowance = 0;
         foreach ($payrollTypes as $payrollType) {
             // for allowance
 
@@ -2034,10 +1871,17 @@ class PayrollController extends Controller
 
                 $employeefinalDisplayData[$value['allowance'][2]] = $allowence;
 
+                // for PF Deduction 
                 if(in_array($value['allowance'][3],["BASIC","GRADE PAY","D.A"])){
                     $totalSal= ($totalSal+$allowence);
                 }
-                $totalallowance = $totalallowance + $allowence;
+
+                // for PT & ESIC Deduction
+                if(in_array($value['allowance'][3],['BASIC','GRADE PAY','D.A','HRA','OTHER ALLOW'])){
+                    $grossallowance += $allowence;
+                }
+
+                $totalallowance += $allowence;
             }
           
             // for deduction
@@ -2068,7 +1912,7 @@ class PayrollController extends Controller
                     }
                 }
                 elseif($getEligible->esic_deduction=="Y" && $value['deduction'][3]=="ESIC"){
-                    $deduction = Helpers::getESIC($totalallowance);//$totalSal
+                    $deduction = Helpers::getESIC($grossallowance);//$totalSal
                 }
                 else if($value['deduction'][1] == 1 && !$deductionName && $value['deduction'][3]!="PF" && $value['deduction'][4]==0){
                     $deduction = round(($deduction / $payrollMonthDays) * $request->totalDay);
@@ -2078,7 +1922,7 @@ class PayrollController extends Controller
                 }
                 //START FOR PT CALCULATE AS PER DAYS 15-09-2025
                 elseif($getEligible->pt_deduction=="Y" && $value['deduction'][3]=="PT"){
-                    $deduction = Helpers::getPT($totalallowance,$getEligible->gender);
+                    $deduction = Helpers::getPT($grossallowance,$getEligible->gender,$request->month);
                 }
                 // 2024-10-11 if total is 0 all values will be 0
                 if($totalDay==0){
@@ -2540,7 +2384,3 @@ $sat_late = $sat_cutoff_value * $sat_late_count;
         return $result; // this is $sat_late
     }
 }
-
-
-
-

@@ -76,6 +76,7 @@
 												'Promoted as per RTE Guidelines (Conditional Promotion)',
 												'Not appeared in Annual Exam',
 												'Not appeared in Term-II',
+												'Pass & Promoted to Class IX with Grace Marks',
 												];
 										@endphp
 

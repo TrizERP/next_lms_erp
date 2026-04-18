@@ -149,14 +149,19 @@ class admissionEnquiryController extends Controller
         }
         // echo "<pre>";print_r($request->all());exit;
         $category = castModel::get()->toArray();
-
+        $new_institutes = [336,337,338,339,340,341];
+        
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1"])
-                ->when($type == "webForm", function ($q) {
+                ->when($type == "webForm" && !in_array($sub_institute_id, $new_institutes), function ($q) {
                     $q->where(['table_name' => "admission_enquiry_online"]);
                 }, function ($q) {
                     $q->where(['table_name' => "admission_enquiry"]);
                 })
-                ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+                ->where(function($q) use ($sub_institute_id) {
+                    $q->where('sub_institute_id', $sub_institute_id)
+                      ->orWhere('common_to_all', 1);
+                })
+                ->where('user_type', '')
                 ->when($type=="webForm" && $sub_institute_id==254,function($q) use($request){
                     $q->whereNotIN('id',[199,200,201]);
                 })
