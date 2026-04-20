@@ -84,10 +84,6 @@
         border-radius: 3px;
     }
 
-    .side-panel-body::-webkit-scrollbar-thumb:hover {
-        background: #adb5bd;
-    }
-
     .custom-side-modal, .details-modal, .intent-modal {
         display: none;
         position: fixed;
@@ -389,10 +385,7 @@
         cursor: pointer;
         transition: background 0.2s;
     }
-    
-    .dropdown-item:hover {
-        background: #f8f9fa;
-    }
+  
 </style>
 
 <div id="conversationAI" class="side-panel" style="border-radius:25px;">
