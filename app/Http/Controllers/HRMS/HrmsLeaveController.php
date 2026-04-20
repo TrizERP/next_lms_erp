@@ -68,11 +68,11 @@ class HrmsLeaveController extends Controller
     }
 
     public function store(Request $request){
-        // echo "<pre>";print_r($request->all());exit;
         $type = $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        $res['formType'] =  $formType = $request->formType;
+        $formType = $request->has('emp_id') && !empty($request->emp_id) ? 'employee' : 'department';
+        $res['formType'] = $formType;
 
         if($type=="API"){
             try {
@@ -89,38 +89,42 @@ class HrmsLeaveController extends Controller
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');            
         }
+        
+        $res['department_id'] = $department_ids = $request->department_id;
+        $res['leave_type_ids'] = $leave_type_ids = $request->leave_type_ids;
+        $res['year'] = $year = $request->year;
+        $res['days'] = $days = $request->days;
+        $res['emp_id'] = $emp_ids = $request->emp_id ?? [];
+
         $insert = 0;
-        // for department wise starts
+        $departmentArray = is_array($department_ids) ? $department_ids : [$department_ids];
+        $employeeArray = is_array($emp_ids) ? $emp_ids : [];
+        
         if($formType=="department"){
-            $res['department_id'] = $department_ids = $request->department_id;
-            $res['leave_type_ids'] = $leave_type_ids = $request->leave_type_ids;
-            $res['year'] = $year = $request->year;
-            $res['days'] = $days = $request->days;
-
-            if($department_ids=="All"){
+            if(in_array("All", $departmentArray)){
                 $departmentAll = DB::table('hrms_departments')->where('sub_institute_id',$sub_institute_id)->where('status',1)->whereNull('deleted_at')->get()->toArray();
-                foreach($departmentAll as $key=>$value){
-                    $insert = $this->insertData($value->id,$leave_type_ids,$year,$days,$sub_institute_id);
+                foreach($departmentAll as $value){
+                    foreach($leave_type_ids as $leaveTypeId){
+                        $insert += $this->insertData($value->id, $leaveTypeId, $year, $days, $sub_institute_id);
+                    }
                 }
-                // echo "<pre>";print_r($insert);exit;
-            }else{
-                $insert = $this->insertData($department_ids,$leave_type_ids,$year,$days,$sub_institute_id);
-                // echo "<pre>";print_r($insert);exit;
-
+            } else {
+                foreach($departmentArray as $deptId){
+                    foreach($leave_type_ids as $leaveTypeId){
+                        $insert += $this->insertData($deptId, $leaveTypeId, $year, $days, $sub_institute_id);
+                    }
+                }
             }
         }
-        // for department wise end
-        // for employee wise starts
-        elseif($formType=="employee"){
-            $res['department_id'] = $department_ids = $request->department_id;
-            $res['emp_id'] = $emp_id = $request->emp_id;
-            $res['leave_type_ids'] = $leave_type_ids = $request->leave_type_ids;
-            $res['year'] = $year = $request->year;
-            $res['days'] = $days = $request->days;
-
-            $insert = $this->insertData($department_ids,$leave_type_ids,$year,$days,$sub_institute_id,$emp_id);
+        elseif($formType=="employee" && !empty($employeeArray)){
+            foreach($employeeArray as $empId){
+                $empDeptId = DB::table('tbluser')->where('id', $empId)->value('department_id');
+                
+                foreach($leave_type_ids as $leaveTypeId){
+                    $insert += $this->insertData($empDeptId, $leaveTypeId, $year, $days, $sub_institute_id, $empId);
+                }
+            }
         }
-        // for employee wise end
 
         if($insert==0){
             $res['status_code'] = 0;
@@ -132,47 +136,48 @@ class HrmsLeaveController extends Controller
         return is_mobile($type, "designation_leave.index", $res);
     }
 
-    public function insertData($department_ids,$leave_type_ids,$year,$days,$sub_institute_id,$emp_id='')
+    public function insertData($department_id, $leave_type_id, $year, $days, $sub_institute_id, $emp_id = null)
     {
-        $i=0;
-        if($emp_id==''){
-            foreach($leave_type_ids as $key=>$value){
-                // check alread exists or not 
-                $check = DB::table('hrms_leave_allocation')->where('sub_institute_id',$sub_institute_id)->where(['department_id'=>$department_ids,'year'=>$year,'leave_type_id'=>$value])->whereNull('employee_id')->first(); // added where null condition on 25-07-2025
-                // return $check;
-                if(empty($check)){
-                    $i++;
-                    $insert = DB::table('hrms_leave_allocation')->insert([
-                        'department_id'=>$department_ids,
-                        'leave_type_id'=>$value,
-                        'year'=>$year,
-                        'value'=>$days,
-                        'sub_institute_id'=>$sub_institute_id,
-                        'created_at'=>now()
-                    ]);
-                }
+        if(is_null($emp_id)){
+            $check = DB::table('hrms_leave_allocation')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where(['department_id' => $department_id, 'year' => $year, 'leave_type_id' => $leave_type_id])
+                ->whereNull('employee_id')
+                ->first();
+            
+            if(empty($check)){
+                DB::table('hrms_leave_allocation')->insert([
+                    'department_id' => $department_id,
+                    'leave_type_id' => $leave_type_id,
+                    'year' => $year,
+                    'value' => $days,
+                    'sub_institute_id' => $sub_institute_id,
+                    'created_at' => now()
+                ]);
+                return 1;
             }
         }
         else{
-            foreach($leave_type_ids as $key=>$value){
-                // check alread exists or not 
-                $check = DB::table('hrms_leave_allocation')->where('sub_institute_id',$sub_institute_id)->where(['department_id'=>$department_ids,'employee_id'=>$emp_id,'year'=>$year,'leave_type_id'=>$value])->first();
-                if(empty($check)){
-                    $i++;
-                    $insert = DB::table('hrms_leave_allocation')->insert([
-                        'department_id'=>$department_ids,
-                        'employee_id'=>$emp_id,
-                        'leave_type_id'=>$value,
-                        'year'=>$year,
-                        'value'=>$days,
-                        'sub_institute_id'=>$sub_institute_id,
-                        'created_at'=>now()
-                    ]);
-                }
+            $check = DB::table('hrms_leave_allocation')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where(['department_id' => $department_id, 'employee_id' => $emp_id, 'year' => $year, 'leave_type_id' => $leave_type_id])
+                ->first();
+            
+            if(empty($check)){
+                DB::table('hrms_leave_allocation')->insert([
+                    'department_id' => $department_id,
+                    'employee_id' => $emp_id,
+                    'leave_type_id' => $leave_type_id,
+                    'year' => $year,
+                    'value' => $days,
+                    'sub_institute_id' => $sub_institute_id,
+                    'created_at' => now()
+                ]);
+                return 1;
             }
         }
         
-        return $i;
+        return 0;
     }
 
     public function edit(Request $request,$id){

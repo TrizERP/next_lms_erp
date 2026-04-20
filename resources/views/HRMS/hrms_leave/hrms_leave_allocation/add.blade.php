@@ -19,20 +19,30 @@
             <form action="{{route('designation_leave.store')}}" class="row" method="post">
                 @csrf
                 @if(isset($data['view']) && $data['view']=="employee")
-                    <input type="hidden" value="employee" name="formType">
-                    {!! App\Helpers\HrmsDepartments("4") !!}
-                @else
-                <input type="hidden" value="department" name="formType">
-                    <div class="col-md-4 form-group">
-                        <label for="">Select Departments</label>
-                        <select name="department_id" id="department_id" class="form-control" required>
-                            <option value="All">All</option>
-                            @foreach($data['departments'] as $key=>$value)
-                            <option value="{{$key}}">{{$value}}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                @endif
+  <input type="hidden" value="employee" name="formType">
+  @php
+      $dep_id = '';
+      $emp_id = '';
+      if(isset($data['department_id'])){
+          $dep_id = $data['department_id'];
+      }
+      if(isset($data['selected_emp'])){
+          $emp_id = $data['selected_emp'];
+      }
+  @endphp
+  {!! App\Helpers\HrmsDepartments("","multiple",$dep_id,"multiple",$emp_id,"") !!}
+@else
+<input type="hidden" value="department" name="formType">
+    <div class="col-md-4 form-group">
+        <label for="">Select Departments</label>
+        <select name="department_id" id="department_id" class="form-control" required>
+            <option value="All">All</option>
+            @foreach($data['departments'] as $key=>$value)
+            <option value="{{$key}}">{{$value}}</option>
+            @endforeach
+        </select>
+    </div>
+@endif
                 <div class="col-md-4 form-group">
                     <label for="">Select Leave Type</label>
                     <select name="leave_type_ids[]" id="leave_type_ids" class="form-control" multiple required>

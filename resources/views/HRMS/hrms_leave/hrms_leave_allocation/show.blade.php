@@ -20,7 +20,7 @@
 				@endif
 
                 <div class="sttabs tabs-style-linemove triz-verTab bg-white style2 text-center">
-                    <ul class="nav nav-tabs tab-title mb-4">
+                    <ul class="nav nav-tabs tab-title mb-4" style="visibility: hidden;">
                         <!--<li class="nav-item"><a href="#section-linemove-1" class="nav-link" aria-selected="false" data-toggle="tab"><span>Department wise Leave</span></a></li>-->
                         <li class="nav-item"><a href="#section-linemove-2" class="nav-link active" aria-selected="true" data-toggle="tab"><span>Employee wise Leave</span></a></li>
                     </ul>
