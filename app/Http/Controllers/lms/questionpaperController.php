@@ -23,6 +23,8 @@ use function App\Helpers\SearchStudent;
 use function App\Helpers\sendNotification;
 use function App\Helpers\send_FCM_Notification;
 use App\Models\school_setup\SchoolModel;
+use function App\Helpers\neo4jCreateNode;
+use function App\Helpers\neo4jCreateRelationship;
 
 class questionpaperController extends Controller
 {
@@ -310,6 +312,78 @@ class questionpaperController extends Controller
           
         }
         // notification ended 
+        try {
+
+        // ✅ CREATE ASSESSMENT NODE
+        $assessment_id = $questionpaper_id;
+        $sub_id = $request['subject'];
+        $standard_id = $request['standard'];
+        $grade_id = $request['grade'];
+
+        neo4jCreateNode(
+            'Assessment',
+            ['assId' => (int)$assessment_id],
+            [
+                'exam_type' => 'online',
+                'displayLabel' => 'Assessment:' . $request['paper_name'],
+                'assId' => (int)$assessment_id,
+                'standard_id' => (int)$standard_id,
+                'subject_id' => (int)$sub_id,
+                'paper_name' => $request['paper_name'],
+                'total_marks' => (int)count($request['question_ids']),
+                'grade_id' => (int)$grade_id,
+                'sub_institute_id' => (int)$sub_institute_id,
+                'syear' => (int)session()->get('syear'),
+                'question_ids' => implode(',', $request['question_ids']),
+                'total_ques' => (int)count($request['question_ids'])
+            ]
+        );
+        
+
+        $question_ids = $request['question_ids'];
+
+        foreach ($question_ids as $qid) {
+
+            // ✅ CHECK QUESTION EXISTS
+            $question = DB::table('lms_question_master')->where('id', $qid)->first();
+
+            if (!$question) {
+                \Log::warning("Question not found: " . $qid);
+                continue;
+            }
+
+            // ✅ RELATION: Assessment → Question
+            neo4jCreateRelationship(
+                'Assessment',
+                ['assId' => (int)$assessment_id,'subject_id'=>(int)$sub_id,'sub_institute_id'=>(int)$sub_institute_id],
+                'HAS_QUESTION',
+                'Question',
+                ['qId' => (int)$qid,'subject_id'=>(int)$question->subject_id,'sub_institute_id'=>(int)$sub_institute_id]
+            );
+
+            // ================= CHAPTER =================
+            if (!empty($question->chapter_id)) {
+
+              
+
+                // ✅ RELATION: Assessment → Chapter
+                neo4jCreateRelationship(
+                    'Assessment',
+                    ['assId' => (int)$assessment_id,'subject_id'=>(int)$sub_id,'sub_institute_id'=>(int)$sub_institute_id],
+                    'ASSESSES_CHAPTER',
+                    'Chapter',
+                    ['chId' => (int)$question->chapter_id,'subject_id'=>(int)$question->subject_id,'sub_institute_id'=>(int)$sub_institute_id]
+                );
+            }
+        }
+
+        \Log::info('✅ Neo4j Assessment Created', [
+            'assessment_id' => $assessment_id
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('❌ Neo4j Error: ' . $e->getMessage());
+    }
 
         $res = array(
             "status_code" => 1,
@@ -320,7 +394,6 @@ class questionpaperController extends Controller
 
         return is_mobile($type, "question_paper.index", $res, "redirect");
     }
-
     public function generatePDF($request, $questionpaper_id)
     {
         $sub_institute_id = $request['sub_institute_id'];
@@ -400,6 +473,8 @@ public function edit(Request $request, $id)
 
     $sub_institute_id_by_lms = ($getIsLms == 'Y') ? "(qm.sub_institute_id = 1 or qm.sub_institute_id = $sub_institute_id)" : "qm.sub_institute_id = $sub_institute_id";
 
+    $sub_institute_id_alias = ($getIsLms == 'Y') ? "(qm.sub_institute_id = 1 or qm.sub_institute_id = $sub_institute_id)" : "qm.sub_institute_id = $sub_institute_id";
+
     $data['questionpaper_data'] = questionpaperModel::find($id)->toArray();
 
     if ($data['questionpaper_data']['open_date'] != "0000-00-00 00:00:00" && $data['questionpaper_data']['open_date'] != null) {
@@ -459,7 +534,7 @@ public function edit(Request $request, $id)
         ->whereIn('qm.chapter_id', $chapters)
         ->where('qm.standard_id', $std_id)
         ->where('qm.subject_id', $sub_id)
-        ->whereRaw($sub_institute_id_by_lms) // Apply LMS condition here for questions
+        ->whereRaw($sub_institute_id_alias) // Apply LMS condition here for questions
         ->where('qm.status', 1)
         ->groupBy('qm.id')
         ->orderBy('chapter_master.sort_order')
@@ -501,13 +576,11 @@ public function edit(Request $request, $id)
      */
     public function update(Request $request)
     {
-
-
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
         $question_ids = $request->hidden_question_ids;
-        $id =  $request->edit_id;
+        $id = $request->edit_id;
 
         $show_hide = $request->get('show_hide');
         $show_hide_val = $show_hide ?? '';
@@ -560,25 +633,95 @@ public function edit(Request $request, $id)
             $questionpaper['close_date'] = $close_date;
         }
 
-        $query = questionpaperModel::where("id",$id)->update($questionpaper);
-        // dd($query);
+        $query = questionpaperModel::where("id", $id)->update($questionpaper);
 
-        if($query==false){
-        $res = [
+        try {
+            // ✅ UPDATE ASSESSMENT NODE
+            $assessment_id = $id;
+            $sub_id = $request['subject'];
+            $standard_id = $request['standard'];
+            $grade_id = $request['grade'];
+            $question_ids_arr = $request['question_ids'] ?? [];
+
+            // Update Assessment node
+            neo4jCreateNode(
+                'Assessment',
+                ['assId' => (int)$assessment_id],
+                [
+                    'exam_type'      => 'online',
+                    'displayLabel'   => 'Assessment:' . $request['paper_name'],
+                    'assId'          => (int)$assessment_id,
+                    'standard_id'    => (int)$standard_id,
+                    'subject_id'     => (int)$sub_id,
+                    'paper_name'     => $request['paper_name'],
+                    'total_marks'    => (int)count($question_ids_arr),
+                    'grade_id'       => (int)$grade_id,
+                    'sub_institute_id' => (int)$sub_institute_id,
+                    'syear'          => (int)$syear,
+                    'question_ids'   => implode(',', $question_ids_arr),
+                    'total_ques'     => (int)count($question_ids_arr)
+                ]
+            );
+
+            // ✅ DELETE EXISTING RELATIONSHIPS
+            // (Assuming a function exists to delete relationships, otherwise skip or implement)
+            // neo4jDeleteRelationships('Assessment', ['assId' => (int)$assessment_id], 'HAS_QUESTION');
+            // neo4jDeleteRelationships('Assessment', ['assId' => (int)$assessment_id], 'ASSESSES_CHAPTER');
+
+            // ✅ CREATE NEW RELATIONSHIPS
+            foreach ($question_ids_arr as $qid) {
+                $question = DB::table('lms_question_master')->where('id', $qid)->first();
+
+                if (!$question) {
+                    \Log::warning("Question not found: " . $qid);
+                    continue;
+                }
+
+                // ✅ RELATION: Assessment → Question
+                neo4jCreateRelationship(
+                    'Assessment',
+                    ['assId' => (int)$assessment_id, 'subject_id' => (int)$sub_id, 'sub_institute_id' => (int)$sub_institute_id],
+                    'HAS_QUESTION',
+                    'Question',
+                    ['qId' => (int)$qid, 'subject_id' => (int)$question->subject_id, 'sub_institute_id' => (int)$sub_institute_id]
+                );
+
+                // ================= CHAPTER =================
+                if (!empty($question->chapter_id)) {
+                    // ✅ RELATION: Assessment → Chapter
+                    neo4jCreateRelationship(
+                        'Assessment',
+                        ['assId' => (int)$assessment_id, 'subject_id' => (int)$sub_id, 'sub_institute_id' => (int)$sub_institute_id],
+                        'ASSESSES_CHAPTER',
+                        'Chapter',
+                        ['chId' => (int)$question->chapter_id, 'subject_id' => (int)$question->subject_id, 'sub_institute_id' => (int)$sub_institute_id]
+                    );
+                }
+            }
+
+            \Log::info('✅ Neo4j Assessment Updated', [
+                'assessment_id' => $assessment_id
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('❌ Neo4j Error: ' . $e->getMessage());
+        }
+
+        if ($query == false) {
+            $res = [
                 "status_code" => 0,
                 "message"     => "Question-Paper Update Cancel Or failed",
             ];
-        }else{
-        $res = [
-            "status_code" => 1,
-            "message"     => "Question-Paper Updated Successfully",
-        ];
+        } else {
+            $res = [
+                "status_code" => 1,
+                "message"     => "Question-Paper Updated Successfully",
+            ];
         }
 
         $type = $request->input('type');
 
         return is_mobile($type, "question_paper.index", $res, "redirect");
-        // return back()->with($res);
     }
 
     public function show(Request $request, $id)

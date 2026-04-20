@@ -20,7 +20,115 @@ use Illuminate\Support\Facades\File;
 if (!defined('BEST_OF')) {
     define('BEST_OF', 2);
 }
+use App\Services\Neo4jService;
+function neo4jCreateRelationship($fromLabel, $fromMatch, $relation, $toLabel, $toMatch)
+{
+    try {
 
+        $neo4j = app(Neo4jService::class);
+
+        $query = "
+            MATCH (a:$fromLabel), (b:$toLabel)
+            WHERE " . buildWhereClause('a', $fromMatch) . "
+            AND " . buildWhereClause('b', $toMatch) . "
+            MERGE (a)-[r:$relation]->(b)
+            RETURN r
+        ";
+
+        $params = array_merge($fromMatch, $toMatch);
+
+        // $neo4j->run($query, $params);
+        $client = $neo4j->getClient();
+        $client->run($query, $params);
+
+        \Log::info("Neo4j Relation Created: $fromLabel-$relation-$toLabel");
+
+    } catch (\Exception $e) {
+        \Log::error("Neo4j Relation Error: " . $e->getMessage());
+    }
+}
+function buildWhereClause($alias, $data)
+{
+    $conditions = [];
+
+    foreach ($data as $key => $val) {
+        $conditions[] = "$alias.$key = $$key";
+    }
+
+    return implode(' AND ', $conditions);
+}
+if (!function_exists('neo4jCreateNode')) {
+
+    function neo4jCreateNode($label, $mergeKeys = [], $properties = [])
+    {
+        try {
+            $neo4jService = app(Neo4jService::class);
+            $client = $neo4jService->getClient();
+
+            // 🔹 Build MERGE clause dynamically
+            $mergeParts = [];
+            $params = [];
+
+            foreach ($mergeKeys as $key => $value) {
+                $mergeParts[] = "n.$key = \$$key";
+                $params[$key] = $value;
+            }
+
+            $mergeCondition = implode(' AND ', $mergeParts);
+
+            // 🔹 Build SET clause dynamically
+            $setParts = [];
+
+            foreach ($properties as $key => $value) {
+                $setParts[] = "n.$key = \$$key";
+                $params[$key] = $value;
+            }
+
+            // Always update created_at
+            // $setParts[] = "n.created_at = datetime()";
+
+            $setString = implode(",\n", $setParts);
+
+            // 🔹 Final query
+            $query = "
+                MERGE (n:$label { " .buildMergeMap($mergeKeys) . " })
+                SET $setString
+                RETURN n
+            ";
+
+            \Log::info('Neo4j Query:', [
+                'query' => $query,
+                'params' => $params
+            ]);
+
+            $result = $client->run($query, $params);
+
+            \Log::info('Neo4j Result:', [
+                'result' => $result
+            ]);
+
+            return $result;
+
+        } catch (\Exception $e) {
+            \Log::error('Neo4j Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+}
+
+// 🔹 Helper function to build MERGE map like { key: $key }
+if (!function_exists('buildMergeMap')) {
+    function buildMergeMap($mergeKeys)
+    {
+        $parts = [];
+
+        foreach ($mergeKeys as $key => $value) {
+            $parts[] = "$key: \$$key";
+        }
+
+        return implode(', ', $parts);
+    }
+}
 if (!function_exists('is_mobile')) {
 
     function is_mobile($type, $url = null, $data = null, $redirect_type = "redirect")
