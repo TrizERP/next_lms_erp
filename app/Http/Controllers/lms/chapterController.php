@@ -217,17 +217,19 @@ class chapterController extends Controller
 public function store(Request $request)
 {
     $sub_institute_id = $request->session()->get('sub_institute_id');
-
+    // return $request->all();
     DB::beginTransaction();
-
+    $grade_id = $request->grade_id ?? $request->grade;
+    $standard_id = $request->standard_id ?? $request->standard;
+    $subject_id = $request->subject_id ?? $request->subject;
     try {
 
         // ================= SQL INSERT =================
         $chapter = chapterModel::create([
-            'chapter_name'     => $request->chapter_name,
-            'subject_id'       => $request->subject_id,
-            'standard_id'      => $request->standard_id,
-            'grade_id'         => $request->grade_id,
+            'chapter_name'     => $request->chapter_name[0] ?? '-',
+            'subject_id'       => $subject_id,
+            'standard_id'      => $standard_id,
+            'grade_id'         => $grade_id,
             'sub_institute_id' => $sub_institute_id,
             'created_by'       => session()->get('user_id')
         ]);
@@ -252,39 +254,29 @@ public function store(Request $request)
     // ======================================================
 
     try {
-
-        // 🔹 SUBJECT NODE
-        neo4jCreateNode(
-            'Subject',
-            ['subId' => (int)$request->subject_id],
-            [
-                'subject_id' => (int)$request->subject_id,
-                'displayLabel' => 'Subject:' . $request->subject_id,
-                'sub_institute_id' => (int)$sub_institute_id
-            ]
-        );
-
         // 🔹 CHAPTER NODE
         neo4jCreateNode(
             'Chapter',
             ['chId' => (int)$chapter_id],
             [
                 'chapter_id' => (int)$chapter_id,
-                'chapter_name' => $request->chapter_name,
-                'displayLabel' => 'Chapter:' . $request->chapter_name,
-                'subject_id' => (int)$request->subject_id,
-                'standard_id' => (int)$request->standard_id,
-                'sub_institute_id' => (int)$sub_institute_id
+                'chapter_name' => $request->chapter_name[0] ?? '-',
+                'displayLabel' => 'chapter:' . ($request->chapter_name[0] ?? '-'),
+                'subject_id' => (int)$subject_id,
+                'standard_id' => (int)$standard_id,
+                'grade_id' => (int)$grade_id,
+                'sub_institute_id' => (int)$sub_institute_id,
+                'sort_order' => 1
             ]
         );
 
         // 🔹 RELATION: Subject → HAS_CHAPTER → Chapter
         neo4jCreateRelationship(
             'Subject',
-            ['subId' => (int)$request->subject_id],
+            ['subject_id' => (int)$subject_id,'standard_id'=>(int)$standard_id,'sub_institute_id'=>(int)$sub_institute_id],
             'HAS_CHAPTER',
             'Chapter',
-            ['chId' => (int)$chapter_id]
+            ['chId' => (int)$chapter_id,'subject_id' => (int)$subject_id,'standard_id'=>(int)$standard_id,'sub_institute_id'=>(int)$sub_institute_id]
         );
 
         \Log::info('✅ Neo4j Chapter Created', [

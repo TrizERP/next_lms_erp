@@ -278,7 +278,7 @@ class questionmasterController extends Controller
         }
 
         $lms_mapping_type = DB::select("SELECT * FROM lms_mapping_type WHERE status=1 AND parent_id=0 AND
-                                (globally=1 OR chapter_id = '".$request->get('chapter_id')."') $where");
+                                (globally=1 OR chapter_id = ?) $where", [$request->get('chapter_id')]);
         $lms_mapping_type = json_decode(json_encode($lms_mapping_type), true);
         $data['lms_mapping_type'] = $lms_mapping_type;
 
@@ -311,16 +311,15 @@ public function store(Request $request)
 
     try {
 
-        // ================= SQL INSERT =================
+        // ✅ SQL INSERT
         $question = lmsQuestionMasterModel::create([
-            'question'         => $request->question,
+            'question_title'   => $request->question_title,
             'chapter_id'       => $request->chapter_id,
-            'subject_id'       => $request->subject_id,
             'standard_id'      => $request->standard_id,
             'grade_id'         => $request->grade_id,
+            'subject_id'       => $request->subject_id,
             'question_type_id' => $request->question_type_id,
-            'sub_institute_id' => $sub_institute_id,
-            'created_by'       => session()->get('user_id')
+            'sub_institute_id' => $sub_institute_id
         ]);
 
         $question_id = $question->id;
@@ -328,6 +327,7 @@ public function store(Request $request)
         DB::commit();
 
     } catch (\Exception $e) {
+
         DB::rollBack();
 
         \Log::error('❌ SQL Question Error: ' . $e->getMessage());
@@ -338,58 +338,47 @@ public function store(Request $request)
         ]);
     }
 
-    // ======================================================
-    // ✅ NEO4J (CORRECT)
-    // ======================================================
-
+    // ================= NEO4J =================
     try {
 
-        // 🔹 QUESTION NODE
+        // ✅ CREATE QUESTION NODE
         neo4jCreateNode(
             'Question',
             ['qId' => (int)$question_id],
             [
-                'question_id' => (int)$question_id,
-                'text' => $request->question,
+                'question_title' => $request->question_title,
                 'chapter_id' => (int)$request->chapter_id,
-                'displayLabel' => 'Question:' . substr($request->question, 0, 30),
-                'sub_institute_id' => (int)$sub_institute_id
+                'displayLabel' => 'Question:' . $request->question_title,
+                'standard_id' => (int)$request->standard_id,
+                'sub_institute_id' => (int)$sub_institute_id,
+                'question_type_id' => (int)$request->question_type_id,
+                'points' => 1
             ]
         );
 
-        // 🔹 CHAPTER NODE
-        neo4jCreateNode(
-            'Chapter',
-            ['chId' => (int)$request->chapter_id],
-            [
-                'chapter_id' => (int)$request->chapter_id,
-                'displayLabel' => 'Chapter:' . $request->chapter_id,
-                'sub_institute_id' => (int)$sub_institute_id
-            ]
-        );
-
-        // 🔹 RELATION
+        // ✅ RELATION: Question → Chapter
         neo4jCreateRelationship(
             'Question',
-            ['qId' => (int)$question_id],
+            ['qId' => (int)$question_id,'chapter_id' => (int)$request->chapter_id,'subject_id' => (int)$request->subject_id, 'standard_id' => (int)$request->standard_id,'sub_institute_id' => (int)$sub_institute_id],
             'BELONGS_TO',
             'Chapter',
-            ['chId' => (int)$request->chapter_id]
+            ['chId' => (int)$request->chapter_id,'subject_id' => (int)$request->subject_id, 'standard_id' => (int)$request->standard_id,'sub_institute_id' => (int)$sub_institute_id]
         );
 
         \Log::info('✅ Neo4j Question Created', [
-            'qId' => $question_id
+            'question_id' => $question_id
         ]);
 
     } catch (\Exception $e) {
-        \Log::error('❌ Neo4j Question Error: ' . $e->getMessage());
+        \Log::error('❌ Neo4j Error: ' . $e->getMessage());
     }
 
     return back()->with([
         'status_code' => 1,
-        'message' => 'Question Added Successfully'
+        'message' => 'Question Created Successfully'
     ]);
 }
+
     // ===== YOUR EXISTING CODE CONTINUES =====
 
     /**
@@ -566,30 +555,25 @@ public function store(Request $request)
 
     try {
 
-        $question = lmsQuestionMasterModel::where('id', $id)
-            ->where('sub_institute_id', $sub_institute_id)
-            ->first();
+        $question = lmsQuestionMasterModel::find($id);
 
-        if (!$question) {
-            DB::rollBack();
-            return back()->with([
-                'status_code' => 0,
-                'message' => 'Question not found'
-            ]);
-        }
-
-        // ================= SQL UPDATE =================
         $question->update([
-            'question'   => $request->question,
-            'chapter_id' => $request->chapter_id
+            'question_title'   => $request->question_title,
+            'chapter_id'       => $request->chapter_id,
+            'standard_id'      => $request->standard_id,
+            'grade_id'         => $request->grade_id,
+            'subject_id'       => $request->subject_id,
+            'question_type_id' => $request->question_type_id,
+            'sub_institute_id' => $sub_institute_id
         ]);
 
         DB::commit();
 
     } catch (\Exception $e) {
+
         DB::rollBack();
 
-        \Log::error('❌ SQL Update Question Error: ' . $e->getMessage());
+        \Log::error('❌ SQL Question Error: ' . $e->getMessage());
 
         return back()->with([
             'status_code' => 0,
@@ -597,45 +581,39 @@ public function store(Request $request)
         ]);
     }
 
-    // ======================================================
-    // ✅ NEO4J UPDATE (CORRECT)
-    // ======================================================
-
+    // ================= NEO4J =================
     try {
 
-        // 🔹 UPDATE QUESTION NODE
+        // ✅ UPDATE QUESTION NODE
         neo4jCreateNode(
             'Question',
             ['qId' => (int)$id],
             [
-                'text' => $request->question,
+                'question_title' => $request->question_title,
                 'chapter_id' => (int)$request->chapter_id,
-                'updated_at' => now()->toDateTimeString()
+                'displayLabel' => 'Question:' . $request->question_title,
+                'standard_id' => (int)$request->standard_id,
+                'sub_institute_id' => (int)$sub_institute_id,
+                'question_type_id' => (int)$request->question_type_id,
+                'points' => 1
             ]
         );
 
-        // 🔹 ENSURE CHAPTER NODE
-        neo4jCreateNode(
-            'Chapter',
-            ['chId' => (int)$request->chapter_id],
-            []
-        );
-
-        // 🔹 RELATION
+        // ✅ UPDATE RELATION: Question → Chapter
         neo4jCreateRelationship(
             'Question',
-            ['qId' => (int)$id],
+            ['qId' => (int)$id,'chapter_id' => (int)$request->chapter_id,'subject_id' => (int)$request->subject_id, 'standard_id' => (int)$request->standard_id,'sub_institute_id' => (int)$sub_institute_id],
             'BELONGS_TO',
             'Chapter',
-            ['chId' => (int)$request->chapter_id]
+            ['chId' => (int)$request->chapter_id,'subject_id' => (int)$request->subject_id, 'standard_id' => (int)$request->standard_id,'sub_institute_id' => (int)$sub_institute_id]
         );
 
         \Log::info('✅ Neo4j Question Updated', [
-            'qId' => $id
+            'question_id' => $id
         ]);
 
     } catch (\Exception $e) {
-        \Log::error('❌ Neo4j Update Error: ' . $e->getMessage());
+        \Log::error('❌ Neo4j Error: ' . $e->getMessage());
     }
 
     return back()->with([
@@ -643,8 +621,6 @@ public function store(Request $request)
         'message' => 'Question Updated Successfully'
     ]);
 }
-    // ============================================
-
     // ===== YOUR EXISTING CODE CONTINUES =====
 
     /**

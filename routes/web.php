@@ -78,6 +78,7 @@ use App\Http\Controllers\library\LostandDamage;
 use App\Http\Controllers\neo4jGraph\GraphController;
 use App\Http\Controllers\neo4jGraph\StudentResultGraphController;
 use App\Services\Neo4jService;
+use App\Http\Controllers\lms\pal\palController;
 
 
 Route::get('/neo4j-test', function (Neo4jService $neo4j) {
@@ -677,3 +678,6 @@ Route::group(['prefix' => 'agent', 'middleware' => ['session', 'menu', 'logRoute
 
 route::get('geminiChat', [AJAXController::class, 'geminiChat']);
 Route::get('ajaxQuestionLists', [AJAXController::class, 'ajaxQuestionListsFunction'])->name('ajaxQuestionLists');
+
+Route::get('/suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggested.content');
+Route::post('/lms/store-suggested-content', [palController::class, 'storeSuggestedContent'])->name('store.suggested.content');

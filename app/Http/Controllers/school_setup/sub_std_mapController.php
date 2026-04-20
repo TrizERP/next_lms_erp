@@ -95,30 +95,17 @@ public function store(Request $request)
     $sub_institute_id = $request->session()->get('sub_institute_id');
     $syear = $request->session()->get('syear');
     $user_id = $request->session()->get('user_id');
-    $standard_id = $request->get('standard_id');
+    $standard_ids = $request->get('standard_id');
 
-    if (!is_array($standard_id)) {
-        $standard_id = [$standard_id];
-    }
-
-    $file_folder = $ext = $size = $newfilename = "";
-
-    // ================= FILE UPLOAD =================
-    if ($request->hasFile('display_image')) {
-        $img = $request->file('display_image');
-        $ext = $img->getClientOriginalExtension();
-        $newfilename = 'SubStdMap_' . date('Y-m-d_h-i-s') . '.' . $ext;
-        $file_folder = '/SubStdMapping';
-
-        Storage::disk('digitalocean')
-            ->putFileAs('public/SubStdMapping/', $img, $newfilename, 'public');
+    if (!is_array($standard_ids)) {
+        $standard_ids = [$standard_ids];
     }
 
     DB::beginTransaction();
 
     try {
 
-        foreach ($standard_id as $stdval) {
+        foreach ($standard_ids as $stdval) {
 
             // ================= SQL =================
             $record = sub_std_mapModel::updateOrCreate(
@@ -128,85 +115,85 @@ public function store(Request $request)
                     'sub_institute_id' => $sub_institute_id
                 ],
                 [
-                    'standard_id'      => $stdval,
-                    'subject_id'       => $request->get('subject_id'),
                     'display_name'     => $request->get('display_name'),
                     'allow_grades'     => $request->get('allow_grades') ?? "",
                     'elective_subject' => $request->get('elective_subject') ?? "No",
-                    'allow_content'    => $request->get('allow_content') ?? "",
-                    'subject_category' => $request->get('subject_category'),
-                    'display_image'    => $newfilename,
-                    'sub_institute_id' => $sub_institute_id,
-                    'created_by'       => $user_id
+                    'allow_content'    => $request->get('allow_content') ?? ""
+                ]
+            );
+            $subId = $record->id;
+              // ✅ CREATE SUBJECT NODE
+            neo4jCreateNode(
+                'Subject',
+                ['subId' => (int)$subId,'sub_institute_id' => (int)$sub_institute_id,'standard_id' => (int)$stdval,'subject_id' => (int)$record->subject_id],
+                [
+                    'display_name' => $request->get('display_name'),
+                    'displayLabel' => "subject:".$record->display_name,
                 ]
             );
 
-            // ======================================================
-            // ✅ NEO4J (CORRECT)
-            // ======================================================
+            // ✅ RELATION: Standard → Subject
+            neo4jCreateRelationship(
+                'Standard',
+                ['stId' => (int)$stdval, 'sub_institute_id' => (int)$sub_institute_id],
+                'HAS_SUBJECT',
+                'Subject',
+                ['subId' => (int)$subId, 'standard_id'=>(int)$stdval,'sub_institute_id' => (int)$sub_institute_id]
+            );
+             // ================= NEO4J =================
+            // try {
 
-            try {
+            //     $subject_id = (int)$request->get('subject_id');
 
-                // 🔹 STANDARD NODE
-                neo4jCreateNode(
-                    'Standard',
-                    ['stId' => (int)$stdval],
-                    [
-                        'standard_id' => (int)$stdval,
-                        'name' => 'Standard ' . $stdval,
-                        'displayLabel' => 'Standard:' . $stdval,
-                        'sub_institute_id' => (int)$sub_institute_id
-                    ]
-                );
+            //     foreach ($standard_ids as $stdval) {
 
-                // 🔹 SUBJECT NODE
-                neo4jCreateNode(
-                    'Subject',
-                    ['subId' => (int)$request->get('subject_id')],
-                    [
-                        'subject_id' => (int)$request->get('subject_id'),
-                        'subject_name' => $request->get('display_name') ?? 'Subject',
-                        'standard_id' => (int)$stdval,
-                        'displayLabel' => 'Subject:' . ($request->get('display_name') ?? 'Subject'),
-                        'sub_institute_id' => (int)$sub_institute_id
-                    ]
-                );
+            //         // ✅ CREATE SUBJECT NODE
+            //         neo4jCreateNode(
+            //             'Subject',
+            //             ['subId' => $subject_id],
+            //             [
+            //                 'name' => $request->get('display_name')
+            //             ]
+            //         );
 
-                // 🔹 RELATION: Standard → HAS_SUBJECT → Subject
-                neo4jCreateRelationship(
-                    'Standard',
-                    ['stId' => (int)$stdval],
-                    'HAS_SUBJECT',
-                    'Subject',
-                    ['subId' => (int)$request->get('subject_id')]
-                );
+            //         // ✅ RELATION: Standard → Subject
+            //         neo4jCreateRelationship(
+            //             'Standard',
+            //             ['stId' => (int)$stdval, 'sub_institute_id' => $sub_institute_id],
+            //             'HAS_SUBJECT',
+            //             'Subject',
+            //             ['subId' => $subject_id, 'sub_institute_id' => $sub_institute_id]
+            //         );
+            //     }
 
-                \Log::info('✅ Neo4j Standard-Subject Created', [
-                    'stId' => $stdval,
-                    'subId' => $request->get('subject_id')
-                ]);
+            //     \Log::info("✅ Neo4j SubStdMap Created");
 
-            } catch (\Exception $e) {
-                \Log::error('❌ Neo4j Error: ' . $e->getMessage());
-            }
+            // } catch (\Exception $e) {
+            //     \Log::error("❌ Neo4j SubStdMap Error: " . $e->getMessage());
+            // }
         }
 
         DB::commit();
 
+        \Log::info("✅ SQL SubStdMap Saved");
+
     } catch (\Exception $e) {
+
         DB::rollBack();
 
-        \Log::error('❌ SQL Error: ' . $e->getMessage());
+        \Log::error("❌ SQL SubStdMap Error: " . $e->getMessage());
 
         return back()->with([
             'status_code' => 0,
-            'message' => 'Error saving data'
+            'message' => 'Error saving mapping'
         ]);
     }
 
-    return redirect()->back()->with([
+   
+
+    return back()->with([
         'status_code' => 1,
-        'message' => 'Standard-Subject Mapping Saved Successfully'
+        'message' => 'Mapping Saved Successfully'
     ]);
 }
     public function edit(Request $request, $id)

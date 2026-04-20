@@ -79,8 +79,16 @@ value="{{ \Carbon\Carbon::parse(request()->session()->get('session_quiz'))->form
                                     <div class="quiz-box-count">
                                         <div class="count">{{$i++}}</div>
                                         <div class="quiz-con">
-                                            <div class="text-secondary mb-2">Marked out of <b>1</b>  <span style="padding:0px 10px" onclick="mapValueModel({{$quesarr['question_id']}});"><i class="fa fa-ellipsis-v" aria-hidden="true"></i></span></div>
+                                            <!-- <div class="text-secondary mb-2">Marked out of <b>1</b>  <span style="padding:0px 10px" onclick="mapValueModel({{$quesarr['question_id']}});"><i class="fa fa-ellipsis-v" aria-hidden="true"></i></span></div> -->
                                             <!-- <div class="text-secondary mb-2">1</div> -->
+                                             <div class="text-secondary mb-2">
+                                                    Marked out of <b>1</b>
+
+                                                    <span style="padding:0px 10px; cursor:pointer;"
+                                                        onclick="mapValueModel({{$quesarr['question_id']}})">
+                                                        <i class="fa fa-ellipsis-v"></i>
+                                                    </span>
+                                                </div>
                                             @if(isset($quesarr['hint_text']))
                                             <div class="text-secondary"><i data-toggle="tooltip" title="{{$quesarr['hint_text']}}" class="mdi mdi-alert-circle"></i></div><!--mdi-flag-outline-->
                                             @endif
@@ -163,6 +171,40 @@ value="{{ \Carbon\Carbon::parse(request()->session()->get('session_quiz'))->form
   </div>
 </div>
 @include('includes.lmsfooterJs')
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1">
+  <div class="modal-dialog" style="max-width:1000px;">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Question Mapped Values</h5>
+        <button type="button" class="close" data-dismiss="modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <h4>Question - <span id="questionValue"></span></h4>
+
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Sr No.</th>
+              <th>Mapped Types</th>
+              <th>Mapped Values</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script type="text/javascript">
 $(document).ready(function(){
     $('[data-toggle="tooltip"]').tooltip(); 
@@ -170,6 +212,52 @@ $(document).ready(function(){
         onloadData({{$quesarr['question_id']}});
     @endforeach
 });
+function mapValueModel(questionId){
+
+    console.log("Clicked:", questionId);
+
+    $('#tableBody').empty(); 
+    $('#questionValue').empty();
+
+    $.ajax({
+        url: "{{route('question_mapped_value')}}",
+        data: {question_id: questionId},
+        type: 'GET',
+
+        success: function(response){
+
+            console.log(response);
+
+            if (response.questionTitle) {
+                $('#questionValue').html(response.questionTitle);
+            } else {
+                $('#questionValue').text('No question title found');
+            }
+
+            if (response.MappedData) {
+
+                $.each(response.MappedData, function(index, mappedItem) {
+
+                    let row = `<tr>
+                        <td>${index + 1}</td>
+                        <td>${mappedItem.name}</td>
+                        <td><ul>`;
+
+                    $.each(mappedItem.mappedValue, function(subIndex, mappedSubItem) {
+                        row += `<li>${subIndex+1}) ${mappedSubItem.name}</li>`;
+                    });
+
+                    row += `</ul></td></tr>`;
+
+                    $('#tableBody').append(row);
+                });
+            }
+
+            // 🔥 OPEN MODAL
+            $('#exampleModal').modal('show');
+        }
+    });
+}
 function onloadData(questionId){
     console.log('Function onloadData called with questionId:', questionId); // Debug log
     $.ajax({

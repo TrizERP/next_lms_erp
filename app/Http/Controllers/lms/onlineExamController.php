@@ -29,6 +29,7 @@ class onlineExamController extends Controller
         $res['answer_arr'] = $data['answer_arr'];
         $res['questionpaper_data'] = $data['questionpaper_data'];
         $res['question_arr'] = $data['question_arr'];
+        $res['online_answer_data'] = $data['online_answer_data'];
 
         return is_mobile($type, 'lms/online_exam', $res, "view");
     }
@@ -76,7 +77,6 @@ class onlineExamController extends Controller
 
 public function store(Request $request)
 {
-    // ================= CLEAR SESSION =================
     Session::forget('session_quiz');
 
     $sub_institute_id = $request->session()->get('sub_institute_id');
@@ -85,11 +85,11 @@ public function store(Request $request)
     // ================= CALCULATE RESULT =================
     $result = $this->get_calculate_marks($request);
 
-    // ================= SQL INSERT =================
     DB::beginTransaction();
 
     try {
 
+        // ✅ SQL INSERT
         $online_exam = [
             'student_id'        => $user_id,
             'question_paper_id' => $request->get('questionpaper_id'),
@@ -97,18 +97,20 @@ public function store(Request $request)
             'total_wrong'       => $result['total_wrong_ans'],
             'obtain_marks'      => $result['obtain_marks'],
             'start_time'        => $request->get('hid_session_quiz'),
+            'created_at'        => now(),
         ];
 
         DB::table('lms_online_exam')->insert($online_exam);
 
-        $online_exam_id = DB::getPdo()->lastInsertId(); // ✅ IMPORTANT
+        $online_exam_id = DB::getPdo()->lastInsertId();
 
         DB::commit();
 
     } catch (\Exception $e) {
+
         DB::rollBack();
 
-        \Log::error('❌ SQL Result Error: ' . $e->getMessage());
+        \Log::error('❌ SQL Error: ' . $e->getMessage());
 
         return back()->with([
             'status_code' => 0,
@@ -116,44 +118,124 @@ public function store(Request $request)
         ]);
     }
 
-    // ==================================================
-    // ✅ NEO4J (MATCH CSV STRUCTURE EXACTLY)
-    // ==================================================
-
+    // ================= NEO4J =================
     try {
 
-      
-        // ❗ DO NOT CREATE STUDENT NODE HERE
-        // Student already exists from enrollment logic
+        $assessment_id = (int)$request->get('questionpaper_id');
 
-        // 🔹 RELATION: Student → HAS_RESULT → Result
-        // MATCH (stu {student_id}) SAME AS CSV
-      
-        // 🔹 RELATION: Result → Assessment
+        // ✅ CREATE RESULT NODE
+        neo4jCreateNode(
+            'Result',
+            ['resultId' => (int)$online_exam_id],
+            [
+                'student_id' => (int)$user_id,
+                'question_paper_id' => $assessment_id,
+                'total_right' => (int)$result['total_right_ans'],
+                'total_wrong' => (int)$result['total_wrong_ans'],
+                'obtain_marks' => (int)$result['obtain_marks'],
+                'displayLabel' => 'Result:' . $result['obtain_marks']
+            ]
+        );
+
+        // ✅ RELATION: Student → Result
+        neo4jCreateRelationship(
+            'Student',
+            ['student_id' => (int)$user_id],
+            'HAS_RESULT',
+            'Result',
+            ['resultId' => (int)$online_exam_id]
+        );
+
+        // ✅ RELATION: Result → Assessment
         neo4jCreateRelationship(
             'Result',
             ['resultId' => (int)$online_exam_id],
             'FOR_ASSESSMENT',
             'Assessment',
-            ['assId' => (int)$request->get('questionpaper_id')]
+            ['assId' => $assessment_id]
         );
 
-        \Log::info('✅ Neo4j Result Created', [
+        // ================= GET CHAPTER =================
+        $chapterMap = DB::table('lms_question_mapping as lqm')
+            ->select('lms_mapping_type.id as chId', 'lms_mapping_type.name as chapter_name')
+            ->join('lms_mapping_type', 'lms_mapping_type.id', '=', 'lqm.mapping_value_id')
+            ->where('lqm.mapping_type_id', 1) // chapter mapping
+            ->whereIn('lqm.questionmaster_id', explode(',', $request->get('question_ids')))
+            ->first();
+
+        if ($chapterMap) {
+
+            // ✅ CREATE CHAPTER NODE
+            neo4jCreateNode(
+                'Chapter',
+                ['chId' => (int)$chapterMap->chId],
+                [
+                    'chapter_name' => $chapterMap->chapter_name,
+                    'displayLabel' => 'Chapter:' . $chapterMap->chapter_name
+                ]
+            );
+
+            // ✅ RELATION: Assessment → Chapter
+            neo4jCreateRelationship(
+                'Assessment',
+                ['assId' => (int)$assessment_id],
+                'ASSESSES_CHAPTER',
+                'Chapter',
+                ['chId' => (int)$chapterMap->chId]
+            );
+
+            // ================= ✅ MASTERS RELATION =================
+            $records = DB::select("
+                SELECT 
+                    r.obtain_marks,
+                    qp.total_marks
+                FROM lms_online_exam r
+                JOIN question_paper qp ON qp.id = r.question_paper_id
+                WHERE r.student_id = ?
+                AND qp.paper_desc = ?
+                AND qp.total_marks > 0
+            ", [$user_id, $chapterMap->chId]);
+
+            $total = 0;
+            $count = 0;
+
+            foreach ($records as $row) {
+                $total += ($row->obtain_marks / $row->total_marks);
+                $count++;
+            }
+
+            if ($count > 0) {
+
+                $avg = $total / $count;
+                $score = round($avg * 100);
+
+                // ✅ CREATE / UPDATE MASTERS RELATION
+                neo4jCreateRelationship(
+                    'Student',
+                    ['student_id' => (int)$user_id],
+                    'MASTERS',
+                    'Chapter',
+                    ['chId' => (int)$chapterMap->chId],
+                    ['proficiency_score' => (int)$score]
+                );
+            }
+        }
+
+        \Log::info('✅ Neo4j + MASTERS created', [
             'student_id' => $user_id,
             'resultId' => $online_exam_id
         ]);
 
     } catch (\Exception $e) {
+
         \Log::error('❌ Neo4j Error: ' . $e->getMessage());
     }
 
-    // ================= RESPONSE =================
     return back()->with([
         'status_code' => 1,
         'message' => 'Exam Submitted Successfully'
     ]);
 }
-
 
     public function get_calculate_marks(Request $request)
     {
