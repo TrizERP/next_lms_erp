@@ -759,6 +759,7 @@ if (!function_exists('SearchStudent')) {
         if ($syear == '') {
             $syear = session()->get('syear');
         }
+
         $marking_period_id = session()->get('term_id');
 
         $grade_arr = array();
@@ -914,7 +915,7 @@ if (!function_exists('SearchStudent')) {
         }
 
         $query->whereraw($extraRaw);
-
+        
         $query->orderByRaw('s.sort_order, d.id, se.roll_no');
 
         return $query->get($columns)->toArray();
@@ -1615,7 +1616,7 @@ if (!function_exists('getStudents')) {
             $student_data[$value->id]['section_id'] = $value->section_id;
             $student_data[$value->id]['grade_id'] = $value->grade_id;
             $student_data[$value->id]['dise_uid'] = $value->dise_uid;
-            $student_data[$value->id]['dise_uid_plus'] = $value->udise_id;
+            $student_data[$value->id]['dise_uid_plus'] = $value->udise_id ?? '';
             $student_data[$value->id]['unique_id'] = $value->uniqueid;
             $student_data[$value->id]['religion_name'] = $value->religion_name;
             $student_data[$value->id]['caste_name'] = $value->caste_name;
