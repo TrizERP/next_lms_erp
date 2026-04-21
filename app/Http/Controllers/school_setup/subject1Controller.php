@@ -14,8 +14,7 @@ use Validator;
 // use GenTux\Jwt\JwtToken;
 // use GenTux\Jwt\GetsJwtToken;
 // use function App\Helpers\aut_token;
-use function App\Helpers\neo4jCreateNode;
-use function App\Helpers\neo4jCreateRelationship;
+
 
 class subject1Controller extends Controller {
     /**
@@ -194,7 +193,7 @@ class subject1Controller extends Controller {
             $st_next_standard_id =$request->st_next_standard;
 
             if(!empty($st_name)){
-            $stdval = standardModel::insertGetId([
+            $data = standardModel::insert([
                 "grade_id"=>$st_grade_id,
                 "name"=>$st_name,
                 "short_name"=>$st_short_name,
@@ -206,21 +205,7 @@ class subject1Controller extends Controller {
                 "next_standard_id"=>$st_next_standard_id ?? null,
                 "marking_period_id"=> $marking_period_id ?? null,
                 ]);
-                neo4jCreateNode(
-                'Standard',
-                [
-                    'standard_id' => (int)$stdval,
-                    'stId' => (int)$stdval
-                ],
-                [
-                    'displayLabel' => "Standard:".$st_name,
-                    'name' => $st_name,
-                    'sub_institute_id' => (int)$sub_institute_id,
-                    'short_name' => $st_short_name
-                ]
-            );
-            
-                if($stdval != null){
+                if($data== true){
                     return redirect()->back()->with('success','Standard Added Successfully !');
                 }else{
                     return redirect()->back()->with('failed','Standard Failed To Add !');

@@ -22,99 +22,9 @@
             @else
             <a href="{{route('question_paper.index')}}" class="btn btn-primary">Back To Exams</a>
             @endif
-            <button class="btn btn-sm btn-info ml-2 pt-2 pb-2"
-        onclick="showSuggestedContent('{{ strtolower($data['online_exam_data']['student_level'] ?? 'easy') }}')">
-    Suggested Content
-</button>
         </div>        
     </div>
-<style>
-    .correct-answer {
-    background-color: #e6ffed;
-    padding: 5px;
-    border-radius: 6px;
-}
 
-.wrong-answer {
-    background-color: #ffe6e6;
-    padding: 5px;
-    border-radius: 6px;
-}
-
-.text-success {
-    color: #28a745 !important;
-    font-weight: bold;
-}
-
-.text-danger {
-    color: #dc3545 !important;
-    font-weight: bold;
-}
-/* Category Box */
-.content-category {
-    background: #f8f9fb;
-    border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 20px;
-    border-left: 5px solid #4e73df;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-}
-
-/* Category Title */
-.content-category h5 {
-    font-weight: 600;
-    font-size: 18px;
-    color: #2c3e50;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-}
-
-/* Add icon before title */
-.content-category h5::before {
-    content: "📘";
-    margin-right: 8px;
-}
-
-/* Different color for Revision Notes */
-.content-category:nth-child(2) {
-    border-left: 5px solid #28a745;
-}
-
-.content-category:nth-child(2) h5::before {
-    content: "📝";
-}
-
-/* Content Card */
-.content-item {
-    border-radius: 10px;
-    border: 1px solid #e3e6f0;
-    transition: 0.3s;
-}
-
-.content-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-/* Title row */
-.content-item h6 {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    font-weight: 600;
-}
-
-/* Badge */
-.content-item .badge {
-    font-size: 12px;
-    padding: 5px 8px;
-    border-radius: 6px;
-    background: #4e73df;
-    color: #fff;
-    
-}
-</style>
     <div class="container-fluid mb-5">
         <div class="course-grid-tab tab-pane fade show active" id="grid" role="tabpanel" aria-labelledby="grid-tab">                                
             <div class="card border-0 rounded mb-5">
@@ -132,12 +42,6 @@
                             <div class="answer-box uttemp">{{$data['online_exam_data']['total_wrong'] ?? 0 }}/{{$data['questionpaper_data']['total_ques']}}</div>
                             <div class="h4 mb-0">Wrong Answer</div>
                         </div>
-                        <div class="col-md-3 text-center my-2">
-    <div class="answer-box info">
-        {{$data['online_exam_data']['student_level'] ?? 'N/A'}}
-    </div>
-    <div class="h4 mb-0">Current Level</div>
-</div>
                     </div>
                 </div>
             </div>
@@ -209,7 +113,7 @@
                                                             <label class="custom-control-label" for="customRadioInline1">
                                                                 {{$ansarr['answer']}}
                                                                 @if(isset($ansarr['feedback'])) 
-                                                                    <span style="background-color:#e8e83b;" @if($ansarr['correct_answer']===1) style="color:green !important;" @endif>&nbsp;&nbsp;{{$ansarr['feedback']}}&nbsp;&nbsp;</span>
+                                                                    <span style="background-color:#e8e83b;">&nbsp;&nbsp;{{$ansarr['feedback']}}&nbsp;&nbsp;</span>
                                                                 @endif
                                                             </label>
                                                         </div>
@@ -266,61 +170,49 @@
                                             <ul>
                                             @if(isset($data['answer_arr'][$quesarr['id']]))                     
                                                 @foreach($data['answer_arr'][$quesarr['id']] as $ansid => $ansarr)
-                                                   @php
-$btnclass = ($quesarr['multiple_answer'] == 1) ? "square" : "dot";
-$type = ($quesarr['multiple_answer'] == 1) ? "checkbox" : "radio";
-$name = ($quesarr['multiple_answer'] == 1)
-    ? "answer[".$quesarr['id']."][".$ansarr['id']."][]"
-    : "answer[".$quesarr['id']."][".$ansarr['id']."]";
+                                                    @php                                                                                                     
+                                                    if($quesarr['multiple_answer'] == 1) //Multiple answer
+                                                    {
+                                                        $btnclass = "square";
+                                                        $type = "checkbox";
+                                                        $name = "answer[".$quesarr['id']."][".$ansarr['id']."][]";
+                                                        $div_wrong_class = $wrong_class = $checked = "";
+                                                        $given_ans_arr = explode(",",$data['online_answer_data'][$quesarr['id']]['GIVEN_ANSWER']); 
+                                                        $actual_ans_arr = explode(",",$data['online_answer_data'][$quesarr['id']]['ACTUAL_ANSWER']); 
+                                                        if($ansarr['correct_answer'] == 1)
+                                                        {
+                                                            $checked = "checked=checked";
+                                                        }
+                                                        if( in_array($ansarr['id'] , $given_ans_arr) && $ansarr['correct_answer'] == 0)
+                                                        {
+                                                            $wrong_class = "text-danger";
+                                                            $div_wrong_class = "wrong-answer";
+                                                            $checked = "checked=checked";
+                                                        }                                                        
+                                                    }
+                                                    else{ //Single answer                                                
+                                                        $btnclass = "dot";
+                                                        $type = "radio";
+                                                        $name = "answer[".$quesarr['id']."][".$ansarr['id']."]";
+                                                        $div_wrong_class = $wrong_class = $checked = "";                                                        
+                                                        if($ansarr['correct_answer'] == 1)
+                                                        {
+                                                            $checked = "checked=checked";
+                                                        }
+                                                        if($ansarr['id'] == $data['online_answer_data'][$quesarr['id']]['GIVEN_ANSWER'] && $ansarr['correct_answer'] == 0)
+                                                        {
+                                                            $wrong_class = "text-danger";
+                                                            $div_wrong_class = "wrong-answer";
+                                                            $checked = "checked=checked";
+                                                        }
 
-$div_wrong_class = "";
-$wrong_class = "";
-$correct_class = "";
-$checked = "";
-
-// get data safely
-$given = $data['online_answer_data'][$quesarr['id']]['GIVEN_ANSWER'] ?? '';
-$actual = $data['online_answer_data'][$quesarr['id']]['ACTUAL_ANSWER'] ?? '';
-
-$given_arr = explode(',', $given);
-$actual_arr = explode(',', $actual);
-
-// RESET
-$correct_class = "";
-
-// ✅ IF USER SELECTED CORRECT ANSWER
-if(in_array($ansarr['id'], $given_arr) && $ansarr['correct_answer'] == 1){
-    $correct_class = "text-success";
-}
-
-// ❌ IF USER SELECTED WRONG ANSWER
-if(in_array($ansarr['id'], $given_arr) && $ansarr['correct_answer'] == 0){
-    $wrong_class = "text-danger";
-    $div_wrong_class = "wrong-answer";
-}
-
-// 💡 SHOW CORRECT ANSWER ONLY WHEN WRONG
-if(!in_array($ansarr['id'], $given_arr) && $ansarr['correct_answer'] == 1 
-   && ($data['online_answer_data'][$quesarr['id']]['RIGHT_WRONG'] ?? '') == "wrong"){
-    $correct_class = "text-success";
-}
-
-// ✅ USER SELECTED
-if(in_array($ansarr['id'], $given_arr)){
-    $checked = "checked";
-}
-
-// ❌ WRONG SELECTED
-if(in_array($ansarr['id'], $given_arr) && $ansarr['correct_answer'] == 0){
-    $wrong_class = "text-danger";
-    $div_wrong_class = "wrong-answer";
-}
-@endphp
+                                                    }
+                                                    @endphp
                                                     
                                                     <li>
-                                                       <div class="custom-control custom-{{$type}} custom-control-inline {{$div_wrong_class}} {{ $ansarr['correct_answer'] == 1 ? 'correct-answer' : '' }}">
+                                                        <div class="custom-control custom-{{$type}} custom-control-inline {{$div_wrong_class}}">
                                                             <input {{$checked}} type="{{$type}}" name="{{$name}}" value="{{$ansarr['correct_answer']}}" class="custom-control-input">
-                                                            <label class="custom-control-label {{$wrong_class}} {{$correct_class}}" for="customRadioInline1">
+                                                            <label class="custom-control-label {{$wrong_class}}" for="customRadioInline1">
                                                                 {{$ansarr['answer']}}
                                                                 @if(isset($ansarr['feedback']) && $ansarr['feedback'] !="") 
                                                                 <span style="background-color:#e8e83b;">&nbsp;&nbsp;{{$ansarr['feedback']}}&nbsp;&nbsp;</span>
@@ -352,13 +244,7 @@ if(in_array($ansarr['id'], $given_arr) && $ansarr['correct_answer'] == 0){
                                                 </ul>
                                             @endif
                                             
-                                        @endif  
-                                        @if(($data['online_answer_data'][$quesarr['id']]['RIGHT_WRONG'] ?? '') == "wrong")
-                                            <div class="alert alert-info mt-2">
-                                                <strong>Correct Answer:</strong>
-                                                {{$data['online_answer_data'][$quesarr['id']]['ACTUAL_ANSWER']}}
-                                            </div>
-                                        @endif                                      
+                                        @endif                                        
                                     </div>
                                 </div>
                             </div>
@@ -430,168 +316,5 @@ $(document).ready(function(){
 
 })
 @endif
-function showSuggestedContent(level){
-    var standard_id = '{{$data["questionpaper_data"]["standard_id"] ?? ""}}';
-    var subject_id = '{{$data["questionpaper_data"]["subject_id"] ?? ""}}';
-    var chapter_id = '{{$data["questionpaper_data"]["paper_desc"] ?? ""}}';
-
-    console.log("showSuggestedContent called", {standard_id, subject_id, chapter_id, level});
-
-//    var nextLevel = getNextLevel(level);
-var nextLevel = level;
-
-// 🔥 SPECIAL RULE
-if(level === 'easy'){
-    nextLevel = 'medium';
-}
-currentStudentLevel = nextLevel;   // ✅ store globally
-$("#studentLevel").text(nextLevel);
-    $("#suggestedModal").modal("show");
-
-    $("#suggestedModal .modal-body").html('<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading content...</div>');
-
-    $.ajax({
-        url: '/lms/suggested-content',
-        type: 'GET',
-        data: {
-            standard_id: standard_id,
-            subject_id: subject_id,
-            chapter_id: chapter_id,
-            student_level: level
-        },
-        success: function(response) {
-            console.log("Suggested Content Response:", response);
-             suggestedContentData = response.content_data;
-            if(response.status === 0) {
-                $("#suggestedModal .modal-body").html('<p class="text-danger">' + response.message + '</p>');
-                return;
-            }
-            
-            var html = '<div class="suggested-content-container">';
-            // html += '<h4>Current Level: <span class="badge badge-primary">' + response.student_level + '</span></h4>';
-            
-            if(response.content_data && Object.keys(response.content_data).length > 0) {
-                $.each(response.content_data, function(chapterId, categories) {
-                    $.each(categories, function(category, contents) {
-                        if(contents && contents.length > 0) {
-                            html += '<div class="content-category mb-3">';
-                            let categoryTitle = category.replace(/_/g, ' ');
-categoryTitle = categoryTitle.charAt(0).toUpperCase() + categoryTitle.slice(1);
-
-html += '<h5>' + categoryTitle + '</h5>';
-                            $.each(contents, function(index, content) {
-                                html += '<div class="content-item card mb-2">';
-                                html += '<div class="card-body">';
-                                html +=  '<h6>'
-                                if(content.file_type=='link'){
-                                html += '<a target="_blank" href="' + content.filename + '">' + (content.title || content.content_title || 'Untitled') + '</a>';
-
-                                }else{
-                                html +=  (content.title || content.content_title || 'Untitled');
-
-                                }
-                               html += '<span class="badge badge-secondary">'+nextLevel+'</span></h6>';
-                                if(content.description) {
-                                    html += '<p>' + content.description + '</p>';
-                                }
-                                if(content.content_link) {
-                                    html += '<a href="' + content.content_link + '" target="_blank" class="btn btn-sm btn-primary">View Content</a>';
-                                }
-                                html += '</div></div>';
-                            });
-                            html += '</div>';
-                        }
-                    });
-                });
-            } else {
-                html += '<p>No content available for this level.</p>';
-            }
-
-            if(response.flashcards && response.flashcards.length > 0) {
-                html += '<div class="flashcards-section mt-3">';
-                html += '<h5>Flash Cards</h5>';
-                $.each(response.flashcards, function(index, card) {
-                    html += '<div class="flashcard-item card mb-2">';
-                    html += '<div class="card-body">';
-                    html += '<h6>' + (card.title || 'Flash Card') + '</h6>';
-                    html += '</div></div>';
-                });
-                html += '</div>';
-            }
-
-            html += '</div>';
-            $("#suggestedModal .modal-body").html(html);
-        },
-        error: function(xhr, status, error) {
-            console.error("Error loading suggested content:", error);
-            $("#suggestedModal .modal-body").html('<p class="text-danger">Error loading content. Please try again.</p>');
-        }
-    });
-}
-function getNextLevel(currentLevel){
-    if(currentLevel === 'easy'){
-        return 'medium';
-    } else if(currentLevel === 'medium'){
-        return 'hard';
-    } else {
-        return 'hard'; // default
-    }
-}
-function storeContent(){
-
-    if(!suggestedContentData || Object.keys(suggestedContentData).length === 0){
-        alert("No content to store");
-        return;
-    }
-
-    console.log("Sending Level:", currentStudentLevel); // ✅ debug
-
-    $.ajax({
-        url: '/lms/store-suggested-content',
-        type: 'POST',
-        data: {
-        _token: '{{ csrf_token() }}',
-        content_data: suggestedContentData,
-        student_level: currentStudentLevel,
-        sub_institute_id: '{{ session()->get("sub_institute_id") }}',
-        standard_id: '{{$data["questionpaper_data"]["standard_id"]}}',
-        subject_id: '{{$data["questionpaper_data"]["subject_id"]}}',
-        chapter_id: '{{$data["questionpaper_data"]["paper_desc"]}}',
-        syear: '{{ session()->get("syear") }}'
-    },
-        success: function(res){
-            alert("Content Stored Successfully ✅");
-        },
-        error: function(err){
-            console.log(err);
-            alert("Error storing content ❌");
-        }
-    });
-}
 </script>
-<!-- Suggested Content Modal -->
-<div class="modal fade" id="suggestedModal" tabindex="-1">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-
-      <div class="modal-header">
-        <h5 class="modal-title">Suggested Content</h5>
-        <button type="button" class="close" data-dismiss="modal">&times;</button>
-      </div>
-
-      <div class="modal-body">
-       <h4>Suggested Level: <span id="studentLevel"></span></h4>
-      </div>
- <div class="modal-footer">
-    <button type="button" class="btn btn-success" onclick="storeContent()">
-        Store Content
-    </button>
-
-      <div class="modal-footer">
-        <button class="btn btn-secondary" data-dismiss="modal">Close</button>
-      </div>
-</div>
-    </div>
-  </div>
-</div>
 @include('includes.footer')

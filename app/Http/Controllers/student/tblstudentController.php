@@ -54,9 +54,6 @@ use function App\Helpers\accesslog_json;
 use Storage;
 use App\Models\settings\masterFieldModel;
 use App\Models\settings\masterFieldInstituteModel;
-use function App\Helpers\neo4jCreateNode;
-use function App\Helpers\neo4jCreateRelationship;
-
 
 class tblstudentController extends Controller
 {
@@ -235,165 +232,216 @@ class tblstudentController extends Controller
      * @return Response
      */
 	public function store(Request $request)
-{
-    $sub_institute_id = $request->session()->get('sub_institute_id');
-    $term_id = $request->session()->get('term_id');
-    $syear = $request->session()->get('syear');
-    $type = $request->input('type');
+	{
+        // echo "<pre>";print_r($request->all());exit;
+		$sub_institute_id = $request->session()->get('sub_institute_id');
+		$term_id = $request->session()->get('term_id');
+		$syear = $request->session()->get('syear');
+        $type = $request->input('type');
+        $marking_period_id = session()->get('term_id');
+		$validator = Validator::make($request->all(), [
+			'student_image' => 'size:1000',
+		]);
 
-    // ================= FILE UPLOAD =================
-    $file_name = $ext = $file_size = "";
+		$file_name = $ext = $file_size = "";
 
-    if ($request->hasFile('student_image')) {
-        $file = $request->file('student_image');
-        $originalname = $file->getClientOriginalName();
-        $file_size = $file->getSize();
+		if ($request->hasFile('student_image')) {
+			$file = $request->file('student_image');
+			$originalname = $file->getClientOriginalName();
+			$file_size = $file->getSize();
+			if ($file_size > 500000) {
+                $res['status_code'] = 0;
+                $res['message'] = "Student image not uploaded,Please select file up to 500 KB size.";
+                $res['data'] = [];
 
-        if ($file_size > 500000) {
-            return is_mobile($type, "search_student.index", [
-                'status_code' => 0,
-                'message' => "Student image too large",
-                'data' => []
-            ]);
+                return is_mobile($type, "search_student.index", $res);
+            } else {
+                $name = $id;
+                $ext = File::extension($originalname);
+                $file_name = $name.'.'.$ext;
+				$path = $file->storeAs('public/student/', $file_name);
+			}
+            $name = $request->input('user_name').date('YmdHis');
+            $ext = File::extension($originalname);
+            $file_name = $name.'.'.$ext;
+            $path = $file->storeAs('public/student/', $file_name);
         }
 
-        $name = $request->input('user_name') . date('YmdHis');
-        $ext = File::extension($originalname);
-        $file_name = $name . '.' . $ext;
-        $file->storeAs('public/student/', $file_name);
-    }
+        $request->request->add(['image' => $file_name]); //add request
+        $request->request->add(['file_size' => $file_size]); //add request
+        $request->request->add(['file_type' => $ext]); //add request
 
-    $request->merge([
-        'image' => $file_name,
-        'file_size' => $file_size,
-        'file_type' => $ext
-    ]);
+        // start of father and nmother image 26-02-2025
+        if ($request->hasFile('father_image')) {
+			$file = $request->file('father_image');
+			$originalname = $file->getClientOriginalName();
+			$file_size = $file->getSize();
+            $ext = File::extension($originalname);
+			if ($file_size > 500000) {
+                $res['status_code'] = 0;
+                $res['message'] = "Father image not uploaded,Please select file up to 500 KB size.";
+                $res['data'] = [];
 
-    // ================= SQL SAVE =================
-    DB::beginTransaction();
-
-    try {
-
-        // 🔹 Save Student
-        $student_id = $this->saveData($request);
-
-        if (!$student_id) {
-            DB::rollBack();
-            return is_mobile($type, "search_student.index", [
-                'status_code' => 0,
-                'message' => "Student not saved",
-                'data' => []
-            ]);
+                return is_mobile($type, "search_student.index", $res);
+            }
+            // $file_name = $name.'.'.$ext;
+            $father_image =  'father_'.$request->enrollment_no.'_'.$sub_institute_id.'.'.$ext;
+            // have to use this for image entering
+            if($request->has('oldFatherImage')){
+                $file_path = 'public/parents_image/' .$request->get('oldFatherImage');
+                if (Storage::disk('digitalocean')->exists($file_path)) {
+                    Storage::disk('digitalocean')->delete($file_path);
+                } 
+            }
+            Storage::disk('digitalocean')->putFileAs('public/parents_image/', $file, $father_image, 'public');   
+            $request->request->add(['father_image' => $father_image]); //add request
         }
 
-        // 🔹 Save Enrollment
-        tblstudentEnrollmentModel::insert([
-            'standard_id' => $request->input('standard'),
-            'section_id' => $request->input('division'),
-            'grade_id' => $request->input('grade'),
-            'syear' => $syear,
-            'student_id' => $student_id,
-            'student_quota' => $request->input('student_quota'),
-            'house_id' => $request->input('house'),
-            'start_date' => date('Y-m-d'),
-            'term_id' => $term_id,
-            'enrollment_code' => 1,
-            'sub_institute_id' => $sub_institute_id,
-            'roll_no' => $request->roll_no
-        ]);
+        if ($request->hasFile('mother_image')) {
+			$file = $request->file('mother_image');
+			$originalname = $file->getClientOriginalName();
+			$file_size = $file->getSize();
+            $ext = File::extension($originalname);
+			if ($file_size > 500000) {
+                $res['status_code'] = 0;
+                $res['message'] = "Mother image not uploaded,Please select file up to 500 KB size.";
+                $res['data'] = [];
 
-        DB::commit();
+                return is_mobile($type, "search_student.index", $res);
+            }
+            // $file_name = $name.'.'.$ext;
+            $mother_image =  'mother_'.$request->enrollment_no.'_'.$sub_institute_id.'.'.$ext;
+            if($request->has('oldMotherImage')){
+                $file_path = 'public/parents_image/' .$request->get('oldMotherImage');
+                if (Storage::disk('digitalocean')->exists($file_path)) {
+                    Storage::disk('digitalocean')->delete($file_path);
+                } 
+            }
+            Storage::disk('digitalocean')->putFileAs('public/parents_image/', $file, $mother_image, 'public');   
+            $request->request->add(['mother_image' => $mother_image]); //add request
+        }
+        // end of father and nmother image 26-02-2025
 
-    } catch (\Exception $e) {
-        DB::rollBack();
+        $dataCustomFields = tblcustomfieldsModel::select('field_name')
+            ->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
+            ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
+            ->get()
+            ->toArray();
 
-        \Log::error('❌ SQL Error: ' . $e->getMessage());
+        foreach ($dataCustomFields as $key => $value) {
+            $file_name = '';
 
-        return is_mobile($type, "search_student.index", [
-            'status_code' => 0,
-            'message' => "SQL Error",
-            'data' => []
-        ]);
-    }
+            if ($request->hasFile($value['field_name'])) {
+                $file = $request->file($value['field_name']);
+                $originalname = $file->getClientOriginalName();
+                $name = $value['field_name']."_".$request->input('user_name').date('YmdHis');
+                $ext = File::extension($originalname);
+                $file_name = $name.'.'.$ext;
+				$path = $file->storeAs('public/student/', $file_name);
+				$request->files->remove($value['field_name']);
+				$request->request->add([$value['field_name'] => $file_name]); //add request
+			}
+		}
 
-    // ======================================================
-    // ✅ NEO4J (CORRECT SCHEMA)
-    // ======================================================
+		$data = $this->saveData($request);
+		$student_id = $data;
 
-    try {
+		//START Save Optional Subject
+		// if ($request->input('optional_subject')) {
+		// 	$optional_subject['student_id'] = $student_id;
+		// 	$optional_subject['sub_institute_id'] = $sub_institute_id;
+		// 	$optional_subject['syear'] = $syear;
+		// 	foreach ($request->input('optional_subject') as $key => $val) {
+		// 		$optional_subject['subject_id'] = $val;
+		// 		student_optional_subjectModel::insert($optional_subject);
+		// 	}
+		// }
+        if(session()->get('sub_institute_id') != 254){
+            if ($request->input('optional_subject')) {
+                $optional_subject['student_id'] = $student_id;
+                $optional_subject['sub_institute_id'] = $sub_institute_id;
+                $optional_subject['syear'] = $syear;
+                foreach ($request->input('optional_subject') as $key => $val) {
+                    $optional_subject['subject_id'] = $val;
+                    student_optional_subjectModel::insert($optional_subject);
+                }
+          
+            }
+        }else{
+            if ($request->input('optional_subject4')) {
+                $optional_subject4['student_id'] = $student_id;
+                $optional_subject4['sub_institute_id'] = $sub_institute_id;
+                $optional_subject4['syear'] = $syear;
+                foreach ($request->input('optional_subject4') as $key => $val) {
+                    $optional_subject4['subject_id'] = $val;
+                    $checkSubject = student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->where('subject_id',$optional_subject4['subject_id'])->first();
+                    if(empty($checkSubject)){
+                    $optional_subject4['level'] = 4;
+                    student_optional_subjectModel::insert($optional_subject4);
+                    }
+                }
+                $optionalQuery = "Insert optional subject 4";
+                accesslog_json($optionalQuery,'insert','Student Edit Profile (Optionl Subject insert)',$optional_subject4);
+            }
+            if ($request->input('optional_subject5')) {
+                $optional_subject5['student_id'] = $student_id;
+                $optional_subject5['sub_institute_id'] = $sub_institute_id;
+                $optional_subject5['syear'] = $syear;
+                foreach ($request->input('optional_subject5') as $key => $val) {
+                    $optional_subject5['subject_id'] = $val;
+                    $checkSubject5 = student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->where('subject_id',$optional_subject5['subject_id'])->first();
+                    if(empty($checkSubject5)){
+                    $optional_subject5['level'] = 5;
+                    student_optional_subjectModel::insert($optional_subject5);
+                    }
+                }
+                $optionalQuery = "Insert optional subject 5";
+                accesslog_json($optionalQuery,'insert','Student Edit Profile (Optionl Subject insert)',$optional_subject5);
+            }
 
-        $studentName = trim($request->first_name . ' ' . $request->last_name);
+            if ($request->input('optional_subject6')) {
+                $optional_subject6['student_id'] = $student_id;
+                $optional_subject6['sub_institute_id'] = $sub_institute_id;
+                $optional_subject6['syear'] = $syear;
+                foreach ($request->input('optional_subject6') as $key => $val) {
+                    $optional_subject6['subject_id'] = $val;
+                    $checkSubject6 = student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->where('subject_id',$optional_subject6['subject_id'])->first();
+                    if(empty($checkSubject6)){
+                    $optional_subject6['level'] = 6;
+                    student_optional_subjectModel::insert($optional_subject6);
+                    }
+                }
+                $optionalQuery = "Insert optional subject 6";
+                accesslog_json($optionalQuery,'insert','Student Edit Profile (Optionl Subject insert)',$optional_subject6);
+            }
+        }
+		//END Save Optional Subject
 
-        // 🔹 STUDENT NODE
-        neo4jCreateNode(
-            'Student',
-            ['stuId' => (int)$student_id],
-            [
-                'student_id' => (int)$student_id,
-                'displayLabel' => 'Student:' . $studentName,
-                'sub_institute_id' => (int)$sub_institute_id
-            ]
-        );
+		$studentEnrollment['standard_id'] = $request->input('standard');
+		$studentEnrollment['section_id'] = $request->input('division');
+		$studentEnrollment['grade_id'] = $request->input('grade');
+		$studentEnrollment['syear'] = $syear;
+		$studentEnrollment['student_id'] = $student_id;
+		$studentEnrollment['student_quota'] = $request->input('student_quota');
+		$studentEnrollment['house_id'] = $request->input('house');
+		$studentEnrollment['start_date'] = date('Y-m-d');
+		$studentEnrollment['term_id'] = $term_id;
+		$studentEnrollment['enrollment_code'] = 1;
+		$studentEnrollment['sub_institute_id'] = $sub_institute_id;
+        $studentEnrollment['roll_no'] = $request->roll_no;
 
-        // 🔹 STANDARD NODE
-        neo4jCreateNode(
-            'Standard',
-            ['stId' => (int)$request->standard],
-            [
-                'standard_id' => (int)$request->standard,
-                'name' => 'Standard ' . $request->standard,
-                'displayLabel' => 'Standard:' . $request->standard,
-                'sub_institute_id' => (int)$sub_institute_id
-            ]
-        );
+		tblstudentEnrollmentModel::insert($studentEnrollment);
 
-        // 🔹 RELATION: Student → ENROLLED_IN → Standard
-        neo4jCreateRelationship(
-            'Student',
-            ['stuId' => (int)$student_id],
-            'ENROLLED_IN',
-            'Standard',
-            ['stId' => (int)$request->standard]
-        );
+		$res['status_code'] = 1;
+		$res['message'] = "Student successfully created.";
+		$res['data'] = $data;
+        if($type=='web'){
+            return redirect('add_students?sub_institute_id='.$sub_institute_id.'&syear='.$syear.'&type=web&success');
+        }else{
+            return is_mobile($type, "search_student.index", $res);
+        }
+	}
 
-        // 🔹 STUDENT DETAIL NODE
-        neo4jCreateNode(
-            'StuDetail',
-            ['sdId' => (int)$student_id],
-            [
-                'student_id' => (int)$student_id,
-                'first_name' => $request->first_name,
-                'middle_name' => $request->middle_name ?? '',
-                'last_name' => $request->last_name,
-                'displayLabel' => 'Student Details:' . $request->first_name,
-                'sub_institute_id' => (int)$sub_institute_id
-            ]
-        );
-
-        // 🔹 RELATION: StuDetail → HAS_STUDENT → Student
-        neo4jCreateRelationship(
-            'StuDetail',
-            ['sdId' => (int)$student_id],
-            'HAS_STUDENT',
-            'Student',
-            ['stuId' => (int)$student_id]
-        );
-
-        \Log::info('✅ Neo4j Student Created', [
-            'stuId' => $student_id
-        ]);
-
-    } catch (\Exception $e) {
-        \Log::error('❌ Neo4j Error: ' . $e->getMessage());
-    }
-
-    // ================= RESPONSE =================
-    return is_mobile($type, "search_student.index", [
-        'status_code' => 1,
-        'message' => "Student Added Successfully",
-        'data' => []
-    ]);
-}
 	public function saveData(Request $request)
 	{
 		$newRequest = $request->post();
@@ -1082,9 +1130,6 @@ die; */
         $controller = new fees_collect_controller;
 
         $OldData = $controller->getBk($request, $id);
-        // if($id===278454){
-        // return json_encode([$id,$request,$OldData]);
-        // }
         $FeesData = $controller->retrieveDataByUserId($request, '', $id);
 
         //transport details 
@@ -1233,167 +1278,221 @@ die; */
      * @return RedirectResponse|Response
      */
 	public function update(Request $request, $id)
-{
-    $sub_institute_id = $request->session()->get('sub_institute_id');
-    $type = $request->input('type');
+	{
+		$sub_institute_id = $request->session()->get('sub_institute_id');
+		$term_id = $request->session()->get('term_id');
+		$syear = $request->session()->get('syear');
+        $type = $request->input('type');
+        
+        if(isset($request->transport_details)){
+        $send_data = $this->update_transport($request,$id);
+        $res['status_code'] = $send_data['status_code'];
+        $res['message'] = $send_data['message'];        
+        }else{
+		$file_name = $ext = $file_size = "";
+		if ($request->hasFile('student_image')) {
+			$file = $request->file('student_image');
+			$originalname = $file->getClientOriginalName();
+			$file_size = $file->getSize();
 
-    // ================= FILE UPLOAD =================
-    $file_name = $ext = $file_size = "";
+			if ($file_size > 500000) {
 
-    if ($request->hasFile('student_image')) {
-        $file = $request->file('student_image');
-        $originalname = $file->getClientOriginalName();
-        $file_size = $file->getSize();
-
-        if ($file_size > 500000) {
-            return is_mobile($type, "search_student.index", [
-                'status_code' => 0,
-                'message' => "Student image too large",
-                'data' => []
-            ]);
+                return redirect()->back()->with("Warning", "Student image not uploaded,Please select file up to 500 KB size.");
+			} else {
+                $name = $id;
+                $ext = File::extension($originalname);
+                $file_name = $name.'.'.$ext;
+				$path = $file->storeAs('public/student/', $file_name);
+			}
+        }
+        if ($file_name != '') {
+            $request->request->add(['image' => $file_name]); //add request
+            $request->request->add(['file_size' => $file_size]); //add request
+            $request->request->add(['file_type' => $ext]); //add request
         }
 
-        $name = $request->input('user_name') . date('YmdHis');
-        $ext = File::extension($originalname);
-        $file_name = $name . '.' . $ext;
-        $file->storeAs('public/student/', $file_name);
+        // start of father and nmother image 04-02-2025
+        if ($request->hasFile('father_image')) {
+			$file = $request->file('father_image');
+			$originalname = $file->getClientOriginalName();
+			$file_size = $file->getSize();
+            $ext = File::extension($originalname);
+			if ($file_size > 500000) {
+                $res['status_code'] = 0;
+                $res['message'] = "Father image not uploaded,Please select file up to 500 KB size.";
+                $res['data'] = [];
 
-        $request->merge([
-            'image' => $file_name,
-            'file_size' => $file_size,
-            'file_type' => $ext
-        ]);
+                return is_mobile($type, "search_student.index", $res);
+            }
+            // $file_name = $name.'.'.$ext;
+            $father_image =  'father_'.$id.'.'.$ext;
+            if($request->has('oldFatherImage')){
+                $file_path = 'public/parents_image/' .$request->get('oldFatherImage');
+                if (Storage::disk('digitalocean')->exists($file_path)) {
+                    Storage::disk('digitalocean')->delete($file_path);
+                } 
+            }
+            Storage::disk('digitalocean')->putFileAs('public/parents_image/', $file, $father_image, 'public');   
+            $request->request->add(['father_image' => $father_image]); //add request
+        }
+
+        if ($request->hasFile('mother_image')) {
+			$file = $request->file('mother_image');
+			$originalname = $file->getClientOriginalName();
+			$file_size = $file->getSize();
+            $ext = File::extension($originalname);
+			if ($file_size > 500000) {
+                $res['status_code'] = 0;
+                $res['message'] = "Mother image not uploaded,Please select file up to 500 KB size.";
+                $res['data'] = [];
+
+                return is_mobile($type, "search_student.index", $res);
+            }
+            // $file_name = $name.'.'.$ext;
+            $mother_image =  'mother_'.$id.'.'.$ext;
+            if($request->has('oldMotherImage')){
+                $file_path = 'public/parents_image/' .$request->get('oldMotherImage');
+                if (Storage::disk('digitalocean')->exists($file_path)) {
+                    Storage::disk('digitalocean')->delete($file_path);
+                } 
+            }
+            Storage::disk('digitalocean')->putFileAs('public/parents_image/', $file, $mother_image, 'public');   
+            $request->request->add(['mother_image' => $mother_image]); //add request
+        }
+        // end of father and nmother image 04-02-2025
+
+        $request->request->add(['id' => $id]); //add request
+        $student_id = $id;
+
+        $dataCustomFields = tblcustomfieldsModel::select('field_name')
+            ->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
+            ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
+            ->get()
+            ->toArray();
+
+        foreach ($dataCustomFields as $key => $value) {
+            if ($request->hasFile($value['field_name'])) {
+                $file = $request->file($value['field_name']);
+                $originalname = $file->getClientOriginalName();
+                $name = $value['field_name']."_".$request->input('user_name').date('YmdHis');
+                $ext = File::extension($originalname);
+                $file_name = $name.'.'.$ext;
+				$path = $file->storeAs('public/student/', $file_name);
+
+				$request->files->remove($value['field_name']);
+				// $request->request->set($value['field_name'], $file_name); //add request
+				$request->request->add([$value['field_name'] => $file_name]); //add request
+			}
+		}
+
+		$data = $this->updateData($request);
+
+		//START Save Optional Subject
+        // student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->delete();
+		if(session()->get('sub_institute_id') != 254){
+            if ($request->input('optional_subject')) {
+                student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->delete();
+                $optional_subject['student_id'] = $student_id;
+                $optional_subject['sub_institute_id'] = $sub_institute_id;
+                $optional_subject['syear'] = $syear;
+                foreach ($request->input('optional_subject') as $key => $val) {
+                    $optional_subject['subject_id'] = $val;
+                    student_optional_subjectModel::insert($optional_subject);
+                }
+            }
+        }else{
+            if ($request->input('optional_subject4')) {
+                $optional_subject4['student_id'] = $student_id;
+                $optional_subject4['sub_institute_id'] = $sub_institute_id;
+                $optional_subject4['syear'] = $syear;
+                foreach ($request->input('optional_subject4') as $key => $val) {
+                    $optional_subject4['subject_id'] = $val;
+                    $checkSubject = student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->where('subject_id',$optional_subject4['subject_id'])->first();
+                    if(empty($checkSubject)){
+                    $optional_subject4['level'] = 4;
+                    student_optional_subjectModel::insert($optional_subject4);
+                    }
+                }
+                $optionalQuery = "Update optional subject 4";
+                accesslog_json($optionalQuery,'Update','Student Edit Profile (Optionl Subject Update)',$optional_subject4);
+            }
+            if ($request->input('optional_subject5')) {
+                $optional_subject5['student_id'] = $student_id;
+                $optional_subject5['sub_institute_id'] = $sub_institute_id;
+                $optional_subject5['syear'] = $syear;
+                foreach ($request->input('optional_subject5') as $key => $val) {
+                    $optional_subject5['subject_id'] = $val;
+                    $checkSubject5 = student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->where('subject_id',$optional_subject5['subject_id'])->first();
+                    if(empty($checkSubject5)){
+                    $optional_subject5['level'] = 5;
+                    student_optional_subjectModel::insert($optional_subject5);
+                    }
+                }
+                $optionalQuery = "Update optional subject 5";
+                accesslog_json($optionalQuery,'Update','Student Edit Profile (Optionl Subject Update)',$optional_subject5);
+            }
+
+            if ($request->input('optional_subject6')) {
+                $optional_subject6['student_id'] = $student_id;
+                $optional_subject6['sub_institute_id'] = $sub_institute_id;
+                $optional_subject6['syear'] = $syear;
+                foreach ($request->input('optional_subject6') as $key => $val) {
+                    $optional_subject6['subject_id'] = $val;
+                    $checkSubject6 = student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->where('subject_id',$optional_subject6['subject_id'])->first();
+                    if(empty($checkSubject6)){
+                    $optional_subject6['level'] = 6;
+                    student_optional_subjectModel::insert($optional_subject6);
+                    }
+                }
+                $optionalQuery = "Update optional subject 6";
+                accesslog_json($optionalQuery,'Update','Student Edit Profile (Optionl Subject Update)',$optional_subject6);
+            }
+        }
+		//END Save Optional Subject
+        if($request->input('editable') == 1){
+            $studentEnrollment['standard_id'] = $request->input('standard');
+            $studentEnrollment['grade_id'] = $request->input('grade');
+        }
+        
+        $studentEnrollment['section_id'] = $request->input('division');
+
+		$studentEnrollment['syear'] = $syear;
+		$studentEnrollment['student_id'] = $student_id;
+		$studentEnrollment['student_quota'] = $request->input('student_quota');
+		$studentEnrollment['house_id'] = $request->input('house');
+		// $studentEnrollment['start_date'] = date('Y-m-d');
+
+		if ($request->input('inactive_satus') == 0) {
+			$studentEnrollment['end_date'] = NULL;
+			$studentEnrollment['remarks'] = NULL;
+		} else {
+			//$studentEnrollment['end_date'] = $request->input('end_date');
+			$studentEnrollment['end_date'] = date("Y-m-d", strtotime($request->input('end_date')));
+			$studentEnrollment['remarks'] = $request->input('remarks');
+		}
+
+		$studentEnrollment['term_id'] = $term_id;
+		$studentEnrollment['enrollment_code'] = 1;
+		$studentEnrollment['sub_institute_id'] = $sub_institute_id;
+		$studentEnrollment['updated_on'] = date('Y-m-d H:i:s');
+		$studentEnrollment['roll_no'] = $request->roll_no;
+		// dd($studentEnrollment);
+        DB::enableQueryLog(); // 2024-08-24 required to convert query into sql for json
+		tblstudentEnrollmentModel::where(['student_id' => $student_id, 'syear' => $syear])->update($studentEnrollment);
+        // 2024-08-23
+        $queries = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
+        $sendQuery = end($queries); // 2024-08-24 required to convert query into sql for json 
+        accesslog_json($sendQuery,'update','Student Edit Profile (Enrollment)',$studentEnrollment);
+        //2024-08-23
+		$res['status_code'] = 1;
+		$res['message'] = "Student Edit Profiled successfully.";
+        $res['data'] = $data;
     }
+		// return is_mobile($type, "search_student.index", $res);
+		// return redirect()->route('add_student.show', $res);
+		return redirect()->back();
+	}
 
-    // ================= SQL UPDATE =================
-    DB::beginTransaction();
-
-    try {
-
-        $student = tblstudentModel::where('id', $id)
-            ->where('sub_institute_id', $sub_institute_id)
-            ->first();
-
-        if (!$student) {
-            DB::rollBack();
-            return is_mobile($type, "search_student.index", [
-                'status_code' => 0,
-                'message' => "Student not found",
-                'data' => []
-            ]);
-        }
-
-        // 🔹 UPDATE STUDENT DATA
-        $student->update($request->all());
-
-        // 🔹 UPDATE ENROLLMENT (STANDARD CHANGE)
-        if ($request->has('standard')) {
-            tblstudentEnrollmentModel::where([
-                'student_id' => $id,
-                'sub_institute_id' => $sub_institute_id
-            ])->update([
-                'standard_id' => $request->standard
-            ]);
-        }
-
-        DB::commit();
-
-    } catch (\Exception $e) {
-        DB::rollBack();
-
-        \Log::error('❌ SQL Update Error: ' . $e->getMessage());
-
-        return is_mobile($type, "search_student.index", [
-            'status_code' => 0,
-            'message' => "SQL Update Error",
-            'data' => []
-        ]);
-    }
-
-    // ======================================================
-    // ✅ NEO4J UPDATE (CORRECT SCHEMA)
-    // ======================================================
-
-    try {
-
-        $studentName = trim($request->first_name . ' ' . $request->last_name);
-
-        // 🔹 UPDATE STUDENT NODE
-        neo4jCreateNode(
-            'Student',
-            ['stuId' => (int)$id],
-            [
-                'student_id' => (int)$id,
-                'displayLabel' => 'Student:' . $studentName,
-                'sub_institute_id' => (int)$sub_institute_id,
-                'updated_at' => now()->toDateTimeString()
-            ]
-        );
-
-        // 🔹 UPDATE STANDARD + RELATION
-        if ($request->has('standard')) {
-
-            // Standard node
-            neo4jCreateNode(
-                'Standard',
-                ['stId' => (int)$request->standard],
-                [
-                    'standard_id' => (int)$request->standard,
-                    'name' => 'Standard ' . $request->standard,
-                    'displayLabel' => 'Standard:' . $request->standard,
-                    'sub_institute_id' => (int)$sub_institute_id
-                ]
-            );
-
-            // Relation
-            neo4jCreateRelationship(
-                'Student',
-                ['stuId' => (int)$id],
-                'ENROLLED_IN',
-                'Standard',
-                ['stId' => (int)$request->standard]
-            );
-        }
-
-        // 🔹 UPDATE STUDENT DETAIL NODE
-        neo4jCreateNode(
-            'StuDetail',
-            ['sdId' => (int)$id],
-            [
-                'student_id' => (int)$id,
-                'first_name' => $request->first_name,
-                'middle_name' => $request->middle_name ?? '',
-                'last_name' => $request->last_name,
-                'displayLabel' => 'Student Details:' . $request->first_name,
-                'sub_institute_id' => (int)$sub_institute_id,
-                'updated_at' => now()->toDateTimeString()
-            ]
-        );
-
-        // 🔹 RELATION (ENSURE EXISTS)
-        neo4jCreateRelationship(
-            'StuDetail',
-            ['sdId' => (int)$id],
-            'HAS_STUDENT',
-            'Student',
-            ['stuId' => (int)$id]
-        );
-
-        \Log::info('✅ Neo4j Student Updated', [
-            'stuId' => $id
-        ]);
-
-    } catch (\Exception $e) {
-        \Log::error('❌ Neo4j Update Error: ' . $e->getMessage());
-    }
-
-    // ================= RESPONSE =================
-    return is_mobile($type, "search_student.index", [
-        'status_code' => 1,
-        'message' => "Student Updated Successfully",
-        'data' => []
-    ]);
-}
     /**
      * Remove the specified resource from storage.
      *
@@ -1891,5 +1990,3 @@ END as color_code
         return response()->json($res);
     }
 }
-
-
