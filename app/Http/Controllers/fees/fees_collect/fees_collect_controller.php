@@ -2194,7 +2194,11 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $last_syear = (session()->get('syear') - 1);
-        
+        if($request->type=="API"){
+            $sub_institute_id=$request->sub_institute_id;
+            $syear = $request->syear;
+            $last_syear= ($syear-1);
+        }
         $stu_arr = [
             "0" => $id,
         ];
