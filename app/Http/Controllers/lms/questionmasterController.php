@@ -16,10 +16,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
-use function App\Helpers\neo4jCreateNode;
-use function App\Helpers\neo4jCreateRelationship;
-
-
 
 class questionmasterController extends Controller
 {
@@ -278,7 +274,7 @@ class questionmasterController extends Controller
         }
 
         $lms_mapping_type = DB::select("SELECT * FROM lms_mapping_type WHERE status=1 AND parent_id=0 AND
-                                (globally=1 OR chapter_id = ?) $where", [$request->get('chapter_id')]);
+                                (globally=1 OR chapter_id = '".$request->get('chapter_id')."') $where");
         $lms_mapping_type = json_decode(json_encode($lms_mapping_type), true);
         $data['lms_mapping_type'] = $lms_mapping_type;
 
@@ -302,84 +298,115 @@ class questionmasterController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return RedirectResponse|Response
      */
+    public function store(Request $request)
+    {
+        // echo ('<pre>');print_r($_REQUEST);die;
+        // return $request;
 
-public function store(Request $request)
-{
-    $sub_institute_id = $request->session()->get('sub_institute_id');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $user_id = $request->session()->get('user_id');
+        $status = $request->get('status');
+        $status_val = isset($status) ? $status : '';
 
-    DB::beginTransaction();
+        $multiple_answer = $request->get('multiple_answer');
+        $multiple_answer_val = isset($multiple_answer) ? $multiple_answer : 0;
 
-    try {
+        $pre_topic = $post_topic = $cross_curriculum_topic = "";
+        if ($request->get('prechapter') != "") {
+            $pre_topic = $request->get('prechapter').'####'.$request->get('pretopic');
+        }
+        if ($request->get('postchapter') != "") {
+            $post_topic = $request->get('postchapter').'####'.$request->get('posttopic');
+        }
+        if ($request->get('cross-curriculumchapter') != "") {
+            $cross_curriculum_topic = $request->get('cross-curriculumchapter').'####'.$request->get('cross-curriculumtopic');
+        }
 
-        // ✅ SQL INSERT
-        $question = lmsQuestionMasterModel::create([
-            'question_title'   => $request->question_title,
-            'chapter_id'       => $request->chapter_id,
-            'standard_id'      => $request->standard_id,
-            'grade_id'         => $request->grade_id,
-            'subject_id'       => $request->subject_id,
-            'question_type_id' => $request->question_type_id,
-            'sub_institute_id' => $sub_institute_id
-        ]);
-
-        $question_id = $question->id;
-
-        DB::commit();
-
-    } catch (\Exception $e) {
-
-        DB::rollBack();
-
-        \Log::error('❌ SQL Question Error: ' . $e->getMessage());
-
-        return back()->with([
-            'status_code' => 0,
-            'message' => 'Error saving question'
-        ]);
-    }
-
-    // ================= NEO4J =================
-    try {
-
-        // ✅ CREATE QUESTION NODE
-        neo4jCreateNode(
-            'Question',
-            ['qId' => (int)$question_id],
-            [
-                'question_title' => $request->question_title,
-                'chapter_id' => (int)$request->chapter_id,
-                'displayLabel' => 'Question:' . $request->question_title,
-                'standard_id' => (int)$request->standard_id,
-                'sub_institute_id' => (int)$sub_institute_id,
-                'question_type_id' => (int)$request->question_type_id,
-                'points' => 1
-            ]
+        $question = array(
+            'question_type_id'             => $request->get('question_type_id'),
+            'grade_id'                     => $request->get('grade_id'),
+            'standard_id'                  => $request->get('standard_id'),
+            'subject_id'                   => $request->get('subject_id'),
+            'chapter_id'                   => $request->get('chapter_id'),
+            'topic_id'                     => $request->get('topic_id'),
+            'question_title'               => htmlspecialchars($request->get('question_title')),
+            'description'                  => $request->get('description'),
+            'pre_grade_topic'              => $pre_topic,
+            'post_grade_topic'             => $post_topic,
+            'cross_curriculum_grade_topic' => $cross_curriculum_topic,
+            'points'                       => $request->get('points'),
+            'status'                       => $status_val,
+            'created_by'                   => $user_id,
+            'sub_institute_id'             => $sub_institute_id,
+            'hint_text'                    => $request->get('hint_text'),
+            'learning_outcome'             => $request->get('learning_outcome'),
+            'multiple_answer'              => $multiple_answer_val,
         );
+        $question_id = lmsQuestionMasterModel::insertGetId($question);
+        // echo "<pre>";print_r($question);
 
-        // ✅ RELATION: Question → Chapter
-        neo4jCreateRelationship(
-            'Question',
-            ['qId' => (int)$question_id,'chapter_id' => (int)$request->chapter_id,'subject_id' => (int)$request->subject_id, 'standard_id' => (int)$request->standard_id,'sub_institute_id' => (int)$sub_institute_id],
-            'BELONGS_TO',
-            'Chapter',
-            ['chId' => (int)$request->chapter_id,'subject_id' => (int)$request->subject_id, 'standard_id' => (int)$request->standard_id,'sub_institute_id' => (int)$sub_institute_id]
+        //START Insert into answer_master
+        $mapping_type = $request->get('mapping_type');
+        $mapping_value = $request->get('mapping_value');
+        $reasons = $request->get('reasons');
+        
+        foreach ($mapping_type as $key => $val) {
+            if ($val != "" && $mapping_value[$key] != "") {
+                $contentmappingtype = array(
+                    'questionmaster_id' => $question_id,
+                    'mapping_type_id'   => $val,
+                    'mapping_value_id'  => $mapping_value[$key],
+                    'mapping_value_id'  => $mapping_value[$key], 
+                    'reasons' => $reasons[$key],                   
+                );
+        // echo "<pre>";print_r($contentmappingtype);
+                
+                lmsQuestionMappingModel::insert($contentmappingtype);
+            }
+        }
+        //END Insert into answer_master
+
+        //START Insert into answer_master
+        if ($request->get('question_type_id') == 1 || $request->get('question_type_id') == 8) {
+            $option_arr = $request->get('options');
+            $feedback_arr = $request->get('feedback');
+            foreach ($option_arr['NEW'] as $key => $val) {
+                $correct_answer_val = 0;
+                if ($request->has('correct_answer')) {
+                    $correct_answer = $request->get('correct_answer');
+                    $correct_answer_val = in_array($key, $correct_answer) ? 1 : 0;
+                }
+
+                $answer = array(
+                    'question_id'      => $question_id,
+                    'answer'           => $val,
+                    'feedback'         => $feedback_arr['NEW'][$key],
+                    'correct_answer'   => $correct_answer_val,
+                    'created_by'       => $user_id,
+                    'sub_institute_id' => $sub_institute_id,
+                );
+
+                answermasterModel::insert($answer);
+            }
+        }
+        //END Insert into answer_master
+// exit;
+        $res = array(
+            "status_code" => 1,
+            "message"     => "Question-Master Added Successfully",
         );
+        $type = $request->input('type');
 
-        \Log::info('✅ Neo4j Question Created', [
-            'question_id' => $question_id
-        ]);
+        // return array
+        if ($request->get('topic_id')) {
+            return redirect()->route('question_master.index',
+                ['chapter_id' => $request->get('chapter_id'), 'topic_id' => $request->get('topic_id'),'standard_id'=>$request->get('standard_id')]);
+        } else {
+            return redirect()->route('question_chapter_master', ['chapter_id' => $request->get('chapter_id'),'standard_id'=>$request->get('standard_id')]);
+        }
 
-    } catch (\Exception $e) {
-        \Log::error('❌ Neo4j Error: ' . $e->getMessage());
+        //return is_mobile($type, "question_master.index", $res, "redirect");
     }
-
-    return back()->with([
-        'status_code' => 1,
-        'message' => 'Question Created Successfully'
-    ]);
-}
-
-    // ===== YOUR EXISTING CODE CONTINUES =====
 
     /**
      * Show the form for editing the specified resource.
@@ -547,81 +574,107 @@ public function store(Request $request)
     }
 
 
-   public function update(Request $request, $id)
-{
-    $sub_institute_id = $request->session()->get('sub_institute_id');
+    public function update(Request $request, $id)
+    {
+        // dd($request->all());
+        // echo ('<pre>');print_r($_REQUEST);die;
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        $user_id = $request->session()->get('user_id');
+        $status = $request->get('status');
+        $status_val = $status ?? '';
 
-    DB::beginTransaction();
+        $multiple_answer = $request->get('multiple_answer');
+        $multiple_answer_val = isset($multiple_answer) ? $multiple_answer : 0;
+        $pre_topic = $post_topic = $cross_curriculum_topic = "";
+        if ($request->get('prechapter') != "") {
+            $pre_topic = $request->get('prechapter').'####'.$request->get('pretopic');
+        }
+        if ($request->get('postchapter') != "") {
+            $post_topic = $request->get('postchapter').'####'.$request->get('posttopic');
+        }
+        if ($request->get('cross-curriculumchapter') != "") {
+            $cross_curriculum_topic = $request->get('cross-curriculumchapter').'####'.$request->get('cross-curriculumtopic');
+        }
 
-    try {
-
-        $question = lmsQuestionMasterModel::find($id);
-
-        $question->update([
-            'question_title'   => $request->question_title,
-            'chapter_id'       => $request->chapter_id,
-            'standard_id'      => $request->standard_id,
-            'grade_id'         => $request->grade_id,
-            'subject_id'       => $request->subject_id,
-            'question_type_id' => $request->question_type_id,
-            'sub_institute_id' => $sub_institute_id
-        ]);
-
-        DB::commit();
-
-    } catch (\Exception $e) {
-
-        DB::rollBack();
-
-        \Log::error('❌ SQL Question Error: ' . $e->getMessage());
-
-        return back()->with([
-            'status_code' => 0,
-            'message' => 'Error updating question'
-        ]);
-    }
-
-    // ================= NEO4J =================
-    try {
-
-        // ✅ UPDATE QUESTION NODE
-        neo4jCreateNode(
-            'Question',
-            ['qId' => (int)$id],
-            [
-                'question_title' => $request->question_title,
-                'chapter_id' => (int)$request->chapter_id,
-                'displayLabel' => 'Question:' . $request->question_title,
-                'standard_id' => (int)$request->standard_id,
-                'sub_institute_id' => (int)$sub_institute_id,
-                'question_type_id' => (int)$request->question_type_id,
-                'points' => 1
-            ]
+        $question = array(
+            'grade_id'                     => $request->get('grade_id'),
+            'standard_id'                  => $request->get('standard_id'),
+            'subject_id'                   => $request->get('subject_id'),
+            'chapter_id'                   => $request->get('chapter_id'),
+            'topic_id'                     => $request->get('topic_id'),
+            'question_title'               => htmlspecialchars($request->get('question_title')),
+            'description'                  => $request->get('description'),
+            'points'                       => $request->get('points'),
+            'pre_grade_topic'              => $pre_topic,
+            'post_grade_topic'             => $post_topic,
+            'cross_curriculum_grade_topic' => $cross_curriculum_topic,
+            'status'                       => $status_val,
+            'created_by'                   => $user_id,
+            'sub_institute_id'             => $sub_institute_id,
+            'hint_text'                    => $request->get('hint_text'),
+            'learning_outcome'             => $request->get('learning_outcome'),
+            'multiple_answer'              => $multiple_answer_val,
         );
 
-        // ✅ UPDATE RELATION: Question → Chapter
-        neo4jCreateRelationship(
-            'Question',
-            ['qId' => (int)$id,'chapter_id' => (int)$request->chapter_id,'subject_id' => (int)$request->subject_id, 'standard_id' => (int)$request->standard_id,'sub_institute_id' => (int)$sub_institute_id],
-            'BELONGS_TO',
-            'Chapter',
-            ['chId' => (int)$request->chapter_id,'subject_id' => (int)$request->subject_id, 'standard_id' => (int)$request->standard_id,'sub_institute_id' => (int)$sub_institute_id]
-        );
+        lmsQuestionMasterModel::where(["id" => $id])->update($question);
 
-        \Log::info('✅ Neo4j Question Updated', [
-            'question_id' => $id
-        ]);
+        if ($request->get('hid_question_type_id') == 1) {
+            $option_arr = $request->get('options');
+            $feedback_arr = $request->get('feedback');
+            foreach ($option_arr['EDIT'] as $key => $val) {
+                $correct_answer_val = 0;
+                if ($request->has('correct_answer')) {
+                    $correct_answer = $request->get('correct_answer');
+                    $correct_answer_val = in_array($key, $correct_answer) ? 1 : 0;
+                }
+                $answer = array(
+                    'question_id'      => $id,
+                    'answer'           => $val,
+                    'feedback'         => $feedback_arr['EDIT'][$key],
+                    'correct_answer'   => $correct_answer_val,
+                    'created_by'       => $user_id,
+                    'sub_institute_id' => $sub_institute_id,
+                );
+                answermasterModel::where(["id" => $key])->update($answer);
+            }
+        }
 
-    } catch (\Exception $e) {
-        \Log::error('❌ Neo4j Error: ' . $e->getMessage());
+        //START Delete and insert into question_mapping_Data
+        lmsQuestionMappingModel::where(["questionmaster_id" => $id])->delete();
+
+        $mapping_type = $request->get('mapping_type');
+        $mapping_value = $request->get('mapping_value');
+        $reasons = $request->get('reasons');        
+
+        foreach ($mapping_type as $key => $val) {
+            if ($val != "" && $mapping_value[$key] != "") {
+                $questionmappingtype = [
+                    'questionmaster_id' => $id,
+                    'mapping_type_id'   => $val,
+                    'mapping_value_id'  => $mapping_value[$key],
+                    'reasons'  => $reasons[$key],                    
+                ];
+                lmsQuestionMappingModel::insert($questionmappingtype);
+            }
+        }
+        //END Delete and insert into question_mapping_Data
+
+        $res = [
+            "status_code" => 1,
+            "message"     => "Question-Master Updated Successfully",
+        ];
+        $type = $request->input('type');
+        //return is_mobile($type, "question_master.index", $res, "redirect");
+
+        // return array
+        if ($request->get('topic_id')) {
+            return redirect()->route('question_master.index',
+                ['chapter_id' => $request->get('chapter_id'), 'topic_id' => $request->get('topic_id'),'standard_id'=>$request->get('standard_id')]);
+        } else {
+            return redirect()->route('question_chapter_master', ['chapter_id' => $request->get('chapter_id'),'standard_id'=>$request->get('standard_id')]);
+        }
     }
-
-    return back()->with([
-        'status_code' => 1,
-        'message' => 'Question Updated Successfully'
-    ]);
-}
-    // ===== YOUR EXISTING CODE CONTINUES =====
 
     /**
      * Remove the specified resource from storage.
@@ -709,4 +762,3 @@ public function store(Request $request)
         return $res;
     }
 }
-
