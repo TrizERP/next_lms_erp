@@ -5,6 +5,7 @@ namespace App\Http\Controllers\settings;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use function App\Helpers\SearchStudent;
 use function App\Helpers\getTableFieldFromId;
 use App\Http\Controllers\student\tblstudentController;
 
@@ -20,52 +21,78 @@ class conversationalAIController extends Controller
         $year = in_array($request->type, ['API', 'JSON'])
             ? $request->syear
             : session('syear');
-
-        // find student
-        $studentId = getTableFieldFromId(
-            'tblstudent',
-            'id',
-            $request->enrollment_no,
-            'enrollment_no',
-            ['sub_institute_id' => $sub]
-        );
-        if (!$studentId) {
+        $student_id = DB::table('tblstudent as s')->join('tblstudent_enrollment as ts', 'ts.student_id', '=', 's.id')->where(['s.sub_institute_id'=>$sub,'ts.syear'=>$year])->where('s.enrollment_no', $request->enrollment_no)->whereNull('ts.end_date')->pluck('s.id');
+        $stu_arr = $student_id->toArray();
+        // find students (multiple possible)
+        $students = SearchStudent("", "", "", $sub, $year , "",  "", "", "", "", $stu_arr , "",1);
+        // return $students;
+        if ($students->isEmpty()) {
             return response()->json([
                 'html' => '<div class="text-muted p-2">Failed to find student please check enrollment no.</div>',
                 'raw_data' => 'No data Found'
             ]);
         }
 
-        // fetch local data if needed
-        $html = '';
-        $data = [];
-        if ($request->action_type === 'remain_fees' || $request->action_type === 'paid_fees') {
-            $ctrl = new tblstudentController;
-            $raw  = $ctrl->edit(
-                new Request(['sub_institute_id' => $sub, 'syear' => $year, 'type' => 'API']),
-                $studentId
-            );
-            $data = json_decode($raw, true);
-            $html = $this->formatDetailsHTML('remain_fees', $data, ['unpaid_fees' => $data['paid_unpaid_fees'] ?? [], 'student_detail' => $data['data'] ?? []]);
-        } else {
-            // call external API
-            $url  = "https://kgenkit.vercel.app/api/genkit-k12?enrollment_no={$request->enrollment_no}&action={$request->action_type}&syear={$year}&sub_institute_id={$sub}&student_id={$studentId}";
-            $data = json_decode(
-                (new \GuzzleHttp\Client)->get($url)->getBody(),
-                true
-            );
+        // Process each student and collect HTML
+        $allHtml = '';
+        $allData = [];
+        $studentCounter = 1;
+        $totalStudents = $students->count();
 
-            if (empty($data) || !is_array($data)) {
-                return response()->json([
-                    'html' => '<div class="text-muted p-2">No records found for the provided enrollment number.</div>',
-                    'raw_data' => $data
-                ]);
+        foreach ($students as $student) {
+            // Add separator between multiple students
+            if ($totalStudents > 1) {
+                $allHtml .= '<div class="student-separator" style="margin-bottom: 20px;">';
+                $allHtml .= '<div class="alert alert-info" style="border-radius: 12px; margin-bottom: 15px;">';
+                $allHtml .= '<strong>Student ' . $studentCounter . ' of ' . $totalStudents . '</strong>';
+                $allHtml .= '</div>';
             }
 
-            // pick formatter
-            $html = $this->formatDetailsHTML($request->action_type, $data);
+            if ($request->action_type === 'remain_fees' || $request->action_type === 'paid_fees') {
+                $ctrl = new tblstudentController;
+                $raw  = $ctrl->edit(
+                    new Request(['sub_institute_id' => $sub, 'syear' => $year, 'type' => 'API']),
+                    $student->id
+                );
+                $data = json_decode($raw, true);
+                
+                $html = $this->formatDetailsHTML('remain_fees', $data, ['unpaid_fees' => $data['paid_unpaid_fees'] ?? [], 'student_detail' => $data['data'] ?? []]);
+                $allData[] = $data;
+            } else {
+                // call external API with student_id
+                $url  = "https://kgenkit.vercel.app/api/genkit-k12?enrollment_no={$request->enrollment_no}&action={$request->action_type}&syear={$year}&sub_institute_id={$sub}&student_id={$student->id}";
+                
+                try {
+                    $response = (new \GuzzleHttp\Client)->get($url);
+                    $data = json_decode($response->getBody(), true);
+                    
+                    if (empty($data) || !is_array($data)) {
+                        $html = '<div class="text-muted p-2">No records found for enrollment number: ' . htmlspecialchars($request->enrollment_no) . '</div>';
+                    } else {
+                        // pick formatter
+                        $html = $this->formatDetailsHTML($request->action_type, $data);
+                    }
+                    $allData[] = $data;
+                } catch (\Exception $e) {
+                    $html = '<div class="text-muted p-2">Error fetching data: ' . htmlspecialchars($e->getMessage()) . '</div>';
+                    $allData[] = ['error' => $e->getMessage()];
+                }
+            }
+
+            $allHtml .= $html;
+            
+            if ($totalStudents > 1) {
+                $allHtml .= '</div>';
+                // Add a divider between students
+                if ($studentCounter < $totalStudents) {
+                    $allHtml .= '<hr style="margin: 20px 0; border-top: 2px dashed #dee2e6;">';
+                }
+            }
+            
+            $studentCounter++;
         }
-        return response()->json(['html' => $html, 'raw_data' => $data]);
+        // return $allData;
+        return response()->json(['html' => $allHtml, 'raw_data' => $allData]);
     }
 
     /**
@@ -101,6 +128,10 @@ class conversationalAIController extends Controller
 
         return $this->getCardWrapper("Student Details", "fa-user-graduate", '
             <div class="detail-item">
+                <span class="detail-label">Student ID</span>
+                <span class="detail-value fw-bold">' . ($student['id'] ?? 'N/A') . '</span>
+            </div>
+            <div class="detail-item">
                 <span class="detail-label">Enrollment No.</span>
                 <span class="detail-value fw-bold">' . ($student['enrollment_no'] ?? 'N/A') . '</span>
             </div>
@@ -127,6 +158,7 @@ class conversationalAIController extends Controller
             ' . $classRow . '
         ');
     }
+    
     private function generateFeesHTML($data)
     {
         if (empty($data) || !isset($data['student_details'][0])) {
@@ -252,6 +284,10 @@ class conversationalAIController extends Controller
 
         return $this->getCardWrapper("Fees Details", "fa-money-bill-wave", '
         <div class="detail-item">
+            <span class="detail-label">Student ID</span>
+            <span class="detail-value fw-bold">' . ($student['id'] ?? 'N/A') . '</span>
+        </div>
+        <div class="detail-item">
             <span class="detail-label">Student Name</span>
             <span class="detail-value fw-bold">' . ($fullName ?: 'N/A') . '</span>
         </div>
@@ -267,6 +303,7 @@ class conversationalAIController extends Controller
         ' . $feesHtml . '
     ');
     }
+    
     private function generateAdmissionHTML($data)
     {
         if (empty($data) || !isset($data[0])) {
@@ -279,6 +316,10 @@ class conversationalAIController extends Controller
         $statusClass = strtolower($status) === 'active' ? 'status-active' : 'status-pending';
 
         return $this->getCardWrapper("Admission Details", "fa-file-alt", '
+            <div class="detail-item">
+                <span class="detail-label">Student ID</span>
+                <span class="detail-value fw-bold">' . ($student['id'] ?? 'N/A') . '</span>
+            </div>
             <div class="detail-item">
                 <span class="detail-label">Student Name</span>
                 <span class="detail-value fw-bold">' . ($fullName ?: 'N/A') . '</span>
@@ -470,6 +511,10 @@ class conversationalAIController extends Controller
 
         return $this->getCardWrapper("Unpaid Fees", "fa-file-alt", '
         <div class="detail-item">
+            <span class="detail-label">Student ID : </span>
+            <span class="detail-value fw-bold">' . ($studentDetail['id'] ?? 'N/A') . '</span>
+        </div>
+        <div class="detail-item">
             <span class="detail-label">Student Name : </span>
             <span class="detail-value fw-bold">' . ($studentName ?: 'N/A') . '</span>
         </div>
@@ -493,6 +538,7 @@ class conversationalAIController extends Controller
         ' . $feesHtml . '
     ');
     }
+    
     /**
      * Common card wrapper function
      */
@@ -779,49 +825,49 @@ class conversationalAIController extends Controller
     }
 
     public function getIntentsList(Request $request)
-{
-    $intents = [
-        "Student Details",
-        "Fees Details",
-        "Admission Details",
-        "Remain Fees",
-        "Paid Fees",
-        "Academic Sections",
-        "Total Academic Sections",
-        "Standards",
-        "Total Standards",
-        "Divisions",
-        "Total Divisions",
-        "Students",
-        "Total Students",
-        "Subjects",
-        "Total Subjects",
-        "Batches",
-        "Total Batches",
-        "Announcements",
-        "Total Announcements",
-        "Chapters",
-        "Total Chapters",
-        "Payroll Types",
-        "Total Payroll Types",
-        "Periods",
-        "Total Periods",
-        "Question Papers",
-        "Total Question Papers",
-        "Transport Drivers",
-        "Total Transport Drivers",
-        "Transport Kilometer Rates",
-        "Total Transport Kilometer Rates",
-        "Transport Routes",
-        "Total Transport Routes",
-        "Transport Vehicles",
-        "Total Transport Vehicles",
-        "User Profiles",
-        "Total User Profiles",
-        "HRMS Departments",
-        "Total HRMS Departments",
-    ];
-    
-    return response()->json(['intents' => $intents]);
-}
+    {
+        $intents = [
+            "Student Details",
+            "Fees Details",
+            "Admission Details",
+            "Remain Fees",
+            "Paid Fees",
+            "Academic Sections",
+            "Total Academic Sections",
+            "Standards",
+            "Total Standards",
+            "Divisions",
+            "Total Divisions",
+            "Students",
+            "Total Students",
+            "Subjects",
+            "Total Subjects",
+            "Batches",
+            "Total Batches",
+            "Announcements",
+            "Total Announcements",
+            "Chapters",
+            "Total Chapters",
+            "Payroll Types",
+            "Total Payroll Types",
+            "Periods",
+            "Total Periods",
+            "Question Papers",
+            "Total Question Papers",
+            "Transport Drivers",
+            "Total Transport Drivers",
+            "Transport Kilometer Rates",
+            "Total Transport Kilometer Rates",
+            "Transport Routes",
+            "Total Transport Routes",
+            "Transport Vehicles",
+            "Total Transport Vehicles",
+            "User Profiles",
+            "Total User Profiles",
+            "HRMS Departments",
+            "Total HRMS Departments",
+        ];
+
+        return response()->json(['intents' => $intents]);
+    }
 }
