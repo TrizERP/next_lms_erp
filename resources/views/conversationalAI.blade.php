@@ -215,7 +215,7 @@
         position: relative;
     }
 
-    .icon-btn {
+    .icon-btn1 {
         background: transparent;
         border: none;
         color: white;
@@ -229,7 +229,7 @@
         cursor: pointer;
     }
 
-    .icon-btn:hover {
+    .icon-btn1:hover {
         background: rgba(255, 255, 255, 0.2);
         transform: scale(1.05);
     }
@@ -406,7 +406,7 @@
             </div>
             <div class="d-flex gap-1">
                 <div class="dropdown">
-                    <button type="button" class="icon-btn dropdown-toggle" id="optionsDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Options">
+                    <button type="button" class="icon-btn1 dropdown-toggle" id="optionsDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Options">
                         <span class="mdi mdi-dots-vertical" style="font-size: 1.2rem;color:white"></span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="optionsDropdownBtn">
@@ -414,17 +414,17 @@
                         <li><a class="dropdown-item" href="#" id="intentListsOption">Intent Lists</a></li>
                     </ul>
                 </div>
-                <button type="button" class="icon-btn" id="expandPanelBtn" title="Expand">
+                <button type="button" class="icon-btn1" id="expandPanelBtn" title="Expand">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
                     </svg>
                 </button>
-                <button type="button" class="icon-btn" id="newConversationBtn" title="New Conversation">
+                <button type="button" class="icon-btn1" id="newConversationBtn" title="New Conversation">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                     </svg>
                 </button>
-                <button type="button" class="icon-btn" id="closeConversationAI" aria-label="Close">
+                <button type="button" class="icon-btn1" id="closeConversationAI" aria-label="Close">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
