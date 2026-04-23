@@ -33,12 +33,11 @@
     <div class="form-group">
         <label for="">Item Code</label>
         <select name="item_codes" id="item_codes" class="form-control" onchange="checkIssue()" required>
-            @if (count($item_codes) == 1 && session()->get('sub_institute_id') == 254)
+            @if (count($item_codes) == 1)
                 @foreach ($item_codes as $key => $value)
                     <option value="{{ $value->id }}" selected>{{ $value->item_code }}</option>
                 @endforeach
             @else
-                <option value=''>Select Item Code</option>
                 @foreach ($item_codes as $key => $value)
                     <option value="{{ $value->id }}">{{ $value->item_code }}</option>
                 @endforeach
@@ -172,11 +171,12 @@
                         $("#issue_book_check").prop("disabled", true);
                     } else {
                         // If available, check if already issued
+                        {{--
                         @if (session()->get('sub_institute_id') == 254)
                             var urls = '/check_issue?book_id=' + book_id;
-                        @else
+                        @else --}}
                             var urls = '/check_issue?book_id=' + book_id + '&item_code=' + item_code;
-                        @endif
+                        {{-- @endif --}}
                         $.ajax({
                             url: urls,
                             type: 'GET',

@@ -270,18 +270,23 @@ class studentBulkUpdateController extends Controller
         else if (isset($request->rollno_standard)){
             $students_arr = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se','s.id','=','se.student_id')
-            ->selectRaw('s.first_name,se.roll_no,se.student_id,se.standard_id,se.section_id')
+            ->selectRaw('se.syear,se.sub_institute_id,s.first_name,s.last_name,se.roll_no,se.student_id,se.standard_id,se.section_id')
             ->where(['s.sub_institute_id'=>$sub_institute_id,'se.syear'=>$syear])
             ->where('se.standard_id',$request->rollno_standard)
             ->where('se.section_id',$request->division)            
             ->whereNull('se.end_date')
             ->orderBy('s.first_name')
+            ->orderBy('s.last_name')
             ->get()->toArray();
             
             if(!empty($students_arr)){
                 $roll_no = 1;
                 foreach ($students_arr as $key => $value) {
-                    $update=DB::table('tblstudent_enrollment')->where('student_id',$value->student_id)->update([
+                    $update=DB::table('tblstudent_enrollment')
+                    ->where('syear',$value->syear)
+                    ->where('sub_institute_id',$value->sub_institute_id)
+                    ->where('student_id',$value->student_id)
+                    ->update([
                         'roll_no'=>$roll_no,
                     ]);
                     $roll_no++;

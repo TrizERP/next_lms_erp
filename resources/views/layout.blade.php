@@ -263,7 +263,7 @@
                   </div>
                </div>
                <!-- start conversational AI 29-01-2026  -->
-                    <div class="d-xl-flex d-md-block d-flex flex-wrap align-items-center justify-content-between mr-2">
+               <!-- <div class="d-xl-flex d-md-block d-flex flex-wrap align-items-center justify-content-between mr-2">
                         <button type="button" class="btn btn-secondary" id="openConversationAI">
                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-bot w-6 h-6 text-blue-600" aria-hidden="true">
                                 <path d="M12 8V4H8"></path>
@@ -274,8 +274,8 @@
                                 <path d="M9 13v2"></path>
                             </svg>
                         </button>
-                    </div>
-                    @include('conversationalAI')
+                    </div> -->
+                  {{-- @include('conversationalAI') --}}
                     <!-- end conversational AI  -->
                <div class="d-xl-flex d-md-block d-flex flex-wrap align-items-center justify-content-between">
                   <!--<div class="d-flex align-items-center">
