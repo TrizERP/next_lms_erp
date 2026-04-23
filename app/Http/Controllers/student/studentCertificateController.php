@@ -746,8 +746,15 @@ LIMIT 1");
         // echo "<pre>";print_r($paidFees);exit;
 
         // end 20-03-2025
-        $html_content = str_replace(htmlspecialchars("<<month_name_value>>"),
-            strtoupper($month), $html_content);
+        $html_content = str_replace(
+            htmlspecialchars("<<month_name_value>>"),
+            strtoupper(
+                isset($value['month_up_paid_school_dues']) && !empty($value['month_up_paid_school_dues'])
+                    ? $value['month_up_paid_school_dues']
+                    : $month
+            ),
+            $html_content
+        );
         $html_content = str_replace(htmlspecialchars("<<month_up_paid_school_dues_value>>"),
             strtoupper($value['month_up_paid_school_dues']), $html_content);
         $html_content = str_replace(htmlspecialchars("<<admission_under_value>>"),
