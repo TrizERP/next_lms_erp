@@ -696,6 +696,14 @@
             });
         }
 
+        // Function to validate enrollment number (accepts alphanumeric with hyphens)
+        function isValidEnrollmentNumber(value) {
+            // Allow alphanumeric characters, hyphens, and spaces
+            // Examples: HN-25-379, 12345, STUDENT-001, ABC123
+            var enrollmentRegex = /^[a-zA-Z0-9\s\-]+$/;
+            return value && value.trim().length > 0 && enrollmentRegex.test(value.trim());
+        }
+
         function sendMessage(userContent) {
             var content = userContent.trim();
             if (!content) return;
@@ -712,7 +720,8 @@
             $chatInput.val('').css('height', 'auto');
             scrollToBottom();
 
-            if (pendingEnrollmentAction && /^\d+$/.test(content)) {
+            // Check if we're expecting an enrollment number
+            if (pendingEnrollmentAction && isValidEnrollmentNumber(content)) {
                 var action = pendingEnrollmentAction;
                 var enrollmentNumber = content;
                 pendingEnrollmentAction = null;
@@ -735,14 +744,30 @@
                     scrollToBottom();
                 });
                 return;
+            } 
+            // If we're expecting enrollment number but got invalid input
+            else if (pendingEnrollmentAction && !isValidEnrollmentNumber(content)) {
+                var errorBot = {
+                    id: generateUUID(),
+                    type: 'bot',
+                    content: "Please enter a valid enrollment number (e.g., HN-25-379, 12345, or STUDENT-001).",
+                    timestamp: new Date(),
+                    metadata: { canEscalate: false },
+                    isHtml: false
+                };
+                messages.push(errorBot);
+                addMessageToDOM(errorBot);
+                scrollToBottom();
+                return;
             }
 
-            var studentKeywords = ["student detail", "student details", "fees details", "fees detail", "fee details", "fee detail", "admission details", "admission detail","remain fees","fees remain","paid fees","fees paid"];
+            // Check for student-related keywords
+            var studentKeywords = ["student detail", "student details", "fees details", "fees detail", "fee details", "fee detail", "admission details", "admission detail","remain fees","fees remain","pending fees","paid fees","fees paid"];
             var matchedKeyword = studentKeywords.find(kw => content.toLowerCase().includes(kw));
             
             if (matchedKeyword) {
                 var detectedAction = "student_details";
-                if (content.toLowerCase().includes("remain") && content.toLowerCase().includes("fees")) {
+                if ((content.toLowerCase().includes("remain") && content.toLowerCase().includes("fees")) || content.toLowerCase().includes("pending") && content.toLowerCase().includes("fees")) {
                     detectedAction = "remain_fees";
                 } else if (content.toLowerCase().includes("paid") && content.toLowerCase().includes("fees")) {
                     detectedAction = "paid_fees";
@@ -760,7 +785,7 @@
                     <div>
                         <span class="mb-2 d-block">Please provide the student enrollment number:</span>
                         <div class="enrollment-input-group">
-                            <input type="text" id="${uniqueId}" class="form-control form-control-sm" placeholder="Enter enrollment no." style="max-width:200px;" />
+                            <input type="text" id="${uniqueId}" class="form-control form-control-sm" placeholder="Enter enrollment no. (e.g., HN-25-379)" style="max-width:200px;" />
                             <button type="button" class="submit-enrollment-btn btn btn-primary btn-sm rounded-pill" data-input-id="${uniqueId}"><i class="fas fa-check"></i></button>
                         </div>
                     </div>
@@ -781,13 +806,13 @@
                     $(document).off('click', '.submit-enrollment-btn').on('click', '.submit-enrollment-btn', function() {
                         var inputId = $(this).data('input-id');
                         var enrollmentVal = $('#' + inputId).val().trim();
-                        if (enrollmentVal && /^\d+$/.test(enrollmentVal)) {
+                        if (enrollmentVal && isValidEnrollmentNumber(enrollmentVal)) {
                             sendMessage(enrollmentVal);
                         } else {
                             var errorBot = {
                                 id: generateUUID(),
                                 type: 'bot',
-                                content: "Please enter a valid numeric enrollment number.",
+                                content: "Please enter a valid enrollment number (e.g., HN-25-379, 12345, or STUDENT-001).",
                                 timestamp: new Date(),
                                 metadata: { canEscalate: false },
                                 isHtml: false
