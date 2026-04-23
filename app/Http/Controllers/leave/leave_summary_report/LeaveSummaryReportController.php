@@ -82,7 +82,7 @@ class LeaveSummaryReportController extends Controller
         $employees = $employeesQuery->get()->toArray();  // 23-04-24 by uma
 
         $get_hrms_leave_types = DB::table('hrms_leave_types')->where('sub_institute_id', $sub_institute_id)->where('status',1)->orderBy('sort_order')->get()->toArray();
-        
+
         // get_hrms_leave_allocations
         $leaveAllocationsQuery = DB::table('hrms_leave_allocation')->whereNull('employee_id')->where('sub_institute_id', $sub_institute_id);
         /*if (isset($employee_id)) {
@@ -92,7 +92,8 @@ class LeaveSummaryReportController extends Controller
             $leaveAllocationsQuery->where('department_id', $department_id);
         }
         $get_hrms_leave_allocations = $leaveAllocationsQuery->get()->toArray();
-                   
+
+        // Get all employee leave records including those with no leaves
         $get_employee_leave_lists = DB::table('hrms_emp_leaves as hel')
             ->selectRaw("hel.*, u.*,CONCAT_WS(' ',u.first_name,u.middle_name,u.last_name) AS employee_name, group_concat(hlt.leave_type) as leave_type,group_concat(hel.status) as leave_status,group_concat(hel.from_date) as leave_from_date,group_concat(hel.to_date) as leave_to_date, hlt.id as leave_id, hel.status as hel_status, group_concat(hel.day_type) as total_day_type, hd.department as department_name,hd.id as department_id,u.openingleave,u.CL_opening_leave,u.probation_period_from,u.probation_period_to")
             ->join('tbluser as u', 'u.id', '=', 'hel.user_id')
@@ -103,7 +104,6 @@ class LeaveSummaryReportController extends Controller
             ->join('hrms_departments as hd', 'hd.id', '=', 'u.department_id')
             ->where('hel.sub_institute_id', $sub_institute_id)
             ->where('u.status', 1)
-            // ->whereYear('hel.from_date', '=', $years)
             ->where('hel.from_date','>=',$years.'-04-01')
             ->where('hel.to_date','<=',($years+1).'-03-31')
             ->when($employee_id!=0, function ($query) use ($employee_id) {
@@ -112,10 +112,42 @@ class LeaveSummaryReportController extends Controller
             ->when($department_id!=0, function ($query) use ($department_id) {
                 return $query->where('u.department_id', $department_id);
             })
-            ->where('hel.status', '!=', 'pending') //added by rajesh 23-09-2025
+            ->where('hel.status', '!=', 'pending')
             ->groupBy('hel.user_id')
             ->get()
             ->toArray();
+
+        // Add employees with no leave records to ensure all employees appear
+        $employeesWithLeaves = array_column($get_employee_leave_lists, 'user_id');
+        foreach ($employees as $emp) {
+            if (!in_array($emp['id'], $employeesWithLeaves)) {
+                // Create empty leave record for employee with no leaves
+                $emptyLeave = (object) [
+                    'id' => null,
+                    'user_id' => $emp['id'],
+                    'employee_no' => $emp['employee_no'] ?? '',
+                    'joined_date' => $emp['joined_date'] ?? '',
+                    'first_name' => $emp['first_name'],
+                    'middle_name' => $emp['middle_name'],
+                    'last_name' => $emp['last_name'],
+                    'employee_name' => trim($emp['first_name'] . ' ' . ($emp['middle_name'] ?: '') . ' ' . $emp['last_name']),
+                    'leave_type' => null,
+                    'leave_status' => null,
+                    'leave_from_date' => null,
+                    'leave_to_date' => null,
+                    'leave_id' => null,
+                    'hel_status' => null,
+                    'total_day_type' => null,
+                    'department_name' => $emp['department'] ?? '',
+                    'department_id' => $emp['department_id'],
+                    'openingleave' => $emp['openingleave'] ?? 0,
+                    'CL_opening_leave' => $emp['CL_opening_leave'] ?? 0,
+                    'probation_period_from' => $emp['probation_period_from'],
+                    'probation_period_to' => $emp['probation_period_to']
+                ];
+                $get_employee_leave_lists[] = $emptyLeave;
+            }
+        }
 
         $new_data = [];
         $op_data = [];
@@ -189,15 +221,15 @@ class LeaveSummaryReportController extends Controller
 
                 $mainLeave = number_format($depLeave,2) ?? 0;
                 // LTY009 earned Leave openingleave
-                if($elLeave > 0 && isset($leaveTypeId) && $leaveTypeId=='LTY009' && strtotime($probationto) > strtotime($date)){
+                if($elLeave > 0 && isset($leaveTypeId) && $leaveTypeId=='LTY009'){// && strtotime($probationto) > strtotime($date)
                     $mainLeave = $elLeave;
-                } 
+                }/* 
                 else if(isset($leaveTypeId) && $leaveTypeId=='LTY009'){
                     $mainLeave = ($depLeave + $elLeave);
-                }
+                }*/
                 // for casual leave if your have CL leave in profile but probation is greater then current date then it's profile value will be count otherwise departmentwise leave will br allocated
                 // LTY001 causual leave CL_opening_leave
-                if($clLeave > 0 && isset($leaveTypeId) && $leaveTypeId=='LTY001' && strtotime($probationto) > strtotime($date)){
+                if($clLeave > 0 && isset($leaveTypeId) && $leaveTypeId=='LTY001'){// && strtotime($probationto) > strtotime($date)
                     $mainLeave = $clLeave; 
                 }
 
