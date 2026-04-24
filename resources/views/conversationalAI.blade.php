@@ -1,8 +1,5 @@
 <style>
-    .modal-backdrop.show, .modal-backdrop.fade{
-       opacity: 0 !important;
-       display: none !important;
-    }
+  
   
     .d-flex .flex-column .gap-1{
         width: 95%;
