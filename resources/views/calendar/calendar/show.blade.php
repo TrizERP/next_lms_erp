@@ -127,6 +127,10 @@
 <script src="/plugins/bower_components/moment/moment.js"></script>
 <script src='/plugins/bower_components/calendar/dist/fullcalendar.min.js'></script>
 <script src="/plugins/bower_components/calendar/dist/jquery.fullcalendar.js"></script>
+
+<!-- Include Conversational AI -->
+@include('conversationalAI')
+
 <script>
     var standard = "<div class='form-group'>";
     standard = standard + "<label class='control-label'>Standard</label>";
