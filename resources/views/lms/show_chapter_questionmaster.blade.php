@@ -27,6 +27,27 @@
             </div>
         </div>
 
+        <!-- Display Academic Section, Standard, Subject, Chapter -->
+        <div class="row mb-3">
+            <div class="col-lg-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3"
+                                <strong>Standard:</strong> {{ $data['breadcrum_data']->standard_name ?? 'N/A' }}
+                            </div>
+                            <div class="col-md-3">
+                                <strong>Subject:</strong> {{ $data['breadcrum_data']->subject_name ?? 'N/A' }}
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Chapter:</strong> {{ $data['breadcrum_data']->chapter_name ?? 'N/A' }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
             <div class="white-box">
                 <div class="panel-body">
@@ -46,10 +67,6 @@
                                         <tr>
                                             <th></th>
                                             <th>Sr. No.</th>
-                                            <th>Academic Section</th>
-                                            <th>Standard</th>
-                                            <th>Subject</th>
-                                            <th>Chapter</th>
                                             <th>Question</th>
                                             <th>Question Type</th>
                                             <th>Mapping Type</th>
@@ -71,10 +88,6 @@
                                                             id="{{ $quesdata->id }}" value="{{ $quesdata->id }}">
                                                     </td>
                                                     <td>@php echo $i++;@endphp</td>
-                                                    <td>{{ $quesdata->grade_name }}</td>
-                                                    <td>{{ $quesdata->standard_name }}</td>
-                                                    <td>{{ $quesdata->subject_name }}</td>
-                                                    <td>{{ $quesdata->chapter_name }}</td>
                                                     <td>{!! $quesdata->question_title !!}</td>
                                                     <td>{{ ucwords($quesdata->question_type) }}</td>
                                                     <td>
@@ -123,7 +136,7 @@
                                             @endforeach
                                         @else
                                             <tr>
-                                                <td colspan="12">
+                                                <td colspan="8">
                                                     <center>No records</center>
                                                 </td>
                                             </tr>
