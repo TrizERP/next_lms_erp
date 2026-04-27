@@ -722,6 +722,7 @@ datalist {
                            placeholder="dd/mm/yyyy" 
                            autocomplete="off" 
                            id="{{ $value1['field_name'] }}" 
+                           name="admission_enquiry_fields[{{ $value1['field_name'] }}]"
                            @if($value1['required'] == 1) required @endif 
                            value="{{ $fieldValue }}" 
                            readonly>
@@ -736,6 +737,7 @@ datalist {
                                 <div class="checkbox checkbox-success">
                                     <input type="checkbox" 
                                            @if($valueData['display_value'] == $fieldValue) checked @endif  
+                                           name="admission_enquiry_fields[{{ $value1['field_name'] }}][]"
                                            value="{{ $valueData['display_value'] }}"  
                                            id="{{ $valueData['display_value'] }}" 
                                            @if($value1['required'] == 1) required @endif 
@@ -749,6 +751,7 @@ datalist {
                 
             @elseif($value1['field_type'] == 'dropdown')
                 <select class="form-control" 
+                        name="admission_enquiry_fields[{{ $value1['field_name'] }}]"
                         @if($value1['required'] == 1) required @endif 
                         id="{{ $value1['field_name'] }}" 
                         readonly>
@@ -766,6 +769,7 @@ datalist {
                 
             @elseif($value1['field_type'] == 'textarea')
                 <textarea id="{{ $value1['field_name'] }}" 
+                          name="admission_enquiry_fields[{{ $value1['field_name'] }}]"
                           class="form-control" 
                           @if($value1['required'] == 1) required @endif 
                           readonly>{{ $fieldValue }}</textarea>
@@ -773,11 +777,12 @@ datalist {
             @else
                 <input type="{{ $value1['field_type'] }}" 
                        id="{{ $value1['field_name'] }}" 
+                       name="admission_enquiry_fields[{{ $value1['field_name'] }}]"
                        placeholder="{{ $value1['field_message'] ?? '' }}" 
                        value="{{ $fieldValue }}" 
                        @if($value1['required'] == 1) required @endif  
                        class="form-control" 
-                       readonly>
+                       >
             @endif
         </div>
     @endforeach
