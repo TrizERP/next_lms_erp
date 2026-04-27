@@ -276,8 +276,6 @@
         }
     </script>
     <script>
-        $('#grade').attr('required', true);
-        $('#standard').attr('required', true);
 
         $(document).ready(function() {
             var table = $('#example').DataTable({
