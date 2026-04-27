@@ -552,11 +552,20 @@ class tblstudentController extends Controller
 		return $id;
 	}
 
-	public function updateData(Request $request)
+    public function updateData(Request $request)
     {
         $newRequest = $request->post();
         $student_id = $newRequest['id'];
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $admissionEnquiryFields = $request->input('admission_enquiry_fields', []);
+        $admissionCustomFieldNames = tblcustomfieldsModel::where([
+            'status' => "1",
+            'table_name' => "admission_enquiry",
+        ])
+            ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
+            ->pluck('field_name')
+            ->toArray();
+        $admissionCustomFieldMap = array_flip($admissionCustomFieldNames);
         $finalArray['sub_institute_id'] = $sub_institute_id;
         $finalArrayAdmission['sub_institute_id'] = $sub_institute_id;
         $finalArray['password'] = md5('student');
@@ -564,13 +573,26 @@ class tblstudentController extends Controller
 
         unset($newRequest['student_image']);
 
+        foreach ($admissionEnquiryFields as $key => $value) {
+            if (!isset($admissionCustomFieldMap[$key])) {
+                continue;
+            }
+
+            if (is_array($value)) {
+                $value = implode(",", $value);
+            }
+
+            $finalArrayAdmission[$key] = $value;
+        }
+
         foreach ($newRequest as $key => $value) {
             if ($key != '_method' && $key != '_token' && $key != 'type' && $key != 'submit' && $key != 'grade' && $key != 'standard'
                 && $key != 'division' && $key != 'student_quota' && $key != 'end_date' && $key != 'remarks' && $key != 'inactive_satus'
                 && $key != 'id' && $key != 'optional_subject' && $key != 'optional_subject4' && $key != 'optional_subject5' && $key != 'optional_subject6' && $key != 'previous_school_gr_no' && $key != 'house'
                 && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation'
                 && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation'
-                && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no'  && $key != 'editable' && $key!='oldFatherImage' && $key!='oldMotherImage') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
+                && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no'  && $key != 'editable' && $key!='oldFatherImage' && $key!='oldMotherImage'
+                && $key != 'admission_enquiry_fields') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
