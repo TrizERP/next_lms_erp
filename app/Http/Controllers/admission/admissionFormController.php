@@ -72,6 +72,7 @@ class admissionFormController extends Controller
 
         $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_form"])
         ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->orderBy('sort_order', 'ASC')
         ->get();
 
         $res['dataCustomFields']=$customFields;
@@ -173,6 +174,7 @@ class admissionFormController extends Controller
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_form"])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)  and user_type="" ')
+            ->orderBy('sort_order', 'ASC')
             ->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();

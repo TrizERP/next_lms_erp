@@ -132,9 +132,42 @@ class tblcustomfieldsController extends Controller
         return is_mobile($type, "add_fields.index", $res);
     }
 
+    public function edit(Request $request, $id)
+    {
+        $type = $request->input('type');
+        $data = tblcustomfieldsModel::find($id);
+        
+        return is_mobile($type, "settings/edit_sort_order", $data, "view");
+    }
+
     public function update(Request $request, $id)
     {
-        // UpDTAe FuncTiON.
+        $newRequest = $request->all();
+        $validator = Validator::make($newRequest, [
+            'sort_order' => 'required|numeric',
+        ]);
+
+        if ($validator->fails()) {
+            $res['status_code'] = "0";
+            $res['message'] = "Please input all required parameters.";
+            $type = $request->input('type');
+            return is_mobile($type, "settings/show_fields", $res);
+        }
+
+        $sort_order = $request->get('sort_order');
+        
+        $result = tblcustomfieldsModel::where(["id" => $id])->update(['sort_order' => $sort_order]);
+
+        if($result){
+            $res['status_code'] = "1";
+            $res['message'] = "Sort order updated successfully";
+        } else {
+            $res['status_code'] = "0";
+            $res['message'] = "Failed to update";
+        }
+
+        $type = $request->input('type');
+        return redirect('/settings/add_fields')->with(['data'=>$res]);
     }
 
     public function destroy(Request $request, $id)

@@ -48,6 +48,7 @@ class admissionReportController extends Controller
             // 2024-12-28 start 
             $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+            ->orderBy('sort_order', 'ASC')
             ->selectRaw("GROUP_CONCAT(
                         CONCAT(
                             'ai.', field_name, 
@@ -55,6 +56,7 @@ class admissionReportController extends Controller
                         )
                         SEPARATOR ', '
                     ) AS fileds")
+
             ->first();
             $customField = '1=1';
             if(isset($customFields->fileds) && $customFields->fileds!=''){
@@ -170,6 +172,7 @@ class admissionReportController extends Controller
         {
             $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_form"])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+            ->orderBy('sort_order', 'ASC')
             ->get();
             foreach ($customFields as $key => $value) {
                 $reportFields[$value['field_name']] = ucfirst(str_replace("_", " ", $value['field_name']));
@@ -323,6 +326,7 @@ class admissionReportController extends Controller
         }
         $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
         ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->orderBy('sort_order', 'ASC')
         ->get();
         $res['dataCustomFields']=$customFields;
         $res['status_code'] = 1;
@@ -475,6 +479,7 @@ class admissionReportController extends Controller
         $res['fields'] = $reportFields;
         $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
         ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->orderBy('sort_order', 'ASC')
         ->get();
         $res['dataCustomFields']=$customFields;
         return is_mobile($type, "admission.report.show_con_report", $res, 'view');
