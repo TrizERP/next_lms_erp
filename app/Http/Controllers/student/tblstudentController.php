@@ -86,7 +86,8 @@ class tblstudentController extends Controller
 
 		$dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "tblstudent"])
 			->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
-			->get();
+			->orderBy('sort_order', 'ASC')
+            ->get();
 
 		$fieldsData = tblfields_dataModel::get()->toArray();
         $i = 0;
@@ -325,6 +326,7 @@ class tblstudentController extends Controller
         $dataCustomFields = tblcustomfieldsModel::select('field_name')
             ->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
             ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
+            ->orderBy('sort_order', 'ASC')
             ->get()
             ->toArray();
 
@@ -759,10 +761,12 @@ class tblstudentController extends Controller
 		// RAJESH	->whereRaw('tblstudent_enrollment.end_date is NULL')
 		$dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "tblstudent"])
         ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
+			->orderBy('sort_order', 'ASC')
 			->get();
 
         $dataCustomFields1 = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
         ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
+			->orderBy('sort_order', 'ASC')
 			->get();
             
         $fieldsData = tblfields_dataModel::get()->toArray();
@@ -1367,6 +1371,7 @@ die; */
         $dataCustomFields = tblcustomfieldsModel::select('field_name')
             ->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
             ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
+            ->orderBy('sort_order', 'ASC')
             ->get()
             ->toArray();
 

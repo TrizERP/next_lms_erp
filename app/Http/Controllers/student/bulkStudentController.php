@@ -135,6 +135,7 @@ class bulkStudentController extends Controller
             ->where(["status" => "1", "table_name" => "tblstudent"])
             ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
             ->where('user_type', "bulk_update")
+            ->orderBy('sort_order', 'ASC')
             ->get()
             ->toArray();
         $customfieldArray = [];
@@ -532,6 +533,7 @@ class bulkStudentController extends Controller
 
                     $dataCustomFields = tblcustomfieldsModel::select('field_name')->where(['status' => "1", 'table_name' => "tblstudent", 'field_type' => "file"])
                         ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1)')
+                        ->orderBy('sort_order', 'ASC')
                         ->get()
                         ->toArray();
                 }
