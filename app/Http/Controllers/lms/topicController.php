@@ -301,11 +301,9 @@ class topicController extends Controller
         {
             return is_mobile($type, "lms/view_content_image", $data, "view");
         }
-        else if($content_data[0]['file_type'] == 'mp3' || $content_data[0]['file_type'] == 'mp4' || $content_data[0]['file_type'] == 'mkv')
-        {
+        else if($content_data[0]['file_type'] == 'mp3' || $content_data[0]['file_type'] == 'mp4' || $content_data[0]['file_type'] == 'mkv'){
             return is_mobile($type, "lms/view_content_video", $data, "view");
-        } else if($content_data[0]['file_type'] == 'pdf')
-        {
+        }else if($content_data[0]['file_type'] == 'pdf'){
             return is_mobile($type, "lms/view_content", $data, "view");
         }else{
             return is_mobile($type, "lms/view_content_video", $data, "view");
