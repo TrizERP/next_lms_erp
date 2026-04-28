@@ -491,11 +491,11 @@ class studentResultController extends Controller
             $result_type = 'playground';
         }
         if (strpos($html_content, htmlspecialchars('<<scholastic_marks_prep_mmis>>')) !== false) {
-            $scholastic = $this->get_mmisPrepScholastic($standard_id, $value['id'], $format, $result_type);
-            $html_content = str_replace(htmlspecialchars("<<scholastic_marks_prep_mmis>>"), $scholastic['scholastic_table'], $html_content);
-            $html_content = str_replace(htmlspecialchars("<<scholastic_prep_grade_marks>>"), $scholastic['scholastic_gradeRange'], $html_content);
-            $html_content = str_replace(htmlspecialchars("<<conduct_remark>>"), $scholastic['conducted'], $html_content);
-            $html_content = str_replace(htmlspecialchars("<<teacher_remark>>"), $scholastic['teacher_remark'], $html_content);
+            $main_result = $this->get_mmisPrepScholastic($standard_id, $value['id'], $format, $result_type);
+            $html_content = str_replace(htmlspecialchars("<<scholastic_marks_prep_mmis>>"), $main_result['table'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<scholastic_prep_grade_marks>>"), $main_result['scholastic_gradeRange'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<conduct_remark>>"), $main_result['conducted'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<teacher_remark>>"), $main_result['teacher_remark'], $html_content);
         }
         if (strpos($html_content, htmlspecialchars('<<co_scholastic_prep_marks>>')) !== false) {
             $co_result = $this->get_mmisPrepCoScholastic($standard_id, $value['id'], $format, $result_type);
@@ -506,12 +506,12 @@ class studentResultController extends Controller
 
         // mmis 11 results start 17-12-2024 scholastic part
         if (strpos($html_content, htmlspecialchars('<<scholastic_marks_11_mmis>>')) !== false) {
-            $scholastic = $this->get_mmis11Scholastic($standard_id, $value['id'], $format, "");
-            $html_content = str_replace(htmlspecialchars("<<scholastic_marks_11_mmis>>"), $scholastic['scholastic_table'], $html_content);
-            $html_content = str_replace(htmlspecialchars("<<scholastic_11_grade_marks>>"), $scholastic['scholastic_gradeRange'], $html_content);
-            $html_content = str_replace(htmlspecialchars("<<conduct_remark>>"), $scholastic['conducted'], $html_content);
-            $html_content = str_replace(htmlspecialchars("<<teacher_remark>>"), $scholastic['teacher_remark'], $html_content);
-            $html_content = str_replace(htmlspecialchars("<<simple_result>>"), $scholastic['simple_result'], $html_content);
+            $main_result = $this->get_mmis11Scholastic($standard_id, $value['id'], $format, "");
+            $html_content = str_replace(htmlspecialchars("<<scholastic_marks_11_mmis>>"), $main_result['table'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<scholastic_11_grade_marks>>"), $main_result['scholastic_gradeRange'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<conduct_remark>>"), $main_result['conducted'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<teacher_remark>>"), $main_result['teacher_remark'], $html_content);
+            $html_content = str_replace(htmlspecialchars("<<simple_result>>"), $main_result['simple_result'], $html_content);
         }
         if (strpos($html_content, htmlspecialchars('<<co_scholastic_11_marks>>')) !== false) {
             $co_result = $this->get_mmis11CoScholastic($standard_id, $value['id'], $format, '');
@@ -743,6 +743,7 @@ if (isset($explodeTermAtten) && $sub_institute_id == 47) {
         $working = $explodeTermAtten[1];
 
     // 2. Get percentage (simple_result)
+    //echo $main_result['table'];exit();
     $percentage = 0;
     if (isset($main_result['table'])) {
         $tableHtml = $main_result['table'];
@@ -8554,6 +8555,8 @@ if ($format === 'yearly') {
                 }
                 $scholaticTable .= '</tr>';
             }
+            $per = $this->getPer($all_mark, $total_mark);
+            $scholaticTable .= '<tr><td><b>' . number_format($per, 2) . '%</b></td></tr>';
             $scholaticTable .= '</tbody></table>';
             // co scholatic parts 
             $gradeRange = $this->getGradeRange($standard_id);
@@ -8583,8 +8586,6 @@ if ($format === 'yearly') {
             $scholaticTableGrades .= '<tr></table>';
         }
 
-        $per = $this->getPer($all_mark, $total_mark);
-
         $curr_std = DB::table('standard')->where('id', $standard_id)->first();
         $next_std = DB::table('standard')->where('id', $curr_std->next_standard_id)->first();
         // get result remarks from table result_remarks 21-02-2025
@@ -8612,7 +8613,7 @@ if ($format === 'yearly') {
             $result = "Failed";
         }
 
-        $res['scholastic_table'] = $scholaticTable;
+        $res['table'] = $scholaticTable;
         $res['scholastic_gradeRange'] = $scholaticTableGrades;
         $res['conducted'] = \App\Helpers\getGradeComment($grade_arr, 100, $per) ?? '-';
         $res['teacher_remark'] = $result;
@@ -9100,7 +9101,7 @@ if ($format === 'yearly') {
             $result = "Failed";
         }
         
-        $res['scholastic_table'] = $scholaticTable;
+        $res['table'] = $scholaticTable;
         $res['scholastic_gradeRange'] = $scholaticTableGrades;
         $res['conducted'] = \App\Helpers\getGradeComment($grade_arr, 100, $percentage) ?? '-';
         $res['teacher_remark'] = $result;
