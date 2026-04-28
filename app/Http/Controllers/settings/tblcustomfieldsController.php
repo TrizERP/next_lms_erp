@@ -19,6 +19,8 @@ class tblcustomfieldsController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $field_data = tblcustomfieldsModel::where(['status' => "1"])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)')
+            ->orderBy('table_name', 'ASC')
+            ->orderBy('sort_order', 'ASC')
             ->get();
         $res['status_code'] = 1;
         $res['message'] = "Success";

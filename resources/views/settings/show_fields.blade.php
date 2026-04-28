@@ -83,7 +83,13 @@
 <script src="{{ asset("/plugins/bower_components/datatables/datatables.min.js") }}"></script>
 <script>
 $(document).ready(function () {
-    $('#example').DataTable();
+    $('#example').DataTable({
+        select: true,
+        lengthMenu: [
+            [100, -1],
+            ['100', 'Show All']
+        ]
+    });
 });
 
 </script>
