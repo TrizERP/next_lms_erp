@@ -132,7 +132,7 @@
                                                             <a target="_blank" href="{{$cval['filename']}}" class="view-box d-flex justify-content-center w-100 h-100">
                                                                 <i class="mdi mdi-file-link" style="font-size: 48px; color: #666;"></i>
                                                             </a>
-                                                        @elseif($cval['file_type'] == "video")
+                                                        @elseif($cval['file_type'] == "video" || $cval['file_type'] == "mp4")
                                                             <video width="100%" height="100%" controls>
                                                                 <source src="{{ Storage::disk('digitalocean')->url('public'.$cval['file_folder'].'/'.$cval['filename']) }}" type="video/mp4">
                                                                 Your browser does not support the video tag.
@@ -166,7 +166,7 @@
                                                             $content_ext = 'pdf';
                                                         }
                                                     @endphp
-                                                    <a class="video-title"><i class="mdi mdi-file-link mr-1"></i>{{ $cval['content_category'] ?? 'Content' }} .{{ $content_ext }}</a>
+                                                    <a class="video-title"><i class="mdi mdi-file-link mr-1"></i>{{ $cval['content_category'] ?? 'Content' }}</a><!--  .{{ $content_ext }} -->
                                                     <div class="d-flex justify-content-between"></div>
                                                     <div class="row gutter-10">
                                                         @if(isset($cval['FLASHCARD']))
@@ -289,7 +289,7 @@
                                                         <i class="mdi mdi-eye-outline"></i>
                                                     </a>
                                                 </div>
-                                            @elseif($cval['file_type'] == "video")
+                                            @elseif($cval['file_type'] == "video" || $cval['file_type'] == "mp4")
                                                 <div class="video-img-box">
                                                     <div class="video-img">
                                                         <video controls="true" width="220" height="140"
@@ -322,7 +322,7 @@
                                                         $content_ext = 'pdf';
                                                     }
                                                 @endphp
-                                                <a class="video-title"><i class="mdi mdi-file-link mr-1"></i>{{ $cval['content_category'] ?? 'Content' }}.{{ $content_ext }}</a>
+                                                <a class="video-title"><i class="mdi mdi-file-link mr-1"></i>{{ $cval['content_category'] ?? 'Content' }}</a><!-- .{{ $content_ext }} -->
                                                 <div class="video-des">{{$cval['description']}}</div>
                                             </div>
                                         </div>
@@ -567,7 +567,7 @@
                                                                     <i class="mdi mdi-eye-outline"></i>
                                                                 </a>
                                                             </div>
-                                                        @elseif($cval['file_type'] == "video")
+                                                        @elseif($cval['file_type'] == "video" || $cval['file_type'] == "mp4")
                                                             <div class="video-img-box">
                                                                 <div class="video-img">
                                                                     <video controls="true" width="150" height="100" controlsList="nodownload">
@@ -596,7 +596,7 @@
                                                                     $content_ext = 'pdf';
                                                                 }
                                                             @endphp
-                                                            <a class="video-title"><i class="mdi mdi-file-link mr-1"></i>{{ $cval['content_category'] ?? 'Content' }} .{{ $content_ext }}</a>
+                                                            <a class="video-title"><i class="mdi mdi-file-link mr-1"></i>{{ $cval['content_category'] ?? 'Content' }}</a><!-- .{{ $content_ext }} -->
                                                             <div class="video-des">{{$cval['description']}}</div>
                                                         </div>
                                                         
