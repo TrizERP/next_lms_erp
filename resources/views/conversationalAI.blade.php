@@ -1,8 +1,5 @@
 <style>
-    .modal-backdrop.show, .modal-backdrop.fade{
-       opacity: 0 !important;
-       display: none !important;
-    }
+  
   
     .d-flex .flex-column .gap-1{
         width: 95%;
@@ -84,6 +81,7 @@
         border-radius: 3px;
     }
 
+    /* Modal Styles */
     .custom-side-modal, .details-modal, .intent-modal {
         display: none;
         position: fixed;
@@ -98,7 +96,7 @@
     }
     
     .custom-side-modal.show, .details-modal.show, .intent-modal.show {
-        display: flex;
+        display: flex !important;
     }
     
     .custom-modal-content, .details-modal-content, .intent-modal-content {
@@ -215,7 +213,7 @@
         position: relative;
     }
 
-    .icon-btn {
+    .icon-btn1 {
         background: transparent;
         border: none;
         color: white;
@@ -229,11 +227,62 @@
         cursor: pointer;
     }
 
-    .icon-btn:hover {
+    .icon-btn1:hover {
         background: rgba(255, 255, 255, 0.2);
         transform: scale(1.05);
     }
 
+    /* Custom Dropdown Styles */
+    .custom-dropdown {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .custom-dropdown-menu {
+        position: absolute;
+        top: 100%;
+        right: 0;
+        z-index: 1000;
+        display: none;
+        min-width: 150px;
+        padding: 0.5rem 0;
+        margin: 0.125rem 0 0;
+        font-size: 0.875rem;
+        color: #212529;
+        text-align: left;
+        list-style: none;
+        background-color: #fff;
+        background-clip: padding-box;
+        border: 1px solid rgba(0,0,0,.15);
+        border-radius: 0.375rem;
+        box-shadow: 0 0.5rem 1rem rgba(0,0,0,.175);
+    }
+    
+    .custom-dropdown-menu.show {
+        display: block;
+    }
+    
+    .custom-dropdown-item {
+        display: block;
+        width: 100%;
+        padding: 0.5rem 1rem;
+        clear: both;
+        font-weight: 400;
+        color: #212529;
+        text-align: inherit;
+        text-decoration: none;
+        white-space: nowrap;
+        background-color: transparent;
+        border: 0;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .custom-dropdown-item:hover {
+        background-color: #f8f9fa;
+        color: #0d6efd;
+    }
+    
     .enrollment-input-group {
         margin-top: 8px;
         display: flex;
@@ -366,26 +415,6 @@
     .text-info { color: #17a2b8; }
     .text-primary { color: #0d6efd; }
     .fw-bold { font-weight: 700; }
-    
-    .dropdown-menu {
-        position: absolute;
-        z-index: 1000;
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-        min-width: 150px;
-        padding: 8px 0;
-    }
-    
-    .dropdown-item {
-        display: block;
-        padding: 8px 16px;
-        color: #2c3e50;
-        text-decoration: none;
-        cursor: pointer;
-        transition: background 0.2s;
-    }
-  
 </style>
 
 <div id="conversationAI" class="side-panel" style="border-radius:25px;">
@@ -405,26 +434,31 @@
                 <h5 class="mt-2 ml-2 mb-0 fw-semibold">Conversational AI</h5>
             </div>
             <div class="d-flex gap-1">
-                <div class="dropdown">
-                    <button type="button" class="icon-btn dropdown-toggle" id="optionsDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Options">
-                        <span class="mdi mdi-dots-vertical" style="font-size: 1.2rem;color:white"></span>
+                <!-- Custom Dropdown without Bootstrap -->
+                <div class="custom-dropdown">
+                    <button type="button" class="icon-btn1" id="optionsDropdownBtn" title="Options">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="1"></circle>
+                            <circle cx="12" cy="5" r="1"></circle>
+                            <circle cx="12" cy="19" r="1"></circle>
+                        </svg>
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="optionsDropdownBtn">
-                        <li><a class="dropdown-item" href="#" id="detailsOption">Details</a></li>
-                        <li><a class="dropdown-item" href="#" id="intentListsOption">Intent Lists</a></li>
-                    </ul>
+                    <div class="custom-dropdown-menu" id="optionsDropdownMenu">
+                        <a class="custom-dropdown-item" href="#" id="detailsOption">📋 Details</a>
+                        <a class="custom-dropdown-item" href="#" id="intentListsOption">🎯 Intent Lists</a>
+                    </div>
                 </div>
-                <button type="button" class="icon-btn" id="expandPanelBtn" title="Expand">
+                <button type="button" class="icon-btn1" id="expandPanelBtn" title="Expand">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"></path>
                     </svg>
                 </button>
-                <button type="button" class="icon-btn" id="newConversationBtn" title="New Conversation">
+                <button type="button" class="icon-btn1" id="newConversationBtn" title="New Conversation">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
                     </svg>
                 </button>
-                <button type="button" class="icon-btn" id="closeConversationAI" aria-label="Close">
+                <button type="button" class="icon-btn1" id="closeConversationAI" aria-label="Close">
                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -478,12 +512,11 @@
     <div class="custom-modal-content">
         <div class="custom-modal-header">
             <h5><i class="fas fa-comment-plus me-2" style="color: #0d6efd;"></i> New Conversation</h5>
-            <button type="button" class="btn-close btn-close-sm" id="closeModalBtn" aria-label="Close" style="border:none !important;background:transparent !important;">×</button>
+            <button type="button" class="close-modal-btn" id="closeModalBtn" aria-label="Close" style="border:none !important;background:transparent !important; font-size: 1.8rem; cursor: pointer;">×</button>
         </div>
         <div class="custom-modal-body">
-            <div class="modal-icon"><i class="fas fa-comment-dots"></i></div>
-            <p>Start a new conversation?</p>
-            <small>This will clear the current chat history.</small>
+            <p style="margin-bottom: 10px;">Start a new conversation?</p>
+            <small style="color: #6c757d;">This will clear the current chat history.</small>
         </div>
         <div class="custom-modal-footer">
             <button type="button" class="btn-custom-secondary" id="cancelModalBtn">Cancel</button>
@@ -497,13 +530,13 @@
     <div class="details-modal-content">
         <div class="details-modal-header">
             <h5><i class="fas fa-info-circle me-2" style="color: #0d6efd;"></i> System Details</h5>
-            <button type="button" class="btn-close btn-close-sm" id="closeDetailsModalBtn" aria-label="Close" style="border:none !important;background:transparent !important;">×</button>
+            <button type="button" class="close-modal-btn" id="closeDetailsModalBtn" aria-label="Close" style="border:none !important;background:transparent !important; font-size: 1.8rem; cursor: pointer;">×</button>
         </div>
         <div class="details-modal-body">
             <p><strong>Conversational AI Assistant</strong></p>
             <p>Version: 1.0.0</p>
-            <p>Features:</p>
-            <ul>
+            <p><strong>Features:</strong></p>
+            <ul style="margin-bottom: 15px;">
                 <li>Student Details Query</li>
                 <li>Fees Details Query</li>
                 <li>Admission Details Query</li>
@@ -525,11 +558,10 @@
     <div class="intent-modal-content">
         <div class="intent-modal-header">
             <h5><i class="fas fa-list me-2" style="color: #0d6efd;"></i> Available Intents</h5>
-            <button type="button" class="btn-close btn-close-sm" id="closeIntentModalBtn" aria-label="Close" style="border:none !important;background:transparent !important;">×</button>
+            <button type="button" class="close-modal-btn" id="closeIntentModalBtn" aria-label="Close" style="border:none !important;background:transparent !important; font-size: 1.8rem; cursor: pointer;">×</button>
         </div>
         <div class="intent-modal-body">
             <div class="intent-list" id="intentListContent">
-                <!-- Intent list will be populated from controller via AJAX -->
                 <div class="text-center">Loading intents...</div>
             </div>
         </div>
@@ -539,12 +571,11 @@
     </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://kit.fontawesome.com/a5f8a6d7d6.js" crossorigin="anonymous"></script>
-
 <script>
+// Wait for jQuery to be fully loaded and document ready
+(function($) {
     $(document).ready(function() {
+        
         var $chatPanel = $('#conversationAI');
         var $chatMessages = $('#chatMessages');
         var $chatInput = $('#chatInput');
@@ -571,6 +602,30 @@
         var pendingEnrollmentAction = null;
         var isExpanded = false;
         var currentEnrollmentInputId = null;
+
+        // Dropdown functionality
+        var $dropdownBtn = $('#optionsDropdownBtn');
+        var $dropdownMenu = $('#optionsDropdownMenu');
+        var isDropdownOpen = false;
+
+        $dropdownBtn.on('click', function(e) {
+            e.stopPropagation();
+            if (isDropdownOpen) {
+                $dropdownMenu.removeClass('show');
+                isDropdownOpen = false;
+            } else {
+                $dropdownMenu.addClass('show');
+                isDropdownOpen = true;
+            }
+        });
+
+        // Close dropdown when clicking outside
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.custom-dropdown').length) {
+                $dropdownMenu.removeClass('show');
+                isDropdownOpen = false;
+            }
+        });
 
         function resetConversation() {
             messages = [];
@@ -619,6 +674,7 @@
         }
 
         function loadIntents() {
+            $('#intentListContent').html('<div class="text-center">Loading intents...</div>');
             $.ajax({
                 url: "{{route('getIntentsList')}}",
                 method: "GET",
@@ -696,6 +752,11 @@
             });
         }
 
+        function isValidEnrollmentNumber(value) {
+            var enrollmentRegex = /^[a-zA-Z0-9\s\-]+$/;
+            return value && value.trim().length > 0 && enrollmentRegex.test(value.trim());
+        }
+
         function sendMessage(userContent) {
             var content = userContent.trim();
             if (!content) return;
@@ -712,7 +773,7 @@
             $chatInput.val('').css('height', 'auto');
             scrollToBottom();
 
-            if (pendingEnrollmentAction && /^\d+$/.test(content)) {
+            if (pendingEnrollmentAction && isValidEnrollmentNumber(content)) {
                 var action = pendingEnrollmentAction;
                 var enrollmentNumber = content;
                 pendingEnrollmentAction = null;
@@ -735,14 +796,28 @@
                     scrollToBottom();
                 });
                 return;
+            } 
+            else if (pendingEnrollmentAction && !isValidEnrollmentNumber(content)) {
+                var errorBot = {
+                    id: generateUUID(),
+                    type: 'bot',
+                    content: "Please enter a valid enrollment number (e.g., HN-25-379, 12345, or STUDENT-001).",
+                    timestamp: new Date(),
+                    metadata: { canEscalate: false },
+                    isHtml: false
+                };
+                messages.push(errorBot);
+                addMessageToDOM(errorBot);
+                scrollToBottom();
+                return;
             }
 
-            var studentKeywords = ["student detail", "student details", "fees details", "fees detail", "fee details", "fee detail", "admission details", "admission detail","remain fees","fees remain","paid fees","fees paid"];
+            var studentKeywords = ["student detail", "student details", "fees details", "fees detail", "fee details", "fee detail", "admission details", "admission detail","remain fees","fees remain","pending fees","paid fees","fees paid"];
             var matchedKeyword = studentKeywords.find(kw => content.toLowerCase().includes(kw));
             
             if (matchedKeyword) {
                 var detectedAction = "student_details";
-                if (content.toLowerCase().includes("remain") && content.toLowerCase().includes("fees")) {
+                if ((content.toLowerCase().includes("remain") && content.toLowerCase().includes("fees")) || content.toLowerCase().includes("pending") && content.toLowerCase().includes("fees")) {
                     detectedAction = "remain_fees";
                 } else if (content.toLowerCase().includes("paid") && content.toLowerCase().includes("fees")) {
                     detectedAction = "paid_fees";
@@ -760,7 +835,7 @@
                     <div>
                         <span class="mb-2 d-block">Please provide the student enrollment number:</span>
                         <div class="enrollment-input-group">
-                            <input type="text" id="${uniqueId}" class="form-control form-control-sm" placeholder="Enter enrollment no." style="max-width:200px;" />
+                            <input type="text" id="${uniqueId}" class="form-control form-control-sm" placeholder="Enter enrollment no. (e.g., HN-25-379)" style="max-width:200px;" />
                             <button type="button" class="submit-enrollment-btn btn btn-primary btn-sm rounded-pill" data-input-id="${uniqueId}"><i class="fas fa-check"></i></button>
                         </div>
                     </div>
@@ -781,13 +856,13 @@
                     $(document).off('click', '.submit-enrollment-btn').on('click', '.submit-enrollment-btn', function() {
                         var inputId = $(this).data('input-id');
                         var enrollmentVal = $('#' + inputId).val().trim();
-                        if (enrollmentVal && /^\d+$/.test(enrollmentVal)) {
+                        if (enrollmentVal && isValidEnrollmentNumber(enrollmentVal)) {
                             sendMessage(enrollmentVal);
                         } else {
                             var errorBot = {
                                 id: generateUUID(),
                                 type: 'bot',
-                                content: "Please enter a valid numeric enrollment number.",
+                                content: "Please enter a valid enrollment number (e.g., HN-25-379, 12345, or STUDENT-001).",
                                 timestamp: new Date(),
                                 metadata: { canEscalate: false },
                                 isHtml: false
@@ -855,8 +930,15 @@
             });
         }
 
-        function showModal(modal) { modal.addClass('show'); }
-        function hideModal(modal) { modal.removeClass('show'); }
+        function showModal(modal) { 
+            modal.addClass('show'); 
+            $('body').css('overflow', 'hidden');
+        }
+        
+        function hideModal(modal) { 
+            modal.removeClass('show'); 
+            $('body').css('overflow', '');
+        }
 
         // New Conversation Modal Events
         $newConvBtn.on('click', function() { showModal($customModal); });
@@ -867,6 +949,8 @@
         // Details Modal Events
         $('#detailsOption').on('click', function(e) {
             e.preventDefault();
+            $dropdownMenu.removeClass('show');
+            isDropdownOpen = false;
             showModal($detailsModal);
         });
         $closeDetailsModalBtn.on('click', function() { hideModal($detailsModal); });
@@ -875,6 +959,8 @@
         // Intent Modal Events
         $('#intentListsOption').on('click', function(e) {
             e.preventDefault();
+            $dropdownMenu.removeClass('show');
+            isDropdownOpen = false;
             loadIntents();
             showModal($intentModal);
         });
@@ -929,4 +1015,5 @@
             $chatInput.focus(); 
         };
     });
+})(jQuery);
 </script>

@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\SearchStudent;
 use function App\Helpers\getTableFieldFromId;
 use App\Http\Controllers\student\tblstudentController;
+use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
 
 class conversationalAIController extends Controller
 {
@@ -26,7 +27,7 @@ class conversationalAIController extends Controller
         // find students (multiple possible)
         $students = SearchStudent("", "", "", $sub, $year , "",  "", "", "", "", $stu_arr , "",1);
         // return $students;
-        if ($students->isEmpty()) {
+        if (empty($students)) {
             return response()->json([
                 'html' => '<div class="text-muted p-2">Failed to find student please check enrollment no.</div>',
                 'raw_data' => 'No data Found'
@@ -37,9 +38,9 @@ class conversationalAIController extends Controller
         $allHtml = '';
         $allData = [];
         $studentCounter = 1;
-        $totalStudents = $students->count();
-
-        foreach ($students as $student) {
+        $totalStudents = count($students);
+        // return $students[0]['id'];
+        foreach ($students as $key=>$student) {
             // Add separator between multiple students
             if ($totalStudents > 1) {
                 $allHtml .= '<div class="student-separator" style="margin-bottom: 20px;">';
@@ -49,18 +50,49 @@ class conversationalAIController extends Controller
             }
 
             if ($request->action_type === 'remain_fees' || $request->action_type === 'paid_fees') {
-                $ctrl = new tblstudentController;
-                $raw  = $ctrl->edit(
-                    new Request(['sub_institute_id' => $sub, 'syear' => $year, 'type' => 'API']),
-                    $student->id
-                );
-                $data = json_decode($raw, true);
-                
-                $html = $this->formatDetailsHTML('remain_fees', $data, ['unpaid_fees' => $data['paid_unpaid_fees'] ?? [], 'student_detail' => $data['data'] ?? []]);
-                $allData[] = $data;
+                // Call the new API endpoint for fees details
+                $apiUrl = url("/studentFeesDetailAPI");
+               $feesRequest = request()->duplicate(
+                                array_merge(
+                                    request()->except('type'),
+                                    [
+                                        'syear' => $year,
+                                        'sub_institute_id' => $sub,
+                                        'student_id' => $student['id'],
+                                    ]
+                                )
+                            );
+                // return $requestFees;
+                try {
+                    $feesController = new fees_collect_controller;
+                    $response = $feesController->studentFeesDetailAPI($feesRequest);
+                    $apiResponse = json_decode($response, true);
+                    // return $apiResponse;
+                    // return $apiResponse;
+                     if (isset($apiResponse['status']) && $apiResponse['status'] == 1 && isset($apiResponse['data'])) {
+                        $data = $apiResponse['data'];
+                        // Get student details from STU_DATA
+                        $studentDetail = $data['STU_DATA'] ?? [];
+                        
+                        if ($request->action_type === 'remain_fees') {
+                            $pendingFees = $data['PENDING'] ?? [];
+                            $html = $this->generateUnpaidFeesHTML($pendingFees, $studentDetail);
+                        } else { // paid_fees
+                            $paidFees = $data['PAID'] ?? [];
+                            $html = $this->generatePaidFeesHTML($paidFees, $studentDetail);
+                        }
+                        $allData[] = $data;
+                    } else {
+                        $html = '<div class="text-muted p-2">No records found for enrollment number: ' . htmlspecialchars($request->enrollment_no) . '</div>';
+                        $allData[] = ['error' => 'No data found in API response'];
+                    }
+                } catch (\Exception $e) {
+                    $html = '<div class="text-muted p-2">Error fetching data: ' . htmlspecialchars($e->getMessage()) . '</div>';
+                    $allData[] = ['error' => $e->getMessage()];
+                }
             } else {
                 // call external API with student_id
-                $url  = "https://kgenkit.vercel.app/api/genkit-k12?enrollment_no={$request->enrollment_no}&action={$request->action_type}&syear={$year}&sub_institute_id={$sub}&student_id={$student->id}";
+                $url  = "https://kgenkit.vercel.app/api/genkit-k12?enrollment_no={$request->enrollment_no}&action={$request->action_type}&syear={$year}&sub_institute_id={$sub}&student_id={$student['id']}";
                 
                 try {
                     $response = (new \GuzzleHttp\Client)->get($url);
@@ -92,7 +124,61 @@ class conversationalAIController extends Controller
             $studentCounter++;
         }
         // return $allData;
-        return response()->json(['html' => $allHtml, 'raw_data' => $allData]);
+        return response()->json(['action_type'=>$request->action_type, 'raw_data' => $allData,'html' => $allHtml]);
+    }
+
+    /**
+     * Transform the fees API response to match expected format
+     */
+    private function transformFeesAPIResponse($data, $actionType)
+    {
+        $transformed = [];
+        
+        if (isset($data['STU_DATA'])) {
+            $stuData = $data['STU_DATA'];
+            $transformed['student_detail'] = [
+                'id' => $stuData['student_id'] ?? '',
+                'enrollment_no' => $stuData['enrollment'] ?? '',
+                'first_name' => $stuData['first_name'] ?? '',
+                'middle_name' => $stuData['middle_name'] ?? '',
+                'last_name' => $stuData['last_name'] ?? '',
+                'mobile' => $stuData['mobile'] ?? '',
+                'email' => $stuData['email'] ?? '',
+                'standard_name' => $stuData['stddiv'] ?? '',
+                'division_name' => '',
+                'class' => $stuData['stddiv'] ?? '',
+                'admission_status' => $stuData['end_date'] ?? 'Active'
+            ];
+        }
+        
+        if ($actionType === 'remain_fees' && isset($data['PENDING'])) {
+            $transformed['unpaid_fees'] = [];
+            foreach ($data['PENDING'] as $pending) {
+                $transformed['unpaid_fees'][] = [
+                    'month' => $pending['month'] ?? '',
+                    'remain' => $pending['remain'] ?? 0,
+                    'discount' => $pending['discount'] ?? 0,
+                    'bk' => ($pending['remain'] ?? 0) + ($pending['discount'] ?? 0),
+                    'paid' => 0
+                ];
+            }
+        }
+        
+        if ($actionType === 'paid_fees' && isset($data['PAID'])) {
+            $transformed['paid_fees'] = [];
+            foreach ($data['PAID'] as $paid) {
+                $transformed['paid_fees'][] = [
+                    'month' => $paid['month_id'] ?? '',
+                    'receipt_no' => $paid['receipt_no'] ?? '',
+                    'receiptdate' => $paid['receiptdate'] ?? '',
+                    'payment_mode' => $paid['payment_mode'] ?? '',
+                    'amount' => $paid['paid_amount'] ?? 0,
+                    'fees_html' => $paid['fees_html'] ?? ''
+                ];
+            }
+        }
+        
+        return $transformed;
     }
 
     /**
@@ -107,6 +193,8 @@ class conversationalAIController extends Controller
                 return $this->generateAdmissionHTML($data);
             case 'remain_fees':
                 return $this->generateUnpaidFeesHTML($extra['unpaid_fees'] ?? [], $extra['student_detail'] ?? []);
+            case 'paid_fees':
+                return $this->generatePaidFeesHTML($extra['paid_fees'] ?? [], $extra['student_detail'] ?? []);
             default:
                 return $this->generateStudentHTML($data);
         }
@@ -127,10 +215,6 @@ class conversationalAIController extends Controller
         </div>" : '';
 
         return $this->getCardWrapper("Student Details", "fa-user-graduate", '
-            <div class="detail-item">
-                <span class="detail-label">Student ID</span>
-                <span class="detail-value fw-bold">' . ($student['id'] ?? 'N/A') . '</span>
-            </div>
             <div class="detail-item">
                 <span class="detail-label">Enrollment No.</span>
                 <span class="detail-value fw-bold">' . ($student['enrollment_no'] ?? 'N/A') . '</span>
@@ -284,10 +368,6 @@ class conversationalAIController extends Controller
 
         return $this->getCardWrapper("Fees Details", "fa-money-bill-wave", '
         <div class="detail-item">
-            <span class="detail-label">Student ID</span>
-            <span class="detail-value fw-bold">' . ($student['id'] ?? 'N/A') . '</span>
-        </div>
-        <div class="detail-item">
             <span class="detail-label">Student Name</span>
             <span class="detail-value fw-bold">' . ($fullName ?: 'N/A') . '</span>
         </div>
@@ -316,10 +396,6 @@ class conversationalAIController extends Controller
         $statusClass = strtolower($status) === 'active' ? 'status-active' : 'status-pending';
 
         return $this->getCardWrapper("Admission Details", "fa-file-alt", '
-            <div class="detail-item">
-                <span class="detail-label">Student ID</span>
-                <span class="detail-value fw-bold">' . ($student['id'] ?? 'N/A') . '</span>
-            </div>
             <div class="detail-item">
                 <span class="detail-label">Student Name</span>
                 <span class="detail-value fw-bold">' . ($fullName ?: 'N/A') . '</span>
@@ -351,37 +427,33 @@ class conversationalAIController extends Controller
         ');
     }
 
-    private function generateUnpaidFeesHTML($unPaidFees, $studentDetail)
+    /**
+     * Generate HTML for remaining/unpaid fees using STU_DATA and PENDING array
+     */
+    private function generateUnpaidFeesHTML($pendingFees, $studentDetail)
     {
-        if (empty($unPaidFees)) {
-            return '<div class="text-muted p-2">No records found.</div>';
+        if (empty($pendingFees)) {
+            return '<div class="text-muted p-2">No pending fees records found.</div>';
         }
 
         $studentName = trim(($studentDetail['first_name'] ?? '') . ' ' . ($studentDetail['middle_name'] ?? '') . ' ' . ($studentDetail['last_name'] ?? ''));
-
-        // Calculate totals
-        $totalBk = 0;
-        $totalPaid = 0;
+        
+        // Calculate totals from pending fees
         $totalRemain = 0;
         $totalDiscount = 0;
-        foreach ($unPaidFees as $val) {
-            $totalBk += (float)($val['bk'] ?? 0);
-            $totalPaid += (float)($val['paid'] ?? 0);
+        foreach ($pendingFees as $val) {
             $totalRemain += (float)($val['remain'] ?? 0);
             $totalDiscount += (float)($val['discount'] ?? 0);
         }
+        $totalBk = $totalRemain + $totalDiscount;
 
-        // Modern fees cards with flex-wrap
+        // Modern fees cards for pending fees
         $feesHtml = '<div style="display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0;">';
-        foreach ($unPaidFees as $val) {
+        foreach ($pendingFees as $val) {
             $monthName = $val['month'] ?? 'N/A';
-            $total = (float)($val['bk'] ?? 0);
-            $paid = (float)($val['paid'] ?? 0);
             $remain = (float)($val['remain'] ?? 0);
             $discount = (float)($val['discount'] ?? 0);
-
-            // Calculate payment percentage for progress bar
-            $percentage = $total > 0 ? ($paid / $total) * 100 : 0;
+            $total = $remain + $discount;
 
             $feesHtml .= '
             <div style="
@@ -418,10 +490,6 @@ class conversationalAIController extends Controller
                     <div style="text-align: center;">
                         <div style="font-size: 0.7rem; color: #6c757d; margin-bottom: 4px;">Total Amount</div>
                         <div style="font-size: 1.1rem; font-weight: 700; color: #2c3e50;">₹' . number_format($total, 2) . '</div>
-                    </div>
-                    <div style="text-align: center;">
-                        <div style="font-size: 0.7rem; color: #6c757d; margin-bottom: 4px;">Paid</div>
-                        <div style="font-size: 1.1rem; font-weight: 700; color: #28a745;">₹' . number_format($paid, 2) . '</div>
                     </div>
                     <div style="text-align: center;">
                         <div style="font-size: 0.7rem; color: #6c757d; margin-bottom: 4px;">Remaining</div>
@@ -471,20 +539,6 @@ class conversationalAIController extends Controller
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
                     margin-bottom: 8px;
-                ">Total Paid</div>
-                <div style="
-                    font-size: 1.5rem;
-                    font-weight: 800;
-                    color: #28a745;
-                ">₹' . number_format($totalPaid, 2) . '</div>
-            </div>
-            <div style="text-align: center; padding: 4px;">
-                <div style="
-                    font-size: 0.75rem;
-                    color: #6c757d;
-                    text-transform: uppercase;
-                    letter-spacing: 0.5px;
-                    margin-bottom: 8px;
                 ">Total Remaining</div>
                 <div style="
                     font-size: 1.5rem;
@@ -509,18 +563,18 @@ class conversationalAIController extends Controller
         </div>
     ';
 
-        return $this->getCardWrapper("Unpaid Fees", "fa-file-alt", '
-        <div class="detail-item">
-            <span class="detail-label">Student ID : </span>
-            <span class="detail-value fw-bold">' . ($studentDetail['id'] ?? 'N/A') . '</span>
-        </div>
+        return $this->getCardWrapper("Remaining Fees Details", "fa-file-invoice-dollar", '
         <div class="detail-item">
             <span class="detail-label">Student Name : </span>
             <span class="detail-value fw-bold">' . ($studentName ?: 'N/A') . '</span>
         </div>
         <div class="detail-item">
             <span class="detail-label">Enrollment No : </span>
-            <span class="detail-value fw-bold">' . ($studentDetail['enrollment_no'] ?? 'N/A') . '</span>
+            <span class="detail-value fw-bold">' . ($studentDetail['enrollment'] ?? 'N/A') . '</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Class : </span>
+            <span class="detail-value fw-bold">' . ($studentDetail['stddiv'] ?? 'N/A') . '</span>
         </div>
         <div class="detail-item">
             <span class="detail-label">Mobile : </span>
@@ -534,7 +588,172 @@ class conversationalAIController extends Controller
         <!-- Totals Summary between student details and fees cards -->
         ' . $totalsHtml . '
         
-        <!-- Modern Fees Cards -->
+        <!-- Modern Fees Cards for Pending Fees -->
+        ' . $feesHtml . '
+    ');
+    }
+
+    /**
+     * Generate HTML for paid fees using STU_DATA and PAID array
+     */
+    private function generatePaidFeesHTML($paidFees, $studentDetail)
+    {
+        if (empty($paidFees)) {
+            return '<div class="text-muted p-2">No paid fees records found.</div>';
+        }
+
+        $studentName = trim(($studentDetail['first_name'] ?? '') . ' ' . ($studentDetail['middle_name'] ?? '') . ' ' . ($studentDetail['last_name'] ?? ''));
+
+        // Calculate total paid amount
+        $totalPaidAmount = 0;
+        foreach ($paidFees as $val) {
+            $totalPaidAmount += (float)($val['paid_amount'] ?? 0);
+        }
+
+        // Modern fees cards with flex-wrap for paid fees
+        $feesHtml = '<div style="display: flex; flex-wrap: wrap; gap: 12px; margin: 16px 0;">';
+        foreach ($paidFees as $val) {
+            $paymentMode = $val['payment_mode'] ?? 'N/A';
+            $amount = (float)($val['paid_amount'] ?? 0);
+            $receiptNo = $val['receipt_no'] ?? 'N/A';
+            $receiptDate = isset($val['receiptdate']) ? date('d-m-Y', strtotime($val['receiptdate'])) : 'N/A';
+            $chequeNo = $val['cheque_no'] ?? '';
+            $bankName = $val['cheque_bank_name'] ?? '';
+
+            $paymentDetails = $paymentMode;
+            if ($chequeNo) {
+                $paymentDetails .= ' - ' . $chequeNo;
+            }
+            if ($bankName) {
+                $paymentDetails .= ' (' . $bankName . ')';
+            }
+
+            $feesHtml .= '
+            <div style="
+                flex: 1;
+                min-width: 250px;
+                background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+                border-radius: 16px;
+                padding: 16px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+                transition: transform 0.2s ease, box-shadow 0.2s ease;
+                cursor: pointer;
+                border: 1px solid #e9ecef;
+            " onmouseover="this.style.transform=\'translateY(-4px)\'; this.style.boxShadow=\'0 8px 24px rgba(0,0,0,0.12)\';" 
+             onmouseout="this.style.transform=\'translateY(0)\'; this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.05)\';">
+                
+                <!-- Payment Mode Header -->
+                <div style="
+                    text-align: center;
+                    margin-bottom: 16px;
+                    padding-bottom: 12px;
+                    border-bottom: 2px solid #e9ecef;
+                ">
+                    <div style="
+                        font-size: 0.9rem;
+                        font-weight: 700;
+                        color: #1a1a2e;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    ">' . htmlspecialchars($paymentDetails) . '</div>
+                </div>
+                
+                <!-- Amount Grid -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.7rem; color: #6c757d; margin-bottom: 4px;">Paid Amount</div>
+                        <div style="font-size: 1.2rem; font-weight: 700; color: #28a745;">₹' . number_format($amount, 2) . '</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 0.7rem; color: #6c757d; margin-bottom: 4px;">Receipt No.</div>
+                        <div style="font-size: 1rem; font-weight: 600; color: #17a2b8;">' . htmlspecialchars($receiptNo) . '</div>
+                    </div>
+                </div>
+                
+                <!-- Payment Date -->
+                <div style="
+                    text-align: center;
+                    padding-top: 12px;
+                    border-top: 1px solid #e9ecef;
+                    margin-top: 8px;
+                ">
+                    <div style="font-size: 0.7rem; color: #6c757d; margin-bottom: 4px;">Payment Date</div>
+                    <div style="font-size: 0.85rem; font-weight: 500; color: #6f42c1;">' . $receiptDate . '</div>
+                </div>
+            </div>
+        ';
+        }
+        $feesHtml .= '</div>';
+
+        // Totals summary
+        $totalsHtml = '
+        <div style="
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin: 20px 0 24px 0;
+            padding: 16px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+            border-radius: 20px;
+            border: 1px solid #e9ecef;
+        ">
+            <div style="text-align: center; padding: 12px;">
+                <div style="
+                    font-size: 0.75rem;
+                    color: #6c757d;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    margin-bottom: 8px;
+                ">Total Fees Paid</div>
+                <div style="
+                    font-size: 1.5rem;
+                    font-weight: 800;
+                    color: #28a745;
+                ">₹' . number_format($totalPaidAmount, 2) . '</div>
+            </div>
+            <div style="text-align: center; padding: 12px;">
+                <div style="
+                    font-size: 0.75rem;
+                    color: #6c757d;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    margin-bottom: 8px;
+                ">Total Transactions</div>
+                <div style="
+                    font-size: 1.5rem;
+                    font-weight: 800;
+                    color: #0d6efd;
+                ">' . count($paidFees) . '</div>
+            </div>
+        </div>
+    ';
+
+        return $this->getCardWrapper("Paid Fees Details", "fa-money-bill-wave", '
+        <div class="detail-item">
+            <span class="detail-label">Student Name : </span>
+            <span class="detail-value fw-bold">' . ($studentName ?: 'N/A') . '</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Enrollment No : </span>
+            <span class="detail-value fw-bold">' . ($studentDetail['enrollment'] ?? 'N/A') . '</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Class : </span>
+            <span class="detail-value fw-bold">' . ($studentDetail['stddiv'] ?? 'N/A') . '</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Mobile : </span>
+            <span class="detail-value fw-bold">' . ($studentDetail['mobile'] ?? 'N/A') . '</span>
+        </div>
+        <div class="detail-item">
+            <span class="detail-label">Email : </span>
+            <span class="detail-value fw-bold">' . ($studentDetail['email'] ?? 'N/A') . '</span>
+        </div>
+        
+        <!-- Totals Summary -->
+        ' . $totalsHtml . '
+        
+        <!-- Modern Paid Fees Cards -->
         ' . $feesHtml . '
     ');
     }

@@ -157,6 +157,7 @@ return DataTables::of($books)
 
         $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "library_books"])
         ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->orderBy('sort_order', 'ASC')
         ->get();
         
         $data['item_status_arr'] = DB::table('mst_item_status')
@@ -251,6 +252,7 @@ return DataTables::of($books)
                     'table_name' => 'library_books'
                 ])
                 ->whereRaw('(sub_institute_id = ? OR common_to_all = 1) AND user_type = ""', [$sub_institute_id])
+                ->orderBy('sort_order', 'ASC')
                 ->pluck('field_name');
 
             foreach ($customFields as $field) {
@@ -392,13 +394,28 @@ return DataTables::of($books)
             $message ='';
             $type=$request->type;	
             $sub_institute_id = $request->sub_institute_id ?? session()->get('sub_institute_id');    
-            if($sub_institute_id==254){
+            /*if($sub_institute_id==254){
                 $issue_status = $this->checkIssue($request);            
-            } else{
+            } else*/
+            {
                 $issue_status = 0;            
             }     
             $details = tblstudentModel::where('enrollment_no', $enroll)->where('sub_institute_id',$sub_institute_id)->with('issuedBookItem')->first();
-            $item_codes= DB::table('library_items')->where('book_id',$request->book_id)->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+            $allItemCodes = DB::table('library_items')
+                ->where('book_id', $request->book_id)
+                ->where('sub_institute_id', $sub_institute_id)
+                ->whereNull('deleted_at')
+                ->get();
+                        
+            $issuedItemIds = DB::table('library_book_circulations')
+                ->where('book_id', $request->book_id)
+                ->whereNull('return_date')
+                ->pluck('item_code')
+                ->toArray();
+
+            $item_codes = $allItemCodes->filter(function($item) use ($issuedItemIds) {
+                return !in_array($item->id, $issuedItemIds) && is_null($item->item_status);
+            })->values()->toArray();
             if($request->type!="API"){
                 $view = View::make('library.user_detail', compact('details','item_codes','message','issue_status'))->render();
                 return response()->json(['data' => $view], 200);
