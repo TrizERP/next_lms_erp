@@ -772,7 +772,7 @@ datalist {
                           name="admission_enquiry_fields[{{ $value1['field_name'] }}]"
                           class="form-control" 
                           @if($value1['required'] == 1) required @endif 
-                          readonly>{{ $fieldValue }}</textarea>
+                          >{{ $fieldValue }}</textarea>
                           
             @else
                 <input type="{{ $value1['field_type'] }}" 
