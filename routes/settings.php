@@ -39,4 +39,5 @@ Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRo
 // no permisson check
 Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRoute']], function () {
     Route::resource('add_fields', tblcustomfieldsController::class);
+    Route::post('add_fields/update_sort', [tblcustomfieldsController::class, 'updateSortOrder'])->name('add_fields_update_sort');
 });

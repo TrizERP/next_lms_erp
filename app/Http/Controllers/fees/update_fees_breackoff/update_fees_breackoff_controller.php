@@ -39,17 +39,51 @@ class update_fees_breackoff_controller extends Controller
         ])->get()->toArray();
         $start_month = $data[0]['from_month'];
         $end_month = $data[0]['to_month'];
+        $fee_type = $data[0]['type'];
         $months = array(1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'May', 6 => 'Jun', 7 => 'Jul', 8 => 'Aug', 9 => 'Sep', 10 => 'Oct', 11 => 'Nov', 12 => 'Dec');
         $months_arr = array();
         $syear = session()->get('syear');
 
-        for ($i = 1; $i <= 12; $i++) {
-            $months_arr[$start_month . $syear] = $months[$start_month] . '/' . $syear;
-            if ($start_month == 12) {
-                $start_month = 0;
-                $syear = $syear + 1;
+        // Fetch month headers
+        $month_headers = DB::table('fees_month_header')
+            ->where('sub_institute_id', session()->get('sub_institute_id'))
+            ->pluck('header', 'month_id')
+            ->toArray();
+
+        // Determine number of periods and increment based on fee type
+        switch ($fee_type) {
+            case 'monthly_fees':
+                $num_periods = 12;
+                $increment = 1;
+                break;
+            case 'quarterly_fees':
+                $num_periods = 4;
+                $increment = 3;
+                break;
+            case 'half_year_fees':
+                $num_periods = 2;
+                $increment = 6;
+                break;
+            case 'yearly_fees':
+                $num_periods = 1;
+                $increment = 12;
+                break;
+            default:
+                $num_periods = 12;
+                $increment = 1;
+                break;
+        }
+
+        for ($i = 1; $i <= $num_periods; $i++) {
+            $key = $start_month . $syear;
+            $default_label = $months[$start_month] . '/' . $syear;
+            $header = isset($month_headers[$key]) && !empty(trim($month_headers[$key])) ? trim($month_headers[$key]) : $default_label;
+            $months_arr[$key] = $header;
+            $start_month += $increment;
+            if ($start_month > 12) {
+                $start_month -= 12;
+                $syear += 1;
             }
-            $start_month = $start_month + 1;
         }
 
         $school_data['data']['ddMonth'] = $months_arr;

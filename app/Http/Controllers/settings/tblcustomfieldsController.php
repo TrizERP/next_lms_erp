@@ -136,40 +136,72 @@ class tblcustomfieldsController extends Controller
 
     public function edit(Request $request, $id)
     {
+        $field = tblcustomfieldsModel::findOrFail($id);
+        $options = tblfields_dataModel::where('field_id', $id)->get();
         $type = $request->input('type');
-        $data = tblcustomfieldsModel::find($id);
-        
-        return is_mobile($type, "settings/edit_sort_order", $data, "view");
+
+        $res['field'] = $field;
+        $res['options'] = $options;
+        $res['update_route'] = 'add_fields.update';
+        $res['index_route'] = 'add_fields.index';
+
+        return is_mobile($type, "settings.edit_custom_field", $res, "view");
     }
 
     public function update(Request $request, $id)
     {
-        $newRequest = $request->all();
-        $validator = Validator::make($newRequest, [
-            'sort_order' => 'required|numeric',
-        ]);
+        $field = tblcustomfieldsModel::findOrFail($id);
+        $field_type = $request->get('field_type');
+
+        $required_fields = [
+            'field_label' => 'required',
+            'sort_order' => 'required|integer|min:1',
+        ];
+
+        if (in_array($field_type, ['checkbox', 'dropdown'])) {
+            $required_fields['display_name'] = 'required';
+            $required_fields['f_value'] = 'required';
+        }
+
+        $validator = Validator::make($request->all(), $required_fields);
 
         if ($validator->fails()) {
-            $res['status_code'] = "0";
-            $res['message'] = "Please input all required parameters.";
-            $type = $request->input('type');
-            return is_mobile($type, "settings/show_fields", $res);
+            return redirect()->back()->withErrors($validator)->withInput();
         }
 
-        $sort_order = $request->get('sort_order');
-        
-        $result = tblcustomfieldsModel::where(["id" => $id])->update(['sort_order' => $sort_order]);
+        $field->field_label = $request->get('field_label');
+        $field->field_message = $request->get('field_message', '');
+        $field->required = $request->get('required', '0');
+        $field->common_to_all = $request->get('common_to_all', '0');
+        $field->file_size_max = $request->get('file_size_max');
+        $field->sort_order = $request->get('sort_order');
 
-        if($result){
-            $res['status_code'] = "1";
-            $res['message'] = "Sort order updated successfully";
-        } else {
-            $res['status_code'] = "0";
-            $res['message'] = "Failed to update";
+        if (in_array($field_type, ['checkbox', 'dropdown'])) {
+            $field->display_name = $request->get('display_name');
+            $field->f_value = $request->get('f_value');
+
+            // Update options
+            tblfields_dataModel::where('field_id', $id)->delete(); // Remove old options
+            if ($request->has('display_name')) {
+                foreach ($request->get('display_name') as $key => $value) {
+                    if (!empty($value)) {
+                        tblfields_dataModel::create([
+                            'field_id' => $id,
+                            'display_text' => $value,
+                            'display_value' => $request->get('f_value')[$key] ?? $value,
+                            'created_on' => now(),
+                        ]);
+                    }
+                }
+            }
         }
 
-        $type = $request->input('type');
-        return redirect('/settings/add_fields')->with(['data'=>$res]);
+        $field->save();
+
+        $res['status_code'] = "1";
+        $res['message'] = "Custom field updated successfully";
+
+        return redirect()->route('add_fields.index')->with(['data' => $res]);
     }
 
     public function destroy(Request $request, $id)
@@ -249,5 +281,24 @@ class tblcustomfieldsController extends Controller
             $request->session()->put('academicTerms', $getAcademicTerms);
             $request->session()->put('academicYears', $getAcademicYear);
         }
+    }
+
+    /**
+     * Update sort order via AJAX for drag & drop
+     */
+    public function updateSortOrder(Request $request)
+    {
+        $request->validate([
+            'order' => 'required|array',
+            'order.*' => 'integer|exists:tblcustom_fields,id'
+        ]);
+
+        $order = $request->get('order'); // Array of IDs in new order
+
+        foreach ($order as $index => $id) {
+            tblcustomfieldsModel::where('id', $id)->update(['sort_order' => $index + 1]);
+        }
+
+        return response()->json(['status' => 'success']);
     }
 }
