@@ -104,7 +104,7 @@ $(document).ready(function () {
             });
 
             $.ajax({
-                url: '{{ route("add_fields.update_sort") }}',
+                url: '{{ route("add_fields_update_sort") }}',
                 method: 'POST',
                 data: {
                     order: order,

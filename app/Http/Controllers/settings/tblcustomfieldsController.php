@@ -142,8 +142,10 @@ class tblcustomfieldsController extends Controller
 
         $res['field'] = $field;
         $res['options'] = $options;
+        $res['update_route'] = 'add_fields.update';
+        $res['index_route'] = 'add_fields.index';
 
-        return is_mobile($type, "settings/edit_custom_field", $res, "view");
+        return is_mobile($type, "settings.edit_custom_field", $res, "view");
     }
 
     public function update(Request $request, $id)
