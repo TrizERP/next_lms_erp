@@ -25,49 +25,51 @@
                         </div>
                         <br><br><br>
                         <div class="col-lg-12 col-sm-12 col-xs-12">
-                            <div class="table-responsive">
-                                <table id="example" class="table table-striped">
-                                    <thead>
-                                        <tr>
-                                            <th>Id</th>
-                                            <th>Module Name</th>
-                                            <th>Field Name</th>
-                                            <th>Field Label</th>
-                                            <th>Field Type</th>
-                                            <th>Field Message</th>
-                                            <th>Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                    @php
-                                    $j=1;
-                                    @endphp
-                                        @foreach($data['data'] as $key => $data)
-                                        <tr>    
-                                            <td>{{$j}}</td>
-                                            <td>{{$data->table_name}}</td>
-                                            <td>{{$data->field_name}}</td>
-                                            <td>{{$data->field_label}}</td>  
-                                            <td>{{$data->field_type}}</td> 
-                                            <td>{{$data->field_message}}</td> 
-                                            <td>
-                                            <!-- <a href="{{ route('add_fields.edit',$data->id)}}"><button style="float:left;" type="button" class="btn btn-info btn-outline btn-circle btn m-r-5"><i class="ti-pencil-alt"></i></button></a> -->
-                                            <form action="{{ route('add_fields.destroy', $data->id)}}" method="post">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-info btn-outline btn-circle btn m-r-5"><i class="ti-trash"></i></button>
-                                            </form>
-                                            </td>  
-                                        </tr>
-                                        @php
-                                    $j++;
-                                    @endphp
-                                        @endforeach
+    <div class="table-responsive">
+        <table id="example" class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Id</th>
+                    <th>Module Name</th>
+                    <th>Field Name</th>
+                    <th>Field Label</th>
+                    <th>Field Type</th>
+                    <th>Field Message</th>
+                    <th>Sort Order</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+            @php
+            $j=1;
+            @endphp
+                @foreach($data['data'] as $key => $data)
+                <tr>    
+                    <td>{{$j}}</td>
+                    <td>{{$data->table_name}}</td>
+                    <td>{{$data->field_name}}</td>
+                    <td>{{$data->field_label}}</td>  
+                    <td>{{$data->field_type}}</td> 
+                    <td>{{$data->field_message}}</td> 
+                    <td>{{$data->sort_order}}</td> 
+                    <td>
+                    <a href="{{ route('add_fields.edit',$data->id)}}"><button style="float:left;" type="button" class="btn btn-info btn-outline btn-circle btn m-r-5"><i class="ti-pencil-alt"></i></button></a>
+                    <form action="{{ route('add_fields.destroy', $data->id)}}" method="post">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-info btn-outline btn-circle btn m-r-5"><i class="ti-trash"></i></button>
+                    </form>
+                    </td>  
+                </tr>
+                @php
+            $j++;
+            @endphp
+                @endforeach
 
-                                    </tbody>
+            </tbody>
 
-                                </table>
-                            </div>
+        </table>
+    </div>
                         </div>
               
                     </div>
@@ -81,7 +83,13 @@
 <script src="{{ asset("/plugins/bower_components/datatables/datatables.min.js") }}"></script>
 <script>
 $(document).ready(function () {
-    $('#example').DataTable();
+    $('#example').DataTable({
+        select: true,
+        lengthMenu: [
+            [100, -1],
+            ['100', 'Show All']
+        ]
+    });
 });
 
 </script>

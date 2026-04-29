@@ -81,11 +81,11 @@
                                      <div class="flag-options">
                                           <label>
                                               <input type="radio" name="{{ 'values[flag]['.$col_arr['student_id'].']'}}" value="1" style="display:none;">
-                                              <i class="fa fa-flag" style="color: grey; cursor: pointer;"></i>
+                                              <i class="fa fa-thumbs-up" style="color: grey; cursor: pointer;"></i>
                                           </label>
                                           <label>
                                               <input type="radio" name="{{ 'values[flag]['.$col_arr['student_id'].']'}}" value="-1" style="display:none;">
-                                              <i class="fa fa-flag" style="color: grey; cursor: pointer;"></i>
+                                              <i class="fa fa-thumbs-down" style="color: grey; cursor: pointer;"></i>
                                           </label>
                                      </div>
                                  </td>

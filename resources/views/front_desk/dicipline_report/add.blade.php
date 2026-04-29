@@ -111,11 +111,11 @@
                                          <td>{{ $col_arr['message'] }}</td>
                                          <td style="text-align: center;">
                                              @if($col_arr['flag'] == 1)
-                                                 <i class="fa fa-flag" style="color: green;"></i>
+                                                 <i class="fa fa-thumbs-up" style="color: green;"></i>
                                              @elseif($col_arr['flag'] == 0)
-                                                 <i class="fa fa-flag" style="color: grey;"></i>
+                                                 <i class="fa fa-thumbs-up" style="color: grey;"></i>
                                              @elseif($col_arr['flag'] == -1)
-                                                 <i class="fa fa-flag" style="color: red;"></i>
+                                                 <i class="fa fa-thumbs-down" style="color: red;"></i>
                                              @else
                                                  -
                                              @endif
@@ -136,8 +136,8 @@
                                      <tr>
                                          <th>Student Name</th>
                                          <th>Total</th>
-                                         <th style="text-align: center;"><i class="fa fa-flag" style="color: green;"></i></th>
-                                         <th style="text-align: center;"><i class="fa fa-flag" style="color: red;"></i></th>
+                                         <th style="text-align: center;"><i class="fa fa-thumbs-up" style="color: green;"></i></th>
+                                         <th style="text-align: center;"><i class="fa fa-thumbs-down" style="color: red;"></i></th>
                                      </tr>
                                  </thead>
                                  <tbody>

@@ -55,6 +55,7 @@ class admissionEnquiryController extends Controller
 
         $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
         ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->orderBy('sort_order', 'ASC')
         ->get();
         
         // echo "<pre>";print_r($columns);exit;
@@ -165,6 +166,7 @@ class admissionEnquiryController extends Controller
                 ->when($type=="webForm" && $sub_institute_id==254,function($q) use($request){
                     $q->whereNotIN('id',[199,200,201]);
                 })
+                ->orderBy('sort_order', 'ASC')
                 ->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
@@ -695,6 +697,7 @@ class admissionEnquiryController extends Controller
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)  and user_type="" ')
+            ->orderBy('sort_order', 'ASC')
             ->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();

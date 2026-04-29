@@ -23,6 +23,7 @@ class hostel_masterController extends Controller
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "hostel_master"])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)  and user_type="" ')
+            ->orderBy('sort_order', 'ASC')
             ->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
@@ -65,6 +66,7 @@ class hostel_masterController extends Controller
 
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "hostel_master"])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+            ->orderBy('sort_order', 'ASC')
             ->get();
 
         $fieldsData = tblfields_dataModel::get()->toArray();
@@ -118,6 +120,7 @@ class hostel_masterController extends Controller
                 'table_name' => "hostel_master",
                 'field_type' => "file",
             ])->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+            ->orderBy('sort_order', 'ASC')
             ->get()->toArray();
 
         foreach ($dataCustomFields as $key => $value) {

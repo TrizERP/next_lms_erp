@@ -157,6 +157,7 @@ return DataTables::of($books)
 
         $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "library_books"])
         ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->orderBy('sort_order', 'ASC')
         ->get();
         
         $data['item_status_arr'] = DB::table('mst_item_status')
@@ -251,6 +252,7 @@ return DataTables::of($books)
                     'table_name' => 'library_books'
                 ])
                 ->whereRaw('(sub_institute_id = ? OR common_to_all = 1) AND user_type = ""', [$sub_institute_id])
+                ->orderBy('sort_order', 'ASC')
                 ->pluck('field_name');
 
             foreach ($customFields as $field) {
