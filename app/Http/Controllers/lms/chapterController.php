@@ -10,6 +10,9 @@ use App\Models\school_setup\sub_std_mapModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use function App\Helpers\neo4jCreateNode;
+use function App\Helpers\neo4jCreateRelationship;
+
 
 class chapterController extends Controller
 {
@@ -212,52 +215,95 @@ class chapterController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-        $user_id = $request->session()->get('user_id');
-        $chapter_name = $request->get('chapter_name');
-        $chapter_desc = $request->get('chapter_desc');
-        $availability = $request->get('availability');
-        $sort_order = $request->get('sort_order');
-        $show_hide = $request->get('show_hide');
+{
+    $sub_institute_id = $request->session()->get('sub_institute_id');
+    $syear = $request->session()->get('syear');
+    $user_id = $request->session()->get('user_id');
 
-        foreach ($chapter_name as $key => $val) {
-            $show_hide_val = $show_hide[$key] ?? '';
-            $availability_val = $availability[$key] ?? '';
-            $chapter_desc_val = $chapter_desc[$key] ?? '';
-            $sort_order_val = $sort_order[$key] ?? '';
+    $grade_id = $request->get('grade');
+    $standard_id = $request->get('standard');
+    $subject_id = $request->get('subject');
 
-            $ch = [
-                'grade_id'         => $request->get('grade'),
-                'standard_id'      => $request->get('standard'),
-                'subject_id'       => $request->get('subject'),
-                'chapter_name'     => $val,
-                'availability'     => $availability_val,
-                'show_hide'        => $show_hide_val,
-                'chapter_desc'     => $chapter_desc_val,
-                'created_by'       => $user_id,
-                'sub_institute_id' => $sub_institute_id,
-                'sort_order'       => $sort_order_val,
-                'syear'            => $syear,
-            ];
+    $chapter_name = $request->get('chapter_name');
+    $chapter_desc = $request->get('chapter_desc');
+    $availability = $request->get('availability');
+    $sort_order = $request->get('sort_order');
+    $show_hide = $request->get('show_hide');
 
-            chapterModel::insert($ch);
-        }
+    foreach ($chapter_name as $key => $val) {
 
-        $res = [
-            "status_code" => 1,
-            "message"     => "Chapters Added Successfully",
-            "subject_id"  => $request->get('subject'),
+        $show_hide_val = $show_hide[$key] ?? '';
+        $availability_val = $availability[$key] ?? '';
+        $chapter_desc_val = $chapter_desc[$key] ?? '';
+        $sort_order_val = $sort_order[$key] ?? '';
+
+        $ch = [
+            'grade_id'         => $grade_id,
+            'standard_id'      => $standard_id,
+            'subject_id'       => $subject_id,
+            'chapter_name'     => $val,
+            'availability'     => $availability_val,
+            'show_hide'        => $show_hide_val,
+            'chapter_desc'     => $chapter_desc_val,
+            'created_by'       => $user_id,
+            'sub_institute_id' => $sub_institute_id,
+            'sort_order'       => $sort_order_val,
+            'syear'            => $syear,
         ];
 
-        $type = $request->input('type');
+        // ✅ Get inserted ID
+        $chapter_id = chapterModel::insertGetId($ch);
 
-        return redirect()->route('chapter_master.index',
-            [
-                'standard_id' => $request->get('standard'), 'subject_id' => $request->get('subject'),'perm'=>$sub_institute_id
-            ]);//->with(['data' => $res]);
+        try {
+            // 🔹 CHAPTER NODE
+            neo4jCreateNode(
+                'Chapter',
+                ['chId' => (int)$chapter_id],
+                [
+                    'chapter_name' => $val ?? '-',
+                    'displayLabel' => 'chapter:' . ($val ?? '-'),
+                    'subject_id' => (int)$subject_id,
+                    'standard_id' => (int)$standard_id,
+                    'grade_id' => (int)$grade_id,
+                    'sub_institute_id' => (int)$sub_institute_id,
+                    'sort_order' => (int)$sort_order_val
+                ]
+            );
+neo4jCreateNode(
+            'Subject',
+            ['subId' => (int)$request->subject_id],
+            []
+        );
+            // 🔹 RELATION
+            neo4jCreateRelationship(
+                'Subject',
+                [
+                    'subject_id' => (int)$subject_id,
+                    'standard_id' => (int)$standard_id,
+                    'sub_institute_id' => (int)$sub_institute_id
+                ],
+                'HAS_CHAPTER',
+                'Chapter',
+                [
+                    'chId' => (int)$chapter_id
+                ]
+            );
+
+            \Log::info('✅ Neo4j Chapter Created', [
+                'chId' => $chapter_id
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('❌ Neo4j Chapter Error: ' . $e->getMessage());
+        }
     }
+
+    return redirect()->route('chapter_master.index', [
+        'standard_id' => $standard_id,
+        'subject_id' => $subject_id,
+        'perm' => $sub_institute_id
+    ]);
+}
 
     public function edit(Request $request, $id)
     {
@@ -296,6 +342,42 @@ class chapterController extends Controller
         ];
 
         chapterModel::where(["id" => $id])->update($data);
+        try {
+
+        // 🔹 UPDATE CHAPTER NODE
+        neo4jCreateNode(
+            'Chapter',
+            ['chId' => (int)$id],
+            [
+                'chapter_name' => $request->chapter_name,
+                'subject_id' => (int)$request->subject_id,
+                'updated_at' => now()->toDateTimeString()
+            ]
+        );
+
+        // 🔹 ENSURE SUBJECT NODE
+        neo4jCreateNode(
+            'Subject',
+            ['subId' => (int)$request->subject_id],
+            []
+        );
+
+        // 🔹 RELATION
+        neo4jCreateRelationship(
+            'Subject',
+            ['subId' => (int)$request->subject_id],
+            'HAS_CHAPTER',
+            'Chapter',
+            ['chId' => (int)$id]
+        );
+
+        \Log::info('✅ Neo4j Chapter Updated', [
+            'chId' => $id
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('❌ Neo4j Update Error: ' . $e->getMessage());
+    }
         $res = [
             "status_code" => 1,
             "message"     => "Chapter Updated Successfully",

@@ -54,6 +54,8 @@ use function App\Helpers\accesslog_json;
 use Storage;
 use App\Models\settings\masterFieldModel;
 use App\Models\settings\masterFieldInstituteModel;
+use function App\Helpers\neo4jCreateNode;
+use function App\Helpers\neo4jCreateRelationship;
 
 class tblstudentController extends Controller
 {
@@ -432,6 +434,73 @@ class tblstudentController extends Controller
 
 		tblstudentEnrollmentModel::insert($studentEnrollment);
 
+        try {
+
+        $studentName = trim($request->first_name . ' ' . $request->last_name);
+
+        // 🔹 STUDENT NODE
+        neo4jCreateNode(
+            'Student',
+            ['stuId' => (int)$student_id],
+            [
+                'student_id' => (int)$student_id,
+                'displayLabel' => 'Student:' . $studentName,
+                'sub_institute_id' => (int)$sub_institute_id
+            ]
+        );
+
+        // 🔹 STANDARD NODE
+        neo4jCreateNode(
+            'Standard',
+            ['stId' => (int)$request->standard],
+            [
+                'standard_id' => (int)$request->standard,
+                'name' => 'Standard ' . $request->standard,
+                'displayLabel' => 'Standard:' . $request->standard,
+                'sub_institute_id' => (int)$sub_institute_id
+            ]
+        );
+
+        // 🔹 RELATION: Student → ENROLLED_IN → Standard
+        neo4jCreateRelationship(
+            'Student',
+            ['stuId' => (int)$student_id],
+            'ENROLLED_IN',
+            'Standard',
+            ['stId' => (int)$request->standard]
+        );
+
+        // 🔹 STUDENT DETAIL NODE
+        neo4jCreateNode(
+            'StuDetail',
+            ['sdId' => (int)$student_id],
+            [
+                'student_id' => (int)$student_id,
+                'first_name' => $request->first_name,
+                'middle_name' => $request->middle_name ?? '',
+                'last_name' => $request->last_name,
+                'displayLabel' => 'Student Details:' . $request->first_name,
+                'sub_institute_id' => (int)$sub_institute_id
+            ]
+        );
+
+        // 🔹 RELATION: StuDetail → HAS_STUDENT → Student
+        neo4jCreateRelationship(
+            'StuDetail',
+            ['sdId' => (int)$student_id],
+            'HAS_STUDENT',
+            'Student',
+            ['stuId' => (int)$student_id]
+        );
+
+        \Log::info('✅ Neo4j Student Created', [
+            'stuId' => $student_id
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('❌ Neo4j Error: ' . $e->getMessage());
+    }
+
 		$res['status_code'] = 1;
 		$res['message'] = "Student successfully created.";
 		$res['data'] = $data;
@@ -447,6 +516,8 @@ class tblstudentController extends Controller
 		$newRequest = $request->post();
 
 		$sub_institute_id = $request->session()->get('sub_institute_id');
+		$syear = $request->session()->get('syear');
+
 		$finalArray['sub_institute_id'] = $sub_institute_id;
 		$finalArrayAdmission['sub_institute_id'] = $sub_institute_id;
         $finalArray['marking_period_id']=session()->get('term_id');
@@ -534,7 +605,76 @@ class tblstudentController extends Controller
 
 		tblstudentModel::insert($finalArray);
 		$id = DB::getPdo()->lastInsertId();
+        // add here neo4j create node 
+        try{
 
+        neo4jCreateNode(
+            'Student',
+            ['stuId' => (int)$id,'sub_institute_id'=>(int)$sub_institute_id,'syear'=>(int)$syear],
+            [
+                'student_id' => (int)$id,
+                'displayLabel' => 'Student:' . $finalArray['first_name'] ?? '-'." ".$finalArray['last_name'] ?? '-',
+                'grade_id' => (int)$request->grade,
+                'standard_id' => (int)$request->standard,
+                'section_id' => (int)$request->division,
+                'syear' => (int)$syear,
+
+            ]
+        );
+        \Log::info('✅ Neo4j Student Created', [
+                    'stuId' => $id
+                ]);
+        // 🔹 UPDATE STUDENT DETAIL NODE
+        neo4jCreateNode(
+            'StuDetail',
+            ['sdId' => (int)$id,'sub_institute_id' => (int)$sub_institute_id,],
+            [
+                'student_id' => (int)$id,
+                'first_name' => $finalArray['first_name'] ?? '-',
+                'middle_name' => $finalArray['middle_name'] ?? '',
+                'last_name' => $finalArray['last_name'] ?? '-',
+                'displayLabel' => 'Student Details:' . $finalArray['first_name'] ?? '-'." ".$finalArray['last_name'] ?? '-',
+            ]
+        );
+  \Log::info('✅ Neo4j Student Details Created', [
+                    'sdId' => $id
+                ]);
+        // 🔹 RELATION (ENSURE EXISTS)
+        neo4jCreateRelationship(
+            'StuDetail',
+            ['sdId' => (int)$id,'sub_institute_id'=>(int)$sub_institute_id,],
+            'HAS_STUDENT',
+            'Student',
+            ['stuId' => (int)$id,'sub_institute_id'=>(int)$sub_institute_id,'syear'=>$syear]
+        );
+          \Log::info('✅ Neo4j HAS_STUDENT relationship Created', [
+                    'stId' => $id
+                ]);
+        // 🔹 UPDATE STANDARD + RELATION
+        if ($request->has('standard')) {
+
+            // Relation
+            neo4jCreateRelationship(
+                'Student',
+                ['stuId' => (int)$id,'sub_institute_id'=>(int)$sub_institute_id,
+            'syear'=>(int)$syear],
+                'ENROLLED_IN',
+                'Standard',
+                ['stId' => (int)$request->standard,'sub_institute_id'=>(int)$sub_institute_id,]
+            );
+        }
+            \Log::info('✅ Neo4j Student ENROLLED_IN relationship Created', [
+                    'stuId' => $id
+                ]);
+        
+        }catch(\Exception $e){
+            \Log::error('❌ Neo4j Student Created', [
+                'stuId' => $id,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        // neo4j ends here 
 		if ($sub_institute_id == 198) {
 
             $getAdmissionId = tblstudentModel::select(DB::raw('admission_id'))
@@ -557,6 +697,7 @@ class tblstudentController extends Controller
         $newRequest = $request->post();
         $student_id = $newRequest['id'];
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
         $finalArray['sub_institute_id'] = $sub_institute_id;
         $finalArrayAdmission['sub_institute_id'] = $sub_institute_id;
         $finalArray['password'] = md5('student');
@@ -627,6 +768,69 @@ class tblstudentController extends Controller
         $sendQuery2 = end($queries2); // 2024-08-24 required to convert query into sql for json 
         accesslog_json($sendQuery2,'update','Student Edit Profile (Admission Enquiry)',$finalArrayAdmission);
         //2024-08-23
+        // add here neo4j create node 
+        try{
+
+        $studentName = trim($request->first_name . ' ' . $request->last_name);
+
+        // 🔹 UPDATE STUDENT NODE
+        neo4jCreateNode(
+            'Student',
+            ['stuId' => (int)$student_id,'sub_institute_id'=>(int)$sub_institute_id,'syear'=>(int)$syear],
+            [
+                'student_id' => (int)$student_id,
+                'displayLabel' => 'Student:' . $studentName,
+                'sub_institute_id' => (int)$sub_institute_id,
+                'grade_id' => (int)$request->grade,
+                'standard_id' => (int)$request->standard,
+                'section_id' => (int)$request->division,
+                'syear' => (int)$syear,
+            ]
+        );
+        // 🔹 UPDATE STUDENT DETAIL NODE
+        neo4jCreateNode(
+            'StuDetail',
+            ['sdId' => (int)$student_id],
+            [
+                'student_id' => (int)$student_id,       
+                'first_name' => $request->first_name,
+                'middle_name' => $request->middle_name ?? '',
+                'last_name' => $request->last_name,
+                'displayLabel' => 'Student Details:' . $request->first_name,
+                'sub_institute_id' => (int)$sub_institute_id,
+            ]
+        );
+        // 🔹 RELATION (ENSURE EXISTS)
+        neo4jCreateRelationship(
+            'StuDetail',
+            ['sdId' => (int)$student_id,'sub_institute_id'=>(int)$sub_institute_id],
+            'HAS_STUDENT',
+            'Student',
+            ['stuId' => (int)$student_id,'sub_institute_id'=>(int)$sub_institute_id,'syear'=>(int)$syear]
+        );
+         \Log::info('✅ Neo4j Student Updated', [
+            'stuId' => $student_id
+        ]);
+    
+    } catch (\Exception $e) {
+        \Log::error('❌ Neo4j Update Error: ' . $e->getMessage());
+    }
+        // 🔹 UPDATE STANDARD + RELATION
+        if ($request->has('standard')) {
+            // Relation
+            neo4jCreateRelationship(
+                'Student',
+                ['stuId' => (int)$student_id,'sub_institute_id'=>(int)$sub_institute_id,'syear'=>(int)$syear],
+                'ENROLLED_IN',
+                'Standard',
+                ['stId' => (int)$request->standard,'sub_institute_id'=>(int)$sub_institute_id]
+            );
+        }
+            \Log::info('✅ Neo4j Student Created', [
+                    'stuId' => $student_id
+                ]);
+        
+        
         return $data;
     }
 

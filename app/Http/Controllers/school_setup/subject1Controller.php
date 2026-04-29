@@ -11,6 +11,8 @@ use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\ValidateInsertData;
 use Validator;
+use function App\Helpers\neo4jCreateNode;
+use function App\Helpers\neo4jCreateRelationship;
 // use GenTux\Jwt\JwtToken;
 // use GenTux\Jwt\GetsJwtToken;
 // use function App\Helpers\aut_token;
@@ -205,7 +207,29 @@ class subject1Controller extends Controller {
                 "next_standard_id"=>$st_next_standard_id ?? null,
                 "marking_period_id"=> $marking_period_id ?? null,
                 ]);
-                if($data== true){
+                $newStdId = DB::getPDO()->lastInsertId();
+                if(!isset($newStdId)){
+                     \Log::info('✅ Need to get last inserted Id');
+                }
+                if($newStdId > 0){
+                    try{
+                    neo4jCreateNode(
+                    'Standard',
+                    ['stId' => (int)$newStdId],
+                    [
+                        'standard_id' => (int)$newStdId,
+                        'name' =>  $st_name,
+                        'displayLabel' => 'Standard:' . $st_short_name,
+                        'sub_institute_id' => (int)$sub_institute_id
+                    ]
+                );
+              \Log::info('✅ Neo4j Standard Created', [
+                    'stId' => $newStdId
+                ]);
+            }catch(\Exception $e){
+                return redirect()->back()->with('failed','Standard Failed To Add !');
+            }
+                    
                     return redirect()->back()->with('success','Standard Added Successfully !');
                 }else{
                     return redirect()->back()->with('failed','Standard Failed To Add !');

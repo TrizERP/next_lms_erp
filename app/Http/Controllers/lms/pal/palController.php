@@ -1,7 +1,7 @@
 <?php
-
+ 
 namespace App\Http\Controllers\lms\pal;
-
+ 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
@@ -10,7 +10,7 @@ use App\Http\Controllers\AJAXController;
 use App\Http\Controllers\lms\onlineExamController;
 use App\Models\lms\lmsQuestionMasterModel;
 // use App\Models\lms\lmsOnlineExamAnswerStudent;
-// use App\Models\lms\lmsOnlineExamStudent;
+// // use App\Models\lms\lmsOnlineExamStudent;
 use App\Models\lms\lmsOnlineExamAnswerModel;
 use App\Models\lms\lmsOnlineExamModel;
 use App\Models\lms\answermasterModel;
@@ -18,6 +18,13 @@ use App\Models\lms\lmsQuestionMappingModel;
 use App\Models\lms\questionpaperModel;
 use App\Models\lms\lmsmappingtypeModel;
 use DB;
+use App\Models\lms\chapterModel;
+use App\Models\lms\contentModel;
+use App\Models\lms\topicModel;
+use App\Models\school_setup\sub_std_mapModel;
+use Illuminate\Support\Facades\Log;
+use function App\Helpers\neo4jCreateNode;
+use function App\Helpers\neo4jCreateRelationship;
 
 class palController extends Controller
 {
@@ -58,8 +65,8 @@ class palController extends Controller
         $res['subjectList'] =$getSubjectList;
         $res['chapterList'] =$getchapterList;  
         // $res['attemptExams'] = questionpaperModel::join('lms_online_exam_student as loes','loes.question_paper_id','=','question_paper.id')
-        $res['attemptExams'] = questionpaperModel::join('lms_online_exam as loes','loes.question_paper_id','=','question_paper.id')
-        ->where('question_paper.created_by',$student_id)->where(['question_paper.sub_institute_id'=>$sub_institute_id,'question_paper.syear'=>$syear])->where('question_paper.exam_type','PAL')->get()->toArray();
+         $res['attemptExams'] = questionpaperModel::join('lms_online_exam as loes','loes.question_paper_id','=','question_paper.id')
+        ->where('question_paper.created_by',$student_id)->where(['question_paper.sub_institute_id'=>$sub_institute_id])->where('question_paper.exam_type','PAL')->get()->toArray();
         // echo "<pre>";print_r($newData);exit;
         return is_mobile($type, 'lms/pal/show', $res, "view");        
     }
@@ -129,7 +136,7 @@ class palController extends Controller
             // No previous exam, default to easy level
             $studentLevel = 'easy';
             $easyLevel = lmsmappingtypeModel::where('name', 'easy')
-                ->where('sub_institute_id', $sub_institute_id)
+                // ->where('sub_institute_id', $sub_institute_id)
                 ->first();
             $studentLevelId = $easyLevel ? $easyLevel->id : null;
         }
@@ -213,7 +220,7 @@ class palController extends Controller
         $selectedLevelId = $this->getLevelId($nextLevel, $sub_institute_id);
 
 
-        $command = "python3 /home/pal/pal.py $sub_institute_id $syear $standard_id $subject_id $chapter_id $enrollment_no";
+        $command = "python3 /home/pal/pal.py $sub_institute_id $standard_id $subject_id $chapter_id $enrollment_no";
         $getLists = shell_exec($command);
         $questionList=json_decode($getLists,true);
 
@@ -325,7 +332,9 @@ class palController extends Controller
         $grade_id = $request->grade_id;
         $standard_id = $request->standard_id;
         $subject_id= $request->subject_id;
-        $paper_name= $request->paper_name;      
+        $paper_name= $request->paper_name; 
+        $chapter_name = $request->chapter_name;
+        $date = date('Y-m-d H:i:s');     
         $allowed_time = $request->questionpaper_time;  
         $total_marks = $request->total_marks;
         $question_ids = implode(',',$request->question_ids);        
@@ -351,9 +360,8 @@ class palController extends Controller
             'show_feedback'=>1,
             'show_hide' =>1,
             'result_show_ans' =>1,
-            'created_by'=>$user_id,
+             'created_by'=>$user_id,
             'sub_institute_id'=>$sub_institute_id,
-            'syear'=>$syear,
             'exam_type'=>'PAL',
         ];
         // $check_exists = DB::table('question_paper')->where($questionPaperDetails)->first();
@@ -465,14 +473,496 @@ class palController extends Controller
                 lmsOnlineExamModel::insert($narrative);
             }
         }
-        $res['message'] = "Exam submitted";
-    // }else{
 
-    // }
-    return redirect()->route('pal.show',[$questionPaperId,"online_exam_id"=> $online_exam_id,"rightInterest"=>$rightInterest]);
+        // Neo4j Assessment Node
+         neo4jCreateNode(
+            'Assessment',
+            [
+                'assId' => (int)$questionPaperId,
+                'sub_institute_id' => (int)$sub_institute_id
+            ],
+            [
+                'displayLabel' => 'Assessment:' . $paper_name,
+                'exam_type' => 'pal',
+                'paper_name' => $paper_name,
+                'total_marks' => (float)$total_marks,
+                'standard_id' => (int)$standard_id,
+                'subject_id' => (int)$subject_id,
+                'grade_id' => (int)$grade_id,
+                'question_ids' => $question_ids,
+                'total_ques' => (int)$total_question
+            ]
+        );
+
+    // ================= RESULT NODE =================
+    // Result Node (using original online_exam_id from line 384)
+    neo4jCreateNode(
+        'Result',
+        ['resultId' => (int)$online_exam_id, 'student_id' => (int)$user_id],
+        [
+            'question_paper_id' => (int)$questionPaperId,
+            'total_right' => (int)$result['total_right_ans'],
+            'total_wrong' => (int)$result['total_wrong_ans'],
+            'obtain_marks' => (int)$result['obtain_marks'],
+            'displayLabel' => 'Result:' . $result['obtain_marks']
+        ]
+    );
+
+    // ================= RELATIONSHIPS =================
+    neo4jCreateRelationship(
+        'Result',
+        ['resultId' => (int)$online_exam_id],
+        'FOR_ASSESSMENT',
+        'Assessment',
+        ['assId' => (int)$questionPaperId]
+    );
+
+    neo4jCreateRelationship(
+        'Student',
+        ['student_id' => (int)$user_id],
+        'HAS_RESULT',
+        'Result',
+        ['resultId' => (int)$online_exam_id]
+    );
+
+    neo4jCreateRelationship(
+        'Assessment',
+        ['assId' => (int)$questionPaperId],
+        'ASSESSES_CHAPTER',
+        'Chapter',
+        ['chId' => (int)$request->chapter_id]
+    );
+
+    // ================= ✅ MASTERS RELATION =================
+    try {
+
+        $records = DB::select("
+            SELECT 
+                r.obtain_marks,
+                a.total_marks,
+                a.paper_desc as chapter_id
+            FROM lms_online_exam r
+            JOIN question_paper a ON a.id = r.question_paper_id
+            WHERE r.student_id = ? AND a.total_marks > 0
+        ", [$user_id]);
+
+        $chapterWise = [];
+
+        foreach ($records as $row) {
+
+            $chId = $row->chapter_id;
+            if (!$chId) continue;
+
+            $ratio = $row->obtain_marks / $row->total_marks;
+
+            if (!isset($chapterWise[$chId])) {
+                $chapterWise[$chId] = ['total' => 0, 'count' => 0];
+            }
+
+            $chapterWise[$chId]['total'] += $ratio;
+            $chapterWise[$chId]['count']++;
+        }
+
+        foreach ($chapterWise as $chId => $data) {
+
+            $avg = $data['total'] / $data['count'];
+            $score = round($avg * 100);
+
+            neo4jCreateRelationship(
+                'Student',
+                ['student_id' => (int)$user_id],
+                'MASTERS',
+                'Chapter',
+                ['chId' => (int)$chId],
+                ['proficiency_score' => (int)$score]
+            );
+        }
+
+        \Log::info('✅ MASTERS created', ['student_id' => $user_id]);
+
+    } catch (\Exception $e) {
+        \Log::error('❌ MASTERS ERROR', ['message' => $e->getMessage()]);
+    }
+
+        $res['message'] = "Exam submitted";
+        return redirect()->route('pal.show',[$questionPaperId,"online_exam_id"=> $online_exam_id,"rightInterest"=>$rightInterest]);
     
     }
 
+    public function suggestedContent(Request $request)
+{
+    $requestedLevel = $request->input('student_level');
+
+     // ================= GET SESSION DATA =================
+     $type = $request->input('type');
+     $isAjax = $request->ajax() || $request->input('type') === 'AJAX';
+ 
+     if ($type == 'API' || $isAjax) {
+         $student_id = $request->input('user_id', session()->get('user_id'));
+         $sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
+         $syear = $request->input('syear', session()->get('syear'));
+     } else {
+         $student_id = session()->get('user_id');
+         $sub_institute_id = session()->get('sub_institute_id');
+         $syear = session()->get('syear');
+     }
+ 
+     // Fallback to session if values not found
+     if(empty($sub_institute_id)) $sub_institute_id = session()->get('sub_institute_id');
+     if(empty($student_id)) $student_id = session()->get('user_id');
+     if(empty($syear)) $syear = session()->get('syear');
+    if (!$requestedLevel) {
+
+        $latestExam = DB::table('lms_online_exam as loes')
+            ->join('question_paper as qp', 'qp.id', '=', 'loes.question_paper_id')
+            ->where('loes.student_id', $student_id)
+            ->where('qp.exam_type', 'PAL')
+            ->where('qp.sub_institute_id', $sub_institute_id)
+            ->orderBy('loes.created_at', 'DESC')
+            ->first();
+
+        if ($latestExam) {
+            $totalQuestions = $latestExam->total_right + $latestExam->total_wrong;
+            $percentage = $totalQuestions > 0 ? ($latestExam->total_right / $totalQuestions) * 100 : 0;
+
+            if ($percentage < 40) {
+                $studentLevel = 'easy';
+            } elseif ($percentage < 70) {
+                $studentLevel = 'medium';
+            } else {
+                $studentLevel = 'hard';
+            }
+        } else {
+            $studentLevel = 'easy';
+        }
+
+    } else {
+        $studentLevel = $requestedLevel;
+    }
+
+    // ================= SPECIAL RULE =================
+    // easy → medium
+    if ($studentLevel == 'easy') {
+        $studentLevel = 'medium';
+    }
+
+    // ================= GET LEVEL ID =================
+    $levelMapping = lmsmappingtypeModel::where('name', $studentLevel)->first();
+    $studentLevelId = $levelMapping ? $levelMapping->id : null;
+
+    // ================= MERGE REQUEST =================
+    $request->merge([
+        'student_level' => $studentLevel,
+        'student_level_id' => $studentLevelId
+    ]);
+
+    // ================= GET DATA =================
+    $data = $this->getData($request);
+
+    $res['sub_institute_id'] = $sub_institute_id;
+
+    // ================= MAPPING =================
+    $lms_mapping_type = DB::table('lms_mapping_type')
+        ->where('status', '=', 1)
+        ->where('parent_id', '=', 0)
+        ->where(function ($q) use ($request) {
+            $q->where('globally', '=', 1)
+              ->orWhere('chapter_id', $request->get('chapter_id'));
+        })
+        ->where(function ($q) use ($request) {
+            $q->where('topic_id', '=', 0)
+              ->orWhere('topic_id', $request->get('topic_id'));
+        })
+        ->where('element_id','content_library')
+        ->get()->toArray();
+
+    $lms_mapping_type = json_decode(json_encode($lms_mapping_type), true);
+
+    $lms_mapping_Values = [];
+    foreach ($lms_mapping_type as $key => $value) {
+        $lms_mapping_Values[$value['name']] = DB::table('lms_mapping_type')
+            ->where('status', '=', 1)
+            ->where('parent_id', '=', $value['id'])
+            ->get()->toArray();
+    }
+
+    // ================= FINAL RESPONSE =================
+    $res['status_code'] = 1;
+    $res['message'] = "SUCCESS";
+    $res['data'] = $data['chapter_data'];
+    $res['content_data'] = $data['content_data'];
+    $res['grade'] = $data['basic_ids']['grade_id'];
+    $res['standard'] = $data['basic_ids']['standard_id'];
+    $res['subject'] = $data['basic_ids']['subject_id'];
+    $res['subject_name'] = $data['basic_ids']['subject_name'];
+    $res['show_content'] = $data['basic_ids']['add_content'];
+    $res['lms_mapping_type'] = $lms_mapping_type;
+    $res['lms_mapping_Values'] = $lms_mapping_Values;
+    $res['mapped_type'] = $request->mapping_type;
+    $res['mapped_value'] = $request->mapped_value;
+
+    // ✅ IMPORTANT
+    $res['student_level'] = $studentLevel;
+    $res['student_level_id'] = $studentLevelId;
+
+    if ($isAjax) {
+        return response()->json($res);
+    }
+
+     return is_mobile($type, 'lms/pal/suggested_content', $res, "view");
+ }    
+
+     /**
+      * Get suggested content from the suggested_content table for a chapter
+      * 
+      * @param Request $request
+      * @return \Illuminate\Http\JsonResponse
+      */
+     public function getSuggestedContent(Request $request)
+     {
+         $type = $request->input('type');
+         $isAjax = $request->ajax() || $request->input('type') === 'AJAX';
+
+         if ($type == 'API' || $isAjax) {
+             $student_id = $request->input('user_id', session()->get('user_id'));
+             $sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
+             $syear = $request->input('syear', session()->get('syear'));
+         } else {
+             $student_id = session()->get('user_id');
+             $sub_institute_id = session()->get('sub_institute_id');
+             $syear = session()->get('syear');
+         }
+
+         // Fallback to session if values not found
+         if(empty($sub_institute_id)) $sub_institute_id = session()->get('sub_institute_id');
+         if(empty($student_id)) $student_id = session()->get('user_id');
+         if(empty($syear)) $syear = session()->get('syear');
+
+         $standard_id = $request->input('standard_id');
+         $subject_id = $request->input('subject_id');
+         $chapter_id = $request->input('chapter_id');
+         $grade_id = $request->input('grade_id');
+
+         // Get suggested content from the suggested_content table
+         $suggestedContent = DB::table('suggested_content as sc')
+             ->join('content_master as cm', 'cm.id', '=', 'sc.type_id')
+             ->where('sc.type', 'pal_content')
+             ->where('sc.student_id', $student_id)
+             ->where('sc.standard_id', $standard_id)
+             ->where('sc.subject_id', $subject_id)
+             ->where('sc.chapter_id', $chapter_id)
+             ->where('sc.sub_institute_id', $sub_institute_id)
+             ->where('sc.syear', $syear)
+             ->select('cm.*')
+             ->get()
+             ->toArray();
+
+         // Format the data similar to the suggestedContent method's content_data
+         $content_data = [];
+         if (!empty($suggestedContent)) {
+             foreach ($suggestedContent as $content) {
+                 $content_data[$content->chapter_id][$content->content_category][] = $content;
+             }
+         }
+
+         // Get chapter data for the chapter (to get chapter name, etc.)
+         $chapterData = chapterModel::where('id', $chapter_id)
+             ->where('sub_institute_id', $sub_institute_id)
+             ->first();
+
+         $res['status_code'] = 1;
+         $res['message'] = "SUCCESS";
+         $res['content_data'] = $content_data;
+         $res['chapter_data'] = $chapterData ? [$chapterData->toArray()] : [];
+         $res['grade'] = $grade_id;
+         $res['standard'] = $standard_id;
+         $res['subject'] = $subject_id;
+         $res['subject_name'] = DB::table('sub_std_map')
+             ->where('standard_id', $standard_id)
+             ->where('subject_id', $subject_id)
+             ->where('sub_institute_id', $sub_institute_id)
+             ->value('display_name');
+
+         if ($isAjax) {
+             return response()->json($res);
+         }
+
+         return is_mobile($type, 'lms/pal/suggested_content', $res, "view");
+     }
+
+     public function storeSuggestedContent(Request $request)
+     {
+         $student_id = session()->get('user_id');
+
+         $contentData = $request->content_data;
+
+         if(empty($contentData)){
+             return response()->json(['status' => 0, 'message' => 'No content found']);
+         }
+
+         // ✅ Get all required values
+         $studentLevel = $request->student_level ?? 'medium';
+         $sub_institute_id = $request->sub_institute_id ?? session()->get('sub_institute_id');
+         $standard_id = $request->standard_id;
+         $subject_id = $request->subject_id;
+         $chapter_id = $request->chapter_id;
+         $syear = $request->syear;
+
+         foreach($contentData as $chapterId => $categories){
+             foreach($categories as $category => $contents){
+                 foreach($contents as $content){
+
+                     if(empty($content)) continue;
+
+                     DB::table('suggested_content')->insert([
+                         'type' => 'pal_content',
+                         'type_id' => $content['id'] ?? null,
+                         'student_id' => $student_id,
+                         'student_level' => $studentLevel,
+                         'standard_id' => $standard_id,
+                         'subject_id' => $subject_id,
+                         'chapter_id' => $chapter_id,
+                         'sub_institute_id' => $sub_institute_id,
+                         'syear' => $syear,
+                         'created_by' => $student_id,
+                         'created_at' => now()
+                     ]);
+                 }
+             }
+         }
+
+         return response()->json([
+             'status' => 1,
+             'message' => 'Content Stored Successfully'
+         ]);
+     }
+public function getData($request)
+    {
+        if($request->has('preload_lms')){
+            $sub_institute_id = 1;
+            $year = DB::table('academic_year')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+            $syear =$year[0]->syear;
+            $user_profile_name = 1;
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');
+            $user_profile_name = $request->session()->get('user_profile_name');
+        }
+
+        $getIsLms = DB::table('school_setup')
+            ->where('Id', $sub_institute_id)
+            ->value('is_Lms');
+
+        $extra_where = array();
+        if ($user_profile_name == "Student") {
+            $extra_where['chapter_master.show_hide'] = "1";
+            $content_where['content_master.show_hide'] = '1';
+        }
+
+        $subject_id = $request->input('subject_id');
+        $standard_id = $request->input('standard_id');
+        $data['chapter_data'] = array();
+
+        $data['chapter_data'] = chapterModel::select('chapter_master.*',
+            DB::raw('COUNT(content_master.id) as total_content,sum(if(content_category = "Triz", 1, 0)) AS total_triz_content,
+        sum(if(content_category = "OER", 1, 0)) AS total_OER_content'))
+            ->leftjoin('content_master', 'content_master.chapter_id', '=', 'chapter_master.id')
+            ->where(function ($query) use ($getIsLms, $sub_institute_id) {
+                if ($getIsLms == 'Y') {
+                    $query->where('chapter_master.sub_institute_id', '1')
+                        ->orWhere('chapter_master.sub_institute_id', $sub_institute_id);
+                } else {
+                    $query->Where('chapter_master.sub_institute_id', $sub_institute_id);
+                }
+            })
+            ->where('chapter_master.subject_id', $subject_id)
+            ->where('chapter_master.standard_id', $standard_id)
+            ->where($extra_where)
+            ->groupBy('chapter_master.id')
+            ->orderBy('chapter_master.sort_order')
+            ->get();
+
+        $data['basic_ids'] = sub_std_mapModel::select('standard.grade_id', 'sub_std_map.subject_id',
+            'sub_std_map.standard_id',
+            'sub_std_map.display_name as subject_name', 'sub_std_map.add_content')
+            ->join('standard', 'standard.id', '=', 'sub_std_map.standard_id')
+            ->where(function ($query) use ($getIsLms, $sub_institute_id) {
+                if ($getIsLms == 'Y') {
+                    $query->where('sub_std_map.sub_institute_id', '1')
+                        ->orWhere('sub_std_map.sub_institute_id', $sub_institute_id);
+                }
+            })
+            ->where('sub_std_map.subject_id', $subject_id)
+            ->where('sub_std_map.standard_id', $standard_id)
+            ->get()->toArray();
+
+        $content_data = contentModel::select('content_master.*')
+    ->where(function ($query) use ($getIsLms, $sub_institute_id) {
+        if ($getIsLms == 'Y') {
+            $query->where('content_master.sub_institute_id', '1')
+                ->orWhere('content_master.sub_institute_id', $sub_institute_id);
+        } else {
+            $query->where('content_master.sub_institute_id', $sub_institute_id);
+        }
+    })
+    ->where('content_master.subject_id', $subject_id)
+    ->where('content_master.standard_id', $standard_id)
+    ->where('content_master.chapter_id', $request->chapter_id) // ✅ ADD THIS
+    ->where(function ($query) {
+        $query->whereNull('content_master.topic_id')
+            ->orWhere('content_master.topic_id', '0');
+    })
+     ->when($request->student_level_id, function ($query) use ($request) {
+         $query->join('content_mapping_type as cmt', 'cmt.content_id', '=', 'content_master.id')
+               ->where('cmt.mapping_value_id', $request->student_level_id);
+     }) // ✅ ADD THIS (LEVEL FILTER)
+     // Note: Using JOIN for level filter means only content mapped to this level is returned.
+     // If no content is found, the level mapping in content_mapping_type table may need to be set up.
+    ->get()
+    ->toArray();
+
+        $content_data_array =[];
+        $mappedVals = explode(',',$request->mapped_value);
+
+        if (!empty($content_data)) {
+            foreach ($content_data as $content) {
+               if(isset($mappedVals[0]) && $mappedVals[0] != ''){
+
+    $exists = DB::table('content_mapping_type')
+        ->where('content_id', $content['id'])
+        ->whereIn('mapping_value_id', $mappedVals)
+        ->exists();
+
+    if($exists){
+        $content_data_array[$content['chapter_id']][$content['content_category']][] = $content;
+    }
+
+} else {
+    $content_data_array[$content['chapter_id']][$content['content_category']][] = $content;
+}
+            }
+            foreach ($content_data_array as $chapter_id => &$chapter_content) {
+                
+                if (!isset($chapter_content['Flash Cards'])) {
+                    $chapter_content['Flash Cards'] =$flash =DB::table('lms_flashcard')
+                    ->where(['chapter_id' => $chapter_id, 'sub_institute_id' => $sub_institute_id, 'status' => 1])
+                    ->get()
+                    ->toArray();
+                }
+                if (!isset($chapter_content['Mindmap'])) {
+                    $chapter_content['Mindmap'] = array();
+                }
+                if (!isset($chapter_content['Virtual Lab'])) {
+                    $chapter_content['Virtual Lab'] = array();
+                }
+            }
+        }
+        $data['content_data'] = $content_data_array;
+
+        $data['basic_ids'] = $data['basic_ids'][0];
+
+        return $data;
+    }
     public function show(Request $request, $id)
     {
         $questionpaper_id = $id;
@@ -520,11 +1010,21 @@ class palController extends Controller
         
         // $data['online_exam_data'] =DB::SELECT("SELECT * FROM lms_online_exam  where id ='$online_exam_id' and student_id=95634 AND question_paper_id = '$user_id'");
 
-        $data['online_exam_data'] = lmsOnlineExamModel::where([
+        $onlineExamData = lmsOnlineExamModel::where([
             'id'=>$online_exam_id,'student_id'=>$user_id
         ])->get()->toArray();
-        // print_r($data['online_exam_data']);exit;
-        $data['online_exam_data'] = $data['online_exam_data'][0] ?? $data['online_exam_data'];
+        $data['online_exam_data'] = $onlineExamData[0] ?? $onlineExamData;
+        
+        // Calculate student level based on performance
+        $totalQuestions = $data['online_exam_data']['total_right'] + $data['online_exam_data']['total_wrong'];
+        $percentage = $totalQuestions > 0 ? ($data['online_exam_data']['total_right'] / $totalQuestions) * 100 : 0;
+        if ($percentage < 40) {
+            $data['online_exam_data']['student_level'] = 'easy';
+        } elseif ($percentage < 70) {
+            $data['online_exam_data']['student_level'] = 'medium';
+        } else {
+            $data['online_exam_data']['student_level'] = 'hard';
+        }
 
         // $online_answer_data = lmsOnlineExamAnswerModel::where(['online_exam_id'=>$online_exam_id,'student_id'=>$user_id])->get()->toArray();
         // foreach($online_answer_data as $key => $val)

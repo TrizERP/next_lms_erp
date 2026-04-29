@@ -16,6 +16,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use function App\Helpers\neo4jCreateNode;
+use function App\Helpers\neo4jCreateRelationship;
 
 class questionmasterController extends Controller
 {
@@ -389,6 +391,43 @@ class questionmasterController extends Controller
                 answermasterModel::insert($answer);
             }
         }
+        try {
+
+    
+    neo4jCreateNode(
+        'Question',
+        ['qId' => (int)$question_id],
+        [
+            'question_title' => $request->question_title,
+            'chapter_id' => (int)$request->chapter_id,
+            'displayLabel' => 'Question:' . $request->question_title,
+            'standard_id' => (int)$request->standard_id,
+            'sub_institute_id' => (int)$sub_institute_id,
+            'question_type_id' => (int)$request->question_type_id,
+            'points' => 1
+        ]
+    );
+
+    \Log::info('Node Created');
+
+    neo4jCreateRelationship(
+        'Question',
+        ['qId' => (int)$question_id],
+        'BELONGS_TO',
+        'Chapter',
+        ['chId' => (int)$request->chapter_id]
+    );
+
+    \Log::info('Relationship Created');
+
+} catch (\Throwable $e) {
+
+    \Log::error('❌ Neo4j Error', [
+        'message' => $e->getMessage(),
+        'line' => $e->getLine(),
+        'file' => $e->getFile()
+    ]);
+}
         //END Insert into answer_master
 // exit;
         $res = array(
@@ -657,6 +696,40 @@ class questionmasterController extends Controller
                 ];
                 lmsQuestionMappingModel::insert($questionmappingtype);
             }
+            try {
+
+        // ✅ UPDATE QUESTION NODE
+        neo4jCreateNode(
+            'Question',
+            ['qId' => (int)$id],
+            [
+                'question_title' => $request->question_title,
+                'chapter_id' => (int)$request->chapter_id,
+                'displayLabel' => 'Question:' . $request->question_title,
+                'standard_id' => (int)$request->standard_id,
+                'sub_institute_id' => (int)$sub_institute_id,
+                'question_type_id' => (int)$request->question_type_id,
+                'points' => 1
+            ]
+        );
+
+        // ✅ UPDATE RELATION: Question → Chapter
+        neo4jCreateRelationship(
+            'Question',
+            ['qId' => (int)$id,'chapter_id' => (int)$request->chapter_id,'subject_id' => (int)$request->subject_id, 'standard_id' => (int)$request->standard_id,'sub_institute_id' => (int)$sub_institute_id],
+            'BELONGS_TO',
+            'Chapter',
+            ['chId' => (int)$request->chapter_id,'subject_id' => (int)$request->subject_id, 'standard_id' => (int)$request->standard_id,'sub_institute_id' => (int)$sub_institute_id]
+        );
+
+        \Log::info('✅ Neo4j Question Updated', [
+            'question_id' => $id
+        ]);
+
+    } catch (\Exception $e) {
+        \Log::error('❌ Neo4j Error: ' . $e->getMessage());
+    }
+
         }
         //END Delete and insert into question_mapping_Data
 

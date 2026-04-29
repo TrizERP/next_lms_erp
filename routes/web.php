@@ -681,3 +681,5 @@ Route::get('ajaxQuestionLists', [AJAXController::class, 'ajaxQuestionListsFuncti
 
 Route::get('/suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggested.content');
 Route::post('/lms/store-suggested-content', [palController::class, 'storeSuggestedContent'])->name('store.suggested.content');
+
+

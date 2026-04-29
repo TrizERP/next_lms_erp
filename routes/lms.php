@@ -146,6 +146,7 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::resource('pal', palController::class);
     Route::get('palreport',[palController::class,'palreport'])->name('palreport.index');
     Route::get('suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggestedContent');
+    Route::get('get-suggested-content', [palController::class, 'getSuggestedContent'])->name('pal.getSuggestedContent');
 
     Route::get('ajax_LMS_MappingValue', [contentController::class, 'ajax_LMS_MappingValue'])->name('ajax_LMS_MappingValue');
 
@@ -320,6 +321,8 @@ Route::prefix('h5p')->group(function () {
 });
 Route::post('get-h5p-ai-output', [H5PIndexController::class, 'getH5pAIOutput'])->name('get-h5p-ai-output');
 Route::post('get-h5p-ai-scenario', [H5PScenarioController::class, 'getH5pAIScenario'])->name('get-h5p-ai-scenario');
+    Route::get('suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggestedContent');
+
 
 
 // use App\Http\Controllers\lms\Neo4jSyncController;

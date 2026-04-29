@@ -16,11 +16,148 @@ use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
+use App\Services\Neo4jService;
 
 if (!defined('BEST_OF')) {
     define('BEST_OF', 2);
 }
+function neo4jCreateRelationship($fromLabel, $fromMatch, $relation, $toLabel, $toMatch, $relationshipProperties = [])
+{
+    try {
+        $neo4j = app(Neo4jService::class);
+        
+        // 🔹 Automatically add database_type based on actual database connection
+        $currentDatabase = config('database.connections.' . config('database.default') . '.database');
+        
+        if ($currentDatabase === 'triz_erp_21') {
+            $relationshipProperties['database_type'] = 'triz_erp_21';
+        } else {
+            $relationshipProperties['database_type'] = 'development_erp';
+        }
+        
+        $query = "
+            MATCH (a:$fromLabel), (b:$toLabel)
+            WHERE " . buildWhereClause('a', $fromMatch) . "
+            AND " . buildWhereClause('b', $toMatch) . "
+            MERGE (a)-[r:$relation]->(b)
+        ";
+        
+        // Add SET clause for relationship properties if any
+        if (!empty($relationshipProperties)) {
+            $setParts = [];
+            foreach ($relationshipProperties as $key => $value) {
+                $setParts[] = "r.$key = \$$key";
+            }
+            $query .= "SET " . implode(', ', $setParts) . "\n";
+            $params = array_merge($fromMatch, $toMatch, $relationshipProperties);
+        } else {
+            $params = array_merge($fromMatch, $toMatch);
+        }
+        
+        $query .= "RETURN r";
+        
+        $client = $neo4j->getClient();
+        $client->run($query, $params);
+        
+        \Log::info("Neo4j Relation Created: $fromLabel-$relation-$toLabel");
+        
+    } catch (\Exception $e) {
+        \Log::error("Neo4j Relation Error: " . $e->getMessage());
+    }
+}
+function buildWhereClause($alias, $data)
+{
+    $conditions = [];
 
+    foreach ($data as $key => $val) {
+        $conditions[] = "$alias.$key = \$$key";
+    }
+
+    return implode(' AND ', $conditions);
+}
+if (!function_exists('neo4jCreateNode')) {
+
+    function neo4jCreateNode($label, $mergeKeys = [], $properties = [])
+    {
+        try {
+            $neo4jService = app(Neo4jService::class);
+            $client = $neo4jService->getClient();
+
+            // 🔹 Automatically add database_type based on actual database connection
+            // Get current database name from Laravel configuration
+            // $currentDatabase = config('database.connections.' . config('database.default') . '.database');
+            
+            // // Set database_type based on actual database name
+            // if ($currentDatabase === 'triz_erp_21') {
+            //     $properties['database_type'] = 'triz_erp_21';
+            // } else {
+            //     $properties['database_type'] = 'development_erp';
+            // }
+            $properties['database_type'] = env('APP_ENV');
+
+            // 🔹 Build MERGE clause dynamically
+            $mergeParts = [];
+            $params = [];
+
+            foreach ($mergeKeys as $key => $value) {
+                $mergeParts[] = "n.$key = \$$key";
+                $params[$key] = $value;
+            }
+
+            $mergeCondition = implode(' AND ', $mergeParts);
+
+            // 🔹 Build SET clause dynamically
+            $setParts = [];
+
+            foreach ($properties as $key => $value) {
+                $setParts[] = "n.$key = \$$key";
+                $params[$key] = $value;
+            }
+
+            // Always update created_at
+            // $setParts[] = "n.created_at = datetime()";
+
+            $setString = implode(",\n", $setParts);
+
+            // 🔹 Final query
+            $query = "
+                MERGE (n:$label { " .buildMergeMap($mergeKeys) . " })
+                SET $setString
+                RETURN n
+            ";
+
+            \Log::info('Neo4j Query:', [
+                'query' => $query,
+                'params' => $params
+            ]);
+
+            $result = $client->run($query, $params);
+
+            \Log::info('Neo4j Result:', [
+                'result' => $result
+            ]);
+
+            return $result;
+
+        } catch (\Exception $e) {
+            \Log::error('Neo4j Error: ' . $e->getMessage());
+            return false;
+        }
+    }
+}
+if (!function_exists('buildMergeMap')) {
+    function buildMergeMap($mergeKeys)
+    {
+        $parts = [];
+
+        foreach ($mergeKeys as $key => $value) {
+            $parts[] = "$key: \$$key";
+        }
+
+        return implode(', ', $parts);
+    }
+}
 if (!function_exists('is_mobile')) {
 
     function is_mobile($type, $url = null, $data = null, $redirect_type = "redirect")
@@ -1614,8 +1751,8 @@ if (!function_exists('getStudents')) {
             $student_data[$value->id]['standard_id'] = $value->standard_id;
             $student_data[$value->id]['section_id'] = $value->section_id;
             $student_data[$value->id]['grade_id'] = $value->grade_id;
-            $student_data[$value->id]['dise_uid'] = $value->dise_uid;
-            $student_data[$value->id]['dise_uid_plus'] = $value->udise_id;
+             $student_data[$value->id]['dise_uid'] = $value->dise_uid;
+             $student_data[$value->id]['dise_uid_plus'] = $value->udise_no;
             $student_data[$value->id]['unique_id'] = $value->uniqueid;
             $student_data[$value->id]['religion_name'] = $value->religion_name;
             $student_data[$value->id]['caste_name'] = $value->caste_name;
