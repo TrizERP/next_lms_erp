@@ -63,7 +63,7 @@ class admissionFollowUpController extends Controller
         $data = $request->except(['_method', '_token', 'submit']);
 
         $data['created_on'] = date('Y-m-d H:i:s');
-        $data['created_ip'] = Request::getClientIp();
+        $data['created_ip'] = $request->getClientIp();
         $data['sub_institute_id'] = $sub_institute_id;
 
         admissionFollowUpModel::insert($data);
