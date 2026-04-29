@@ -709,7 +709,10 @@ class assessmentQuestionController extends Controller
                 if (empty($customPrompt)) {
                     $prompt .= " Use this seed for variety: " . $seed . ".";
                 }
-                
+                // added by uma fo 28-04-2026 for mcq 
+                    if($questionTypeId == 1){
+                        $prompt .= "and it must have different types of 4 options which differentiate between them. give me corret_answer also below the options array. Each option must have 'text' (string) and 'correct' (boolean: true/false). Make options truly distinct from each other.";
+                    }
                 $questionCount = $totalQuestions;
                 
             } else {
@@ -741,6 +744,11 @@ class assessmentQuestionController extends Controller
                     $prompt .= ". Generate exactly " . $questionCount . " MCQ question(s) ONLY. ";
                     $prompt .= "Make each question unique and different from each other. Use this seed for variety: " . $seed . ". ";
                     $prompt .= "Return the response as a JSON array of question objects with fields: question, question_type (always 'MCQ'), difficulty (Easy/Medium/Hard), options (array of 4 objects with 'text' and 'correct' boolean fields), correct_answer, and explanation.";
+                    // added by uma fo 28-04-2026 for mcq 
+                     if($questionTypeId == 1){
+                        $prompt .= "and it must have different types of 4 options which differentiate between them. give me corret_answer also below the options array. Each option must have 'text' (string) and 'correct' (boolean: true/false). Make options truly distinct from each other.";
+                    }
+                    
                 } else {
                     // Original behavior - generate varied question types
                     $prompt = "Generate unique, varied questions for " .
@@ -767,13 +775,14 @@ class assessmentQuestionController extends Controller
                     $prompt .= "Make each question unique and different from each other. Use this seed for variety: " . $seed . ". ";
                     $prompt .= "Return the response as a JSON array of question objects with fields: question, question_type (MCQ/ShortAnswer/LongAnswer/FillInBlanks), difficulty (Easy/Medium/Hard), options (array of 4 for MCQ), correct_answer, and explanation. with no extra text want only json array";
                 }
+                // below if condition is for MCQ only
                 if($questionTypeId == 1){
-                    $prompt .= " and it must have different types of 4 options which differentiate between them. give me corre t_answer also below the options array.";
-                }
-                
+                        $prompt .= "and it must have different types of 4 options which differentiate between them. give me corret_answer also below the options array. Each option must have 'text' (string) and 'correct' (boolean: true/false). Make options truly distinct from each other.";
+                    }
                 $distribution = null;
             }
-            
+            // return $prompt;
+            $prompt.=". Return ONLY the JSON array starting with `[` - no explanations, no prefixes, no markdown formatting, just the raw JSON array.";
             // Call the AI service
             $generatedQuestions = $response = $this->openAIService->generateContent($prompt);
             
@@ -806,6 +815,8 @@ class assessmentQuestionController extends Controller
             }
 
             return response()->json([
+                'status'=>1,
+                'message'=>'Success',
                 'main'=>$response,
                 'ai_response'=>$aiData,
                 'questions'=>$questions,
@@ -818,20 +829,22 @@ class assessmentQuestionController extends Controller
             // Log the error
             \Log::error('Question generation error: ' . $e->getMessage());
             
-            // Return fallback questions on error
-            $questionsCount = $request->get('question_prompt', '');
-            preg_match('/(\d+)/', $questionsCount, $matches);
-            $count = isset($matches[0]) ? (int)$matches[0] : 3;
+            // // Return fallback questions on error
+            // $questionsCount = $request->get('question_prompt', '');
+            // preg_match('/(\d+)/', $questionsCount, $matches);
+            // $count = isset($matches[0]) ? (int)$matches[0] : 3;
             
-            return response()->json($this->generateFallbackQuestions(
-                $count,
-                $request->get('standard'),
-                $request->get('subject_id'),
-                $request->get('chapter_id'),
-                $request->get('topic_id'),
-                rand(1, 10000),
-                ($request->get('question_type_id') ?? 1) == 1
-            ));
+            // return response()->json($this->generateFallbackQuestions(
+            //     $count,
+            //     $request->get('standard'),
+            //     $request->get('subject_id'),
+            //     $request->get('chapter_id'),
+            //     $request->get('topic_id'),
+            //     rand(1, 10000),
+            //     ($request->get('question_type_id') ?? 1) == 1
+            // ));
+
+            return response()->json(['status'=>0,'message'=>$e->getMessage()]);
         }
     }
     

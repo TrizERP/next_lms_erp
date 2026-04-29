@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
+use function App\Helpers\getAIKey;
 use OpenAI;
 
 set_time_limit(200);
@@ -774,38 +775,107 @@ class OpenAIService
      * Generate content for question generation
      * Used by assessmentQuestionController
      */
-    public function generateContent($prompt)
-    {
-        try {
-            // Use OpenRouter API with DeepSeek model (same as handleDynamicResponse)
-            $response = $this->client->post('https://openrouter.ai/api/v1/chat/completions', [
-                'verify' => false,
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey_deepseek,
-                    'Content-Type' => 'application/json',
-                    'HTTP-Referer' => 'https://nextlms.in',
-                    'X-Title' => 'Next LMS ERP',
-                ],
-                'json' => [
-                    'model' => 'deepseek/deepseek-chat',
-                    'messages' => [
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'max_tokens' => 4096,
-                    'temperature' => 1.8,
-                    'top_p' => 0.5,
-                ],
-            ]);
+    // public function generateContent($prompt)
+    // {
+    //     try {
+    //         $apiKey_deepseek = getAIKey('OPENROUTER_API_KEY',1);
+    //         // Use OpenRouter API with DeepSeek model (same as handleDynamicResponse)
+    //         $response = $this->client->post('https://openrouter.ai/api/v1/chat/completions', [
+    //             'verify' => false,
+    //             'headers' => [
+    //                 'Authorization' => 'Bearer ' . $apiKey_deepseek,
+    //                 'Content-Type' => 'application/json',
+    //                 'HTTP-Referer' => 'https://nextlms.in',
+    //                 'X-Title' => 'Next LMS ERP',
+    //             ],
+    //             'json' => [
+    //                 'model' => 'deepseek/deepseek-chat',
+    //                 'messages' => [
+    //                     ['role' => 'user', 'content' => $prompt],
+    //                 ],
+    //                 'max_tokens' => 4096,
+    //                 'temperature' => 1.8,
+    //                 'top_p' => 0.5,
+    //             ],
+    //         ]);
 
-            $data = json_decode($response->getBody(), true);
-            $generatedText = $data['choices'][0]['message']['content'];
-            
-            return $generatedText;
-        } catch (RequestException $e) {
-            Log::error('OpenRouter API Error: ' . $e->getMessage());
-            throw new \Exception('Failed to generate content: ' . $e->getMessage());
+    //         $data = json_decode($response->getBody(), true);
+    //         $generatedText = $data['choices'][0]['message']['content'];
+    //         if(eror){
+    //             $apiKey_deepseek = getAIKey('OPENROUTER_API_KEY',1);
+    //         }
+    //         return $generatedText;
+    //     } catch (RequestException $e) {
+    //         Log::error('OpenRouter API Error: ' . $e->getMessage());
+    //         throw new \Exception('Failed to generate content: ' . $e->getMessage());
+    //     }
+    // }
+
+    // dynamic key fecthing by saroj uma 
+  public function generateContent($prompt, $retry = 0)
+{
+    try {
+        $apiKey = getAIKey('OPENROUTER_API_KEY', 1);
+
+        if (!$apiKey) {
+            throw new \Exception('No active API keys available');
         }
+
+        $response = $this->client->post('https://openrouter.ai/api/v1/chat/completions', [
+            'verify' => false,
+            'headers' => [
+                'Authorization' => 'Bearer ' . $apiKey->api_key,
+                'Content-Type' => 'application/json',
+                'HTTP-Referer' => 'https://nextlms.in',
+                'X-Title' => 'Next LMS ERP',
+            ],
+            'json' => [
+                'model' => 'deepseek/deepseek-chat',
+                'messages' => [
+                    ['role' => 'user', 'content' => $prompt],
+                ],
+                'max_tokens' => 1500, // ✅ FIXED (reduce tokens)
+                'temperature' => 1.2, // optional tuning
+                'top_p' => 0.8,
+            ],
+        ]);
+
+        $data = json_decode($response->getBody(), true);
+
+        return $data['choices'][0]['message']['content'] ?? '';
+
+    } catch (\GuzzleHttp\Exception\ClientException $e) {
+
+        $statusCode = $e->getResponse()->getStatusCode();
+        $responseBody = json_decode($e->getResponse()->getBody(), true);
+
+        Log::error('API Error', [
+            'status' => $statusCode,
+            'response' => $responseBody,
+            'api_key' => $apiKey->api_key
+        ]);
+
+        // ✅ HANDLE ALL IMPORTANT CASES
+        if (in_array($statusCode, [401, 402, 429])) {
+
+            // 🔴 Disable current key
+            DB::table('ai_api_key')
+                ->where('id', $apiKey->id)
+                ->update(['status' => 0,'updated_at'=>now()]);
+
+            // 🔁 Retry (max 3 times)
+            if ($retry < 1) {
+                return $this->generateContent($prompt, $retry + 1);
+            }
+        }
+
+        throw new \Exception('API Failed: ' . $e->getMessage());
+
+    } catch (\Exception $e) {
+        Log::error('General Error: ' . $e->getMessage());
+        throw $e;
     }
+}
     
     protected function getAttendance($studentId)
     {
