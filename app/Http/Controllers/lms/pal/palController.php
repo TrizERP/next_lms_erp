@@ -67,7 +67,17 @@ class palController extends Controller
         // $res['attemptExams'] = questionpaperModel::join('lms_online_exam_student as loes','loes.question_paper_id','=','question_paper.id')
          $res['attemptExams'] = questionpaperModel::join('lms_online_exam as loes','loes.question_paper_id','=','question_paper.id')
         ->where('question_paper.created_by',$student_id)->where(['question_paper.sub_institute_id'=>$sub_institute_id])->where('question_paper.exam_type','PAL')->get()->toArray();
-        // echo "<pre>";print_r($newData);exit;
+        $perChapterQuiz = [];
+        foreach($res['attemptExams'] as $exam){
+            $i=0;
+            if(!isset($perChapterQuiz[$exam['paper_desc']])){
+                $perChapterQuiz[$exam['paper_desc']]=0;
+            }
+            $perChapterQuiz[$exam['paper_desc']]++;
+            $i++;
+        }
+        $res['perChapterQuiz'] = $perChapterQuiz;
+        // echo "<pre>";print_r($res['perChapterQuiz']);exit;
         return is_mobile($type, 'lms/pal/show', $res, "view");        
     }
     
@@ -77,6 +87,52 @@ class palController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
+
+  public function misconception(Request $request)
+{
+    $chapter_id = $request->chapter_id;
+    $student_id = session()->get('user_id');
+
+    $data = DB::select("
+        SELECT 
+            q.id as question_id,
+            q.question_title as question,
+            GROUP_CONCAT(DISTINCT am.answer) as correct_answer,
+            COUNT(*) as wrong_count
+        FROM lms_online_exam_answer lea
+        JOIN lms_question_master q ON q.id = lea.question_id
+        LEFT JOIN answer_master am 
+            ON am.question_id = q.id AND am.correct_answer = 1
+        JOIN question_paper qp ON qp.id = lea.question_paper_id
+        WHERE lea.student_id = ?
+        AND lea.ans_status = 'wrong'
+        AND qp.paper_desc = ?
+        GROUP BY q.id, q.question_title
+    ", [$student_id, $chapter_id]);
+
+    // Get mapping type and mapping value for each question only
+    foreach ($data as &$question) {
+        $mappingData = lmsQuestionMappingModel::select(
+            'lms_question_mapping.questionmaster_id',
+            't.name as type_name', 
+            't.id as type_id',
+            't1.name as value_name', 
+            't1.id as value_id'
+        )
+        ->join('lms_mapping_type as t', 't.id', '=', 'lms_question_mapping.mapping_type_id')
+        ->join('lms_mapping_type as t1', 't1.id', '=', 'lms_question_mapping.mapping_value_id')
+        ->where(['questionmaster_id' => $question->question_id])
+        ->get()
+        ->toArray();
+        
+        $question->mapping = $mappingData;
+    }
+
+    return response()->json([
+        'status' => 1,
+        'data' => $data
+    ]);
+}
     public function getStudentResult(Request $request)
     {
         $type = $request->input('type');
@@ -349,7 +405,7 @@ class palController extends Controller
             'standard_id'=>$standard_id,
             'subject_id'=>$subject_id,
             'paper_name'=>$paper_name,
-            'paper_desc'=>$request->chapter_id,
+            'paper_desc'=>$request->chapter_id, // to count quiz it is used as chapter_id only in PAL
             'timelimit_enable'=>1,
             'time_allowed' =>$allowed_time,
             'total_marks' =>$total_marks,
@@ -740,7 +796,7 @@ class palController extends Controller
 
          $standard_id = $request->input('standard_id');
          $subject_id = $request->input('subject_id');
-         $chapter_id = $request->input('chapter_id');
+        //  $chapter_id = $request->input('chapter_id');
          $grade_id = $request->input('grade_id');
 
          // Get suggested content from the suggested_content table
@@ -750,7 +806,7 @@ class palController extends Controller
              ->where('sc.student_id', $student_id)
              ->where('sc.standard_id', $standard_id)
              ->where('sc.subject_id', $subject_id)
-             ->where('sc.chapter_id', $chapter_id)
+            //  ->where('sc.chapter_id', $chapter_id)
              ->where('sc.sub_institute_id', $sub_institute_id)
              ->where('sc.syear', $syear)
              ->select('cm.*')
@@ -766,14 +822,14 @@ class palController extends Controller
          }
 
          // Get chapter data for the chapter (to get chapter name, etc.)
-         $chapterData = chapterModel::where('id', $chapter_id)
-             ->where('sub_institute_id', $sub_institute_id)
-             ->first();
+        //  $chapterData = chapterModel::where('id', $chapter_id)
+        //      ->where('sub_institute_id', $sub_institute_id)
+        //      ->first();
 
          $res['status_code'] = 1;
          $res['message'] = "SUCCESS";
          $res['content_data'] = $content_data;
-         $res['chapter_data'] = $chapterData ? [$chapterData->toArray()] : [];
+        //  $res['chapter_data'] = $chapterData ? [$chapterData->toArray()] : [];
          $res['grade'] = $grade_id;
          $res['standard'] = $standard_id;
          $res['subject'] = $subject_id;

@@ -23,8 +23,7 @@ html {
             @csrf
 
             <input type="hidden" name="hid_session_quiz" id="hid_session_quiz" 
-value="{{ \Carbon\Carbon::parse(request()->session()->get('session_quiz'))->format('Y-m-d H:i:s') }}">
-            <!-- <input type="hidden" name="hid_session_quiz" id="hid_session_quiz" value="{{ request()->session()->get('session_quiz') }}"> -->
+value="{{ now() }}">
             <div class="tab-content" id="pills-tabContent">
                 <div class="tab-pane fade show active" id="chat" role="tabpanel" aria-labelledby="chat-tab">
                     <div class="card border-0 rounded mb-5">
@@ -44,23 +43,24 @@ value="{{ \Carbon\Carbon::parse(request()->session()->get('session_quiz'))->form
                                     </ul>
                                 </div>
                                 <div class="quiz-time">
-                                    <!-- <a href="#" class="btn btn-outline-primary mb-3">Start a new Preview</a>-->
                                    <div class="color-primary mb-2">
-    Total Marks : {{ count($data['question_arr']) }}
-</div>
-                                    <div class="color-primary mb-2">(Total {{$data['questionpaper_data']['time_allowed']}} mins)</div> 
-                                    <div class="text-secondary">Time Left: <p id="showtimer"></p></div>                                  
+                                        Total Marks : {{ count($data['question_arr']) }}
+                                    </div>
+                                    @php
+                                        $totalQuestions = count($data['question_arr']);
+                                        $totalMins = $totalQuestions * 1; // 1 minute per question
+                                    @endphp
+                                    <div class="color-primary mb-2">(Total {{ $totalMins }} mins)</div> 
+                                    <div class="text-secondary">Time Left: <span id="showtimer" style="font-size: 20px; font-weight: bold; color: #dc3545;"></span></div>                                  
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <input type="hidden" name="questionpaper_time" id="questionpaper_time" value="{{$data['questionpaper_data']['time_allowed']}}">
-                    <!-- <input type="hidden" name="total_marks" id="total_marks" value="{{$data['questionpaper_data']['total_marks']}}"> -->
-                   <input type="hidden" name="total_marks" id="total_marks" value="{{ count($data['question_arr']) }}">
+                    {{-- Pass the calculated total minutes to the hidden input --}}
+                    <input type="hidden" name="questionpaper_time" id="questionpaper_time" value="{{ $totalMins }}">
+                    <input type="hidden" name="total_marks" id="total_marks" value="{{ count($data['question_arr']) }}">
                     <input type="hidden" name="total_question" id="total_question" value="{{count($data['question_arr'])}}">
                     
-                   {{-- <input type="hidden" name="questionpaper_id" id="questionpaper_id" value="{{$data['questionpaper_data']['id']}}"> --}} 
-                   <!-- standard and subject and chapter id  -->
                    <input type="hidden" name="grade_id" id="grade_id" value="{{$data['grade_id']}}">                   
                    <input type="hidden" name="standard_id" id="standard_id" value="{{$data['standard_id']}}">
                    <input type="hidden" name="subject_id" id="subject_id" value="{{$data['subject_id']}}">
@@ -80,9 +80,8 @@ value="{{ \Carbon\Carbon::parse(request()->session()->get('session_quiz'))->form
                                         <div class="count">{{$i++}}</div>
                                         <div class="quiz-con">
                                             <div class="text-secondary mb-2">Marked out of <b>1</b>  <span style="padding:0px 10px" onclick="mapValueModel({{$quesarr['question_id']}});"><i class="fa fa-ellipsis-v" aria-hidden="true"></i></span></div>
-                                            <!-- <div class="text-secondary mb-2">1</div> -->
                                             @if(isset($quesarr['hint_text']))
-                                            <div class="text-secondary"><i data-toggle="tooltip" title="{{$quesarr['hint_text']}}" class="mdi mdi-alert-circle"></i></div><!--mdi-flag-outline-->
+                                            <div class="text-secondary"><i data-toggle="tooltip" title="{{$quesarr['hint_text']}}" class="mdi mdi-alert-circle"></i></div>
                                             @endif
                                         </div>
                                     </div>
@@ -90,9 +89,6 @@ value="{{ \Carbon\Carbon::parse(request()->session()->get('session_quiz'))->form
                                 <div class="col-10">
                                     <div class="card border-0 rounded">
                                         <div class="card-body">
-                                            <!-- <a href="javascript:void(0)" class="float-right" data-container="body" data-toggle="popover" data-placement="left" data-content="Vivamus sagittis lacus vel augue laoreet rutrum faucibus." data-trigger="hover">
-                                                <i class="mdi mdi-alert-circle-outline"></i>
-                                            </a> -->
                                             <div class="quiz-title">{!!$quesarr['question_text']!!}</div>
                                           <input type="hidden" name="interestValue[{{$quesarr['question_id']}}]" id="interest_{{$quesarr['question_id']}}">
                                             <div class="quiz-option">
@@ -102,7 +98,7 @@ value="{{ \Carbon\Carbon::parse(request()->session()->get('session_quiz'))->form
                                                         @php
                                                             $btnclass = "square";
                                                             $type = "radio";
-                                                            $name = "answer_multiple[".$quesarr['question_id']."][]";//[".$ansarr['id']."]";
+                                                            $name = "answer_multiple[".$quesarr['question_id']."][]";
                                                         @endphp
                                                         <li>
                                                             <div>
@@ -170,8 +166,9 @@ $(document).ready(function(){
         onloadData({{$quesarr['question_id']}});
     @endforeach
 });
+
 function onloadData(questionId){
-    console.log('Function onloadData called with questionId:', questionId); // Debug log
+    console.log('Function onloadData called with questionId:', questionId);
     $.ajax({
         url : "{{route('question_mapped_value')}}",
         data : {question_id:questionId},
@@ -197,11 +194,12 @@ function onloadData(questionId){
  }); 
 </script> 
 
-
 <script>
+// Timer variable
+var timerInterval;
+
 // added on 06-01-2025 for back restrictions
 $(document).ready(function() {
-// alert('hello');
     function disableBack() {
         window.history.forward()
     }
@@ -210,111 +208,130 @@ $(document).ready(function() {
         if (e.persisted)
             disableBack();
     }
+    
+    // Clear any existing timer
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+    
+    // Start the timer when page loads (refresh on page load)
+    startTimer();
 });
-// added on 06-01-2025 for back restrictions
 
-//Set the date we're counting down to
-//var countDownDate = new Date("Jan 7, 2021 15:57:25").getTime();
+// Timer function
+function startTimer() {
+    // Get total minutes (1 minute per question)
+    var min_to_add = parseInt($("#questionpaper_time").val());
+    var session_date = $("#hid_session_quiz").val();
 
-var min_to_add = parseInt($("#questionpaper_time").val());
-var session_date = $("#hid_session_quiz").val();
-
-if (!session_date) {
-    console.error("Session date is missing!");
-    return;
-}
-
-// Convert to proper format for JS
-var dt = new Date(session_date.replace(/-/g, "/"));
-
-if (isNaN(dt.getTime())) {
-    console.error("Invalid date format:", session_date);
-    return;
-}
-
-dt.setMinutes(dt.getMinutes() + min_to_add);
-
-var countDownDate = dt.getTime();
-// console.log("countDownDate"+countDownDate);
-// Update the count down every 1 second
-var x = setInterval(function() {
-
-  // Get today's date and time
-  var now = new Date().getTime();
-    // console.log("now"+now);
-  // Find the distance between now and the count down date
-  var distance = (countDownDate - now);
-  // console.log("distance"+distance);
-    
-  // Time calculations for days, hours, minutes and seconds
-  var days = Math.floor(distance / (1000 * 60 * 60 * 24));
-  var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-  var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-  var seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-  // console.log("days"+days);
-  // console.log("hours"+hours);
-  // console.log("minutes"+minutes);
-  // console.log("seconds"+seconds);
-    
-  // Output the result in an element with id="demo"
-  document.getElementById("showtimer").innerHTML = hours + "h "+ minutes + "m " + seconds + "s ";
-    
-  // If the count down is over, write some text 
-  if (distance < 0) {
-    clearInterval(x);
-    document.getElementById("showtimer").innerHTML = "EXPIRED";
-    alert("Your Exam time is exipred");
-    $("#online_exam").submit();
-    @php
-    session(['session_quiz' => now()]);
-    // request()->session()->forget("session_quiz");
-    @endphp
-    window.close();
-  }
-}, 1000);
-function mapValueModel(questionId){
-        $('#tableBody').empty(); 
-        $('#questionValue').empty();
-
-        $.ajax({
-            url : "{{route('question_mapped_value')}}",
-            data : {question_id:questionId},
-            type: 'GET',
-            success : function(response){
-                console.log(response);
-               // Check if question title exists
-                if (response.questionTitle) {
-                    // Append the question title to the modal
-                    $('#questionValue').html(response.questionTitle);
-                } else {
-                    $('#questionValue').text('No question title found');
-                }
-                if (response.MappedData) {
-                    $('#tableBody').empty(); 
-                    $.each(response.MappedData, function(index, mappedItem) {
-                        // Start building the table row with the mappedItem name
-                        let row = `<tr>
-                            <td>${index + 1}</td>
-                            <td>${mappedItem.name}</td>
-                            <td><ul>`;
-                                // Loop through mappedValue within each mappedItem
-                                $.each(mappedItem.mappedValue, function(subIndex, mappedSubItem) {
-                                    row += `<li>${subIndex+1}) ${mappedSubItem.name}</li>`;
-                                });
-                        row += `</ul></td>
-                        </tr>`;
-
-                        // Append the complete row to the table body
-                        $('#tableBody').append(row);
-                    });
-                }
-
-                $('#exampleModal').modal('show');
-            }
-        })
+    if (!session_date) {
+        console.error("Session date is missing!");
+        return;
     }
 
+    // Start timer from current time + total minutes
+    var countDownDate = new Date().getTime() + (min_to_add * 60 * 1000);
+    
+    // Store end time in localStorage to persist across page refreshes
+    localStorage.setItem('quiz_end_time', countDownDate);
+    
+    // Update the count down every 1 second
+    timerInterval = setInterval(function() {
+        // Get current time
+        var now = new Date().getTime();
+        
+        // Get end time from localStorage (in case of page refresh)
+        var endTime = localStorage.getItem('quiz_end_time');
+        if (endTime) {
+            var distance = parseInt(endTime) - now;
+        } else {
+            var distance = countDownDate - now;
+        }
+        
+        if (distance < 0) {
+            // Time is up - redirect back
+            clearInterval(timerInterval);
+            localStorage.removeItem('quiz_end_time');
+            document.getElementById("showtimer").innerHTML = "00:00";
+            alert("Your exam time has expired!");
+            
+            // Redirect back to previous page
+            window.location.href = document.referrer;
+            return;
+        }
+        
+        // Time calculations for minutes and seconds
+        var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+        
+        // Format with leading zeros
+        var formattedTime = "";
+        
+        // If total time is more than 60 minutes, show hours as well
+        if (min_to_add >= 60) {
+            var hours = Math.floor(distance / (1000 * 60 * 60));
+            minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            formattedTime = hours.toString().padStart(2, '0') + ":" + 
+                           minutes.toString().padStart(2, '0') + ":" + 
+                           seconds.toString().padStart(2, '0');
+        } else {
+            // Show only minutes and seconds
+            formattedTime = minutes.toString().padStart(2, '0') + ":" + 
+                           seconds.toString().padStart(2, '0');
+        }
+        
+        // Output the result
+        document.getElementById("showtimer").innerHTML = formattedTime;
+        
+    }, 1000);
+}
+
+function mapValueModel(questionId){
+    $('#tableBody').empty(); 
+    $('#questionValue').empty();
+
+    $.ajax({
+        url : "{{route('question_mapped_value')}}",
+        data : {question_id:questionId},
+        type: 'GET',
+        success : function(response){
+            console.log(response);
+            if (response.questionTitle) {
+                $('#questionValue').html(response.questionTitle);
+            } else {
+                $('#questionValue').text('No question title found');
+            }
+            if (response.MappedData) {
+                $('#tableBody').empty(); 
+                $.each(response.MappedData, function(index, mappedItem) {
+                    let row = `<tr>
+                        <tr>${index + 1}</td>
+                        <td>${mappedItem.name}</td>
+                        <td><ul>`;
+                    $.each(mappedItem.mappedValue, function(subIndex, mappedSubItem) {
+                        row += `<li>${subIndex+1}) ${mappedSubItem.name}</li>`;
+                    });
+                    row += `</ul></td>
+                    </tr>`;
+
+                    $('#tableBody').append(row);
+                });
+            }
+
+            $('#exampleModal').modal('show');
+        }
+    })
+}
+
+// Clear localStorage when form is submitted
+$(document).ready(function() {
+    $('#online_exam').on('submit', function() {
+        localStorage.removeItem('quiz_end_time');
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+    });
+});
 </script>
 
 @include('includes.footer')

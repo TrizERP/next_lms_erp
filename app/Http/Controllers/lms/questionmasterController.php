@@ -331,7 +331,7 @@ class questionmasterController extends Controller
             'subject_id'                   => $request->get('subject_id'),
             'chapter_id'                   => $request->get('chapter_id'),
             'topic_id'                     => $request->get('topic_id'),
-            'question_title'               => htmlspecialchars($request->get('question_title')),
+            'question_title'               => $request->get('question_title'),
             'description'                  => $request->get('description'),
             'pre_grade_topic'              => $pre_topic,
             'post_grade_topic'             => $post_topic,
