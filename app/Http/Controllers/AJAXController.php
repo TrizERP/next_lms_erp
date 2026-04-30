@@ -747,11 +747,12 @@ class AJAXController extends Controller
         $join->on('b.student_id', '=', 'a.student_id')
              ->on('b.sub_institute_id', '=', 'a.sub_institute_id')
              ->on('b.standard_id', '=', 'a.standard_id')
-             ->where('b.syear', '<', $syear);
+             ->on('b.syear', '=', 'a.syear');
     })
     ->whereNull('a.end_date')
     ->where('a.sub_institute_id', $sub_institute_id)
     ->where('a.student_id', $student_id)
+    ->where('b.syear', '<', $syear)
     ->orderBy('a.syear', 'desc')
     ->distinct('a.syear', 'a.standard_id') // ✅ avoids duplicate rows due to self-join
     ->get()
