@@ -556,50 +556,47 @@ class tblstudentController extends Controller
 
     public function updateData(Request $request)
     {
+        // return $request;exit;
         $newRequest = $request->post();
         $student_id = $newRequest['id'];
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $admissionEnquiryFields = $request->input('admission_enquiry_fields', []);
-        $admissionCustomFieldNames = tblcustomfieldsModel::where([
-            'status' => "1",
-            'table_name' => "admission_enquiry",
-        ])
-            ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
-            ->pluck('field_name')
-            ->toArray();
-        $admissionCustomFieldMap = array_flip($admissionCustomFieldNames);
         $finalArray['sub_institute_id'] = $sub_institute_id;
         $finalArrayAdmission['sub_institute_id'] = $sub_institute_id;
         $finalArray['password'] = md5('student');
         $finalArray['status'] = 1;
 
-        unset($newRequest['student_image']);
-
-        foreach ($admissionEnquiryFields as $key => $value) {
-            if (!isset($admissionCustomFieldMap[$key])) {
-                continue;
+        // for other custom table data
+        if(isset($request->otherCustom)){
+            foreach($request->otherCustom as $tname_id=>$tableData){
+                $tableExplode = explode('||',$tname_id);
+                $tableName = $tableExplode[0] ?? '';
+                $tableId = $tableExplode[1] ?? 0;
+                // return $tableId;
+                if($tableName!=''){
+                    foreach ($tableData as $fieldName => $fieldValue) {
+                       $update = DB::table($tableName)->where('id',$tableId)->update([$fieldName=>$fieldValue]);
+                    }
+                }
             }
-
-            if (is_array($value)) {
-                $value = implode(",", $value);
-            }
-
-            $finalArrayAdmission[$key] = $value;
         }
 
+        unset($newRequest['student_image']);
+        unset($newRequest['otherCustom']);
+
+        // return $request;
         foreach ($newRequest as $key => $value) {
             if ($key != '_method' && $key != '_token' && $key != 'type' && $key != 'submit' && $key != 'grade' && $key != 'standard'
                 && $key != 'division' && $key != 'student_quota' && $key != 'end_date' && $key != 'remarks' && $key != 'inactive_satus'
                 && $key != 'id' && $key != 'optional_subject' && $key != 'optional_subject4' && $key != 'optional_subject5' && $key != 'optional_subject6' && $key != 'previous_school_gr_no' && $key != 'house'
                 && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation'
                 && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation'
-                && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no'  && $key != 'editable' && $key!='oldFatherImage' && $key!='oldMotherImage'
-                && $key != 'admission_enquiry_fields') { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
+                && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no'  && $key != 'editable' && $key!='oldFatherImage' && $key!='oldMotherImage' && $key!='otherCustom'
+                ) { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
                 $finalArray[$key] = $value;
-
+                // return $finalArray;
                 // 05-04-2022 START if city is not exist in table then insert city in table
                 if ($key == 'state') {
                     $get_state_data = tblstateModel::where(['state_name' => $value])->get()->toArray();
@@ -778,18 +775,19 @@ class tblstudentController extends Controller
                     'tblstudent.id' => $id,
                 ])->first();
         }
-        $admissionEnquiryData = DB::table('admission_enquiry')->where(['id' => $student_data->admission_id ?? 0])->get()->toArray();
         // echo "<pre>";print_r($admissionEnquiryData);exit;      
 		// RAJESH	->whereRaw('tblstudent_enrollment.end_date is NULL')
 		$dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "tblstudent"])
+        ->whereNull('crud_table')
+        ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
+			->orderBy('sort_order', 'ASC')
+			->get();
+        $OtherCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "tblstudent"])
+        ->whereNotNull('crud_table')
         ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
 			->orderBy('sort_order', 'ASC')
 			->get();
 
-        $dataCustomFields1 = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
-        ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
-			->orderBy('sort_order', 'ASC')
-			->get();
             
         $fieldsData = tblfields_dataModel::get()->toArray();
         $i = 0;
@@ -1094,8 +1092,7 @@ die; */
 		$res['total_distance'] = $total_distance;
         //$res['student_data'] = $student_data;
 		$res['custom_fields'] = $dataCustomFields;
-        $res['custom_fields1'] = $dataCustomFields1;
-
+        $res['Other_custom_fields'] = $OtherCustomFields;
         if (count($finalfieldsData) > 0) {
 			$res['data_fields'] = $finalfieldsData;
 		}
@@ -1204,7 +1201,6 @@ die; */
         }else{
             $res['trans_details']=[];
         }
-        $res['admissionEnquiryData'] = $admissionEnquiryData;
 		return is_mobile($type, "student/edit_student", $res, "view");
 	}
 
@@ -1413,7 +1409,7 @@ die; */
 		}
 
 		$data = $this->updateData($request);
-
+        // return $data;exit;
 		//START Save Optional Subject
         // student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->delete();
 		if(session()->get('sub_institute_id') != 254){
