@@ -494,15 +494,16 @@ class fees_collect_controller extends Controller
     $data = DB::table('tblstudent_enrollment as a')
     ->select('a.syear', 'a.standard_id', 's.marking_period_id')
     ->join('standard as s', 's.id', '=', 'a.standard_id')
-    ->join('tblstudent_enrollment as b', function ($join) use ($syear) {
+    ->join('tblstudent_enrollment as b', function ($join) {
         $join->on('b.student_id', '=', 'a.student_id')
              ->on('b.sub_institute_id', '=', 'a.sub_institute_id')
              ->on('b.standard_id', '=', 'a.standard_id')
-             ->where('b.syear', '<', $syear);
+             ->on('b.syear', '=', 'a.syear');
     })
     ->whereNull('a.end_date')
     ->where('a.sub_institute_id', $sub_institute_id)
     ->where('a.student_id', $stu_arr[0])
+    ->where('b.syear', '<', $syear)
     ->orderBy('a.syear', 'desc')
     ->distinct('a.syear', 'a.standard_id') // ✅ avoids duplicate rows due to self-join
     ->get()
@@ -2208,15 +2209,16 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
     $data = DB::table('tblstudent_enrollment as a')
     ->select('a.syear', 'a.standard_id', 's.marking_period_id')
     ->join('standard as s', 's.id', '=', 'a.standard_id')
-    ->join('tblstudent_enrollment as b', function ($join) use ($syear) {
+    ->join('tblstudent_enrollment as b', function ($join) {
         $join->on('b.student_id', '=', 'a.student_id')
              ->on('b.sub_institute_id', '=', 'a.sub_institute_id')
              ->on('b.standard_id', '=', 'a.standard_id')
-             ->where('b.syear', '<', $syear);
+             ->on('b.syear', '=', 'a.syear');
     })
     ->whereNull('a.end_date')
     ->where('a.sub_institute_id', $sub_institute_id)
     ->where('a.student_id', $student_id)
+    ->where('b.syear', '<', $syear)
     ->orderBy('a.syear', 'desc')
     ->distinct('a.syear', 'a.standard_id') // ✅ avoids duplicate rows due to self-join
     ->get()
