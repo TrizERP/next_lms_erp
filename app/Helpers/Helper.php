@@ -3111,4 +3111,14 @@ if (!function_exists('get_string')) {
         }
     }
 
+    if(!function_exists('getAIKey')){
+        function getAIKey($keyType,$status=1)
+        {
+            $result = DB::table('ai_api_keys')
+                ->where('api_type', $keyType)
+                ->where('status', $status)
+                ->first();
+            return $result ?? '-';
+        }
+    }
 }

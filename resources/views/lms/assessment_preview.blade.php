@@ -327,7 +327,10 @@ $(document).ready(function() {
             },
             success: function(result) {
                 console.log('API Response:', result);
-                
+                if(result.status && result.status === 0){
+                    alert(result.message || 'Error generating questions');
+                    return;
+                }
                 let questionsData = [];
                 
                 if (result.ai_response && Array.isArray(result.ai_response) && result.ai_response.length > 0) {
