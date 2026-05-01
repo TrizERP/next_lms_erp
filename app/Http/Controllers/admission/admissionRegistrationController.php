@@ -76,7 +76,7 @@ class admissionRegistrationController extends Controller
         ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
         ->orderBy('sort_order', 'ASC')
         ->get();
-        
+
         $res['custom_fields']=$customFields;
 
         $res['status_code'] = 1;
@@ -121,7 +121,7 @@ class admissionRegistrationController extends Controller
                 })
                 ->selectRaw("ae.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,CONCAT_WS(',',ae.house_no,
                     ae.`building_name_appratment_name_society_name`,ae.district_name,ae.pin_code,ae.state) AS address,
-			        ae.previous_standard,ae.mother_name,ae.mobile_number_mother ,ae.place_of_birth,ar.enquiry_id as registration_enquiry_id")
+			        ae.previous_standard,ae.mother_name,ae.mobile_number_mother ,ae.place_of_birth,ar.enquiry_id as registration_enquiry_id, ae.remarks AS enquiry_remark, ae.fees_remark AS enquiry_remark2")
                 ->where('ae.id', $id)
                 ->where('ae.sub_institute_id', $sub_institute_id)
                 ->get()->toArray();
@@ -132,12 +132,12 @@ class admissionRegistrationController extends Controller
                 })->leftJoin('admission_registration as ar', function ($join) use($sub_institute_id) {
                     $join->on('ae.id', '=', 'ar.enquiry_id')->where('ar.sub_institute_id',$sub_institute_id);
                 })
-                ->selectRaw("ae.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,ar.enquiry_id as registration_enquiry_id")
+                ->selectRaw("ae.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,ar.enquiry_id as registration_enquiry_id, ae.remarks AS enquiry_remark, ae.fees_remark AS enquiry_remark2")
                 ->where('ae.id', $id)
                 ->where('ae.sub_institute_id', $sub_institute_id)
                 ->get()->toArray();
         }
-
+        
         $data = array_map(function ($value) {
             return (array) $value;
         }, $data);
@@ -272,14 +272,16 @@ class admissionRegistrationController extends Controller
         $editdata['address'] = $request->input("address");
         $editdata['previous_school_name'] = $request->input("previous_school_name");
         $editdata['source_of_enquiry'] = $request->input("source_of_enquiry");
+        $editdata['remarks'] = $request->input("remarks");
+        $editdata['fees_remark'] = $request->input("fees_remark");
         
         admissionEnquiryModel::where(['id' => $id, 'sub_institute_id' => $sub_institute_id])->update($editdata);
 
         $data = $request->except([
             '_method', '_token','token','syear','sub_institute_id','user_id', 'submit', 'type', 'first_name', 'middle_name', 'last_name', 'mobile', 'email',
             'date_of_birth', 'age', 'address', 'previous_school_name', 'previous_standard', 'source_of_enquiry','gender',
-            'admission_standard'
-        ]); //,'remarks','followup_date'
+            'admission_standard', 'remarks', 'fees_remark'
+        ]); //,'followup_date'
 
         $checkForm = admissionRegistrationModel::where(['enquiry_id' => $id])->where('sub_institute_id',$sub_institute_id)->get()->toArray();
         if (count($checkForm) > 0) {
@@ -333,7 +335,7 @@ class admissionRegistrationController extends Controller
                 $join->whereRaw('ae.id = af.enquiry_id');
             })->join('admission_registration as ar', function ($join) use($sub_institute_id){
                 $join->whereRaw('ae.id = ar.enquiry_id')->where('ar.sub_institute_id',$sub_institute_id); // 2024-08-27 add sub_institute_id
-            })->selectRaw("ae.*,af.*,ae.id as id,ar.*,ar.religion as con_religion,ar.cast as con_cast")
+            })            ->selectRaw("ae.*,af.*,ae.id as id,ar.*,ar.religion as con_religion,ar.cast as con_cast, ae.remarks AS enquiry_remark, ae.fees_remark AS enquiry_remark2")
             ->where('ae.id', $id)->get()->toArray();
 
         $data = array_map(function ($value) {
@@ -384,9 +386,12 @@ class admissionRegistrationController extends Controller
         $studentArray['religion'] = $data['con_religion'];
         $studentArray['cast'] = $data['con_cast'];
         // end 2024-08-27
-         // 2025-02-18 added fathre mobile numer in student mobile 
+         // 2025-02-18 added fathre mobile numer in student mobile
          $studentArray['student_mobile'] = isset($data['mobile_number_father']) ? $data['mobile_number_father'] : null;
-         // end 2025-02-18 
+         // end 2025-02-18
+         // Add enquiry remarks
+         $studentArray['remark1'] = isset($data['enquiry_remark']) ? $data['enquiry_remark'] : (isset($data['remarks']) ? $data['remarks'] : '');
+         $studentArray['remark2'] = isset($data['enquiry_remark2']) ? $data['enquiry_remark2'] : ''; 
         $i=0;
         if (isset($data['enrollment_no']) && $data['enrollment_no'] != '') {
             $enrollment_no_sql_new = $data['enrollment_no'];
@@ -424,10 +429,12 @@ class admissionRegistrationController extends Controller
                         // 2024-08-27 add
                         'religion'            => $studentArray['religion'],
                         'cast'                => $studentArray['cast'],
-                        // end 2024-08-27 
-                        // 2025-02-18 added fathre mobile numer in student mobile 
+                        // end 2024-08-27
+                        // 2025-02-18 added fathre mobile numer in student mobile
                         'student_mobile'                => $studentArray['student_mobile'],
-                        // end 2025-02-18 
+                        // end 2025-02-18
+                        'remark1'                        => $studentArray['remark1'],
+                        'remark2'                       => $studentArray['remark2'],
                     ]);
 
                 $student_id = DB::getPdo()->lastInsertId();
@@ -471,11 +478,13 @@ class admissionRegistrationController extends Controller
                         'religion'            => $studentArray['religion'],
                         'cast'                => $studentArray['cast'],
                         // 2024-08-27 end
-                        // 2025-02-18 added fathre mobile numer in student mobile 
+                        // 2025-02-18 added fathre mobile numer in student mobile
                         'student_mobile'                => $studentArray['student_mobile'],
-                        // end 2025-02-18 
+                        // end 2025-02-18
+                        'remark1'                        => $studentArray['remark1'],
+                        'remark2'                       => $studentArray['remark2'],
                     ]);
-
+                
                 $student_id = DB::getPdo()->lastInsertId();
                 $i=1;
                 }
