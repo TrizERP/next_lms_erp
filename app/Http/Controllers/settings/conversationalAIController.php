@@ -79,7 +79,10 @@ class conversationalAIController extends Controller
                             $html = $this->generateUnpaidFeesHTML($pendingFees, $studentDetail);
                         } else { // paid_fees
                             $paidFees = $data['PAID'] ?? [];
-                            $html = $this->generatePaidFeesHTML($paidFees, $studentDetail);
+                            $filteredFees = array_filter($paidFees, function ($item) use ($year) {
+                                return $item['syear'] == $year;
+                            });
+                            $html = $this->generatePaidFeesHTML($filteredFees, $studentDetail,$year);
                         }
                         $allData[] = $data;
                     } else {
@@ -184,7 +187,7 @@ class conversationalAIController extends Controller
     /**
      * Common HTML formatting function for all detail types
      */
-    private function formatDetailsHTML($actionType, $data, $extra = [])
+    private function formatDetailsHTML($actionType, $data, $extra = [],$syear = '')
     {
         switch ($actionType) {
             case 'fees_details':
@@ -194,7 +197,10 @@ class conversationalAIController extends Controller
             case 'remain_fees':
                 return $this->generateUnpaidFeesHTML($extra['unpaid_fees'] ?? [], $extra['student_detail'] ?? []);
             case 'paid_fees':
-                return $this->generatePaidFeesHTML($extra['paid_fees'] ?? [], $extra['student_detail'] ?? []);
+                  $filteredFees = array_filter($extra['paid_fees'], function ($item) use ($syear) {
+                                return $item['syear'] == $syear;
+                            });
+                return $this->generatePaidFeesHTML($filteredFees, $extra['student_detail'] ?? [],$syear);
             default:
                 return $this->generateStudentHTML($data);
         }
@@ -343,6 +349,13 @@ class conversationalAIController extends Controller
                     letter-spacing: 0.5px;
                     margin-bottom: 8px;
                 ">Total Fees Paid</div>
+                <div style="
+                    font-size: 0.45rem;
+                    color: #6c757d;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    margin-bottom: 8px;
+                ">(Fine and Discount Included)</div>
                 <div style="
                     font-size: 1.5rem;
                     font-weight: 800;
@@ -596,7 +609,7 @@ class conversationalAIController extends Controller
     /**
      * Generate HTML for paid fees using STU_DATA and PAID array
      */
-    private function generatePaidFeesHTML($paidFees, $studentDetail)
+    private function generatePaidFeesHTML($paidFees, $studentDetail,$syear)
     {
         if (empty($paidFees)) {
             return '<div class="text-muted p-2">No paid fees records found.</div>';
@@ -705,6 +718,13 @@ class conversationalAIController extends Controller
                     letter-spacing: 0.5px;
                     margin-bottom: 8px;
                 ">Total Fees Paid</div>
+                <div style="
+                    font-size: 0.45rem;
+                    color: #6c757d;
+                    text-transform: uppercase;
+                    letter-spacing: 0.5px;
+                    margin-bottom: 8px;
+                ">(Fine and Discount Included)</div>
                 <div style="
                     font-size: 1.5rem;
                     font-weight: 800;
