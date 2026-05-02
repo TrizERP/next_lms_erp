@@ -625,14 +625,14 @@
                 @if(isset($data['parentCommunications']))
                 <div class="col-md-12 col-lg-6 col-sm-12 mb-4">
                     <div class="card h-100">
-                        <h3 class="card-title">Recent Parent Communication</h3>
+                        <h3 class="card-title">Pending Parent Communication</h3>
                         <div class="table-responsive">
                             <table class="table table-hover">
                                 <thead>
                                     <tr>
                                         <th>Student Name</th>                                      
                                         <th>Reason</th>
-                                        <th>Reply</th>
+                                        <!--<th>Reply</th>-->
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -640,8 +640,8 @@
                                         @foreach($data['parentCommunications'] as $key => $value)
                                         <tr>
                                             <td><span>{{$value->student_name}}</span> </td>                                           
-                                            <td><span>{{$value->message}} [ {{date('d-m-Y h:m:i',strtotime($value->created_at))}} ]</span></td>
-                                            <td><span>{{$value->reply}}</span></td>
+                                            <td><span>{{$value->message}} [ {{date('d-m-Y h:i:s A', strtotime($value->created_at))}} ]</span></td>
+                                            <!--<td><span>{{$value->reply}}</span></td>-->
                                         </tr>
                                         @endforeach
                                     @else

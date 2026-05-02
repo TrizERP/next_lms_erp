@@ -113,9 +113,12 @@ class dashboardController extends Controller
                     ->join("tblstudent as s", function ($join) {
                         $join->on("p.student_id", "=", "s.id");
                     })
-                    ->where("date_", "=", $date)
+                    ->where(function($q) {
+                        $q->whereNull('p.reply')->orWhere('p.reply', '');
+                    })
+                    ->where("date_", "<=", $date)
                     ->where("p.sub_institute_id", "=", $sub_institute_id)
-                    ->limit(10)
+                    ->limit(25)
                     ->orderBy("p.id", "desc")
                     ->get()->toArray();
 
@@ -964,12 +967,34 @@ class dashboardController extends Controller
                             $res['smsNotificationBlock'] = $smsNotificationBlock;
                         } elseif ($key == "Academic Information") {
                             $res['academicBlock'] = $academicBlock;
-                        }
+                     }
 
-                    }
-                }
+                 }
 
-                $current_date = date('Y-m-d');
+} else {
+    // For teachers: show pending parent communications for their standards
+    $teacherStandards = DB::table('timetable')->where('teacher_id', $user_id)->where('sub_institute_id', $sub_institute_id)->where('syear', $syear)->distinct()->pluck('standard_id')->toArray();
+    $parentCommunication = DB::table("parent_communication as p")
+        ->selectRaw("p.* , CONCAT_WS(' ', s.first_name, s.last_name) as student_name, s.image as student_image")
+        ->join("tblstudent as s", function ($join) {
+            $join->on("p.student_id", "=", "s.id");
+        })
+        ->join('tblstudent_enrollment as se', 'se.student_id', '=', 'p.student_id')
+        ->whereIn('se.standard_id', $teacherStandards)
+        ->where('se.syear', $syear)
+        ->whereNull('se.end_date')
+        ->where(function($q) {
+            $q->whereNull('p.reply')->orWhere('p.reply', '');
+        })
+        ->where("date_", ">=", $date)
+        ->where("p.sub_institute_id", "=", $sub_institute_id)
+        ->limit(10)
+        ->orderBy("p.id", "desc")
+        ->get()->toArray();
+    $res['parentCommunications'] = $parentCommunication;
+}
+
+                 $current_date = date('Y-m-d');
 
 
                 $school_setup_data = DB::table("school_setup")
