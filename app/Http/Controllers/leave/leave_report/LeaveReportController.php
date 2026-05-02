@@ -9,6 +9,7 @@ use App\Models\HrmsInOutTime;
 use App\Models\HrmsJobTitle;
 use App\Models\PayrollType;
 use App\Models\user\tbluserModel;
+use function App\Helpers\getSubCordinates;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
@@ -72,6 +73,10 @@ class LeaveReportController extends Controller
         $department_id = ($request->get('department_id')!=0) ? implode(',',$request->get('department_id')) : 0;
 	    $employee_id = ($request->input('emp_id')!=0) ? implode(',',$request->input('emp_id')) : 0;
 	    $get_leave_status = $request->input('leave_status');
+
+        $syear = session()->get('syear');
+        $userId = session()->get('user_id');
+        $userProfileName = session()->get('user_profile_name');
         
         /* echo("<pre>");
         print_r($sub_institute_id);echo("<br>");
@@ -82,6 +87,18 @@ class LeaveReportController extends Controller
         print_r($get_leave_status);
         echo("</pre>");
         die; */
+
+        // sub cordinates 02-08-2024
+        $SubCordinates = [];
+        $profileArr = ["Admin", "Super Admin", "School Admin", "Assistant Admin"];
+        if ($employee_id == 0 && !in_array($userProfileName, $profileArr)) {
+            $SubCordinates = getSubCordinates($sub_institute_id, $userId);
+            if (!empty($SubCordinates)) {
+                $employee_id = implode(',', $SubCordinates);
+            }
+        }
+        // echo "<pre>"; print_r($SubCordinates);exit;
+        // end  02-08-2024
 
         $from_date_formatted = Carbon::createFromFormat('Y-m-d', $from_date)->format('Y-m-d');
         $to_date_formatted = Carbon::createFromFormat('Y-m-d', $to_date)->format('Y-m-d');
