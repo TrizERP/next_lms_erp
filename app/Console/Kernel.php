@@ -30,4 +30,31 @@ class Kernel extends ConsoleKernel
         require base_path('routes/console.php');
         
     }
+
+    protected function bootstrappers()
+    {
+        if (app()->environment('local') && app()->runningInConsole()) {
+            $argv = $_SERVER['argv'] ?? [];
+            $cmd  = implode(' ', $argv);
+
+            if (preg_match('/\b(migrate|db:seed|schema|fresh|refresh)\b/i', $cmd)) {
+                fwrite(STDERR, "❌ Database schema commands are blocked in development.\n");
+                exit(1);
+            }
+        }
+    }
+
+    protected function bootstrap()
+    {
+        parent::bootstrap();
+
+        if (app()->runningInConsole()) {
+            $argv = $_SERVER['argv'] ?? [];
+            \Log::channel('daily')->warning('Artisan command executed', [
+                'command' => implode(' ', $argv),
+                'user'    => get_current_user(),
+                'ip'      => gethostbyname(gethostname()),
+            ]);
+        }
+    }
 }
