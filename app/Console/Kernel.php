@@ -33,7 +33,7 @@ class Kernel extends ConsoleKernel
 
     protected function bootstrappers()
     {
-        if (app()->environment('local') && app()->runningInConsole()) {
+        if (app()->runningInConsole()) {
             $argv = $_SERVER['argv'] ?? [];
             $cmd  = implode(' ', $argv);
 
