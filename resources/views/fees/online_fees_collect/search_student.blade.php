@@ -184,6 +184,11 @@
                                     "/fees/hdfcrazorpay/online_fees_collect";
                                 // console.log(key);
                             }
+                            if (value.bank_name == 'icici_orange') {
+                                document.forms.changeAction.action =
+                                    "/fees/online_fees_orange_pg";
+                                // console.log(key);
+                            }
                         }
                         if(value.end_date === null){
                             var act = " (Active)";

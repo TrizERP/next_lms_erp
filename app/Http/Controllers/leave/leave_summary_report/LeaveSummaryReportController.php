@@ -9,6 +9,7 @@ use App\Models\HrmsInOutTime;
 use App\Models\HrmsJobTitle;
 use App\Models\PayrollType;
 use App\Models\user\tbluserModel;
+use function App\Helpers\getSubCordinates;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
@@ -67,10 +68,24 @@ class LeaveSummaryReportController extends Controller
         // $from_date = $request->get('from_date');
         // $to_date = $request->get('to_date');
         $department_id = $request->get('department_id');
-	    $employee_id = $request->get('emp_id');
+	    $employee_id = ($request->get('emp_id') != 0) ? $request->get('emp_id') : 0;
 	    $years = $request->get('years');
+        $userId = session()->get('user_id');
+        $userProfileName = session()->get('user_profile_name');
         // $both_years = explode(" ", $years);
         // $year1 = $both_years[0];
+
+        // sub cordinates 02-08-2024
+        $SubCordinates = [];
+        $profileArr = ["Admin", "Super Admin", "School Admin", "Assistant Admin"];
+        if ($employee_id == 0 && !in_array($userProfileName, $profileArr)) {
+            $SubCordinates = getSubCordinates($sub_institute_id, $userId);
+            if (!empty($SubCordinates)) {
+                $employee_id = implode(',', $SubCordinates);
+            }
+        }
+        // echo "<pre>"; print_r($SubCordinates);exit;
+        // end  02-08-2024
         
         $departments = HrmsDepartment::where('status', true)->pluck('department', 'id');
 
@@ -78,7 +93,11 @@ class LeaveSummaryReportController extends Controller
         $employeesQuery = tbluserModel::where('sub_institute_id', $sub_institute_id)->where('status', 1);
         if ($department_id!=0) {
             $employeesQuery->where('department_id', $department_id);
-                  }
+        }
+        if ($employee_id!=0) {
+            $employeesQuery->where('id', $employee_id);
+        }
+        
         $employees = $employeesQuery->get()->toArray();  // 23-04-24 by uma
 
         $get_hrms_leave_types = DB::table('hrms_leave_types')->where('sub_institute_id', $sub_institute_id)->where('status',1)->orderBy('sort_order')->get()->toArray();

@@ -565,32 +565,13 @@ class tblstudentController extends Controller
         $finalArray['password'] = md5('student');
         $finalArray['status'] = 1;
 
-        // for other custom table data
-        if(isset($request->otherCustom)){
-            foreach($request->otherCustom as $tname_id=>$tableData){
-                $tableExplode = explode('||',$tname_id);
-                $tableName = $tableExplode[0] ?? '';
-                $tableId = $tableExplode[1] ?? 0;
-                // return $tableId;
-                if($tableName!=''){
-                    foreach ($tableData as $fieldName => $fieldValue) {
-                       $update = DB::table($tableName)->where('id',$tableId)->update([$fieldName=>$fieldValue]);
-                    }
-                }
-            }
-        }
-
-        unset($newRequest['student_image']);
-        unset($newRequest['otherCustom']);
-
-        // return $request;
         foreach ($newRequest as $key => $value) {
             if ($key != '_method' && $key != '_token' && $key != 'type' && $key != 'submit' && $key != 'grade' && $key != 'standard'
                 && $key != 'division' && $key != 'student_quota' && $key != 'end_date' && $key != 'remarks' && $key != 'inactive_satus'
                 && $key != 'id' && $key != 'optional_subject' && $key != 'optional_subject4' && $key != 'optional_subject5' && $key != 'optional_subject6' && $key != 'previous_school_gr_no' && $key != 'house'
                 && $key != 'father_occupation' && $key != 'father_qualification' && $key != 'mother_occupation'
                 && $key != 'mother_qualification' && $key != 'guardian_name' && $key != 'guardian_relation'
-                && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no'  && $key != 'editable' && $key!='oldFatherImage' && $key!='oldMotherImage' && $key!='otherCustom'
+                && $key != 'house_no' && $key != 'building_name_appratment_name_society_name' && $key != 'district_name' && $key != 'roll_no'  && $key != 'editable' && $key!='oldFatherImage' && $key!='oldMotherImage'
                 ) { //&& $key != 'place_of_birth' && $key != 'previous_school_name'
                 if (is_array($value)) {
                     $value = implode(",", $value);
@@ -778,17 +759,10 @@ class tblstudentController extends Controller
         // echo "<pre>";print_r($admissionEnquiryData);exit;      
 		// RAJESH	->whereRaw('tblstudent_enrollment.end_date is NULL')
 		$dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "tblstudent"])
-        ->whereNull('crud_table')
         ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
 			->orderBy('sort_order', 'ASC')
 			->get();
-        $OtherCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "tblstudent"])
-        ->whereNotNull('crud_table')
-        ->whereRaw('(sub_institute_id = ' . $sub_institute_id . ' OR common_to_all = 1) and user_type= "" ')
-			->orderBy('sort_order', 'ASC')
-			->get();
-
-            
+        
         $fieldsData = tblfields_dataModel::get()->toArray();
         $i = 0;
         $finalfieldsData = [];
@@ -1092,7 +1066,6 @@ die; */
 		$res['total_distance'] = $total_distance;
         //$res['student_data'] = $student_data;
 		$res['custom_fields'] = $dataCustomFields;
-        $res['Other_custom_fields'] = $OtherCustomFields;
         if (count($finalfieldsData) > 0) {
 			$res['data_fields'] = $finalfieldsData;
 		}

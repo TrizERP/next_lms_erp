@@ -447,7 +447,7 @@ Route::get('fetch_payment_status', 'fees\online_fees\online_fees_collect_control
 Route::get('icici_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@icici_fetch_payment_status');
 Route::get('hdfc_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@hdfc_fetch_payment_status');
 Route::get('payphi_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@payphi_fetch_payment_status');
-
+Route::get('orange_pg_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@orange_pg_fetch_payment_status');
 Route::group(['middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('leave-type', LeaveTypeController::class);
     Route::resource('holiday', HolidayController::class);

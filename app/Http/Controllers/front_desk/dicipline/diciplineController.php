@@ -205,7 +205,8 @@ class diciplineController extends Controller
             //END Send Notification Code
 
             //START Send Parent Email Notification
-            $this->sendParentEmailNotification($stu_id, $flag_value, $_REQUEST['values']['text'][$stu_id], $sub_institute_id, $syear);
+            // 01-05-2026 Stop Mail call from Abhi
+            //$this->sendParentEmailNotification($stu_id, $flag_value, $_REQUEST['values']['text'][$stu_id], $sub_institute_id, $syear);
             //END Send Parent Email Notification
         }
         $res = [

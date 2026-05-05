@@ -49,20 +49,29 @@
                                     <th>Date of Birth</th>
                                     <th>Age</th>
                                     <th>Admission Standard</th>
-                                    @if(in_array($sub_institute_id,$oldAdmissionInstitutes))
-                                        <th>Previous School Name</th>
-                                        <th>Previous Standard</th>
-                                        <th>Enquiry Remarks</th>
-                                        @if(session()->get('sub_institute_id')==254)
-                                        <th class="text-left">Transport Fees</th>
-                                        @endif
-                                    @endif
+                                     <th>Enquiry Remarks</th>
+                                     @if(Session::get('sub_institute_id') == '76')
+                                     <th>Enquiry Remark 1</th>
+                                     <th>Enquiry Remark 2</th>
+                                     @endif
+                                     @if(isset($data['enquiry_custom_fields']))
+                                     @foreach($data['enquiry_custom_fields'] as $k => $v)
+                                     <th>{{$v['field_label']}}</th>
+                                     @endforeach
+                                     @endif
+                                     @if(in_array($sub_institute_id,$oldAdmissionInstitutes))
+                                         <th>Previous School Name</th>
+                                         <th>Previous Standard</th>
+                                         @if(session()->get('sub_institute_id')==254)
+                                         <th class="text-left">Transport Fees</th>
+                                         @endif
+                                     @endif
 
-                                      <!-- 2024-12-28  -->
-                                      @foreach($data['custom_fields'] as $k => $v)
-                                        <th data-toggle="tooltip" title="Enquiry Status">{{$v['field_label']}}</th>
-                                    @endforeach
-                                    <!-- 2024-12-28  -->
+                                       <!-- 2024-12-28  -->
+                                       @foreach($data['custom_fields'] as $k => $v)
+                                         <th data-toggle="tooltip" title="Enquiry Status">{{$v['field_label']}}</th>
+                                     @endforeach
+                                     <!-- 2024-12-28  -->
 
                                 </tr>
                             </thead>
@@ -97,14 +106,50 @@
                                     <td>{{$data['date_of_birth']}}</td>
                                     <td>{{$data['age']}}</td>
                                     <td>{{$data['std_name']}}</td>
-                                    @if(in_array($sub_institute_id,$oldAdmissionInstitutes))
-                                        <td>{{$data['previous_school_name']}}</td>
-                                        <td>{{$data['previous_standard']}}</td>
-                                        <td>{{$data['enquiry_remark']}}</td>
-                                        @if(session()->get('sub_institute_id')==254)
-                                        <td>{{$data['transport_fees']}}</td>
-                                        @endif
-                                    @endif
+                                     <td>{{$data['enquiry_remark']}}</td>
+                                     @if(Session::get('sub_institute_id') == '76')
+                                     <td>{{ isset($data['enquiry_remark']) ? $data['enquiry_remark'] : '' }}</td>
+                                     <td>{{ isset($data['enquiry_remark2']) ? $data['enquiry_remark2'] : '' }}</td>
+                                     @endif
+                                     @if(isset($data['enquiry_custom_fields']))
+                                     @foreach($data['enquiry_custom_fields'] as $k => $v)
+                                     <td>
+                                     @if($v['field_type'] == 'dropdown' && isset($data['data_fields'][$v['id']]))
+                                         @php
+                                             $val = $data[$v['field_name']] ?? '';
+                                             $text = '';
+                                             foreach($data['data_fields'][$v['id']] as $opt) {
+                                                 if($opt['display_value'] == $val) {
+                                                     $text = $opt['display_text'];
+                                                     break;
+                                                 }
+                                             }
+                                             echo $text;
+                                         @endphp
+                                     @elseif($v['field_type'] == 'checkbox' && isset($data['data_fields'][$v['id']]))
+                                         @php
+                                             $vals = explode(',', $data[$v['field_name']] ?? '');
+                                             $texts = [];
+                                             foreach($data['data_fields'][$v['id']] as $opt) {
+                                                 if(in_array($opt['display_value'], $vals)) {
+                                                     $texts[] = $opt['display_text'];
+                                                 }
+                                             }
+                                             echo implode(', ', $texts);
+                                         @endphp
+                                     @else
+                                         {{ isset($data[$v['field_name']]) ? $data[$v['field_name']] : '' }}
+                                     @endif
+                                     </td>
+                                     @endforeach
+                                     @endif
+                                     @if(in_array($sub_institute_id,$oldAdmissionInstitutes))
+                                         <td>{{$data['previous_school_name']}}</td>
+                                         <td>{{$data['previous_standard']}}</td>
+                                         @if(session()->get('sub_institute_id')==254)
+                                         <td>{{$data['transport_fees']}}</td>
+                                         @endif
+                                     @endif
 
                                     <!-- 2024-12-28 -->
                                     @foreach($custom_fields as $k => $v)
