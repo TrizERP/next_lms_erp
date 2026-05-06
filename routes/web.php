@@ -240,6 +240,7 @@ Route::any('/knowledge-base', [dashboardController::class, 'knowledge_base'])->n
 Route::any('/knowledge-base-detail/{id}/{title}', [dashboardController::class, 'knowledge_base_detail'])->name('knowledge_base_detail')->middleware('session', 'menu');
 
 Route::get('dashboard', [dashboardController::class, 'index'])->name('dashboard')->middleware('session', 'menu', 'logRoute');
+Route::get('dashboard/communication-details', [dashboardController::class, 'getCommunicationDetails'])->name('dashboard.communication.details')->middleware('session');
 // add by uma 
 Route::resource('norm-clature', normClatureController::class);
 Route::resource('add-institute-details', institute_detail::class);
