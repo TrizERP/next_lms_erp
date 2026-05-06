@@ -1533,7 +1533,7 @@ exit; */
         }
 
         // ── Fetch Orange PG bank config (reuse fees_icici table or create fees_orange_pg) ─
-        $get_map_bank_detail = DB::table("icici_orange")   // rename table if preferred
+        $get_map_bank_detail = DB::table("fees_icici")   // rename table if preferred
             ->where(["sub_institute_id" => session()->get("sub_institute_id")])
             ->when(!empty($medium_data[0]), function ($q) use ($medium_data) {
                 return $q->where('medium', $medium_data[0]->medium);
@@ -1557,9 +1557,9 @@ exit; */
         }
 
         // ── Orange PG credentials (store these in fees_icici / fees_orange_pg table) ──
-        $merchantId   = $get_map_bank_detail[0]->key_id;   // e.g. 100000000007164
-        $aggregatorID = $get_map_bank_detail[0]->sub_key; // e.g. A100000000007164
-        $secretKey    = $get_map_bank_detail[0]->key_secret;        // HMAC key (UUID)
+        $merchantId   = $get_map_bank_detail[0]->merchant_id;   // e.g. 100000000007164
+        $aggregatorID = $get_map_bank_detail[0]->sub_merchant_id; // e.g. A100000000007164
+        $secretKey    = $get_map_bank_detail[0]->enc_key;        // HMAC key (UUID)
 
         // ── Student details ───────────────────────────────────────────────────
         $studentMobile = DB::table("tblstudent")
@@ -1575,7 +1575,7 @@ exit; */
         $txnDate       = date("YmdHis");
         $currencyCode  = "356";
         $payType       = "0";
-        $returnURL     = "https://erp.triz.co.in/fees/online_fees_orange_pg_response_handler";
+        $returnURL     = $this->site_name() . "fees/online_fees_orange_pg_response_handler";
 
         // addlParam1 = enrollment_no, addlParam2 = student_id (customize as needed)
         $addlParam1 = $medium_data[0]->enrollment_no ?? $student_id;
@@ -1624,8 +1624,8 @@ exit; */
         ];
         //dd($payload);
         // ── Call Orange PG initiateSale API ───────────────────────────────────
-        $initiateURL = "https://pgpayuat.icicibank.com/tsp/pg/api/v2/initiateSale";
-        // For production: https://pgpay.icicibank.com/tsp/pg/api/v2/initiateSale
+        $initiateURL = "https://pgpay.icicibank.com/tsp/pg/api/v2/initiateSale";
+        // For development : https://pgpayuat.icicibank.com/tsp/pg/api/v2/initiateSale
 
         $ch = curl_init($initiateURL);
         curl_setopt_array($ch, [
@@ -1634,8 +1634,9 @@ exit; */
             CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
             CURLOPT_POSTFIELDS     => json_encode($payload),
             CURLOPT_TIMEOUT        => 30,
+            CURLOPT_SSL_VERIFYPEER => false,
         ]);
-        
+
         $apiResponse = curl_exec($ch);
         $curlError   = curl_error($ch);
         curl_close($ch);
@@ -1718,7 +1719,7 @@ exit; */
         // ── Determine payment status ──────────────────────────────────────────
         // Orange PG success responseCode is "0000/000"
         $responseCode   = $response["responseCode"] ?? "";
-        $payment_status = ($responseCode === "0000/000") ? "PS" : "PF";
+        $payment_status = ($responseCode === "0000" || $responseCode === "000") ? "PS" : "PF";
 
         // ── (Optional) Verify response secureHash ─────────────────────────────
         // You should verify the returned securehash here using the same HMAC logic
@@ -1741,7 +1742,6 @@ exit; */
         $type = $request->input('type') ?? "web";
 
         if ($payment_status === "PS") {
-            $paymentMode = $response["paymentMode"] ?? null;
             $data = $this->pay_fees(
                 $request,
                 $get_all_data[0]->student_id,
@@ -1750,7 +1750,7 @@ exit; */
                 $get_all_data[0]->amount,
                 $merchantTxnNo,
                 $get_all_data[0]->fine,
-                $paymentMode
+                'Online'
             );
             return \App\Helpers\is_mobile($type, "fees/online_fees_collect/receipt_view", $data, "view");
         }
@@ -1761,49 +1761,153 @@ exit; */
     /**
      * Status check API call (optional — for manual/cron reconciliation).
      */
-    public function orange_pg_status_check($merchantTxnNo)
+    public function orange_pg_fetch_payment_status(Request $request)
     {
-        $get_map_bank_detail = DB::table("fees_icici")
-            ->where(["sub_institute_id" => session()->get("sub_institute_id")])
-            ->first();
+        // Fetch pending payments from last 3 days (excluding last 30 mins)
+        $payment_data = DB::table('fees_payment AS fp')
+            ->select(
+                'fp.id', 'fp.student_id', 'fi.merchant_id', 'fi.enc_key', 'fi.sub_merchant_id',
+                'fp.icici_order_id', 'fp.syear', 'fp.sub_institute_id',
+                'fp.amount', 'fp.fine', 'fp.discount', 'fp.icici_bank_res'
+            )
+            ->join('tblstudent_enrollment AS tse', function ($join) {
+                $join->on('tse.student_id', '=', 'fp.student_id')
+                     ->on('tse.syear',       '=', 'fp.syear')
+                     ->on('tse.sub_institute_id', '=', 'fp.sub_institute_id');
+            })
+            ->join('academic_section AS a', 'a.id', '=', 'tse.grade_id')
+            ->join('fees_icici AS fi', function ($join) {
+                $join->on('fi.medium',           '=', 'a.medium')
+                     ->on('fi.sub_institute_id', '=', 'tse.sub_institute_id');
+            })
+            ->where(function ($query) {
+                $query->where('fp.icici_payment_status', '!=', 'PS')
+                      ->where(function ($query) {
+                          $query->whereNotIn('fp.razorpay_payment_status', ['Success'])
+                                ->orWhereNull('fp.razorpay_payment_status');
+                      });
+            })
+            ->whereNotNull('fp.icici_order_id')
+            ->whereNotNull('fi.sub_merchant_id')
+            ->whereBetween('fp.created_at', [now()->subDays(3), now()->subMinutes(30)])
+            ->groupBy('fp.id')
+            ->get();
 
-        $merchantId   = $get_map_bank_detail->merchant_id;
-        $aggregatorID = $get_map_bank_detail->sub_merchant_id;
-        $secretKey    = $get_map_bank_detail->enc_key;
+        if (empty($payment_data) || $payment_data->isEmpty()) {
+            return;
+        }
 
-        // Hash for STATUS: same key order but transactionType = STATUS
-        $hashText =
-            $aggregatorID .
-            $merchantId .
-            $merchantTxnNo .
-            "STATUS" .
-            $merchantTxnNo;  // originalTxnNo same as merchantTxnNo
+        foreach ($payment_data as $data) {
+            $id             = $data->id;
+            $merchantId     = $data->merchant_id;       // e.g. 100000000007164
+            $aggregatorID   = $data->sub_merchant_id;   // e.g. A100000000007164
+            $secretKey      = $data->enc_key;            // HMAC key (UUID)
+            $merchantTxnNo  = $data->icici_order_id;     // our order ID stored at initiation
+            $student_id     = $data->student_id;
+            $amount         = $data->amount;
+            $fine           = $data->fine;
+            $discount       = $data->discount;
 
-        $secureHash = hash_hmac('sha256', $hashText, $secretKey);
+            // ── Build secureHash for STATUS request ───────────────────────────
+            // Field order as per Orange PG docs for STATUS transactionType:
+            // aggregatorID | merchantId | merchantTxnNo | transactionType | originalTxnNo
+            $hashText = $aggregatorID . $merchantId . $merchantTxnNo . "STATUS" . $merchantTxnNo;
+            $secureHash = hash_hmac('sha256', $hashText, $secretKey);
 
-        $payload = [
-            "merchantId"     => $merchantId,
-            "aggregatorID"   => $aggregatorID,
-            "merchantTxnNo"  => $merchantTxnNo,
-            "transactionType"=> "STATUS",
-            "secureHash"     => $secureHash,
-            "originalTxnNo"  => $merchantTxnNo,
-        ];
+            $payload = [
+                "merchantId"      => $merchantId,
+                "aggregatorID"    => $aggregatorID,
+                "merchantTxnNo"   => $merchantTxnNo,
+                "transactionType" => "STATUS",
+                //"secureHash"      => $secureHash,
+                "originalTxnNo"   => $merchantTxnNo,
+            ];
 
-        $ch = curl_init("https://pgpayuat.icicibank.com/tsp/pg/api/command");
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST           => true,
-            CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
-            CURLOPT_POSTFIELDS     => json_encode($payload),
-            CURLOPT_TIMEOUT        => 30,
-        ]);
-        $apiResponse = curl_exec($ch);
-        curl_close($ch);
+            // ── Call Orange PG Status Check API ───────────────────────────────
+            $statusURL = "https://pgpay.icicibank.com/tsp/pg/api/command";
+            // Development: "https://pgpayuat.icicibank.com/tsp/pg/api/command"
 
-        return json_decode($apiResponse, true);
+            $ch = curl_init($statusURL);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_HTTPHEADER     => ['Content-Type: application/json'],
+                CURLOPT_POSTFIELDS     => json_encode($payload),
+                CURLOPT_TIMEOUT        => 30,
+                CURLOPT_SSL_VERIFYPEER => false,
+            ]);
+            $apiResponse = curl_exec($ch);
+            $curlError   = curl_error($ch);
+            curl_close($ch);
+
+            if ($curlError || empty($apiResponse)) {
+                continue; // Skip this record on connection failure
+            }
+
+            $payment = json_decode($apiResponse, true);
+            if (empty($payment) || !isset($payment['txnResponseCode'])) {
+                continue;
+            }
+
+            // ── Orange PG STATUS response fields ──────────────────────────────
+            // txnResponseCode: "0000" = success, others = failure/pending
+            $txnResponseCode  = $payment['txnResponseCode']       ?? null;
+            $paymentMode   = $payment['paymentMode']        ?? null;
+            $paymentDate   = $payment['paymentDateTime']    ?? null;   // "20241121115413"
+
+            // Parse paymentDateTime (YmdHis) to Y-m-d
+            $trandate = !empty($paymentDate)
+                ? date("Y-m-d", strtotime($paymentDate))
+                : date("Y-m-d");
+
+            // Map Orange PG success to "Success" (same as old cron logic)
+            $status = ($txnResponseCode === "0000" || $txnResponseCode === "000") ? "Success" : "Failed";
+
+            // ── Update fees_payment record ────────────────────────────────────
+            DB::table("fees_payment")
+                ->where('id', $id)
+                ->update([
+                    "razorpay_payment_status" => $status,
+                    "razorpay_bank_res"       => $trandate,
+                    "aggre_pay_bank_res"      => "cron",
+                    "icici_bank_res"          => $apiResponse,   // raw JSON string
+                    "razorpay_dashboard_ps"   => $paymentMode,
+                    "updated_at"              => now(),
+                ]);
+
+            // ── If successful, book the fees (prevent duplicate) ──────────────
+            if ($status === 'Success') {
+                $alreadyBooked = DB::table('fees_collect')
+                    ->whereRaw(
+                        'cheque_no = ? AND student_id = ? AND syear = ? AND sub_institute_id = ?',
+                        [$merchantTxnNo, $student_id, $data->syear, $data->sub_institute_id]
+                    )
+                    ->exists();
+
+                if (!$alreadyBooked) {
+                    $request->merge([
+                        '_key'             => csrf_token(),
+                        'student_id'       => $student_id,
+                        'inserted_id'      => $id,
+                        'icici_payment_id' => $merchantTxnNo,
+                        'syear'            => $data->syear,
+                        'sub_institute_id' => $data->sub_institute_id,
+                    ]);
+
+                    $this->pay_fees(
+                        $request,
+                        $data->student_id,
+                        $data->syear,
+                        $data->sub_institute_id,
+                        $amount,
+                        $merchantTxnNo,
+                        $fine,
+                        'Online'
+                    );
+                }
+            }
+        }
     }
-
 
     public function axis(Request $request)
     {
@@ -3492,7 +3596,7 @@ if (isset($input['error'])) {
                         if ($status == 'captured') {
                             $check = DB::table('fees_collect')->whereRaw('cheque_no="'.$payment_id.'" AND student_id='.$student_id.' AND syear='.$data->syear.' AND sub_institute_id='.$data->sub_institute_id)->get()->toArray();
                             if (count($check) == 0) {
-                                $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, ($amount/100), $payment_id, $data->fine, 'HDFC Razorpay', $data->discount);
+                                $this->pay_fees($request, $data->student_id, $data->syear, $data->sub_institute_id, ($amount/100), $payment_id, $data->fine, 'Online', $data->discount);
                             }
                         }
                     }
