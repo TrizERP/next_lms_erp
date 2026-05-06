@@ -391,6 +391,89 @@ function openContent(link){
         window.open(link, '_blank');
     }
 }
+
+function buildSuggestedContentMappingHtml(content, mappingId) {
+    var mappingHtml = '<div class="mapping-details suggested-content-mapping" style="display:none;" id="' + mappingId + '">';
+    mappingHtml += '<div class="card mt-3">';
+    mappingHtml += '<h6 class="px-3 pt-3"><i class="fa fa-tags"></i> CONTENT MAPPING</h6>';
+
+    if(content.mapping && content.mapping.length > 0) {
+        mappingHtml += '<div class="table-responsive px-3 pb-3">';
+        mappingHtml += '<table class="table table-bordered mb-0">';
+        mappingHtml += '<thead><tr><th>MAPPING TYPE</th><th>MAPPING VALUE</th></tr></thead>';
+        mappingHtml += '<tbody>';
+
+        $.each(content.mapping, function(mi, mapping) {
+            mappingHtml += '<tr>';
+            mappingHtml += '<td>' + escapeHtml(mapping.type_name || '-') + '</td>';
+            mappingHtml += '<td>' + escapeHtml(mapping.value_name || '-') + '</td>';
+            mappingHtml += '</tr>';
+        });
+
+        mappingHtml += '</tbody></table></div>';
+    } else {
+        mappingHtml += '<div class="card-body text-center py-3">';
+        mappingHtml += '<p class="text-muted mb-0"><i class="fa fa-info-circle"></i> No mapping information available</p>';
+        mappingHtml += '</div>';
+    }
+
+    mappingHtml += '</div></div>';
+
+    return mappingHtml;
+}
+
+function buildSuggestedContentCard(content, index, prefix) {
+    var contentId = content.id || index;
+    var mappingId = prefix + '_content_mapping_' + contentId + '_' + index;
+    var title = content.title || content.content_title || 'Untitled';
+    var html = '<div class="content-item card mb-2" data-mapping-id="' + mappingId + '">';
+    html += '<div class="card-body">';
+    html += '<h6>';
+
+    if(content.file_type == 'link'){
+        html += '<a href="' + escapeHtml(content.filename) + '" target="_blank">' + escapeHtml(title) + '</a>';
+    }else{
+        html += escapeHtml(title);
+    }
+
+    html += '<span class="badge badge-secondary ml-2">Suggested</span>';
+    html += '</h6>';
+
+    if(content.description) {
+        html += '<p>' + escapeHtml(content.description) + '</p>';
+    }
+
+    html += '<button type="button" class="btn btn-sm btn-outline-info mt-2" onclick="toggleSuggestedContentMapping(\'' + mappingId + '\')">';
+    html += '<i class="fa fa-tags"></i> Mapping Type & Value';
+    html += '</button>';
+
+    if(content.content_link){
+        html += '<a href="' + escapeHtml(content.content_link) + '" target="_blank" class="btn btn-sm btn-success mt-2 ml-2">';
+        html += '<i class="fa fa-external-link"></i> Open Content';
+        html += '</a>';
+    }
+
+    html += buildSuggestedContentMappingHtml(content, mappingId);
+    html += '</div></div>';
+
+    return html;
+}
+
+function toggleSuggestedContentMapping(mappingId) {
+    var mappingDiv = $('#' + mappingId);
+    var card = $('.content-item[data-mapping-id="' + mappingId + '"]');
+
+    if(mappingDiv.is(':visible')) {
+        mappingDiv.slideUp(250);
+        card.removeClass('border-primary');
+    } else {
+        $('.suggested-content-mapping').slideUp(250);
+        $('.content-item').removeClass('border-primary');
+        mappingDiv.slideDown(250);
+        card.addClass('border-primary');
+    }
+}
+
 function generateExam(grade_id,subject_id,chapter_id,standard_id,enrollment_no){
       if (chapter_id !== '' && chapter_id !== 'undefined') {
         window.location.href = '/lms/pal/create?subject_id='+subject_id+'&chapter_id='+chapter_id+'&grade_id='+grade_id+'&standard_id='+standard_id+'&enrollment_no='+enrollment_no;
@@ -431,34 +514,7 @@ function suggestedContent(grade_id,subject_id,chapter_id,standard_id, loadFromDb
                                      html += '<div class="content-category mb-3">';
                                      html += '<h5>' + category + '</h5>';
                                      $.each(contents, function(index, content) {
-                                         html += '<div class="content-item card mb-2">';
-                                         html += '<div class="card-body">';
-                                         html += '<h6>';
-                                         
-                                         // Handle link type content
-                                         if(content.file_type == 'link'){
-                                             html += '<a href="' + content.filename + '" target="_blank">';
-                                             html += (content.title || content.content_title || 'Untitled');
-                                             html += '</a>';
-                                         }else{
-                                             html += (content.title || content.content_title || 'Untitled');
-                                         }
-                                         
-                                         // Add badge
-                                         html += '<span class="badge badge-secondary ml-2">Suggested</span>';
-                                         
-                                         html += '</h6>';
-                                         
-                                         if(content.description) {
-                                             html += '<p>' + content.description + '</p>';
-                                         }
-                                         
-                                         if(content.content_link){
-                                             html += '<a href="' + content.content_link + '" target="_blank" class="btn btn-sm btn-success mt-2">';
-                                             html += '<i class="fa fa-external-link"></i> Open Content';
-                                             html += '</a>';
-                                         }
-                                         html += '</div></div>';
+                                         html += buildSuggestedContentCard(content, index, 'db');
                                      });
                                      html += '</div>';
                                  }
@@ -505,6 +561,8 @@ function suggestedContent(grade_id,subject_id,chapter_id,standard_id, loadFromDb
                                      html += '<div class="content-category mb-3">';
                                      html += '<h5>' + category + '</h5>';
                                      $.each(contents, function(index, content) {
+                                         html += buildSuggestedContentCard(content, index, 'generated');
+                                         return;
                                          html += '<div class="content-item card mb-2">';
                                          html += '<div class="card-body">';
                                          html += '<h6>';

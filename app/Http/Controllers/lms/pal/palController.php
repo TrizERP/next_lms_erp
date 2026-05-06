@@ -796,7 +796,7 @@ class palController extends Controller
 
          $standard_id = $request->input('standard_id');
          $subject_id = $request->input('subject_id');
-        //  $chapter_id = $request->input('chapter_id');
+         $chapter_id = $request->input('chapter_id');
          $grade_id = $request->input('grade_id');
 
          // Get suggested content from the suggested_content table
@@ -806,12 +806,16 @@ class palController extends Controller
              ->where('sc.student_id', $student_id)
              ->where('sc.standard_id', $standard_id)
              ->where('sc.subject_id', $subject_id)
-            //  ->where('sc.chapter_id', $chapter_id)
+             ->when($chapter_id, function ($query) use ($chapter_id) {
+                 $query->where('cm.chapter_id', $chapter_id);
+             })
              ->where('sc.sub_institute_id', $sub_institute_id)
              ->where('sc.syear', $syear)
              ->select('cm.*')
              ->get()
              ->toArray();
+
+         $this->attachContentMappings($suggestedContent);
 
          // Format the data similar to the suggestedContent method's content_data
          $content_data = [];
@@ -844,6 +848,48 @@ class palController extends Controller
          }
 
          return is_mobile($type, 'lms/pal/suggested_content', $res, "view");
+     }
+
+     private function attachContentMappings(&$contents)
+     {
+         if (empty($contents)) {
+             return;
+         }
+
+         $contentIds = [];
+         foreach ($contents as $content) {
+             $contentIds[] = is_array($content) ? ($content['id'] ?? null) : ($content->id ?? null);
+         }
+         $contentIds = array_values(array_filter(array_unique($contentIds)));
+
+         if (empty($contentIds)) {
+             return;
+         }
+
+         $mappingRows = DB::table('content_mapping_type as cmt')
+             ->join('lms_mapping_type as t', 't.id', '=', 'cmt.mapping_type_id')
+             ->join('lms_mapping_type as t1', 't1.id', '=', 'cmt.mapping_value_id')
+             ->whereIn('cmt.content_id', $contentIds)
+             ->select(
+                 'cmt.content_id',
+                 't.name as type_name',
+                 't.id as type_id',
+                 't1.name as value_name',
+                 't1.id as value_id'
+             )
+             ->get()
+             ->groupBy('content_id');
+
+         foreach ($contents as &$content) {
+             $contentId = is_array($content) ? ($content['id'] ?? null) : ($content->id ?? null);
+             $mapping = isset($mappingRows[$contentId]) ? $mappingRows[$contentId]->values()->toArray() : [];
+
+             if (is_array($content)) {
+                 $content['mapping'] = $mapping;
+             } else {
+                 $content->mapping = $mapping;
+             }
+         }
      }
 
      public function storeSuggestedContent(Request $request)
@@ -976,6 +1022,8 @@ public function getData($request)
      // If no content is found, the level mapping in content_mapping_type table may need to be set up.
     ->get()
     ->toArray();
+
+        $this->attachContentMappings($content_data);
 
         $content_data_array =[];
         $mappedVals = explode(',',$request->mapped_value);

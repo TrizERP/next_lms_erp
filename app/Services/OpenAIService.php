@@ -7,6 +7,7 @@ use GuzzleHttp\Client;
 use Illuminate\Support\Facades\DB;
 use GuzzleHttp\Exception\RequestException;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManagerStatic as Image;
 use Illuminate\Support\Facades\Session; 
@@ -814,10 +815,29 @@ class OpenAIService
     // dynamic key fecthing by saroj uma 
   public function generateContent($prompt, $retry = 0)
 {
-    try {
-        $apiKey = getAIKey('OPENROUTER_API_KEY', 1);
+    $apiKey = null;
 
-        if (!$apiKey) {
+    try {
+        try {
+            $apiKey = getAIKey('OPENROUTER_API_KEY', 1);
+        } catch (\Throwable $keyLookupError) {
+            Log::warning('AI key table lookup failed, falling back to env key: ' . $keyLookupError->getMessage());
+        }
+
+        if (!$apiKey || $apiKey === '-' || empty($apiKey->api_key)) {
+            $envApiKey = env('OPENROUTER_API_KEY');
+            if (!empty($envApiKey)) {
+                $apiKey = (object) [
+                    'id' => null,
+                    'api_key' => trim($envApiKey, " \t\n\r\0\x0B'\""),
+                    'api_limit' => 1466,
+                ];
+            }
+        }
+        \Log::info('used key and limit: ' . $apiKey->api_key . ' limit-' . $apiKey->api_limit
+            . ' id-' . $apiKey->id);
+
+        if (!$apiKey || empty($apiKey->api_key)) {
             throw new \Exception('No active API keys available');
         }
 
@@ -834,12 +854,12 @@ class OpenAIService
                 'messages' => [
                     ['role' => 'user', 'content' => $prompt],
                 ],
-                'max_tokens' => 1500, // ✅ FIXED (reduce tokens)
+                'max_tokens' => $apiKey->api_limit ?? 1466, // ✅ FIXED (reduce tokens)
                 'temperature' => 1.2, // optional tuning
                 'top_p' => 0.8,
             ],
         ]);
-
+        \Log::info('used key and limit: ' . $apiKey->api_key . ' limit-' . $apiKey->api_limit);
         $data = json_decode($response->getBody(), true);
 
         return $data['choices'][0]['message']['content'] ?? '';
@@ -852,16 +872,18 @@ class OpenAIService
         Log::error('API Error', [
             'status' => $statusCode,
             'response' => $responseBody,
-            'api_key' => $apiKey->api_key
+            'api_key_id' => $apiKey->id ?? null,
         ]);
-
+        \Log::error('status: ' . $statusCode);
         // ✅ HANDLE ALL IMPORTANT CASES
         if (in_array($statusCode, [401, 402, 429])) {
 
             // 🔴 Disable current key
-            DB::table('ai_api_key')
-                ->where('id', $apiKey->id)
-                ->update(['status' => 0,'updated_at'=>now()]);
+            if (!empty($apiKey->id) && Schema::hasTable('ai_api_keys')) {
+                DB::table('ai_api_keys')
+                    ->where('api_key', $apiKey->api_key)
+                    ->update(['status' => 0,'updated_at'=>now()]);
+            }
 
             // 🔁 Retry (max 3 times)
             if ($retry < 1) {
@@ -1861,6 +1883,202 @@ Create a detailed 30-slide interactive presentation for the following parameters
             'generated_at' => date('Y-m-d H:i:s'),
             'error' => 'Failed to parse JSON response'
         ];
+    }
+
+    /**
+     * Generate a Gamma-style PDF presentation from existing generated content.
+     */
+    public function generateGammaStylePresentationPdf($params = [])
+    {
+        $generatedContent = trim($params['generatedContent'] ?? '');
+        $topicName = trim($params['topicName'] ?? '');
+        $chapterName = trim($params['chapterName'] ?? '');
+        $subjectName = trim($params['subjectName'] ?? '');
+        $standardId = trim($params['standardId'] ?? '');
+        $contentCategory = trim($params['contentCategory'] ?? 'Classroom Presentation');
+        $slideCount = max(1, min(20, (int) ($params['slideCount'] ?? 8)));
+
+        if ($generatedContent === '') {
+            throw new \Exception('Generated content is required.');
+        }
+
+        $apiKey = $this->apiKey_deepseek;
+        if (empty($apiKey)) {
+            $apiKey = getAIKey('OPENROUTER_API_KEY', 1);
+        }
+
+        if (is_object($apiKey)) {
+            $apiKey = $apiKey->api_key ?? '';
+        }
+
+        if (empty($apiKey)) {
+            throw new \Exception('OpenRouter API key not configured.');
+        }
+
+        $title = $topicName ?: $chapterName ?: 'Generated Presentation';
+        $prompt = "Create exactly {$slideCount} polished presentation slides from the content below.\n";
+        $prompt .= "Use a Gamma-style structure: concise headlines, visual-first slide intent, short bullets, speaker notes, and clean educational flow.\n";
+        $prompt .= "Return ONLY valid JSON with this shape: {\"title\":\"...\",\"slides\":[{\"title\":\"...\",\"subtitle\":\"...\",\"bullets\":[\"...\"],\"visual_prompt\":\"...\",\"speaker_notes\":\"...\"}]}.\n\n";
+        $prompt .= "Context:\n";
+        $prompt .= "- Standard: {$standardId}\n";
+        $prompt .= "- Subject: {$subjectName}\n";
+        $prompt .= "- Chapter: {$chapterName}\n";
+        $prompt .= "- Topic: {$topicName}\n";
+        $prompt .= "- Content Category: {$contentCategory}\n\n";
+        $prompt .= "Generated content:\n{$generatedContent}";
+
+        try {
+            $response = $this->client->post('https://openrouter.ai/api/v1/chat/completions', [
+                'verify' => false,
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $apiKey,
+                    'Content-Type' => 'application/json',
+                    'HTTP-Referer' => 'https://nextlms.in',
+                    'X-Title' => 'NEXT LMS ERP',
+                ],
+                'json' => [
+                    'model' => 'deepseek/deepseek-chat',
+                    'messages' => [
+                        ['role' => 'user', 'content' => $prompt],
+                    ],
+                    'max_tokens' => 6000,
+                    'temperature' => 0.7,
+                    'top_p' => 0.9,
+                ],
+                'timeout' => 90,
+            ]);
+
+            $data = json_decode($response->getBody()->getContents(), true);
+            $generatedJson = $data['choices'][0]['message']['content'] ?? '';
+            $presentation = $this->parseGammaStyleSlides($generatedJson, $generatedContent, $slideCount, $title);
+            $pdfBinary = $this->renderGammaStyleSlidesPdf($presentation, [
+                'standardId' => $standardId,
+                'subjectName' => $subjectName,
+                'chapterName' => $chapterName,
+                'topicName' => $topicName,
+                'contentCategory' => $contentCategory,
+            ]);
+
+            $safeTitle = preg_replace('/[^a-zA-Z0-9]+/', '_', $presentation['title'] ?? $title);
+            $safeTitle = trim($safeTitle, '_') ?: 'generated_presentation';
+
+            return [
+                'file_name' => strtolower($safeTitle) . '_' . time() . '.pdf',
+                'pdf_binary' => $pdfBinary,
+                'title' => $presentation['title'] ?? $title,
+            ];
+        } catch (RequestException $e) {
+            Log::error('OpenRouter Gamma-style slide error: ' . $e->getMessage());
+            throw new \Exception('Failed to generate slide content: ' . $e->getMessage());
+        }
+    }
+
+    private function parseGammaStyleSlides($modelContent, $fallbackContent, $slideCount, $fallbackTitle)
+    {
+        $jsonText = trim($modelContent);
+        if (preg_match('/```(?:json)?\s*(.*?)```/is', $jsonText, $matches)) {
+            $jsonText = trim($matches[1]);
+        } elseif (preg_match('/\{.*\}/s', $jsonText, $matches)) {
+            $jsonText = trim($matches[0]);
+        }
+
+        $decoded = json_decode($jsonText, true);
+        if (is_array($decoded) && !empty($decoded['slides']) && is_array($decoded['slides'])) {
+            $decoded['title'] = $decoded['title'] ?? $fallbackTitle;
+            $decoded['slides'] = array_slice($decoded['slides'], 0, $slideCount);
+            return $decoded;
+        }
+
+        $sentences = preg_split('/(?<=[.!?])\s+/', strip_tags($fallbackContent));
+        $chunks = array_chunk(array_filter(array_map('trim', $sentences)), 3);
+        $slides = [];
+
+        for ($i = 0; $i < $slideCount; $i++) {
+            $chunk = $chunks[$i] ?? [];
+            $slides[] = [
+                'title' => $i === 0 ? $fallbackTitle : 'Key Idea ' . ($i + 1),
+                'subtitle' => 'Generated learning slide',
+                'bullets' => array_slice($chunk, 0, 3),
+                'visual_prompt' => 'Clean educational visual supporting the slide concept.',
+                'speaker_notes' => implode(' ', $chunk),
+            ];
+        }
+
+        return [
+            'title' => $fallbackTitle,
+            'slides' => $slides,
+        ];
+    }
+
+    private function renderGammaStyleSlidesPdf($presentation, $context)
+    {
+        $escape = function ($value) {
+            return htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+        };
+
+        $slides = $presentation['slides'] ?? [];
+        $title = $escape($presentation['title'] ?? 'Generated Presentation');
+        $meta = $escape(trim(($context['subjectName'] ?? '') . ' / ' . ($context['chapterName'] ?? '') . ' / ' . ($context['topicName'] ?? ''), ' /'));
+
+        $html = '<!doctype html><html><head><meta charset="utf-8"><style>
+            @page { size: A4 landscape; margin: 0; }
+            body { margin: 0; font-family: DejaVu Sans, Arial, sans-serif; color: #16202a; background: #f4f7fb; }
+            .slide { position: relative; width: 100%; height: 100%; min-height: 760px; page-break-after: always; overflow: hidden; background: #f8fafc; }
+            .slide:nth-child(4n+1) { background: linear-gradient(135deg, #f8fafc 0%, #e0f2fe 55%, #fef3c7 100%); }
+            .slide:nth-child(4n+2) { background: linear-gradient(135deg, #fff7ed 0%, #ecfeff 52%, #e0e7ff 100%); }
+            .slide:nth-child(4n+3) { background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 50%, #ffe4e6 100%); }
+            .slide:nth-child(4n) { background: linear-gradient(135deg, #fdf2f8 0%, #eff6ff 54%, #f7fee7 100%); }
+            .frame { position: absolute; inset: 38px; border: 1px solid rgba(15, 23, 42, .14); background: rgba(255,255,255,.72); padding: 42px; }
+            .kicker { font-size: 13px; text-transform: uppercase; letter-spacing: 1.8px; color: #475569; margin-bottom: 18px; }
+            h1 { font-size: 46px; line-height: 1.05; margin: 0 0 18px; color: #0f172a; }
+            h2 { font-size: 34px; line-height: 1.12; margin: 0 0 12px; color: #0f172a; }
+            .subtitle { font-size: 19px; color: #334155; margin-bottom: 28px; max-width: 780px; }
+            ul { margin: 0; padding: 0; list-style: none; max-width: 720px; }
+            li { font-size: 20px; line-height: 1.35; margin: 0 0 14px; padding-left: 28px; position: relative; }
+            li:before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: #0ea5e9; position: absolute; left: 0; top: 9px; }
+            .visual { position: absolute; right: 42px; bottom: 92px; width: 270px; min-height: 160px; background: #0f172a; color: #f8fafc; padding: 24px; font-size: 15px; line-height: 1.35; }
+            .notes { position: absolute; left: 42px; right: 42px; bottom: 32px; color: #64748b; font-size: 12px; border-top: 1px solid rgba(15,23,42,.14); padding-top: 10px; }
+            .count { position: absolute; top: 34px; right: 42px; color: #64748b; font-size: 13px; }
+        </style></head><body>';
+
+        $total = count($slides);
+        foreach ($slides as $index => $slide) {
+            $slideTitle = $escape($slide['title'] ?? 'Slide ' . ($index + 1));
+            $subtitle = $escape($slide['subtitle'] ?? '');
+            $visual = $escape($slide['visual_prompt'] ?? '');
+            $notes = $escape($slide['speaker_notes'] ?? '');
+            $html .= '<section class="slide"><div class="frame">';
+            $html .= '<div class="count">' . ($index + 1) . ' / ' . $total . '</div>';
+            $html .= '<div class="kicker">' . ($index === 0 ? $title : $meta) . '</div>';
+            $html .= $index === 0 ? '<h1>' . $slideTitle . '</h1>' : '<h2>' . $slideTitle . '</h2>';
+            if ($subtitle !== '') {
+                $html .= '<div class="subtitle">' . $subtitle . '</div>';
+            }
+            $html .= '<ul>';
+            foreach (array_slice($slide['bullets'] ?? [], 0, 5) as $bullet) {
+                $html .= '<li>' . $escape($bullet) . '</li>';
+            }
+            $html .= '</ul>';
+            if ($visual !== '') {
+                $html .= '<div class="visual">' . $visual . '</div>';
+            }
+            if ($notes !== '') {
+                $html .= '<div class="notes">' . $notes . '</div>';
+            }
+            $html .= '</div></section>';
+        }
+
+        $html .= '</body></html>';
+
+        $options = new Options();
+        $options->set('defaultFont', 'DejaVu Sans');
+        $options->set('isHtml5ParserEnabled', true);
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'landscape');
+        $dompdf->render();
+
+        return $dompdf->output();
     }
 
     /**
