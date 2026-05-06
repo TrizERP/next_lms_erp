@@ -130,6 +130,8 @@
             </div>
         </div>
 
+
+
         <div class="container-fluid pull-up1 mb-3">
             <div class="row">
                 <div class="col-md-3">
@@ -497,10 +499,33 @@
                             </div>
                         </div>
                     </div>
+             </div>
+            </div>
+            </div>
+                <!-- cn dashboard end -->
+
+                <!-- Communication Modal -->
+                <div class="modal fade" id="communicationModal" tabindex="-1" aria-labelledby="communicationModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="communicationModalLabel">Communication Details</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <input type="text" id="communicationSearch" class="form-control" placeholder="Search by student name, teacher name, or message">
+                                </div>
+                                <div id="communicationTable">
+                                    <!-- Table will be loaded here -->
+                                </div>
+                                <div class="mt-3">
+                                    <button onclick="exportCommunication()" class="btn btn-primary">Export to CSV</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-            </div>
-            </div>
-            <!-- cn dashboard end  -->
                 @if(isset($data['smsNotificationBlock']))
                 <div class="col-md-6 mb-4">
                     <div class="card h-100">
@@ -626,30 +651,31 @@
                 <div class="col-md-12 col-lg-6 col-sm-12 mb-4">
                     <div class="card h-100">
                         <h3 class="card-title">Pending Parent Communication</h3>
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Student Name</th>                                      
-                                        <th>Reason</th>
-                                        <!--<th>Reply</th>-->
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @if(count($data['parentCommunications']) > 0)
-                                        @foreach($data['parentCommunications'] as $key => $value)
-                                        <tr>
-                                            <td><span>{{$value->student_name}}</span> </td>                                           
-                                            <td><span>{{$value->message}} [ {{date('d-m-Y h:i:s A', strtotime($value->created_at))}} ]</span></td>
-                                            <!--<td><span>{{$value->reply}}</span></td>-->
-                                        </tr>
-                                        @endforeach
-                                    @else
-                                        <tr><td colspan="5" class="font-weight-bold"><center>No Records</center></td></tr>
-                                    @endif
-                                </tbody>
-                            </table>
+                        @if(isset($data['communicationSummary']))
+                        <div class="row mb-3">
+                            <div class="col-4">
+                                <div class="text-center border rounded p-2" style="cursor: pointer;" onclick="openCommunicationModal('1day')">
+                                    <h4 class="mb-1 text-danger">{{ $data['communicationSummary']['1day']['pending'] }}</h4>
+                                    <small class="d-block">Last 1 Day</small>
+                                    <small class="text-info">Total: {{ $data['communicationSummary']['1day']['total'] }}</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-center border rounded p-2" style="cursor: pointer;" onclick="openCommunicationModal('7days')">
+                                    <h4 class="mb-1 text-danger">{{ $data['communicationSummary']['7days']['pending'] }}</h4>
+                                    <small class="d-block">Last 7 Days</small>
+                                    <small class="text-info">Total: {{ $data['communicationSummary']['7days']['total'] }}</small>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-center border rounded p-2" style="cursor: pointer;" onclick="openCommunicationModal('15days')">
+                                    <h4 class="mb-1 text-danger">{{ $data['communicationSummary']['15days']['pending'] }}</h4>
+                                    <small class="d-block">Last 15 Days</small>
+                                    <small class="text-info">Total: {{ $data['communicationSummary']['15days']['total'] }}</small>
+                                </div>
+                            </div>
                         </div>
+                        @endif
                     </div>
                 </div>
                 @endif                
@@ -881,7 +907,7 @@ $(document).ready(function(){
 
     $('#studentDetailModal').modal('show');
     if(modelName==='active_student'){
-        $('#exportButton').append(`<center><button onclick="exportTableToCSV('${filename}.csv')" class="btn btn-primary">Export to CSV</button></center>`);
+        $('#exportButton').append(`<center><button onclick="exportTableToCSV('monthwiseTable', '${filename}.csv')" class="btn btn-primary">Export to CSV</button></center>`);
     }
 });
 
@@ -913,9 +939,50 @@ function downloadCSV(csv, filename) {
         downloadLink.click();
     }
 
-    function exportTableToCSV(filename) {
+    var currentPeriod = '';
+    function openCommunicationModal(period) {
+        currentPeriod = period;
+        loadCommunications(period, 1, '');
+        $('#communicationModal').modal('show');
+    }
+
+    function loadCommunications(period, page, search) {
+        $.ajax({
+            url: '{{ route("dashboard.communication.details") }}',
+            data: {period: period, page: page, search: search},
+            success: function(data) {
+                var html = '<table id="communicationListTable" class="table table-hover"><thead><tr><th>Student Name</th><th>Message</th><th>Date</th><th>Class Teacher</th></tr></thead><tbody>';
+                data.data.forEach(function(item) {
+                    html += '<tr><td>' + item.student_name + '</td><td>' + item.message + '</td><td>' + item.date_ + '</td><td>' + (item.teacher_name || 'N/A') + '</td></tr>';
+                });
+                html += '</tbody></table>';
+
+                // Pagination
+                if (data.last_page > 1) {
+                    html += '<nav><ul class="pagination justify-content-center">';
+                    for (let i = 1; i <= data.last_page; i++) {
+                        html += '<li class="page-item ' + (i == data.current_page ? 'active' : '') + '"><a class="page-link" href="#" onclick="loadCommunications(\'' + period + '\', ' + i + ', \'' + search + '\')">' + i + '</a></li>';
+                    }
+                    html += '</ul></nav>';
+                }
+
+                $('#communicationTable').html(html);
+            }
+        });
+    }
+
+    $(document).on('keyup', '#communicationSearch', function() {
+        var search = $(this).val();
+        loadCommunications(currentPeriod, 1, search);
+    });
+
+    function exportCommunication() {
+        exportTableToCSV('communicationListTable', 'communications.csv');
+    }
+
+    function exportTableToCSV(tableId, filename) {
         let csv = [];
-        let rows = document.querySelectorAll('#monthwiseTable tr');
+        let rows = document.querySelectorAll('#' + tableId + ' tr');
 
         for (let i = 0; i < rows.length; i++) {
             let row = [], cols = rows[i].querySelectorAll('td, th');

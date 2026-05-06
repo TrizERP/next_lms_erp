@@ -23,6 +23,51 @@ use Carbon\Carbon;
 
 class dashboardController extends Controller
 {
+    public function getCommunicationDetails(Request $request)
+    {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $period = $request->input('period'); // '1day', '7days', '15days'
+        $search = $request->input('search', '');
+        $days = ['1day' => 1, '7days' => 7, '15days' => 15][$period];
+        $startDate = Carbon::now()->subDays($days)->toDateString();
+
+        $query = DB::table("parent_communication as p")
+            ->selectRaw("p.id, CONCAT_WS(' ', s.first_name, s.last_name) as student_name, p.message, p.date_, CONCAT_WS(' ', u.first_name, u.last_name) as teacher_name")
+            ->join("tblstudent as s", "p.student_id", "=", "s.id")
+            ->join("tblstudent_enrollment as se", function($join) use ($syear) {
+                $join->on("se.student_id", "=", "s.id")
+                     ->where("se.syear", "=", $syear)
+                     ->whereNull("se.end_date");
+            })
+            ->leftJoin("class_teacher as ct", function($join) use ($sub_institute_id, $syear) {
+                $join->on("ct.standard_id", "=", "se.standard_id")
+                     ->on("ct.division_id", "=", "se.section_id")
+                     ->where("ct.sub_institute_id", "=", $sub_institute_id)
+                     ->where("ct.syear", "=", $syear);
+            })
+            ->leftJoin("tbluser as u", "u.id", "=", "ct.teacher_id")
+            ->where("p.date_", ">=", $startDate)
+            ->where("p.sub_institute_id", "=", $sub_institute_id)
+            ->where(function($q) {
+                $q->whereNull('p.reply')->orWhereRaw("TRIM(p.reply) = ''");
+            });
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('s.first_name', 'like', "%$search%")
+                  ->orWhere('s.last_name', 'like', "%$search%")
+                  ->orWhere('p.message', 'like', "%$search%")
+                  ->orWhere('u.first_name', 'like', "%$search%")
+                  ->orWhere('u.last_name', 'like', "%$search%");
+            });
+        }
+
+        $communications = $query->paginate(10);
+
+        return response()->json($communications);
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -114,13 +159,33 @@ class dashboardController extends Controller
                         $join->on("p.student_id", "=", "s.id");
                     })
                     ->where(function($q) {
-                        $q->whereNull('p.reply')->orWhere('p.reply', '');
+                        $q->whereNull('p.reply')
+                        ->orWhereRaw("TRIM(p.reply) = ''");
                     })
                     ->where("date_", "<=", $date)
                     ->where("p.sub_institute_id", "=", $sub_institute_id)
                     ->limit(25)
                     ->orderBy("p.id", "desc")
                     ->get()->toArray();
+
+                // Communication Summary
+                $communicationSummary = [];
+                $periods = ['1day' => 1, '7days' => 7, '15days' => 15];
+                foreach ($periods as $key => $days) {
+                    $startDate = Carbon::now()->subDays($days)->toDateString();
+                    $total = DB::table("parent_communication")
+                        ->where("date_", ">=", $startDate)
+                        ->where("sub_institute_id", "=", $sub_institute_id)
+                        ->count();
+                    $pending = DB::table("parent_communication")
+                        ->where("date_", ">=", $startDate)
+                        ->where("sub_institute_id", "=", $sub_institute_id)
+                        ->where(function($q) {
+                            $q->whereNull('reply')->orWhereRaw("TRIM(reply) = ''");
+                        })
+                        ->count();
+                    $communicationSummary[$key] = ['total' => $total, 'pending' => $pending];
+                }
 
                 $fees_collection = fees_collect::selectRaw('fees_collect.*,CONCAT_WS(" ",tblstudent.first_name,tblstudent.middle_name,tblstudent.last_name) as student_name,sum(amount) as total_fees')
                     ->join('tblstudent', 'tblstudent.id', '=', 'fees_collect.student_id')
@@ -949,9 +1014,10 @@ class dashboardController extends Controller
                             $res['standardsJson'] = json_encode($standards_att, true);
                             $res['absentsJson'] = json_encode($absents, true);
                             $res['presantsJson'] = json_encode($presants, true);
-                        } elseif ($key == "Recent Parent Communication") {
-                            $res['parentCommunications'] = $parentCommunication;
-                        } elseif ($key == "Student Fees Chart") {
+                         } elseif ($key == "Recent Parent Communication") {
+                             $res['parentCommunications'] = $parentCommunication;
+                             $res['communicationSummary'] = $communicationSummary;
+                         } elseif ($key == "Student Fees Chart") {
                             $res['studentFeesChart'] = 1;
                         } elseif ($key == "Recent fees collection") {
                             $res['recentFeesCollection'] = $fees_collection ?? []; // Use an empty array as fallback.
