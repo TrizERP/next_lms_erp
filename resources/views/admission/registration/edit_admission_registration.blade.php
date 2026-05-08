@@ -14,6 +14,9 @@ $editData = array();
         $divisionRequired = 'required';
         $genderRequired = 'required';
     }
+    else{
+        $divisionRequired = 'required';
+    }
 @endphp
 <style type="text/css">
 .division_error {
