@@ -249,17 +249,38 @@ datalist {
                                              <label>Admision Enquiry No</label>
                                              <span><br><b>{{ $student_data->enquiry_no ? $student_data->enquiry_no : '-'}}</b></span>
                                          </div>
-                                        <div class="col-md-4 form-group">
-                                            <label>Fees Year</label>
-                                            <select id='admission_year' name="admission_year" class="form-control" required>
-                                                <option value="">--Select--</option>  
-                                                @if(isset($data['admission_year']))
-                                                    @foreach($data['admission_year'] as $key => $value)
-                                                        <option @if($student_data->admission_year == $value->year) selected="selected" @endif value="{{ $value->year }}">{{ $value->year }}</option>
-                                                    @endforeach
-                                                @endif   
-                                            </select>                                           
-                                        </div>
+<div class="col-md-4 form-group">
+    <label>Fees Year</label>
+
+    @php
+        $years = collect($data['admission_year'] ?? []);
+        $exists = $years->contains(function ($item) use ($student_data) {
+            return $item->year == $student_data->admission_year;
+        });
+    @endphp
+
+    <select id="admission_year" name="admission_year" class="form-control" required>
+        <option value="">--Select--</option>
+
+        {{-- Add old year if not exists --}}
+        @if(!$exists && !empty($student_data->admission_year))
+            <option value="{{ $student_data->admission_year }}" selected>
+                {{ $student_data->admission_year }}
+            </option>
+        @endif
+
+        @if(isset($data['admission_year']))
+            @foreach($data['admission_year'] as $key => $value)
+                <option 
+                    value="{{ $value->year }}"
+                    @if($student_data->admission_year == $value->year) selected="selected" @endif
+                >
+                    {{ $value->year }}
+                </option>
+            @endforeach
+        @endif
+    </select>
+</div>
                                         <div class="col-md-4 form-group" >
                                             <label>Admission Date</label>
                                             <div class="input-daterange input-group" >

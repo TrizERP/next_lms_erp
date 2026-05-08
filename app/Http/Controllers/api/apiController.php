@@ -920,11 +920,11 @@ if(in_array($sub_institute_id, $cn))
                 ->get();
 
             if (isset($data[0])) {
-                //if($data[0]->otp == null || $data[0]->otp == ''){
+                if($data[0]->otp == null || $data[0]->otp == ''){
                     $otp = rand(100000, 999999);
-                //}else{
-
-                //}
+                }else{
+                    $otp = $data[0]->otp;
+                }
                 
                 $sub_institute_id = $data[0]->sub_institute_id;
 
