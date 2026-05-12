@@ -10,25 +10,16 @@
         </div>
         <div class="card">
             <div class="card-body">
-                @if ($sessionData = Session::get('data'))
-                    @if($sessionData['status'] == "1")
-                        <div class="alert alert-success alert-block">
-                    @else
-                        <div class="alert alert-danger alert-block">
-                            @endif
-                            <button type="button" class="close" data-dismiss="alert">×</button>
-                            <strong>{{ $sessionData['message'] }}</strong>
-                        </div>
-                    @endif
+                <div id="message-container"></div>
             </div>
             <div class="row">
-                <form action="{{route('scan_books.store')}}" class="col-md-12 mb-4" method="POST">
+                <form id="scanForm" class="col-md-12 mb-4" method="POST">
                     @csrf
                     <center>
                     <div style="width:100%;padding:20px;box-shadow:5px 5px 5px 5px #ddd;display:flex;justify-content:center">
                         <label for="item_code" style="padding:12px"><b>Item Code : </b></label>
-                        <input type="text" class="form-control" name="item_code" id="item_code" @if(isset($data['searchedItem'])) value="{{$data['searchedItem']}}" @else placeholder="Search Item Status Name" @endif style="width:500px;" required>
-                        <input type="submit" value="Scan Books" name="submit" class="btn btn-primary ml-4">
+                        <input type="text" class="form-control" name="item_code" id="item_code" placeholder="Scan Item Code" style="width:500px;" required autofocus>
+                        <button type="submit" class="btn btn-primary ml-4" id="scanBtn">Scan Books</button>
                     </div>
                     </center>
                 </form>
@@ -118,6 +109,52 @@
                 }
             });
         });
+
+        $('#scanForm').on('submit', function(e) {
+            e.preventDefault();
+            var itemCode = $('#item_code').val().trim();
+            if (!itemCode) {
+                showMessage('Please enter an item code.', 'danger');
+                $('#item_code').focus();
+                return;
+            }
+
+            $('#scanBtn').prop('disabled', true).text('Scanning...');
+
+            $.ajax({
+                url: '{{ route("scan_books.store") }}',
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function(response) {
+                    if (response.status == 1) {
+                        showMessage(response.message, 'success');
+                    } else {
+                        showMessage(response.message, 'danger');
+                    }
+                    $('#item_code').val('').focus();
+                },
+                error: function() {
+                    showMessage('An error occurred. Please try again.', 'danger');
+                    $('#item_code').focus();
+                },
+                complete: function() {
+                    $('#scanBtn').prop('disabled', false).text('Scan Books');
+                }
+            });
+        });
+
+        function showMessage(message, type) {
+            var alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            var html = '<div class="alert ' + alertClass + ' alert-block">' +
+                       '<button type="button" class="close" data-dismiss="alert">×</button>' +
+                       '<strong>' + message + '</strong>' +
+                       '</div>';
+            $('#message-container').html(html);
+            // Auto hide after 3 seconds
+            setTimeout(function() {
+                $('.alert').fadeOut();
+            }, 3000);
+        }
     });
 </script>
 @include('includes.footer')

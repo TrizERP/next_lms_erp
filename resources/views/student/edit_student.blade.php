@@ -245,21 +245,42 @@ datalist {
                                             <!--<span><br><b>{{ $student_data->email }}</b></span>-->
                                             <input type="email" value="{{ $student_data->email }}" id='email' required name="email" class="form-control">
                                         </div>
-                                        <div class="col-md-4 form-group">
-                                            <label>Admision Enquiry No</label>
-                                            <span><br><b>{{ $student_data->enquiry_no ? $student_data->enquiry_no : '-'}}</b></span>
-                                        </div>
-                                        <div class="col-md-4 form-group">
-                                            <label>Fees Year</label>
-                                            <select id='admission_year' name="admission_year" class="form-control" required>
-                                                <option value="">--Select--</option>  
-                                                @if(isset($data['admission_year']))
-                                                    @foreach($data['admission_year'] as $key => $value)
-                                                        <option @if($student_data->admission_year == $value->year) selected="selected" @endif value="{{ $value->year }}">{{ $value->year }}</option>
-                                                    @endforeach
-                                                @endif   
-                                            </select>                                           
-                                        </div>
+                                         <div class="col-md-4 form-group">
+                                             <label>Admision Enquiry No</label>
+                                             <span><br><b>{{ $student_data->enquiry_no ? $student_data->enquiry_no : '-'}}</b></span>
+                                         </div>
+<div class="col-md-4 form-group">
+    <label>Fees Year</label>
+
+    @php
+        $years = collect($data['admission_year'] ?? []);
+        $exists = $years->contains(function ($item) use ($student_data) {
+            return $item->year == $student_data->admission_year;
+        });
+    @endphp
+
+    <select id="admission_year" name="admission_year" class="form-control" required>
+        <option value="">--Select--</option>
+
+        {{-- Add old year if not exists --}}
+        @if(!$exists && !empty($student_data->admission_year))
+            <option value="{{ $student_data->admission_year }}" selected>
+                {{ $student_data->admission_year }}
+            </option>
+        @endif
+
+        @if(isset($data['admission_year']))
+            @foreach($data['admission_year'] as $key => $value)
+                <option 
+                    value="{{ $value->year }}"
+                    @if($student_data->admission_year == $value->year) selected="selected" @endif
+                >
+                    {{ $value->year }}
+                </option>
+            @endforeach
+        @endif
+    </select>
+</div>
                                         <div class="col-md-4 form-group" >
                                             <label>Admission Date</label>
                                             <div class="input-daterange input-group" >
@@ -673,89 +694,12 @@ datalist {
                                             {{ $student_data[$value['field_name']] }}
                                             </textarea>
                                             @else
-                                            <input type="{{ $value['field_type'] }}" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" value="{{ isset($student_data[$value['field_name']]) ? $student_data[$value['field_name']] : '' }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
+                                            <input type="{{ $value['field_type'] }}" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" value="{{ $student_data[$value['field_name']] }}" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}" class="form-control">
                                             @endif
                                         </div>
                                         @endforeach
                                         @endif
 
-                                         @if(isset($data['Other_custom_fields']))
-                                        @foreach($data['Other_custom_fields'] as $key => $value)
-                                        <div class="col-md-4 form-group">
-                                            <label>{{ $value['field_label'] }}</label>
-                                            @if($value['field_type'] == 'file')
-                                            <input type="{{ $value['field_type'] }}" id="input-file-now"  @if($value['required'] == 1) required @endif data-default-file="/storage/student/{{ $student_data[$value['field_name']] }}" name="{{ $value['field_name'] }}" class="dropify">
-                                            <a href="/storage/student/{{ $student_data[$value['field_name']] }}" download="{{$student_data->username.'_'.$student_data[$value['field_name']]}}"><label>Download</label></a>
-                                            @elseif($value['field_type'] == 'date')
-                                            <div class="input-daterange input-group" >
-                                            <input type="text" class="form-control mydatepicker" placeholder="dd/mm/yyyy" autocomplete="off" id="{{ $value['field_name'] }}" @if($value['required'] == 1) required @endif value="{{ $student_data[$value['field_name']] }}" name="{{ $value['field_name'] }}" class="form-control"><span class="input-group-addon"><i class="icon-calender"></i></span>
-                                            </div>
-                                            @elseif($value['field_type'] == 'checkbox')
-                                            <div class="checkbox-list">
-                                                @if(isset($data['data_fields'][$value['id']]))
-                                                @foreach($data['data_fields'][$value['id']] as $keyData => $valueData )
-                                                    <label class="checkbox-inline">
-                                                        <div class="checkbox checkbox-success">
-                                                            <input type="checkbox" @if($valueData['display_value'] == $student_data[$value['field_name']]) checked @endif name="{{ $value['field_name'] }}[]" value="{{ $valueData['display_value'] }}"  id="{{ $valueData['display_value'] }}" @if($value['required'] == 1) required @endif>
-                                                            <label for="{{ $valueData['display_value'] }}">{{ $valueData['display_text'] }}</label>
-                                                        </div>
-                                                    </label>
-                                                    @endforeach
-                                                @endif
-                                            </div>
-                                            @elseif($value['field_type'] == 'dropdown')
-
-                                                    <!-- <div class="custom-select"> -->
-                                                    <select name="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif id="{{ $value['field_name'] }}">
-                                                        <option value=""> SELECT {{ strtoupper($value['field_label']) }} </option>
-
-                                                    @if(isset($data['data_fields'][$value['id']]))
-                                                        @foreach($data['data_fields'][$value['id']] as $keyData => $valueData)
-                                                        @php
-                                                            $selected = '';
-                                                        @endphp
-                                                        @if($student_data[$value['field_name']]== $valueData['display_value'])
-                                                            @php
-                                                                $selected = 'selected';
-                                                            @endphp
-                                                        @endif
-                                                        <option value="{{ $valueData['display_value'] }}" {{$selected}} > {{ $valueData['display_text'] }} </option>
-                                                        @endforeach
-                                                    @endif
-                                                    </select>
-                                                    <!-- </div> -->
-                                                    
-                                            @elseif($value['field_type'] == 'textarea')
-                                            <textarea id="{{ $value['field_name'] }}" class="form-control" @if($value['required'] == 1) required @endif name="{{ $value['field_name'] }}">
-                                            {{ $student_data[$value['field_name']] }}
-                                            </textarea>
-                                            @else
-                                               @php 
-                                                $OtherTableVal = "";
-                                                $tableId = 0;
-                                                if (in_array($value['crud_table'],["admission_enquiry"])) {
-
-                                                    $OtherTableData = DB::table($value['crud_table'])
-                                                        ->where([
-                                                            'sub_institute_id' => session()->get('sub_institute_id'),
-                                                            'enquiry_no' => $student_data->enquiry_no,
-                                                            'email' => $student_data->email
-                                                        ])
-                                                        ->first();
-                                                       
-                                                    if ($OtherTableData && isset($OtherTableData->id)) {
-                                                        $OtherTableVal = $OtherTableData->{$value['field_name']};
-                                                        $tableId = $OtherTableData->id;
-                                                    }
-                                                }
-                                            @endphp
-                                            <input type="{{ $value['field_type'] }}" id="{{ $value['field_name'] }}" placeholder="{{ $value['field_message'] }}" value="{{ $OtherTableVal }}" @if($value['required'] == 1) required @endif name="otherCustom[{{$value['crud_table']}}||{{$tableId}}][{{ $value['field_name'] }}]" class="form-control">
-                                            @endif
-                                        </div>
-                                        @endforeach
-                                        @endif
-
-                                        
                                         @if(Session::get('user_profile_name') != 'Student')
                                         <div class="col-md-12 form-group">
                                             <input type="submit" name="submit" value="Update" class="btn btn-success triz-btn" >

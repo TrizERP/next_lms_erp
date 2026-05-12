@@ -44,7 +44,7 @@ class photo_video_gallaryController extends Controller
     public function getData()
     {
         $marking_period_id = session()->get('term_id');
-        return DB::table("photo_video_gallary as c")
+        $results = DB::table("photo_video_gallary as c")
             ->join('standard as s', function ($join) use($marking_period_id) {
                 $join->whereRaw("s.id = c.standard_id AND s.sub_institute_id = c.sub_institute_id");
                 // ->when($marking_period_id, function ($query) use ($marking_period_id) {
@@ -60,6 +60,13 @@ class photo_video_gallaryController extends Controller
             ->orderBy('id', 'DESC')
             ->limit(1000)
             ->get()->toArray();
+
+        $grouped = [];
+        foreach ($results as $r) {
+            $album = $r->album_title ?: 'Default Album';
+            $grouped[$album][] = $r;
+        }
+        return $grouped;
     }
 
     public function fetchData(Request $request)

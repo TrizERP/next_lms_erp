@@ -1531,6 +1531,13 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             //14-07-2025 END RAJESH
 
             // 31/03/2021 END for Cumulative Fees Receipt
+            $groupinstitute = [341];
+            if(in_array($sub_institute_id,$groupinstitute)){
+                $fees_head_content .= '<tr>';
+                $fees_head_content .= '  <td colspan="3" align="left">SCHOOL FEES</td>';
+                $fees_head_content .= '  <td align="right">' . $recTotal . '</td>';
+                $fees_head_content .= '</tr>';
+            }else{
             foreach ($arr as $pkey => $pval) {
                 //  31/03/2021 - Start For Cumulative name
                 if (isset($appendnew[$pkey])) {
@@ -1550,6 +1557,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 $fees_head_content .= '  <td colspan="3" align="left">' . $pkey . '</td>'; //&nbsp;(' . $TERM_SHORT_NAME . ')
                 $fees_head_content .= '  <td align="right">' . $minus_sign . $pval . '</td>'; //&nbsp;(' . $TERM_SHORT_NAME . ')
                 $fees_head_content .= '</tr>';
+            }
             }
             $fees_head_content .= '<tr>
                   <td align="right" colspan="3"><b>Total</b></td>

@@ -14,6 +14,9 @@ $editData = array();
         $divisionRequired = 'required';
         $genderRequired = 'required';
     }
+    else{
+        $divisionRequired = 'required';
+    }
 @endphp
 <style type="text/css">
 .division_error {
@@ -58,7 +61,7 @@ $editData = array();
                     $class="show";
                 }
 
-                $unmandatoryFileds = ['category','previous_school_name','previous_standard','send_sms','remarks','source_of_enquiry','followup_date','register_number','mother_name','mother_mobile_number','aadhar_number','place_of_birth','amount','blood_group','payment_mode','date_of_payment','religion','cast','aadhar_number'];
+                $unmandatoryFileds = ['category','previous_school_name','previous_standard','send_sms','remarks','fees_remark','source_of_enquiry','followup_date','register_number','mother_name','mother_mobile_number','aadhar_number','place_of_birth','amount','blood_group','payment_mode','date_of_payment','religion','cast','aadhar_number'];
             @endphp
             <div class="row">
                 <div class="col-lg-12 col-sm-12 col-xs-12">
@@ -145,10 +148,24 @@ $editData = array();
                                 <label>Source of enquiry </label>
                                 <input type="text" id='source_of_enquiry' name='source_of_enquiry' @if(isset($editData['source_of_enquiry'])) value="{{$editData['source_of_enquiry']}}" @endif  class="form-control">
                             </div>
-                            <div class="col-md-3 form-group  {{$class}} remarksDiv">
-                                <label>Remarks </label>
-                                <input type="text" id='remarks' name='remarks' @if(isset($editData['remarks'])) value="{{$editData['remarks']}}" @endif  name="remarks" class="form-control">
+                             <div class="col-md-3 form-group {{$class}} remarksDiv">
+                                 <label>Remarks </label>
+                                 <input type="text" id='remarks' name='remarks' @if(isset($editData['remarks'])) value="{{$editData['remarks']}}" @endif  name="remarks" class="form-control">
+                             </div>
+                             <div class="col-md-3 form-group {{$class}} fees_remarkDiv">
+                                 <label>Fees Remark </label>
+                                 <input type="text" id='fees_remark' name='fees_remark' @if(isset($editData['enquiry_remark2'])) value="{{$editData['enquiry_remark2']}}" @endif  class="form-control">
+                             </div>
+                            @if(Session::get('sub_institute_id') == '76')
+                            <div class="col-md-3 form-group">
+                                <label>Enquiry Remarks 1</label>
+                                <input type="text" readonly @if(isset($editData['enquiry_remark'])) value="{{$editData['enquiry_remark']}}" @endif class="form-control">
                             </div>
+                            <div class="col-md-3 form-group">
+                                <label>Enquiry Remarks 2</label>
+                                <input type="text" readonly @if(isset($editData['enquiry_remark2'])) value="{{$editData['enquiry_remark2']}}" @endif class="form-control">
+                            </div>
+                            @endif
                             <div class="col-md-3 form-group {{$class}} followup_dateDiv">
                                 <label>Followup Date </label>
                                 <input type="text" id='followup_date' name='followup_date' @if(isset($editData['followup_date'])) value="{{$editData['followup_date']}}" @endif  name="followup_date" class="form-control mydatepicker" autocomplete="off">

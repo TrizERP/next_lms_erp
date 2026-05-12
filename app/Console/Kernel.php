@@ -4,6 +4,7 @@ namespace App\Console;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use Illuminate\Support\Facades\Log;
 
 class Kernel extends ConsoleKernel
 {
@@ -29,5 +30,26 @@ class Kernel extends ConsoleKernel
 
         require base_path('routes/console.php');
         
+    }
+
+    public function bootstrap()
+    {
+        parent::bootstrap();
+
+        if (app()->runningInConsole()) {
+            $argv = $_SERVER['argv'] ?? [];
+
+            Log::channel('daily')->warning('Artisan command executed', [
+                'command' => implode(' ', $argv),
+                'user' => get_current_user(),
+                'ip' => gethostbyname(gethostname()),
+            ]);
+            
+            $cmd  = implode(' ', $argv);
+            if (preg_match('/\b(migrate|db:seed|schema|fresh|refresh)\b/i', $cmd)) {
+                fwrite(STDERR, "❌ Database schema commands are blocked in production.\n");
+                exit(1);
+            }
+        }
     }
 }
