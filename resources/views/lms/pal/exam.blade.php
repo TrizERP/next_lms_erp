@@ -73,8 +73,9 @@ value="{{ \Carbon\Carbon::parse(request()->session()->get('session_quiz'))->form
                             $i = 1;                           
                             @endphp                           
                             @foreach($data['question_arr'] as $quesid => $quesarr)
-                           <input type="hidden" name="question_ids[]" id="question_ids" value="{{$quesarr['question_id']}}">                    
-                            <div class="row mb-3" id="question-{{$quesarr['question_id']}}-tab">
+                           <input type="hidden" name="question_ids[]" id="question_ids" value="{{$quesarr['question_id']}}">
+                           <input type="hidden" name="attempt_time[{{$quesarr['question_id']}}]" id="attempt_time_{{$quesarr['question_id']}}" value="0">                    
+                            <div class="row mb-3 question-block" id="question-{{$quesarr['question_id']}}-tab" data-question-id="{{$quesarr['question_id']}}">
                                 <div class="col-2">
                                     <div class="quiz-box-count">
                                         <div class="count">{{$i++}}</div>
@@ -197,6 +198,11 @@ function onloadData(questionId){
  }); 
 </script> 
 
+<script>
+// Timer variable
+var timerInterval;
+var questionAttemptTimers = {};
+var activeQuestionIds = {};
 
 <script>
 // added on 06-01-2025 for back restrictions
@@ -210,6 +216,15 @@ $(document).ready(function() {
         if (e.persisted)
             disableBack();
     }
+    
+    // Clear any existing timer
+    if (timerInterval) {
+        clearInterval(timerInterval);
+    }
+    
+    // Start the timer when page loads (refresh on page load)
+    startTimer();
+    startQuestionAttemptTimers();
 });
 // added on 06-01-2025 for back restrictions
 
@@ -315,6 +330,112 @@ function mapValueModel(questionId){
         })
     }
 
+            $('#exampleModal').modal('show');
+        }
+    })
+}
+
+function startQuestionAttemptTimers() {
+    $('.question-block').each(function() {
+        var questionId = $(this).data('question-id');
+        questionAttemptTimers[questionId] = {
+            seconds: parseInt($('#attempt_time_' + questionId).val()) || 0,
+            lastStartedAt: null
+        };
+    });
+
+    if ('IntersectionObserver' in window) {
+        var observer = new IntersectionObserver(function(entries) {
+            entries.forEach(function(entry) {
+                var questionId = $(entry.target).data('question-id');
+                if (entry.isIntersecting) {
+                    startQuestionAttemptTimer(questionId);
+                } else {
+                    pauseQuestionAttemptTimer(questionId);
+                }
+            });
+        }, { threshold: 0.5 });
+
+        $('.question-block').each(function() {
+            observer.observe(this);
+        });
+    } else {
+        $('.question-block').each(function() {
+            startQuestionAttemptTimer($(this).data('question-id'));
+        });
+    }
+
+    $('input[type="radio"], input[type="checkbox"], textarea').on('change input', function() {
+        var questionId = $(this).closest('.question-block').data('question-id');
+        updateQuestionAttemptInput(questionId);
+    });
+
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            finalizeQuestionAttemptTimers();
+        } else {
+            Object.keys(activeQuestionIds).forEach(function(questionId) {
+                startQuestionAttemptTimer(questionId);
+            });
+        }
+    });
+}
+
+function startQuestionAttemptTimer(questionId) {
+    if (!questionAttemptTimers[questionId] || questionAttemptTimers[questionId].lastStartedAt) {
+        return;
+    }
+
+    activeQuestionIds[questionId] = true;
+    questionAttemptTimers[questionId].lastStartedAt = Date.now();
+}
+
+function pauseQuestionAttemptTimer(questionId) {
+    if (!questionAttemptTimers[questionId] || !questionAttemptTimers[questionId].lastStartedAt) {
+        delete activeQuestionIds[questionId];
+        return;
+    }
+
+    updateQuestionAttemptInput(questionId);
+    questionAttemptTimers[questionId].seconds = parseInt($('#attempt_time_' + questionId).val()) || 0;
+    questionAttemptTimers[questionId].lastStartedAt = null;
+    delete activeQuestionIds[questionId];
+}
+
+function updateQuestionAttemptInput(questionId) {
+    var timer = questionAttemptTimers[questionId];
+    if (!timer) {
+        return;
+    }
+
+    var elapsedSeconds = timer.seconds;
+    if (timer.lastStartedAt) {
+        elapsedSeconds += Math.floor((Date.now() - timer.lastStartedAt) / 1000);
+    }
+
+    $('#attempt_time_' + questionId).val(Math.min(elapsedSeconds, 60));
+}
+
+function finalizeQuestionAttemptTimers() {
+    Object.keys(questionAttemptTimers).forEach(function(questionId) {
+        updateQuestionAttemptInput(questionId);
+        if (questionAttemptTimers[questionId].lastStartedAt) {
+            questionAttemptTimers[questionId].seconds = parseInt($('#attempt_time_' + questionId).val()) || 0;
+            questionAttemptTimers[questionId].lastStartedAt = null;
+        }
+    });
+}
+
+// Clear localStorage when form is submitted
+$(document).ready(function() {
+    $('#online_exam').on('submit', function() {
+        finalizeQuestionAttemptTimers();
+        localStorage.removeItem('quiz_end_time');
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+    });
+});
 </script>
 
 @include('includes.footer')

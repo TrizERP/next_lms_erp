@@ -38,6 +38,7 @@ class contentModel extends Model
         'post_grade_topic',
         'cross_curriculum_grade_topic',
         'basic_advance',
+        'user_profile',
         'created_at',
         'created_by'
     ];

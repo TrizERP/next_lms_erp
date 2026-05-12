@@ -682,3 +682,9 @@ Route::get('ajaxQuestionLists', [AJAXController::class, 'ajaxQuestionListsFuncti
 
 Route::get('/suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggested.content');
 Route::post('/lms/store-suggested-content', [palController::class, 'storeSuggestedContent'])->name('store.suggested.content');
+Route::get('/lms/misconception', [\App\Http\Controllers\lms\pal\palController::class, 'misconception'])->name('misconception');
+Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
+Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
+
+
+
