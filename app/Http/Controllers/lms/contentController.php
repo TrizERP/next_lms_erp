@@ -324,6 +324,7 @@ class contentController extends Controller
         'post_grade_topic'             => $post_topic,
         'cross_curriculum_grade_topic' => $cross_curriculum_topic,
         'basic_advance'                => $basic_advanced_val,
+        'user_profile'                  => $request->get('user_profile', $request->session()->get('user_profile_name')),
         'syear'                        => $syear,
     ];
     
@@ -508,6 +509,7 @@ class contentController extends Controller
         'post_grade_topic'             => $post_topic,
         'cross_curriculum_grade_topic' => $cross_curriculum_topic,
         'basic_advance'                => $basic_advanced_val,
+        'user_profile'                  => $request->get('user_profile', $request->session()->get('user_profile_name')),
         'syear'                        => $syear,
     ];
 
@@ -767,6 +769,7 @@ class contentController extends Controller
             'pre_grade_topic'              => $pre_topic,
             'post_grade_topic'             => $post_topic,
             'cross_curriculum_grade_topic' => $cross_curriculum_topic,
+            'user_profile'                  => $request->get('user_profile', $request->session()->get('user_profile_name')),
             'syear'                        => $syear,
         ];
         

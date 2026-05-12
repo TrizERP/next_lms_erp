@@ -113,6 +113,187 @@
     color: #fff;
     
 }
+
+.content-item h6 {
+    gap: 12px;
+}
+
+.content-item .content-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.content-item .btn-outline-info {
+    border-radius: 6px;
+    font-weight: 600;
+}
+
+.content-item .content-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 6px 12px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1.2;
+    white-space: nowrap;
+}
+
+.content-item .level-badge {
+    background: #e0f2fe;
+    color: #075985;
+}
+
+.content-item .mapping-type-pill {
+    background: #ffffff;
+    border-color: #22aeea;
+    color: #0797d6;
+    box-shadow: 0 1px 3px rgba(7, 151, 214, 0.18);
+}
+
+.content-item .mapping-type-pill:hover,
+.content-item .mapping-type-pill:focus {
+    background: #f0fbff;
+    color: #057faf;
+}
+
+.mapping-details .table th,
+.mapping-details .table td {
+    text-align: center !important;
+    vertical-align: middle !important;
+}
+
+.question-mapping-card {
+    margin-top: 18px;
+    border: 1px solid #b9d9ff;
+    border-radius: 10px;
+    background: #f8fbff;
+    overflow: hidden;
+    box-shadow: 0 8px 22px rgba(37, 99, 235, 0.08);
+}
+
+.question-mapping-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: linear-gradient(90deg, #2563eb, #0ea5e9);
+    border-bottom: 0;
+    color: #fff;
+    font-weight: 700;
+    letter-spacing: 0.2px;
+}
+
+.question-mapping-card__header span:first-child::before {
+    content: "\f02c";
+    font-family: FontAwesome;
+    margin-right: 8px;
+}
+
+.question-mapping-card__count {
+    font-size: 12px;
+    color: #eaf6ff;
+    background: rgba(255, 255, 255, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    padding: 4px 10px;
+}
+
+.question-mapping-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.question-mapping-list__item {
+    display: grid;
+    grid-template-columns: minmax(210px, 28%) 1fr;
+    gap: 14px;
+    padding: 14px 16px;
+    border-bottom: 1px solid #dbeafe;
+    background: #fff;
+}
+
+.question-mapping-list__item:nth-child(even) {
+    background: #f0f9ff;
+}
+
+.question-mapping-list__item:last-child {
+    border-bottom: 0;
+}
+
+.question-mapping-list__type {
+    color: #0f172a;
+    font-weight: 700;
+    line-height: 1.45;
+    position: relative;
+    padding-left: 12px;
+}
+
+.question-mapping-list__type::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 4px;
+    bottom: 4px;
+    width: 4px;
+    border-radius: 4px;
+    background: #2563eb;
+}
+
+.question-mapping-list__item:nth-child(2n) .question-mapping-list__type::before {
+    background: #0891b2;
+}
+
+.question-mapping-list__item:nth-child(3n) .question-mapping-list__type::before {
+    background: #7c3aed;
+}
+
+.question-mapping-list__values {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.question-mapping-chip {
+    display: inline-flex;
+    align-items: center;
+    min-height: 34px;
+    padding: 6px 12px;
+    border: 1px solid #bfdbfe;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #1d4ed8;
+    font-size: 13px;
+    font-weight: 700;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+}
+
+.question-mapping-list__item:nth-child(2n) .question-mapping-chip {
+    border-color: #a5f3fc;
+    background: #ecfeff;
+    color: #0e7490;
+}
+
+.question-mapping-list__item:nth-child(3n) .question-mapping-chip {
+    border-color: #ddd6fe;
+    background: #f5f3ff;
+    color: #6d28d9;
+}
+
+@media (max-width: 767.98px) {
+    .question-mapping-list__item {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+}
 </style>
     <div class="container-fluid mb-5">
         <div class="course-grid-tab tab-pane fade show active" id="grid" role="tabpanel" aria-labelledby="grid-tab">                                
@@ -133,7 +314,7 @@
                         </div>
                         <div class="col-md-3 text-center my-2">
     <div class="answer-box info">
-        {{$data['online_exam_data']['student_level'] ?? 'N/A'}}
+        {{ ucfirst(strtolower($data['online_exam_data']['student_level'] ?? 'N/A')) }}
     </div>
     <div class="h4 mb-0">Current Level</div>
 </div>
@@ -331,24 +512,35 @@ if(in_array($ansarr['id'], $given_arr) && $ansarr['correct_answer'] == 0){
                                                 @endforeach
                                             @endif
                                             </ul>
-                                            @if(isset($data['mapping_arr'][$quesarr['id']]))   
-                                                <ul class="result"> 
-                                                @php 
-                                                    $licolor = array("010101","7460EE","7ACE4C","FFBB44","41B3F9","F32F54","010101","7460EE","7ACE4C","FFBB44","41B3F9","F32F54","010101","7460EE","7ACE4C","FFBB44","41B3F9","F32F54");
-                                                    $k=0;
+                                            @if(isset($data['mapping_arr'][$quesarr['id']]) && count($data['mapping_arr'][$quesarr['id']]) > 0)
+                                                @php
+                                                    $questionMappings = $data['mapping_arr'][$quesarr['id']];
+                                                    $mappingValueCount = 0;
+                                                    foreach($questionMappings as $mappingValues) {
+                                                        $mappingValueCount += is_array($mappingValues) ? count($mappingValues) : 1;
+                                                    }
                                                 @endphp
-                                                @foreach($data['mapping_arr'][$quesarr['id']] as $mapping_type => $mapping_value)                                                    
-                                                    <li style="width:30% !important;background:#{{$licolor[$k]}}">
-                                                        {{$mapping_type}}
-                                                    </li> 
-                                                    <li style="width:60% !important;background:#{{$licolor[$k]}};">
-                                                        {{$mapping_value}}
-                                                    </li>
-                                                @php                                                 
-                                                $k++;
-                                                @endphp                                                                        
-                                                @endforeach
-                                                </ul>
+                                                <div class="question-mapping-card">
+                                                    <div class="question-mapping-card__header">
+                                                        <span>Mapping Values</span>
+                                                        <span class="question-mapping-card__count">{{$mappingValueCount}} {{ $mappingValueCount == 1 ? 'value' : 'values' }}</span>
+                                                    </div>
+                                                    <ul class="question-mapping-list">
+                                                        @foreach($questionMappings as $mapping_type => $mapping_values)
+                                                            @php
+                                                                $mapping_values = is_array($mapping_values) ? $mapping_values : [$mapping_values];
+                                                            @endphp
+                                                            <li class="question-mapping-list__item">
+                                                                <div class="question-mapping-list__type">{{$mapping_type}}</div>
+                                                                <div class="question-mapping-list__values">
+                                                                    @foreach($mapping_values as $mapping_value)
+                                                                        <span class="question-mapping-chip">{{$mapping_value}}</span>
+                                                                    @endforeach
+                                                                </div>
+                                                            </li>
+                                                        @endforeach
+                                                    </ul>
+                                                </div>
                                             @endif
                                             
                                         @endif  
@@ -445,6 +637,121 @@ $(document).ready(function(){
 
 })
 @endif
+function escapeHtml(text) {
+    if(!text) return '';
+    return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function formatLevelLabel(level) {
+    if(!level) return 'Medium';
+    level = String(level).toLowerCase();
+    return level.charAt(0).toUpperCase() + level.slice(1);
+}
+
+function getUniqueContents(contents) {
+    var seen = {};
+    var uniqueContents = [];
+
+    $.each(contents || [], function(index, content) {
+        var key = content.id || content.content_id || content.filename || content.title || content.content_title || index;
+
+        if(seen[key]) {
+            return;
+        }
+
+        seen[key] = true;
+        uniqueContents.push(content);
+    });
+
+    return uniqueContents;
+}
+
+function getMappingTypeSummary(content) {
+    if(!content.mapping || content.mapping.length === 0) {
+        return 'Mapping Types';
+    }
+
+    var mappingTypes = [];
+    $.each(content.mapping, function(index, mapping) {
+        if(mapping.type_name && mappingTypes.indexOf(mapping.type_name) === -1) {
+            mappingTypes.push(mapping.type_name);
+        }
+    });
+
+    return mappingTypes.length ? mappingTypes.join(', ') : 'Mapping Types';
+}
+
+function buildSuggestedContentMappingHtml(content, mappingId) {
+    var html = '<div class="mapping-details suggested-content-mapping mt-3" style="display:none;" id="' + mappingId + '">';
+
+    if(content.mapping && content.mapping.length > 0) {
+        html += '<div class="table-responsive">';
+        html += '<table class="table table-bordered mb-0 text-center">';
+        html += '<thead><tr><th class="text-center">Mapping Type</th><th class="text-center">Mapping Value</th></tr></thead><tbody>';
+
+        $.each(content.mapping, function(index, mapping) {
+            html += '<tr>';
+            html += '<td class="text-center">' + escapeHtml(mapping.type_name || '-') + '</td>';
+            html += '<td class="text-center">' + escapeHtml(mapping.value_name || '-') + '</td>';
+            html += '</tr>';
+        });
+
+        html += '</tbody></table></div>';
+    } else {
+        html += '<div class="alert alert-info mb-0">No mapping information available</div>';
+    }
+
+    html += '</div>';
+    return html;
+}
+
+function toggleSuggestedContentMapping(mappingId) {
+    var mappingDiv = $('#' + mappingId);
+
+    if(mappingDiv.is(':visible')) {
+        mappingDiv.slideUp(250);
+    } else {
+        $('.suggested-content-mapping').slideUp(250);
+        mappingDiv.slideDown(250);
+    }
+}
+
+function buildSuggestedContentCard(content, index, level) {
+    var mappingId = 'result_content_mapping_' + (content.id || index) + '_' + index;
+    var title = content.title || content.content_title || 'Untitled';
+    var levelLabel = formatLevelLabel(content.student_level || level);
+    var html = '<div class="content-item card mb-2">';
+    html += '<div class="card-body">';
+    html += '<h6><span>';
+
+    if(content.file_type == 'link'){
+        html += '<a target="_blank" href="' + escapeHtml(content.filename) + '">' + escapeHtml(title) + '</a>';
+    } else {
+        html += escapeHtml(title);
+    }
+
+    html += '</span><span class="content-meta">';
+    
+    html += '</button></span></h6>';
+
+    if(content.description) {
+        html += '<p>' + escapeHtml(content.description) + '</p>';
+    }
+
+    if(content.content_link) {
+        html += '<a href="' + escapeHtml(content.content_link) + '" target="_blank" class="btn btn-sm btn-primary">View Content</a>';
+    }
+
+    html += buildSuggestedContentMappingHtml(content, mappingId);
+    html += '</div></div>';
+    return html;
+}
+
 function showSuggestedContent(level){
      var standard_id = '{{$data["questionpaper_data"]["standard_id"] ?? ""}}';
      var subject_id = '{{$data["questionpaper_data"]["subject_id"] ?? ""}}';
@@ -454,7 +761,7 @@ function showSuggestedContent(level){
  
      var nextLevel = getNextLevel(level);
      currentStudentLevel = nextLevel;   // ✅ store globally
-     $("#studentLevel").text(nextLevel);
+     $("#studentLevel").text(formatLevelLabel(nextLevel));
      $("#suggestedModal").modal("show");
  
      $("#suggestedModal .modal-body").html('<div class="text-center"><i class="fa fa-spinner fa-spin"></i> Loading content...</div>');
@@ -489,25 +796,8 @@ function showSuggestedContent(level){
 categoryTitle = categoryTitle.charAt(0).toUpperCase() + categoryTitle.slice(1);
 
 html += '<h5>' + categoryTitle + '</h5>';
-                            $.each(contents, function(index, content) {
-                                html += '<div class="content-item card mb-2">';
-                                html += '<div class="card-body">';
-                                html +=  '<h6>'
-                                if(content.file_type=='link'){
-                                html += '<a target="_blank" href="' + content.filename + '">' + (content.title || content.content_title || 'Untitled') + '</a>';
-
-                                }else{
-                                html +=  (content.title || content.content_title || 'Untitled');
-
-                                }
-                               html += '<span class="badge badge-secondary">'+nextLevel+'</span></h6>';
-                                if(content.description) {
-                                    html += '<p>' + content.description + '</p>';
-                                }
-                                if(content.content_link) {
-                                    html += '<a href="' + content.content_link + '" target="_blank" class="btn btn-sm btn-primary">View Content</a>';
-                                }
-                                html += '</div></div>';
+                            $.each(getUniqueContents(contents), function(index, content) {
+                                html += buildSuggestedContentCard(content, index, response.student_level || nextLevel);
                             });
                             html += '</div>';
                         }

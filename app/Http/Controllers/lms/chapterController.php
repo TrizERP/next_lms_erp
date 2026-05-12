@@ -9,6 +9,7 @@ use App\Models\lms\topicModel;
 use App\Models\school_setup\sub_std_mapModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use function App\Helpers\is_mobile;
 use function App\Helpers\neo4jCreateNode;
 use function App\Helpers\neo4jCreateRelationship;
@@ -94,10 +95,20 @@ class chapterController extends Controller
         $data['chapter_data'] = array();
 
         // DB::enableQueryLog();
+        $hasContentUserProfile = Schema::hasColumn('content_master', 'user_profile');
+
         $data['chapter_data'] = chapterModel::select('chapter_master.*',
             DB::raw('COUNT(content_master.id) as total_content,sum(if(content_category = "Triz", 1, 0)) AS total_triz_content,
         sum(if(content_category = "OER", 1, 0)) AS total_OER_content'))
-            ->leftjoin('content_master', 'content_master.chapter_id', '=', 'chapter_master.id')
+            ->leftjoin('content_master', function ($join) use ($hasContentUserProfile) {
+                $join->on('content_master.chapter_id', '=', 'chapter_master.id');
+                if ($hasContentUserProfile) {
+                    $join->where(function ($query) {
+                        $query->whereNull('content_master.user_profile')
+                            ->orWhereRaw("LOWER(content_master.user_profile) != 'student'");
+                    });
+                }
+            })
             ->where(function ($query) use ($getIsLms, $sub_institute_id) {
                 if ($getIsLms == 'Y') {
                     $query->where('chapter_master.sub_institute_id', '1')
@@ -136,6 +147,12 @@ class chapterController extends Controller
             })
             ->where('content_master.subject_id', $subject_id)
             ->where('content_master.standard_id', $standard_id)
+            ->when($hasContentUserProfile, function ($query) {
+                $query->where(function ($profileQuery) {
+                    $profileQuery->whereNull('content_master.user_profile')
+                        ->orWhereRaw("LOWER(content_master.user_profile) != 'student'");
+                });
+            })
             ->where(function ($query) {
                 $query->whereNull('content_master.topic_id')
                     ->orWhere('content_master.topic_id', '0');

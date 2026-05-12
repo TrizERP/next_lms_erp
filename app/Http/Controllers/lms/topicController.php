@@ -9,6 +9,7 @@ use App\Models\lms\topicModel;
 use App\Models\school_setup\sub_std_mapModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use function App\Helpers\is_mobile;
 
 class topicController extends Controller
@@ -79,6 +80,8 @@ class topicController extends Controller
             $content_where['content_master.show_hide'] = '1';
         }
 
+        $hasContentUserProfile = Schema::hasColumn('content_master', 'user_profile');
+
         $content_data = contentModel::select('content_master.*')
             ->where(function ($query) use ($getIsLms, $sub_institute_id) {
                 if ($getIsLms == 'Y') {
@@ -87,6 +90,12 @@ class topicController extends Controller
                 }
             })
             ->where($content_where)
+            ->when($hasContentUserProfile, function ($query) {
+                $query->where(function ($profileQuery) {
+                    $profileQuery->whereNull('content_master.user_profile')
+                        ->orWhereRaw("LOWER(content_master.user_profile) != 'student'");
+                });
+            })
             ->get()->toArray();
 
         foreach ($content_data as $key => $val) {

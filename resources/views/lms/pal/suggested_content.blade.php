@@ -124,7 +124,8 @@
             <div class="suggested-level-card mb-3">
     <h4>Suggested Level</h4>
     <h5 class="text-primary">
-       {{ $student_level ?? request()->student_level ?? 'N/A' }}
+       @php $displayLevel = $student_level ?? request()->student_level ?? null; @endphp
+       {{ $displayLevel ? ucfirst(strtolower($displayLevel)) : 'N/A' }}
     </h5>
 </div>
             <!-- <nav aria-label="breadcrumb">
