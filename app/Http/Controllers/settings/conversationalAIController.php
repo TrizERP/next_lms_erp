@@ -23,6 +23,8 @@ class conversationalAIController extends Controller
             ? $request->syear
             : session('syear');
         $student_id = DB::table('tblstudent as s')->join('tblstudent_enrollment as ts', 'ts.student_id', '=', 's.id')->where(['s.sub_institute_id'=>$sub,'ts.syear'=>$year])->where('s.enrollment_no', $request->enrollment_no)->whereNull('ts.end_date')->pluck('s.id');
+        // return $student_id;
+
         $stu_arr = $student_id->toArray();
         // find students (multiple possible)
         $students = SearchStudent("", "", "", $sub, $year , "",  "", "", "", "", $stu_arr , "",1);
