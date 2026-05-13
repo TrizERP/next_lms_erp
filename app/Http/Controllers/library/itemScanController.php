@@ -119,13 +119,14 @@ class itemScanController extends Controller
                 $data['created_at']=now();
                 itemScanDetail::insert($data);
                 // LibraryItem::where('item_code',$item_code)->update(['item_status'=>0]);
+                $res['status'] = "1";
+                $res['message'] = "Book Scanned Successfully";
             }else{
                 itemScanDetail::where('id',$checkData->id)->update(["updated_at"=>now()]);
                 // LibraryItem::where('item_code',$item_code)->update(['item_status'=>0]);
+                $res['status'] = "1";
+                $res['message'] = "Already Scanned - Date: " . date('d-m-Y H:i:s', strtotime($checkData->created_at));
             }
-
-            $res['status'] = "1";
-            $res['message'] = "Book Scan Successfully";
             $scanData = itemScanDetail::join('library_items as li',function($join){
                                     $join->on('li.item_code','=','item_scan_details.item_code')->on('item_scan_details.sub_institute_id','=','li.sub_institute_id');
                                 })
@@ -144,6 +145,10 @@ class itemScanController extends Controller
        
         $res['searchedItem'] = $item_code;
         $res['bookData'] = isset($scanData) ? $scanData : [];
+
+        if ($request->ajax()) {
+            return response()->json($res);
+        }
 
         return is_mobile($type, "library/bookVarification/scanBook", $res, "view");        
     }
