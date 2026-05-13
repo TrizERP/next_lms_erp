@@ -145,7 +145,7 @@
 
         function showMessage(message, type) {
             var alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
-            var html = '<div class="alert ' + alertClass + ' alert-block">' +
+            var html = '<div class="alert ' + alertClass + ' alert-block" style="color:black">' +
                        '<button type="button" class="close" data-dismiss="alert">×</button>' +
                        '<strong>' + message + '</strong>' +
                        '</div>';

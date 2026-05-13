@@ -1491,7 +1491,7 @@ exit; */
         }
     }
 
-    public function orange_pg(Request $request)
+    public function icici_orange(Request $request)
     {
         $data = $this->get_fees($request);
         $type = "web";
@@ -1501,7 +1501,7 @@ exit; */
     /**
      * Build Orange PG initiateSale request and redirect student to payment page.
      */
-    public function orange_pg_request_handler(Request $request)
+    public function icici_orange_request_handler(Request $request)
     {
         $student_id = $_REQUEST["student_id"];
         $fine       = isset($_REQUEST["fees_data"]["fine"]) ? $_REQUEST["fees_data"]["fine"] : 0;
@@ -1624,7 +1624,7 @@ exit; */
         ];
         //dd($payload);
         // ── Call Orange PG initiateSale API ───────────────────────────────────
-        $initiateURL = "https://pgpay.icicibank.com/tsp/pg/api/v2/initiateSale";
+        $initiateURL = "https://pgpay.icicibank.com/pg/api/v2/initiateSale"; // Production
         // For development : https://pgpayuat.icicibank.com/tsp/pg/api/v2/initiateSale
 
         $ch = curl_init($initiateURL);
@@ -1646,7 +1646,7 @@ exit; */
         }
 
         $responseData = json_decode($apiResponse, true);
-
+//echo "<pre>";print_r($apiResponse);exit();
         // ── Save to DB before redirect ────────────────────────────────────────
         $amountInt   = intval($amount);
         $fineInt     = intval($fine);
@@ -1687,7 +1687,7 @@ exit; */
     /**
      * Handle the return POST/GET callback from Orange PG after payment.
      */
-    public function orange_pg_response_handler(Request $request)
+    public function icici_orange_response_handler(Request $request)
     {
         $response = $_REQUEST;
         $resJson  = json_encode($response);
@@ -1824,7 +1824,7 @@ exit; */
             ];
 
             // ── Call Orange PG Status Check API ───────────────────────────────
-            $statusURL = "https://pgpay.icicibank.com/tsp/pg/api/command";
+            $statusURL = "https://pgpay.icicibank.com/pg/api/command"; //Production
             // Development: "https://pgpayuat.icicibank.com/tsp/pg/api/command"
 
             $ch = curl_init($statusURL);

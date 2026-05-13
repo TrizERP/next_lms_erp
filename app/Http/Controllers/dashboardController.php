@@ -487,7 +487,7 @@ class dashboardController extends Controller
                 }
 
                 if (isset($key)) {
-                    $next_id = $key + 1;
+                    $next_id = (int)$key + 1;
                 } else {
                     $next_id = 0;
                 }
@@ -1960,7 +1960,7 @@ class dashboardController extends Controller
             }
 
             if (isset($next_id)) {
-                $next_id = $key + 1;
+                $next_id = (int)$key + 1;
             } else {
                 $next_id = 0;
             }

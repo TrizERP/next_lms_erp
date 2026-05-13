@@ -256,12 +256,11 @@ Route::controller(online_fees_collect_controller::class)->group(function () {
 
     Route::post('fees/icici/online_fees_collect', 'icici')->name("icici_fees_collect");
     Route::post('fees/icici/online_fees_iciciRequestHandler', 'icici_request_handler')->name("icici_request_handler");
-    //Route::post('fees/icici/online_fees_iciciResponseHandler', 'icici_response_handler')->name("icici_response_handler");
     Route::post('fees/online_fees_iciciresponsehandler', 'icici_response_handler')->name("icici_response_handler");
 
-    Route::post('fees/online_fees_orange_pg','orange_pg')->name("online_fees_orange_pg_collect");
-    Route::post('fees/online_fees_orange_pg_request_handler', 'orange_pg_request_handler')->name("icici_orange_pg_request_handler");
-    Route::post('fees/online_fees_orange_pg_response_handler', 'orange_pg_response_handler')->name("icici_orange_pg_response_handler");
+    Route::post('fees/icici_orange/online_fees_collect','icici_orange')->name("icici_orange_fees_collect");
+    Route::post('fees/icici_orange/online_fees_iciciorangeRequestHandler', 'icici_orange_request_handler')->name("icici_orange_request_handler");
+    Route::post('fees/online_fees_orange_pg_response_handler', 'icici_orange_response_handler')->name("icici_orange_response_handler");
 
     Route::post('fees/razorpay/online_fees_collect', 'razorpay')->name("razorpay_fees_collect");
     Route::post('fees/razorpay/online_fees_razorpayRequestHandler', 'razorpay_request_handler')->name("razorpay_request_handler");
