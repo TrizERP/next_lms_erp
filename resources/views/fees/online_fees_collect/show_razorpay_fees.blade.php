@@ -16,7 +16,7 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-md-12">
-                <h4 class="page-title text-center">Fees Collect</h4>
+                <h4 class="page-title text-center">Fees Collect - Razorpay</h4>
             </div>
         </div>
         <div class="card">

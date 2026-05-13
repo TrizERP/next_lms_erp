@@ -186,7 +186,7 @@
                             }
                             if (value.bank_name == 'icici_orange') {
                                 document.forms.changeAction.action =
-                                    "/fees/online_fees_orange_pg";
+                                    "/fees/icici_orange/online_fees_collect";
                                 // console.log(key);
                             }
                         }
@@ -266,6 +266,10 @@
 
                 if (value.bank_name == 'payphi') {
                     document.forms.changeAction.action = "/fees/payphi/online_fees_collect";
+                    // console.log(key);
+                }
+                if (value.bank_name == 'icici_orange') {
+                    document.forms.changeAction.action = "/fees/icici_orange/online_fees_collect";
                     // console.log(key);
                 }
             }
