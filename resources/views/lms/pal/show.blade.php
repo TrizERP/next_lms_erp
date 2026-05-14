@@ -713,7 +713,7 @@ function buildMisconceptionSuggestedContentCard(content, index, prefix) {
     }
     html += '</span>';
     html += '</h6>';
-    html += '<span class="teacher-category-badge">' + escapeHtml(content.teacher_content_category || 'Misconception Content') + '</span>';
+    html += '<span class="teacher-category-badge">' + escapeHtml(content.teacher_content_category || ' ') + '</span>';
     html += buildSuggestedContentMappingHtml(content, mappingId);
     html += '</div></div>';
 
