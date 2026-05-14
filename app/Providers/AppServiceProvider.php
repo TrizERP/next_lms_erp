@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Blade;
 use App\View\Components\filters;
+use Illuminate\Support\Facades\Log;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -43,7 +44,7 @@ class AppServiceProvider extends ServiceProvider
         Schema::defaultStringLength(191);
         
         DB::listen(function ($query) {
-        $dangerous = ['DROP', 'TRUNCATE'];
+        $dangerous = ['DROP TABLE', 'TRUNCATE TABLE'];
         foreach ($dangerous as $cmd) {
             if (stripos($query->sql, $cmd) !== false) {
                     Log::critical("DANGEROUS SQL BLOCKED", [
