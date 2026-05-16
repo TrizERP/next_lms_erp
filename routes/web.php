@@ -610,6 +610,8 @@ Route::get('/scatter-line-chart-data', [FeesReportController::class, 'getScatter
 Route::get('/polar-area-chart-data', [FeesReportController::class, 'getPolarAreaChartData']);
 
 use App\Models\ReportDynamic;
+use Symfony\Component\HttpKernel\DataCollector\AjaxDataCollector;
+
 Route::get('/get-fields', function (Request $request) {
     $reportType = $request->query('report_type');
 
@@ -686,5 +688,4 @@ Route::get('/lms/misconception', [\App\Http\Controllers\lms\pal\palController::c
 Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
 Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
 
-
-
+Route::post('/test-event', [AJAXController::class, 'testEvent']);
