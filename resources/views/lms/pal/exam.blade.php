@@ -18,6 +18,11 @@ html {
                   <a class="nav-link active" id="chat-tab" data-toggle="pill" href="#chat" role="tab" aria-controls="chat-tab" aria-selected="false">Online Question Paper: {{$data['questionpaper_data']['paper_name']}}</a>
                 </li>
             </ul>
+             @if(session()->has('error'))
+                <div class="alert alert-danger">
+                    {{ session('error') }}
+                </div>
+            @endif
             <form id="online_exam" method="post" action="{{ route('pal.store') }}">
             {{ method_field('POST') }}
             @csrf

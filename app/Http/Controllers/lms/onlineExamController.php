@@ -187,48 +187,49 @@ class onlineExamController extends Controller
     //     return redirect()->route('online_exam.show',[$request->get('questionpaper_id'),"online_exam_id"=> $online_exam_id]);
     // }
 
-     public function store(Request $request)
+  public function store(Request $request)
     {
         // Clear session for timer
         Session::forget('session_quiz');
         
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $user_id = $request->session()->get('user_id');
+        $subInstituteId = (int) $request->session()->get('sub_institute_id');
+        $studentId = (int) $request->session()->get('user_id');
+        $assessmentId = (int) $request->get('questionpaper_id');
+        $timeTaken = (int) $request->get('time_taken', 0);
         
-        // Prepare assessment data for the service
-        $assessmentData = [
-            'student_id' => $user_id,
-            'sub_institute_id' => $sub_institute_id,
-            'question_paper_id' => $request->get('questionpaper_id'),
-            'start_time' => $request->get('hid_session_quiz'),
-            'time_taken' => $request->get('time_taken', 0),
-            'confidence' => $request->get('confidence', 0.8),
-            'concept_id' => $request->get('concept_id', 'general'),
-            'kasba_dimensions' => $request->get('kasba_dimensions', []),
+        // Prepare response in PAL format
+        $response = [
             'answers' => [
                 'single' => $request->get('answer_single', []),
                 'multiple' => $request->get('answer_multiple', []),
                 'narrative' => $request->get('answer_narrative', [])
-            ]
+            ],
+            'confidence' => (float) $request->get('confidence', 0.8)
         ];
         
-        // 🎯 CALL THE SERVICE - This will process everything AND dispatch the event
-        $result = $this->assessmentService->processAssessment($assessmentData);
+        // Call the service using PAL standard method
+        $result = $this->assessmentService->processSubmission(
+            $studentId,
+            $subInstituteId,
+            $assessmentId,
+            $response,
+            $timeTaken
+        );
         
-        if (!$result['success']) {
-            // Handle failure
+        if (isset($result['error']) && $result['error']) {
             return redirect()->back()->with('error', $result['message']);
         }
         
-        // Store results in session for feedback display
+        // Store results in session for display
         Session::put('assessment_feedback', $result['feedback']);
-        Session::put('assessment_mastery', $result['mastery_level']);
+        Session::put('assessment_mastery', $result['mastery_estimate']);
+        Session::put('assessment_learner_state', $result['learner_state']);
         Session::put('assessment_next_steps', $result['next_steps']);
         
         // Redirect to results page
         return redirect()->route('online_exam.show', [
-            $request->get('questionpaper_id'),
-            'online_exam_id' => $result['online_exam_id']
+            $assessmentId,
+            'online_exam_id' => $result['attempt_id']
         ])->with('success', 'Assessment completed successfully!');
     }
     
