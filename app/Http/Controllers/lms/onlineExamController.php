@@ -13,10 +13,17 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use function App\Helpers\is_mobile;
+use App\Services\LMS\AssessmentService;
 
 class onlineExamController extends Controller
 {
-
+ protected AssessmentService $assessmentService;
+    
+    public function __construct(AssessmentService $assessmentService)
+    {
+        $this->assessmentService = $assessmentService;
+    }
+    
     public function index(Request $request)
     {
 
@@ -71,116 +78,160 @@ class onlineExamController extends Controller
     {
     }
 
-    public function store(Request $request)
-    {
-        //Clear session for timer
-        Session::forget('session_quiz');
+    // public function store(Request $request)
+    // {
+    //     //Clear session for timer
+    //     Session::forget('session_quiz');
 
+    //     $sub_institute_id = $request->session()->get('sub_institute_id');
+    //     $user_id = $request->session()->get('user_id');
+
+    //     //$questionpaper_details = $this->get_questionpaper_details($request->get('questionpaper_id'));
+    //     $result = $this->get_calculate_marks($request);
+
+    //     //START Insert into lms_online_exam table
+    //     $online_exam = [
+    //         'student_id'        => $user_id,
+    //         'question_paper_id' => $request->get('questionpaper_id'),
+    //         'total_right'       => $result['total_right_ans'],
+    //         'total_wrong'       => $result['total_wrong_ans'],
+    //         'obtain_marks'      => $result['obtain_marks'],
+    //         'start_time'        => $request->get('hid_session_quiz'),
+    //     ];
+
+
+    //     lmsOnlineExamModel::insert($online_exam);
+    //     $online_exam_id = DB::getPDO()->lastInsertId();
+    //     //END Insert into lms_online_exam table
+
+    //     //START Insert into lms_online_exam_answer table
+    //     $answer_single = $request->get('answer_single');
+    //     $answer_multiple = $request->get('answer_multiple');
+    //     $answer_narrative = $request->get('answer_narrative');
+
+    //     if (is_array($answer_single)) {
+    //         foreach ($answer_single as $single_question_id => $single_answer_ids) {
+    //             $ans_status = "wrong";
+    //             $single_ans_arr = explode("##", $single_answer_ids);
+    //             if ($single_ans_arr[1] == 1) {
+    //                 $ans_status = "right";
+    //             }
+    //             $single = [
+    //                 'question_paper_id' => $request->get('questionpaper_id'),
+    //                 'online_exam_id'    => $online_exam_id,
+    //                 'student_id'        => $user_id,
+    //                 'question_id'       => $single_question_id,
+    //                 'answer_id'         => $single_ans_arr[0],
+    //                 'ans_status'        => $ans_status,
+    //             ];
+    //             lmsOnlineExamAnswerModel::insert($single);
+    //         }
+    //     }
+
+    //     if (is_array($answer_multiple)) {
+    //         foreach ($answer_multiple as $multiple_question_id => $multiple_answer_ids) {
+    //             if (is_array($multiple_answer_ids))//Insert MCQ Answers
+    //             {
+    //                 foreach ($multiple_answer_ids as $key => $val) {
+    //                     $ans_status = "wrong";
+    //                     $multiple_ans_arr = explode("##", $val);
+    //                     if ($multiple_ans_arr[1] == 1) {
+    //                         $ans_status = "right";
+    //                     }
+    //                     $multiple = [
+    //                         'question_paper_id' => $request->get('questionpaper_id'),
+    //                         'online_exam_id'    => $online_exam_id,
+    //                         'student_id'        => $user_id,
+    //                         'question_id'       => $multiple_question_id,
+    //                         'answer_id'         => $multiple_ans_arr[0],
+    //                         'ans_status'        => $ans_status,
+    //                     ];
+    //                     lmsOnlineExamAnswerModel::insert($multiple);
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    //     if (is_array($answer_narrative)) {
+    //         foreach ($answer_narrative as $narrative_question_id => $narrative_answer_ids) {
+    //             $ans_status = "right";
+    //             $narrative = [
+    //                 'question_paper_id' => $request->get('questionpaper_id'),
+    //                 'online_exam_id'    => $online_exam_id,
+    //                 'student_id'        => $user_id,
+    //                 'question_id'       => $narrative_question_id,
+    //                 'narrative_answer'  => $narrative_answer_ids,
+    //                 'ans_status'        => $ans_status,
+    //             ];
+    //             lmsOnlineExamAnswerModel::insert($narrative);
+    //         }
+    //     }
+
+
+    //     // if(is_array($answer_ids))//Insert MCQ Answers
+    //     // {
+    //     //     foreach($answer_ids as $key => $val)
+    //     //     {
+    //     //         $online_exam_answer['answer_id'] = $key; 
+    //     //         lmsOnlineExamAnswerModel::insert($online_exam_answer);        
+    //     //     }                
+    //     // }
+    //     // else //Insert Narrative Answers
+    //     // { 
+    //     //     $online_exam_answer['narrative_answer'] = $answer_ids; 
+    //     //     lmsOnlineExamAnswerModel::insert($online_exam_answer);        
+    //     // }
+    //     //END Insert into lms_online_exam_answer table
+
+    //     //return is_mobile($type,'lms/online_exam_result',$res,"view");
+    //     return redirect()->route('online_exam.show',[$request->get('questionpaper_id'),"online_exam_id"=> $online_exam_id]);
+    // }
+
+     public function store(Request $request)
+    {
+        // Clear session for timer
+        Session::forget('session_quiz');
+        
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
-
-        //$questionpaper_details = $this->get_questionpaper_details($request->get('questionpaper_id'));
-        $result = $this->get_calculate_marks($request);
-
-        //START Insert into lms_online_exam table
-        $online_exam = [
-            'student_id'        => $user_id,
+        
+        // Prepare assessment data for the service
+        $assessmentData = [
+            'student_id' => $user_id,
+            'sub_institute_id' => $sub_institute_id,
             'question_paper_id' => $request->get('questionpaper_id'),
-            'total_right'       => $result['total_right_ans'],
-            'total_wrong'       => $result['total_wrong_ans'],
-            'obtain_marks'      => $result['obtain_marks'],
-            'start_time'        => $request->get('hid_session_quiz'),
+            'start_time' => $request->get('hid_session_quiz'),
+            'time_taken' => $request->get('time_taken', 0),
+            'confidence' => $request->get('confidence', 0.8),
+            'concept_id' => $request->get('concept_id', 'general'),
+            'kasba_dimensions' => $request->get('kasba_dimensions', []),
+            'answers' => [
+                'single' => $request->get('answer_single', []),
+                'multiple' => $request->get('answer_multiple', []),
+                'narrative' => $request->get('answer_narrative', [])
+            ]
         ];
-
-
-        lmsOnlineExamModel::insert($online_exam);
-        $online_exam_id = DB::getPDO()->lastInsertId();
-        //END Insert into lms_online_exam table
-
-        //START Insert into lms_online_exam_answer table
-        $answer_single = $request->get('answer_single');
-        $answer_multiple = $request->get('answer_multiple');
-        $answer_narrative = $request->get('answer_narrative');
-
-        if (is_array($answer_single)) {
-            foreach ($answer_single as $single_question_id => $single_answer_ids) {
-                $ans_status = "wrong";
-                $single_ans_arr = explode("##", $single_answer_ids);
-                if ($single_ans_arr[1] == 1) {
-                    $ans_status = "right";
-                }
-                $single = [
-                    'question_paper_id' => $request->get('questionpaper_id'),
-                    'online_exam_id'    => $online_exam_id,
-                    'student_id'        => $user_id,
-                    'question_id'       => $single_question_id,
-                    'answer_id'         => $single_ans_arr[0],
-                    'ans_status'        => $ans_status,
-                ];
-                lmsOnlineExamAnswerModel::insert($single);
-            }
+        
+        // 🎯 CALL THE SERVICE - This will process everything AND dispatch the event
+        $result = $this->assessmentService->processAssessment($assessmentData);
+        
+        if (!$result['success']) {
+            // Handle failure
+            return redirect()->back()->with('error', $result['message']);
         }
-
-        if (is_array($answer_multiple)) {
-            foreach ($answer_multiple as $multiple_question_id => $multiple_answer_ids) {
-                if (is_array($multiple_answer_ids))//Insert MCQ Answers
-                {
-                    foreach ($multiple_answer_ids as $key => $val) {
-                        $ans_status = "wrong";
-                        $multiple_ans_arr = explode("##", $val);
-                        if ($multiple_ans_arr[1] == 1) {
-                            $ans_status = "right";
-                        }
-                        $multiple = [
-                            'question_paper_id' => $request->get('questionpaper_id'),
-                            'online_exam_id'    => $online_exam_id,
-                            'student_id'        => $user_id,
-                            'question_id'       => $multiple_question_id,
-                            'answer_id'         => $multiple_ans_arr[0],
-                            'ans_status'        => $ans_status,
-                        ];
-                        lmsOnlineExamAnswerModel::insert($multiple);
-                    }
-                }
-            }
-        }
-
-        if (is_array($answer_narrative)) {
-            foreach ($answer_narrative as $narrative_question_id => $narrative_answer_ids) {
-                $ans_status = "right";
-                $narrative = [
-                    'question_paper_id' => $request->get('questionpaper_id'),
-                    'online_exam_id'    => $online_exam_id,
-                    'student_id'        => $user_id,
-                    'question_id'       => $narrative_question_id,
-                    'narrative_answer'  => $narrative_answer_ids,
-                    'ans_status'        => $ans_status,
-                ];
-                lmsOnlineExamAnswerModel::insert($narrative);
-            }
-        }
-
-
-        // if(is_array($answer_ids))//Insert MCQ Answers
-        // {
-        //     foreach($answer_ids as $key => $val)
-        //     {
-        //         $online_exam_answer['answer_id'] = $key; 
-        //         lmsOnlineExamAnswerModel::insert($online_exam_answer);        
-        //     }                
-        // }
-        // else //Insert Narrative Answers
-        // { 
-        //     $online_exam_answer['narrative_answer'] = $answer_ids; 
-        //     lmsOnlineExamAnswerModel::insert($online_exam_answer);        
-        // }
-        //END Insert into lms_online_exam_answer table
-
-        //return is_mobile($type,'lms/online_exam_result',$res,"view");
-        return redirect()->route('online_exam.show',[$request->get('questionpaper_id'),"online_exam_id"=> $online_exam_id]);
+        
+        // Store results in session for feedback display
+        Session::put('assessment_feedback', $result['feedback']);
+        Session::put('assessment_mastery', $result['mastery_level']);
+        Session::put('assessment_next_steps', $result['next_steps']);
+        
+        // Redirect to results page
+        return redirect()->route('online_exam.show', [
+            $request->get('questionpaper_id'),
+            'online_exam_id' => $result['online_exam_id']
+        ])->with('success', 'Assessment completed successfully!');
     }
-
-
+    
     public function get_calculate_marks(Request $request)
     {
         $answer_single = $request->get('answer_single');

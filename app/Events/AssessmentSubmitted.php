@@ -33,7 +33,33 @@ class AssessmentSubmitted
     {
         
     }
+// Inside AssessmentService.php
 
+private function dispatchAssessmentEvent(array $assessmentData, array $processedResults): void
+{
+    // Calculate probability of knowing (pKnow)
+    $pKnow = $processedResults['percentage'] / 100;
+    
+    // 🎯 THIS IS WHERE THE EVENT IS CREATED AND DISPATCHED!
+    event(new AssessmentSubmitted(
+        student_id: $assessmentData['student_id'],
+        sub_institute_id: $assessmentData['sub_institute_id'] ?? '',
+        assessmentId: (string)$assessmentData['question_paper_id'],
+        conceptId: $assessmentData['concept_id'] ?? 'general',
+        isCorrect: $processedResults['percentage'] >= 60,
+        pKnow: $pKnow,
+        timeTaken: $assessmentData['time_taken'] ?? 0,
+        confidence: $assessmentData['confidence'] ?? 0.8,
+        kasbaDimensions: $assessmentData['kasba_dimensions'] ?? [],
+        metadata: [
+            'total_questions' => $processedResults['total_questions'],
+            'correct_answers' => $processedResults['total_right'],
+            'wrong_answers' => $processedResults['total_wrong'],
+            'obtain_marks' => $processedResults['obtain_marks'],
+            'mastery_level' => $processedResults['percentage']
+        ]
+    ));
+}
     /**
      * Get the channels the event should broadcast on.
      *
