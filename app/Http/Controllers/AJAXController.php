@@ -36,7 +36,8 @@ use Symfony\Component\Process\Process;
 use Symfony\Component\Process\Exception\ProcessFailedException;
 use Spatie\Async\Pool;
 //use Gemini\Laravel\Facades\Gemini;
-use Log;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 use function App\Helpers\getSubCordinates;
 use App\Models\lms\answermasterModel;
 
@@ -3017,5 +3018,193 @@ class AJAXController extends Controller
 
             ], 500);
         }
+    }
+
+    public function geminiChat(Request $request)
+    {
+        $userInput = $request->input('message')
+            ?? $request->input('prompt')
+            ?? 'Hello!';
+
+        $today = date('Y-m-d');
+
+        /*
+    |--------------------------------------------------------------------------
+    | Fetch only usable Gemini keys
+    |--------------------------------------------------------------------------
+    */
+        $availableKeys = DB::table('ai_api_keys as ak')
+            ->leftJoin('ai_daily_used_api as dua', function ($join) use ($today) {
+                $join->on('ak.api_key', '=', 'dua.key')
+                    ->where('dua.date', '=', $today);
+            })
+            ->where('ak.api_type', 'gemini')
+            ->where('ak.status', 1)
+            ->select(
+                'ak.id',
+                'ak.api_key',
+                'ak.api_limit',
+                DB::raw('COALESCE(dua.count, 0) as current_count')
+            )
+
+            // IMPORTANT:
+            // only keys whose current_count < api_limit
+            ->havingRaw('current_count < ak.api_limit')
+
+            // least used key first
+            ->orderBy('current_count', 'asc')
+
+            ->get();
+
+        if ($availableKeys->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'error' => 'All Gemini API keys have exhausted their daily limits.'
+            ], 429);
+        }
+
+        $apiResponse = null;
+        $successfulKey = null;
+        $responseText = '';
+        /*
+    |--------------------------------------------------------------------------
+    | Try keys one by one
+    |--------------------------------------------------------------------------
+    */
+        foreach ($availableKeys as $keyRow) {
+
+            try {
+
+                $response = Http::timeout(60)
+                    ->withHeaders([
+                        'Content-Type' => 'application/json',
+                    ])
+                    ->post(
+                        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={$keyRow->api_key}",
+                        [
+                            'contents' => [
+                                [
+                                    'parts' => [
+                                        [
+                                            'text' => $userInput
+                                        ]
+                                    ]
+                                ]
+                            ]
+                        ]
+                    );
+
+                /*
+            |--------------------------------------------------------------------------
+            | If ANY error happens → move to next key
+            |--------------------------------------------------------------------------
+            */
+
+                if (!$response->successful()) {
+
+                    Log::warning("Gemini API Failed", [
+                        'key_id' => $keyRow->id,
+                        'status' => $response->status(),
+                        'response' => $response->body(),
+                    ]);
+
+                    /*
+                |--------------------------------------------------------------------------
+                | If quota/rate limit issue,
+                | mark key as fully used for today
+                |--------------------------------------------------------------------------
+                */
+                    if (
+                        in_array($response->status(), [429, 403])
+                    ) {
+
+                        $this->logApiUsage(
+                            $keyRow->api_key,
+                            $keyRow->id,
+                            $today,
+                            $keyRow->api_limit // mark exhausted
+                        );
+                    }
+
+                    // move to next key
+                    continue;
+                }
+
+                /*
+            |--------------------------------------------------------------------------
+            | Success
+            |--------------------------------------------------------------------------
+            */
+                $apiResponse = $response->json();
+                $responseText = $apiResponse['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                $successfulKey = $keyRow;
+
+                break;
+            } catch (\Throwable $e) {
+
+                Log::error("Gemini Exception", [
+                    'key_id' => $keyRow->id,
+                    'message' => $e->getMessage(),
+                ]);
+
+                // move to next key
+                continue;
+            }
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | If success
+    |--------------------------------------------------------------------------
+    */
+        if ($successfulKey && $apiResponse) {
+
+            $newCount = $successfulKey->current_count + 1;
+
+            $this->logApiUsage(
+                $successfulKey->api_key,
+                $successfulKey->id,
+                $today,
+                $newCount
+            );
+
+            return response()->json([
+                'success' => true,
+                'key_used' => $successfulKey->id,
+                'count_used' => $newCount,
+                'response_ai' => $responseText
+            ]);
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | All keys failed
+    |--------------------------------------------------------------------------
+    */
+        return response()->json([
+            'success' => false,
+            'error' => 'All Gemini API keys failed or exhausted.'
+        ], 500);
+    }
+
+
+    /**
+     * Store/update usage count
+     */
+    private function logApiUsage($apiKey, $parentId, $date, $count)
+    {
+        DB::table('ai_daily_used_api')->updateOrInsert(
+            [
+                'key' => $apiKey,
+                'date' => $date,
+            ],
+            [
+                'api_name' => 'gemini',
+                'parent_id' => $parentId,
+                'count' => $count,
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
     }
 }
