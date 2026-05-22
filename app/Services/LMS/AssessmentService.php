@@ -11,6 +11,7 @@ use App\Services\LMS\Neo4jService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
+use App\Jobs\ProcessAssessmentAftermath;
 
 class AssessmentService
 {
@@ -64,37 +65,28 @@ class AssessmentService
             // STEP 4: Save Attempt to database
             $attemptId = $this->saveAttempt($studentId, $subInstituteId, $assessmentId, $response, $isCorrect, $timeTaken, $confidence);
             
-            // STEP 5: Update Neo4j Graph Database
-            $this->neo4jService->recordAttempt(
+            // STEP 5: Update Mastery using BKT (AI Knowledge Tracing)
+            $pKnow = $this->bktService->update($isCorrect);
+            
+            // STEP 6: Generate Feedback
+            $feedback = $this->generateFeedback($isCorrect, $assessment, $pKnow);
+            
+            // STEP 7: Decide Next Learning Step
+            $nextSteps = $this->determineNextSteps($isCorrect, $pKnow, $assessment, $studentId, $subInstituteId);
+            
+            DB::commit();
+            
+            // Dispatch asynchronous tasks to reduce load on main request
+            // These operations are moved to a queue job to improve response time
+            ProcessAssessmentAftermath::dispatch(
                 $studentId,
                 $subInstituteId,
                 $assessmentId,
                 $isCorrect,
                 $timeTaken,
-                $confidence
+                $confidence,
+                $pKnow
             );
-            
-            // STEP 6: Update Mastery using BKT (AI Knowledge Tracing)
-            $pKnow = $this->bktService->update($isCorrect);
-            
-            // STEP 7: Update Learner State
-            $learnerState = $this->learnerStateEngine->update($studentId, [
-                'last_assessment' => now(),
-                'is_correct' => $isCorrect,
-                'time_taken' => $timeTaken,
-                'confidence' => $confidence
-            ]);
-            
-            // STEP 8: Generate Feedback
-            $feedback = $this->generateFeedback($isCorrect, $assessment, $pKnow);
-            
-            // STEP 9: Decide Next Learning Step
-            $nextSteps = $this->determineNextSteps($isCorrect, $pKnow, $assessment, $studentId, $subInstituteId);
-            
-            // Dispatch Event for async processing
-            $this->dispatchAssessmentEvent($studentId, $subInstituteId, $assessmentId, $isCorrect, $pKnow, $timeTaken, $confidence);
-            
-            DB::commit();
             
             // Return final output matching PAL specification
             return [
@@ -105,7 +97,13 @@ class AssessmentService
                 ],
                 'feedback' => $feedback,
                 'next_steps' => $nextSteps,
-                'learner_state' => $learnerState,
+                'learner_state' => [
+                    'engagement' => 'medium',
+                    'fatigue' => 'low',
+                    'velocity' => 'medium',
+                    'frustration' => 'low',
+                    'last_updated' => now()->toIso8601String()
+                ],
                 'attempt_id' => $attemptId
             ];
             
