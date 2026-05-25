@@ -158,18 +158,14 @@ datalist {
                             <li class="nav-item"><a href="#section-linemove-3" class="nav-link" aria-selected="false" data-toggle="tab"><span>Family History</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-4" class="nav-link" aria-selected="false" data-toggle="tab"><span>Siblings Details</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-5" class="nav-link" aria-selected="false" data-toggle="tab"><span>Parent Feedback</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-6" class="nav-link" aria-selected="false" data-toggle="tab"><span>Infirmary</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-7" class="nav-link" aria-selected="false" data-toggle="tab"><span>Vaccination</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-8" class="nav-link" aria-selected="false" data-toggle="tab"><span>Height & Weight</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-9" class="nav-link" aria-selected="false" data-toggle="tab"><span>Health</span></a></li>
+                            <li class="nav-item"><a href="#section-medical" class="nav-link" aria-selected="false" data-toggle="tab"><span>Medical</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-10" data-id="document" class="nav-link" aria-selected="false" data-toggle="tab"><span>Documents</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-11" class="nav-link" aria-selected="false" data-toggle="tab"><span>Fees Details</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-12" class="nav-link" aria-selected="false" data-toggle="tab"><span>TC Information</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-13" class="nav-link" aria-selected="false" data-toggle="tab"><span>Attendance</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-14" class="nav-link" aria-selected="false" data-toggle="tab"><span>Parent Communication</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-15" class="nav-link" aria-selected="false" data-toggle="tab"><span>Leave Application</span></a></li>
+                            <li class="nav-item"><a href="#section-services" class="nav-link" aria-selected="false" data-toggle="tab"><span>Services</span></a></li>
                             <li class="nav-item"><a href="#section-linemove-16" class="nav-link" aria-selected="false" data-toggle="tab"><span>Transport Details</span></a></li>
-                            <li class="nav-item"><a href="#section-linemove-17" class="nav-link" aria-selected="false" data-toggle="tab"><span>Anacdotal</span></a></li>
+                            <li class="nav-item"><a href="#section-anacdotal" class="nav-link" aria-selected="false" data-toggle="tab"><span>Anacdotal</span></a></li>
                         </ul>
                             
                             @if(isset($data['data']))
@@ -1141,236 +1137,247 @@ datalist {
                                 
 
 
-                                <!-- START STUDENT INFIRMARY -->
-                                <div class="tab-pane p-3" id="section-linemove-6" role="tabpanel">
-                                    @if(Session::get('user_profile_name') != 'Student') 
-                                    <div class="row">                                        
-                                        <div class="col-md-3 mb-4"> 
-                                            <a href="{{ route('student_infirmary.create') }}" class="btn btn-info add-new" target="_blank">
-                                                <i class="fa fa-plus"></i> Add Infirmary
-                                            </a>
-                                        </div>
-                                    </div>
-                                    @endif                               
-                                    @php
-                                        if(isset($data['student_infirmary'])){
-                                            $student_infirmary = $data['student_infirmary'];
-                                        }else{
-                                            $student_infirmary = array();
-                                        }
-                                    @endphp
-                                    <div class="table-responsive">
-                                        <table id="example" class="table table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th>SrNo.</th>
-                                                    <th>MedicalCaseNo</th>
-                                                    <th>DoctorName</th>
-                                                    <th>DoctorContact</th>
-                                                    <th>OpenDate</th>
-                                                    <th>Complaint</th>
-                                                    <th>Symptoms</th>
-                                                    <th>Disease</th>
-                                                    <th>Treatments</th>
-                                                    <th>MedicalCloseDate</th>
-                                                    <th>Health Center</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                            @php
-                                            $j=1;
-                                            @endphp
-                                            @if(isset($data['data']))
-                                                @foreach($student_infirmary as $pkey => $pvalue)
-                                                <tr>
-                                                    <td>{{$j}}</td>
-                                                    <td>{{$pvalue['medical_case_no']}}</td>
-                                                    <td>{{$pvalue['doctor_name']}}</td>
-                                                    <td>{{$pvalue['doctor_contact']}}</td>
-                                                    <td>{{$pvalue['date']}}</td>
-                                                    <td>{{$pvalue['complaint']}}</td>
-                                                    <td>{{$pvalue['symptoms']}}</td>
-                                                    <td>{{$pvalue['disease']}}</td>
-                                                    <td>{{$pvalue['treatments']}}</td>
-                                                    <td>{{$pvalue['medical_close_date']}}</td>
-                                                    <td>{{$pvalue['health_center']}}</td>
-                                                </tr>
-                                            @php
-                                            $j++;
-                                            @endphp
-                                                @endforeach
-                                            @endif
-                                            </tbody>
-                                        </table>
-                                    </div>                                
-                                </div>
-                                <!-- END STUDENT INFIRMARY -->
+                                 <!-- START MEDICAL GROUP -->
+                                 <div class="tab-pane p-3" id="section-medical" role="tabpanel">
+                                     <h5 class="mb-3">Medical Records</h5>
+                                     <ul class="nav nav-pills mb-3" id="medical-subtabs" role="tablist">
+                                         <li class="nav-item">
+                                             <a class="nav-link active" id="med-inf-tab" data-toggle="tab" href="#med-inf" role="tab" aria-controls="med-inf" aria-selected="true">Infirmary</a>
+                                         </li>
+                                         <li class="nav-item">
+                                             <a class="nav-link" id="med-vac-tab" data-toggle="tab" href="#med-vac" role="tab" aria-controls="med-vac" aria-selected="false">Vaccination</a>
+                                         </li>
+                                         <li class="nav-item">
+                                             <a class="nav-link" id="med-hw-tab" data-toggle="tab" href="#med-hw" role="tab" aria-controls="med-hw" aria-selected="false">Height & Weight</a>
+                                         </li>
+                                         <li class="nav-item">
+                                             <a class="nav-link" id="med-health-tab" data-toggle="tab" href="#med-health" role="tab" aria-controls="med-health" aria-selected="false">Health</a>
+                                         </li>
+                                     </ul>
+                                     <div class="tab-content" id="medical-sub-content">
+                                         <!-- Infirmary subcontent -->
+                                         <div class="tab-pane fade show active" id="med-inf" role="tabpanel" aria-labelledby="med-inf-tab">
+                                             @if(Session::get('user_profile_name') != 'Student') 
+                                             <div class="row">                                        
+                                                 <div class="col-md-3 mb-4"> 
+                                                     <a href="{{ route('student_infirmary.create') }}" class="btn btn-info add-new" target="_blank">
+                                                         <i class="fa fa-plus"></i> Add Infirmary
+                                                     </a>
+                                                 </div>
+                                             </div>
+                                             @endif                               
+                                             @php
+                                                 if(isset($data['student_infirmary'])){
+                                                     $student_infirmary = $data['student_infirmary'];
+                                                 }else{
+                                                     $student_infirmary = array();
+                                                 }
+                                             @endphp
+                                             <div class="table-responsive">
+                                                 <table id="example" class="table table-striped">
+                                                     <thead>
+                                                         <tr>
+                                                             <th>SrNo.</th>
+                                                             <th>MedicalCaseNo</th>
+                                                             <th>DoctorName</th>
+                                                             <th>DoctorContact</th>
+                                                             <th>OpenDate</th>
+                                                             <th>Complaint</th>
+                                                             <th>Symptoms</th>
+                                                             <th>Disease</th>
+                                                             <th>Treatments</th>
+                                                             <th>MedicalCloseDate</th>
+                                                             <th>Health Center</th>
+                                                         </tr>
+                                                     </thead>
+                                                     <tbody>
+                                                     @php
+                                                     $j=1;
+                                                     @endphp
+                                                     @if(isset($data['data']))
+                                                         @foreach($student_infirmary as $pkey => $pvalue)
+                                                         <tr>
+                                                             <td>{{$j}}</td>
+                                                             <td>{{$pvalue['medical_case_no']}}</td>
+                                                             <td>{{$pvalue['doctor_name']}}</td>
+                                                             <td>{{$pvalue['doctor_contact']}}</td>
+                                                             <td>{{$pvalue['date']}}</td>
+                                                             <td>{{$pvalue['complaint']}}</td>
+                                                             <td>{{$pvalue['symptoms']}}</td>
+                                                             <td>{{$pvalue['disease']}}</td>
+                                                             <td>{{$pvalue['treatments']}}</td>
+                                                             <td>{{$pvalue['medical_close_date']}}</td>
+                                                             <td>{{$pvalue['health_center']}}</td>
+                                                         </tr>
+                                                     @php
+                                                     $j++;
+                                                     @endphp
+                                                         @endforeach
+                                                     @endif
+                                                     </tbody>
+                                                 </table>
+                                             </div>                                
+                                         </div>
+                                         <!-- Vaccination subcontent -->
+                                         <div class="tab-pane fade" id="med-vac" role="tabpanel" aria-labelledby="med-vac-tab">
+                                             @if(Session::get('user_profile_name') != 'Student')
+                                             <div class="row">                                        
+                                                 <div class="col-md-3 mb-4"> 
+                                                     <a href="{{ route('student_vaccination.create') }}" class="btn btn-info add-new" target="_blank">
+                                                         <i class="fa fa-plus"></i> Add Vaccination 
+                                                     </a>
+                                                 </div>
+                                             </div> 
+                                             @endif
+                                             @php
+                                                 if(isset($data['student_vaccination'])){
+                                                     $student_vaccination = $data['student_vaccination'];
+                                                 }else{
+                                                     $student_vaccination = array();
+                                                 }
+                                             @endphp
+                                             <div class="table-responsive">
+                                                 <table id="example" class="table table-striped">
+                                                     <thead>
+                                                         <tr>
+                                                             <th>Sr No.</th>                                                            
+                                                             <th>Doctor Name</th>
+                                                             <th>Doctor Contact</th>
+                                                             <th>Vaccination Type</th>
+                                                             <th>Note</th>
+                                                             <th>Date</th>
+                                                         </tr>
+                                                     </thead>
+                                                     <tbody>
+                                                     @php
+                                                     $j=1;
+                                                     @endphp
+                                                     @if(isset($data['data']))
+                                                         @foreach($student_vaccination as $pkey => $pvalue)
+                                                         <tr>
+                                                             <td>{{$j}}</td>                                                            
+                                                             <td>{{$pvalue['doctor_name']}}</td>
+                                                             <td>{{$pvalue['doctor_contact']}}</td>
+                                                             <td>{{$pvalue['vaccination_type']}}</td>
+                                                             <td>{{$pvalue['note']}}</td>
+                                                             <td>{{$pvalue['date']}}</td>
+                                                         </tr>
+                                                     @php
+                                                     $j++;
+                                                     @endphp
+                                                         @endforeach
+                                                     @endif
+                                                     </tbody>
+                                                 </table>
+                                             </div>
+                                         </div>
+                                         <!-- Height Weight subcontent -->
+                                         <div class="tab-pane fade" id="med-hw" role="tabpanel" aria-labelledby="med-hw-tab">
+                                             @if(Session::get('user_profile_name') != 'Student')
+                                             <div class="row">                                        
+                                                 <div class="col-md-3 mb-4"> 
+                                                     <a href="{{ route('student_hw.create') }}" class="btn btn-info add-new" target="_blank">
+                                                         <i class="fa fa-plus"></i> Add Height Weight 
+                                                     </a>
+                                                 </div>
+                                             </div>                           
+                                             @endif
+                                             @php
+                                                 if(isset($data['student_height_weight'])){
+                                                     $student_height_weight = $data['student_height_weight'];
+                                                 }else{
+                                                     $student_height_weight = array();
+                                                 }
+                                             @endphp
 
-
-                                <!-- START STUDENT VACCINATION -->
-                                <div class="tab-pane p-3" id="section-linemove-7" role="tabpanel">
-                                    @if(Session::get('user_profile_name') != 'Student')
-                                    <div class="row">                                        
-                                        <div class="col-md-3 mb-4"> 
-                                            <a href="{{ route('student_vaccination.create') }}" class="btn btn-info add-new" target="_blank">
-                                                <i class="fa fa-plus"></i> Add Vaccination 
-                                            </a>
-                                        </div>
-                                    </div> 
-                                    @endif
-                                    @php
-                                        if(isset($data['student_vaccination'])){
-                                            $student_vaccination = $data['student_vaccination'];
-                                        }else{
-                                            $student_vaccination = array();
-                                        }
-                                    @endphp
-                                    <div class="table-responsive">
-                                        <table id="example" class="table table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th>Sr No.</th>                                                            
-                                                    <th>Doctor Name</th>
-                                                    <th>Doctor Contact</th>
-                                                    <th>Vaccination Type</th>
-                                                    <th>Note</th>
-                                                    <th>Date</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                            @php
-                                            $j=1;
-                                            @endphp
-                                            @if(isset($data['data']))
-                                                @foreach($student_vaccination as $pkey => $pvalue)
-                                                <tr>
-                                                    <td>{{$j}}</td>                                                            
-                                                    <td>{{$pvalue['doctor_name']}}</td>
-                                                    <td>{{$pvalue['doctor_contact']}}</td>
-                                                    <td>{{$pvalue['vaccination_type']}}</td>
-                                                    <td>{{$pvalue['note']}}</td>
-                                                    <td>{{$pvalue['date']}}</td>
-                                                </tr>
-                                            @php
-                                            $j++;
-                                            @endphp
-                                                @endforeach
-                                            @endif
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                                <!-- END STUDENT VACCINATION -->
-
-                               
-                                <!-- START STUDENT HEALTH WEIGHT-->
-                                <div class="tab-pane p-3" id="section-linemove-8" role="tabpanel">
-                                    @if(Session::get('user_profile_name') != 'Student')
-                                    <div class="row">                                        
-                                        <div class="col-md-3 mb-4"> 
-                                            <a href="{{ route('student_hw.create') }}" class="btn btn-info add-new" target="_blank">
-                                                <i class="fa fa-plus"></i> Add Height Weight 
-                                            </a>
-                                        </div>
-                                    </div>                           
-                                    @endif
-                                    @php
-                                        if(isset($data['student_height_weight'])){
-                                            $student_height_weight = $data['student_height_weight'];
-                                        }else{
-                                            $student_height_weight = array();
-                                        }
-                                    @endphp
-
-                                    <div class="table-responsive">
-                                        <table id="example" class="table table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th>Sr No.</th>                                                            
-                                                    <th>Doctor Name</th>
-                                                    <th>Doctor Contact</th>
-                                                    <th>Height</th>
-                                                    <th>Weight</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                            @php
-                                            $j=1;
-                                            @endphp
-                                            @if(isset($data['data']))
-                                                @foreach($student_height_weight as $pkey => $pvalue)
-                                                <tr>
-                                                    <td>{{$j}}</td>
-                                                    <td>{{$pvalue['doctor_name']}}</td>
-                                                    <td>{{$pvalue['doctor_contact']}}</td>
-                                                    <td>{{$pvalue['height']}}</td>
-                                                    <td>{{$pvalue['weight']}}</td>
-                                                </tr>
-                                            @php
-                                            $j++;
-                                            @endphp
-                                                @endforeach
-                                            @endif
-                                            </tbody>
-                                        </table>
-                                    </div>                                
-                                </div>
-                                <!-- END STUDENT HEALTH WEIGHT-->
-
-
-                                <!-- START STUDENT HEALTH -->
-                                <div class="tab-pane p-3" id="section-linemove-9" role="tabpanel">
-                                    @if(Session::get('user_profile_name') != 'Student')
-                                    <div class="row">                                        
-                                        <div class="col-md-3 mb-4"> 
-                                            <a href="{{ route('student_health.create') }}" class="btn btn-info add-new" target="_blank">
-                                                <i class="fa fa-plus"></i> Add Health
-                                            </a>
-                                        </div>
-                                    </div>
-                                    @endif                           
-                                    @php
-                                        if(isset($data['student_health'])){
-                                            $student_health = $data['student_health'];
-                                        }else{
-                                            $student_health = array();
-                                        }
-                                    @endphp
-                                    <div class="table-responsive">
-                                        <table id="example" class="table table-striped">
-                                            <thead>
-                                                <tr>
-                                                    <th>Sr No.</th>                                                            
-                                                    <th>Doctor Name</th>
-                                                    <th>Doctor Contact</th>
-                                                    <th>Date</th>
-                                                    <th>File</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                            @php
-                                            $j=1;
-                                            @endphp
-                                            @if(isset($data['data']))
-                                                @foreach($student_health as $pkey => $pvalue)
-                                                <tr>
-                                                    <td>{{$j}}</td>                                                            
-                                                    <td>{{$pvalue['doctor_name']}}</td>
-                                                    <td>{{$pvalue['doctor_contact']}}</td>
-                                                    <td>{{$pvalue['date']}}</td>
-                                                    <td><a target="_blank" href="../../../../storage/frontdesk/{{$pvalue['file']}}">{{$pvalue['file']}}</a></td>
-                                                </tr>
-                                            @php
-                                            $j++;
-                                            @endphp
-                                                @endforeach
-                                            @endif
-                                            </tbody>
-                                        </table>
-                                    </div>                                
-                                </div>
-                                <!-- END STUDENT HEALTH -->
-
+                                             <div class="table-responsive">
+                                                 <table id="example" class="table table-striped">
+                                                     <thead>
+                                                         <tr>
+                                                             <th>Sr No.</th>                                                            
+                                                             <th>Doctor Name</th>
+                                                             <th>Doctor Contact</th>
+                                                             <th>Height</th>
+                                                             <th>Weight</th>
+                                                         </tr>
+                                                     </thead>
+                                                     <tbody>
+                                                     @php
+                                                     $j=1;
+                                                     @endphp
+                                                     @if(isset($data['data']))
+                                                         @foreach($student_height_weight as $pkey => $pvalue)
+                                                         <tr>
+                                                             <td>{{$j}}</td>
+                                                             <td>{{$pvalue['doctor_name']}}</td>
+                                                             <td>{{$pvalue['doctor_contact']}}</td>
+                                                             <td>{{$pvalue['height']}}</td>
+                                                             <td>{{$pvalue['weight']}}</td>
+                                                         </tr>
+                                                     @php
+                                                     $j++;
+                                                     @endphp
+                                                         @endforeach
+                                                     @endif
+                                                     </tbody>
+                                                 </table>
+                                             </div>                                
+                                         </div>
+                                         <!-- Health subcontent -->
+                                         <div class="tab-pane fade" id="med-health" role="tabpanel" aria-labelledby="med-health-tab">
+                                             @if(Session::get('user_profile_name') != 'Student')
+                                             <div class="row">                                        
+                                                 <div class="col-md-3 mb-4"> 
+                                                     <a href="{{ route('student_health.create') }}" class="btn btn-info add-new" target="_blank">
+                                                         <i class="fa fa-plus"></i> Add Health
+                                                     </a>
+                                                 </div>
+                                             </div>
+                                             @endif                           
+                                             @php
+                                                 if(isset($data['student_health'])){
+                                                     $student_health = $data['student_health'];
+                                                 }else{
+                                                     $student_health = array();
+                                                 }
+                                             @endphp
+                                             <div class="table-responsive">
+                                                 <table id="example" class="table table-striped">
+                                                     <thead>
+                                                         <tr>
+                                                             <th>Sr No.</th>                                                            
+                                                             <th>Doctor Name</th>
+                                                             <th>Doctor Contact</th>
+                                                             <th>Date</th>
+                                                             <th>File</th>
+                                                         </tr>
+                                                     </thead>
+                                                     <tbody>
+                                                     @php
+                                                     $j=1;
+                                                     @endphp
+                                                     @if(isset($data['data']))
+                                                         @foreach($student_health as $pkey => $pvalue)
+                                                         <tr>
+                                                             <td>{{$j}}</td>                                                            
+                                                             <td>{{$pvalue['doctor_name']}}</td>
+                                                             <td>{{$pvalue['doctor_contact']}}</td>
+                                                             <td>{{$pvalue['date']}}</td>
+                                                             <td><a target="_blank" href="../../../../storage/frontdesk/{{$pvalue['file']}}">{{$pvalue['file']}}</a></td>
+                                                         </tr>
+                                                     @php
+                                                     $j++;
+                                                     @endphp
+                                                         @endforeach
+                                                     @endif
+                                                     </tbody>
+                                                 </table>
+                                             </div>                                
+                                         </div>
+                                     </div>
+                                 </div>
+                                 <!-- END MEDICAL GROUP -->
+ 
 
                                 <!-- START STUDENT DOCUMENT -->                                
                                 <div class="tab-pane p-3" id="section-linemove-10" role="tabpanel">                                
@@ -1932,93 +1939,168 @@ datalist {
                                             </tbody>
                                         </table>
                                     </div>
-                                </div>
-                                <!-- END ATTENDANCE REPORT -->
+                                 </div>
+                                 <!-- END ATTENDANCE REPORT -->
 
-                                <!-- START PARENT COMMUNICATION -->
-                                <div class="tab-pane p-3" id="section-linemove-14" role="tabpanel">
-                                    <div class="tab-pane p-3" id="section-linemove-13" role="tabpanel">
-                                        <div class="table-responsive">
-                                            <table id="parent-communication" class="table table-striped">
-                                                <thead>
-                                                    <th>Title</th>
-                                                    <th>Description</th>
-                                                    <th>Created At</th>
-                                                    <th>Reply</th>
-                                                    <th>Reply By</th>
-                                                    <th>Reply On</th>
-                                                </thead>
-                                                <tbody>
-                                                @if( $data['stu_par_communication'] )
-                                                    @foreach ( $data['stu_par_communication'] as $stuParComunication )
-                                                    <tr>
-                                                        <td>{{ $stuParComunication->title }}</td>
-                                                        <td>{{ $stuParComunication->message }}</td>
-                                                        <td>{{ $stuParComunication->created_at }}</td>
-                                                        <td>{{ $stuParComunication->reply }}</td>
-                                                        <td>{{ $stuParComunication->reply_by }}</td>
-                                                        <td>{{ $stuParComunication->reply_on }}</td>
-                                                    </tr>
-                                                    @endforeach
-                                                @else
-                                                    <tr>
-                                                        <td colspan="6">No Data Found</td>
-                                                    </tr>
-                                                @endif
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- END PARENT COMMUNICATION -->
-                                
-                                <!-- START LEAVE APPLICATION -->
-                                <div class="tab-pane p-3" id="section-linemove-15" role="tabpanel">
-                                    <div class="tab-pane p-3" id="section-linemove-14" role="tabpanel">
-                                        <div class="table-responsive">
-                                            <table id="leave-application" class="table table-striped">
-                                                <thead>
-                                                    <th>Title</th>
-                                                    <th>Message</th>
-                                                    <th>Files</th>
-                                                    <th>Apply Date</th>
-                                                    <th>From Date</th>
-                                                    <th>To Date</th>
-                                                    <th>Reply</th>
-                                                    <th>Reply On</th>
-                                                    <th>Reply By</th>
-                                                    <th>Status</th>
-                                                </thead>
-                                                <tbody>
-                                                @if($data['leave_application'])
-                                                    @foreach($data['leave_application'] as $leaveData)
-                                                        <tr>
-                                                            <td>{{ $leaveData->title }}</td>
-                                                            <td>{{ $leaveData->message }}</td>
-                                                            <td><a href="{{ asset('storage/leave_application/' . $leaveData->files);}}" download>Download</a></td>
-                                                            <td>{{ $leaveData->apply_date }}</td>
-                                                            <td>{{ $leaveData->from_date }}</td>
-                                                            <td>{{ $leaveData->to_date }}</td>
-                                                            <td>{{ $leaveData->reply }}</td>
-                                                            <td>{{ $leaveData->reply_by }}</td>
-                                                            <td>{{ $leaveData->reply_on }}</td>
-                                                            <td>{{ $leaveData->status }}</td>
-                                                        </tr>
-                                                    @endforeach
-                                                @else
-                                                    <tr>
-                                                        <td colspan="12">No Data Found</td>
-                                                    </tr>
-                                                @endif
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                                <!-- END LEAVE APPLICATION --> 
+                                 <!-- START SERVICES GROUP -->
+                                 <div class="tab-pane p-3" id="section-services" role="tabpanel">
+                                     <h5 class="mb-3">Services</h5>
+                                     <ul class="nav nav-pills mb-3" id="services-subtabs" role="tablist">
+                                         <li class="nav-item">
+                                             <a class="nav-link active" id="serv-pc-tab" data-toggle="tab" href="#serv-pc" role="tab" aria-controls="serv-pc" aria-selected="true">Parent Communication</a>
+                                         </li>
+                                         <li class="nav-item">
+                                             <a class="nav-link" id="serv-leave-tab" data-toggle="tab" href="#serv-leave" role="tab" aria-controls="serv-leave" aria-selected="false">Leave Application</a>
+                                         </li>
+                                         <li class="nav-item">
+                                             <a class="nav-link" id="serv-disc-tab" data-toggle="tab" href="#serv-disc" role="tab" aria-controls="serv-disc" aria-selected="false">Student Discipline</a>
+                                         </li>
+                                         <li class="nav-item">
+                                             <a class="nav-link" id="serv-results-tab" data-toggle="tab" href="#serv-results" role="tab" aria-controls="serv-results" aria-selected="false">Results</a>
+                                         </li>
+                                     </ul>
+                                     <div class="tab-content" id="services-sub-content">
+                                         <!-- Parent Communication -->
+                                         <div class="tab-pane fade show active" id="serv-pc" role="tabpanel" aria-labelledby="serv-pc-tab">
+                                             <div class="table-responsive">
+                                                 <table id="parent-communication" class="table table-striped">
+                                                     <thead>
+                                                         <th>Title</th>
+                                                         <th>Description</th>
+                                                         <th>Created At</th>
+                                                         <th>Reply</th>
+                                                         <th>Reply By</th>
+                                                         <th>Reply On</th>
+                                                     </thead>
+                                                     <tbody>
+                                                     @if( isset($data['stu_par_communication']) && $data['stu_par_communication'] )
+                                                         @foreach ( $data['stu_par_communication'] as $stuParComunication )
+                                                         <tr>
+                                                             <td>{{ $stuParComunication->title }}</td>
+                                                             <td>{{ $stuParComunication->message }}</td>
+                                                             <td>{{ $stuParComunication->created_at }}</td>
+                                                             <td>{{ $stuParComunication->reply }}</td>
+                                                             <td>{{ $stuParComunication->reply_by }}</td>
+                                                             <td>{{ $stuParComunication->reply_on }}</td>
+                                                         </tr>
+                                                         @endforeach
+                                                     @else
+                                                         <tr>
+                                                             <td colspan="6">No Data Found</td>
+                                                         </tr>
+                                                     @endif
+                                                     </tbody>
+                                                 </table>
+                                             </div>
+                                         </div>
+                                         <!-- Leave Application -->
+                                         <div class="tab-pane fade" id="serv-leave" role="tabpanel" aria-labelledby="serv-leave-tab">
+                                             <div class="table-responsive">
+                                                 <table id="leave-application" class="table table-striped">
+                                                     <thead>
+                                                         <th>Title</th>
+                                                         <th>Message</th>
+                                                         <th>Files</th>
+                                                         <th>Apply Date</th>
+                                                         <th>From Date</th>
+                                                         <th>To Date</th>
+                                                         <th>Reply</th>
+                                                         <th>Reply On</th>
+                                                         <th>Reply By</th>
+                                                         <th>Status</th>
+                                                     </thead>
+                                                     <tbody>
+                                                     @if(isset($data['leave_application']) && $data['leave_application'])
+                                                         @foreach($data['leave_application'] as $leaveData)
+                                                             <tr>
+                                                                 <td>{{ $leaveData->title }}</td>
+                                                                 <td>{{ $leaveData->message }}</td>
+                                                                 <td><a href="{{ asset('storage/leave_application/' . $leaveData->files);}}" download>Download</a></td>
+                                                                 <td>{{ $leaveData->apply_date }}</td>
+                                                                 <td>{{ $leaveData->from_date }}</td>
+                                                                 <td>{{ $leaveData->to_date }}</td>
+                                                                 <td>{{ $leaveData->reply }}</td>
+                                                                 <td>{{ $leaveData->reply_by }}</td>
+                                                                 <td>{{ $leaveData->reply_on }}</td>
+                                                                 <td>{{ $leaveData->status }}</td>
+                                                             </tr>
+                                                         @endforeach
+                                                     @else
+                                                         <tr>
+                                                             <td colspan="12">No Data Found</td>
+                                                         </tr>
+                                                     @endif
+                                                     </tbody>
+                                                 </table>
+                                             </div>
+                                         </div>
+                                         <!-- Student Discipline (API) -->
+                                         <div class="tab-pane fade" id="serv-disc" role="tabpanel" aria-labelledby="serv-disc-tab">
+                                             <div class="table-responsive">
+                                                 <table id="student-discipline" class="table table-striped">
+                                                     <thead>
+                                                         <th>Discipline</th>
+                                                         <th>Message</th>
+                                                         <th>Date</th>
+                                                         <th>Flag</th>
+                                                     </thead>
+                                                     <tbody>
+                                                     @if( isset($data['student_discipline']) && count($data['student_discipline']) > 0 )
+                                                         @foreach ( $data['student_discipline'] as $disc )
+                                                         <tr>
+                                                             <td>{{ $disc->discipline ?? $disc->dicipline ?? '' }}</td>
+                                                             <td>{{ $disc->message ?? '' }}</td>
+                                                             <td>{{ $disc->discipline_date ?? $disc->date_ ?? '' }}</td>
+                                                             <td>{{ $disc->flag ?? '' }}</td>
+                                                         </tr>
+                                                         @endforeach
+                                                     @else
+                                                         <tr>
+                                                             <td colspan="4">No Data Found</td>
+                                                         </tr>
+                                                     @endif
+                                                     </tbody>
+                                                 </table>
+                                             </div>
+                                         </div>
+                                         <!-- Results (API) -->
+                                         <div class="tab-pane fade" id="serv-results" role="tabpanel" aria-labelledby="serv-results-tab">
+                                             <div class="table-responsive">
+                                                 <table id="student-results" class="table table-striped">
+                                                     <thead>
+                                                         <th>Title</th>
+                                                         <th>PDF Link</th>
+                                                     </thead>
+                                                     <tbody>
+                                                     @if( isset($data['student_results']) && (is_array($data['student_results']) || is_object($data['student_results'])) )
+                                                         @php $resArr = is_object($data['student_results']) ? [$data['student_results']] : $data['student_results']; @endphp
+                                                         @foreach ( $resArr as $resItem )
+                                                         <tr>
+                                                             <td>{{ $resItem->title ?? '' }}</td>
+                                                             <td>
+                                                                 @if(!empty($resItem->pdf_link))
+                                                                     <a href="{{ $resItem->pdf_link }}" target="_blank">Download PDF</a>
+                                                                 @else
+                                                                     {{ $resItem->pdf_link ?? 'N/A' }}
+                                                                 @endif
+                                                             </td>
+                                                         </tr>
+                                                         @endforeach
+                                                     @else
+                                                         <tr>
+                                                             <td colspan="2">No Data Found</td>
+                                                         </tr>
+                                                     @endif
+                                                     </tbody>
+                                                 </table>
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </div>
+                                 <!-- END SERVICES GROUP -->
 
-                                 <!-- START Transport -->
-                                 <div class="tab-pane p-3" id="section-linemove-16" role="tabpanel">
+                                  <!-- START Transport -->
+                                  <div class="tab-pane p-3" id="section-linemove-16" role="tabpanel">
                                     <div class="tab-pane p-3" id="section-linemove-14" role="tabpanel">
                                     <form action="{{ route('add_student.update', [$student_data->id]) }}" enctype="multipart/form-data" method="post">
                                         <div class="row equal">
@@ -2103,117 +2185,117 @@ datalist {
                                         </div>                                        
                                         </form>
                                     </div>
-                                </div>
-                                <!-- END LEAVE APPLICATION --> 
+                                 </div>
+                                 <!-- END TRANSPORT -->
 
-                                <!-- START Anacdotal -->
-                                <div class="tab-pane p-3" id="section-linemove-17" role="tabpanel">                          
-                                    <form action="{{ route('anacdotal.store') }}" enctype="multipart/form-data" method="post">
-                                        {{ method_field("POST") }}
-                                    @csrf
-                                    @php
-                                        if(isset($data['get_anacdotals']))
-                                        {
-                                            $get_anacdotals = $data['get_anacdotals'];
-                                        }
-                                        else
-                                        {
-                                            $get_anacdotals = array();
-                                        }
-                                    @endphp
-                                    @foreach($get_anacdotals as $get_anacdotal)
-                                    <div id="entered_og_anacdotal">
-                                        <div class="row">
-                                            <div class="col-md-4 form-group">
-                                                <label>Place</label>
-                                                <input type="text" required id="place" value="{{ $get_anacdotal['place'] }}" name="place[]" name="place[]" class="form-control">
-                                            </div>
-                                            <div class="col-md-4 form-group">
-                                                <label for="observation">Observation</label>
-                                                <textarea id="observation" name="observation[]" class="form-control">
-                                                {{ $get_anacdotal['observation'] }}
-                                                </textarea>
-                                            </div>
-                                            <div class="col-md-4 form-group ml-0">
-                                                <label>Date </label>
-                                                <input type="text" id='anacdotal_date' value="{{ $get_anacdotal['date'] }}" name="date[]" class="form-control mydatepicker">
-                                            </div>
-                                            <div class="col-md-4 form-group">
-                                                <label>Time </label>
-                                                <input type="text" id='time' required name="time[]" value="{{ $get_anacdotal['time'] }}" class="form-control batchname clockpicker">
-                                                <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
-                                            </div>
-                                            <div class="col-md-4 form-group ml-0 mr-0">
-                                                <label for="life_skills">Life Skills</label>
-                                                <select id="life_skills" name="life_skills[]" class="form-control">
-                                                    <option value="1" @if ($get_anacdotal['life_skills'] == 1) selected @endif>1</option>
-                                                    <option value="2" @if ($get_anacdotal['life_skills'] == 2) selected @endif>2</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-4 form-group ml-0 mr-0">
-                                                <label for="life_values">Life Values</label>
-                                                <select id="life_values" name="life_values[]" class="form-control">
-                                                    <option value="1" @if ($get_anacdotal['life_values'] == 1) selected @endif>1</option>
-                                                    <option value="2" @if ($get_anacdotal['life_values'] == 2) selected @endif>2</option>
-                                                </select>
-                                            </div>
-                                            <div style="height:60px; width:100%; clear:both;"></div>
-                                        </div>
-                                    </div>
-                                    @endforeach
-                                    <input type="hidden" name="student_id" value="{{$student_data['id']}}">
-                                    <div id="anacdotal_og">
-                                        <div class="row">
-                                            <div class="col-md-4 form-group">
-                                                <label>Place</label>
-                                                <input type="text" required id='place' name="place[]" class="form-control">
-                                            </div>
-                                            <div class="col-md-4 form-group">
-                                                <label for="observation">Observation</label>
-                                                <textarea id="observation" name="observation[]" class="form-control"></textarea>
-                                            </div>
-                                            <div class="col-md-4 form-group ml-0">
-                                                <label>Date </label>
-                                                <input type="text" id='add_anacdotal_date' name="date[]" class="form-control mydatepicker">
-                                            </div>
-                                            <div class="col-md-4 form-group">
-                                                <label>Time </label>
-                                                <input type="text" id='time' required name="time[]" class="form-control batchname clockpicker">
-                                                <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
-                                            </div>
-                                            <div class="col-md-4 form-group ml-0 mr-0">
-                                                <label for="life_skills">Life Skills</label>
-                                                <select id="life_skills" name="life_skills[]" class="form-control">
-                                                    <option value="1">1</option>
-                                                    <option value="2">2</option>
-                                                </select>
-                                            </div>
-                                            <div class="col-md-4 form-group ml-0 mr-0">
-                                                <label for="life_values">Life Values</label>
-                                                <select id="life_values" name="life_values[]" class="form-control">
-                                                    <option value="1">1</option>
-                                                    <option value="2">2</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-12 form-group">
-                                            <label>Add </label>
-                                            <a href="javascript:void(0);" class="triz-add-btn" onclick="addNewRow('anacdotal_og','anacdotal_add');">
-                                                <span class="btn btn-outline-success"><i class="fa fa-plus"></i></span>
-                                            </a>
-                                        </div>
-                                    <div id="anacdotal_add">
-                                    </div>
-                                    @if(Session::get('user_profile_name') != 'Student')
-                                        <div class="col-md-12 form-group">
-                                            <input type="submit" name="submit" value="Save" class="btn btn-success triz-btn" >
-                                        </div>
-                                    @endif    
-                                    </form>
-                                </div>
-                                <!-- END Anacdotal -->
-                                
+                                 <!-- START Anacdotal -->
+                                 <div class="tab-pane p-3" id="section-anacdotal" role="tabpanel">                          
+                                     <form action="{{ route('anacdotal.store') }}" enctype="multipart/form-data" method="post">
+                                         {{ method_field("POST") }}
+                                     @csrf
+                                     @php
+                                         if(isset($data['get_anacdotals']))
+                                         {
+                                             $get_anacdotals = $data['get_anacdotals'];
+                                         }
+                                         else
+                                         {
+                                             $get_anacdotals = array();
+                                         }
+                                     @endphp
+                                     @foreach($get_anacdotals as $get_anacdotal)
+                                     <div id="entered_og_anacdotal">
+                                         <div class="row">
+                                             <div class="col-md-4 form-group">
+                                                 <label>Place</label>
+                                                 <input type="text" required id="place" value="{{ $get_anacdotal['place'] }}" name="place[]" name="place[]" class="form-control">
+                                             </div>
+                                             <div class="col-md-4 form-group">
+                                                 <label for="observation">Observation</label>
+                                                 <textarea id="observation" name="observation[]" class="form-control">
+                                                 {{ $get_anacdotal['observation'] }}
+                                                 </textarea>
+                                             </div>
+                                             <div class="col-md-4 form-group ml-0">
+                                                 <label>Date </label>
+                                                 <input type="text" id='anacdotal_date' value="{{ $get_anacdotal['date'] }}" name="date[]" class="form-control mydatepicker">
+                                             </div>
+                                             <div class="col-md-4 form-group">
+                                                 <label>Time </label>
+                                                 <input type="text" id='time' required name="time[]" value="{{ $get_anacdotal['time'] }}" class="form-control batchname clockpicker">
+                                                 <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
+                                             </div>
+                                             <div class="col-md-4 form-group ml-0 mr-0">
+                                                 <label for="life_skills">Life Skills</label>
+                                                 <select id="life_skills" name="life_skills[]" class="form-control">
+                                                     <option value="1" @if ($get_anacdotal['life_skills'] == 1) selected @endif>1</option>
+                                                     <option value="2" @if ($get_anacdotal['life_skills'] == 2) selected @endif>2</option>
+                                                 </select>
+                                             </div>
+                                             <div class="col-md-4 form-group ml-0 mr-0">
+                                                 <label for="life_values">Life Values</label>
+                                                 <select id="life_values" name="life_values[]" class="form-control">
+                                                     <option value="1" @if ($get_anacdotal['life_values'] == 1) selected @endif>1</option>
+                                                     <option value="2" @if ($get_anacdotal['life_values'] == 2) selected @endif>2</option>
+                                                 </select>
+                                             </div>
+                                             <div style="height:60px; width:100%; clear:both;"></div>
+                                         </div>
+                                     </div>
+                                     @endforeach
+                                     <input type="hidden" name="student_id" value="{{$student_data['id']}}">
+                                     <div id="anacdotal_og">
+                                         <div class="row">
+                                             <div class="col-md-4 form-group">
+                                                 <label>Place</label>
+                                                 <input type="text" required id='place' name="place[]" class="form-control">
+                                             </div>
+                                             <div class="col-md-4 form-group">
+                                                 <label for="observation">Observation</label>
+                                                 <textarea id="observation" name="observation[]" class="form-control"></textarea>
+                                             </div>
+                                             <div class="col-md-4 form-group ml-0">
+                                                 <label>Date </label>
+                                                 <input type="text" id='add_anacdotal_date' name="date[]" class="form-control mydatepicker">
+                                             </div>
+                                             <div class="col-md-4 form-group">
+                                                 <label>Time </label>
+                                                 <input type="text" id='time' required name="time[]" class="form-control batchname clockpicker">
+                                                 <span class="input-group-addon"><span class="glyphicon glyphicon-time"></span></span>
+                                             </div>
+                                             <div class="col-md-4 form-group ml-0 mr-0">
+                                                 <label for="life_skills">Life Skills</label>
+                                                 <select id="life_skills" name="life_skills[]" class="form-control">
+                                                     <option value="1">1</option>
+                                                     <option value="2">2</option>
+                                                 </select>
+                                             </div>
+                                             <div class="col-md-4 form-group ml-0 mr-0">
+                                                 <label for="life_values">Life Values</label>
+                                                 <select id="life_values" name="life_values[]" class="form-control">
+                                                     <option value="1">1</option>
+                                                     <option value="2">2</option>
+                                                 </select>
+                                             </div>
+                                         </div>
+                                     </div>
+                                     <div class="col-md-12 form-group">
+                                             <label>Add </label>
+                                             <a href="javascript:void(0);" class="triz-add-btn" onclick="addNewRow('anacdotal_og','anacdotal_add');">
+                                                 <span class="btn btn-outline-success"><i class="fa fa-plus"></i></span>
+                                             </a>
+                                     </div>
+                                     <div id="anacdotal_add">
+                                     </div>
+                                     @if(Session::get('user_profile_name') != 'Student')
+                                         <div class="col-md-12 form-group">
+                                             <input type="submit" name="submit" value="Save" class="btn btn-success triz-btn" >
+                                         </div>
+                                     @endif    
+                                     </form>
+                                 </div>
+                                 <!-- END Anacdotal -->
+                                 
                                 <div id="overlay" style="display:none;"><img id="loading" src="https://i1.wp.com/cdnjs.cloudflare.com/ajax/libs/galleriffic/2.0.1/css/loader.gif">
                                 </div>
                             

@@ -668,10 +668,11 @@ class tblstudentController extends Controller
 		/**
 		 * GET STUDENT PARENT DATA USING API
 		 */
-		$postData = [
+ 		$postData = [
             'sub_institute_id' => $sub_institute_id,
             'syear' => $syear,
             'student_id' => $id,
+            'term_id' => session()->get('term_id') ?? $request->input('term_id') ?? 0,
         ];
 
         $payload = json_encode($postData);
@@ -679,6 +680,8 @@ class tblstudentController extends Controller
         // Prepare new cURL resource
         $ch = curl_init("https://" . $_SERVER['SERVER_NAME'] . "/studentParentcommunicationListAPI"); 
         $leave = curl_init("https://" . $_SERVER['SERVER_NAME'] . "/studentLeaveApplicationAPI");
+        $disciplineCurl = curl_init("https://" . $_SERVER['SERVER_NAME'] . "/studentDisciplineAPI");
+        $resultsCurl = curl_init("https://" . $_SERVER['SERVER_NAME'] . "/studentResultPDFAPI");
 
         if(isset($ch))
         {
@@ -696,6 +699,22 @@ class tblstudentController extends Controller
             curl_setopt($leave, CURLOPT_POSTFIELDS, $payload);
         }
 
+        if(isset($disciplineCurl))
+        {
+            curl_setopt($disciplineCurl, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($disciplineCurl, CURLINFO_HEADER_OUT, true);
+            curl_setopt($disciplineCurl, CURLOPT_POST, true);
+            curl_setopt($disciplineCurl, CURLOPT_POSTFIELDS, $payload);
+        }
+
+        if(isset($resultsCurl))
+        {
+            curl_setopt($resultsCurl, CURLOPT_RETURNTRANSFER, true);
+            curl_setopt($resultsCurl, CURLINFO_HEADER_OUT, true);
+            curl_setopt($resultsCurl, CURLOPT_POST, true);
+            curl_setopt($resultsCurl, CURLOPT_POSTFIELDS, $payload);
+        }
+
         // Set HTTP Header for POST request
         curl_setopt($ch, CURLOPT_HTTPHEADER, [
                 'Content-Type: application/json',
@@ -709,17 +728,35 @@ class tblstudentController extends Controller
             ]
         );
 
+        curl_setopt($disciplineCurl, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen($payload),
+            ]
+        );
+
+        curl_setopt($resultsCurl, CURLOPT_HTTPHEADER, [
+                'Content-Type: application/json',
+                'Content-Length: ' . strlen($payload),
+            ]
+        );
+
         // Submit the POST request
         $getResult = curl_exec($ch);
         $getLeaveResult = curl_exec($leave);
+        $getDisciplineResult = curl_exec($disciplineCurl);
+        $getResultsResult = curl_exec($resultsCurl);
         
         // decode json result
         $result = json_decode($getResult);
         $leaveResult = json_decode($getLeaveResult);
+        $disciplineResult = json_decode($getDisciplineResult);
+        $resultsResult = json_decode($getResultsResult);
         
         // Close cURL session handle
         curl_close($ch);
         curl_close($leave);
+        curl_close($disciplineCurl);
+        curl_close($resultsCurl);
 
         $stuParCommunication = [];
         if (!empty($result) && $result->status_code == 1) {
@@ -729,6 +766,16 @@ class tblstudentController extends Controller
         $leaveApplication = [];
         if (!empty($leaveResult) && $leaveResult->status == 1) {
             $leaveApplication = $leaveResult->data;
+        }
+
+        $studentDiscipline = [];
+        if (!empty($disciplineResult) && $disciplineResult->status == 1) {
+            $studentDiscipline = $disciplineResult->data;
+        }
+
+        $studentResults = [];
+        if (!empty($resultsResult) && $resultsResult->status == 1) {
+            $studentResults = $resultsResult->data;
         }
 
         if ($sub_institute_id == 198) {
@@ -1166,10 +1213,12 @@ die; */
 		$res['transport_map_student'] = $studentTransportMap;
 		$res['state_data'] = $stateData;
 		$res['city_data'] = $cityData;
-		$res['attendance_data'] = $attendanceData;
-		$res['stu_par_communication'] = $stuParCommunication;
-        $res['leave_application'] = $leaveApplication;
-        if(isset($trans_details['stu_data'])){
+ 		$res['attendance_data'] = $attendanceData;
+ 		$res['stu_par_communication'] = $stuParCommunication;
+         $res['leave_application'] = $leaveApplication;
+         $res['student_discipline'] = $studentDiscipline;
+         $res['student_results'] = $studentResults;
+         if(isset($trans_details['stu_data'])){
             $res['trans_details']=$trans_details['stu_data'];
         }else{
             $res['trans_details']=[];
