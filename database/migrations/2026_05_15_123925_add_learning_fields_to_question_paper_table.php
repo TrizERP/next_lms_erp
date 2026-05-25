@@ -15,7 +15,7 @@ return new class extends Migration
 
             // Concept ID
             if (!Schema::hasColumn('question_paper', 'concept_id')) {
-                $table->bigInteger('concept_id')->nullable();
+                $table->unsignedBigInteger('concept_id')->nullable();
             }
 
             // Question type

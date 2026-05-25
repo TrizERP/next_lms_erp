@@ -18,6 +18,7 @@ return new class extends Migration {
             $table->integer('grade_id')->nullable();
             $table->integer('standard_id')->nullable();
             $table->integer('subject_id')->nullable();
+            $table->unsignedBigInteger('concept_id')->nullable();
             $table->string('paper_name', 250)->nullable();
             $table->string('paper_desc', 250)->nullable();
             $table->dateTime('open_date')->nullable();
