@@ -304,8 +304,10 @@ Route::post('/ai/generateLessonPlanNew', [contentController::class, 'generateLes
 Route::post('/ai/generateSportsData', [contentController::class, 'generateSportsData'])->name('ai.generateSportsData');
 Route::post('/ai/generateSlides', [contentController::class, 'generateSlides'])->name('ai.generateSlides');
 Route::post('/ai/generateKAABSlides', [contentController::class, 'generateKAABSlides'])->name('ai.generateKAABSlides');
+Route::post('/ai/generateGammaStyleSlide', [contentController::class, 'generateGammaStyleSlide'])->name('ai.generateGammaStyleSlide');
 Route::post('/ai/generateGammaPresentation', [contentController::class, 'generateGammaPresentation'])->name('ai.generateGammaPresentation');
 Route::post('/ai/getGammaPresentationStatus', [contentController::class, 'getGammaPresentationStatus'])->name('ai.getGammaPresentationStatus');
+Route::post('/generate-gamma-pdf', [contentController::class, 'generateGammaPDF'])->name('generate-gamma-pdf');
 Route::post('/paraphraseNew', [ParaphraseController::class, 'paraphrase']);
 Route::post('/set-book-session',[contentController::class,'setBookSession'])->name('set-book-session');
 
@@ -320,6 +322,8 @@ Route::prefix('h5p')->group(function () {
 });
 Route::post('get-h5p-ai-output', [H5PIndexController::class, 'getH5pAIOutput'])->name('get-h5p-ai-output');
 Route::post('get-h5p-ai-scenario', [H5PScenarioController::class, 'getH5pAIScenario'])->name('get-h5p-ai-scenario');
+    Route::get('suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggestedContent');
+
 
 
 // use App\Http\Controllers\lms\Neo4jSyncController;

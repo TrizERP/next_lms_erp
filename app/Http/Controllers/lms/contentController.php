@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Storage;
 use App\Services\OpenAIService;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class contentController extends Controller
 {
@@ -1207,6 +1209,45 @@ class contentController extends Controller
 }
 
 /**
+ * Generate a Gamma-style PDF presentation from AI generated content.
+ */
+public function generateGammaStyleSlide(Request $request)
+{
+    try {
+        $request->validate([
+            'generated_content' => 'required|string',
+            'subject_name' => 'required|string',
+            'chapter_name' => 'required|string',
+            'slide_count' => 'nullable|integer|min:1|max:20',
+        ]);
+
+        $openAIService = new OpenAIService();
+        $result = $openAIService->generateGammaStylePresentationPdf([
+            'generatedContent' => $request->generated_content,
+            'standardId' => $request->standard_id ?? '',
+            'subjectName' => $request->subject_name,
+            'chapterName' => $request->chapter_name,
+            'topicName' => $request->topic_name ?? '',
+            'contentCategory' => $request->content_category ?? 'Classroom Presentation',
+            'slideCount' => $request->slide_count ?? 8,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'file_name' => $result['file_name'],
+            'file_base64' => base64_encode($result['pdf_binary']),
+            'title' => $result['title'],
+            'message' => 'Slide PDF generated successfully',
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Error generating slide PDF: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+/**
  * Generate PDF Presentation using Gamma API
  */
 public function generateGammaPresentation(Request $request)
@@ -1270,5 +1311,171 @@ public function getGammaPresentationStatus(Request $request)
         ], 500);
     }
 }
+/**
+ * Extract mapping type and value from AI prompt
+ */
+private function extractMappingsFromPrompt($prompt)
+{
+    $mappings = [];
+    
+    // Define mapping patterns based on your lms_mapping_type table
+    // This is an example - adjust based on your actual mapping types
+    $mappingPatterns = [
+        // Example: If prompt contains "Bloom's Taxonomy Level 2"
+        'bloom' => [
+            'type_id' => 1,  // ID for Bloom's Taxonomy in lms_mapping_type
+            'patterns' => [
+                'Remember' => 101,
+                'Understand' => 102,
+                'Apply' => 103,
+                'Analyze' => 104,
+                'Evaluate' => 105,
+                'Create' => 106,
+            ]
+        ],
+        // Add more mapping types as needed
+    ];
+    
+    foreach ($mappingPatterns as $key => $config) {
+        foreach ($config['patterns'] as $keyword => $valueId) {
+            if (stripos($prompt, $keyword) !== false) {
+                $mappings[] = [
+                    'mapping_type_id' => $config['type_id'],
+                    'mapping_value_id' => $valueId
+                ];
+                break; // Only take first match per type
+            }
+        }
+    }
+    
+    return $mappings;
+}
+public function generateGammaPDF(Request $request)
+{
+    try {
+            // Validate the request
+            $request->validate([
+                'prompt' => 'required|string|max:400000', // Gamma supports up to 400k chars [citation:4]
+                'format' => 'nullable|in:presentation,document,social',
+                'export_format' => 'nullable|in:pdf,pptx',
+            ]);
+
+            $apiKey = env('GAMMA_API_KEY');
+            $baseUrl = env('GAMMA_BASE_URL');
+
+            if (!$apiKey || !$baseUrl) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gamma API credentials are missing'
+                ], 500);
+            }
+
+            // Step 1: Create a generation (async)
+            $generationResponse = Http::withHeaders([
+                'X-API-KEY' => $apiKey,  // Important: Not Bearer token, but X-API-KEY header [citation:1]
+                'Content-Type' => 'application/json',
+            ])->timeout(60)
+              ->post($baseUrl . 'generations', [  // Note: No leading slash needed if base URL ends with /
+                'inputText' => $request->prompt,
+                'textMode' => 'generate',  // Rewrite and expand content [citation:7]
+                'format' => $request->format ?? 'document',
+                'exportAs' => $request->export_format ?? 'pdf',
+                'numCards' => $request->slide_count ?? 10,  // Optional: control number of cards/pages
+            ]);
+
+            if (!$generationResponse->successful()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create generation',
+                    'error' => $generationResponse->json()
+                ], $generationResponse->status());
+            }
+
+            $generationId = $generationResponse->json('generationId');
+            
+            if (!$generationId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No generation ID received'
+                ], 500);
+            }
+
+            // Step 2: Poll for completion (max 30 attempts = 2.5 minutes)
+            $maxAttempts = 30;
+            $attempts = 0;
+            $status = 'processing';
+            $result = null;
+
+            while ($attempts < $maxAttempts && $status !== 'completed' && $status !== 'failed') {
+                $attempts++;
+                
+                // Wait 5 seconds between polls as recommended [citation:2]
+                if ($attempts > 1) {
+                    sleep(5);
+                }
+                
+                $pollResponse = Http::withHeaders([
+                    'X-API-KEY' => $apiKey,
+                ])->get($baseUrl . 'generations/' . $generationId);
+                
+                if (!$pollResponse->successful()) {
+                    Log::warning('Poll attempt failed', [
+                        'attempt' => $attempts,
+                        'response' => $pollResponse->body()
+                    ]);
+                    continue;
+                }
+                
+                $result = $pollResponse->json();
+                $status = $result['status'] ?? 'processing';
+                
+                Log::info('Polling generation status', [
+                    'generation_id' => $generationId,
+                    'status' => $status,
+                    'attempt' => $attempts
+                ]);
+            }
+
+            // Check final status
+            if ($status !== 'completed') {
+                return response()->json([
+                    'success' => false,
+                    'message' => $status === 'failed' ? 'Generation failed' : 'Generation timeout',
+                    'generation_id' => $generationId,
+                    'status' => $status
+                ], 408);
+            }
+
+            // Success! Return the file URL and details
+            return response()->json([
+                'success' => true,
+                'message' => 'PDF generated successfully',
+                'data' => [
+                    'file_url' => $result['exportUrl'],  // Direct download URL [citation:1]
+                    'gamma_url' => $result['gammaUrl'],  // View in Gamma app
+                    'generation_id' => $generationId,
+                    'status' => 'completed',
+                     'content_category' => $request->input('content_category', 'Classroom Presentation'), // Add this line
+                'title' => $request->input('title', 'Gamma Generated Presentation'), // Optional: pass title
+                
+                    'credits_used' => $result['credits']['deducted'] ?? null,
+                    'credits_remaining' => $result['credits']['remaining'] ?? null,
+                    'created_at' => now()->toISOString(),
+                            'mappings' => $request->input('mappings', [])  // Pass mappings from request
+
+                ]
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('PDF Generation Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred: ' . $e->getMessage()
+            ], 500);
+        }
 
 }
+}
+
+

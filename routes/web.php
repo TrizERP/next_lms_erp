@@ -538,6 +538,7 @@ Route::any('check_access',[AJAXController::class, 'check_access'])->name('check_
 Route::any('chat',[AJAXController::class, 'chat'])->name('chat');
 Route::post('/lms_chat', [App\Http\Controllers\lms\assessmentQuestionController::class, 'chat'])->name('lms_chat');
 Route::match(['get', 'post'], '/preview_distribution', [App\Http\Controllers\lms\assessmentQuestionController::class, 'previewDistribution'])->name('preview_distribution');
+Route::get('/assessment_question/concepts', [\App\Http\Controllers\lms\assessmentQuestionController::class, 'concepts'])->name('assessment_question.concepts');
 Route::post('assessment_question/store', [\App\Http\Controllers\lms\assessmentQuestionController::class, 'store'])->name('assessment_question.store');
 Route::any('geminiAI',[AJAXController::class, 'geminiAI'])->name('geminiAI');
 Route::get('lms_data',[AJAXController::class, 'lmsDataApi'])->name('lms_data');

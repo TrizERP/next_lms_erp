@@ -64,6 +64,7 @@ class questionmasterController extends Controller
         }
         $res['chapter_id'] = $request->get('chapter_id');
         $res['topic_id'] = $request->get('topic_id');
+        $res['concept_data'] = $this->getConceptData();
         
         // Get question types for AI question generation
         $res['questiontype_data'] = questiontypeModel::select('*')->get();
@@ -195,12 +196,21 @@ class questionmasterController extends Controller
         }
         $res['chapter_id'] = $request->get('chapter_id');
         $res['topic_id'] = $request->get('topic_id');
+        $res['concept_data'] = $this->getConceptData();
         
         // Get question types for AI question generation
         $res['questiontype_data'] = questiontypeModel::select('*')->get();
         
         // echo "<pre>";print_r($res['lms_mapping_type']);exit;
         return is_mobile($type, 'lms/show_chapter_questionmaster', $res, "view");
+    }
+
+    private function getConceptData()
+    {
+        return DB::table('lms_concept')
+            ->select('id', 'name')
+            ->orderBy('name')
+            ->get();
     }
 
     /**
