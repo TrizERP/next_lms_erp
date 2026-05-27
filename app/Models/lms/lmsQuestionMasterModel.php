@@ -16,6 +16,7 @@ class lmsQuestionMasterModel extends Model
         'standard_id',
         'subject_id',
         'chapter_id',
+        'concept_id',
         'topic_id',
         'question_title',
         'description',

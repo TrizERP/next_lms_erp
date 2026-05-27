@@ -1,7 +1,7 @@
 <?php
-
+ 
 namespace App\Http\Controllers\lms\pal;
-
+ 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
@@ -9,8 +9,6 @@ use function App\Helpers\getStudents;
 use App\Http\Controllers\AJAXController;
 use App\Http\Controllers\lms\onlineExamController;
 use App\Models\lms\lmsQuestionMasterModel;
-// use App\Models\lms\lmsOnlineExamAnswerStudent;
-// use App\Models\lms\lmsOnlineExamStudent;
 use App\Models\lms\lmsOnlineExamAnswerStudent;
 // // use App\Models\lms\lmsOnlineExamStudent;
 use App\Models\lms\lmsOnlineExamAnswerModel;
@@ -274,9 +272,19 @@ class palController extends Controller
         $res['subjectList'] =$getSubjectList;
         $res['chapterList'] =$getchapterList;  
         // $res['attemptExams'] = questionpaperModel::join('lms_online_exam_student as loes','loes.question_paper_id','=','question_paper.id')
-        $res['attemptExams'] = questionpaperModel::join('lms_online_exam as loes','loes.question_paper_id','=','question_paper.id')
-        ->where('question_paper.created_by',$student_id)->where(['question_paper.sub_institute_id'=>$sub_institute_id,'question_paper.syear'=>$syear])->where('question_paper.exam_type','PAL')->get()->toArray();
-        // echo "<pre>";print_r($newData);exit;
+         $res['attemptExams'] = questionpaperModel::join('lms_online_exam as loes','loes.question_paper_id','=','question_paper.id')
+        ->where('question_paper.created_by',$student_id)->where(['question_paper.sub_institute_id'=>$sub_institute_id])->where('question_paper.exam_type','PAL')->get()->toArray();
+        $perChapterQuiz = [];
+        foreach($res['attemptExams'] as $exam){
+            $i=0;
+            if(!isset($perChapterQuiz[$exam['paper_desc']])){
+                $perChapterQuiz[$exam['paper_desc']]=0;
+            }
+            $perChapterQuiz[$exam['paper_desc']]++;
+            $i++;
+        }
+        $res['perChapterQuiz'] = $perChapterQuiz;
+        // echo "<pre>";print_r($res['perChapterQuiz']);exit;
         return is_mobile($type, 'lms/pal/show', $res, "view");        
     }
     
@@ -577,7 +585,7 @@ public function generateMisconceptionContent(Request $request)
             // No previous exam, default to easy level
             $studentLevel = 'easy';
             $easyLevel = lmsmappingtypeModel::where('name', 'easy')
-                ->where('sub_institute_id', $sub_institute_id)
+                // ->where('sub_institute_id', $sub_institute_id)
                 ->first();
             $studentLevelId = $easyLevel ? $easyLevel->id : null;
         }
@@ -840,9 +848,6 @@ public function generateMisconceptionContent(Request $request)
             ->where('paper_desc', $chapter_id)
             ->count();
 
-        $command = "python3 /home/pal/pal.py $sub_institute_id $syear $standard_id $subject_id $chapter_id $enrollment_no";
-        $getLists = shell_exec($command);
-        $questionList=json_decode($getLists,true);
         if ($attemptedChapterQuizCount == 0) {
             $questionList = $this->getMixedLevelQuestionList($sub_institute_id, $standard_id, $subject_id, $chapter_id);
         } else {
@@ -1019,7 +1024,9 @@ public function incrementContentVisit(Request $request)
         $grade_id = $request->grade_id;
         $standard_id = $request->standard_id;
         $subject_id= $request->subject_id;
-        $paper_name= $request->paper_name;      
+        $paper_name= $request->paper_name; 
+        $chapter_name = $request->chapter_name;
+        $date = date('Y-m-d H:i:s');     
         $allowed_time = $request->questionpaper_time;  
         $total_marks = $request->total_marks;
         $submittedQuestionIds = $request->get('question_ids', []);
@@ -1035,7 +1042,7 @@ public function incrementContentVisit(Request $request)
             'standard_id'=>$standard_id,
             'subject_id'=>$subject_id,
             'paper_name'=>$paper_name,
-            'paper_desc'=>$request->chapter_id,
+            'paper_desc'=>$request->chapter_id, // to count quiz it is used as chapter_id only in PAL
             'timelimit_enable'=>1,
             'time_allowed' =>$allowed_time,
             'total_marks' =>$total_marks,
@@ -1046,9 +1053,8 @@ public function incrementContentVisit(Request $request)
             'show_feedback'=>1,
             'show_hide' =>1,
             'result_show_ans' =>1,
-            'created_by'=>$user_id,
+             'created_by'=>$user_id,
             'sub_institute_id'=>$sub_institute_id,
-            'syear'=>$syear,
             'exam_type'=>'PAL',
         ];
         // $check_exists = DB::table('question_paper')->where($questionPaperDetails)->first();
@@ -1392,10 +1398,7 @@ public function incrementContentVisit(Request $request)
     }
 
         $res['message'] = "Exam submitted";
-    // }else{
-
-    // }
-    return redirect()->route('pal.show',[$questionPaperId,"online_exam_id"=> $online_exam_id,"rightInterest"=>$rightInterest]);
+        return redirect()->route('pal.show',[$questionPaperId,"online_exam_id"=> $online_exam_id,"rightInterest"=>$rightInterest]);
     
     }
 
@@ -1965,11 +1968,21 @@ public function getData($request)
         
         // $data['online_exam_data'] =DB::SELECT("SELECT * FROM lms_online_exam  where id ='$online_exam_id' and student_id=95634 AND question_paper_id = '$user_id'");
 
-        $data['online_exam_data'] = lmsOnlineExamModel::where([
+        $onlineExamData = lmsOnlineExamModel::where([
             'id'=>$online_exam_id,'student_id'=>$user_id
         ])->get()->toArray();
-        // print_r($data['online_exam_data']);exit;
-        $data['online_exam_data'] = $data['online_exam_data'][0] ?? $data['online_exam_data'];
+        $data['online_exam_data'] = $onlineExamData[0] ?? $onlineExamData;
+        
+        // Calculate student level based on performance
+        $totalQuestions = $data['online_exam_data']['total_right'] + $data['online_exam_data']['total_wrong'];
+        $percentage = $totalQuestions > 0 ? ($data['online_exam_data']['total_right'] / $totalQuestions) * 100 : 0;
+        if ($percentage < 40) {
+            $data['online_exam_data']['student_level'] = 'easy';
+        } elseif ($percentage < 70) {
+            $data['online_exam_data']['student_level'] = 'medium';
+        } else {
+            $data['online_exam_data']['student_level'] = 'hard';
+        }
 
         // $online_answer_data = lmsOnlineExamAnswerModel::where(['online_exam_id'=>$online_exam_id,'student_id'=>$user_id])->get()->toArray();
         // foreach($online_answer_data as $key => $val)
@@ -2058,4 +2071,3 @@ public function getData($request)
         return is_mobile($type, "lms/pal/palreport", $res, "view");
     }
 }
-

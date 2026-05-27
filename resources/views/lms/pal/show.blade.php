@@ -6,7 +6,220 @@
 				<h4 class="page-title">PAL Subjects</h4>
 			</div>
 		</div>
-		
+	<style>
+/* Misconception Modal Styles - CRYSTAL CLEAR FIX */
+#misconceptionModal .modal-dialog {
+    max-width: 850px;
+}
+
+#misconceptionModal .modal-content {
+    border-radius: 12px;
+    overflow: hidden;
+}
+
+#misconceptionModal .modal-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-bottom: none;
+    padding: 15px 20px;
+}
+
+#misconceptionModal .modal-header h5 {
+    font-weight: 600;
+    margin: 0;
+}
+
+#misconceptionModal .modal-header .close {
+    color: white;
+    opacity: 0.8;
+}
+
+#misconceptionModal .modal-body {
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 20px;
+    background: #f5f7fa;
+}
+
+/* Question Card */
+.misconception-question-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    margin-bottom: 15px;
+}
+
+.misconception-question-card:hover {
+    transform: translateX(5px);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+    border-left-color: #4e73df;
+}
+
+.misconception-question-card.border-primary {
+    border-left-color: #4e73df !important;
+    box-shadow: 0 4px 15px rgba(78, 115, 223, 0.15);
+}
+
+/* Question Row */
+.question-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+}
+
+.question-text {
+    flex: 1;
+    font-size: 14px;
+    color: #333;
+    line-height: 1.5;
+}
+
+.wrong-count {
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wrong-count .badge {
+    font-size: 12px;
+    padding: 6px 12px;
+    border-radius: 20px;
+}
+
+.wrong-count .badge i {
+    margin-right: 4px;
+}
+
+.toggle-icon {
+    font-size: 12px;
+    color: #6c757d;
+    transition: transform 0.3s ease;
+}
+
+/* ========== CRITICAL FIX: MAPPING DETAILS CLEAR DISPLAY ========== */
+.mapping-details {
+    margin-top: 15px !important;
+}
+
+.mapping-details .card {
+    background-color: #ffffff !important;
+    border: 1px solid #e3e6f0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+.mapping-details .card-body {
+    padding: 0 !important;
+}
+
+/* Clean Mapping Header */
+.mapping-details h6 {
+    background: #f8f9fc;
+    padding: 12px 15px;
+    margin: 0 !important;
+    color: #4e73df;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid #e3e6f0;
+}
+
+.mapping-details h6 i {
+    margin-right: 8px;
+}
+
+/* CRYSTAL CLEAR TABLE STYLES - OVERRIDE BOOTSTRAP */
+.mapping-details .table {
+    margin-bottom: 0 !important;
+    background: white;
+    border-collapse: separate;
+    border-spacing: 0;
+    filter : blur(0px) !important;
+    text-align: center;
+}
+
+.mapping-details .table thead th {
+    background-color: #f1f5f9;
+    font-weight: 700 !important;
+    font-size: 12px !important;
+    text-transform: uppercase;
+    letter-spacing: 0.8px !important;
+    padding: 12px 15px !important;
+    border-bottom: 2px solid #e2e8f0;
+    color: #1e293b !important;
+    text-align: center;
+}
+
+.mapping-details .table tbody td {
+    padding: 14px 15px !important;
+    vertical-align: middle;
+    border-bottom: 1px solid #eef2f6;
+    font-size: 13px !important;
+    text-align: center;
+}
+
+.mapping-details .table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Mapping Type Column - BOLD & CLEAR */
+.mapping-details .table tbody td:first-child {
+    font-weight: 700 !important;
+    color: #1e293b !important;
+    background-color: #fafcff !important;
+    width: 40%;
+    border-right: 1px solid #eef2f6;
+}
+
+/* Mapping Value Column - CLEAR TEXT */
+.mapping-details .table tbody td:last-child {
+    font-weight: 500 !important;
+    color: #2d3748 !important;
+    background-color: #ffffff !important;
+    width: 60%;
+}
+
+/* Ensure text is sharp */
+.mapping-details .table tbody td {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Responsive fix */
+@media (max-width: 576px) {
+    .mapping-details .table thead th,
+    .mapping-details .table tbody td {
+        padding: 10px 12px !important;
+        font-size: 12px !important;
+    }
+}
+    	.title {  
+    display: flex;
+    justify-content: space-between;
+    /* gap: 20px; */
+    align-items: center;
+    width: 100%;
+}
+
+.chapter-name {
+    font-weight: 500;
+}
+
+.chapter-btns {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;              /* PERFECT GAP */
+    align-items: center;
+}
+
+.chapter-btns .btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    white-space: nowrap;    /* text break na thay */
+}
+        </style>
 		@if ($sessionData = Session::get('data'))
         @if (isset($sessionData['status_code']))
             <div class="col-md-12 alert alert-{{ $sessionData['status_code'] == 1 ? 'success' : 'danger' }} alert-block">
@@ -33,11 +246,8 @@
                             @if(!empty($data['chapterList'][$subject_id]))
                                 @foreach($data['chapterList'][$subject_id] as $chapter_id=>$chapter_name)
                                     <div class="row card single-chp mb-2" style="left:5% !important;">
-                                        <div class="col-md-4 mb-2 chp-details" data-toggle="collapse" href="#quiz_{{$j}}" role="button" aria-expanded="false" aria-controls="quiz_{{$j}}">
+                                        <div class="col-md-12 mb-2 chp-details" data-toggle="collapse" href="#quiz_{{$j}}" role="button" aria-expanded="false" aria-controls="quiz_{{$j}}">
                                             <div class="count">{{$j}}</div>
-                                            <div class="title">
-                                                {{$chapter_name}}
-                                            </div>
                                            <div class="title">
     <span class="chapter-name">{{$chapter_name}}</span>
         @if(isset($data['perChapterQuiz'][$chapter_id]) && $data['perChapterQuiz'][$chapter_id] > 0)
@@ -93,11 +303,12 @@
                                                 <div class="title">
                                                 <input type="hidden" name="quiz_no" id="quiz_no" data-val="{{$subject_id}}" value="{{$k}}">
                                                     <span>Quiz {{$k++}}</span>
+                                                    
                                                 </div>
                                             </div>
                                             @php
                                                 $total = ($examValue['total_right'] + $examValue['total_wrong']);
-                                                $per= (($examValue['total_right'] * 100) / $total) ?? 0
+                                                $per = $total > 0 ? ($examValue['total_right'] * 100) / $total : 0;
                                             @endphp
                                             <div class="col-md-4 progress_bar">
                                             <p style="margin-bottom:0px !important">Progress</p>
@@ -106,7 +317,7 @@
                                                 </div>
                                             </div>
                                             <div class="col-md-4 marks text-right">
-                                                {{$examValue['total_right']}} / {{$total}}
+                                                {{$total > 0 ? $examValue['total_right'] . ' / ' . $total : 'Not Attempted'}}       
                                             </div>
                                         </div>  
                                     </div> 
@@ -121,6 +332,7 @@
                                             </div>
                                         </div>  
                                     </div> 
+                                 
                                     @php $j++; @endphp                                     
                                     <!-- end quiz list  -->
                                 @endforeach      
@@ -135,7 +347,6 @@
 	</div>
 </div>
 @include('includes.lmsfooterJs')
-<script>
 <div class="modal fade" id="suggestedContentModal" tabindex="-1" role="dialog" aria-labelledby="suggestedContentModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
@@ -871,3 +1082,4 @@ function escapeHtml(text) {
 
 @include('includes.footer')
 @endsection
+
