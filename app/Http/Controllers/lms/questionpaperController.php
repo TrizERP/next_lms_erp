@@ -325,7 +325,7 @@ class questionpaperController extends Controller
                 'standard_id' => (int)$request['standard'],
                 'subject_id' => (int)$request['subject'],
                 'paper_name' => $request['paper_name'],
-                'total_marks' => (int)count($request['question_ids']),
+                'total_marks' => (int)$request['total_marks'],
                 'grade_id' => (int)$request['grade'],
                 'sub_institute_id' => (int)$sub_institute_id,
                 'syear' => (int)session()->get('syear'),

@@ -179,7 +179,7 @@ class onlineExamController extends Controller
                  'subject_id'       => (int)$questionpaper_details['subject_id'],
                  'paper_name'       => $questionpaper_details['paper_name'],
                  'total_marks'      => (int)$questionpaper_details['total_marks'],
-                 'grade_id'         => (int)$questionpaper_details['grade'],
+                 'grade_id'         => (int)$questionpaper_details['grade_id'],
                  'sub_institute_id' => (int)$sub_institute_id,
                  'syear'            => (int)$questionpaper_details['syear'],
                  'question_ids'     => $questionpaper_details['question_ids'],

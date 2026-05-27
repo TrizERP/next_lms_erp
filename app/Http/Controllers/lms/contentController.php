@@ -1480,3 +1480,4 @@ public function generateGammaPDF(Request $request)
 
 }
 }
+
