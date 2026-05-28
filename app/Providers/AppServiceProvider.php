@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\Facades\Log;
 use App\View\Components\filters;
+use Illuminate\Support\Facades\Log;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -58,16 +59,9 @@ class AppServiceProvider extends ServiceProvider
         // });
         // added on 08-05-2026
         DB::listen(function ($query) {
-
-            $dangerousPatterns = [
-                '/\bDROP\s+TABLE\b/i',
-                '/\bTRUNCATE\s+TABLE\b/i',
-            ];
-
-            foreach ($dangerousPatterns as $pattern) {
-
-                if (preg_match($pattern, $query->sql)) {
-
+        $dangerous = ['DROP TABLE', 'TRUNCATE TABLE'];
+        foreach ($dangerous as $cmd) {
+            if (stripos($query->sql, $cmd) !== false) {
                     Log::critical("DANGEROUS SQL BLOCKED", [
                         'sql'  => $query->sql,
                         'user' => auth()->user()?->email ?? 'system',

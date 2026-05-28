@@ -2451,7 +2451,8 @@ foreach ($previous_standard as $item) {
                 $topics = " and topic_id ='".$request->topic_id."'";
             }
            $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->where('status',1)->pluck('question_title');
-            $message=array($request->question_prompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
+            $questionPrompt = $this->appendSelectedMappingsToDistributionRequirements($request->question_prompt, $request);
+            $message=array($questionPrompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
             // return $message;exit;
         }else if(isset($request->search) && $request->search=="summernote"){
             $lang='';
@@ -2494,6 +2495,111 @@ foreach ($previous_standard as $item) {
             $res['answer'] = $response;
         }
        return $res['answer'];
+    }
+
+    private function appendSelectedMappingsToDistributionRequirements($prompt, Request $request)
+    {
+        if (!$request->boolean('advanced_mapping')) {
+            return $prompt;
+        }
+
+        $mappingTypes = (array) $request->get('mapping_type', []);
+        $mappingValues = (array) $request->get('mapping_value', []);
+        $reasons = (array) $request->get('reasons', []);
+        $selectedRows = [];
+
+        foreach ($mappingTypes as $index => $typeId) {
+            $valueId = $mappingValues[$index] ?? null;
+            if (empty($typeId) || empty($valueId)) {
+                continue;
+            }
+
+            $mappingType = DB::table('lms_mapping_type')
+                ->where('id', $typeId)
+                ->where('status', 1)
+                ->first();
+            $mappingValue = DB::table('lms_mapping_type')
+                ->where('id', $valueId)
+                ->where('parent_id', $typeId)
+                ->where('status', 1)
+                ->first();
+
+            if (!$mappingType || !$mappingValue) {
+                continue;
+            }
+
+            $selectedRows[] = [
+                'type' => $mappingType->name,
+                'value' => $mappingValue->name,
+                'reason' => $reasons[$index] ?? ''
+            ];
+        }
+
+        if (empty($selectedRows)) {
+            return $prompt;
+        }
+
+        $mappingLines = "Distribution Requirements:\n";
+        $totalQuestions = max(1, (int) $request->get('total_questions', 1));
+        $countPerValue = (int) floor($totalQuestions / count($selectedRows));
+        $remainder = $totalQuestions % count($selectedRows);
+
+        foreach ($selectedRows as $index => $row) {
+            $questionsForThis = max(1, $countPerValue + ($index < $remainder ? 1 : 0));
+            $focus = !empty($row['reason']) ? $row['reason'] : $row['value'];
+
+            $mappingLines .= "- {$row['type']} - {$row['value']} - Focus: {$focus}";
+            $mappingLines .= "\n";
+        }
+        $mappingLines .= "Use the selected mapping rows as tags on the same generated set; do not generate extra items for additional mapping rows.\n";
+
+        $distributionStart = strpos($prompt, "Distribution Requirements:\n");
+        $returnStart = strpos($prompt, "\nReturn");
+
+        if ($distributionStart !== false && $returnStart !== false && $returnStart > $distributionStart) {
+            return substr($prompt, 0, $distributionStart) .
+                $mappingLines .
+                substr($prompt, $returnStart);
+        }
+
+        if ($returnStart !== false) {
+            return substr($prompt, 0, $returnStart) .
+                "\n" . $mappingLines .
+                substr($prompt, $returnStart);
+        }
+
+        return rtrim($prompt) . "\n\n" . $mappingLines;
+    }
+
+    // private function getDifficultyFromMappingValue($valueName)
+    // {
+    //     $lowerName = strtolower(trim($valueName));
+    //     $easy = ['remember', 'understand', 'simple', 'basic'];
+    //     $medium = ['apply', 'analyze', 'intermediate', 'moderate'];
+    //     $hard = ['evaluate', 'create', 'complex', 'advanced'];
+
+    //     if (in_array($lowerName, $easy)) {
+    //         return 'Easy';
+    //     }
+
+    //     if (in_array($lowerName, $medium)) {
+    //         return 'Medium';
+    //     }
+
+    //     if (in_array($lowerName, $hard)) {
+    //         return 'Hard';
+    //     }
+
+    //     return 'Easy';
+    // }
+
+    private function getMarksByDifficulty($difficulty)
+    {
+        return [
+            'Easy' => 1,
+            'Medium' => 2,
+            'Hard' => 3
+        ][$difficulty] ?? 1;
     }
 
     public function geminiAI(Request $request){
@@ -2559,7 +2665,8 @@ foreach ($previous_standard as $item) {
             }
            $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->where('status',1)->pluck('question_title');
             
-           $message=array($request->question_prompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
+           $questionPrompt = $this->appendSelectedMappingsToDistributionRequirements($request->question_prompt, $request);
+           $message=array($questionPrompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
             // return $message;exit;
         }
 

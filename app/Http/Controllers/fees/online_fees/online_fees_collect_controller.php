@@ -1491,7 +1491,7 @@ exit; */
         }
     }
 
-    public function orange_pg(Request $request)
+    public function icici_orange(Request $request)
     {
         $data = $this->get_fees($request);
         $type = "web";
@@ -1501,7 +1501,7 @@ exit; */
     /**
      * Build Orange PG initiateSale request and redirect student to payment page.
      */
-    public function orange_pg_request_handler(Request $request)
+    public function icici_orange_request_handler(Request $request)
     {
         $student_id = $_REQUEST["student_id"];
         $fine       = isset($_REQUEST["fees_data"]["fine"]) ? $_REQUEST["fees_data"]["fine"] : 0;
@@ -1624,8 +1624,8 @@ exit; */
         ];
         //dd($payload);
         // ── Call Orange PG initiateSale API ───────────────────────────────────
-        $initiateURL = "https://pgpay.icicibank.com/tsp/pg/api/v2/initiateSale";
-        // For development : https://pgpayuat.icicibank.com/tsp/pg/api/v2/initiateSale
+        //$initiateURL = "https://pgpay.icicibank.com/pg/api/v2/initiateSale"; // Production
+        $initiateURL = "https://pgpayuat.icicibank.com/tsp/pg/api/v2/initiateSale"; // Development
 
         $ch = curl_init($initiateURL);
         curl_setopt_array($ch, [
@@ -1646,7 +1646,7 @@ exit; */
         }
 
         $responseData = json_decode($apiResponse, true);
-
+//echo "<pre>";print_r($apiResponse);exit();
         // ── Save to DB before redirect ────────────────────────────────────────
         $amountInt   = intval($amount);
         $fineInt     = intval($fine);
@@ -1687,7 +1687,7 @@ exit; */
     /**
      * Handle the return POST/GET callback from Orange PG after payment.
      */
-    public function orange_pg_response_handler(Request $request)
+    public function icici_orange_response_handler(Request $request)
     {
         $response = $_REQUEST;
         $resJson  = json_encode($response);
@@ -1824,7 +1824,7 @@ exit; */
             ];
 
             // ── Call Orange PG Status Check API ───────────────────────────────
-            $statusURL = "https://pgpay.icicibank.com/tsp/pg/api/command";
+            $statusURL = "https://pgpay.icicibank.com/pg/api/command"; //Production
             // Development: "https://pgpayuat.icicibank.com/tsp/pg/api/command"
 
             $ch = curl_init($statusURL);
@@ -3170,11 +3170,13 @@ if (Str::startsWith($order_id, 'pay_')) {
         $medium_data = DB::select("SELECT a.*,e.grade_id,
             CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name,
             t.mobile,
-            CONCAT_WS('_',t.first_name,t.middle_name,t.last_name,t.enrollment_no) AS uniqueid,
+            CONCAT_WS('_',t.first_name,t.middle_name,t.last_name,t.enrollment_no,s.name,d.name) AS uniqueid,
             t.email
             FROM tblstudent_enrollment e
             INNER JOIN academic_section a ON e.grade_id = a.id
-            INNER JOIN tblstudent t ON t.id=e.student_id
+            INNER JOIN standard         s ON e.standard_id = s.id
+            INNER JOIN division         d ON e.section_id  = d.id
+            INNER JOIN tblstudent       t ON t.id=e.student_id
             INNER JOIN fees_online_maping fom ON fom.syear=e.syear AND fom.sub_institute_id=e.sub_institute_id
             WHERE e.student_id = ? ORDER BY e.syear DESC LIMIT 1", [$student_id]);
 

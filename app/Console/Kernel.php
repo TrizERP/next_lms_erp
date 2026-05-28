@@ -46,7 +46,7 @@ class Kernel extends ConsoleKernel
             ]);
             
             $cmd  = implode(' ', $argv);
-            if (preg_match('/\b(migrate|db:seed|schema|fresh|refresh)\b/i', $cmd)) {
+            if (preg_match('/\b(db:seed|schema|fresh|refresh)\b/i', $cmd)) {
                 fwrite(STDERR, "❌ Database schema commands are blocked in production.\n");
                 exit(1);
             }

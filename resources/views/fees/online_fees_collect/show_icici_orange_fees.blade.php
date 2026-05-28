@@ -17,7 +17,7 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-md-12">
-                <h4 class="page-title text-center">Fees Collect</h4>
+                <h4 class="page-title text-center">Fees Collect - ICICI Orange</h4>
             </div>
         </div>
         <div class="card">
@@ -129,7 +129,7 @@
                                 </tr>
                             </table>
                         </div>
-                        <form action="{{ route('icici_orange_pg_request_handler') }}" enctype="multipart/form-data" method="post">
+                        <form action="{{ route('icici_orange_request_handler') }}" enctype="multipart/form-data" method="post">
                             @csrf
                             <input type="hidden" name="grade_id" value="<?php echo $data['stu_data']['grade_id']; ?>">
                             <input type="hidden" name="standard_id" value="<?php echo $data['stu_data']['std_id']; ?>">

@@ -87,6 +87,19 @@ class studentAttendanceController extends Controller
         list($standard, $division) = explode("||", $standard_division_orignal);
         $grade = '';
 
+        $get_term = DB::table('academic_year')->selectRaw('group_concat(id) as id,group_concat(term_id) as term_id,group_concat(title) as title,group_concat(start_date) as start_date,group_concat(end_date) as end_date,group_concat(post_start_date) as post_start_date,group_concat(post_end_date) as post_end_date')->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->groupBy('syear')->first();
+        if ($get_term) {
+            $post_start_date_ex = explode(',', $get_term->post_start_date);
+            $post_end_date_ex = explode(',', $get_term->post_end_date);
+            $post_start_date = $post_start_date_ex[0];
+            $post_end_date = isset($post_end_date_ex[1]) ? $post_end_date_ex[1] : $post_end_date_ex[0];
+            if ($date < $post_start_date || $date > $post_end_date) {
+                $res['status_code'] = 0;
+                $res['message'] = "Your selected date $date is not your academic year date";
+                return is_mobile($type, "student_attendance.index", $res);
+            }
+        }
+
         $sundays = getCountDays($date, $date);
        
         $holidays = DB::table('calendar_events')
