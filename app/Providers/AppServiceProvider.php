@@ -8,7 +8,6 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Blade;
-use Illuminate\Support\Facades\Log;
 use App\View\Components\filters;
 use Illuminate\Support\Facades\Log;
 
