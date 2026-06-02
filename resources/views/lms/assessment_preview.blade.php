@@ -332,6 +332,7 @@
 $(document).ready(function() {
     let currentDistribution = null;
     let currentPrompt = '';
+    let unmappedPrompt = '';
     let generatedQuestions = [];
     const $assessmentModal = $('#assessmentPreviewModal');
 
@@ -396,13 +397,41 @@ $(document).ready(function() {
         };
     }
 
+    function hasSelectedAdvancedMapping() {
+        let hasSelectedMapping = false;
+
+        $assessmentModal.find('select[name="mapping_type[]"], select[name="mapping_value[]"]').each(function() {
+            if ($(this).val()) {
+                hasSelectedMapping = true;
+                return false;
+            }
+        });
+
+        return hasSelectedMapping;
+    }
+
     $('#advancedMappingToggle').on('change', function() {
-        $('#advancedMappingSection').toggleClass('d-none', !$(this).is(':checked'));
-        if ($(this).is(':checked')) {
+        const isAdvancedMappingOpen = $(this).is(':checked');
+
+        $('#advancedMappingSection').toggleClass('d-none', !isAdvancedMappingOpen);
+        if (isAdvancedMappingOpen) {
+            unmappedPrompt = $('#aiPrompt').val() || currentPrompt || unmappedPrompt;
             $('#promptPreviewSection').find('.alert-heading').addClass('d-none');
             $('#aiPrompt').val('');
         } else {
             $('#promptPreviewSection').find('.alert-heading').removeClass('d-none');
+            if (!hasSelectedAdvancedMapping() && unmappedPrompt) {
+                $('#aiPrompt').val(unmappedPrompt);
+                currentPrompt = unmappedPrompt;
+                $('#promptPreviewSection').removeClass('d-none');
+            }
+        }
+    });
+
+    $('#aiPrompt').on('input', function() {
+        currentPrompt = $(this).val();
+        if (!$('#advancedMappingToggle').is(':checked')) {
+            unmappedPrompt = currentPrompt;
         }
     });
 
@@ -679,6 +708,9 @@ $(document).ready(function() {
                     // Show prompt in editable textarea
                     $('#aiPrompt').val(result.prompt || '');
                     currentPrompt = result.prompt || '';
+                    if (!$('#advancedMappingToggle').is(':checked')) {
+                        unmappedPrompt = currentPrompt;
+                    }
                     $('#promptPreviewSection').removeClass('d-none');
                     
                     // Show distribution too
