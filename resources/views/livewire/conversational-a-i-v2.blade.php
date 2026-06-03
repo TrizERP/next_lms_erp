@@ -864,7 +864,7 @@
                 return;
             }
             
-            const studentKeywords = ["student detail", "student details", "fees details", "fees detail", "fee details", "fee detail", "admission details", "admission detail","remain fees","fees remain","pending fees","paid fees","fees paid","total fees"];
+            const studentKeywords = ["student detail", "student details", "fees details", "fees detail", "fee details", "fee detail", "admission details", "admission detail","remain fees","fees remain","pending fees","paid fees","fees paid","total fees","attendance","results"];
             const matchedKeyword = studentKeywords.find(kw => content.toLowerCase().includes(kw));
             if (matchedKeyword) {
                 let detectedAction = "student_details";
@@ -873,6 +873,8 @@
                 else if (content.toLowerCase().includes("total")) detectedAction = "total_fees";
                 else if ((content.toLowerCase().includes("fees") || content.toLowerCase().includes("fee")) && (content.toLowerCase().includes("detail") || content.toLowerCase().includes("details"))) detectedAction = "fees_details";
                 else if ((content.toLowerCase().includes("admission") || content.toLowerCase().includes("admissions")) && (content.toLowerCase().includes("detail") || content.toLowerCase().includes("details"))) detectedAction = "admission_details";
+                else if (content.toLowerCase().includes("attendance")) detectedAction = "attendance";
+                else if (content.toLowerCase().includes("results") || content.toLowerCase().includes("result")) detectedAction = "results";
                 pendingEnrollmentAction = detectedAction;
                 const uniqueId = 'enrollmentInput_' + Date.now(); currentEnrollmentInputId = uniqueId;
                 const inputHtml = `<div><span class="mb-2 d-block">Please provide the student enrollment number:</span><div class="enrollment-input-group"><input type="text" id="${uniqueId}" class="form-control form-control-sm" placeholder="Enter enrollment no. (e.g., HN-25-379)" style="max-width:200px;" /><button type="button" class="submit-enrollment-btn btn btn-primary btn-sm rounded-pill" data-input-id="${uniqueId}"><i class="fas fa-check"></i></button></div></div>`;
