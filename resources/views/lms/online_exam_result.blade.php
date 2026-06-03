@@ -24,7 +24,7 @@
             @endif
         </div>        
     </div>
-
+<style>
 .wrong-answer {
     background-color: #ffe6e6;
     padding: 5px;

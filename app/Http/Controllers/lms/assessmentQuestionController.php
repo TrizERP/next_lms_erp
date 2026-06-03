@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\lms;
 
+use App\Http\Controllers\AJAXController;
 use App\Http\Controllers\Controller;
 use App\Models\lms\answermasterModel;
 use App\Models\lms\lmsmappingtypeModel;
@@ -19,6 +20,7 @@ use function App\Helpers\neo4jCreateRelationship;
 class assessmentQuestionController extends Controller
 {
     protected $openAIService;
+    protected $ajaxController;
 
     const BLOOMS_TAXONOMY_MAPPING_TYPE_ID = 2;
     
@@ -56,9 +58,10 @@ class assessmentQuestionController extends Controller
         'advanced' => 'Hard'
     ];
     
-    public function __construct(OpenAIService $openAIService)
+    public function __construct(OpenAIService $openAIService, AJAXController $ajaxController)
     {
         $this->openAIService = $openAIService;
+        $this->ajaxController = $ajaxController;
     }
     
     /**
@@ -137,7 +140,7 @@ class assessmentQuestionController extends Controller
                 $names = $this->getName($standardId, $subjectId, $chapterId, $topicId);
 
                 // Generate the prompt
-                $prompt = $this->generateEnhancedPrompt(
+                $prompt = $this->ajaxController->generateAssessmentPrompt(
                     $totalDistributedQuestions,
                     $distribution,
                     $questionTypeName,
@@ -385,12 +388,12 @@ class assessmentQuestionController extends Controller
 
         if (empty($allValues)) {
             $allValues = [
-                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 1, 'value_name' => 'Remember', 'difficulty' => 'Easy'],
-                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 2, 'value_name' => 'Understand', 'difficulty' => 'Easy'],
-                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 3, 'value_name' => 'Apply', 'difficulty' => 'Medium'],
-                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 4, 'value_name' => 'Analyze', 'difficulty' => 'Medium'],
-                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 5, 'value_name' => 'Evaluate', 'difficulty' => 'Hard'],
-                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 6, 'value_name' => 'Create', 'difficulty' => 'Hard']
+                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 1, 'value_name' => 'Remember',],
+                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 2, 'value_name' => 'Understand',],
+                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 3, 'value_name' => 'Apply',],
+                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 4, 'value_name' => 'Analyze',],
+                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 5, 'value_name' => 'Evaluate',],
+                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 6, 'value_name' => 'Create',]
             ];
         }
 
@@ -411,7 +414,6 @@ class assessmentQuestionController extends Controller
                 'mapping_type_name' => 'Selected Mappings',
                 'mapping_value_id' => null,
                 'mapping_value_name' => null,
-                'difficulty' => 'Mixed',
                 'questions' => $totalQuestions,
                 'start_num' => 1,
                 'end_num' => $totalQuestions,
@@ -601,90 +603,6 @@ class assessmentQuestionController extends Controller
         return false;
     }
     
-    /**
-     * Generate enhanced AI prompt with distribution details
-     */
-    private function generateEnhancedPrompt($totalQuestions, $distribution, $questionType, $standard, $subject, $chapter, $topic = null, $concept = null)
-    {
-        $prompt = "Generate {$totalQuestions} {$questionType} CBSE questions for:\n";
-        $prompt .= "- Standard: {$standard}\n";
-        $prompt .= "- Subject: {$subject}\n";
-        $prompt .= "- Chapter: {$chapter}\n";
-        if ($topic) {
-            $prompt .= "- Topic: {$topic}\n";
-        }
-        if ($concept) {
-            $prompt .= "- Concept: {$concept}\n";
-            $prompt .= "Generate every question specifically to assess this concept; do not broaden the questions to unrelated chapter concepts.\n";
-        }
-        
-        $primaryDistribution = array_values(array_filter($distribution, fn($item) => empty($item['additional_mapping'])));
-        $additionalMappings = array_values(array_filter($distribution, fn($item) => !empty($item['additional_mapping'])));
-        $hasSelectedDistribution = collect($primaryDistribution)->contains(fn($item) => !empty($item['selected']));
-
-        $prompt .= "\nDistribution Requirements:\n";
-        
-        foreach ($primaryDistribution as $item) {
-            if (!empty($item['all_selected_mappings']) && is_array($item['all_selected_mappings'])) {
-                foreach ($item['all_selected_mappings'] as $selectedMapping) {
-                    $focusArea = !empty($selectedMapping['reason'])
-                        ? $selectedMapping['reason']
-                        : $this->getFocusAreaForLevel($selectedMapping['value_name'] ?? null);
-                    $prompt .= "- {$selectedMapping['type_name']} - {$selectedMapping['value_name']} - Focus: {$focusArea}\n";
-                }
-                continue;
-            }
-
-            $focusArea = $this->getFocusAreaForLevel($item['mapping_value_name'] ?? null);
-            $prompt .= "- {$item['mapping_type_name']} - {$item['mapping_value_name']} - Focus: {$focusArea}\n";
-        }
-
-        if ($hasSelectedDistribution) {
-            $prompt .= "Use the selected mapping rows as tags on the same generated set; do not generate extra items for additional mapping rows.\n";
-        }
-
-        if (!empty($additionalMappings)) {
-            foreach ($additionalMappings as $item) {
-                $focusArea = !empty($item['reason']) ? $item['reason'] : $this->getFocusAreaForLevel($item['mapping_value_name']);
-                $attachInstruction = !empty($item['attach_to_all'])
-                    ? 'Apply to every question.'
-                    : 'Do not generate extra items for this mapping.';
-                $prompt .= "- {$item['mapping_type_name']} - {$item['mapping_value_name']} - Focus: {$focusArea}. {$attachInstruction}\n";
-            }
-        }
-
-        $prompt .= "\nReturn the response as a JSON array of question objects with fields: ";
-        $prompt .= "question, question_type (always '{$questionType}'), correct_answer, and explanation.";
-        
-        if (strtolower($questionType) === 'mcq' || strtolower($questionType) === 'multiple choice') {
-            $prompt .= " For MCQ, include options array with 4 objects having 'text' and 'correct' boolean fields.";
-        }
-        
-        return $prompt;
-    }
-    
-    /**
-     * Get focus area description for each mapping level
-     */
-    private function getFocusAreaForLevel($levelName)
-    {
-        $focusAreas = [
-            'Remember' => 'Recall definitions, facts, and basic concepts',
-            'Understand' => 'Explain and summarize key ideas',
-            'Apply' => 'Use knowledge in new situations',
-            'Analyze' => 'Compare, contrast, and examine relationships',
-            'Evaluate' => 'Justify and critique decisions',
-            'Create' => 'Design and develop original solutions',
-            'Simple' => 'Basic recall and identification',
-            'Basic' => 'Simple understanding of concepts',
-            'Intermediate' => 'Application of procedures',
-            'Moderate' => 'Analysis of complex situations',
-            'Complex' => 'Evaluation and synthesis',
-            'Advanced' => 'Creative problem solving'
-        ];
-        
-        return $focusAreas[$levelName] ?? 'General understanding';
-    }
     /**
      * Get Text from pass IDs
      */
@@ -1051,7 +969,7 @@ class assessmentQuestionController extends Controller
                     }
                 } else {
                     // Generate enhanced prompt
-                    $prompt = $this->generateEnhancedPrompt(
+                    $prompt = $this->ajaxController->generateAssessmentPrompt(
                         $distributedQuestionCount,
                         $distribution,
                         $questionTypeName,
