@@ -275,7 +275,8 @@
                             </svg>
                         </button>
                     </div> 
-               @include('conversationalAI')
+               {{-- @include('conversationalAI') --}}
+                  @livewire('conversational-a-i-v2')
                     <!-- end conversational AI  -->
                <div class="d-xl-flex d-md-block d-flex flex-wrap align-items-center justify-content-between">
                   <!--<div class="d-flex align-items-center">
@@ -688,10 +689,12 @@
          @endif
          @endforeach
          @endif
-      </div>
-      </aside>
-      <!-- ============================================================== -->
-      <!-- End Left Sidebar -->
-      <!-- ============================================================== -->
-      @section('container')
-      @show
+</div>
+       </aside>
+       <!-- ============================================================== -->
+       <!-- End Left Sidebar -->
+       <!-- ============================================================== -->
+       @section('container')
+       @show
+       @livewireScripts
+       @stack('scripts')

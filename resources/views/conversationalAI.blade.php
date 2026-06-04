@@ -1,6 +1,4 @@
 <style>
-  
-  
     .d-flex .flex-column .gap-1{
         width: 95%;
     }
@@ -154,6 +152,13 @@
         border-left: 3px solid #0d6efd;
         font-size: 0.85rem;
         color: #2c3e50;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .intent-item:hover {
+        background: #e9ecef;
+        transform: translateX(5px);
     }
     
     .intent-category {
@@ -682,13 +687,26 @@
                     var html = '<div class="intent-list">';
                     if (response.intents && response.intents.length > 0) {
                         response.intents.forEach(function(intent) {
-                            html += '<div class="intent-item">' + intent + '</div>';
+                            html += '<div class="intent-item" data-intent-text="' + intent.replace(/"/g, '&quot;') + '">' + intent + '</div>';
                         });
                     } else {
                         html += '<div class="text-muted">No intents available</div>';
                     }
                     html += '</div>';
                     $('#intentListContent').html(html);
+                    
+                    // Add click handler for intent items
+                    $('.intent-item').on('dblclick', function() {
+                        var intentText = $(this).data('intent-text');
+                        if (intentText) {
+                            // Set the text in the chat input
+                            $chatInput.val(intentText).trigger('input');
+                            // Close the modal
+                            hideModal($intentModal);
+                            // Focus on the input
+                            $chatInput.focus();
+                        }
+                    });
                 },
                 error: function() {
                     $('#intentListContent').html('<div class="text-danger">Failed to load intents</div>');

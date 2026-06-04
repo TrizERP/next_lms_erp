@@ -42,17 +42,32 @@ class AppServiceProvider extends ServiceProvider
 
 
         Schema::defaultStringLength(191);
-        
+
+        // DB::listen(function ($query) {
+        // $dangerous = ['DROP', 'TRUNCATE'];
+        // foreach ($dangerous as $cmd) {
+        //     if (stripos($query->sql, $cmd) !== false) {
+        //             Log::critical("DANGEROUS SQL BLOCKED", [
+        //                 'sql' => $query->sql,
+        //                 'user' => auth()->user()?->email ?? 'system',
+        //                 'time' => now()
+        //             ]);
+        //             throw new \Exception("Dangerous command blocked: $cmd");
+        //         }
+        //     }
+        // });
+        // added on 08-05-2026
         DB::listen(function ($query) {
         $dangerous = ['DROP TABLE', 'TRUNCATE TABLE'];
         foreach ($dangerous as $cmd) {
             if (stripos($query->sql, $cmd) !== false) {
                     Log::critical("DANGEROUS SQL BLOCKED", [
-                        'sql' => $query->sql,
+                        'sql'  => $query->sql,
                         'user' => auth()->user()?->email ?? 'system',
                         'time' => now()
                     ]);
-                    throw new \Exception("Dangerous command blocked: $cmd");
+
+                    throw new \Exception("Dangerous SQL command blocked.");
                 }
             }
         });
