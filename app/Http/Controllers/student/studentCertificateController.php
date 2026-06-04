@@ -301,11 +301,22 @@ class studentCertificateController extends Controller
         }
 
         $number_controller = new numberWordsController;
-        $date_in_word = ucwords($number_controller->toWords(date('dS', strtotime($value['dob'])))." of ".
+        /*$date_in_word = ucwords($number_controller->toWords(date('dS', strtotime($value['dob'])))." of ".
             date('F', strtotime($value['dob']))." ".
-            $this->convert_number_to_words(date('Y', strtotime($value['dob']))));
+            $this->convert_number_to_words(date('Y', strtotime($value['dob']))));*/
+
+        $date_in_word = str_replace(
+		    ' Of ',
+		    ' of ',
+		    ucwords(
+		        $number_controller->toWords(date('dS', strtotime($value['dob']))) . " of " .
+		        date('F', strtotime($value['dob'])) . " " .
+		        $this->convert_number_to_words(date('Y', strtotime($value['dob'])))
+		    )
+		);
+		
         if(in_array($sub_institute_id,[47,76])){
-            $date_in_word = str_replace([' And ', ' Of '], ' ', $date_in_word);
+            $date_in_word = str_replace([' And ', ' of ', ' Of '], ' ', $date_in_word);
         }
         // echo "<pre>";print_r($date_in_word);exit;
         $males = ["male","Male","MALE","M"];
