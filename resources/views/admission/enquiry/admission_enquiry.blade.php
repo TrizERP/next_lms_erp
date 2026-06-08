@@ -136,11 +136,11 @@
                         <div class="col-md-3 {{$class}} form-group">
                             <label>Previous School's Name </label>
                             <input type="text" id='previous_school_name' name="previous_school_name"
-                                class="form-control" required>
+                                class="form-control" @if($class == 'show') required @endif>
                         </div>
                         <div class="col-md-3 {{$class}} form-group">
                             <label>Previous Standard </label>
-                            <select id='previous_standard' name="previous_standard" class="form-control" required>
+                            <select id='previous_standard' name="previous_standard" class="form-control" @if($class == 'show') required @endif>
                                 <option value=""> Select Standard </option>
                                 @foreach ($data['standard'] as $key => $previous)
                                     <option value="{{ $previous['id'] }}"> {{ $previous['name'] }}</option>
