@@ -15,6 +15,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use function App\Helpers\sendSMS;
+use function App\Helpers\SearchStudent;
+use App\Http\Controllers\admission\admissionRegistrationHillController;
 use GenTux\Jwt\GetsJwtToken;
 use Carbon\Carbon;
 use App\Models\settings\masterFieldModel;
@@ -565,7 +568,7 @@ class admissionEnquiryController extends Controller
             } else {
                 admissionEnquiryModel::insert($data);
                 $last_inserted_id = DB::getPdo()->lastInsertId();
-                if ($data['send_sms'] == 1) {
+                if (isset($data['send_sms']) && $data['send_sms'] == 1) {
                     $response1 = sendSMS($data['mobile'], $data['sms_message'], $sub_institute_id);
                     if ($response1['error'] != 1) {
                         DB::table('sms_sent_parents')->insert([
@@ -585,7 +588,7 @@ class admissionEnquiryController extends Controller
             }
             admissionEnquiryModel::insert($data);
             $last_inserted_id = DB::getPdo()->lastInsertId();
-            if ($data['send_sms'] == 1) {
+            if (isset($data['send_sms']) && $data['send_sms'] == 1) {
                 $response1 = sendSMS($data['mobile'], $data['sms_message'], $sub_institute_id);
                 if ($response1['error'] != 1) {
                     DB::table('sms_sent_parents')->insert([
