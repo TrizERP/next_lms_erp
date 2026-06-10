@@ -754,9 +754,9 @@ class admissionEnquiryController extends Controller
 
         // Master Fields Data for edit view
         $masterData = masterFieldInstituteModel::where(['sub_institute_id'=>$sub_institute_id, 'module'=>'admission_enquiry'])->whereNull('deleted_at')->orderBy('sort_order')->get();
-        if(count($masterData)==0){
+        /*if(count($masterData)==0){
             $masterData = masterFieldModel::where('module','admission_enquiry')->orderBy('sort_order')->get();
-        }
+        }*/
 
         $masterDataArr = [];
         foreach ($masterData as $key => $value) {

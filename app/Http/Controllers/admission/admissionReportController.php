@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use App\Models\settings\tblcustomfieldsModel;
+use App\Models\settings\masterFieldInstituteModel;
+use App\Models\settings\masterFieldModel;
 use GenTux\Jwt\GetsJwtToken;
 
 class admissionReportController extends Controller
@@ -38,6 +40,19 @@ class admissionReportController extends Controller
             ->groupBy('u.id')
             ->get();
 
+        // Master Fields Data starts
+        $masterData = masterFieldInstituteModel::where(['sub_institute_id'=>$sub_institute_id, 'module'=>'admission_enquiry'])->whereNull('deleted_at')->orderBy('sort_order')->get();
+        /*if(count($masterData)==0){
+            $masterData = masterFieldModel::where('module','admission_enquiry')->orderBy('sort_order')->get();
+        }*/
+
+        $masterDataArr = [];
+        foreach ($masterData as $key => $value) {
+            $masterDataArr[$value['section']][] = $value;
+        }
+        $res['masterData'] = $masterDataArr;
+        // Master Fields Data ends
+
         if (isset($report)) {
 
              $extra = '';
@@ -58,9 +73,26 @@ class admissionReportController extends Controller
                     ) AS fileds")
 
             ->first();
-            $customField = '1=1';
+            $customField = '';
             if(isset($customFields->fileds) && $customFields->fileds!=''){
                 $customField = $customFields->fileds;
+            }
+
+            $masterField = '';
+            if(count($masterDataArr) > 0){
+                $masterFieldSelect = [];
+                foreach($masterDataArr as $section => $fields){
+                    foreach($fields as $field){
+                        if($field->field_name == 'admission_standard'){
+                        $masterFieldSelect[] = "s.name AS `".$field->field_label."`";
+                        }elseif($field->field_name == 'previous_standard'){
+                        $masterFieldSelect[] = "s_previous.name AS `".$field->field_label."`";
+                        }else{
+                        $masterFieldSelect[] = "ai.".$field->field_name." AS `".$field->field_label."`";
+                        }
+                    }
+                }
+                $masterField = implode(', ', $masterFieldSelect);
             }
             // echo "<pre>";print_r($customFields);exit;
 
@@ -70,8 +102,30 @@ class admissionReportController extends Controller
                 s.name as admission_standard, ai.remarks,fu.status as enquiry_status, ai.source_of_enquiry, ai.created_by,
                 ai.counciler_name, ai.father_name,CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by, cs.caste_name,ai.siblings $extra";
             }else{
-                $select = "ai.enquiry_no, DATE_FORMAT(ai.created_on, '%d-%m-%Y %h:%i:%s') as created_on, DATE_FORMAT(ai.followup_date, '%d-%m-%Y') as followup_date, ai.first_name, ai.middle_name, ai.last_name,
-                ai.gender, ai.mobile, ai.email, ai.address, DATE_FORMAT(ai.date_of_birth, '%d-%m-%Y') as date_of_birth, ai.age,s.name as admission_standard,$customField,ai.syear,CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by";
+                $select = "ai.enquiry_no,
+                    DATE_FORMAT(ai.created_on, '%d-%m-%Y %h:%i:%s') as created_on,
+                    DATE_FORMAT(ai.followup_date, '%d-%m-%Y') as followup_date,
+                    ai.first_name,
+                    ai.middle_name,
+                    ai.last_name,
+                    ai.gender,
+                    ai.mobile,
+                    ai.email,
+                    ai.address,
+                    DATE_FORMAT(ai.date_of_birth, '%d-%m-%Y') as date_of_birth,
+                    ai.age,
+                    s.name as admission_standard";
+
+                if (!empty($customField)) {
+                    $select .= ", " . $customField;
+                }
+                $select .= ",
+                    ai.syear,
+                    CONCAT_WS(' ', ts.first_name, ts.last_name) AS created_by";
+
+                if (!empty($masterField)) {
+                    $select = $masterField;
+                }
             }
             // 2024-12-28 end 
             
