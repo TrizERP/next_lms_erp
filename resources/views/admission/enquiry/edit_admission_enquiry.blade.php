@@ -18,6 +18,7 @@
         if (isset($data['editData'])) {
             $student_data = $editData = $data['editData'];
         }
+        $usingMasterFields = isset($data['masterData']) && count($data['masterData']) > 0;
     @endphp
 
     <div id="page-wrapper">
@@ -538,7 +539,19 @@
             }
         }
 
-        @if (isset($data['custom_fields']))
+        @if($usingMasterFields)
+            @foreach($data['masterData'] as $section=>$sectionVal)
+                @foreach($sectionVal as $key=>$vals)
+                    @if(in_array($vals['field_name'], ['category','previous_school_name','previous_standard','send_sms','remarks','source_of_enquiry','followup_date']))
+                        $('.{{ $vals["field_name"] }}Div').removeClass('hide');
+                        $('.{{ $vals["field_name"] }}Div').addClass('show');
+                    @endif
+                    @if($vals['is_mandatory']==1)
+                        $('#{{ $vals["field_name"] }}').prop('required', true);
+                    @endif
+                @endforeach
+            @endforeach
+        @elseif (isset($data['custom_fields']))
             @foreach ($data['custom_fields'] as $key => $value)
                 @if (in_array($value['field_name'], [
                         'category',

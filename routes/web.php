@@ -610,6 +610,11 @@ Route::get('/real-time-chart-data', [FeesReportController::class, 'getRealTimeCh
 Route::get('/scatter-line-chart-data', [FeesReportController::class, 'getScatterChartData']);
 Route::get('/polar-area-chart-data', [FeesReportController::class, 'getPolarAreaChartData']);
 
+// MIS Daily Summary Dashboard for Principal / Trustee / Management
+use App\Http\Controllers\MIS\MisSummaryController;
+Route::get('/mis-summary', [MisSummaryController::class, 'index'])->name('mis.summary')
+    ->middleware(['session', 'menu', 'logRoute', 'check_permissions']);
+
 use App\Models\ReportDynamic;
 Route::get('/get-fields', function (Request $request) {
     $reportType = $request->query('report_type');
