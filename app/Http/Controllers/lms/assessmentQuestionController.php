@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\lms;
 
+use App\Http\Controllers\AJAXController;
 use App\Http\Controllers\Controller;
 use App\Models\lms\answermasterModel;
 use App\Models\lms\lmsmappingtypeModel;
@@ -13,10 +14,15 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use function App\Helpers\neo4jCreateNode;
+use function App\Helpers\neo4jCreateRelationship;
 
 class assessmentQuestionController extends Controller
 {
     protected $openAIService;
+    protected $ajaxController;
+
+    const BLOOMS_TAXONOMY_MAPPING_TYPE_ID = 2;
     
     // Difficulty weights for distribution
     const DIFFICULTY_WEIGHTS = [
@@ -29,7 +35,8 @@ class assessmentQuestionController extends Controller
     const MARKS_BY_DIFFICULTY = [
         'Easy' => 1,
         'Medium' => 2,
-        'Hard' => 3
+        'Hard' => 3,
+        'Mixed' => 1
     ];
     
     // Mapping value to difficulty mapping
@@ -51,9 +58,10 @@ class assessmentQuestionController extends Controller
         'advanced' => 'Hard'
     ];
     
-    public function __construct(OpenAIService $openAIService)
+    public function __construct(OpenAIService $openAIService, AJAXController $ajaxController)
     {
         $this->openAIService = $openAIService;
+        $this->ajaxController = $ajaxController;
     }
     
     /**
@@ -73,6 +81,14 @@ class assessmentQuestionController extends Controller
             $chapterId = $request->get('chapter_id');
             $topicId = $request->get('topic_id');
             $generatePrompt = $request->get('generate_prompt', false);
+            $concept = $this->getSelectedConcept($request);
+
+            if ($request->filled('concept_id') && empty($concept)) {
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => 'The selected concept is not available.'
+                ]);
+            }
             
             // Validate minimum questions
             if ($totalQuestions < 1 || $totalQuestions > 100) {
@@ -82,23 +98,31 @@ class assessmentQuestionController extends Controller
                 ]);
             }
             
-            // Get available mappings from database
-            $mappings = $this->getAvailableMappings($standardId, $subjectId, $chapterId, $topicId);
-            
-            // Calculate distribution
-            $distribution = $this->distributeQuestionsByDifficulty($totalQuestions, $mappings);
-            
-            // Calculate marks for each distribution
-            $distribution = $this->calculateMarksForDistribution($distribution);
-            
-            // Calculate total marks
-            $totalMarks = array_sum(array_column($distribution, 'total_marks'));
+            $baseMappings = $this->getAvailableMappings($standardId, $subjectId, $chapterId, $topicId);
+            $selectedMappings = $this->getSelectedMappingsFromRequest($request);
+            $mappings = array_merge($baseMappings, $selectedMappings);
+
+            $distribution = $this->buildDistributionWithSelectedMappings(
+                $totalQuestions,
+                $baseMappings,
+                $selectedMappings
+            );
+            $distribution = $this->appendPedagogyToDistribution($distribution);
+            // Additional mapping rows are attached to the same generated questions, so
+            // they should not increase the requested question count or total marks.
+            $primaryDistribution = array_values(array_filter($distribution, fn($item) => empty($item['additional_mapping'])));
+            $totalDistributedQuestions = !empty($selectedMappings)
+                ? $totalQuestions
+                : array_sum(array_column($primaryDistribution, 'questions'));
+            $totalMarks = !empty($selectedMappings)
+                ? array_sum(array_column($primaryDistribution, 'total_marks'))
+                : array_sum(array_column($primaryDistribution, 'total_marks'));
             
             // Build response
             $response = [
                 'status_code' => 1,
                 'distribution' => $distribution,
-                'total_questions' => $totalQuestions,
+                'total_questions' => $totalDistributedQuestions,
                 'total_marks' => $totalMarks,
                 'mappings_found' => count($mappings)
             ];
@@ -114,15 +138,17 @@ class assessmentQuestionController extends Controller
                     }
                 }
                 $names = $this->getName($standardId, $subjectId, $chapterId, $topicId);
+
                 // Generate the prompt
-                $prompt = $this->generateEnhancedPrompt(
-                    $totalQuestions,
+                $prompt = $this->ajaxController->generateAssessmentPrompt(
+                    $totalDistributedQuestions,
                     $distribution,
                     $questionTypeName,
                     $names['standard'],
                     $names['subject'],
                     $names['chapter'],
-                    $names['topic']
+                    $names['topic'],
+                    $concept->name ?? null
                 );
                 
                 $response['prompt'] = $prompt;
@@ -138,15 +164,47 @@ class assessmentQuestionController extends Controller
             ]);
         }
     }
+
+    /**
+     * Return available concepts for question generation.
+     */
+    public function concepts(Request $request)
+    {
+        $query = DB::table('lms_concept')
+            ->select('id', 'name');
+
+        return response()->json([
+            'status_code' => 1,
+            'data' => $query->orderBy('name')->get()
+        ]);
+    }
+
+    /**
+     * Resolve a submitted concept from the available concept master.
+     */
+    private function getSelectedConcept(Request $request)
+    {
+        if (!$request->filled('concept_id')) {
+            return null;
+        }
+
+        $query = DB::table('lms_concept')
+            ->select('id', 'name')
+            ->where('id', $request->get('concept_id'));
+
+        return $query->first();
+    }
     
     /**
-     * Auto-detect available mappings from database
+     * Load Bloom's Taxonomy mappings for automatic question generation.
+     * Advanced Mapping selections are processed separately and remain user-controlled.
      */
     private function getAvailableMappings($standardId = null, $subjectId = null, $chapterId = null, $topicId = null)
     {
         $parentMappings = DB::table('lms_mapping_type')
             ->where('status', '=', 1)
             ->where('parent_id', '=', 0)
+            ->where('id', self::BLOOMS_TAXONOMY_MAPPING_TYPE_ID)
             ->where(function ($q) use ($chapterId, $topicId) {
                 $q->where('globally', '=', 1)
                   ->orWhere('chapter_id', $chapterId ?? 0);
@@ -183,6 +241,76 @@ class assessmentQuestionController extends Controller
         }
         
         return $availableMappings;
+    }
+
+    /**
+     * Build mapping distribution data from selected mapping rows.
+     */
+    private function getSelectedMappingsFromRequest(Request $request)
+    {
+        if (!$request->boolean('advanced_mapping')) {
+            return [];
+        }
+
+        $mappingTypes = (array) $request->get('mapping_type', []);
+        $mappingValues = (array) $request->get('mapping_value', []);
+        $reasons = (array) $request->get('reasons', []);
+        $selectedMappings = [];
+
+        foreach ($mappingTypes as $index => $typeId) {
+            $valueId = $mappingValues[$index] ?? null;
+            if (empty($typeId) || empty($valueId)) {
+                continue;
+            }
+
+            $mappingType = DB::table('lms_mapping_type')
+                ->where('id', $typeId)
+                ->where('status', 1)
+                ->first();
+            $mappingValue = DB::table('lms_mapping_type')
+                ->where('id', $valueId)
+                ->where('parent_id', $typeId)
+                ->where('status', 1)
+                ->first();
+
+            if (!$mappingType || !$mappingValue) {
+                continue;
+            }
+
+            if (!isset($selectedMappings[$typeId])) {
+                $selectedMappings[$typeId] = [
+                    'type_id' => $mappingType->id,
+                    'type_name' => $mappingType->name,
+                    'values' => []
+                ];
+            }
+
+            $selectedMappings[$typeId]['values'][] = [
+                'value_id' => $mappingValue->id,
+                'value_name' => $mappingValue->name,
+                'difficulty' => $this->getDifficultyFromMappingValue($mappingValue->name),
+                'reason' => $reasons[$index] ?? '',
+                'selected' => true
+            ];
+        }
+
+        return array_values($selectedMappings);
+    }
+
+    /**
+     * Build the question distribution. Selected mappings replace the auto distribution.
+     */
+    private function buildDistributionWithSelectedMappings($totalQuestions, $baseMappings, $selectedMappings)
+    {
+        if (!empty($selectedMappings)) {
+            return $this->calculateMarksForDistribution(
+                $this->distributeQuestionsByDifficulty($totalQuestions, $selectedMappings, true)
+            );
+        }
+
+        return $this->calculateMarksForDistribution(
+            $this->distributeQuestionsByDifficulty($totalQuestions, $baseMappings)
+        );
     }
     
     /**
@@ -226,8 +354,9 @@ class assessmentQuestionController extends Controller
     
     /**
      * Distribute questions based on difficulty weights
+     * @param bool $isSelectedMappings - When true, attach all selected mappings to every question
      */
-    private function distributeQuestionsByDifficulty($totalQuestions, $mappings)
+    private function distributeQuestionsByDifficulty($totalQuestions, $mappings, $isSelectedMappings = false)
     {
         $distribution = [];
         
@@ -250,20 +379,50 @@ class assessmentQuestionController extends Controller
                     'type_name' => $mapping['type_name'],
                     'value_id' => $value['value_id'],
                     'value_name' => $value['value_name'],
-                    'difficulty' => $value['difficulty']
+                    'difficulty' => $value['difficulty'],
+                    'reason' => $value['reason'] ?? '',
+                    'selected' => $value['selected'] ?? false
                 ];
             }
         }
-        
+
         if (empty($allValues)) {
             $allValues = [
-                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 1, 'value_name' => 'Remember', 'difficulty' => 'Easy'],
-                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 2, 'value_name' => 'Understand', 'difficulty' => 'Easy'],
-                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 3, 'value_name' => 'Apply', 'difficulty' => 'Medium'],
-                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 4, 'value_name' => 'Analyze', 'difficulty' => 'Medium'],
-                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 5, 'value_name' => 'Evaluate', 'difficulty' => 'Hard'],
-                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 6, 'value_name' => 'Create', 'difficulty' => 'Hard']
+                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 1, 'value_name' => 'Remember',],
+                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 2, 'value_name' => 'Understand',],
+                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 3, 'value_name' => 'Apply',],
+                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 4, 'value_name' => 'Analyze',],
+                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 5, 'value_name' => 'Evaluate',],
+                ['type_id' => 1, 'type_name' => 'Bloom\'s Taxonomy', 'value_id' => 6, 'value_name' => 'Create',]
             ];
+        }
+
+        // For selected mappings, create a single distribution item with all selected mappings attached to every question
+        if (collect($allValues)->contains(fn($value) => !empty($value['selected'])) || $isSelectedMappings) {
+            // Get all selected mappings (or all mappings if isSelectedMappings is true)
+            $selectedValues = $isSelectedMappings ? $allValues : array_filter($allValues, fn($value) => !empty($value['selected']));
+            $selectedValues = array_values($selectedValues);
+            
+            if (empty($selectedValues)) {
+                return $this->distributeSelectedValues($allValues, $totalQuestions);
+            }
+
+            // Create one distribution item that includes all selected mappings,
+            // and this will be attached to all questions
+            $distribution[] = [
+                'mapping_type_id' => null, // Multiple types
+                'mapping_type_name' => 'Selected Mappings',
+                'mapping_value_id' => null,
+                'mapping_value_name' => null,
+                'questions' => $totalQuestions,
+                'start_num' => 1,
+                'end_num' => $totalQuestions,
+                'reason' => '',
+                'selected' => true,
+                'all_selected_mappings' => $selectedValues // Store all selected mappings to attach to each question
+            ];
+            
+            return $distribution;
         }
         
         $easyValues = array_filter($allValues, fn($v) => $v['difficulty'] === 'Easy');
@@ -279,6 +438,43 @@ class assessmentQuestionController extends Controller
         $distribution = array_merge($distribution, $this->distributeToValues($hardValues, $hardCount, 'Hard'));
         
         return $distribution;
+    }
+
+    /**
+     * Distribute all questions across the selected mapping values.
+     */
+    private function distributeSelectedValues($values, $totalQuestions)
+    {
+        $result = [];
+        $values = array_values($values);
+
+        if (empty($values)) {
+            return $result;
+        }
+
+        $countPerValue = (int) floor($totalQuestions / count($values));
+        $remainder = $totalQuestions % count($values);
+        $questionNum = 1;
+
+        foreach ($values as $index => $value) {
+            $questionsForThis = max(1, $countPerValue + ($index < $remainder ? 1 : 0));
+
+            $result[] = [
+                'mapping_type_id' => $value['type_id'],
+                'mapping_type_name' => $value['type_name'],
+                'mapping_value_id' => $value['value_id'],
+                'mapping_value_name' => $value['value_name'],
+                'difficulty' => $value['difficulty'],
+                'questions' => $questionsForThis,
+                'start_num' => (($index % $totalQuestions) + 1),
+                'end_num' => (($index % $totalQuestions) + 1),
+                'reason' => $value['reason'] ?? '',
+                'selected' => true
+            ];
+            $questionNum += $questionsForThis;
+        }
+
+        return $result;
     }
     
     /**
@@ -311,7 +507,8 @@ class assessmentQuestionController extends Controller
                     'difficulty' => $difficulty,
                     'questions' => $questionsForThis,
                     'start_num' => $questionNum,
-                    'end_num' => $questionNum + $questionsForThis - 1
+                    'end_num' => $questionNum + $questionsForThis - 1,
+                    'reason' => $value['reason'] ?? ''
                 ];
                 $questionNum += $questionsForThis;
             }
@@ -326,7 +523,7 @@ class assessmentQuestionController extends Controller
     private function calculateMarksForDistribution($distribution)
     {
         foreach ($distribution as &$item) {
-            $item['marks'] = self::MARKS_BY_DIFFICULTY[$item['difficulty']];
+            $item['marks'] = self::MARKS_BY_DIFFICULTY[$item['difficulty'] ?? 'Easy'] ?? 1;
             $item['total_marks'] = $item['questions'] * $item['marks'];
         }
         return $distribution;
@@ -340,64 +537,72 @@ class assessmentQuestionController extends Controller
         $difficulty = $this->getDifficultyFromMappingValue($mappingValue);
         return self::MARKS_BY_DIFFICULTY[$difficulty] ?? 1;
     }
-    
+
     /**
-     * Generate enhanced AI prompt with distribution details
+     * Add Pedagogy mapping rows into the distribution preview/prompt when absent.
      */
-    private function generateEnhancedPrompt($totalQuestions, $distribution, $questionType, $standard, $subject, $chapter, $topic = null)
+    private function appendPedagogyToDistribution($distribution)
     {
-        $prompt = "Generate {$totalQuestions} {$questionType} CBSE questions for:\n";
-        $prompt .= "- Standard: {$standard}\n";
-        $prompt .= "- Subject: {$subject}\n";
-        $prompt .= "- Chapter: {$chapter}\n";
-        if ($topic) {
-            $prompt .= "- Topic: {$topic}\n";
+        $pedagogyTypeId = 3105;
+
+        if ($this->distributionHasMappingType($distribution, $pedagogyTypeId)) {
+            return $distribution;
         }
-        
-        $prompt .= "\nDistribution Requirements:\n";
-        
-        foreach ($distribution as $item) {
-            $focusArea = $this->getFocusAreaForLevel($item['mapping_value_name']);
-            $prompt .= "- {$item['mapping_type_name']} - {$item['mapping_value_name']}: " .
-                      "{$item['questions']} question(s), " .
-                      self::MARKS_BY_DIFFICULTY[$item['difficulty']] . " mark(s) each - Focus: {$focusArea}\n";
+
+        $pedagogyTitle = DB::table('lms_mapping_type')
+            ->where('id', $pedagogyTypeId)
+            ->where('status', 1)
+            ->value('name');
+
+        $pedagogyValue = DB::table('lms_mapping_type')
+            ->where('parent_id', $pedagogyTypeId)
+            ->where('status', 1)
+            ->where('globally', 1)
+            ->orderBy('id')
+            ->first(['id', 'name']);
+
+        if (empty($pedagogyTitle) || empty($pedagogyValue)) {
+            return $distribution;
         }
-        
-        $prompt .= "\nTotal: {$totalQuestions} questions {$questionType} only\n";
-        
-        $prompt .= "\nReturn the response as a JSON array of question objects with fields: ";
-        $prompt .= "question, question_type (always '{$questionType}'), difficulty (Easy/Medium/Hard), ";
-        $prompt .= "mapping_type_id, mapping_value_id, marks, correct_answer, and explanation.";
-        
-        if (strtolower($questionType) === 'mcq' || strtolower($questionType) === 'multiple choice') {
-            $prompt .= " For MCQ, include options array with 4 objects having 'text' and 'correct' boolean fields.";
-        }
-        
-        return $prompt;
-    }
-    
-    /**
-     * Get focus area description for each mapping level
-     */
-    private function getFocusAreaForLevel($levelName)
-    {
-        $focusAreas = [
-            'Remember' => 'Recall definitions, facts, and basic concepts',
-            'Understand' => 'Explain and summarize key ideas',
-            'Apply' => 'Use knowledge in new situations',
-            'Analyze' => 'Compare, contrast, and examine relationships',
-            'Evaluate' => 'Justify and critique decisions',
-            'Create' => 'Design and develop original solutions',
-            'Simple' => 'Basic recall and identification',
-            'Basic' => 'Simple understanding of concepts',
-            'Intermediate' => 'Application of procedures',
-            'Moderate' => 'Analysis of complex situations',
-            'Complex' => 'Evaluation and synthesis',
-            'Advanced' => 'Creative problem solving'
+
+        $distribution[] = [
+            'mapping_type_id' => $pedagogyTypeId,
+            'mapping_type_name' => $pedagogyTitle,
+            'mapping_value_id' => $pedagogyValue->id,
+            'mapping_value_name' => $pedagogyValue->name,
+            'difficulty' => 'Mixed',
+            'questions' => 0,
+            'start_num' => null,
+            'end_num' => null,
+            'marks' => 0,
+            'total_marks' => 0,
+            'reason' => $pedagogyValue->name,
+            'additional_mapping' => true,
+            'attach_to_all' => true
         ];
-        
-        return $focusAreas[$levelName] ?? 'General understanding';
+
+        return $distribution;
     }
+
+    private function distributionHasMappingType($distribution, $mappingTypeId)
+    {
+        foreach ($distribution ?? [] as $item) {
+            if (($item['mapping_type_id'] ?? null) == $mappingTypeId) {
+                return true;
+            }
+
+            if (!empty($item['all_selected_mappings']) && is_array($item['all_selected_mappings'])) {
+                foreach ($item['all_selected_mappings'] as $selectedMapping) {
+                    if (($selectedMapping['type_id'] ?? null) == $mappingTypeId) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
+    }
+    
     /**
      * Get Text from pass IDs
      */
@@ -438,6 +643,14 @@ class assessmentQuestionController extends Controller
             return response()->json([
                 'status_code' => 0,
                 'message' => 'Chapter ID is required.'
+            ]);
+        }
+
+        $concept = $this->getSelectedConcept($request);
+        if ($request->filled('concept_id') && empty($concept)) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'The selected concept is not available.'
             ]);
         }
         
@@ -515,8 +728,9 @@ class assessmentQuestionController extends Controller
                 'standard_id'          => $request->get('standard_id'),
                 'subject_id'           => $request->get('subject_id'),
                 'chapter_id'           => $request->get('chapter_id'),
+                'concept_id'           => $concept->id ?? null,
                 'topic_id'             => $request->get('topic_id'),
-                'question_title'      => htmlspecialchars($questionData['question_title']),
+                'question_title'      => $questionData['question_title'],
                 'description'          => $questionData['description'] ?? '',
                 // 'multiple_answer'      => $multipleAnswerValue,
                 'points'               => $questionData['points'] ?? 1,
@@ -525,6 +739,7 @@ class assessmentQuestionController extends Controller
                 'sub_institute_id'     => $sub_institute_id,
                 'hint_text'            => $questionData['hint_text'] ?? '',
                 'learning_outcome'     => $questionData['learning_outcome'] ?? '',
+                'concept'              => $concept->name ?? ($questionData['concept'] ?? null),
             );
             
             if($questionTypeId==1){
@@ -532,9 +747,47 @@ class assessmentQuestionController extends Controller
             }else{
                 $question['multiple_answer'] = 0;
             }
-            
+
             $question_id = lmsQuestionMasterModel::insertGetId($question);
-            
+
+            try {
+
+
+    neo4jCreateNode(
+        'Question',
+        ['qId' => (int)$question_id],
+        [
+            'question_title' => $questionData['question_title'],
+            'chapter_id' => (int)$request->get('chapter_id'),
+            'displayLabel' => 'Question:' . $questionData['question_title'],
+            'standard_id' => (int)$request->get('standard_id'),
+            'sub_institute_id' => (int)$sub_institute_id,
+            'question_type_id' => (int)$questionTypeId,
+            'points' => 1,
+            'concept_id' => isset($concept->id) ? (int) $concept->id : null
+        ]
+    );
+
+    \Log::info('Node Created');
+
+    neo4jCreateRelationship(
+        'Question',
+        ['qId' => (int)$question_id],
+        'BELONGS_TO',
+        'Chapter',
+        ['chId' => (int)$request->get('chapter_id')]
+    );
+
+    \Log::info('Relationship Created');
+
+} catch (\Throwable $e) {
+
+    \Log::error('❌ Neo4j Error', [
+        'message' => $e->getMessage(),
+        'line' => $e->getLine(),
+        'file' => $e->getFile()
+    ]);
+}
             // Save mapping data
             if (!empty($questionData['mappings'])) {
                 foreach ($questionData['mappings'] as $mapping) {
@@ -571,6 +824,7 @@ class assessmentQuestionController extends Controller
             }
             
             $savedQuestions[] = $question_id;
+
         }
         
         return response()->json([
@@ -637,9 +891,17 @@ class assessmentQuestionController extends Controller
             $subject_id = $request->get('subject_id');
             $chapter_id = $request->get('chapter_id');
             $topic_id = $request->get('topic_id');
+            $concept = $this->getSelectedConcept($request);
             $question_prompt = $request->get('question_prompt');
             $search = $request->get('search');
             $mappings = $request->get('mappings', []);
+
+            if ($request->filled('concept_id') && empty($concept)) {
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => 'The selected concept is not available.'
+                ]);
+            }
             
             // Get question type ID
             $questionTypeId = $request->get('question_type_id');
@@ -675,33 +937,47 @@ class assessmentQuestionController extends Controller
                     ]);
                 }
                 
-                // Auto-detect available mappings
-                $availableMappings = $this->getAvailableMappings(
+                $baseMappings = $this->getAvailableMappings(
                     $request->get('standard_id'),
                     $request->get('subject_id'),
                     $request->get('chapter_id'),
                     $topic_id
                 );
-                
-                // Calculate distribution
-                $distribution = $this->distributeQuestionsByDifficulty($totalQuestions, $availableMappings);
-                $distribution = $this->calculateMarksForDistribution($distribution);
+                $selectedMappings = $this->getSelectedMappingsFromRequest($request);
+
+                $distribution = $this->buildDistributionWithSelectedMappings(
+                    $totalQuestions,
+                    $baseMappings,
+                    $selectedMappings
+                );
+                $distribution = $this->appendPedagogyToDistribution($distribution);
+                $primaryDistribution = array_values(array_filter($distribution, fn($item) => empty($item['additional_mapping'])));
+                $distributedQuestionCount = !empty($selectedMappings)
+                    ? $totalQuestions
+                    : array_sum(array_column($primaryDistribution, 'questions'));
+                $totalMarks = !empty($selectedMappings)
+                    ? array_sum(array_column($primaryDistribution, 'total_marks'))
+                    : array_sum(array_column($primaryDistribution, 'total_marks'));
                 
                 $names = $this->getName($standard, $subject_id, $chapter_id, $topic_id);
                 
                 // Use custom prompt if provided, otherwise generate one
                 if (!empty($customPrompt)) {
                     $prompt = $customPrompt;
+                    if ($concept) {
+                        $prompt .= "\nGenerate every question specifically to assess the selected concept: " . $concept->name . ".";
+                    }
                 } else {
                     // Generate enhanced prompt
-                    $prompt = $this->generateEnhancedPrompt(
-                        $totalQuestions,
+                    $prompt = $this->ajaxController->generateAssessmentPrompt(
+                        $distributedQuestionCount,
                         $distribution,
                         $questionTypeName,
                         $names['standard'],
                         $names['subject'],
                         $names['chapter'],
-                        $names['topic']
+                        $names['topic'],
+                        $concept->name ?? null
                     );
                 }
                 
@@ -713,7 +989,7 @@ class assessmentQuestionController extends Controller
                     if($questionTypeId == 1){
                         $prompt .= "and it must have different types of 4 options which differentiate between them. give me corret_answer also below the options array. Each option must have 'text' (string) and 'correct' (boolean: true/false). Make options truly distinct from each other.";
                     }
-                $questionCount = $totalQuestions;
+                $questionCount = $distributedQuestionCount;
                 
             } else {
                 // Original workflow - use mappings from frontend
@@ -729,6 +1005,9 @@ class assessmentQuestionController extends Controller
                     if ($topic_id) {
                         $prompt .= ", Topic: " . $names['topic'];
                     }
+                    if ($concept) {
+                        $prompt .= ", Concept: " . $concept->name . ". Generate every question specifically for this concept";
+                    }
                     
                     // Add mapping info to make questions more specific
                     if (!empty($mappings)) {
@@ -743,7 +1022,7 @@ class assessmentQuestionController extends Controller
                     $questionCount = !empty($mappings[0]['questions']) ? (int)$mappings[0]['questions'] : 5;
                     $prompt .= ". Generate exactly " . $questionCount . " MCQ question(s) ONLY. ";
                     $prompt .= "Make each question unique and different from each other. Use this seed for variety: " . $seed . ". ";
-                    $prompt .= "Return the response as a JSON array of question objects with fields: question, question_type (always 'MCQ'), difficulty (Easy/Medium/Hard), options (array of 4 objects with 'text' and 'correct' boolean fields), correct_answer, and explanation.";
+                    $prompt .= "Return the response as a JSON array of question objects with fields: question, question_type (always 'MCQ'), options (array of 4 objects with 'text' and 'correct' boolean fields), correct_answer, and explanation.";
                     // added by uma fo 28-04-2026 for mcq 
                      if($questionTypeId == 1){
                         $prompt .= "and it must have different types of 4 options which differentiate between them. give me corret_answer also below the options array. Each option must have 'text' (string) and 'correct' (boolean: true/false). Make options truly distinct from each other.";
@@ -759,6 +1038,9 @@ class assessmentQuestionController extends Controller
                     if ($topic_id) {
                         $prompt .= ", Topic: " . $names['topic'];
                     }
+                    if ($concept) {
+                        $prompt .= ", Concept: " . $concept->name . ". Generate every question specifically for this concept";
+                    }
                     
                     // Add mapping info to make questions more specific
                     if (!empty($mappings)) {
@@ -771,9 +1053,9 @@ class assessmentQuestionController extends Controller
                     
                     // Add variety instruction
                     $questionCount = !empty($mappings[0]['questions']) ? (int)$mappings[0]['questions'] : 5;
-                    $prompt .= ". Generate exactly " . $questionCount . " different question(s) that vary in type (MCQ, short answer, long answer, fill in the blanks) and difficulty level. ";
+                    $prompt .= ". Generate exactly " . $questionCount . " different question(s) that vary in type (MCQ, short answer, long answer, fill in the blanks). ";
                     $prompt .= "Make each question unique and different from each other. Use this seed for variety: " . $seed . ". ";
-                    $prompt .= "Return the response as a JSON array of question objects with fields: question, question_type (MCQ/ShortAnswer/LongAnswer/FillInBlanks), difficulty (Easy/Medium/Hard), options (array of 4 for MCQ), correct_answer, and explanation. with no extra text want only json array";
+                    $prompt .= "Return the response as a JSON array of question objects with fields: question, question_type (MCQ/ShortAnswer/LongAnswer/FillInBlanks), options (array of 4 for MCQ), correct_answer, and explanation. with no extra text want only json array";
                 }
                 // below if condition is for MCQ only
                 if($questionTypeId == 1){
@@ -783,6 +1065,16 @@ class assessmentQuestionController extends Controller
             }
             // return $prompt;
             $prompt.=". Return ONLY the JSON array starting with `[` - no explanations, no prefixes, no markdown formatting, just the raw JSON array.";
+            // if(empty($getPadagogy))
+            //     {
+            //         $getPadagogyTitle = \App\Helpers\getTableFieldFromId('lms_mapping_type', 'name', 3105);
+            //         $getPadadgogyVals = DB::table('lms_mapping_type')
+            //             ->where('parent_id', 3105)
+            //             ->where(['status'=>1,'globally'=>1])
+            //             ->pluck('name')->toArray();    
+                            
+            //         $prompt .= "Also in every Questions i want mappings with type=".$getPadagogyTitle." and values=".json_encode($getPadadgogyVals);
+            //     }
             // Call the AI service
             $generatedQuestions = $response = $this->openAIService->generateContent($prompt);
             
@@ -822,7 +1114,9 @@ class assessmentQuestionController extends Controller
                 'questions'=>$questions,
                 'distribution' => $distribution ?? null,
                 'total_questions' => $questionCount ?? null,
-                'total_marks' => $isSimplifiedMode ? array_sum(array_column($distribution, 'total_marks')) : null
+                'total_marks' => $isSimplifiedMode
+                    ? ($totalMarks ?? array_sum(array_column(array_filter($distribution, fn($item) => empty($item['additional_mapping'])), 'total_marks')))
+                    : null
             ]);
             
         } catch (\Exception $e) {
@@ -853,30 +1147,139 @@ class assessmentQuestionController extends Controller
      */
     private function attachDistributionToQuestions($questions, $distribution)
     {
-        $result = [];
+        $result = $questions;
         $questionIndex = 0;
+        $primaryDistribution = array_values(array_filter($distribution, fn($item) => empty($item['additional_mapping'])));
+        $additionalDistribution = array_values(array_filter($distribution, fn($item) => !empty($item['additional_mapping'])));
+        $hasSelectedDistribution = collect($primaryDistribution)->contains(fn($item) => !empty($item['selected']));
+
+        if ($hasSelectedDistribution) {
+            $questionCount = count($result);
+            foreach ($primaryDistribution as $index => $distItem) {
+                if ($questionCount === 0) {
+                    break;
+                }
+
+                $targetIndex = $index % $questionCount;
+                if (!isset($result[$targetIndex]['mappings']) || !is_array($result[$targetIndex]['mappings'])) {
+                    $result[$targetIndex]['mappings'] = [];
+                }
+
+                if (!empty($distItem['all_selected_mappings']) && is_array($distItem['all_selected_mappings'])) {
+                    foreach ($result as &$question) {
+                        if (!isset($question['mappings']) || !is_array($question['mappings'])) {
+                            $question['mappings'] = [];
+                        }
+
+                        foreach ($distItem['all_selected_mappings'] as $selectedMapping) {
+                            if (empty($question['mapping_type_id'])) {
+                                $question['mapping_type_id'] = $selectedMapping['type_id'];
+                                $question['mapping_value_id'] = $selectedMapping['value_id'];
+                                $question['mapping_type_name'] = $selectedMapping['type_name'];
+                                $question['mapping_value_name'] = $selectedMapping['value_name'];
+                                $question['difficulty'] = $selectedMapping['difficulty'];
+                                $question['marks'] = self::MARKS_BY_DIFFICULTY[$selectedMapping['difficulty'] ?? 'Easy'] ?? 1;
+                                $question['points'] = $question['marks'];
+                            }
+
+                            $question['mappings'][] = [
+                                'mapping_type' => $selectedMapping['type_id'],
+                                'mapping_value' => $selectedMapping['value_id'],
+                                'mapping_type_name' => $selectedMapping['type_name'],
+                                'mapping_value_name' => $selectedMapping['value_name'],
+                                'reason' => ($selectedMapping['reason'] ?? '') ?: $selectedMapping['value_name'] . ' - ' . $selectedMapping['difficulty']
+                            ];
+                        }
+                    }
+                    unset($question);
+
+                    return $result;
+                }
+
+                if (empty($result[$targetIndex]['mapping_type_id'])) {
+                    $result[$targetIndex]['mapping_type_id'] = $distItem['mapping_type_id'];
+                    $result[$targetIndex]['mapping_value_id'] = $distItem['mapping_value_id'];
+                    $result[$targetIndex]['mapping_type_name'] = $distItem['mapping_type_name'];
+                    $result[$targetIndex]['mapping_value_name'] = $distItem['mapping_value_name'];
+                    $result[$targetIndex]['difficulty'] = $distItem['difficulty'];
+                    $result[$targetIndex]['marks'] = $distItem['marks'];
+                    $result[$targetIndex]['points'] = $distItem['marks'];
+                }
+
+                $result[$targetIndex]['mappings'][] = [
+                    'mapping_type' => $distItem['mapping_type_id'],
+                    'mapping_value' => $distItem['mapping_value_id'],
+                    'mapping_type_name' => $distItem['mapping_type_name'],
+                    'mapping_value_name' => $distItem['mapping_value_name'],
+                    'reason' => ($distItem['reason'] ?? '') ?: $distItem['mapping_value_name'] . ' - ' . $distItem['difficulty']
+                ];
+            }
+
+            return $result;
+        }
         
-        foreach ($distribution as $distItem) {
+        foreach ($primaryDistribution as $distItem) {
             for ($i = 0; $i < $distItem['questions']; $i++) {
-                if (isset($questions[$questionIndex])) {
-                    $questions[$questionIndex]['mapping_type_id'] = $distItem['mapping_type_id'];
-                    $questions[$questionIndex]['mapping_value_id'] = $distItem['mapping_value_id'];
-                    $questions[$questionIndex]['mapping_type_name'] = $distItem['mapping_type_name'];
-                    $questions[$questionIndex]['mapping_value_name'] = $distItem['mapping_value_name'];
-                    $questions[$questionIndex]['difficulty'] = $distItem['difficulty'];
-                    $questions[$questionIndex]['marks'] = $distItem['marks'];
-                    $questions[$questionIndex]['points'] = $distItem['marks'];
+                if (isset($result[$questionIndex])) {
+                    $result[$questionIndex]['mapping_type_id'] = $distItem['mapping_type_id'];
+                    $result[$questionIndex]['mapping_value_id'] = $distItem['mapping_value_id'];
+                    $result[$questionIndex]['mapping_type_name'] = $distItem['mapping_type_name'];
+                    $result[$questionIndex]['mapping_value_name'] = $distItem['mapping_value_name'];
+                    $result[$questionIndex]['difficulty'] = $distItem['difficulty'];
+                    $result[$questionIndex]['marks'] = $distItem['marks'];
+                    $result[$questionIndex]['points'] = $distItem['marks'];
                     
-                    // Create mappings array for store method
-                    $questions[$questionIndex]['mappings'] = [[
+                    $result[$questionIndex]['mappings'] = [[
                         'mapping_type' => $distItem['mapping_type_id'],
                         'mapping_value' => $distItem['mapping_value_id'],
-                        'reason' => $distItem['mapping_value_name'] . ' - ' . $distItem['difficulty']
+                        'mapping_type_name' => $distItem['mapping_type_name'],
+                        'mapping_value_name' => $distItem['mapping_value_name'],
+                        'reason' => ($distItem['reason'] ?? '') ?: $distItem['mapping_value_name'] . ' - ' . $distItem['difficulty']
                     ]];
                     
-                    $result[] = $questions[$questionIndex];
                     $questionIndex++;
                 }
+            }
+        }
+
+        $questionIndex = 0;
+        foreach ($additionalDistribution as $distItem) {
+            if (!empty($distItem['attach_to_all'])) {
+                foreach ($result as &$question) {
+                    if (!isset($question['mappings']) || !is_array($question['mappings'])) {
+                        $question['mappings'] = [];
+                    }
+
+                    $question['mappings'][] = [
+                        'mapping_type' => $distItem['mapping_type_id'],
+                        'mapping_value' => $distItem['mapping_value_id'],
+                        'mapping_type_name' => $distItem['mapping_type_name'],
+                        'mapping_value_name' => $distItem['mapping_value_name'],
+                        'reason' => ($distItem['reason'] ?? '') ?: $distItem['mapping_value_name'] . ' - ' . $distItem['difficulty']
+                    ];
+                }
+                unset($question);
+                continue;
+            }
+
+            for ($i = 0; $i < $distItem['questions']; $i++) {
+                if (!isset($result[$questionIndex])) {
+                    break;
+                }
+
+                if (!isset($result[$questionIndex]['mappings']) || !is_array($result[$questionIndex]['mappings'])) {
+                    $result[$questionIndex]['mappings'] = [];
+                }
+
+                $result[$questionIndex]['mappings'][] = [
+                    'mapping_type' => $distItem['mapping_type_id'],
+                    'mapping_value' => $distItem['mapping_value_id'],
+                    'mapping_type_name' => $distItem['mapping_type_name'],
+                    'mapping_value_name' => $distItem['mapping_value_name'],
+                    'reason' => ($distItem['reason'] ?? '') ?: $distItem['mapping_value_name'] . ' - ' . $distItem['difficulty']
+                ];
+
+                $questionIndex++;
             }
         }
         
@@ -892,29 +1295,60 @@ class assessmentQuestionController extends Controller
         
         // Try to extract JSON from the response
         if (is_string($response)) {
-            // Find JSON array in response
-            if (preg_match('/\[\s*\{/', $response, $match, PREG_OFFSET_CAPTURE)) {
-                $jsonStr = substr($response, $match[0][1]);
-                // Find the closing bracket
+            $cleanResponse = trim(preg_replace('/^```(?:json)?\s*|\s*```$/m', '', $response));
+            $parsed = json_decode($cleanResponse, true);
+
+            if (json_last_error() === JSON_ERROR_NONE && is_array($parsed)) {
+                return $parsed;
+            }
+
+            // Find and decode the first complete JSON array in the response.
+            $startPos = strpos($cleanResponse, '[');
+            if ($startPos !== false) {
+                $jsonStr = substr($cleanResponse, $startPos);
                 $depth = 0;
-                $endPos = strlen($jsonStr) - 1;
+                $inString = false;
+                $escaped = false;
+                $endPos = null;
+
                 for ($i = 0; $i < strlen($jsonStr); $i++) {
-                    if ($jsonStr[$i] === '{') $depth++;
-                    if ($jsonStr[$i] === '}') $depth--;
-                    if ($depth === 0) {
-                        $endPos = $i;
-                        break;
+                    $char = $jsonStr[$i];
+
+                    if ($escaped) {
+                        $escaped = false;
+                        continue;
+                    }
+
+                    if ($char === '\\' && $inString) {
+                        $escaped = true;
+                        continue;
+                    }
+
+                    if ($char === '"') {
+                        $inString = !$inString;
+                        continue;
+                    }
+
+                    if ($inString) {
+                        continue;
+                    }
+
+                    if ($char === '[') {
+                        $depth++;
+                    } elseif ($char === ']') {
+                        $depth--;
+                        if ($depth === 0) {
+                            $endPos = $i;
+                            break;
+                        }
                     }
                 }
-                $jsonStr = substr($jsonStr, 0, $endPos + 1);
-                
-                try {
-                    $parsed = json_decode($jsonStr, true);
+
+                if ($endPos !== null) {
+                    $parsed = json_decode(substr($jsonStr, 0, $endPos + 1), true);
                     if (json_last_error() === JSON_ERROR_NONE && is_array($parsed)) {
                         $questions = $parsed;
                     }
-                } catch (\Exception $e) {
-                    // Failed to parse
                 }
             }
         }
@@ -992,3 +1426,4 @@ class assessmentQuestionController extends Controller
         return $questions;
     }
 }
+

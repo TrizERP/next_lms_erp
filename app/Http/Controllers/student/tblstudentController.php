@@ -905,6 +905,41 @@ class tblstudentController extends Controller
             'sub_institute_id' => $sub_institute_id, 'student_id' => $id,
         ])->get()->toArray();
 
+        if(count($familyHistory)==0){
+            $user_id = $request->session()->get('user_id');
+            if($type=='API'){
+                $user_id = $request->input('user_id') ?? 0;
+            }
+            $inserts=[];
+            if(!empty($student_data->father_name ?? null)){
+                $inserts[]=[
+                    'student_id'=>$id,
+                    'name'=>$student_data->father_name,
+                    'relation_with_student'=>'FATHER',
+                    'mobile_no'=>$student_data->student_mobile,
+                    'sub_institute_id'=>$sub_institute_id,
+                    'created_by'=>$user_id,
+                    'created_on'=>now(),
+                ];
+            }
+            if(!empty($student_data->mother_name ?? null)){
+                $inserts[]=[
+                    'student_id'=>$id,
+                    'name'=>$student_data->mother_name,
+                    'relation_with_student'=>'MOTHER',
+                    'mobile_no'=>$student_data->mother_mobile,
+                    'sub_institute_id'=>$sub_institute_id,
+                    'created_by'=>$user_id,
+                    'created_on'=>now(),
+                ];
+            }
+            if(!empty($inserts)){
+                tblstudentFamilyHistoryModel::insert($inserts);
+                $familyHistory = tblstudentFamilyHistoryModel::where([
+                    'sub_institute_id' => $sub_institute_id, 'student_id' => $id,
+                ])->get()->toArray();
+            }
+        }
 
         $studentSiblings_data = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) {

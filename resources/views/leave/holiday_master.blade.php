@@ -212,13 +212,10 @@
                         <label for="">From Date</label>
                         <input class="form-control mydatepicker" type="text" name="from_date" id="from_date" onchange="checkIfSunday(this)" required>
                     </div>
-                    <!--
                     <div class="form-group">
                         <label for="">To Date</label>
                         <input class="form-control" type="date" name="to_date" id="to_date">
                     </div>
-                	-->
-                	<!--
                     <div class="form-group">
                         <label for="">Day Type</label>
                         <select name="day_Type" id="day_Type" class="form-control" required>
@@ -228,7 +225,6 @@
                                 Half Day</option>
                         </select>
                     </div>
-                	-->
                     <div class="form-group">
                         <label for="">Department</label>
                         <select name="department[]" id="department" class="form-control" multiple>

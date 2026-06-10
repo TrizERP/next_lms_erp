@@ -730,30 +730,32 @@ class studentResultController extends Controller
         $working = 0;
         $present = 0;
 
-if (isset($explodeTermAtten) && $sub_institute_id == 47) {
-    /*$tableHtml = $attendance['table'];
-    preg_match_all('/<td[^>]*>([^<]+)<\/td>/', $tableHtml, $tdMatches);
+$subInstituteArray = [47,76];
+if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray)) {
+    if($sub_institute_id = 76){
+        $tableHtml = $attendance['table'];
+        preg_match_all('/<td[^>]*>([^<]+)<\/td>/', $tableHtml, $tdMatches);
 
-    if (!empty($tdMatches[1]) && count($tdMatches[1]) >= 4) {
-        if (is_numeric(trim($tdMatches[1][1])))
-            $working = trim($tdMatches[1][1]);
+        if (!empty($tdMatches[1]) && count($tdMatches[1]) >= 4) {
+            if (is_numeric(trim($tdMatches[1][1])))
+                $working = trim($tdMatches[1][1]);
 
-        if (is_numeric(trim($tdMatches[1][3])))
-            $present = trim($tdMatches[1][3]);
+            if (is_numeric(trim($tdMatches[1][3])))
+                $present = trim($tdMatches[1][3]);
+        }
+    }elseif($sub_institute_id = 47){
+        if (isset($explodeTermAtten[0]) && is_numeric($explodeTermAtten[0]))
+            $present = $explodeTermAtten[0];
+        if (isset($explodeTermAtten[1]) && is_numeric($explodeTermAtten[1]))
+            $working = $explodeTermAtten[1];
     }
-    */
-    if (isset($explodeTermAtten[0]) && is_numeric($explodeTermAtten[0]))
-        $present = $explodeTermAtten[0];
-    if (isset($explodeTermAtten[1]) && is_numeric($explodeTermAtten[1]))
-        $working = $explodeTermAtten[1];
-
     // 2. Get percentage (simple_result)
     //echo $main_result['table'];exit();
     $percentage = 0;
     if (isset($main_result['table'])) {
         $tableHtml = $main_result['table'];
 
-        if (preg_match('/<b>(\d+(\.\d+)?)%<\/b>/', $tableHtml, $matches)) {
+        if (preg_match('/<b>(\d+(\.\d+)?)\s*%<\/b>/', $tableHtml, $matches)) {
             $percentage = $matches[1]; // numeric value
         }
     }

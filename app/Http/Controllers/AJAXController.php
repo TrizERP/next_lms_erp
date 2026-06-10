@@ -2451,7 +2451,8 @@ foreach ($previous_standard as $item) {
                 $topics = " and topic_id ='".$request->topic_id."'";
             }
            $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->where('status',1)->pluck('question_title');
-            $message=array($request->question_prompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
+            $questionPrompt = $this->appendSelectedMappingsToDistributionRequirements($request->question_prompt, $request);
+            $message=array($questionPrompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
             // return $message;exit;
         }else if(isset($request->search) && $request->search=="summernote"){
             $lang='';
@@ -2494,6 +2495,211 @@ foreach ($previous_standard as $item) {
             $res['answer'] = $response;
         }
        return $res['answer'];
+    }
+
+    /**
+     * Build the prompt used by assessment question generation and preview.
+     */
+    public function generateAssessmentPrompt($totalQuestions, $distribution, $questionType, $standard, $subject, $chapter, $topic = null, $concept = null)
+    {
+        $prompt = "You are an expert CBSE assessment designer and Bloom's Taxonomy specialist.\n";
+        $prompt .= "Create exactly {$totalQuestions} {$questionType} question(s) that are academically accurate, age-appropriate, and assessment-ready.\n";
+        $prompt .= "\nSTRICT CURRICULUM SCOPE:\n";
+        $prompt .= "- Standard: {$standard}\n";
+        $prompt .= "- Subject: {$subject}\n";
+        $prompt .= "- Chapter: {$chapter}\n";
+        if ($topic) {
+            $prompt .= "- Topic: {$topic}\n";
+        }
+        if ($concept) {
+            $prompt .= "- Concept: {$concept}\n";
+        }
+        $prompt .= "- Every question must directly assess the selected standard, subject, and chapter";
+        $prompt .= $concept ? ", with the selected concept as its central learning target.\n" : ".\n";
+        $prompt .= "- Do not generate generic questions, questions from another chapter, or questions that merely mention the concept without assessing it.\n";
+        $prompt .= "- Use prerequisite knowledge only when it is essential to test the selected concept in this chapter.\n";
+
+        $primaryDistribution = array_values(array_filter($distribution, fn($item) => empty($item['additional_mapping'])));
+        $additionalMappings = array_values(array_filter($distribution, fn($item) => !empty($item['additional_mapping'])));
+        $hasSelectedDistribution = collect($primaryDistribution)->contains(fn($item) => !empty($item['selected']));
+
+        $prompt .= "\nBLOOM'S TAXONOMY AND MAPPING REQUIREMENTS:\n";
+        $prompt .= "- Map the cognitive demand of each question to its assigned Bloom level; the command verb, reasoning needed, and expected answer must all match that level.\n";
+        $prompt .= "- Follow the allocation below exactly. Do not replace higher-order questions with recall questions.\n";
+        $prompt .= "- Return question objects in the exact order of the allocation below because Bloom mappings are attached by question position.\n";
+
+        foreach ($primaryDistribution as $item) {
+            if (!empty($item['all_selected_mappings']) && is_array($item['all_selected_mappings'])) {
+                $prompt .= "- Generate exactly {$item['questions']} question(s) using all selected mappings below as required tags for this question set:\n";
+                foreach ($item['all_selected_mappings'] as $selectedMapping) {
+                    $focusArea = !empty($selectedMapping['reason'])
+                        ? $selectedMapping['reason']
+                        : $this->getAssessmentFocusAreaForLevel($selectedMapping['value_name'] ?? null);
+                    $prompt .= "  * {$selectedMapping['type_name']}: {$selectedMapping['value_name']} - Cognitive evidence: {$focusArea}\n";
+                }
+                continue;
+            }
+
+            $focusArea = $this->getAssessmentFocusAreaForLevel($item['mapping_value_name'] ?? null);
+            $prompt .= "- Exactly {$item['questions']} question(s): {$item['mapping_type_name']} = {$item['mapping_value_name']}; ";
+            $prompt .= "cognitive evidence = {$focusArea}.\n";
+        }
+
+        if ($hasSelectedDistribution) {
+            $prompt .= "- Selected mapping rows are tags on this same generated question set; never create extra questions for a tag.\n";
+        }
+
+        if (!empty($additionalMappings)) {
+            $prompt .= "\nADDITIONAL TAGGING REQUIREMENTS:\n";
+            foreach ($additionalMappings as $item) {
+                $focusArea = !empty($item['reason']) ? $item['reason'] : $this->getAssessmentFocusAreaForLevel($item['mapping_value_name']);
+                $attachInstruction = !empty($item['attach_to_all'])
+                    ? 'Apply to every question.'
+                    : 'Do not generate extra items for this mapping.';
+                $prompt .= "- {$item['mapping_type_name']}: {$item['mapping_value_name']}. Focus: {$focusArea}. {$attachInstruction}\n";
+            }
+        }
+
+        $prompt .= "\nQUESTION QUALITY RULES:\n";
+        $prompt .= "- Use precise, student-friendly language appropriate for Standard {$standard}.\n";
+        $prompt .= "- Make every question unique and free from ambiguity; do not repeat the same skill using superficial wording changes.\n";
+        $prompt .= "- Make the answer and explanation explicitly demonstrate the targeted cognitive demand and remain within the selected concept.\n";
+
+        $prompt .= "\nOUTPUT CONTRACT:\n";
+        $prompt .= "- Return only a valid JSON array of question objects with fields: ";
+        $prompt .= "question, question_type (always '{$questionType}'), correct_answer, and explanation.\n";
+
+        if (strtolower($questionType) === 'mcq' || strtolower($questionType) === 'multiple choice') {
+            $prompt .= "- For each MCQ, include an options array of exactly 4 objects with 'text' and 'correct' boolean fields; exactly one option must be correct.\n";
+            $prompt .= "- Distractors must be plausible misconceptions connected to the selected concept, not obviously wrong or unrelated choices.\n";
+        }
+
+        return $prompt;
+    }
+
+    private function getAssessmentFocusAreaForLevel($levelName)
+    {
+        $focusAreas = [
+            'remember' => 'Recall definitions, facts, and basic concepts',
+            'understand' => 'Explain and summarize key ideas',
+            'apply' => 'Use knowledge in new situations',
+            'analyze' => 'Compare, contrast, and examine relationships',
+            'evaluate' => 'Justify and critique decisions',
+            'create' => 'Design and develop original solutions',
+            'simple' => 'Basic recall and identification',
+            'basic' => 'Simple understanding of concepts',
+            'intermediate' => 'Application of procedures',
+            'moderate' => 'Analysis of complex situations',
+            'complex' => 'Evaluation and synthesis',
+            'advanced' => 'Creative problem solving'
+        ];
+
+        return $focusAreas[strtolower(trim((string) $levelName))] ?? 'General understanding';
+    }
+
+    private function appendSelectedMappingsToDistributionRequirements($prompt, Request $request)
+    {
+        if (!$request->boolean('advanced_mapping')) {
+            return $prompt;
+        }
+
+        $mappingTypes = (array) $request->get('mapping_type', []);
+        $mappingValues = (array) $request->get('mapping_value', []);
+        $reasons = (array) $request->get('reasons', []);
+        $selectedRows = [];
+
+        foreach ($mappingTypes as $index => $typeId) {
+            $valueId = $mappingValues[$index] ?? null;
+            if (empty($typeId) || empty($valueId)) {
+                continue;
+            }
+
+            $mappingType = DB::table('lms_mapping_type')
+                ->where('id', $typeId)
+                ->where('status', 1)
+                ->first();
+            $mappingValue = DB::table('lms_mapping_type')
+                ->where('id', $valueId)
+                ->where('parent_id', $typeId)
+                ->where('status', 1)
+                ->first();
+
+            if (!$mappingType || !$mappingValue) {
+                continue;
+            }
+
+            $selectedRows[] = [
+                'type' => $mappingType->name,
+                'value' => $mappingValue->name,
+                'reason' => $reasons[$index] ?? ''
+            ];
+        }
+
+        if (empty($selectedRows)) {
+            return $prompt;
+        }
+
+        $mappingLines = "Distribution Requirements:\n";
+        $totalQuestions = max(1, (int) $request->get('total_questions', 1));
+        $countPerValue = (int) floor($totalQuestions / count($selectedRows));
+        $remainder = $totalQuestions % count($selectedRows);
+
+        foreach ($selectedRows as $index => $row) {
+            $questionsForThis = max(1, $countPerValue + ($index < $remainder ? 1 : 0));
+            $focus = !empty($row['reason']) ? $row['reason'] : $row['value'];
+
+            $mappingLines .= "- {$row['type']} - {$row['value']} - Focus: {$focus}";
+            $mappingLines .= "\n";
+        }
+        $mappingLines .= "Use the selected mapping rows as tags on the same generated set; do not generate extra items for additional mapping rows.\n";
+
+        $distributionStart = strpos($prompt, "Distribution Requirements:\n");
+        $returnStart = strpos($prompt, "\nReturn");
+
+        if ($distributionStart !== false && $returnStart !== false && $returnStart > $distributionStart) {
+            return substr($prompt, 0, $distributionStart) .
+                $mappingLines .
+                substr($prompt, $returnStart);
+        }
+
+        if ($returnStart !== false) {
+            return substr($prompt, 0, $returnStart) .
+                "\n" . $mappingLines .
+                substr($prompt, $returnStart);
+        }
+
+        return rtrim($prompt) . "\n\n" . $mappingLines;
+    }
+
+    // private function getDifficultyFromMappingValue($valueName)
+    // {
+    //     $lowerName = strtolower(trim($valueName));
+    //     $easy = ['remember', 'understand', 'simple', 'basic'];
+    //     $medium = ['apply', 'analyze', 'intermediate', 'moderate'];
+    //     $hard = ['evaluate', 'create', 'complex', 'advanced'];
+
+    //     if (in_array($lowerName, $easy)) {
+    //         return 'Easy';
+    //     }
+
+    //     if (in_array($lowerName, $medium)) {
+    //         return 'Medium';
+    //     }
+
+    //     if (in_array($lowerName, $hard)) {
+    //         return 'Hard';
+    //     }
+
+    //     return 'Easy';
+    // }
+
+    private function getMarksByDifficulty($difficulty)
+    {
+        return [
+            'Easy' => 1,
+            'Medium' => 2,
+            'Hard' => 3
+        ][$difficulty] ?? 1;
     }
 
     public function geminiAI(Request $request){
@@ -2559,7 +2765,8 @@ foreach ($previous_standard as $item) {
             }
            $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->where('status',1)->pluck('question_title');
             
-           $message=array($request->question_prompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
+           $questionPrompt = $this->appendSelectedMappingsToDistributionRequirements($request->question_prompt, $request);
+           $message=array($questionPrompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
             // return $message;exit;
         }
 
