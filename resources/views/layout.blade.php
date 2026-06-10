@@ -275,8 +275,8 @@
                             </svg>
                         </button>
                     </div> 
-               {{-- @include('conversationalAI') --}}
-                  @livewire('conversational-a-i-v2')
+               @include('conversationalAI')
+               {{-- @livewire('conversational-a-i-v2') --}}
                     <!-- end conversational AI  -->
                <div class="d-xl-flex d-md-block d-flex flex-wrap align-items-center justify-content-between">
                   <!--<div class="d-flex align-items-center">

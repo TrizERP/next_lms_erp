@@ -209,8 +209,8 @@
                              </svg>
                          </button>
                      </div>
-                     {{-- @include('conversationalAI') --}}
-                     @livewire('conversational-a-i-v2')
+                     @include('conversationalAI')
+                     {{-- @livewire('conversational-a-i-v2') --}}
 
                     <div class="d-xl-flex d-md-block d-flex flex-wrap align-items-center justify-content-between">
                         <div class="dropdown user-dropdown">
