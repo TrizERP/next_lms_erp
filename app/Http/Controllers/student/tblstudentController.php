@@ -172,9 +172,9 @@ class tblstudentController extends Controller
 
         // master Fields Data stats
  
-        $masterData = masterFieldInstituteModel::where(['sub_institute_id'=>$sub_institute_id])->whereNull('deleted_at')->orderBy('sort_order')->get();
+        $masterData = masterFieldInstituteModel::where(['sub_institute_id'=>$sub_institute_id, 'module'=>'add_student'])->whereNull('deleted_at')->orderBy('sort_order')->get();
         if(count($masterData)==0){
-            $masterData = masterFieldModel::orderBy('sort_order')->get();
+            $masterData = masterFieldModel::where('module','add_student')->orderBy('sort_order')->get();
         }
 
         $masterDataArr = [];
