@@ -9,13 +9,14 @@
                     ✅ Thank you for your enquiry.<br>
                     Please save the enquiry token below for your future reference.
                 </div>
-                <h2 style="color:blue;">{{ $data['payment_type'] ?? 'N/A' }}<h2>
+                <h2 style="color:blue;">{{ $data['payment_type'] ?? 'N/A' }}</h2>
                 <p style="color:#374151; font-size:18px; font-weight:500; margin-top:24px;">
                     <strong style="display:block; margin-bottom:8px;">Enquiry Token:</strong> 
                     <span style="background:#fef08a; color:#111827; padding:12px 20px; border-radius:8px; font-size:22px; font-weight:700; display:inline-block; box-shadow:0 2px 6px rgba(0,0,0,0.1);">
                         {{ $data['enquiry_no'] ?? 'N/A' }}
                     </span>
                 </p>
+                <a href="{{ url('admission_enquiry?sub_institute_id=' . ($data['sub_institute_id'] ?? '') . '&syear=' . ($data['syear'] ?? '') . '&type=webForm') }}" style="display:inline-block; margin-top:24px; background:#3b82f6; color:#fff; font-weight:600; padding:12px 32px; border-radius:8px; text-decoration:none; font-size:16px;">Go to Main Page</a>
             </div>
 <!--
             <div style="background:#ffffff; box-shadow:0 4px 12px rgba(0,0,0,0.1); border-radius:16px; padding:40px 20px;">
