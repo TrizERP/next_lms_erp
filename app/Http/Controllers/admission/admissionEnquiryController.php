@@ -15,11 +15,10 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
-use function App\Helpers\sendSMS;
-use function App\Helpers\SearchStudent;
-use App\Http\Controllers\admission\admissionRegistrationHillController;
 use GenTux\Jwt\GetsJwtToken;
 use Carbon\Carbon;
+use App\Models\settings\masterFieldModel;
+use App\Models\settings\masterFieldInstituteModel;
 
 class admissionEnquiryController extends Controller
 {
@@ -150,7 +149,7 @@ class admissionEnquiryController extends Controller
         }
         // echo "<pre>";print_r($request->all());exit;
         $category = castModel::get()->toArray();
-        $new_institutes = [336,337,338,339,340,341];
+        $new_institutes = [1,336,337,338,339,340,341];
         
         $dataCustomFields = tblcustomfieldsModel::where(['status' => "1"])
                 ->when($type == "webForm" && !in_array($sub_institute_id, $new_institutes), function ($q) {
@@ -191,6 +190,19 @@ class admissionEnquiryController extends Controller
             $res['data_fields'] = $finalfieldsData;
         }
 
+        // Master Fields Data starts - dynamic field system
+        $masterData = masterFieldInstituteModel::where(['sub_institute_id'=>$sub_institute_id, 'module'=>'admission_enquiry'])->whereNull('deleted_at')->orderBy('sort_order')->get();
+        /*if(count($masterData)==0){
+            $masterData = masterFieldModel::where('module','admission_enquiry')->orderBy('sort_order')->get();
+        }*/
+
+        $masterDataArr = [];
+        foreach ($masterData as $key => $value) {
+            $masterDataArr[$value['section']][] = $value;
+        }
+        $res['masterData'] = $masterDataArr;
+        // Master Fields Data ends
+
         if (count($category) > 0) {
             $res['category'] = $category;
         }
@@ -215,7 +227,7 @@ class admissionEnquiryController extends Controller
         $res['logo'] = $schoolLogo;
         // echo "<pre>";print_r($res['ageValidation']);exit;
         if($type=='webForm'){
-            // echo "<pre>";print_r($res['ageValidation']);exit;
+            //echo "<pre>";print_r($res);exit;
             return is_mobile($type, 'admission/enquiry/admission_enquiry', $res, 'view');
         }else{
             return is_mobile($type, 'admission/enquiry/add_admission_enquiry', $res, 'view');
@@ -736,6 +748,18 @@ class admissionEnquiryController extends Controller
         if (count($category) > 0) {
             $res['category'] = $category;
         }
+
+        // Master Fields Data for edit view
+        $masterData = masterFieldInstituteModel::where(['sub_institute_id'=>$sub_institute_id, 'module'=>'admission_enquiry'])->whereNull('deleted_at')->orderBy('sort_order')->get();
+        if(count($masterData)==0){
+            $masterData = masterFieldModel::where('module','admission_enquiry')->orderBy('sort_order')->get();
+        }
+
+        $masterDataArr = [];
+        foreach ($masterData as $key => $value) {
+            $masterDataArr[$value['section']][] = $value;
+        }
+        $res['masterData'] = $masterDataArr;
 
         return is_mobile($type, 'admission/enquiry/edit_admission_enquiry', $res, 'view');
     }

@@ -488,7 +488,7 @@ class configurationController extends Controller
         $res['tableData'] = $sectionData;
         $res['masterTable'] = $masterTable;
         $res['table_fields'] = $tableFields;
-        $res['duplicateFields'] = $duplicateFields;
+        $res['duplicateFields'] = [];//$duplicateFields;
         return $res;
     }
 

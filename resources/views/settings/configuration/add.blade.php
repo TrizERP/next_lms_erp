@@ -290,7 +290,7 @@
                <div class="dataContainer detailContainer show">
 
                   <div class="addBlock" align="right">
-                     <button class="btn btn-outline-dark" data-toggle="modal" data-target="#addModal"><span class="mdi mdi-plus"></span> Add Feild</button>
+                     <button class="btn btn-outline-dark" data-toggle="modal" data-target="#addModal"><span class="mdi mdi-plus"></span> Add Field</button>
                      @if(isset($data['deletedData']) && count($data['deletedData']) > 0)
                      <button class="btn btn-outline-secondary" data-toggle="modal" data-target="#restoreModal"><span class="mdi mdi-restore"></span> Restore</button>
                      @endif
