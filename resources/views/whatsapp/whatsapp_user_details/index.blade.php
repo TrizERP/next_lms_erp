@@ -43,8 +43,21 @@
                                 <tr>
                                     <td>{{$j}}</td>
                                     <td>{{$data->user_whatsapp_no}}</td>
-                                    <td>{{$data->user_whatsapp_sid}}</td>
-                                    <td>{{$data->user_whatsapp_token}}</td>
+                                    <td>{{ ucfirst($data->api_type ?? 'Twilio') }}</td>
+                                    <td>
+                                        @if(($data->api_type ?? 'twilio') == 'twilio')
+                                            {{$data->user_whatsapp_sid}}
+                                        @else
+                                            {{$data->cloud_api_phone_number_id ?? '-'}}
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if(($data->api_type ?? 'twilio') == 'twilio')
+                                            ****
+                                        @else
+                                            {{$data->cloud_api_access_token ? substr($data->cloud_api_access_token,0,12).'...' : '-'}}
+                                        @endif
+                                    </td>
                                     <td>{{$data->created_by_name ?? '-'}}</td>
                                     <td>
                                         <div class="d-inline">
