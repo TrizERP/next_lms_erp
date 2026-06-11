@@ -48,18 +48,44 @@
                     @enderror
                 </div>
                 <div class="col-md-4 form-group">
+                    <label>API Type</label>
+                    <select id='api_type' name="api_type" class="form-control" required onchange="toggleApiFields(this.value)">
+                        <option value="twilio" {{(isset($data['api_type']) && $data['api_type']=='twilio')?'selected':''}}>Twilio</option>
+                        <option value="cloud_api" {{(isset($data['api_type']) && $data['api_type']=='cloud_api')?'selected':''}}>WhatsApp Cloud API</option>
+                    </select>
+                    @error('api_type')
+                    <span style="color: red">{{$message}}</span>
+                    @enderror
+                </div>
+                <div class="col-md-4 form-group twilio-field">
                     <label>User Whatsapp SID</label>
-                    <input type="text" id='user_whatsapp_sid' required name="user_whatsapp_sid" class="form-control"
+                    <input type="text" id='user_whatsapp_sid' name="user_whatsapp_sid" class="form-control"
                            value="{{$data['user_whatsapp_sid']}}">
                     @error('user_whatsapp_sid')
                     <span style="color: red">{{$message}}</span>
                     @enderror
                 </div>
-                <div class="col-md-4 form-group">
+                <div class="col-md-4 form-group twilio-field">
                     <label>User Whatsapp Token</label>
-                    <input type="text" id='user_whatsapp_token' required name="user_whatsapp_token" class="form-control"
+                    <input type="text" id='user_whatsapp_token' name="user_whatsapp_token" class="form-control"
                            value="{{$data['user_whatsapp_token']}}">
                     @error('user_whatsapp_token')
+                    <span style="color: red">{{$message}}</span>
+                    @enderror
+                </div>
+                <div class="col-md-4 form-group cloud-api-field" style="display:none">
+                    <label>Access Token</label>
+                    <input type="text" id='cloud_api_access_token' name="cloud_api_access_token" class="form-control"
+                           value="{{$data['cloud_api_access_token'] ?? ''}}">
+                    @error('cloud_api_access_token')
+                    <span style="color: red">{{$message}}</span>
+                    @enderror
+                </div>
+                <div class="col-md-4 form-group cloud-api-field" style="display:none">
+                    <label>Phone Number ID</label>
+                    <input type="text" id='cloud_api_phone_number_id' name="cloud_api_phone_number_id" class="form-control"
+                           value="{{$data['cloud_api_phone_number_id'] ?? ''}}">
+                    @error('cloud_api_phone_number_id')
                     <span style="color: red">{{$message}}</span>
                     @enderror
                 </div>
@@ -75,5 +101,20 @@
 </div>
 
 @include('includes.footerJs')
+
+<script>
+function toggleApiFields(type) {
+    if (type === 'cloud_api') {
+        document.querySelectorAll('.twilio-field').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.cloud-api-field').forEach(el => el.style.display = 'block');
+    } else {
+        document.querySelectorAll('.twilio-field').forEach(el => el.style.display = 'block');
+        document.querySelectorAll('.cloud-api-field').forEach(el => el.style.display = 'none');
+    }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    toggleApiFields(document.getElementById('api_type')?.value || 'twilio');
+});
+</script>
 
 @include('includes.footer')

@@ -112,12 +112,12 @@
 
 @include('includes.footerJs')
 <script>
-    $(function () {
-        var $tblChkBox = $("input:checkbox");
-        $("#ckbCheckAll").on("click", function () {
-            $($tblChkBox).prop('checked', $(this).prop('checked'));
-        });
+$(function () {
+    var $tblChkBox = $("#myTable input:checkbox");
+    $("#ckbCheckAll").on("click", function () {
+        $tblChkBox.prop('checked', $(this).prop('checked'));
     });
+});
 </script>
 <script src="{{ asset("/ckeditor_wiris/ckeditor4/ckeditor.js") }}"></script>
 <script>
