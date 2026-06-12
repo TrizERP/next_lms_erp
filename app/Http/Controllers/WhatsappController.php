@@ -16,6 +16,7 @@ use function App\Helpers\FeeMonthId;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 use GuzzleHttp\Client as HttpClient;
+use GuzzleHttp\Exception\ClientException;
 use Illuminate\Support\Facades\Storage;
 
 class WhatsappController extends Controller
@@ -141,7 +142,7 @@ class WhatsappController extends Controller
             $imageUrl = $matches[1];
             $message = preg_replace('/<img[^>]*>/i', '<a href="' . $imageUrl . '">' . $imageUrl . '</a>', $message);
         }
-        $textPattern = '/(^|<\/a>)(.*?)(<a href="|$)/';
+        $textPattern = '/(^|<\/a>)(.*?)(<a href="|$)/us';
         $textMatches = [];
         preg_match_all($textPattern, $message, $textMatches);
 
@@ -239,16 +240,6 @@ class WhatsappController extends Controller
                         usleep(300000);
                     }
                     $i++;
-                    $payload = [
-                        "messaging_product" => "whatsapp",
-                        "to" => "91" . $student['mobile'],
-                        "type" => "text",
-                        "text" => ["body" => $request->message]
-                    ];
-                    if (!empty($hrefArray)) {
-                        $payload['type'] = 'image';
-                        $payload['image'] = ['link' => $hrefArray[0], 'caption' => $request->message];
-                    }
                     $cloudResponse = $this->sendWhatsappCloudApi(
                         '91' . $student['mobile'],
                         $request->message,
@@ -373,29 +364,69 @@ class WhatsappController extends Controller
     {
         $url = "https://graph.facebook.com/v25.0/{$phoneNumberId}/messages";
         $client = new HttpClient();
+
+        $message = trim(preg_replace('/\s+/', ' ', strip_tags($message)));
+
         $payload = [
             "messaging_product" => "whatsapp",
-            "to" => $to,
-            "type" => "text",
-            "text" => ["body" => $message]
+            "to" => $to
         ];
+
         if (!empty($imageUrl)) {
-            $payload = [
-                "messaging_product" => "whatsapp",
-                "to" => $to,
-                "type" => "image",
-                "image" => ["link" => $imageUrl]
+            $payload["type"] = "image";
+            $payload["image"] = [
+                "link" => $imageUrl,
+                "caption" => $message
+            ];
+        } else {
+            $payload["type"] = "template";
+            $payload["template"] = [
+                "name" => "parents_",
+                "language" => ["code" => "en_US"],
+                "components" => [
+                    [
+                        "type" => "body",
+                        "parameters" => [
+                            [
+                                "type" => "text",
+                                "text" => $message
+                            ]
+                        ]
+                    ]
+                ]
             ];
         }
-        $response = $client->post($url, [
-            'headers' => [
-                'Authorization' => 'Bearer ' . $accessToken,
-                'Content-Type' => 'application/json',
-            ],
-            'json' => $payload
-        ]);
-        return json_decode($response->getBody(), true);
+
+        Log::info('WhatsApp Payload', $payload);
+
+        try {
+            $response = $client->post($url, [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $accessToken,
+                    'Content-Type' => 'application/json',
+                ],
+                'json' => $payload
+            ]);
+
+            return json_decode($response->getBody(), true);
+        } catch (ClientException $exception) {
+            $errorResponse = $exception->getResponse();
+            $errorBody = $errorResponse ? json_decode($errorResponse->getBody()->getContents(), true) : null;
+
+            Log::error('WhatsApp Cloud API error', [
+                'payload' => $payload,
+                'response' => $errorBody,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return $errorBody ?: [
+                'error' => [
+                    'message' => $exception->getMessage(),
+                ]
+            ];
+        }
     }
+    
 
     public function incomingMessage(Request $request)
     {
