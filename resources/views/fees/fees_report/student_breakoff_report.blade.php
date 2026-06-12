@@ -112,13 +112,15 @@
                             <th>{{ App\Helpers\get_string('studentname','request')}}</th>
                             <th>{{ App\Helpers\get_string('std/div','request')}}</th>
                             <!--<th>{{ App\Helpers\get_string('studentquota','request')}}</th>-->
-                            <th>{{ App\Helpers\get_string('uniqueid','request')}}</th>
+                            <!--<th>{{ App\Helpers\get_string('uniqueid','request')}}</th>-->
                             @if (isset($data['fees_titles']))
                                 @foreach ($data['fees_titles'] as $key => $value)
                                     <th>{{ $value->display_name }}</th>
                                 @endforeach
                             @endif
                             <th>Total</th>
+                            <th>Paid</th>
+                            <th>Pending</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -126,7 +128,7 @@
                     $i=1;
                     $total_breakoff = 0;
                     $total_array = array();
-                    $final_total_amount = 0;
+                    $final_total_amount = $total_paid = $total_pending = 0;
                     $amount = 0;
                     @endphp
 
@@ -139,23 +141,21 @@
                             <td>{{$fees_value['student_name'].' '.$fees_value['surname']}}</td>
                             <td>{{$fees_value['standard_name'].'/'.$fees_value['division_name']}}</td>
                             <!--<td>{{$fees_value['quota']}}</td>-->
-                            <td>{{$fees_value['uniqueid']}}</td>
+                            <!--<td>{{$fees_value['uniqueid']}}</td>-->
                              @php
-                                $totalAmount = 0; // Initialize the total amount variable
+                                $totalAmount = $totalPaid = $totalPending = 0;
                             @endphp
-                            @foreach ($data['fees_titles'] as $value)
+@foreach ($data['fees_titles'] as $value)
     @php
         $fees_title = $value->fees_title;
         $display_name = $value->display_name;
-        $amount = 0; // Initialize amount to 0
+        $amount = $paid = $pending = 0;
 
         foreach($fees_value['breakoff'] as $k => $v) {
             if (isset($v[$fees_title])) {
-                if($v[$fees_title]['amount']!=0){
-                    $amount +=$v[$fees_title]['amount'];
-                }else{
-                    $amount += $v[$fees_title]['paid_amount'];
-                }
+                $amount += ($v[$fees_title]['amount'] + $v[$fees_title]['paid_amount']);
+                $totalPending +=$v[$fees_title]['amount'];
+                $totalPaid += $v[$fees_title]['paid_amount'];
             }
         }
 
@@ -176,17 +176,23 @@
     <td>{{ $amount }}</td>
 @endforeach
 
-                            <td> {{ $totalAmount }}</td>
+                            <td>{{ $totalAmount }}</td>
+                            <td>{{ $totalPaid }}</td>
+                            <td>{{ $totalPending }}</td>
                             @php
-                                $final_total_amount += $totalAmount; // Add the total for the current row to the final total
+                                $final_total_amount += $totalAmount;
+                                $total_paid += $totalPaid;
+                                $total_pending += $totalPending;
                             @endphp
                         </tr>
                         @endforeach
                         @endforeach
                         
                         <tr class="font-weight-bold">
-                            <td style="text-align:right;" colspan="{{ count($data['fees_titles']) + 5}}">Total</td>
+                            <td style="text-align:right;" colspan="{{ count($data['fees_titles']) + 4}}">Total</td>
                             <td style="text-align:right;">{{ $final_total_amount }}</td>
+                            <td style="text-align:right;">{{ $total_paid }}</td>
+                            <td style="text-align:right;">{{ $total_pending }}</td>
                         </tr>
                     @endif
                     </tbody>

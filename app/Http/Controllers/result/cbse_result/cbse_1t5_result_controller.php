@@ -761,14 +761,17 @@ else
 
     public function studentResultPDFAPI(Request $request)
     {
-        try {
-            if (!$this->jwtToken()->validate()) {
-                $response = array('status' => '2', 'message' => 'Token Auth Failed', 'data' => array());
+        $type = $request->input('type');
+        if ($type == "API") {
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = array('status' => '2', 'message' => 'Token Auth Failed', 'data' => array());
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = array('status' => '2', 'message' => $e->getMessage(), 'data' => array());
                 return response()->json($response, 401);
             }
-        } catch (\Exception $e) {
-            $response = array('status' => '2', 'message' => $e->getMessage(), 'data' => array());
-            return response()->json($response, 401);
         }
 
         $response = array();

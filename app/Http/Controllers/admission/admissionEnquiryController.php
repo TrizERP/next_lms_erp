@@ -568,6 +568,9 @@ class admissionEnquiryController extends Controller
                 }
             }
         } else {
+            if (isset($data['sibling_in_anandniketan']) && is_array($data['sibling_in_anandniketan'])) {
+                $data['sibling_in_anandniketan'] = implode(',', $data['sibling_in_anandniketan']);
+            }
             admissionEnquiryModel::insert($data);
             $last_inserted_id = DB::getPdo()->lastInsertId();
             if ($data['send_sms'] == 1) {

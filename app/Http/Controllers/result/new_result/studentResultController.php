@@ -730,12 +730,11 @@ class studentResultController extends Controller
         $working = 0;
         $present = 0;
 
-$subInstituteArray = [47,76];
+$subInstituteArray = [47,76,195];
 if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray)) {
-    if($sub_institute_id = 76){
+    if($sub_institute_id == 76){
         $tableHtml = $attendance['table'];
         preg_match_all('/<td[^>]*>([^<]+)<\/td>/', $tableHtml, $tdMatches);
-
         if (!empty($tdMatches[1]) && count($tdMatches[1]) >= 4) {
             if (is_numeric(trim($tdMatches[1][1])))
                 $working = trim($tdMatches[1][1]);
@@ -743,7 +742,13 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
             if (is_numeric(trim($tdMatches[1][3])))
                 $present = trim($tdMatches[1][3]);
         }
-    }elseif($sub_institute_id = 47){
+    }elseif($sub_institute_id == 195){
+        $tableHtml = $attendance['table'];
+        if (preg_match('/Attendance<\/td>\s*<td><b>(\d+)\/(\d+)<\/b><\/td>/i', $tableHtml, $matches)) {
+            $present = $matches[1]; // 181
+            $working = $matches[2]; // 226
+        }
+    }elseif($sub_institute_id == 47){
         if (isset($explodeTermAtten[0]) && is_numeric($explodeTermAtten[0]))
             $present = $explodeTermAtten[0];
         if (isset($explodeTermAtten[1]) && is_numeric($explodeTermAtten[1]))

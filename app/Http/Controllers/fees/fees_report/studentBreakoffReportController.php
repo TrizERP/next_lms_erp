@@ -82,15 +82,24 @@ class studentBreakoffReportController extends Controller
         if(isset($month)){
             $search_ids = $month;
         }
-        foreach ($student_data as $id => $arr) {
-            $stu_arr = ['0' => $arr['id']];
-            // $student_ids, $from_date = null, $to_date = null, $fees_head = null, $syear = ''
-            $final_array[] = FeeBreakoffHeadWise($stu_arr,"","","","",$month); //for current year
-            $final_array[$id][$arr['id']]['quota'] = $arr['student_quota'];
-            $final_array[$id][$arr['id']]['uniqueid'] = $arr['uniqueid']; 
-            $final_array[$id][$arr['id']]['otherfees'] = OtherBreackOff($stu_arr,$search_ids,'Yes');                                   
-       
-        }
+
+foreach ($student_data as $id => $arr) {
+
+    $stu_arr = [$arr['id']];
+
+    $feeData = FeeBreakoffHeadWise($stu_arr, "", "", "", "", $month);
+
+    // Skip if no data returned
+    if (empty($feeData)) {
+        continue;
+    }
+
+    $feeData[$arr['id']]['quota'] = $arr['student_quota'];
+    $feeData[$arr['id']]['uniqueid'] = $arr['uniqueid'];
+    $feeData[$arr['id']]['otherfees'] = OtherBreackOff($stu_arr, $search_ids, 'Yes');
+
+    $final_array[] = $feeData;
+}
         $get_fees_titles = DB::table('fees_title')
         ->select('display_name', 'fees_title')
         ->where('sub_institute_id', session()->get('sub_institute_id'))
@@ -113,7 +122,7 @@ class studentBreakoffReportController extends Controller
         $res['mobile_no'] = $mobile_no;
         $res['month'] = $month;
         $res['fees_titles'] = $get_fees_titles;
-        //  echo "<pre>";print_r($final_array);exit;
+        //echo "<pre>";print_r($res);exit;
         return is_mobile($type, "fees/fees_report/student_breakoff_report", $res, "view");
     }
 

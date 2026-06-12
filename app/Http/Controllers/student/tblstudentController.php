@@ -746,6 +746,7 @@ class tblstudentController extends Controller
         $getDisciplineResult = curl_exec($disciplineCurl);
         $getResultsResult = curl_exec($resultsCurl);
         
+        //echo "<pr>";print_r($getResultsResult);exit();
         // decode json result
         $result = json_decode($getResult);
         $leaveResult = json_decode($getLeaveResult);
