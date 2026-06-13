@@ -3169,7 +3169,7 @@ foreach ($previous_standard as $item) {
             if (count($fees_online_link) > 0) {
                 $online_link = env('APP_URL') . "fees/online_fees_collect";
             }
-            $array = [1,72];
+            $array = [72];
             $all_year_fees = [254];
             if(in_array($sub_institute_id, $array)){
                 $pay_link = DB::table('tblstudent_enrollment as se')
@@ -3180,10 +3180,10 @@ foreach ($previous_standard as $item) {
                     ->where('se.sub_institute_id', $sub_institute_id)
                     ->get();
                 
-                    $online_link = "";
-                    if (count($pay_link) > 0) {
-                        $online_link = $pay_link[0]->payment_link;
-                    }
+                $online_link = "";
+                if (count($pay_link) > 0) {
+                    $online_link = $pay_link[0]->payment_link;
+                }
             }
 
             $fees_data = $this->getBk($request, $student_id);
