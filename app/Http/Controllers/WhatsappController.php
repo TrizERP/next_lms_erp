@@ -219,7 +219,8 @@ class WhatsappController extends Controller
     {
         $type = $request->type ?? '';
         $request->validate([
-            'message' => 'required'
+            'message' => 'required',
+            'sendNotification' => 'required|array'
         ]);
 
         $token = WhatappUserDetail::where('sub_institute_id', session()->get('sub_institute_id'))->first();
@@ -232,7 +233,7 @@ class WhatsappController extends Controller
         list($textArray, $hrefArray) = $this->mediaFound($request->message);
 
         $i = 0;
-        if (isset($textArray[0])) {
+        if (isset($textArray[0]) && !empty($request->sendNotification)) {
             foreach ($request->sendNotification as $studentId => $on) {
                 $student = tblstudentModel::where([['id', $studentId], ['sub_institute_id', session()->get('sub_institute_id')]])->first();
                 if (!empty($student) && $student['mobile'] != null && strlen($student['mobile']) == 10 && !in_array(substr($student['mobile'], 0, 1), [0, 1, 2, 3, 4, 5])) {
@@ -360,13 +361,102 @@ class WhatsappController extends Controller
         return true;
     }
 
-    public function sendWhatsappCloudApi($to, $message, $accessToken, $phoneNumberId, $imageUrl = null)
+    private function normalizeWhatsappTemplateText($message)
     {
-        $url = "https://graph.facebook.com/v25.0/{$phoneNumberId}/messages";
-        $client = new HttpClient();
+        $message = preg_replace('/<br\s*\/?\s*>/i', "\n", $message);
+        $message = strip_tags($message);
+        $message = html_entity_decode($message, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $message = str_replace('&nbsp;', ' ', $message);
+        $message = str_replace(["\r\n", "\r", "\\r\\n", "\\r"], "\n", $message);
+        $message = str_replace('\\n', "\n", $message);
+        $message = str_replace(["\t", "\\t"], ' ', $message);
+        return $message;
+    }
 
-        $message = trim(preg_replace('/\s+/', ' ', strip_tags($message)));
+    private function cleanWhatsappTemplateText($message)
+    {
+        $message = $this->normalizeWhatsappTemplateText($message);
+        $message = preg_replace('/\s{2,}/', ' ', $message);
+        return trim($message);
+    }
 
+    private function getWhatsappTemplateVariableCount($message)
+    {
+        $message = $this->normalizeWhatsappTemplateText($message);
+        preg_match_all('/\{\{\s*(\d+)\s*\}\}/', $message, $matches);
+        if (!empty($matches[1])) {
+            $variables = array_map('intval', $matches[1]);
+            return count(array_unique($variables));
+        }
+
+        $lines = preg_split('/\n+/', $message, -1, PREG_SPLIT_NO_EMPTY);
+        $lines = array_values(array_filter(array_map('trim', $lines), function ($line) {
+            return $line !== '';
+        }));
+
+        return min(count($lines), 3);
+    }
+
+    private function getWhatsappTemplateName($message)
+    {
+        $variableCount = $this->getWhatsappTemplateVariableCount($message);
+        if ($variableCount === 2) {
+            return 'p2';
+        }
+        if ($variableCount >= 3) {
+            return 'p3';
+        }
+        return 'parents_';
+    }
+
+    private function getWhatsappTemplateParameters($message)
+    {
+        $message = $this->normalizeWhatsappTemplateText($message);
+        if ($this->cleanWhatsappTemplateText($message) === '') {
+            return [];
+        }
+
+        preg_match_all('/\{\{\s*\d+\s*\}\}/', $message, $matches);
+        if (!empty($matches[0])) {
+            $parts = preg_split('/\{\{\s*\d+\s*\}\}/', $message, -1, PREG_SPLIT_NO_EMPTY);
+            $parts = array_values(array_filter(array_map([$this, 'cleanWhatsappTemplateText'], $parts), function ($part) {
+                return $part !== '';
+            }));
+        } else {
+            $parts = preg_split('/\n+/', $message, -1, PREG_SPLIT_NO_EMPTY);
+            $parts = array_values(array_filter(array_map([$this, 'cleanWhatsappTemplateText'], $parts), function ($part) {
+                return $part !== '';
+            }));
+
+            if (count($parts) <= 1) {
+                return [['type' => 'text', 'text' => $this->cleanWhatsappTemplateText($message)]];
+            }
+        }
+
+        $variableCount = min($this->getWhatsappTemplateVariableCount($message), 3);
+        if ($variableCount > 0 && count($parts) > $variableCount) {
+            $parts[$variableCount - 1] = trim($parts[$variableCount - 1] . ' ' . implode(' ', array_slice($parts, $variableCount)));
+            $parts = array_slice($parts, 0, $variableCount);
+        }
+
+        $parameters = array_map(function ($part) {
+            return ['type' => 'text', 'text' => $part];
+        }, $parts);
+
+        while (count($parameters) < $variableCount) {
+            $parameters[] = ['type' => 'text', 'text' => ''];
+        }
+
+        return $parameters;
+    }
+
+    private function getWhatsappTemplateLanguageCodes()
+    {
+        return ['en_US', 'en', 'en_GB'];
+    }
+
+    private function getWhatsappPayload($to, $message, $cleanMessage, $imageUrl, $languageCode)
+    {
         $payload = [
             "messaging_product" => "whatsapp",
             "to" => $to
@@ -376,29 +466,27 @@ class WhatsappController extends Controller
             $payload["type"] = "image";
             $payload["image"] = [
                 "link" => $imageUrl,
-                "caption" => $message
+                "caption" => $cleanMessage
             ];
         } else {
             $payload["type"] = "template";
             $payload["template"] = [
-                "name" => "parents_",
-                "language" => ["code" => "en_US"],
+                "name" => $this->getWhatsappTemplateName($message),
+                "language" => ["code" => $languageCode],
                 "components" => [
                     [
                         "type" => "body",
-                        "parameters" => [
-                            [
-                                "type" => "text",
-                                "text" => $message
-                            ]
-                        ]
+                        "parameters" => $this->getWhatsappTemplateParameters($message)
                     ]
                 ]
             ];
         }
 
-        Log::info('WhatsApp Payload', $payload);
+        return $payload;
+    }
 
+    private function postWhatsappCloudApiRequest($client, $url, $accessToken, $payload)
+    {
         try {
             $response = $client->post($url, [
                 'headers' => [
@@ -408,23 +496,57 @@ class WhatsappController extends Controller
                 'json' => $payload
             ]);
 
-            return json_decode($response->getBody(), true);
+            return [json_decode($response->getBody(), true), null];
         } catch (ClientException $exception) {
             $errorResponse = $exception->getResponse();
             $errorBody = $errorResponse ? json_decode($errorResponse->getBody()->getContents(), true) : null;
 
-            Log::error('WhatsApp Cloud API error', [
-                'payload' => $payload,
-                'response' => $errorBody,
-                'message' => $exception->getMessage(),
-            ]);
-
-            return $errorBody ?: [
-                'error' => [
-                    'message' => $exception->getMessage(),
+            return [
+                null,
+                $errorBody ?: [
+                    'error' => [
+                        'message' => $exception->getMessage(),
+                    ]
                 ]
             ];
         }
+    }
+
+    public function sendWhatsappCloudApi($to, $message, $accessToken, $phoneNumberId, $imageUrl = null)
+    {
+        $url = "https://graph.facebook.com/v25.0/{$phoneNumberId}/messages";
+        $client = new HttpClient();
+
+        $cleanMessage = $this->cleanWhatsappTemplateText($message);
+        $lastErrorBody = null;
+
+        foreach ($this->getWhatsappTemplateLanguageCodes() as $languageCode) {
+            $payload = $this->getWhatsappPayload($to, $message, $cleanMessage, $imageUrl, $languageCode);
+
+            Log::info('WhatsApp Payload', $payload);
+
+            list($responseBody, $errorBody) = $this->postWhatsappCloudApiRequest($client, $url, $accessToken, $payload);
+            if (empty($errorBody)) {
+                return $responseBody;
+            }
+
+            $lastErrorBody = $errorBody;
+
+            if (!isset($errorBody['error']['code']) || $errorBody['error']['code'] !== 132001) {
+                break;
+            }
+        }
+
+        Log::error('WhatsApp Cloud API error', [
+            'payload' => $payload ?? null,
+            'response' => $lastErrorBody,
+        ]);
+
+        return $lastErrorBody ?: [
+            'error' => [
+                'message' => 'WhatsApp Cloud API request failed',
+            ]
+        ];
     }
     
 
