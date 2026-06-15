@@ -93,6 +93,7 @@ class tbluserModel extends Model
         'uan_no',
         'pan_no',
         'esic_no',
+        'allocated_standards',
         'tds_deduction',
         'pf_deduction',
         'pt_deduction',
