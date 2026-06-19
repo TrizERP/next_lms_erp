@@ -79,6 +79,7 @@ use App\Http\Controllers\neo4jGraph\GraphController;
 use App\Http\Controllers\neo4jGraph\StudentResultGraphController;
 use App\Services\Neo4jService;
 use App\Http\Controllers\lms\pal\palController;
+use App\Http\Controllers\FileController;
 
 
 Route::get('/neo4j-test', function (Neo4jService $neo4j) {
@@ -688,3 +689,4 @@ Route::get('ajaxQuestionLists', [AJAXController::class, 'ajaxQuestionListsFuncti
 
 Route::get('/suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggested.content');
 Route::post('/lms/store-suggested-content', [palController::class, 'storeSuggestedContent'])->name('store.suggested.content');
+Route::get('/download-folder', [FileController::class, 'downloadFolder']);
