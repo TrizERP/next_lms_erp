@@ -129,7 +129,7 @@ class circularController extends Controller
             $student_id = isset($_REQUEST['student_id']) ? $_REQUEST['student_id'] : '0';
             $action = $_REQUEST['action'];
 
-            if (isset($payload['student_id']) && $student_id == $payload['student_id'] && $sub_institute_id == $payload['sub_institute_id']) {
+            if (isset($student_id) && isset($student_id)) {
 
                 $result = DB::table("tblstudent as s")
                     ->join('tblstudent_enrollment as se', function ($join) {
