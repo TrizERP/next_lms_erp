@@ -10,6 +10,7 @@ use App\Models\user\tbluserModel;
 use App\Models\fees\map_year\map_year;
 use App\Models\student\appNotificationModel;
 use App\Models\student\tblstudentModel;
+use App\Services\Neo4jService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\URL;
@@ -2982,6 +2983,87 @@ if (!function_exists('get_string')) {
                 ->where('status', $status)
                 ->first();
             return $result ?? '-';
+        }
+    }
+
+    if (!function_exists('neo4jCreateNode')) {
+        function neo4jCreateNode($label, array $matchProperties, array $nodeProperties = [])
+        {
+            try {
+                $neo4jService = app(Neo4jService::class);
+
+                $matchParts = [];
+                $params = [];
+
+                foreach ($matchProperties as $property => $value) {
+                    $paramKey = 'match_' . $property;
+                    $matchParts[] = $property . ': $' . $paramKey;
+                    $params[$paramKey] = $value;
+                }
+
+                $query = 'MERGE (n:' . $label . ' {' . implode(', ', $matchParts) . '})';
+
+                if (!empty($nodeProperties)) {
+                    $query .= ' SET n += $nodeProps';
+                    $params['nodeProps'] = $nodeProperties;
+                }
+
+                $query .= ' RETURN n';
+
+                return $neo4jService->run($query, $params);
+            } catch (\Throwable $e) {
+                \Log::error('Neo4j node creation failed', [
+                    'label' => $label,
+                    'message' => $e->getMessage(),
+                ]);
+
+                return null;
+            }
+        }
+    }
+
+    if (!function_exists('neo4jCreateRelationship')) {
+        function neo4jCreateRelationship($startLabel, array $startProperties, $relationshipType, $endLabel, array $endProperties, array $relationshipProperties = [])
+        {
+            try {
+                $neo4jService = app(Neo4jService::class);
+
+                $startParts = [];
+                $endParts = [];
+                $params = [];
+
+                foreach ($startProperties as $property => $value) {
+                    $paramKey = 'start_' . $property;
+                    $startParts[] = $property . ': $' . $paramKey;
+                    $params[$paramKey] = $value;
+                }
+
+                foreach ($endProperties as $property => $value) {
+                    $paramKey = 'end_' . $property;
+                    $endParts[] = $property . ': $' . $paramKey;
+                    $params[$paramKey] = $value;
+                }
+
+                $query = 'MATCH (start:' . $startLabel . ' {' . implode(', ', $startParts) . '}), ';
+                $query .= '(end:' . $endLabel . ' {' . implode(', ', $endParts) . '}) ';
+                $query .= 'MERGE (start)-[r:' . $relationshipType . ']->(end)';
+
+                if (!empty($relationshipProperties)) {
+                    $query .= ' SET r += $relationshipProps';
+                    $params['relationshipProps'] = $relationshipProperties;
+                }
+
+                $query .= ' RETURN r';
+
+                return $neo4jService->run($query, $params);
+            } catch (\Throwable $e) {
+                \Log::error('Neo4j relationship creation failed', [
+                    'relationshipType' => $relationshipType,
+                    'message' => $e->getMessage(),
+                ]);
+
+                return null;
+            }
         }
     }
 }

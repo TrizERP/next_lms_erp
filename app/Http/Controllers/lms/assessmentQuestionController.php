@@ -1425,5 +1425,966 @@ class assessmentQuestionController extends Controller
         
         return $questions;
     }
+
+    // Add to assessmentQuestionController.php or new MasteryController.php
+
+public function getMasteryMatrix(Request $request)
+{
+    $standard_id = $request->get('standard_id');
+    $subject_id = $request->get('subject_id');
+    $student_id = $request->session()->get('user_id');
+    
+    $concepts = DB::table('lms_concept')
+        ->where('standard_id', $standard_id)
+        ->where('subject_id', $subject_id)
+        ->get();
+    
+    $masteryData = [];
+    
+    foreach ($concepts as $concept) {
+        // Get all questions for this concept
+        $questions = DB::table('lms_question_master')
+            ->where('concept_id', $concept->id)
+            ->pluck('id');
+        
+        // Get student attempts
+        $attempts = DB::table('lms_online_exam_answer')
+            ->whereIn('question_id', $questions)
+            ->where('user_id', $student_id)
+            ->get();
+        
+        $total = $attempts->count();
+        $correct = $attempts->where('is_correct', 1)->count();
+        
+        // Calculate mastery (weighted by recency and difficulty)
+        $masteryLevel = $this->calculateMasteryLevel($attempts);
+        
+        $masteryData[] = [
+            'concept_id' => $concept->id,
+            'concept_name' => $concept->name,
+            'mastery_level' => $masteryLevel,
+            'total_attempts' => $total,
+            'accuracy' => $total > 0 ? round(($correct / $total) * 100, 1) : 0,
+            'last_practiced' => $attempts->isNotEmpty() ? $attempts->last()->created_at : null,
+            'status' => $masteryLevel >= 70 ? 'mastered' : ($masteryLevel >= 40 ? 'developing' : 'needs_practice')
+        ];
+    }
+    
+    return response()->json([
+        'status_code' => 1,
+        'data' => $masteryData
+    ]);
+}
+
+private function calculateMasteryLevel($attempts)
+{
+    if ($attempts->isEmpty()) return 0;
+    
+    $weightedScore = 0;
+    $totalWeight = 0;
+    
+    foreach ($attempts as $attempt) {
+        // Recency weight (newer attempts have higher weight)
+        $daysAgo = Carbon::parse($attempt->created_at)->diffInDays(now());
+        $recencyWeight = max(0.5, 1 - ($daysAgo / 30));
+        
+        // Difficulty weight (harder questions = higher weight)
+        $difficultyWeight = $this->getQuestionDifficulty($attempt->question_id);
+        
+        $weight = $recencyWeight * $difficultyWeight;
+        $totalWeight += $weight;
+        
+        if ($attempt->is_correct) {
+            $weightedScore += $weight;
+        }
+    }
+    
+    return $totalWeight > 0 ? round(($weightedScore / $totalWeight) * 100, 1) : 0;
+}
+// Add to assessmentQuestionController.php
+
+public function getForgettingCurve($student_id, $concept_id)
+{
+    // Get all attempts for this concept
+    $attempts = DB::table('lms_online_exam_answer')
+        ->join('lms_question_master', 'lms_question_master.id', '=', 'lms_online_exam_answer.question_id')
+        ->where('lms_question_master.concept_id', $concept_id)
+        ->where('lms_online_exam_answer.user_id', $student_id)
+        ->orderBy('lms_online_exam_answer.created_at', 'desc')
+        ->get();
+    
+    // Ebbinghaus Forgetting Curve calculation
+    $curveData = [];
+    $intervals = [1, 3, 7, 14, 30]; // Days
+    
+    foreach ($intervals as $interval) {
+        $relevantAttempts = $attempts->filter(function($attempt) use ($interval) {
+            return Carbon::parse($attempt->created_at)->diffInDays(now()) <= $interval;
+        });
+        
+        $total = $relevantAttempts->count();
+        $correct = $relevantAttempts->where('is_correct', 1)->count();
+        
+        $curveData[] = [
+            'interval' => $interval,
+            'retention_rate' => $total > 0 ? ($correct / $total) * 100 : 0
+        ];
+    }
+    
+    // Determine next review date
+    $nextReview = $this->calculateNextReview($curveData);
+    
+    return [
+        'current_retention' => $curveData[0]['retention_rate'] ?? 0,
+        'forgetting_curve' => $curveData,
+        'next_review' => $nextReview,
+        'review_urgency' => $this->getReviewUrgency($curveData)
+    ];
+}
+
+private function getReviewUrgency($curveData)
+{
+    if (empty($curveData)) return 'needs_immediate';
+    
+    $latestRetention = $curveData[0]['retention_rate'] ?? 0;
+    
+    if ($latestRetention < 30) return 'critical';
+    if ($latestRetention < 50) return 'urgent';
+    if ($latestRetention < 70) return 'recommended';
+    return 'optional';
+}
+
+   public function generateAdaptivePractice(Request $request)
+    {
+        try {
+            $student_id = $request->get('student_id');
+            $standard_id = $request->get('standard_id');
+            $subject_id = $request->get('subject_id');
+            $chapter_id = $request->get('chapter_id');
+            $concept_id = $request->get('concept_id');
+            $questionCount = (int) $request->get('question_count', 5);
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+
+            if (!$student_id) {
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => 'Student ID is required'
+                ]);
+            }
+
+            // Get student's mastery levels
+            $masteryData = $this->getStudentMastery($student_id, $standard_id, $subject_id, $chapter_id);
+            
+            // Determine practice strategy
+            $strategy = $this->getPracticeStrategy($masteryData, $concept_id);
+            
+            // Generate questions
+            $questions = $this->getPracticeQuestions(
+                $student_id,
+                $standard_id,
+                $subject_id,
+                $chapter_id,
+                $concept_id,
+                $strategy,
+                $questionCount
+            );
+
+            return response()->json([
+                'status_code' => 1,
+                'message' => 'Practice questions generated successfully',
+                'data' => [
+                    'questions' => $questions,
+                    'strategy' => $strategy,
+                    'mastery_data' => $masteryData,
+                    'total_questions' => count($questions)
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Generate Adaptive Practice Error: ' . $e->getMessage());
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Error generating practice: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+
+    /**
+     * Get student's mastery levels for all concepts
+     */
+private function getStudentMastery($student_id, $standard_id, $subject_id, $chapter_id = null)
+    {
+        $query = DB::table('lms_concept as c')
+            ->leftJoin('lms_question_master as q', 'q.concept_id', '=', 'c.id')
+            ->leftJoin('lms_online_exam_answer as a', function($join) use ($student_id) {
+                $join->on('a.question_id', '=', 'q.id')
+                     ->where('a.student_id', '=', $student_id);
+            })
+            ->select(
+                'c.id as concept_id',
+                'c.name as concept_name',
+                'c.mastery_threshold',
+                DB::raw('COUNT(DISTINCT a.id) as attempts'),
+                DB::raw('SUM(CASE WHEN a.ans_status = 1 THEN 1 ELSE 0 END) as correct'),
+                DB::raw('MAX(a.created_at) as last_practiced')
+            )
+            ->where('c.sub_institute_id', session('sub_institute_id'));
+
+        if ($standard_id) {
+            $query->where('c.standard_id', $standard_id);
+        }
+        if ($subject_id) {
+            $query->where('c.subject_id', $subject_id);
+        }
+        if ($chapter_id) {
+            $query->where('c.chapter_id', $chapter_id);
+        }
+
+        $results = $query->groupBy('c.id', 'c.name', 'c.mastery_threshold')->get();
+
+        $masteryData = [];
+        foreach ($results as $concept) {
+            $attempts = $concept->attempts ?? 0;
+            $correct = $concept->correct ?? 0;
+            $mastery = $attempts > 0 ? round(($correct / $attempts) * 100, 1) : 0;
+            
+            $threshold = $concept->mastery_threshold ?? 70;
+            $status = $attempts == 0 ? 'not_started' : 
+                     ($mastery >= $threshold ? 'mastered' : 
+                     ($mastery >= $threshold * 0.6 ? 'developing' : 'needs_practice'));
+
+            $masteryData[] = [
+                'concept_id' => $concept->concept_id,
+                'concept_name' => $concept->concept_name,
+                'mastery_level' => $mastery,
+                'attempts' => $attempts,
+                'correct' => $correct,
+                'status' => $status,
+                'last_practiced' => $concept->last_practiced
+            ];
+        }
+
+        return $masteryData;
+    }
+
+    /**
+     * Get practice urgency based on last practice date and mastery level
+     */
+    private function getPracticeUrgency($lastPracticed, $masteryLevel)
+    {
+        if (!$lastPracticed) return 'immediate';
+        
+        $daysAgo = \Carbon\Carbon::parse($lastPracticed)->diffInDays(now());
+        
+        if ($masteryLevel < 40) return 'immediate';
+        if ($masteryLevel < 60 && $daysAgo > 3) return 'soon';
+        if ($masteryLevel < 80 && $daysAgo > 7) return 'recommended';
+        return 'optional';
+    }
+
+    /**
+     * Get practice strategy based on mastery data
+     */
+    private function getPracticeStrategy($masteryData, $specificConceptId = null)
+    {
+        if ($specificConceptId) {
+            $concept = collect($masteryData)->firstWhere('concept_id', $specificConceptId);
+            if ($concept) {
+                return [
+                    'type' => 'focused',
+                    'focus' => [$specificConceptId],
+                    'question_count' => 5,
+                    'difficulty' => $concept['mastery_level'] < 40 ? 'easy' : 'mixed',
+                    'hints' => $concept['mastery_level'] < 40,
+                    'explanation' => true,
+                    'description' => 'Focused practice on ' . ($concept['concept_name'] ?? 'selected concept')
+                ];
+            }
+        }
+
+        $needsPractice = collect($masteryData)->filter(function($c) {
+            return $c['status'] === 'needs_practice';
+        });
+
+        if ($needsPractice->isNotEmpty()) {
+            return [
+                'type' => 'remediation',
+                'focus' => $needsPractice->pluck('concept_id')->toArray(),
+                'question_count' => min(8, $needsPractice->count() * 2 + 2),
+                'difficulty' => 'easy_to_medium',
+                'hints' => true,
+                'explanation' => true,
+                'description' => 'Focusing on concepts that need practice'
+            ];
+        }
+
+        $developing = collect($masteryData)->filter(function($c) {
+            return $c['status'] === 'developing';
+        });
+
+        if ($developing->isNotEmpty()) {
+            return [
+                'type' => 'practice',
+                'focus' => $developing->pluck('concept_id')->toArray(),
+                'question_count' => min(6, $developing->count() * 2 + 1),
+                'difficulty' => 'mixed',
+                'hints' => false,
+                'explanation' => true,
+                'description' => 'Strengthening developing concepts'
+            ];
+        }
+
+        return [
+            'type' => 'challenge',
+            'focus' => collect($masteryData)->pluck('concept_id')->toArray(),
+            'question_count' => 5,
+            'difficulty' => 'hard',
+            'hints' => false,
+            'explanation' => true,
+            'description' => 'Challenge yourself with advanced questions'
+        ];
+    }
+
+    /**
+     * Get strategy for a specific concept
+     */
+    private function getStrategyForConcept($concept)
+    {
+        $masteryLevel = $concept['mastery_level'];
+        
+        if ($masteryLevel < 30) {
+            return [
+                'type' => 'remediation',
+                'focus' => [$concept['concept_id']],
+                'question_count' => 5,
+                'difficulty' => 'easy',
+                'hints' => true,
+                'explanation' => true,
+                'description' => 'Building foundation for ' . $concept['concept_name']
+            ];
+        } elseif ($masteryLevel < 60) {
+            return [
+                'type' => 'practice',
+                'focus' => [$concept['concept_id']],
+                'question_count' => 4,
+                'difficulty' => 'mixed',
+                'hints' => false,
+                'explanation' => true,
+                'description' => 'Practicing ' . $concept['concept_name']
+            ];
+        } else {
+            return [
+                'type' => 'challenge',
+                'focus' => [$concept['concept_id']],
+                'question_count' => 3,
+                'difficulty' => 'hard',
+                'hints' => false,
+                'explanation' => true,
+                'description' => 'Mastering ' . $concept['concept_name']
+            ];
+        }
+    }
+
+    /**
+     * Get practice questions based on strategy
+     */
+  private function getPracticeQuestions($student_id, $standard_id, $subject_id, $chapter_id, $concept_id, $strategy, $limit)
+    {
+        $questions = [];
+        $focusConcepts = $strategy['focus'] ?? [];
+        $difficulty = $strategy['difficulty'] ?? 'mixed';
+        $sub_institute_id = session('sub_institute_id');
+
+        // Build query
+        $query = DB::table('lms_question_master as q')
+            ->select('q.*')
+            ->where('q.sub_institute_id', $sub_institute_id)
+            ->where('q.status', 1);
+
+        if ($standard_id) {
+            $query->where('q.standard_id', $standard_id);
+        }
+        if ($subject_id) {
+            $query->where('q.subject_id', $subject_id);
+        }
+        if ($chapter_id) {
+            $query->where('q.chapter_id', $chapter_id);
+        }
+
+        // Filter by concept
+        if (!empty($focusConcepts)) {
+            $query->whereIn('q.concept_id', $focusConcepts);
+        } elseif ($concept_id) {
+            $query->where('q.concept_id', $concept_id);
+        }
+
+        // Filter by difficulty
+        if ($difficulty === 'easy') {
+            $query->where('q.points', '<=', 1);
+        } elseif ($difficulty === 'hard') {
+            $query->where('q.points', '>=', 3);
+        } elseif ($difficulty === 'easy_to_medium') {
+            $query->where('q.points', '<=', 2);
+        }
+
+        // Get questions not recently attempted
+        $attemptedQuestions = DB::table('lms_online_exam_answer')
+            ->where('student_id', $student_id)
+            ->where('created_at', '>=', now()->subDays(7))
+            ->pluck('question_id')
+            ->toArray();
+
+        if (!empty($attemptedQuestions)) {
+            $query->whereNotIn('q.id', $attemptedQuestions);
+        }
+
+        $questionResults = $query->inRandomOrder()->limit($limit)->get();
+
+        foreach ($questionResults as $q) {
+            // Get options for MCQ
+            $options = [];
+            if ($q->question_type_id == 1) {
+                $options = DB::table('answer_master')
+                    ->where('question_id', $q->id)
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->get();
+            }
+
+            // Get concept name
+            $conceptName = DB::table('lms_concept')
+                ->where('id', $q->concept_id)
+                ->value('name');
+
+            $questions[] = [
+                'id' => $q->id,
+                'question_title' => $q->question_title,
+                'question_type_id' => $q->question_type_id,
+                'points' => $q->points,
+                'concept_id' => $q->concept_id,
+                'concept_name' => $conceptName,
+                'options' => $options,
+                'hint_text' => $q->hint_text,
+                'learning_outcome' => $q->learning_outcome,
+                'multiple_answer' => $q->multiple_answer,
+                'difficulty' => $q->points <= 1 ? 'Easy' : ($q->points >= 3 ? 'Hard' : 'Medium')
+            ];
+        }
+
+        // If not enough questions, get more
+        if (count($questions) < $limit) {
+            $additional = $this->getAdditionalQuestions($student_id, $standard_id, $subject_id, $chapter_id, $concept_id, $limit - count($questions));
+            $questions = array_merge($questions, $additional);
+        }
+
+        return $questions;
+    }
+
+    /**
+     * Get additional questions when not enough found
+     */
+    private function getAdditionalQuestions($student_id, $standard_id, $subject_id, $chapter_id, $concept_id, $limit)
+    {
+        $query = DB::table('lms_question_master as q')
+            ->select('q.*')
+            ->where('q.sub_institute_id', session('sub_institute_id'))
+            ->where('q.status', 1);
+
+        if ($standard_id) {
+            $query->where('q.standard_id', $standard_id);
+        }
+        if ($subject_id) {
+            $query->where('q.subject_id', $subject_id);
+        }
+        if ($chapter_id) {
+            $query->where('q.chapter_id', $chapter_id);
+        }
+        if ($concept_id) {
+            $query->where('q.concept_id', $concept_id);
+        }
+
+        $results = $query->inRandomOrder()->limit($limit)->get();
+        
+        $questions = [];
+        foreach ($results as $q) {
+            $conceptName = DB::table('lms_concept')
+                ->where('id', $q->concept_id)
+                ->value('name');
+
+            $questions[] = [
+                'id' => $q->id,
+                'question_title' => $q->question_title,
+                'question_type_id' => $q->question_type_id,
+                'points' => $q->points,
+                'concept_id' => $q->concept_id,
+                'concept_name' => $conceptName,
+                'difficulty' => $q->points <= 1 ? 'Easy' : ($q->points >= 3 ? 'Hard' : 'Medium')
+            ];
+        }
+
+        return $questions;
+    }
+
+    /**
+     * Get suggested content for practice
+     */
+    private function getSuggestedContentForPractice($student_id, $standard_id, $subject_id, $chapter_id, $masteryData)
+    {
+        // Find weak concepts
+        $weakConcepts = collect($masteryData)
+            ->filter(function($c) {
+                return $c['status'] === 'needs_practice' || $c['status'] === 'developing';
+            })
+            ->pluck('concept_id')
+            ->toArray();
+
+        if (empty($weakConcepts)) {
+            return [];
+        }
+
+        // Get content for weak concepts
+        $content = DB::table('teacher_content')
+            ->where('standard_id', $standard_id)
+            ->where('subject_id', $subject_id)
+            ->where('sub_institute_id', session('sub_institute_id'))
+            ->whereIn('concept_id', $weakConcepts)
+            ->where('status', 1)
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        return $content;
+    }
+
+    /**
+     * PHASE 3: Submit Practice Results
+     */
+  public function submitPractice(Request $request)
+    {
+        try {
+            $student_id = $request->get('student_id');
+            $answers = $request->get('answers', []);
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+
+            \Log::info('Submit Practice Request:', [
+                'student_id' => $student_id,
+                'answers' => $answers,
+                'sub_institute_id' => $sub_institute_id
+            ]);
+
+            if (!$student_id) {
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => 'Student ID is required'
+                ]);
+            }
+
+            if (empty($answers)) {
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => 'No answers provided'
+                ]);
+            }
+
+            $results = [];
+            $totalCorrect = 0;
+            $totalWrong = 0;
+            $totalMarks = 0;
+            $obtainedMarks = 0;
+            $conceptUpdates = [];
+
+            foreach ($answers as $questionId => $answerData) {
+                // Get question details
+                $question = DB::table('lms_question_master')
+                    ->where('id', $questionId)
+                    ->first();
+
+                if (!$question) {
+                    continue;
+                }
+
+                // Check if answer is correct
+                $isCorrect = $this->checkAnswer($questionId, $answerData);
+                
+                // Prepare answer data
+                $answerValue = is_array($answerData) ? implode(',', $answerData) : $answerData;
+                
+                // Store answer in database
+                $answerId = DB::table('lms_online_exam_answer')->insertGetId([
+                    'question_id' => $questionId,
+                    'student_id' => $student_id,
+                    'answer_id' => $answerValue,
+                    'ans_status' => $isCorrect ? 1 : 0,
+                    'created_at' => now(),
+                    'sub_institute_id' => $sub_institute_id
+                ]);
+
+                // Update concept mastery
+                if ($question->concept_id) {
+                    $this->updateConceptMastery($student_id, $question->concept_id, $isCorrect);
+                    
+                    // Track concept updates
+                    if (!isset($conceptUpdates[$question->concept_id])) {
+                        $conceptUpdates[$question->concept_id] = [
+                            'correct' => 0,
+                            'total' => 0
+                        ];
+                    }
+                    $conceptUpdates[$question->concept_id]['total']++;
+                    if ($isCorrect) {
+                        $conceptUpdates[$question->concept_id]['correct']++;
+                    }
+                }
+
+                $results[] = [
+                    'question_id' => $questionId,
+                    'correct' => $isCorrect,
+                    'points' => $question->points ?? 1
+                ];
+
+                if ($isCorrect) {
+                    $totalCorrect++;
+                    $obtainedMarks += $question->points ?? 1;
+                } else {
+                    $totalWrong++;
+                }
+                $totalMarks += $question->points ?? 1;
+            }
+
+            // Update forgetting curve for each concept
+            foreach ($conceptUpdates as $conceptId => $data) {
+                $performance = $data['total'] > 0 ? ($data['correct'] / $data['total']) * 100 : 0;
+                $this->updateForgettingCurve($student_id, $conceptId, $performance);
+            }
+
+            // Get updated mastery
+            $updatedMastery = $this->getStudentMastery($student_id, null, null, null);
+
+            // Generate next practice recommendation
+            $nextRecommendation = $this->getNextPracticeRecommendation($updatedMastery);
+
+            return response()->json([
+                'status_code' => 1,
+                'message' => 'Practice submitted successfully',
+                'data' => [
+                    'results' => $results,
+                    'summary' => [
+                        'total_correct' => $totalCorrect,
+                        'total_wrong' => $totalWrong,
+                        'total_marks' => $totalMarks,
+                        'obtained_marks' => $obtainedMarks,
+                        'percentage' => $totalMarks > 0 ? round(($obtainedMarks / $totalMarks) * 100, 1) : 0
+                    ],
+                    'updated_mastery' => $updatedMastery,
+                    'next_practice_recommendation' => $nextRecommendation
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Submit Practice Error: ' . $e->getMessage());
+            \Log::error('Stack trace: ' . $e->getTraceAsString());
+            
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Error submitting practice: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+
+    /**
+     * Check if answer is correct
+     */
+    private function checkAnswer($questionId, $answerData)
+    {
+        $correctAnswers = DB::table('answer_master')
+            ->where('question_id', $questionId)
+            ->where('correct_answer', 1)
+            ->pluck('id')
+            ->toArray();
+
+        if (empty($correctAnswers)) {
+            return false;
+        }
+
+        if (is_array($answerData)) {
+            // Multiple answers
+            sort($answerData);
+            sort($correctAnswers);
+            return $answerData == $correctAnswers;
+        } else {
+            // Single answer
+            return in_array($answerData, $correctAnswers);
+        }
+    }
+
+    /**
+     * Update concept mastery
+     */
+    private function updateConceptMastery($student_id, $concept_id, $isCorrect)
+    {
+        // Get all attempts for this concept
+        $attempts = DB::table('lms_online_exam_answer as a')
+            ->join('lms_question_master as q', 'q.id', '=', 'a.question_id')
+            ->where('a.student_id', $student_id)
+            ->where('q.concept_id', $concept_id)
+            ->get();
+
+        $total = $attempts->count();
+        $correct = $attempts->where('ans_status', 1)->count();
+        
+        // Calculate mastery
+        $masteryLevel = $total > 0 ? round(($correct / $total) * 100, 1) : 0;
+
+        // Log mastery
+        DB::table('lms_concept_mastery_log')->insert([
+            'student_id' => $student_id,
+            'concept_id' => $concept_id,
+            'mastery_level' => $masteryLevel,
+            'total_attempts' => $total,
+            'correct_attempts' => $correct,
+            'created_at' => now()
+        ]);
+
+        // Update or insert concept mastery
+        $existing = DB::table('lms_concept_mastery')
+            ->where('student_id', $student_id)
+            ->where('concept_id', $concept_id)
+            ->first();
+
+        if ($existing) {
+            DB::table('lms_concept_mastery')
+                ->where('id', $existing->id)
+                ->update([
+                    'mastery_level' => $masteryLevel,
+                    'updated_at' => now()
+                ]);
+        } else {
+            DB::table('lms_concept_mastery')->insert([
+                'student_id' => $student_id,
+                'concept_id' => $concept_id,
+                'mastery_level' => $masteryLevel,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        }
+    }
+    private function updateForgettingCurve($student_id, $concept_id, $performance)
+    {
+        $existing = DB::table('lms_forgetting_curve')
+            ->where('student_id', $student_id)
+            ->where('concept_id', $concept_id)
+            ->first();
+
+        if ($existing) {
+            // Update based on performance
+            $newRetention = ($existing->retention_rate * 0.6) + ($performance * 0.4);
+            $reviewCount = $existing->review_count + 1;
+            
+            // Spaced repetition intervals
+            $intervals = [1, 2, 4, 7, 14, 30];
+            $intervalIndex = min($reviewCount - 1, count($intervals) - 1);
+            $nextInterval = $intervals[$intervalIndex];
+            
+            DB::table('lms_forgetting_curve')
+                ->where('id', $existing->id)
+                ->update([
+                    'retention_rate' => $newRetention,
+                    'last_reviewed_at' => now(),
+                    'next_review_at' => now()->addDays($nextInterval),
+                    'review_interval_days' => $nextInterval,
+                    'review_count' => $reviewCount,
+                    'updated_at' => now()
+                ]);
+        } else {
+            DB::table('lms_forgetting_curve')->insert([
+                'student_id' => $student_id,
+                'concept_id' => $concept_id,
+                'retention_rate' => $performance,
+                'last_reviewed_at' => now(),
+                'next_review_at' => now()->addDay(),
+                'review_interval_days' => 1,
+                'review_count' => 1,
+                'created_at' => now(),
+                'updated_at' => now()
+            ]);
+        }
+    }
+
+    /**
+     * Get next practice recommendation
+     */
+    private function getNextPracticeRecommendation($masteryData)
+    {
+        $needsPractice = collect($masteryData)->filter(function($c) {
+            return $c['status'] === 'needs_practice';
+        });
+
+        if ($needsPractice->isNotEmpty()) {
+            $concepts = $needsPractice->pluck('concept_name')->toArray();
+            return [
+                'action' => 'practice',
+                'message' => 'Practice these concepts: ' . implode(', ', $concepts),
+                'concepts' => $needsPractice->pluck('concept_id')->toArray()
+            ];
+        }
+
+        $developing = collect($masteryData)->filter(function($c) {
+            return $c['status'] === 'developing';
+        });
+
+        if ($developing->isNotEmpty()) {
+            return [
+                'action' => 'review',
+                'message' => 'Review these concepts to master them: ' . implode(', ', $developing->pluck('concept_name')->toArray()),
+                'concepts' => $developing->pluck('concept_id')->toArray()
+            ];
+        }
+
+        return [
+            'action' => 'challenge',
+            'message' => 'You\'ve mastered all concepts! Try the challenge mode.',
+            'concepts' => []
+        ];
+    }
+
+
+    /**
+     * PHASE 3: Get Practice History
+     */
+    public function getPracticeHistory(Request $request)
+    {
+        $student_id = $request->get('student_id');
+        $limit = (int) $request->get('limit', 10);
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        if (!$student_id) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Student ID is required'
+            ]);
+        }
+
+        $history = DB::table('lms_online_exam_answer as a')
+            ->join('lms_question_master as q', 'q.id', '=', 'a.question_id')
+            ->join('lms_concept as c', 'c.id', '=', 'q.concept_id')
+            ->select(
+                'a.id',
+                'a.question_id',
+                'a.ans_status',
+                'a.created_at',
+                'q.question_title',
+                'q.points',
+                'c.name as concept_name',
+                DB::raw('CASE WHEN a.ans_status = 1 THEN "Correct" ELSE "Wrong" END as status_text')
+            )
+            ->where('a.student_id', $student_id)
+            ->where('q.sub_institute_id', $sub_institute_id)
+            ->orderBy('a.created_at', 'desc')
+            ->limit($limit)
+            ->get();
+
+        // Get weekly progress
+        $weeklyProgress = DB::table('lms_online_exam_answer as a')
+            ->join('lms_question_master as q', 'q.id', '=', 'a.question_id')
+            ->join('lms_concept as c', 'c.id', '=', 'q.concept_id')
+            ->select(
+                DB::raw('DATE(a.created_at) as date'),
+                DB::raw('COUNT(*) as total'),
+                DB::raw('SUM(CASE WHEN a.ans_status = 1 THEN 1 ELSE 0 END) as correct')
+            )
+            ->where('a.student_id', $student_id)
+            ->where('q.sub_institute_id', $sub_institute_id)
+            ->where('a.created_at', '>=', now()->subDays(7))
+            ->groupBy(DB::raw('DATE(a.created_at)'))
+            ->orderBy('date', 'asc')
+            ->get();
+
+        return response()->json([
+            'status_code' => 1,
+            'data' => [
+                'history' => $history,
+                'weekly_progress' => $weeklyProgress,
+                'total_practiced' => $history->count(),
+                'accuracy' => $history->count() > 0 ? 
+                    round($history->where('ans_status', 1)->count() / $history->count() * 100, 1) : 0
+            ]
+        ]);
+    }
+
+    /**
+     * PHASE 3: Get Spaced Repetition Schedule
+     */
+    public function getSpacedRepetition(Request $request)
+    {
+        $student_id = $request->get('student_id');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        if (!$student_id) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Student ID is required'
+            ]);
+        }
+
+        // Get concepts that need review based on Ebbinghaus forgetting curve
+        $reviewSchedule = DB::table('lms_concept_mastery_log as l')
+            ->join('lms_concept as c', 'c.id', '=', 'l.concept_id')
+            ->select(
+                'l.concept_id',
+                'c.name as concept_name',
+                'l.mastery_level',
+                'l.created_at as last_practiced',
+                DB::raw('DATEDIFF(NOW(), l.created_at) as days_ago')
+            )
+            ->where('l.student_id', $student_id)
+            ->where('l.sub_institute_id', $sub_institute_id)
+            ->where('l.mastery_level', '<', 80)
+            ->orderBy('l.created_at', 'asc')
+            ->get();
+
+        // Group by urgency
+        $schedule = [
+            'today' => [],
+            'tomorrow' => [],
+            'this_week' => [],
+            'next_week' => []
+        ];
+
+        foreach ($reviewSchedule as $item) {
+            $days = $item->days_ago ?? 999;
+            $mastery = $item->mastery_level ?? 0;
+            
+            // Calculate next review based on mastery level
+            $reviewInterval = $this->getReviewInterval($mastery);
+            
+            if ($days >= $reviewInterval) {
+                $schedule['today'][] = $item;
+            } elseif ($days >= $reviewInterval - 1) {
+                $schedule['tomorrow'][] = $item;
+            } elseif ($days >= $reviewInterval - 3) {
+                $schedule['this_week'][] = $item;
+            } else {
+                $schedule['next_week'][] = $item;
+            }
+        }
+
+        return response()->json([
+            'status_code' => 1,
+            'data' => $schedule
+        ]);
+    }
+
+    /**
+     * Get review interval based on mastery level
+     */
+    private function getReviewInterval($masteryLevel)
+    {
+        if ($masteryLevel < 40) return 1;
+        if ($masteryLevel < 60) return 3;
+        if ($masteryLevel < 80) return 7;
+        return 14;
+    }
+    
 }
 
