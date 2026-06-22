@@ -111,7 +111,7 @@ $(document).ready(function () {
 
         <div class="row reports-container">
             <div class="col-lg-4 col-md-6 col-sm-6 col-xs-12">
-                <a href="https://datastudio.google.com/s/vvsJTtzEy1c" target="_blank" rel="noopener noreferrer" class="card report-card teacher-report" aria-label="Open Teacher Performance Evaluation report in a new tab">
+                <a href="https://datastudio.google.com/reporting/8c1acb9c-0307-4023-b71a-c846aa845450" target="_blank" rel="noopener noreferrer" class="card report-card teacher-report" aria-label="Open Teacher Performance Evaluation report in a new tab">
                     <div class="report-icon-wrapper">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
                             <rect x="3" y="3" width="7" height="7"></rect>
