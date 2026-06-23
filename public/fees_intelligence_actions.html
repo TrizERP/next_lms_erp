@@ -1,0 +1,1698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fees Intelligence Action Center | Institute Management System</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #a5b4fc;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --purple: #8b5cf6;
+            --pink: #ec4899;
+            --teal: #14b8a6;
+            --orange: #f97316;
+            --dark: #1e293b;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --white: #ffffff;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container { max-width: 1600px; margin: 0 auto; }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 20px;
+            padding: 30px 40px;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 { font-size: 28px; font-weight: 700; }
+        .header p { opacity: 0.9; font-size: 14px; }
+
+        .header-stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .header-stat {
+            background: rgba(255,255,255,0.15);
+            padding: 12px 20px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-stat-value { font-size: 20px; font-weight: 700; }
+        .header-stat-label { font-size: 11px; opacity: 0.8; text-transform: uppercase; }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: var(--white);
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--gray-500);
+            transition: all 0.2s;
+            box-shadow: var(--shadow);
+        }
+
+        .nav-tab:hover { background: var(--gray-100); }
+        .nav-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Section Titles */
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-badge {
+            background: var(--gray-100);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--gray-500);
+        }
+
+        /* Module Integration Grid */
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .module-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+            border-left: 4px solid var(--primary);
+            cursor: pointer;
+        }
+
+        .module-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .module-card.student { border-left-color: #10b981; }
+        .module-card.fees { border-left-color: #6366f1; }
+        .module-card.staff { border-left-color: #f59e0b; }
+        .module-card.attendance { border-left-color: #3b82f6; }
+        .module-card.timetable { border-left-color: #8b5cf6; }
+        .module-card.exam { border-left-color: #ec4899; }
+        .module-card.library { border-left-color: #14b8a6; }
+        .module-card.lms { border-left-color: #f97316; }
+        .module-card.transport { border-left-color: #06b6d4; }
+        .module-card.hostel { border-left-color: #84cc16; }
+        .module-card.inventory { border-left-color: #a855f7; }
+        .module-card.communication { border-left-color: #22c55e; }
+        .module-card.visitor { border-left-color: #64748b; }
+        .module-card.certificate { border-left-color: #eab308; }
+        .module-card.discipline { border-left-color: #ef4444; }
+        .module-card.health { border-left-color: #f472b6; }
+        .module-card.homework { border-left-color: #0ea5e9; }
+
+        .module-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .module-card h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 8px;
+        }
+
+        .module-card p {
+            font-size: 12px;
+            color: var(--gray-500);
+            margin-bottom: 12px;
+        }
+
+        .module-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .module-action-btn {
+            padding: 4px 10px;
+            background: var(--gray-100);
+            border: none;
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--gray-600);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .module-action-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Action Cards */
+        .action-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .action-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .action-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .action-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .action-badge.critical { background: #fee2e2; color: #991b1b; }
+        .action-badge.high { background: #ffedd5; color: #9a3412; }
+        .action-badge.medium { background: #fef3c7; color: #92400e; }
+        .action-badge.low { background: #dcfce7; color: #166534; }
+
+        .action-description {
+            font-size: 14px;
+            color: var(--gray-600);
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .action-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .action-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--gray-500);
+        }
+
+        .action-meta-item strong { color: var(--dark); }
+
+        .action-modules {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .linked-module {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--gray-100);
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--gray-600);
+        }
+
+        .linked-module span { font-size: 14px; }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+
+        .btn-secondary { background: var(--gray-100); color: var(--gray-600); }
+        .btn-secondary:hover { background: var(--gray-200); }
+
+        .btn-success { background: var(--secondary); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+
+        /* Cross-Module Workflow */
+        .workflow-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border: 2px solid var(--primary-light);
+        }
+
+        .workflow-steps {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+            overflow-x: auto;
+            padding: 10px 0;
+        }
+
+        .workflow-step {
+            flex: 0 0 auto;
+            padding: 16px 20px;
+            background: var(--gray-50);
+            border-radius: 12px;
+            text-align: center;
+            min-width: 140px;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .workflow-step.active {
+            border-color: var(--primary);
+            background: #eef2ff;
+        }
+
+        .workflow-step.completed {
+            border-color: var(--secondary);
+            background: #ecfdf5;
+        }
+
+        .workflow-step-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .workflow-step-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .workflow-step-module {
+            font-size: 10px;
+            color: var(--gray-500);
+            margin-top: 4px;
+        }
+
+        .workflow-arrow {
+            color: var(--gray-400);
+            font-size: 20px;
+        }
+
+        /* Filters */
+        .filter-section {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--gray-500);
+            text-transform: uppercase;
+        }
+
+        .filter-select {
+            padding: 10px 16px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 160px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Stats Summary */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--gray-500);
+            text-transform: uppercase;
+        }
+
+        .stat-card.critical .stat-value { color: var(--danger); }
+        .stat-card.high .stat-value { color: var(--warning); }
+        .stat-card.medium .stat-value { color: var(--info); }
+        .stat-card.low .stat-value { color: var(--secondary); }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border-top: 4px solid var(--primary);
+        }
+
+        .kpi-card.success { border-top-color: var(--secondary); }
+        .kpi-card.warning { border-top-color: var(--warning); }
+        .kpi-card.danger { border-top-color: var(--danger); }
+
+        .kpi-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .kpi-change {
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        .kpi-change.positive { color: var(--secondary); }
+        .kpi-change.negative { color: var(--danger); }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--gray-100);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        /* Impact Matrix */
+        .impact-matrix {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .impact-item {
+            padding: 16px;
+            background: var(--gray-50);
+            border-radius: 12px;
+        }
+
+        .impact-item h4 {
+            font-size: 13px;
+            color: var(--gray-500);
+            margin-bottom: 8px;
+        }
+
+        .impact-item p {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        /* Dependencies */
+        .dependency-list {
+            margin: 16px 0;
+        }
+
+        .dependency-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--gray-50);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .dependency-icon { font-size: 18px; }
+        .dependency-name { flex: 1; font-size: 13px; }
+        .dependency-type {
+            font-size: 11px;
+            padding: 2px 8px;
+            background: var(--gray-200);
+            border-radius: 4px;
+            color: var(--gray-600);
+        }
+
+        /* Hidden sections */
+        .section-content { display: none; }
+        .section-content.active { display: block; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header { padding: 20px; }
+            .header h1 { font-size: 22px; }
+            .module-grid { grid-template-columns: 1fr; }
+            .action-buttons { flex-direction: column; }
+            .workflow-steps { flex-direction: column; }
+            .workflow-arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-top">
+                <div>
+                    <h1>⚡ Fees Intelligence Action Center</h1>
+                    <p>Execute intelligent actions with cross-module integration</p>
+                </div>
+                <div class="header-stats">
+                    <div class="header-stat">
+                        <div class="header-stat-value">15</div>
+                        <div class="header-stat-label">Actions</div>
+                    </div>
+                    <div class="header-stat">
+                        <div class="header-stat-value">16</div>
+                        <div class="header-stat-label">Modules</div>
+                    </div>
+                    <div class="header-stat">
+                        <div class="header-stat-value">8</div>
+                        <div class="header-stat-label">Active Workflows</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showSection('overview')">📊 Overview</button>
+            <button class="nav-tab" onclick="showSection('actions')">⚡ Action Items</button>
+            <button class="nav-tab" onclick="showSection('modules')">🔗 Module Integration</button>
+            <button class="nav-tab" onclick="showSection('workflows')">📋 Cross-Module Workflows</button>
+            <button class="nav-tab" onclick="showSection('recommendations')">💡 Recommendations</button>
+        </div>
+
+        <!-- Filters -->
+        <div class="filter-section">
+            <div class="filter-group">
+                <label class="filter-label">Priority</label>
+                <select class="filter-select" id="priorityFilter">
+                    <option value="all">All Priorities</option>
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Module</label>
+                <select class="filter-select" id="moduleFilter">
+                    <option value="all">All Modules</option>
+                    <option value="student">Student Management</option>
+                    <option value="fees">Fees Management</option>
+                    <option value="attendance">Attendance</option>
+                    <option value="communication">Communication</option>
+                    <option value="transport">Transport</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Status</label>
+                <select class="filter-select" id="statusFilter">
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Owner</label>
+                <select class="filter-select" id="ownerFilter">
+                    <option value="all">All Owners</option>
+                    <option value="cfo">CFO</option>
+                    <option value="finance">Finance Team</option>
+                    <option value="principal">Principal</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Overview Section -->
+        <div id="overview-section" class="section-content active">
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon">💰</div>
+                    <div class="kpi-label">Total Revenue MTD</div>
+                    <div class="kpi-value">₹12.8L</div>
+                    <div class="kpi-change positive">↑ 18.5% vs last month</div>
+                </div>
+                <div class="kpi-card success">
+                    <div class="kpi-icon">✅</div>
+                    <div class="kpi-label">Collection Rate</div>
+                    <div class="kpi-value">87.5%</div>
+                    <div class="kpi-change positive">↑ 5.2% improvement</div>
+                </div>
+                <div class="kpi-card warning">
+                    <div class="kpi-icon">⏳</div>
+                    <div class="kpi-label">Outstanding</div>
+                    <div class="kpi-value">₹4.2L</div>
+                    <div class="kpi-change negative">↑ 12 students added</div>
+                </div>
+                <div class="kpi-card danger">
+                    <div class="kpi-icon">⚠️</div>
+                    <div class="kpi-label">Defaulters</div>
+                    <div class="kpi-value">47</div>
+                    <div class="kpi-change negative">Requires immediate action</div>
+                </div>
+            </div>
+
+            <!-- Stats Summary -->
+            <h2 class="section-title">Action Summary by Priority</h2>
+            <div class="stats-grid">
+                <div class="stat-card critical">
+                    <div class="stat-value">2</div>
+                    <div class="stat-label">Critical Actions</div>
+                </div>
+                <div class="stat-card high">
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">High Priority</div>
+                </div>
+                <div class="stat-card medium">
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">Medium Priority</div>
+                </div>
+                <div class="stat-card low">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Low/Backlog</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <h2 class="section-title">Quick Execute Actions</h2>
+            <div class="module-grid">
+                <div class="module-card fees" onclick="executeAction('view-defaulters')">
+                    <div class="module-icon" style="background: #eef2ff;">👥</div>
+                    <h3>View Defaulters List</h3>
+                    <p>Access comprehensive list of students with outstanding fees</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn">📋 View List</button>
+                        <button class="module-action-btn">📊 Analytics</button>
+                        <button class="module-action-btn">📧 Notify</button>
+                    </div>
+                </div>
+
+                <div class="module-card communication" onclick="executeAction('send-reminders')">
+                    <div class="module-icon" style="background: #dcfce7;">📱</div>
+                    <h3>Send Payment Reminders</h3>
+                    <p>Automated SMS/Email reminders to parents with pending fees</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn">📱 SMS All</button>
+                        <button class="module-action-btn">📧 Email All</button>
+                        <button class="module-action-btn">⏰ Schedule</button>
+                    </div>
+                </div>
+
+                <div class="module-card student" onclick="executeAction('export-report')">
+                    <div class="module-icon" style="background: #fef3c7;">📥</div>
+                    <h3>Export Collection Report</h3>
+                    <p>Generate comprehensive fee collection reports for review</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn">📊 PDF</button>
+                        <button class="module-action-btn">📗 Excel</button>
+                        <button class="module-action-btn">📑 Summary</button>
+                    </div>
+                </div>
+
+                <div class="module-card transport" onclick="executeAction('transport-fee')">
+                    <div class="module-icon" style="background: #ecfeff;">🚌</div>
+                    <h3>Transport Fee Review</h3>
+                    <p>Analyze transport fee collection and outstanding</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn">📍 Routes</button>
+                        <button class="module-action-btn">👤 Students</button>
+                        <button class="module-action-btn">💵 Pending</button>
+                    </div>
+                </div>
+
+                <div class="module-card attendance" onclick="executeAction('attendance-correlation')">
+                    <div class="module-icon" style="background: #f3e8ff;">📈</div>
+                    <h3>Attendance Correlation</h3>
+                    <p>Analyze payment behavior vs attendance patterns</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn">📊 Analyze</button>
+                        <button class="module-action-btn">🎯 Insights</button>
+                    </div>
+                </div>
+
+                <div class="module-card student" onclick="executeAction('student-profile')">
+                    <div class="module-icon" style="background: #ffe4e6;">🎓</div>
+                    <h3>Student Financial Profile</h3>
+                    <p>View detailed payment history and risk assessment</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn">🔍 Search</button>
+                        <button class="module-action-btn">📋 All</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions Section -->
+        <div id="actions-section" class="section-content">
+            <h2 class="section-title">Intelligence Action Items</h2>
+            
+            <!-- Action Card 1 -->
+            <div class="action-card" data-priority="critical" data-modules="fees,student,communication">
+                <div class="action-header">
+                    <div class="action-title">🔴 Critical: Investigate Duplicate Cancellation</div>
+                    <span class="action-badge critical">P1 - Critical</span>
+                </div>
+                <div class="action-description">
+                    Receipt #49 was cancelled 3 times resulting in ₹43,500 discrepancy. This requires immediate audit trail verification and process correction.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 25 Jun 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Accounts Head</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> Low</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> High</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>👥</span> Student Management</div>
+                    <div class="linked-module"><span>📱</span> Communication</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeCrossModule('audit-cancellation')">🔍 Start Audit</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(1)">📋 View Details</button>
+                    <button class="btn btn-secondary" onclick="assignAction(1)">👤 Assign</button>
+                </div>
+            </div>
+
+            <!-- Action Card 2 -->
+            <div class="action-card" data-priority="critical" data-modules="fees,student,communication">
+                <div class="action-header">
+                    <div class="action-title">🔴 Critical: Resolve Cheque Returns</div>
+                    <span class="action-badge critical">P1 - Critical</span>
+                </div>
+                <div class="action-description">
+                    3 cheques returned due to insufficient funds (₹45,788). Immediate parent contact required for re-payment and future payment method review.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 23 Jun 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Accounts Team</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> Medium</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> High</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>👥</span> Student Management</div>
+                    <div class="linked-module"><span>📱</span> Communication</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-danger" onclick="executeCrossModule('cheque-recovery')">📞 Contact Parents</button>
+                    <button class="btn btn-primary" onclick="executeCrossModule('update-payment-method')">💳 Update Methods</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(2)">📋 View Details</button>
+                </div>
+            </div>
+
+            <!-- Action Card 3 -->
+            <div class="action-card" data-priority="high" data-modules="fees,it,communication">
+                <div class="action-header">
+                    <div class="action-title">🟠 High: Implement Pre-Submission Verification</div>
+                    <span class="action-badge high">P2 - High</span>
+                </div>
+                <div class="action-description">
+                    Wrong transactions cause 65% of cancellations. Implement confirmation step before final submission to reduce errors.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 30 Jun 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> IT Team</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> Medium</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> High</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>💻</span> IT/System</div>
+                    <div class="linked-module"><span>📱</span> Communication</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeCrossModule('setup-verification')">⚙️ Configure</button>
+                    <button class="btn btn-secondary" onclick="executeCrossModule('test-workflow')">🧪 Test</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(3)">📋 View Details</button>
+                </div>
+            </div>
+
+            <!-- Action Card 4 -->
+            <div class="action-card" data-priority="high" data-modules="fees,student,communication">
+                <div class="action-header">
+                    <div class="action-title">🟠 High: Launch Digital Payment Campaign</div>
+                    <span class="action-badge high">P2 - High</span>
+                </div>
+                <div class="action-description">
+                    62% cash usage increases operational risk. Offer 2% discount for online payments to shift parents to digital modes.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 15 Jul 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Management</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> Low</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> Medium</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>👥</span> Student Management</div>
+                    <div class="linked-module"><span>📱</span> Communication</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-success" onclick="executeCrossModule('setup-discount')">🏷️ Setup Discount</button>
+                    <button class="btn btn-primary" onclick="executeCrossModule('announce-campaign')">📢 Announce</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(4)">📋 View Details</button>
+                </div>
+            </div>
+
+            <!-- Action Card 5 -->
+            <div class="action-card" data-priority="high" data-modules="fees,student,communication">
+                <div class="action-header">
+                    <div class="action-title">🟠 High: Due Date Reminder System</div>
+                    <span class="action-badge high">P2 - High</span>
+                </div>
+                <div class="action-description">
+                    Implement automated SMS/Email reminders 7 days before due date to improve on-time payment rate.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 30 Jun 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Finance Team</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> Low</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> High</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>📱</span> Communication</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeCrossModule('setup-reminders')">⚙️ Configure</button>
+                    <button class="btn btn-secondary" onclick="executeCrossModule('preview-template')">👁️ Preview</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(5)">📋 View Details</button>
+                </div>
+            </div>
+
+            <!-- Action Card 6 -->
+            <div class="action-card" data-priority="medium" data-modules="fees,student,discipline">
+                <div class="action-header">
+                    <div class="action-title">🟡 Medium: Expand Co-curricular Programs</div>
+                    <span class="action-badge medium">P3 - Medium</span>
+                </div>
+                <div class="action-description">
+                    Co-curricular fees (₹1,05,000) are highest revenue contributor. Add new programs to increase revenue.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 05 Jul 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Admin</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> Medium</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> High</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>👥</span> Student Management</div>
+                    <div class="linked-module"><span>📋</span> Discipline/LMS</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeCrossModule('add-program')">➕ Add Program</button>
+                    <button class="btn btn-secondary" onclick="executeCrossModule('set-fees')">💰 Set Fees</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(6)">📋 View Details</button>
+                </div>
+            </div>
+
+            <!-- Action Card 7 -->
+            <div class="action-card" data-priority="medium" data-modules="fees,student,attendance,exam">
+                <div class="action-header">
+                    <div class="action-title">🟡 Medium: Early Warning System Rollout</div>
+                    <span class="action-badge medium">P3 - Medium</span>
+                </div>
+                <div class="action-description">
+                    Trigger alerts for students at retention risk based on payment behavior, attendance, and academic performance correlation.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 20 Jul 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Principal</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> Low</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> Medium</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>📊</span> Attendance</div>
+                    <div class="linked-module"><span>📝</span> Exams</div>
+                    <div class="linked-module"><span>👥</span> Student</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeCrossModule('configure-alerts')">⚙️ Configure</button>
+                    <button class="btn btn-secondary" onclick="executeCrossModule('define-rules')">📋 Define Rules</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(7)">📋 View Details</button>
+                </div>
+            </div>
+
+            <!-- Action Card 8 -->
+            <div class="action-card" data-priority="low" data-modules="fees,lms,inventory">
+                <div class="action-header">
+                    <div class="action-title">🟢 Low: Deploy 90-Day Cash Forecast</div>
+                    <span class="action-badge low">P4 - Low</span>
+                </div>
+                <div class="action-description">
+                    Predictive model for working capital planning based on historical patterns and upcoming expenses.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 01 Aug 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> CFO</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> High</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> High</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>📈</span> Analytics</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeCrossModule('build-model')">🤖 Build Model</button>
+                    <button class="btn btn-secondary" onclick="executeCrossModule('view-forecast')">📊 View Forecast</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(8)">📋 View Details</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module Integration Section -->
+        <div id="modules-section" class="section-content">
+            <h2 class="section-title">Module Integration Matrix <span class="section-badge">16 Modules</span></h2>
+            
+            <div class="module-grid">
+                <!-- Student Management -->
+                <div class="module-card student">
+                    <div class="module-icon" style="background: #dcfce7;">👥</div>
+                    <h3>Student Management</h3>
+                    <p>Student profiles, enrollment, contact details, and payment history</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/student/list')">📋 Student List</button>
+                        <button class="module-action-btn" onclick="navigateTo('/student/profile')">👤 Profile</button>
+                        <button class="module-action-btn" onclick="navigateTo('/fees/student-outstanding')">💰 Outstanding</button>
+                    </div>
+                </div>
+
+                <!-- Fees Management -->
+                <div class="module-card fees">
+                    <div class="module-icon" style="background: #eef2ff;">💰</div>
+                    <h3>Fees Management</h3>
+                    <p>Fee structure, collections, cancellations, and discounts</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/fees/collections')">📥 Collections</button>
+                        <button class="module-action-btn" onclick="navigateTo('/fees/structure')">📐 Structure</button>
+                        <button class="module-action-btn" onclick="navigateTo('/fees/reports')">📊 Reports</button>
+                    </div>
+                </div>
+
+                <!-- Staff & User Management -->
+                <div class="module-card staff">
+                    <div class="module-icon" style="background: #fef3c7;">👔</div>
+                    <h3>Staff & User Management</h3>
+                    <p>Staff details, roles, permissions, and collection accountability</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/staff/list')">👥 Staff List</button>
+                        <button class="module-action-btn" onclick="navigateTo('/staff/roles')">🔐 Roles</button>
+                        <button class="module-action-btn" onclick="navigateTo('/reports/collection-by-staff')">📈 By Staff</button>
+                    </div>
+                </div>
+
+                <!-- Attendance -->
+                <div class="module-card attendance">
+                    <div class="module-icon" style="background: #f3e8ff;">📊</div>
+                    <h3>Student & Staff Attendance</h3>
+                    <p>Attendance tracking linked to fee payment correlation</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/attendance/student')">👥 Student</button>
+                        <button class="module-action-btn" onclick="navigateTo('/attendance/staff')">👔 Staff</button>
+                        <button class="module-action-btn" onclick="navigateTo('/reports/attendance-fee-correlation')">📈 Correlation</button>
+                    </div>
+                </div>
+
+                <!-- Class Timetable -->
+                <div class="module-card timetable">
+                    <div class="module-icon" style="background: #fce7f3;">📅</div>
+                    <h3>Class Timetable</h3>
+                    <p>Schedule management integrated with fee collection periods</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/timetable')">📅 View</button>
+                        <button class="module-action-btn" onclick="navigateTo('/timetable/create')">➕ Create</button>
+                    </div>
+                </div>
+
+                <!-- Exams & Results -->
+                <div class="module-card exam">
+                    <div class="module-icon" style="background: #ffe4e6;">📝</div>
+                    <h3>Student Exams & Results</h3>
+                    <p>Exam schedules linked to fee clearance verification</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/exam/schedule')">📅 Schedule</button>
+                        <button class="module-action-btn" onclick="navigateTo('/exam/results')">📊 Results</button>
+                        <button class="module-action-btn" onclick="navigateTo('/reports/fee-exam-correlation')">📈 Correlation</button>
+                    </div>
+                </div>
+
+                <!-- Library Management -->
+                <div class="module-card library">
+                    <div class="module-icon" style="background: #ccfbf1;">📚</div>
+                    <h3>Library Management</h3>
+                    <p>Book issue/return linked to fee clearance status</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/library')">📖 Catalog</button>
+                        <button class="module-action-btn" onclick="navigateTo('/library/issue')">📥 Issue</button>
+                        <button class="module-action-btn" onclick="navigateTo('/reports/library-fee-status')">📈 Status</button>
+                    </div>
+                </div>
+
+                <!-- LMS -->
+                <div class="module-card lms">
+                    <div class="module-icon" style="background: #ffedd5;">🎓</div>
+                    <h3>Learning Management System</h3>
+                    <p>E-learning integrated with co-curricular fee tracking</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/lms/courses')">📚 Courses</button>
+                        <button class="module-action-btn" onclick="navigateTo('/lms/enrollment')">👥 Enroll</button>
+                        <button class="module-action-btn" onclick="navigateTo('/fees/cocurricular')">💰 Fees</button>
+                    </div>
+                </div>
+
+                <!-- Transport -->
+                <div class="module-card transport">
+                    <div class="module-icon" style="background: #ecfeff;">🚌</div>
+                    <h3>Transport Management</h3>
+                    <p>Route management, vehicle tracking, and transport fees</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/transport/routes')">🛤️ Routes</button>
+                        <button class="module-action-btn" onclick="navigateTo('/transport/vehicles')">🚍 Vehicles</button>
+                        <button class="module-action-btn" onclick="navigateTo('/fees/transport')">💰 Transport Fees</button>
+                    </div>
+                </div>
+
+                <!-- Hostel -->
+                <div class="module-card hostel">
+                    <div class="module-icon" style="background: #dcfce7;">🏠</div>
+                    <h3>Hostel Management</h3>
+                    <p>Hostel allocation, mess fees, and accommodation charges</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/hostel/rooms')">🛏️ Rooms</button>
+                        <button class="module-action-btn" onclick="navigateTo('/hostel/allocation')">👥 Allocation</button>
+                        <button class="module-action-btn" onclick="navigateTo('/fees/hostel')">💰 Hostel Fees</button>
+                    </div>
+                </div>
+
+                <!-- Inventory -->
+                <div class="module-card inventory">
+                    <div class="module-icon" style="background: #f3e8ff;">📦</div>
+                    <h3>Inventory & Asset Management</h3>
+                    <p>Uniform, books, and other student supplies with fees</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/inventory/stock')">📦 Stock</button>
+                        <button class="module-action-btn" onclick="navigateTo('/inventory/issue')">📥 Issue</button>
+                        <button class="module-action-btn" onclick="navigateTo('/fees/inventory')">💰 Charges</button>
+                    </div>
+                </div>
+
+                <!-- Communication -->
+                <div class="module-card communication">
+                    <div class="module-icon" style="background: #dbeafe;">📱</div>
+                    <h3>Communication (SMS/Email)</h3>
+                    <p>Automated reminders, notifications, and announcements</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/communication/sms')">📱 SMS</button>
+                        <button class="module-action-btn" onclick="navigateTo('/communication/email')">📧 Email</button>
+                        <button class="module-action-btn" onclick="navigateTo('/communication/templates')">📝 Templates</button>
+                    </div>
+                </div>
+
+                <!-- Visitor -->
+                <div class="module-card visitor">
+                    <div class="module-icon" style="background: #f1f5f9;">🏢</div>
+                    <h3>Visitor Management</h3>
+                    <p>Parent meetings, fee-related visits tracking</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/visitor/log')">📋 Log</button>
+                        <button class="module-action-btn" onclick="navigateTo('/visitor/appointments')">📅 Appointments</button>
+                    </div>
+                </div>
+
+                <!-- Certificates -->
+                <div class="module-card certificate">
+                    <div class="module-icon" style="background: #fef9c3;">📜</div>
+                    <h3>Certificates & Documents</h3>
+                    <p>TC, Bonafide linked to fee clearance verification</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/certificate/issue')">📜 Issue</button>
+                        <button class="module-action-btn" onclick="navigateTo('/certificate/verify')">✅ Verify</button>
+                        <button class="module-action-btn" onclick="navigateTo('/fees/clearance')">💰 Clearance</button>
+                    </div>
+                </div>
+
+                <!-- Discipline -->
+                <div class="module-card discipline">
+                    <div class="module-icon" style="background: #fee2e2;">⚖️</div>
+                    <h3>Discipline Management</h3>
+                    <p>Student conduct linked to fee payment compliance</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/discipline/incidents')">📋 Incidents</button>
+                        <button class="module-action-btn" onclick="navigateTo('/discipline/records')">📁 Records</button>
+                        <button class="module-action-btn" onclick="navigateTo('/reports/fee-discipline')">📈 Reports</button>
+                    </div>
+                </div>
+
+                <!-- Health -->
+                <div class="module-card health">
+                    <div class="module-icon" style="background: #fce7f3;">🏥</div>
+                    <h3>Health & Medical Management</h3>
+                    <p>Medical records linked to fee-related exemptions</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/health/records')">📋 Records</button>
+                        <button class="module-action-btn" onclick="navigateTo('/health/checkups')">🩺 Checkups</button>
+                        <button class="module-action-btn" onclick="navigateTo('/fees/exemptions')">💰 Exemptions</button>
+                    </div>
+                </div>
+
+                <!-- Homework -->
+                <div class="module-card homework">
+                    <div class="module-icon" style="background: #e0f2fe;">📚</div>
+                    <h3>Homework Management</h3>
+                    <p>Assignment tracking correlated with payment behavior</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn" onclick="navigateTo('/homework')">📝 Homework</button>
+                        <button class="module-action-btn" onclick="navigateTo('/homework/submissions')">📤 Submit</button>
+                        <button class="module-action-btn" onclick="navigateTo('/reports/engagement')">📈 Reports</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cross-Module Workflows Section -->
+        <div id="workflows-section" class="section-content">
+            <h2 class="section-title">Cross-Module Workflows</h2>
+
+            <!-- Workflow 1 -->
+            <div class="workflow-card">
+                <div class="action-header">
+                    <div class="action-title">📋 Student Onboarding with Fee Clearance</div>
+                    <span class="action-badge high">High Priority</span>
+                </div>
+                <div class="workflow-steps">
+                    <div class="workflow-step completed">
+                        <div class="workflow-step-icon">👥</div>
+                        <div class="workflow-step-title">Student Admission</div>
+                        <div class="workflow-step-module">Student Mgmt</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step completed">
+                        <div class="workflow-step-icon">💰</div>
+                        <div class="workflow-step-title">Fee Structure</div>
+                        <div class="workflow-step-module">Fees Mgmt</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step active">
+                        <div class="workflow-step-icon">📱</div>
+                        <div class="workflow-step-title">Send Welcome</div>
+                        <div class="workflow-step-module">Communication</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">📚</div>
+                        <div class="workflow-step-title">Assign Class</div>
+                        <div class="workflow-step-module">Timetable</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">🚌</div>
+                        <div class="workflow-step-title">Transport Setup</div>
+                        <div class="workflow-step-module">Transport</div>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeWorkflow('student-onboarding')">▶️ Start Workflow</button>
+                    <button class="btn btn-secondary" onclick="viewWorkflowDetails('student-onboarding')">📋 View Details</button>
+                </div>
+            </div>
+
+            <!-- Workflow 2 -->
+            <div class="workflow-card">
+                <div class="action-header">
+                    <div class="action-title">📋 Defaulter Follow-up & Recovery</div>
+                    <span class="action-badge critical">Critical</span>
+                </div>
+                <div class="workflow-steps">
+                    <div class="workflow-step completed">
+                        <div class="workflow-step-icon">💰</div>
+                        <div class="workflow-step-title">Identify Defaulters</div>
+                        <div class="workflow-step-module">Fees Mgmt</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step active">
+                        <div class="workflow-step-icon">📱</div>
+                        <div class="workflow-step-title">Send Reminder</div>
+                        <div class="workflow-step-module">Communication</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">📞</div>
+                        <div class="workflow-step-title">Phone Call</div>
+                        <div class="workflow-step-module">Visitor Mgmt</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">👥</div>
+                        <div class="workflow-step-title">Parent Meeting</div>
+                        <div class="workflow-step-module">Visitor Mgmt</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">📋</div>
+                        <div class="workflow-step-title">Create Promise</div>
+                        <div class="workflow-step-module">Fees Mgmt</div>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-danger" onclick="executeWorkflow('defaulter-recovery')">▶️ Start Recovery</button>
+                    <button class="btn btn-secondary" onclick="viewWorkflowDetails('defaulter-recovery')">📋 View Details</button>
+                    <button class="btn btn-secondary" onclick="viewDefaulterList()">👥 View Defaulters</button>
+                </div>
+            </div>
+
+            <!-- Workflow 3 -->
+            <div class="workflow-card">
+                <div class="action-header">
+                    <div class="action-title">📋 Exam Hall Access with Fee Clearance</div>
+                    <span class="action-badge medium">Medium</span>
+                </div>
+                <div class="workflow-steps">
+                    <div class="workflow-step completed">
+                        <div class="workflow-step-icon">📝</div>
+                        <div class="workflow-step-title">Exam Registration</div>
+                        <div class="workflow-step-module">Exams</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step completed">
+                        <div class="workflow-step-icon">💰</div>
+                        <div class="workflow-step-title">Fee Verification</div>
+                        <div class="workflow-step-module">Fees Mgmt</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step active">
+                        <div class="workflow-step-icon">📱</div>
+                        <div class="workflow-step-title">Send Admit Card</div>
+                        <div class="workflow-step-module">Communication</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">📋</div>
+                        <div class="workflow-step-title">Generate Hall</div>
+                        <div class="workflow-step-module">Exams</div>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeWorkflow('exam-clearance')">▶️ Run Clearance</button>
+                    <button class="btn btn-secondary" onclick="viewPendingClearance()">📊 Pending List</button>
+                </div>
+            </div>
+
+            <!-- Workflow 4 -->
+            <div class="workflow-card">
+                <div class="action-header">
+                    <div class="action-title">📋 Certificate Issuance with Fee Clearance</div>
+                    <span class="action-badge medium">Medium</span>
+                </div>
+                <div class="workflow-steps">
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">📜</div>
+                        <div class="workflow-step-title">Request Certificate</div>
+                        <div class="workflow-step-module">Certificates</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">💰</div>
+                        <div class="workflow-step-title">Fee Clearance</div>
+                        <div class="workflow-step-module">Fees Mgmt</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">✅</div>
+                        <div class="workflow-step-title">Verify Documents</div>
+                        <div class="workflow-step-module">Certificates</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">📱</div>
+                        <div class="workflow-step-title">Notify Parent</div>
+                        <div class="workflow-step-module">Communication</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">🏢</div>
+                        <div class="workflow-step-title">Schedule Pickup</div>
+                        <div class="workflow-step-module">Visitor Mgmt</div>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeWorkflow('certificate-clearance')">▶️ Process Requests</button>
+                    <button class="btn btn-secondary" onclick="viewPendingCertificates()">📋 Pending</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations Section -->
+        <div id="recommendations-section" class="section-content">
+            <h2 class="section-title">AI-Powered Recommendations</h2>
+
+            <div class="action-card">
+                <div class="action-header">
+                    <div class="action-title">💡 Strategic Recommendation: Digital Payment Shift</div>
+                </div>
+                <div class="action-description">
+                    <strong>Insight:</strong> 62% cash transactions are causing reconciliation delays and increasing operational risk.
+                    <br><br>
+                    <strong>Recommendation:</strong> Implement a phased digital payment migration:
+                    <ul style="margin: 10px 0 10px 20px;">
+                        <li>Week 1-2: Offer 2% discount for online/UPI payments</li>
+                        <li>Week 3-4: Mandate digital for fees above ₹10,000</li>
+                        <li>Month 2: Set up additional POS terminals at collection counters</li>
+                        <li>Month 3: Target 60% digital, 40% cash</li>
+                    </ul>
+                    <strong>Expected Impact:</strong> 15% reduction in reconciliation time, ₹50,000 annual savings
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>📱</span> Communication</div>
+                    <div class="linked-module"><span>👥</span> Student Management</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-success" onclick="implementRecommendation('digital-shift')">🚀 Implement Now</button>
+                    <button class="btn btn-secondary" onclick="scheduleRecommendation('digital-shift')">📅 Schedule</button>
+                    <button class="btn btn-secondary" onclick="dismissRecommendation('digital-shift')">✕ Dismiss</button>
+                </div>
+            </div>
+
+            <div class="action-card">
+                <div class="action-header">
+                    <div class="action-title">💡 Operational Recommendation: Pre-emptive Defaulter Alert</div>
+                </div>
+                <div class="action-description">
+                    <strong>Insight:</strong> Analysis shows 73% of students who miss 2 consecutive payments become defaulters.
+                    <br><br>
+                    <strong>Recommendation:</strong> Deploy ML-based early warning system that triggers intervention after first missed payment.
+                    <ul style="margin: 10px 0 10px 20px;">
+                        <li>Real-time monitoring of payment patterns</li>
+                        <li>Automated SMS after 7 days overdue</li>
+                        <li>Principal notification after 15 days</li>
+                        <li>Personal meeting scheduling after 30 days</li>
+                    </ul>
+                    <strong>Expected Impact:</strong> 40% reduction in defaulter rate, improved retention
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>📊</span> Attendance</div>
+                    <div class="linked-module"><span>📱</span> Communication</div>
+                    <div class="linked-module"><span>👥</span> Student</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-success" onclick="implementRecommendation('early-warning')">🚀 Implement Now</button>
+                    <button class="btn btn-secondary" onclick="viewPilotResults()">📊 Pilot Results</button>
+                </div>
+            </div>
+
+            <div class="action-card">
+                <div class="action-header">
+                    <div class="action-title">💡 Revenue Recommendation: Dynamic Fee Structuring</div>
+                </div>
+                <div class="action-description">
+                    <strong>Insight:</strong> Class 6-8 shows 25% lower collection rate compared to other classes.
+                    <br><br>
+                    <strong>Recommendation:</strong> Introduce flexible payment plans for middle school:
+                    <ul style="margin: 10px 0 10px 20px;">
+                        <li>Monthly installments option (12-month)</li>
+                        <li>Early bird discount (5% for annual payment)</li>
+                        <li>Sibling discount enhancement (15% from 10%)</li>
+                        <li>Need-based scholarship expansion</li>
+                    </ul>
+                    <strong>Expected Impact:</strong> 10% increase in collection rate, 5% retention improvement
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>👥</span> Student Management</div>
+                    <div class="linked-module"><span>👔</span> Staff/Admin</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="implementRecommendation('dynamic-fee')">🚀 Implement Now</button>
+                    <button class="btn btn-secondary" onclick="analyzeClassImpact()">📊 Impact Analysis</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="actionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Action Details</div>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div id="modalContent">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Navigation
+        function showSection(section) {
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.section-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(section + '-section').classList.add('active');
+        }
+
+        // Execute Action
+        function executeAction(action) {
+            console.log('Executing action:', action);
+            alert('Executing action: ' + action + '\n\nThis will navigate to the relevant module.');
+        }
+
+        // Cross-Module Execution
+        function executeCrossModule(action) {
+            console.log('Executing cross-module action:', action);
+            
+            const actionMessages = {
+                'audit-cancellation': 'Opening Fees Management → Audit Trail\nLinked: Student Management, Communication',
+                'cheque-recovery': 'Opening Communication → Send SMS/Email\nLinked: Student Management → Contact Parents',
+                'update-payment-method': 'Opening Student Profile → Update Payment Method\nLinked: Fees Management',
+                'setup-verification': 'Opening System Settings → Fee Collection\nLinked: Fees Management, Staff Management',
+                'test-workflow': 'Opening Test Environment → Fee Workflow\nLinked: All Modules',
+                'setup-discount': 'Opening Fees Structure → Add Discount Rule\nLinked: Fees Management, Communication',
+                'announce-campaign': 'Opening Communication → Create Announcement\nLinked: Student Management',
+                'setup-reminders': 'Opening Communication → Configure Templates\nLinked: Fees Management',
+                'preview-template': 'Opening Template Preview\nLinked: Communication',
+                'add-program': 'Opening LMS → Add Course\nLinked: Fees Management → Set Fees',
+                'set-fees': 'Opening Fees Structure → Co-curricular\nLinked: LMS',
+                'configure-alerts': 'Opening System → Alert Configuration\nLinked: Student, Attendance, Exam',
+                'define-rules': 'Opening Rules Engine\nLinked: All Modules',
+                'build-model': 'Opening Analytics → Build Forecast Model\nLinked: Fees Historical Data',
+                'view-forecast': 'Opening Dashboard → Cash Flow Forecast\nLinked: Fees Management'
+            };
+
+            alert('Cross-Module Action: ' + action + '\n\n' + (actionMessages[action] || 'Executing action across modules...'));
+        }
+
+        // Navigate to Module
+        function navigateTo(path) {
+            console.log('Navigating to:', path);
+            alert('Navigating to: ' + path + '\n\nThis would open the module in the IMS.');
+        }
+
+        // Execute Workflow
+        function executeWorkflow(workflow) {
+            alert('Starting Workflow: ' + workflow + '\n\nThis will initiate the cross-module workflow.');
+        }
+
+        // View Details
+        function viewWorkflowDetails(workflow) {
+            alert('Viewing details for: ' + workflow);
+        }
+
+        // View Defaulter List
+        function viewDefaulterList() {
+            alert('Opening Defaulter List\nLinked Modules:\n- Student Management\n- Fees Management\n- Communication\n- Attendance');
+        }
+
+        // View Pending Clearance
+        function viewPendingClearance() {
+            alert('Opening Pending Exam Clearance List\nLinked Modules:\n- Exams\n- Fees Management');
+        }
+
+        // View Pending Certificates
+        function viewPendingCertificates() {
+            alert('Opening Pending Certificate Requests\nLinked Modules:\n- Certificates\n- Fees Management\n- Communication');
+        }
+
+        // Show Action Details
+        function showActionDetails(id) {
+            const modal = document.getElementById('actionModal');
+            const content = document.getElementById('modalContent');
+            
+            const details = {
+                1: {
+                    title: 'Duplicate Cancellation Audit',
+                    impact: { revenue: '₹43,500 at risk', process: 'High priority audit needed' },
+                    dependencies: ['Fees Management', 'Student Management', 'Communication'],
+                    timeline: 'Complete within 48 hours'
+                },
+                2: {
+                    title: 'Cheque Return Recovery',
+                    impact: { revenue: '₹45,788 to recover', compliance: '3 parent contacts required' },
+                    dependencies: ['Fees Management', 'Student Management', 'Communication'],
+                    timeline: 'Complete within 72 hours'
+                }
+            };
+
+            content.innerHTML = `
+                <h3>${details[id]?.title || 'Action Details'}</h3>
+                <div class="impact-matrix">
+                    <div class="impact-item">
+                        <h4>Revenue Impact</h4>
+                        <p>${details[id]?.impact.revenue || 'TBD'}</p>
+                    </div>
+                    <div class="impact-item">
+                        <h4>Process Impact</h4>
+                        <p>${details[id]?.impact.process || 'TBD'}</p>
+                    </div>
+                </div>
+                <h4 style="margin: 16px 0 8px;">Dependencies</h4>
+                <div class="dependency-list">
+                    ${(details[id]?.dependencies || []).map(d => `
+                        <div class="dependency-item">
+                            <span class="dependency-icon">🔗</span>
+                            <span class="dependency-name">${d}</span>
+                            <span class="dependency-type">Required</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <p style="margin-top: 16px;"><strong>Timeline:</strong> ${details[id]?.timeline || 'TBD'}</p>
+                <div class="action-buttons" style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="closeModal()">Proceed</button>
+                    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                </div>
+            `;
+            
+            modal.classList.add('active');
+        }
+
+        // Assign Action
+        function assignAction(id) {
+            alert('Assigning action to team member...\nThis would open the assignment dialog.');
+        }
+
+        // Implement Recommendation
+        function implementRecommendation(rec) {
+            alert('Implementing recommendation: ' + rec + '\n\nThis will configure the system automatically.');
+        }
+
+        // Schedule Recommendation
+        function scheduleRecommendation(rec) {
+            alert('Scheduling recommendation: ' + rec + '\n\nThis will open the scheduling dialog.');
+        }
+
+        // Dismiss Recommendation
+        function dismissRecommendation(rec) {
+            if (confirm('Dismiss this recommendation?')) {
+                alert('Recommendation dismissed.');
+            }
+        }
+
+        // View Pilot Results
+        function viewPilotResults() {
+            alert('Showing pilot results for Early Warning System\nBased on 100 students over 30 days.');
+        }
+
+        // Analyze Class Impact
+        function analyzeClassImpact() {
+            alert('Analyzing class-wise fee collection impact\nClass 6-8 identified as priority.');
+        }
+
+        // Close Modal
+        function closeModal() {
+            document.getElementById('actionModal').classList.remove('active');
+        }
+
+        // Filter functionality
+        document.querySelectorAll('.filter-select').forEach(select => {
+            select.addEventListener('change', function() {
+                console.log('Filter changed:', {
+                    priority: document.getElementById('priorityFilter').value,
+                    module: document.getElementById('moduleFilter').value,
+                    status: document.getElementById('statusFilter').value,
+                    owner: document.getElementById('ownerFilter').value
+                });
+            });
+        });
+
+        // Close modal on outside click
+        document.getElementById('actionModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+    </script>
+</body>
+</html>
