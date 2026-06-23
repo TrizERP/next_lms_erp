@@ -79,6 +79,7 @@ use App\Http\Controllers\neo4jGraph\GraphController;
 use App\Http\Controllers\neo4jGraph\StudentResultGraphController;
 use App\Services\Neo4jService;
 use App\Http\Controllers\lms\pal\palController;
+use App\Http\Controllers\FileController;
 
 
 Route::get('/neo4j-test', function (Neo4jService $neo4j) {
@@ -691,6 +692,4 @@ Route::post('/lms/store-suggested-content', [palController::class, 'storeSuggest
 Route::get('/lms/misconception', [\App\Http\Controllers\lms\pal\palController::class, 'misconception'])->name('misconception');
 Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
 Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
-
-
-
+Route::get('/download-folder', [FileController::class, 'downloadFolder']);
