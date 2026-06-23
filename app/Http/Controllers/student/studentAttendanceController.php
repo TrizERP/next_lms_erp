@@ -452,11 +452,34 @@ class studentAttendanceController extends Controller
     
             $data = $data->orderBy('sm.sort_order', 'ASC')->orderBy('dm.id', 'ASC')->get()->toArray();
 
+        $attendance_totals = (object) [
+            'BOY' => 0,
+            'GIRL' => 0,
+            'TBP' => 0,
+            'TGP' => 0,
+            'TBA' => 0,
+            'TGA' => 0,
+        ];
+
+        foreach ($data as $row) {
+            $attendance_totals->BOY += (int) $row->BOY;
+            $attendance_totals->GIRL += (int) $row->GIRL;
+            $attendance_totals->TBP += (int) $row->TBP;
+            $attendance_totals->TGP += (int) $row->TGP;
+            $attendance_totals->TBA += (int) $row->TBA;
+            $attendance_totals->TGA += (int) $row->TGA;
+        }
+
+        $attendance_totals->total_student = $attendance_totals->BOY + $attendance_totals->GIRL;
+        $attendance_totals->total_present = $attendance_totals->TBP + $attendance_totals->TGP;
+        $attendance_totals->total_absent = $attendance_totals->TBA + $attendance_totals->TGA;
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['date'] = $date;
         $res['taken'] = $taken;
         $res['attendance_data'] = $data;
+        $res['attendance_totals'] = $attendance_totals;
 
         return is_mobile($type, "student/daywise_attendance_report", $res, "view");
     }

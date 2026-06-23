@@ -10,6 +10,7 @@ use App\Models\user\tbluserModel;
 use App\Models\fees\map_year\map_year;
 use App\Models\student\appNotificationModel;
 use App\Models\student\tblstudentModel;
+use App\Services\Neo4jService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\URL;
@@ -229,27 +230,52 @@ $sub_institute_id = session()->get('sub_institute_id');
             $sub_institute_id = session()->get('sub_institute_id');
             $syear = session()->get('syear');
 
-            $subject_teacher = DB::table('subject as s')
-                ->join('timetable as t', function ($join) {
-                    $join->whereRaw('t.subject_id = s.id AND t.sub_institute_id = s.sub_institute_id');
-                })->selectRaw('s.id,s.subject_name,t.*')
-                ->where('t.teacher_id', $teacher_id)
-                ->where('t.syear', $syear)
-                ->where('t.sub_institute_id', $sub_institute_id)
-                ->groupByRaw('s.id,t.standard_id,t.academic_section_id,t.division_id')
-                ->orderBy('s.subject_name')->get()->toArray();
+            $getUserData = tbluserModel::where('id', session()->get('user_id'))->first();
+            if (!empty($getUserData) && isset($getUserData->allocated_standards) && $getUserData->allocated_standards != '') {
+                $getAllocatedStandard = DB::table('standard')->whereRaw('id IN (' . $getUserData->allocated_standards . ')')
+                    ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
 
-            $subjectTeacherGrdArr = $subjectTeacherStdArr = $subjectTeacherDivArr = array();
-            if (count($subject_teacher) > 0) {
-                foreach ($subject_teacher as $k => $v) {
-                    $subjectTeacherGrdArr[] = $v->academic_section_id;
-                    $subjectTeacherStdArr[] = $v->standard_id;
-                    $subjectTeacherDivArr[] = $v->division_id;
+                $subjectTeacherGrdArr = $subjectTeacherStdArr = $subjectTeacherDivArr = array();
+                if (count($getAllocatedStandard) > 0) {
+                    foreach ($getAllocatedStandard as $k => $v) {
+                        if (!in_array($v->grade_id, $subjectTeacherGrdArr)) {
+                            $subjectTeacherGrdArr[] = $v->grade_id;
+                        }
+                        if (!in_array($v->id, $subjectTeacherStdArr)) {
+                            $subjectTeacherStdArr[] = $v->id;
+                        }
+                    }
+                    $subjectTeacherDivArr = DB::table('std_div_map')
+                        ->whereIn('standard_id', $subjectTeacherStdArr)
+                        ->where('sub_institute_id', $sub_institute_id)
+                        ->pluck('division_id')->toArray();
                 }
+                Session::put('subjectTeacherGrdArr', $subjectTeacherGrdArr);
+                Session::put('subjectTeacherStdArr', $subjectTeacherStdArr);
+                Session::put('subjectTeacherDivArr', $subjectTeacherDivArr);
+            } else {
+                $subject_teacher = DB::table('subject as s')
+                    ->join('timetable as t', function ($join) {
+                        $join->whereRaw('t.subject_id = s.id AND t.sub_institute_id = s.sub_institute_id');
+                    })->selectRaw('s.id,s.subject_name,t.*')
+                    ->where('t.teacher_id', $teacher_id)
+                    ->where('t.syear', $syear)
+                    ->where('t.sub_institute_id', $sub_institute_id)
+                    ->groupByRaw('s.id,t.standard_id,t.academic_section_id,t.division_id')
+                    ->orderBy('s.subject_name')->get()->toArray();
+
+                $subjectTeacherGrdArr = $subjectTeacherStdArr = $subjectTeacherDivArr = array();
+                if (count($subject_teacher) > 0) {
+                    foreach ($subject_teacher as $k => $v) {
+                        $subjectTeacherGrdArr[] = $v->academic_section_id;
+                        $subjectTeacherStdArr[] = $v->standard_id;
+                        $subjectTeacherDivArr[] = $v->division_id;
+                    }
+                }
+                Session::put('subjectTeacherGrdArr', $subjectTeacherGrdArr);
+                Session::put('subjectTeacherStdArr', $subjectTeacherStdArr);
+                Session::put('subjectTeacherDivArr', $subjectTeacherDivArr);
             }
-            Session::put('subjectTeacherGrdArr', $subjectTeacherGrdArr);
-            Session::put('subjectTeacherStdArr', $subjectTeacherStdArr);
-            Session::put('subjectTeacherDivArr', $subjectTeacherDivArr);
         }
         // END 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
 
@@ -259,9 +285,10 @@ $sub_institute_id = session()->get('sub_institute_id');
             $getUserData =tbluserModel::where('id',session()->get('user_id'))->first();
             if(!empty($getUserData) && isset($getUserData->allocated_standards) && $getUserData->allocated_standards!=''){
                 $getAllocatedStandard = DB::table('standard')->whereRaw('id IN ('.$getUserData->allocated_standards.')')
+                ->where('sub_institute_id', session()->get('sub_institute_id'))
                 ->get()->toArray();
             
-                $subjectTeacherGrdArr = $subjectTeacherStdArr = array();
+                $subjectTeacherGrdArr = $subjectTeacherStdArr = $subjectTeacherDivArr = array();
                 if (count($getAllocatedStandard) > 0) {
                     foreach ($getAllocatedStandard as $k => $v) {
                         if(!in_array($v->grade_id,$subjectTeacherGrdArr)){
@@ -271,9 +298,14 @@ $sub_institute_id = session()->get('sub_institute_id');
                             $subjectTeacherStdArr[] = $v->id;
                         }
                     }
+                    $subjectTeacherDivArr = DB::table('std_div_map')
+                        ->whereIn('standard_id', $subjectTeacherStdArr)
+                        ->where('sub_institute_id', session()->get('sub_institute_id'))
+                        ->pluck('division_id')->toArray();
                 }
                 Session::put('subjectTeacherGrdArr', $subjectTeacherGrdArr);
                 Session::put('subjectTeacherStdArr', $subjectTeacherStdArr);
+                Session::put('subjectTeacherDivArr', $subjectTeacherDivArr);
             }
         }
         // 10-01-2025 end supervisor rights
@@ -1211,26 +1243,51 @@ if (!function_exists('ClassTeacherSearch')) {
 
     function ClassTeacherSearch($stdiv = null)
     {
+        $getUserData = tbluserModel::where('id', session()->get('user_id'))->first();
+        if (!empty($getUserData) && isset($getUserData->allocated_standards) && $getUserData->allocated_standards != '') {
+            $getAllocatedStandard = DB::table('standard')->whereRaw('id IN (' . $getUserData->allocated_standards . ')')
+                ->where('sub_institute_id', session()->get('sub_institute_id'))
+                ->get()->toArray();
 
-        $result = DB::table('class_teacher as ct')
-            ->join('standard as s', function ($join) {
-                $join->whereRaw('ct.standard_id = s.id AND ct.sub_institute_id = s.sub_institute_id');
-            })->join('division as d', function ($join) {
-                $join->whereRaw('d.id = ct.division_id AND d.sub_institute_id = ct.sub_institute_id');
-            })->selectRaw('ct.standard_id,ct.division_id,s.name as standard_name,d.name as division_name')
-            ->where('ct.sub_institute_id', session()->get('sub_institute_id'))
-            ->where('syear', session()->get('syear'))
-            ->where(function ($q) {
-                if (session()->get('user_profile_name') == 'Teacher') {
-                    $q->where('ct.teacher_id', session()->get('user_id'));
-                } else {
-                    if (session()->get('profile_parent_id') != '1') {
-                        $q->whereRaw('1 != 1');
+            $subjectTeacherStdArr = array();
+            if (count($getAllocatedStandard) > 0) {
+                foreach ($getAllocatedStandard as $k => $v) {
+                    if (!in_array($v->id, $subjectTeacherStdArr)) {
+                        $subjectTeacherStdArr[] = $v->id;
                     }
                 }
-            })
-            ->orderByRaw('s.sort_order,d.name') // by uma 2025-07-24
-            ->get()->toArray();
+            }
+
+            $result = DB::table('std_div_map as sdm')
+                ->join('standard as s', 's.id', '=', 'sdm.standard_id')
+                ->join('division as d', 'd.id', '=', 'sdm.division_id')
+                ->selectRaw('s.id as standard_id,d.id as division_id,s.name as standard_name,d.name as division_name')
+                ->where('sdm.sub_institute_id', session()->get('sub_institute_id'))
+                ->whereIn('sdm.standard_id', $subjectTeacherStdArr)
+                ->groupBy('sdm.standard_id', 'sdm.division_id')
+                ->orderByRaw('s.sort_order,d.name')
+                ->get()->toArray();
+        } else {
+            $result = DB::table('class_teacher as ct')
+                ->join('standard as s', function ($join) {
+                    $join->whereRaw('ct.standard_id = s.id AND ct.sub_institute_id = s.sub_institute_id');
+                })->join('division as d', function ($join) {
+                    $join->whereRaw('d.id = ct.division_id AND d.sub_institute_id = ct.sub_institute_id');
+                })->selectRaw('ct.standard_id,ct.division_id,s.name as standard_name,d.name as division_name')
+                ->where('ct.sub_institute_id', session()->get('sub_institute_id'))
+                ->where('syear', session()->get('syear'))
+                ->where(function ($q) {
+                    if (session()->get('user_profile_name') == 'Teacher') {
+                        $q->where('ct.teacher_id', session()->get('user_id'));
+                    } else {
+                        if (session()->get('profile_parent_id') != '1') {
+                            $q->whereRaw('1 != 1');
+                        }
+                    }
+                })
+                ->orderByRaw('s.sort_order,d.name') // by uma 2025-07-24
+                ->get()->toArray();
+        }
 
         $returnHtml = '<select name="standard_division" class="form-control" id="standard_division" required>';
         $returnHtml .= '<option value=""> Select Standard Division </option>';
@@ -2982,6 +3039,87 @@ if (!function_exists('get_string')) {
                 ->where('status', $status)
                 ->first();
             return $result ?? '-';
+        }
+    }
+
+    if (!function_exists('neo4jCreateNode')) {
+        function neo4jCreateNode($label, array $matchProperties, array $nodeProperties = [])
+        {
+            try {
+                $neo4jService = app(Neo4jService::class);
+
+                $matchParts = [];
+                $params = [];
+
+                foreach ($matchProperties as $property => $value) {
+                    $paramKey = 'match_' . $property;
+                    $matchParts[] = $property . ': $' . $paramKey;
+                    $params[$paramKey] = $value;
+                }
+
+                $query = 'MERGE (n:' . $label . ' {' . implode(', ', $matchParts) . '})';
+
+                if (!empty($nodeProperties)) {
+                    $query .= ' SET n += $nodeProps';
+                    $params['nodeProps'] = $nodeProperties;
+                }
+
+                $query .= ' RETURN n';
+
+                return $neo4jService->run($query, $params);
+            } catch (\Throwable $e) {
+                \Log::error('Neo4j node creation failed', [
+                    'label' => $label,
+                    'message' => $e->getMessage(),
+                ]);
+
+                return null;
+            }
+        }
+    }
+
+    if (!function_exists('neo4jCreateRelationship')) {
+        function neo4jCreateRelationship($startLabel, array $startProperties, $relationshipType, $endLabel, array $endProperties, array $relationshipProperties = [])
+        {
+            try {
+                $neo4jService = app(Neo4jService::class);
+
+                $startParts = [];
+                $endParts = [];
+                $params = [];
+
+                foreach ($startProperties as $property => $value) {
+                    $paramKey = 'start_' . $property;
+                    $startParts[] = $property . ': $' . $paramKey;
+                    $params[$paramKey] = $value;
+                }
+
+                foreach ($endProperties as $property => $value) {
+                    $paramKey = 'end_' . $property;
+                    $endParts[] = $property . ': $' . $paramKey;
+                    $params[$paramKey] = $value;
+                }
+
+                $query = 'MATCH (start:' . $startLabel . ' {' . implode(', ', $startParts) . '}), ';
+                $query .= '(end:' . $endLabel . ' {' . implode(', ', $endParts) . '}) ';
+                $query .= 'MERGE (start)-[r:' . $relationshipType . ']->(end)';
+
+                if (!empty($relationshipProperties)) {
+                    $query .= ' SET r += $relationshipProps';
+                    $params['relationshipProps'] = $relationshipProperties;
+                }
+
+                $query .= ' RETURN r';
+
+                return $neo4jService->run($query, $params);
+            } catch (\Throwable $e) {
+                \Log::error('Neo4j relationship creation failed', [
+                    'relationshipType' => $relationshipType,
+                    'message' => $e->getMessage(),
+                ]);
+
+                return null;
+            }
         }
     }
 }
