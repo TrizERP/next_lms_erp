@@ -56,12 +56,11 @@
 
         @if(isset($data['attendance_data']))
         @php
-        $j = 1;
             if(isset($data['attendance_data'])){
                 $attendance_data = $data['attendance_data'];
             }
-           $token = isset($data['taken']) ? $data['taken'] : '';
-                            
+            $attendance_totals = isset($data['attendance_totals']) ? $data['attendance_totals'] : null;
+            $token = isset($data['taken']) ? $data['taken'] : '';
         @endphp
             <div class="card">
                 <div class="table-responsive">
@@ -106,6 +105,7 @@
                                     }else{
                                         $per_b_g = 0;
                                     }
+                                    $attendance_taken = (($value->TBP + $value->TGP + $value->TBA + $value->TGA) > 0) ? 'Yes' : 'No';
                                 @endphp
                                 <tr>
                                     <td> {{$value->standard_name}} </td>
@@ -118,12 +118,38 @@
                                     <td> {{$value->TBA}} </td>
                                     <td> {{$value->TGA}} </td>
                                     <td> {{($value->TBA + $value->TGA)}} </td>
-                                    <td> {{($per_b_g > 0 ) ? 'Yes' : 'No'}} </td>
+                                    <td> {{$attendance_taken}} </td>
                                     <td> {{$per_b_g}}% </td>
                                     <td> </td>
                                 </tr>
                             @endforeach
                         </tbody>
+                        @if($attendance_totals)
+                            @php
+                                $total_present = $attendance_totals->total_present;
+                                $total_absent = $attendance_totals->total_absent;
+                                $total_student = $attendance_totals->total_student;
+                                $total_percentage = ($total_student > 0) ? number_format((100 * ($total_present / $total_student)), 2) : 0;
+                                $total_taken = (($total_present + $total_absent) > 0) ? 'Yes' : 'No';
+                            @endphp
+                            <tfoot>
+                                <tr style="font-weight: 600;">
+                                    <td>TOTAL</td>
+                                    <td> {{$attendance_totals->BOY}} </td>
+                                    <td> {{$attendance_totals->GIRL}} </td>
+                                    <td style="background-color: #FADB2E;"> {{$total_student}} </td>
+                                    <td> {{$attendance_totals->TBP}} </td>
+                                    <td> {{$attendance_totals->TGP}} </td>
+                                    <td style="background-color: #9ACD74;"> {{$total_present}} </td>
+                                    <td> {{$attendance_totals->TBA}} </td>
+                                    <td> {{$attendance_totals->TGA}} </td>
+                                    <td style="background-color: #FF9797;"> {{$total_absent}} </td>
+                                    <td> </td>
+                                    <td style="background-color: #F4CD8A;"> {{$total_percentage}}% </td>
+                                    <td> </td>
+                                </tr>
+                            </tfoot>
+                        @endif
                     </table>
                     <center>
                         <button

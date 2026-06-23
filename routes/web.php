@@ -81,6 +81,7 @@ use App\Services\Neo4jService;
 use App\Http\Controllers\lms\pal\palController;
 use App\Http\Controllers\lms\assessmentQuestionController;
 use App\Http\Controllers\lms\pedagogyEngineController;
+use App\Http\Controllers\FileController;
 
 // ============================================================
 // PHASE 4: PEDAGOGY ENGINE ROUTES
@@ -743,6 +744,4 @@ Route::get('/lms/pedagogy-suggested-content', [\App\Http\Controllers\lms\pal\pal
 Route::get('/lms/misconception', [\App\Http\Controllers\lms\pal\palController::class, 'misconception'])->name('misconception');
 Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
 Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
-
-
-
+Route::get('/download-folder', [FileController::class, 'downloadFolder']);

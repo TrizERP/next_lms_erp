@@ -58,7 +58,7 @@ class photo_video_gallaryController extends Controller
             ->where("c.syear", "=", session()->get('syear'))
             ->where("c.sub_institute_id", "=", session()->get('sub_institute_id'))
             ->orderBy('id', 'DESC')
-            ->limit(1000)
+            //->limit(1000)
             ->get()->toArray();
 
         $grouped = [];
