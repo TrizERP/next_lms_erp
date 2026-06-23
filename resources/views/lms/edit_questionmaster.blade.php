@@ -100,7 +100,7 @@ br {
                                             <div class="form-group">
                                                 <label for="topicType2">Mapping Value</label>
                                                 <select name="mapping_value[]" data-new = "{{$j}}" class="cust-select form-control mb-0">
-                                                    @foreach($data['lms_mapping_value'][$mval['TYPE_ID']] as $key1 => $value1)
+                                                    @foreach(($data['lms_mapping_value'][$mval['TYPE_ID']] ?? []) as $key1 => $value1)
                                                         <option value="{{$key1}}" @if( $mval['VALUE_ID'] == $key1) selected @endif>{{$value1}}</option>
                                                     @endforeach
                                                 </select>
@@ -110,7 +110,7 @@ br {
                                          <div class="col-md-3">
                                 <div class="form-group">
                                     <label for="topicType2">Reason</label>
-                                    <textarea name="reasons[]" class="form-control" data-reason="{{$j}}" row="2">{{$mval['REASONS']}}</textarea>
+                                    <textarea name="reasons[]" class="form-control" data-reason="{{$j}}" row="2">{{$mval['REASONS'] ?? ''}}</textarea>
                                 </div>
                             </div>
                                         <div class="col-md-3">
@@ -163,7 +163,7 @@ br {
                         <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="topicType2">Learning Outcome</label>
-                                  <textarea name="learning_outcome" class="form-control" row="2">{{$data['questionmaster_data']['learning_outcome']}}</textarea>
+                                  <textarea name="learning_outcome" class="form-control" row="2">{{$data['questionmaster_data']['learning_outcome'] ?? ''}}</textarea>
                                   </div>
                             </div>
                     <div class="col-md-8 border">
@@ -340,7 +340,7 @@ br {
                                     <input type="text" id="options[EDIT][{{$val['id']}}]" name="options[EDIT][{{$val['id']}}]"  value="{{$val['answer']}}" required class="form-control">
                                 </div>
                                 <div class="col-sm-4">
-                                    <input type="text" id="feedback[EDIT][{{$val['id']}}]" name="feedback[EDIT][{{$val['id']}}]"  value="{{$val['feedback']}}" class="form-control">
+                                    <input type="text" id="feedback[EDIT][{{$val['id']}}]" name="feedback[EDIT][{{$val['id']}}]"  value="{{$val['feedback'] ?? ''}}" class="form-control">
                                 </div>
                                 <div class="col-sm-1">
                                     <div class="custom-control custom-radio">
