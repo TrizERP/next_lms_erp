@@ -1,0 +1,321 @@
+{
+  "module": "Fees & Finance Module",
+  "description": "Autonomous AI agents built on ScholarClone's Fees Collection, NACH, Online Payment, Fee Circular, and Petty Cash sub-modules.",
+  "dataFoundation": {
+    "subModules": [
+      "Fees Collection (Online/Offline)",
+      "NACH Auto-debit",
+      "Online Payment Gateway",
+      "Fee Circular",
+      "Petty Cash",
+      "Fees Status Report",
+      "Fees Monthly Report",
+      "Fees Break-off",
+      "Fees Late Master",
+      "Fee Circular Master",
+      "NACH Mandate Status"
+    ]
+  },
+  "agents": [
+    {
+      "id": "F-01",
+      "name": "Autonomous Fees Defaulter Detection & Escalating Reminder Agent",
+      "priority": "high",
+      "color": "red",
+      "problemStatement": "School accounts staff manually identifies overdue fee accounts each month, then manually sends SMS/email reminders. With 500-2000+ students, this creates a 2-3 day workload each cycle, and late reminders result in cash flow issues. Fine calculation is inconsistent and dispute-prone.",
+      "agentRole": [
+        "Scans all student fee records daily against due dates and payment status",
+        "Classifies each account as current/overdue/critical/suspended",
+        "Determines appropriate reminder channel and intensity based on days overdue and payment history",
+        "Triggers SMS/email/mobile notification without human intervention",
+        "Auto-calculates and applies late fine per Fees Late Master settings",
+        "Escalates to admin dashboard after 3 failed contact attempts"
+      ],
+      "workflow": [
+        {
+          "step": 1,
+          "name": "Nightly Batch Scan",
+          "description": "Fees Monitoring Agent runs nightly batch scan across all student fee records. Cross-references due dates, payment received, and outstanding balance from Fees Status Report."
+        },
+        {
+          "step": 2,
+          "name": "Account Classification",
+          "description": "For Green accounts (< 7 days overdue): Agent sends gentle reminder via SMS/app push. For Orange accounts (7-30 days): Agent increases urgency, adds fine calculation per Fees Late Master, sends SMS + email to parent with outstanding amount and fine breakdown."
+        },
+        {
+          "step": 3,
+          "name": "Critical Escalation",
+          "description": "For Critical accounts (> 30 days): Agent flags for management dashboard, generates Fees Overall Report entry, and prepares draft communication for principal review."
+        },
+        {
+          "step": 4,
+          "name": "Follow-up Tracking",
+          "description": "Agent tracks response to each communication. If no response in 48 hours, escalates to next channel (SMS → Email → Phone call → Personal visit request)."
+        }
+      ],
+      "inputs": [
+        "Fees Status Report (paid/pending)",
+        "Fees Late Master (fine rules)",
+        "Student master (contact details)",
+        "SMS API / Email SMTP config",
+        "Payment gateway transaction log",
+        "Academic calendar (holiday exclusions)"
+      ],
+      "outputs": [
+        "Automated SMS/email/push per escalation tier",
+        "Auto-applied fine entries in fee records",
+        "Admin dashboard defaulter report",
+        "Task assigned to accounts staff",
+        "Communication Report log entries",
+        "Month-wise outstanding summary for management"
+      ],
+      "dependencies": [
+        "SMS API integration configured",
+        "Email SMTP configured",
+        "Fees Late Master populated",
+        "Parent mobile numbers verified",
+        "NACH mandate status sync"
+      ],
+      "kpis": [
+        "Collection rate: +15%",
+        "Staff workload: -3 hrs/week",
+        "Cash flow predictability: +25%",
+        "Late fine disputes: -80%"
+      ],
+      "risks": [
+        {
+          "risk": "Incorrect overdue classification due to data sync delays",
+          "mitigation": "Implement 24-hour reconciliation buffer before nightly scan"
+        },
+        {
+          "risk": "Parent complaints about unsolicited communication",
+          "mitigation": "Enable opt-out mechanism and compliance consent during admission"
+        }
+      ],
+      "buildTime": "2 sprints",
+      "status": "ready"
+    },
+    {
+      "id": "F-02",
+      "name": "Intelligent Fee Structure Recommendation & Auto-Circular Generation Agent",
+      "priority": "high",
+      "color": "purple",
+      "problemStatement": "At the start of each academic year, admin staff manually creates fee structures per standard/quota, generates fee circulars, and distributes them. This process takes 3-5 days and is error-prone, with wrong amounts sometimes sent to parents.",
+      "agentRole": [
+        "Analyzes historical fee collection data, inflation indices, and pending balance patterns",
+        "Generates recommended fee break-off structures per standard/quota/admission year",
+        "Drafts fee circulars for each section/division using Fee Circular Master template",
+        "Queues them for admin one-click approval",
+        "Upon approval, autonomously distributes via SMS/email/mobile push to all parents segmented by standard"
+      ],
+      "workflow": [
+        {
+          "step": 1,
+          "name": "Historical Analysis",
+          "description": "At academic year rollover, AI Agent reads last 3 years of Fees Break-off data and collection rates per standard."
+        },
+        {
+          "step": 2,
+          "name": "Recommendation Generation",
+          "description": "Recommendation Agent generates draft fee structure with percentage change suggestion per head (tuition, transport, hostel, etc.)."
+        },
+        {
+          "step": 3,
+          "name": "Admin Approval",
+          "description": "Admin reviews and approves recommended structure with any modifications."
+        },
+        {
+          "step": 4,
+          "name": "Circular Generation & Distribution",
+          "description": "Circular Generation Agent uses Fee Circular Master templates to auto-populate amounts, bank details, due dates per standard/division. Upon admin approval, bulk distribution to parents."
+        }
+      ],
+      "inputs": [
+        "Historical Fees Break-off records",
+        "Fees Collection Reports (3 years)",
+        "Fee Circular Master templates",
+        "Student standard/division mapping",
+        "Bank Master for payment details",
+        "Cost inflation indices"
+      ],
+      "outputs": [
+        "Draft fee structure per standard/quota",
+        "Auto-generated personalized fee circulars",
+        "Bulk SMS + email + push distribution",
+        "Delivery confirmation report",
+        "Fees Structure Report auto-updated"
+      ],
+      "dependencies": [
+        "Rollover completed in system",
+        "Fee Circular Master configured",
+        "Admin approval workflow enabled",
+        "SMS/Email integrations active"
+      ],
+      "kpis": [
+        "Process time: 5 days → 2 hours",
+        "Error rate: -95%",
+        "Parent satisfaction: +20%",
+        "Timely fee submissions: +30%"
+      ],
+      "risks": [
+        {
+          "risk": "Incorrect fee amounts distributed to parents",
+          "mitigation": "Mandatory 2-step approval: auto-generation → admin review → auto-distribution"
+        }
+      ],
+      "buildTime": "3 sprints",
+      "status": "ready"
+    },
+    {
+      "id": "F-03",
+      "name": "Predictive Fee Collection Forecasting & Cash Flow Intelligence Agent",
+      "priority": "high",
+      "color": "teal",
+      "problemStatement": "School management lacks early visibility into monthly/quarterly fee collection projections. Decisions about vendor payments, salary disbursals, and capital expenditures are made without cash flow data, leading to financial stress in low-collection months.",
+      "agentRole": [
+        "Analyzes 3+ years of Fees Monthly Reports, payment patterns by standard/quota",
+        "Monitors NACH approval rates and seasonal trends",
+        "Generates 30/60/90 day cash flow forecasts",
+        "Identifies high-risk defaulter segments",
+        "Posts weekly financial intelligence brief to management dashboard"
+      ],
+      "workflow": [
+        {
+          "step": 1,
+          "name": "Weekly Data Pull",
+          "description": "Every Monday, Forecasting Agent pulls Fees Monthly Report, Fees Status Report, and NACH status data."
+        },
+        {
+          "step": 2,
+          "name": "Pattern Analysis",
+          "description": "Agent analyzes historical patterns: seasonal trends (fee collection dips in festival months), quota-wise collection rates, NACH success/failure patterns."
+        },
+        {
+          "step": 3,
+          "name": "Forecast Generation",
+          "description": "Generates 30/60/90-day collection forecast with confidence intervals per standard and fee head."
+        },
+        {
+          "step": 4,
+          "name": "Risk Identification",
+          "description": "Identifies cohorts at high default risk based on payment history, flags them for proactive intervention."
+        },
+        {
+          "step": 5,
+          "name": "Brief Publication",
+          "description": "Publishes weekly management brief with key metrics, forecast, and recommended actions."
+        }
+      ],
+      "inputs": [
+        "Fees Monthly Report (historical)",
+        "Fees Status Report",
+        "NACH approval/rejection history",
+        "Academic calendar",
+        "Admission count per standard",
+        "Vendor payment schedule",
+        "Salary disbursement dates"
+      ],
+      "outputs": [
+        "30/60/90-day collection forecast",
+        "Default risk cohort report",
+        "Weekly management intelligence brief",
+        "Graphical fees dashboard update",
+        "Cash flow stress alerts",
+        "Vendor payment timing recommendations"
+      ],
+      "dependencies": [
+        "3+ years historical data in system",
+        "NACH integration active",
+        "Management dashboard access",
+        "Historical seasonal data tagged"
+      ],
+      "kpis": [
+        "Cash flow predictability: +40%",
+        "Late vendor payments: -90%",
+        "Management decision confidence: +50%",
+        "Overdraft usage: -60%"
+      ],
+      "risks": [
+        {
+          "risk": "Forecast inaccuracy due to unprecedented events (pandemics, natural disasters)",
+          "mitigation": "Include scenario planning with confidence intervals; flag low-confidence forecasts for human review"
+        }
+      ],
+      "buildTime": "3 sprints",
+      "status": "ready"
+    }
+  ],
+  "additionalUseCases": [
+    {
+      "id": "F-04",
+      "name": "NACH Mandate Status Intelligence Agent",
+      "priority": "medium",
+      "description": "Monitor NACH auto-debit success rates, predict mandate failures, and proactively contact parents for re-submission."
+    },
+    {
+      "id": "F-05",
+      "name": "Fee Payment Receipt Auto-Verification Agent",
+      "priority": "medium",
+      "description": "Automatically verify online payment receipts against bank statements, flag mismatches for reconciliation."
+    },
+    {
+      "id": "F-06",
+      "name": "Fee Refund & Adjustment Intelligence Agent",
+      "priority": "low",
+      "description": "Analyze refund requests, detect fraudulent adjustments, and ensure policy compliance."
+    },
+    {
+      "id": "F-07",
+      "name": "Sibling Discount Optimization Agent",
+      "priority": "low",
+      "description": "Automatically calculate and verify sibling discounts, identify families eligible for enhanced discounts."
+    }
+  ],
+  "implementationPhases": {
+    "phase1": {
+      "name": "Quick Wins",
+      "agents": ["F-01"],
+      "sprints": "1-2",
+      "rationale": "Delivers immediate ROI with minimal infrastructure. Uses existing data with no new integrations."
+    },
+    "phase2": {
+      "name": "Core Intelligence",
+      "agents": ["F-02", "F-03"],
+      "sprints": "3-6",
+      "rationale": "Builds predictive capabilities. Requires dashboard enhancements and LLM integration."
+    },
+    "phase3": {
+      "name": "Advanced Automation",
+      "agents": ["F-04", "F-05", "F-06", "F-07"],
+      "sprints": "7-10",
+      "rationale": "Complete automation. Requires bank API integration and policy engine."
+    }
+  },
+  "dataRequirements": {
+    "mandatory": [
+      "SMS API configured",
+      "Email SMTP configured",
+      "Student mobile numbers verified (> 95%)",
+      "Fees Late Master populated",
+      "Fee Circular Master configured"
+    ],
+    "recommended": [
+      "3+ years historical data",
+      "NACH integration active",
+      "Mobile push notification service",
+      "Parent consent records"
+    ],
+    "optional": [
+      "Payment gateway integration",
+      "Bank statement API",
+      "LLM integration (for circular generation)"
+    ]
+  },
+  "complianceRequirements": [
+    "DPDP Act 2023 consent for parent communication",
+    "AI-generated communications must be auditable",
+    "Fee data access requires role-based access control",
+    "Student financial data encryption at rest",
+    "Parental opt-out mechanism for notifications"
+  ]
+}
