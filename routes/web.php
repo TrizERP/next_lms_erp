@@ -79,8 +79,59 @@ use App\Http\Controllers\neo4jGraph\GraphController;
 use App\Http\Controllers\neo4jGraph\StudentResultGraphController;
 use App\Services\Neo4jService;
 use App\Http\Controllers\lms\pal\palController;
+use App\Http\Controllers\lms\assessmentQuestionController;
+use App\Http\Controllers\lms\pedagogyEngineController;
 use App\Http\Controllers\FileController;
 
+// ============================================================
+// PHASE 4: PEDAGOGY ENGINE ROUTES
+// ============================================================
+
+// Suggested Content with Pedagogy Engine
+
+// Other pedagogy routes...
+Route::get('/lms/student-profile', [PedagogyEngineController::class, 'buildStudentProfile'])->name('student.profile');
+Route::get('/lms/forgetting-curve', [PedagogyEngineController::class, 'getForgettingCurve'])->name('forgetting.curve');
+Route::post('/lms/update-forgetting-curve', [PedagogyEngineController::class, 'updateForgettingCurve'])->name('update.forgetting.curve');
+Route::get('/lms/class-insights', [PedagogyEngineController::class, 'generateClassInsights'])->name('class.insights');
+Route::get('/lms/teacher-dashboard', [PedagogyEngineController::class, 'teacherDashboard'])->name('teacher.dashboard');
+Route::get('/lms/knowledge-graph', [PedagogyEngineController::class, 'buildKnowledgeGraph'])->name('knowledge.graph');
+Route::get('/lms/concept-prerequisites', [PedagogyEngineController::class, 'getConceptPrerequisites'])->name('concept.prerequisites');
+Route::get('/lms/recommend-content', [PedagogyEngineController::class, 'recommendContent'])->name('recommend.content');
+Route::post('/lms/track-content-view', [PedagogyEngineController::class, 'trackContentView'])->name('track.content.view');
+Route::get('/lms/pedagogy-recommendations', [PedagogyEngineController::class, 'getPedagogyRecommendations'])->name('pedagogy.recommendations');
+
+
+// PHASE 3: Adaptive Practice Routes
+// ============================================================
+// PHASE 3: ADAPTIVE PRACTICE ROUTES - FIXED
+// ============================================================
+
+// Generate Adaptive Practice
+Route::get('/lms/adaptive-practice', [App\Http\Controllers\lms\assessmentQuestionController::class, 'generateAdaptivePractice'])
+    ->name('adaptive.practice');
+
+// Submit Practice (POST)
+Route::post('/lms/submit-practice', [App\Http\Controllers\lms\assessmentQuestionController::class, 'submitPractice'])
+    ->name('submit.practice');
+
+// Practice History
+Route::get('/lms/practice-history', [App\Http\Controllers\lms\assessmentQuestionController::class, 'getPracticeHistory'])
+    ->name('practice.history');
+
+// Spaced Repetition
+Route::get('/lms/spaced-repetition', [App\Http\Controllers\lms\assessmentQuestionController::class, 'getSpacedRepetition'])
+    ->name('spaced.repetition');
+
+// ============================================================
+// PHASE 4: PEDAGOGY ENGINE ROUTES
+// ============================================================
+
+Route::get('/lms/pedagogy-suggested-content', [App\Http\Controllers\lms\PedagogyEngineController::class, 'getPedagogySuggestedContent'])
+    ->name('pedagogy.suggested.content');
+
+Route::post('/lms/store-suggested-content', [App\Http\Controllers\lms\PedagogyEngineController::class, 'storeSuggestedContent'])
+    ->name('store.suggested.content');
 
 Route::get('/neo4j-test', function (Neo4jService $neo4j) {
     return $neo4j->testConnection();
@@ -689,4 +740,8 @@ Route::get('ajaxQuestionLists', [AJAXController::class, 'ajaxQuestionListsFuncti
 
 Route::get('/suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggested.content');
 Route::post('/lms/store-suggested-content', [palController::class, 'storeSuggestedContent'])->name('store.suggested.content');
+Route::get('/lms/pedagogy-suggested-content', [\App\Http\Controllers\lms\pal\palController::class, 'getPedagogySuggestedContent'])->name('pal.pedagogy.suggested.content');
+Route::get('/lms/misconception', [\App\Http\Controllers\lms\pal\palController::class, 'misconception'])->name('misconception');
+Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
+Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
 Route::get('/download-folder', [FileController::class, 'downloadFolder']);

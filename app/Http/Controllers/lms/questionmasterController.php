@@ -771,4 +771,279 @@ class questionmasterController extends Controller
         $res['MappedData'] =  $mappedValues;
         return $res;
     }
+    public function getMasteryMatrix(Request $request)
+    {
+        $student_id = $request->get('student_id');
+        $standard_id = $request->get('standard_id');
+        $subject_id = $request->get('subject_id');
+        $chapter_id = $request->get('chapter_id');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        if (!$student_id) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Student ID is required'
+            ]);
+        }
+
+        // Get all concepts for this standard/subject
+        $concepts = DB::table('lms_concept')
+            ->where('standard_id', $standard_id)
+            ->where('subject_id', $subject_id)
+            ->when($chapter_id, function($query, $chapter_id) {
+                return $query->where('chapter_id', $chapter_id);
+            })
+            ->where('sub_institute_id', $sub_institute_id)
+            ->get();
+
+        $masteryData = [];
+
+        foreach ($concepts as $concept) {
+            // Get all questions for this concept
+            $questions = DB::table('lms_question_master')
+                ->where('concept_id', $concept->id)
+                ->where('sub_institute_id', $sub_institute_id)
+                ->pluck('id');
+
+            if ($questions->isEmpty()) {
+                $masteryData[] = [
+                    'concept_id' => $concept->id,
+                    'concept_name' => $concept->name,
+                    'concept_description' => $concept->description,
+                    'mastery_level' => 0,
+                    'total_questions' => 0,
+                    'attempted' => 0,
+                    'correct' => 0,
+                    'wrong' => 0,
+                    'accuracy' => 0,
+                    'status' => 'not_started',
+                    'mastery_threshold' => $concept->mastery_threshold ?? 70,
+                    'estimated_minutes' => $concept->estimated_mastery_minutes ?? 30,
+                    'last_practiced' => null
+                ];
+                continue;
+            }
+
+            // Get student attempts
+            $attempts = DB::table('lms_online_exam_answer')
+                ->whereIn('question_id', $questions)
+                ->where('student_id', $student_id)
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            $total = $attempts->count();
+            $correct = $attempts->where('ans_status', 1)->count(); // Assuming 1 = correct
+            $wrong = $total - $correct;
+
+            // Calculate weighted mastery (recent attempts get higher weight)
+            $weightedScore = 0;
+            $totalWeight = 0;
+            $index = 0;
+
+            foreach ($attempts as $attempt) {
+                // Recency weight: newer = higher
+                $weight = pow(2, $index / max($total, 1));
+                $totalWeight += $weight;
+
+                if ($attempt->ans_status == 1) {
+                    $weightedScore += $weight;
+                }
+                $index++;
+            }
+
+            $masteryLevel = $totalWeight > 0 ? round(($weightedScore / $totalWeight) * 100, 1) : 0;
+            
+            // Simple accuracy
+            $accuracy = $total > 0 ? round(($correct / $total) * 100, 1) : 0;
+
+            // Determine status
+            $threshold = $concept->mastery_threshold ?? 70;
+            if ($total == 0) {
+                $status = 'not_started';
+            } elseif ($masteryLevel >= $threshold) {
+                $status = 'mastered';
+            } elseif ($masteryLevel >= $threshold * 0.6) {
+                $status = 'developing';
+            } else {
+                $status = 'needs_practice';
+            }
+
+            $masteryData[] = [
+                'concept_id' => $concept->id,
+                'concept_name' => $concept->name,
+                'concept_description' => $concept->description,
+                'mastery_level' => $masteryLevel,
+                'simple_accuracy' => $accuracy,
+                'total_questions' => $questions->count(),
+                'attempted' => $total,
+                'correct' => $correct,
+                'wrong' => $wrong,
+                'accuracy' => $accuracy,
+                'status' => $status,
+                'mastery_threshold' => $threshold,
+                'estimated_minutes' => $concept->estimated_mastery_minutes ?? 30,
+                'last_practiced' => $total > 0 ? $attempts->last()->created_at : null,
+                'attempt_history' => $attempts->map(function($a) {
+                    return [
+                        'is_correct' => $a->ans_status == 1,
+                        'date' => $a->created_at
+                    ];
+                })
+            ];
+        }
+
+        // Sort by mastery level (lowest first - needs attention)
+        usort($masteryData, function($a, $b) {
+            return $a['mastery_level'] - $b['mastery_level'];
+        });
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'Success',
+            'data' => $masteryData,
+            'summary' => [
+                'total_concepts' => count($masteryData),
+                'mastered' => collect($masteryData)->where('status', 'mastered')->count(),
+                'developing' => collect($masteryData)->where('status', 'developing')->count(),
+                'needs_practice' => collect($masteryData)->where('status', 'needs_practice')->count(),
+                'not_started' => collect($masteryData)->where('status', 'not_started')->count()
+            ]
+        ]);
+    }
+
+    /**
+     * Get concept details with student performance
+     */
+    public function getConceptDetails(Request $request)
+    {
+        $concept_id = $request->get('concept_id');
+        $student_id = $request->get('student_id');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        if (!$concept_id || !$student_id) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Concept ID and Student ID are required'
+            ]);
+        }
+
+        // Get concept details
+        $concept = DB::table('lms_concept')
+            ->where('id', $concept_id)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->first();
+
+        if (!$concept) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Concept not found'
+            ]);
+        }
+
+        // Get all questions for this concept
+        $questions = DB::table('lms_question_master')
+            ->where('concept_id', $concept_id)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->get();
+
+        // Get student attempts for these questions
+        $attempts = DB::table('lms_online_exam_answer')
+            ->whereIn('question_id', $questions->pluck('id'))
+            ->where('student_id', $student_id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Get wrong questions (for misconception analysis)
+        $wrongQuestions = DB::table('lms_online_exam_answer as a')
+            ->join('lms_question_master as q', 'q.id', '=', 'a.question_id')
+            ->whereIn('a.question_id', $questions->pluck('id'))
+            ->where('a.student_id', $student_id)
+            ->where('a.ans_status', 0) // Wrong answers
+            ->select(
+                'q.id as question_id',
+                'q.question_title',
+                'q.concept',
+                'a.ans_status',
+                'a.created_at',
+                DB::raw('COUNT(*) as wrong_count')
+            )
+            ->groupBy('q.id', 'q.question_title', 'q.concept', 'a.ans_status', 'a.created_at')
+            ->orderBy('wrong_count', 'desc')
+            ->get();
+
+        return response()->json([
+            'status_code' => 1,
+            'data' => [
+                'concept' => $concept,
+                'questions' => $questions,
+                'attempts' => $attempts,
+                'wrong_questions' => $wrongQuestions,
+                'total_attempts' => $attempts->count(),
+                'correct_attempts' => $attempts->where('ans_status', 1)->count(),
+                'wrong_attempts' => $attempts->where('ans_status', 0)->count()
+            ]
+        ]);
+    }
+
+    /**
+     * Calculate concept mastery for a specific concept
+     */
+    public function calculateConceptMastery(Request $request)
+    {
+        $concept_id = $request->get('concept_id');
+        $student_id = $request->get('student_id');
+
+        $result = $this->calculateMasteryForConcept($student_id, $concept_id);
+
+        return response()->json([
+            'status_code' => 1,
+            'data' => $result
+        ]);
+    }
+
+    private function calculateMasteryForConcept($student_id, $concept_id)
+    {
+        $questions = DB::table('lms_question_master')
+            ->where('concept_id', $concept_id)
+            ->pluck('id');
+
+        if ($questions->isEmpty()) {
+            return ['mastery' => 0, 'attempts' => 0, 'correct' => 0, 'wrong' => 0];
+        }
+
+        $attempts = DB::table('lms_online_exam_answer')
+            ->whereIn('question_id', $questions)
+            ->where('student_id', $student_id)
+            ->orderBy('created_at', 'asc')
+            ->get();
+
+        $total = $attempts->count();
+        $correct = $attempts->where('ans_status', 1)->count();
+        $wrong = $total - $correct;
+
+        // Weighted mastery calculation
+        $weightedScore = 0;
+        $totalWeight = 0;
+        $index = 0;
+
+        foreach ($attempts as $attempt) {
+            $weight = pow(2, $index / max($total, 1));
+            $totalWeight += $weight;
+            if ($attempt->ans_status == 1) {
+                $weightedScore += $weight;
+            }
+            $index++;
+        }
+
+        $mastery = $totalWeight > 0 ? round(($weightedScore / $totalWeight) * 100, 1) : 0;
+
+        return [
+            'mastery' => $mastery,
+            'simple_accuracy' => $total > 0 ? round(($correct / $total) * 100, 1) : 0,
+            'total_attempts' => $total,
+            'correct' => $correct,
+            'wrong' => $wrong,
+            'last_practiced' => $total > 0 ? $attempts->last()->created_at : null
+        ];
+    }
 }
