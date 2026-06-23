@@ -643,6 +643,7 @@
         <!-- Navigation Tabs -->
         <div class="nav-tabs">
             <button class="nav-tab active" onclick="showSection('overview')">📊 Overview</button>
+            <button class="nav-tab" onclick="showSection('agents')">🤖 AI Agents</button>
             <button class="nav-tab" onclick="showSection('actions')">⚡ Action Items</button>
             <button class="nav-tab" onclick="showSection('modules')">🔗 Module Integration</button>
             <button class="nav-tab" onclick="showSection('workflows')">📋 Cross-Module Workflows</button>
@@ -809,6 +810,343 @@
                         <button class="module-action-btn">🔍 Search</button>
                         <button class="module-action-btn">📋 All</button>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Agents Section -->
+        <div id="agents-section" class="section-content">
+            <div class="intro-box" style="background: #eef2ff; border-left-color: #6366f1; color: #3730a3; margin-bottom: 24px;">
+                <strong>🤖 Agentic AI for Fees & Finance Module</strong><br>
+                Autonomous AI agents built on ScholarClone's Fees Collection, NACH, Online Payment, Fee Circular, and Petty Cash sub-modules. Each agent operates autonomously — monitoring, analyzing, and acting without manual intervention.
+            </div>
+
+            <!-- Agent F-01 -->
+            <div class="action-card" style="border-left: 4px solid #ef4444;">
+                <div class="action-header">
+                    <div class="action-title">🤖 F-01: Autonomous Fees Defaulter Detection & Escalating Reminder Agent</div>
+                    <div style="display: flex; gap: 8px;">
+                        <span class="action-badge critical">High Priority</span>
+                        <span class="action-badge" style="background: #dcfce7; color: #166534;">● Running</span>
+                    </div>
+                </div>
+                <div class="action-description">
+                    <strong>Problem:</strong> School accounts staff manually identifies overdue fee accounts each month, then manually sends SMS/email reminders. With 500-2000+ students, this creates a 2-3 day workload each cycle, and late reminders result in cash flow issues.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Build:</strong> 2 Sprints</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Accounts Team</div>
+                    <div class="action-meta-item">⏱️ <strong>Schedule:</strong> Nightly 02:00 AM</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> +15% Collection</div>
+                </div>
+                
+                <!-- Workflow -->
+                <h4 style="font-size: 14px; margin: 20px 0 12px;">⚙️ Autonomous Workflow</h4>
+                <div style="display: flex; gap: 8px; overflow-x: auto; padding: 12px 0; margin-bottom: 16px;">
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: #dcfce7; border-radius: 8px; text-align: center; border: 2px solid #10b981;">
+                        <div style="font-size: 18px; margin-bottom: 4px;">✓</div>
+                        <div style="font-size: 11px; font-weight: 600;">Nightly Scan</div>
+                        <div style="font-size: 10px; color: #64748b;">All fee records</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: #dcfce7; border-radius: 8px; text-align: center; border: 2px solid #10b981;">
+                        <div style="font-size: 18px; margin-bottom: 4px;">✓</div>
+                        <div style="font-size: 11px; font-weight: 600;">Classification</div>
+                        <div style="font-size: 10px; color: #64748b;">Green/Orange/Critical</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: #eef2ff; border-radius: 8px; text-align: center; border: 2px solid #6366f1;">
+                        <div style="font-size: 18px; margin-bottom: 4px;">2</div>
+                        <div style="font-size: 11px; font-weight: 600;">Reminders</div>
+                        <div style="font-size: 10px; color: #64748b;">SMS/Email/Push</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: var(--gray-100); border-radius: 8px; text-align: center; border: 2px solid var(--gray-300);">
+                        <div style="font-size: 18px; margin-bottom: 4px;">3</div>
+                        <div style="font-size: 11px; font-weight: 600;">Fine Calc</div>
+                        <div style="font-size: 10px; color: #64748b;">Auto-apply</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: var(--gray-100); border-radius: 8px; text-align: center; border: 2px solid var(--gray-300);">
+                        <div style="font-size: 18px; margin-bottom: 4px;">4</div>
+                        <div style="font-size: 11px; font-weight: 600;">Escalation</div>
+                        <div style="font-size: 10px; color: #64748b;">Admin flagging</div>
+                    </div>
+                </div>
+
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Status Report</div>
+                    <div class="linked-module"><span>📋</span> Fees Late Master</div>
+                    <div class="linked-module"><span>👥</span> Student Master</div>
+                    <div class="linked-module"><span>📱</span> SMS/Email API</div>
+                    <div class="linked-module"><span>📅</span> Academic Calendar</div>
+                </div>
+
+                <h4 style="font-size: 13px; margin: 16px 0 12px;">📊 Expected KPIs</h4>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+                    <div style="background: #dcfce7; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #166534;">+15%</div>
+                        <div style="font-size: 11px; color: #64748b;">Collection Rate</div>
+                    </div>
+                    <div style="background: #eef2ff; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #4f46e5;">-3hrs</div>
+                        <div style="font-size: 11px; color: #64748b;">Staff Time/Week</div>
+                    </div>
+                    <div style="background: #fef3c7; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #92400e;">+25%</div>
+                        <div style="font-size: 11px; color: #64748b;">Cash Predictability</div>
+                    </div>
+                    <div style="background: #fee2e2; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #991b1b;">-80%</div>
+                        <div style="font-size: 11px; color: #64748b;">Fine Disputes</div>
+                    </div>
+                </div>
+
+                <div style="background: #fef3c7; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 12px;">
+                    <strong style="color: #92400e;">⚠️ RISK:</strong> <span style="color: #78350f;">Incorrect overdue classification due to data sync delays</span>
+                    <br><strong style="color: #92400e;">Mitigation:</strong> <span style="color: #78350f;">Implement 24-hour reconciliation buffer before nightly scan</span>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeAgent('F-01', 'scan')">▶️ Run Manual Scan</button>
+                    <button class="btn btn-success" onclick="executeAgent('F-01', 'configure')">⚙️ Configure</button>
+                    <button class="btn btn-secondary" onclick="executeAgent('F-01', 'report')">📊 View Report</button>
+                    <button class="btn btn-secondary" onclick="executeAgent('F-01', 'logs')">📜 View Logs</button>
+                </div>
+            </div>
+
+            <!-- Agent F-02 -->
+            <div class="action-card" style="border-left: 4px solid #8b5cf6;">
+                <div class="action-header">
+                    <div class="action-title">📋 F-02: Intelligent Fee Structure Recommendation & Auto-Circular Generation Agent</div>
+                    <div style="display: flex; gap: 8px;">
+                        <span class="action-badge high">High Priority</span>
+                        <span class="action-badge" style="background: #fef3c7; color: #92400e;">○ Standby</span>
+                    </div>
+                </div>
+                <div class="action-description">
+                    <strong>Problem:</strong> At the start of each academic year, admin staff manually creates fee structures per standard/quota, generates fee circulars, and distributes them. This process takes 3-5 days and is error-prone, with wrong amounts sometimes sent to parents.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Build:</strong> 3 Sprints</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Admin Team</div>
+                    <div class="action-meta-item">⏱️ <strong>Trigger:</strong> Academic Year Rollover</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> 5 days → 2 hrs</div>
+                </div>
+                
+                <!-- Workflow -->
+                <h4 style="font-size: 14px; margin: 20px 0 12px;">⚙️ Autonomous Workflow</h4>
+                <div style="display: flex; gap: 8px; overflow-x: auto; padding: 12px 0; margin-bottom: 16px;">
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: #eef2ff; border-radius: 8px; text-align: center; border: 2px solid #6366f1;">
+                        <div style="font-size: 18px; margin-bottom: 4px;">1</div>
+                        <div style="font-size: 11px; font-weight: 600;">Historical Analysis</div>
+                        <div style="font-size: 10px; color: #64748b;">Read 3 years data</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: var(--gray-100); border-radius: 8px; text-align: center; border: 2px solid var(--gray-300);">
+                        <div style="font-size: 18px; margin-bottom: 4px;">2</div>
+                        <div style="font-size: 11px; font-weight: 600;">Recommendation</div>
+                        <div style="font-size: 10px; color: #64748b;">Generate drafts</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: var(--gray-100); border-radius: 8px; text-align: center; border: 2px solid var(--gray-300);">
+                        <div style="font-size: 18px; margin-bottom: 4px;">3</div>
+                        <div style="font-size: 11px; font-weight: 600;">Admin Approval</div>
+                        <div style="font-size: 10px; color: #64748b;">Review & approve</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: var(--gray-100); border-radius: 8px; text-align: center; border: 2px solid var(--gray-300);">
+                        <div style="font-size: 18px; margin-bottom: 4px;">4</div>
+                        <div style="font-size: 11px; font-weight: 600;">Distribution</div>
+                        <div style="font-size: 10px; color: #64748b;">Bulk SMS/Email</div>
+                    </div>
+                </div>
+
+                <div class="action-modules">
+                    <div class="linked-module"><span>📊</span> Historical Fees Break-off</div>
+                    <div class="linked-module"><span>💰</span> Fees Collection Reports</div>
+                    <div class="linked-module"><span>📄</span> Fee Circular Master</div>
+                    <div class="linked-module"><span>👥</span> Student Standard Mapping</div>
+                    <div class="linked-module"><span>🏦</span> Bank Master</div>
+                </div>
+
+                <h4 style="font-size: 13px; margin: 16px 0 12px;">📊 Expected KPIs</h4>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+                    <div style="background: #dcfce7; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #166534;">5d→2hrs</div>
+                        <div style="font-size: 11px; color: #64748b;">Process Time</div>
+                    </div>
+                    <div style="background: #eef2ff; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #4f46e5;">-95%</div>
+                        <div style="font-size: 11px; color: #64748b;">Error Rate</div>
+                    </div>
+                    <div style="background: #fef3c7; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #92400e;">+20%</div>
+                        <div style="font-size: 11px; color: #64748b;">Parent Satisfaction</div>
+                    </div>
+                    <div style="background: #ccfbf1; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #0f766e;">+30%</div>
+                        <div style="font-size: 11px; color: #64748b;">Timely Submissions</div>
+                    </div>
+                </div>
+
+                <div style="background: #fef3c7; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 12px;">
+                    <strong style="color: #92400e;">⚠️ RISK:</strong> <span style="color: #78350f;">Incorrect fee amounts distributed to parents</span>
+                    <br><strong style="color: #92400e;">Mitigation:</strong> <span style="color: #78350f;">Mandatory 2-step approval: auto-generation → admin review → auto-distribution</span>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeAgent('F-02', 'trigger')">📋 Trigger Review</button>
+                    <button class="btn btn-success" onclick="executeAgent('F-02', 'preview')">👁️ Preview Circular</button>
+                    <button class="btn btn-secondary" onclick="executeAgent('F-02', 'configure')">⚙️ Configure Templates</button>
+                </div>
+            </div>
+
+            <!-- Agent F-03 -->
+            <div class="action-card" style="border-left: 4px solid #0f766e;">
+                <div class="action-header">
+                    <div class="action-title">📈 F-03: Predictive Fee Collection Forecasting & Cash Flow Intelligence Agent</div>
+                    <div style="display: flex; gap: 8px;">
+                        <span class="action-badge high">High Priority</span>
+                        <span class="action-badge" style="background: #dcfce7; color: #166534;">● Running</span>
+                    </div>
+                </div>
+                <div class="action-description">
+                    <strong>Problem:</strong> School management lacks early visibility into monthly/quarterly fee collection projections. Decisions about vendor payments, salary disbursals, and capital expenditures are made without cash flow data, leading to financial stress in low-collection months.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Build:</strong> 3 Sprints</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> CFO/Finance</div>
+                    <div class="action-meta-item">⏱️ <strong>Schedule:</strong> Weekly (Monday 09:00 AM)</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> +40% Predictability</div>
+                </div>
+                
+                <!-- Workflow -->
+                <h4 style="font-size: 14px; margin: 20px 0 12px;">⚙️ Autonomous Workflow</h4>
+                <div style="display: flex; gap: 8px; overflow-x: auto; padding: 12px 0; margin-bottom: 16px;">
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: #dcfce7; border-radius: 8px; text-align: center; border: 2px solid #10b981;">
+                        <div style="font-size: 18px; margin-bottom: 4px;">✓</div>
+                        <div style="font-size: 11px; font-weight: 600;">Weekly Data Pull</div>
+                        <div style="font-size: 10px; color: #64748b;">Mon 09:00 AM</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: #dcfce7; border-radius: 8px; text-align: center; border: 2px solid #10b981;">
+                        <div style="font-size: 18px; margin-bottom: 4px;">✓</div>
+                        <div style="font-size: 11px; font-weight: 600;">Pattern Analysis</div>
+                        <div style="font-size: 10px; color: #64748b;">Historical + Seasonal</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: #eef2ff; border-radius: 8px; text-align: center; border: 2px solid #6366f1;">
+                        <div style="font-size: 18px; margin-bottom: 4px;">3</div>
+                        <div style="font-size: 11px; font-weight: 600;">Forecast Gen</div>
+                        <div style="font-size: 10px; color: #64748b;">30/60/90 day</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: var(--gray-100); border-radius: 8px; text-align: center; border: 2px solid var(--gray-300);">
+                        <div style="font-size: 18px; margin-bottom: 4px;">4</div>
+                        <div style="font-size: 11px; font-weight: 600;">Risk ID</div>
+                        <div style="font-size: 10px; color: #64748b;">Defaulter cohorts</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: var(--gray-100); border-radius: 8px; text-align: center; border: 2px solid var(--gray-300);">
+                        <div style="font-size: 18px; margin-bottom: 4px;">5</div>
+                        <div style="font-size: 11px; font-weight: 600;">Brief Publication</div>
+                        <div style="font-size: 10px; color: #64748b;">Mgmt Dashboard</div>
+                    </div>
+                </div>
+
+                <div class="action-modules">
+                    <div class="linked-module"><span>📊</span> Fees Monthly Report</div>
+                    <div class="linked-module"><span>💰</span> Fees Status Report</div>
+                    <div class="linked-module"><span>🏦</span> NACH History</div>
+                    <div class="linked-module"><span>📅</span> Academic Calendar</div>
+                    <div class="linked-module"><span>👥</span> Admission Count</div>
+                </div>
+
+                <h4 style="font-size: 13px; margin: 16px 0 12px;">📊 Expected KPIs</h4>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+                    <div style="background: #dcfce7; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #166534;">+40%</div>
+                        <div style="font-size: 11px; color: #64748b;">Cash Predictability</div>
+                    </div>
+                    <div style="background: #eef2ff; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #4f46e5;">-90%</div>
+                        <div style="font-size: 11px; color: #64748b;">Late Vendor Payments</div>
+                    </div>
+                    <div style="background: #fef3c7; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #92400e;">+50%</div>
+                        <div style="font-size: 11px; color: #64748b;">Decision Confidence</div>
+                    </div>
+                    <div style="background: #ccfbf1; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #0f766e;">-60%</div>
+                        <div style="font-size: 11px; color: #64748b;">Overdraft Usage</div>
+                    </div>
+                </div>
+
+                <!-- Live Monitor -->
+                <h4 style="font-size: 13px; margin: 16px 0 12px;">📡 Last Forecast (22 Jun 2026)</h4>
+                <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center;">
+                        <div>
+                            <div style="font-size: 18px; font-weight: 700; color: #10b981;">₹15.2L</div>
+                            <div style="font-size: 11px; color: #64748b;">Next 30 Days</div>
+                            <div style="font-size: 10px; color: #10b981;">High Confidence: 92%</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 18px; font-weight: 700; color: #6366f1;">₹42.5L</div>
+                            <div style="font-size: 11px; color: #64748b;">Next 90 Days</div>
+                            <div style="font-size: 10px; color: #6366f1;">Med Confidence: 85%</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 18px; font-weight: 700; color: #f59e0b;">23</div>
+                            <div style="font-size: 11px; color: #64748b;">High-Risk Accounts</div>
+                            <div style="font-size: 10px; color: #f59e0b;">Flagged for Intervention</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: #fef3c7; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 12px;">
+                    <strong style="color: #92400e;">⚠️ RISK:</strong> <span style="color: #78350f;">Forecast inaccuracy due to unprecedented events (pandemics, natural disasters)</span>
+                    <br><strong style="color: #92400e;">Mitigation:</strong> <span style="color: #78350f;">Include scenario planning with confidence intervals; flag low-confidence forecasts for human review</span>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeAgent('F-03', 'forecast')">📈 Generate Forecast</button>
+                    <button class="btn btn-success" onclick="executeAgent('F-03', 'brief')">📄 View Brief</button>
+                    <button class="btn btn-secondary" onclick="executeAgent('F-03', 'configure')">⚙️ Configure</button>
+                    <button class="btn btn-secondary" onclick="executeAgent('F-03', 'history')">📜 Forecast History</button>
+                </div>
+            </div>
+
+            <!-- Implementation Roadmap -->
+            <div class="action-card" style="background: #eef2ff; border-left: 4px solid #6366f1;">
+                <div class="action-header">
+                    <div class="action-title">🗺️ Implementation Roadmap</div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                    <div style="background: white; padding: 16px; border-radius: 8px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #4f46e5; margin-bottom: 8px;">Phase 1 (Sprint 1-2)</div>
+                        <div style="font-size: 13px; margin-bottom: 12px;">Quick Wins</div>
+                        <div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">Delivers immediate ROI with minimal infrastructure.</div>
+                        <div style="font-size: 11px; font-weight: 600; color: #166534;">✅ F-01: Defaulter Agent</div>
+                    </div>
+                    <div style="background: white; padding: 16px; border-radius: 8px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #4f46e5; margin-bottom: 8px;">Phase 2 (Sprint 3-6)</div>
+                        <div style="font-size: 13px; margin-bottom: 12px;">Core Intelligence</div>
+                        <div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">Builds predictive capabilities with LLM integration.</div>
+                        <div style="font-size: 11px; font-weight: 600; color: #0f766e;">⏳ F-02: Fee Structure, F-03: Forecasting</div>
+                    </div>
+                    <div style="background: white; padding: 16px; border-radius: 8px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #4f46e5; margin-bottom: 8px;">Phase 3 (Sprint 7-10)</div>
+                        <div style="font-size: 13px; margin-bottom: 12px;">Advanced Automation</div>
+                        <div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">Complete automation with bank API integration.</div>
+                        <div style="font-size: 11px; font-weight: 600; color: #64748b;">📋 NACH, Refund, Sibling Agents</div>
+                    </div>
+                </div>
+
+                <div style="background: #fef3c7; padding: 12px; border-radius: 8px; margin-top: 16px; font-size: 12px;">
+                    <strong style="color: #92400e;">📋 Data Foundation Requirements:</strong>
+                    <span style="color: #78350f;">All phases require SMS API + Email SMTP configured, mobile push notification service, and role-based access control audit. Phase 2+ requires data anonymization pipeline and vendor DPA compliance with DPDP Act 2023.</span>
                 </div>
             </div>
         </div>
@@ -1675,6 +2013,32 @@
         // Close Modal
         function closeModal() {
             document.getElementById('actionModal').classList.remove('active');
+        }
+
+        // Agent Execution Functions
+        function executeAgent(agentId, action) {
+            const agentActions = {
+                'F-01': {
+                    'scan': 'Running manual defaulter scan...\n\nProcessing all fee records and sending appropriate reminders.',
+                    'configure': 'Opening F-01 Configuration...\n\nConfigure thresholds, escalation rules, and notification settings.',
+                    'report': 'Opening Defaulter Report...\n\nShowing all flagged accounts and their current status.',
+                    'logs': 'Opening Agent Activity Logs...\n\nDisplaying F-01 execution history.'
+                },
+                'F-02': {
+                    'trigger': 'Triggering Fee Structure Review...\n\nAnalyzing historical data and generating recommended structures.',
+                    'preview': 'Opening Circular Preview...\n\nShowing sample fee circular for review.',
+                    'configure': 'Opening Template Configuration...\n\nConfiguring Fee Circular Master templates.'
+                },
+                'F-03': {
+                    'forecast': 'Generating new cash flow forecast...\n\nAnalyzing latest data and producing updated projections.',
+                    'brief': 'Opening Weekly Intelligence Brief...\n\nDisplaying latest management brief with key insights.',
+                    'configure': 'Opening F-03 Configuration...\n\nConfiguring forecast parameters and thresholds.',
+                    'history': 'Opening Forecast History...\n\nDisplaying historical forecast accuracy analysis.'
+                }
+            };
+
+            const message = agentActions[agentId]?.[action] || 'Executing action...';
+            alert(agentId + ' - ' + action.toUpperCase() + '\n\n' + message);
         }
 
         // Filter functionality
