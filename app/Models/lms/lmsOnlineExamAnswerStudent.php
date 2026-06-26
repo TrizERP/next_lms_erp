@@ -8,8 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class lmsOnlineExamAnswerStudent extends Model
 {
     use HasFactory;
-    protected $table = "lms_online_exam_answer_student";
-
+    protected $table = "lms_online_exam_answer_student";   
     protected $fillable = [
         'question_paper_id',
         'online_exam_id',
@@ -19,5 +18,5 @@ class lmsOnlineExamAnswerStudent extends Model
         'narrative_answer',
         'ans_status',
         'attempt_time',
-    ];    
+    ];     
 }
