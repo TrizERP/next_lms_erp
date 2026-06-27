@@ -603,6 +603,271 @@
         .section-content { display: none; }
         .section-content.active { display: block; }
 
+        /* Data Injection Tab Styles */
+        .data-injection-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-top: 20px;
+        }
+
+        .data-injection-panel {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 2px solid var(--gray-100);
+        }
+
+        .panel-header h3 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .panel-section {
+            margin-bottom: 24px;
+        }
+
+        .panel-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .panel-section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-500);
+            margin-bottom: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+        }
+
+        .input-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .input-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--gray-600);
+            margin-bottom: 8px;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--gray-200);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.2s;
+            background: var(--white);
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        .input-field::placeholder {
+            color: var(--gray-400);
+        }
+
+        textarea.input-field {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .data-source-options {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .source-option {
+            flex: 1;
+            padding: 16px;
+            border: 2px solid var(--gray-200);
+            border-radius: 10px;
+            background: var(--white);
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.2s;
+        }
+
+        .source-option:hover {
+            border-color: var(--primary-light);
+            background: var(--gray-50);
+        }
+
+        .source-option.selected {
+            border-color: var(--primary);
+            background: #eef2ff;
+        }
+
+        .source-option-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .source-option-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--gray-600);
+        }
+
+        .module-checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .module-checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 12px;
+            background: var(--gray-50);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .module-checkbox-item:hover {
+            background: var(--gray-100);
+        }
+
+        .module-checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: var(--primary);
+        }
+
+        .module-checkbox-item span {
+            font-size: 13px;
+            color: var(--gray-600);
+        }
+
+        .extracted-data-preview {
+            background: var(--gray-50);
+            border: 2px dashed var(--gray-300);
+            border-radius: 10px;
+            padding: 20px;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .extracted-data-preview.has-data {
+            border-style: solid;
+            background: var(--white);
+            align-items: flex-start;
+            justify-content: flex-start;
+            text-align: left;
+        }
+
+        .preview-placeholder {
+            color: var(--gray-400);
+            font-size: 14px;
+        }
+
+        .preview-placeholder-icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+
+        .preview-data-content {
+            width: 100%;
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--gray-700);
+            white-space: pre-wrap;
+        }
+
+        .preview-data-content .data-item {
+            display: flex;
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            background: var(--gray-50);
+            border-radius: 6px;
+        }
+
+        .preview-data-content .data-key {
+            font-weight: 600;
+            color: var(--dark);
+            min-width: 120px;
+        }
+
+        .preview-data-content .data-value {
+            color: var(--gray-600);
+        }
+
+        .prompt-input-container {
+            margin-top: 12px;
+        }
+
+        .data-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .summary-item {
+            background: var(--gray-50);
+            padding: 16px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .summary-item-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .summary-item-label {
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+
+        .btn-execute {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 16px;
+        }
+
+        .btn-execute:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .header { padding: 20px; }
@@ -611,6 +876,9 @@
             .action-buttons { flex-direction: column; }
             .workflow-steps { flex-direction: column; }
             .workflow-arrow { transform: rotate(90deg); }
+            .data-injection-container { grid-template-columns: 1fr; }
+            .module-checkbox-group { grid-template-columns: 1fr; }
+            .data-summary-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -649,6 +917,7 @@
             <button class="nav-tab" onclick="showSection('modules')">🔗 Module Integration</button>
             <button class="nav-tab" onclick="showSection('workflows')">📋 Cross-Module Workflows</button>
             <button class="nav-tab" onclick="showSection('recommendations')">💡 Recommendations</button>
+            <button class="nav-tab" onclick="showSection('datainjection')">💉 Data Injection</button>
         </div>
 
         <!-- Filters -->
@@ -2106,6 +2375,141 @@
         </div>
     </div>
 
+    <!-- Data Injection Section -->
+    <div id="datainjection-section" class="section-content">
+        <div class="intro-box" style="background: #eef2ff; border-left-color: #6366f1; color: #3730a3; margin-bottom: 24px;">
+            <strong>💉 Data Injection & Intelligence Generation</strong><br>
+            Inject data from various sources, extract key information, and automatically generate intelligence templates based on your requirements.
+        </div>
+
+        <div class="data-injection-container">
+            <!-- LEFT PANEL -->
+            <div class="data-injection-panel">
+                <div class="panel-header">
+                    <span style="font-size: 20px;">📥 Input Configuration</span>
+                </div>
+
+                <!-- 1. Data Source Input -->
+                <div class="panel-section">
+                    <div class="panel-section-title">1. Data Source Input</div>
+                    <div class="data-source-options">
+                        <div class="source-option selected" onclick="selectSource(this, 'url')">
+                            <div class="source-option-icon">🔗</div>
+                            <div class="source-option-label">URL</div>
+                        </div>
+                        <div class="source-option" onclick="selectSource(this, 'file')">
+                            <div class="source-option-icon">📄</div>
+                            <div class="source-option-label">Upload File</div>
+                        </div>
+                    </div>
+                    <div class="input-group" id="urlInputGroup">
+                        <label class="input-label">Enter URL</label>
+                        <input type="url" class="input-field" id="dataUrl" placeholder="https://example.com/data-source">
+                    </div>
+                    <div class="input-group" id="fileInputGroup" style="display: none;">
+                        <label class="input-label">Upload File</label>
+                        <input type="file" class="input-field" id="dataFile" accept=".csv,.xlsx,.xls,.json,.txt,.pdf">
+                    </div>
+                </div>
+
+                <!-- 2. Required Extraction Input -->
+                <div class="panel-section">
+                    <div class="panel-section-title">2. Required Extraction</div>
+                    <div class="input-group">
+                        <label class="input-label">Specify extraction details</label>
+                        <textarea class="input-field" id="extractionDetails" placeholder="E.g., Extract student names, fee amounts, due dates, and payment status..."></textarea>
+                    </div>
+                </div>
+
+                <!-- 3. Module Selection -->
+                <div class="panel-section">
+                    <div class="panel-section-title">3. Module Selection</div>
+                    <div class="module-checkbox-group">
+                        <label class="module-checkbox-item">
+                            <input type="checkbox" value="student" checked>
+                            <span>👥 Student Management</span>
+                        </label>
+                        <label class="module-checkbox-item">
+                            <input type="checkbox" value="fees" checked>
+                            <span>💰 Fees Management</span>
+                        </label>
+                        <label class="module-checkbox-item">
+                            <input type="checkbox" value="attendance">
+                            <span>📋 Attendance</span>
+                        </label>
+                        <label class="module-checkbox-item">
+                            <input type="checkbox" value="transport">
+                            <span>🚌 Transport</span>
+                        </label>
+                        <label class="module-checkbox-item">
+                            <input type="checkbox" value="library">
+                            <span>📚 Library</span>
+                        </label>
+                        <label class="module-checkbox-item">
+                            <input type="checkbox" value="communication">
+                            <span>📱 Communication</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button class="btn-execute" onclick="executeDataExtraction()">🔍 Extract Data</button>
+            </div>
+
+            <!-- RIGHT PANEL -->
+            <div class="data-injection-panel">
+                <div class="panel-header">
+                    <span style="font-size: 20px;">📊 Output & Intelligence</span>
+                </div>
+
+                <!-- 1. Extracted Data Preview -->
+                <div class="panel-section">
+                    <div class="panel-section-title">1. Extracted Data Preview</div>
+                    <div class="extracted-data-preview" id="extractedDataPreview">
+                        <div class="preview-placeholder">
+                            <div class="preview-placeholder-icon">📋</div>
+                            <div>Data will appear here after extraction</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Give Prompt Required Intelligence -->
+                <div class="panel-section">
+                    <div class="panel-section-title">2. Give Prompt Required Intelligence</div>
+                    <div class="input-group">
+                        <label class="input-label">Enter prompt to generate Intelligence Template</label>
+                        <textarea class="input-field" id="intelligencePrompt" placeholder="E.g., Generate a defaulters report with names, amounts, and days overdue, sorted by urgency..."></textarea>
+                    </div>
+                    <div class="prompt-input-container">
+                        <button class="btn-execute" onclick="generateIntelligenceTemplate()">✨ Generate Intelligence Template</button>
+                    </div>
+                </div>
+
+                <!-- 3. Data Processing Summary -->
+                <div class="panel-section">
+                    <div class="panel-section-title">3. Data Processing Summary</div>
+                    <div class="data-summary-grid">
+                        <div class="summary-item">
+                            <div class="summary-item-value" id="totalRecords">0</div>
+                            <div class="summary-item-label">Total Records</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-item-value" id="extractedFields">0</div>
+                            <div class="summary-item-label">Fields Extracted</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-item-value" id="modulesLinked">0</div>
+                            <div class="summary-item-label">Modules Linked</div>
+                        </div>
+                        <div class="summary-item">
+                            <div class="summary-item-value" id="processingTime">0s</div>
+                            <div class="summary-item-label">Processing Time</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal -->
     <div class="modal" id="actionModal">
         <div class="modal-content">
@@ -2581,6 +2985,125 @@
         // Close modal on outside click
         document.getElementById('actionModal').addEventListener('click', function(e) {
             if (e.target === this) closeModal();
+        });
+
+        // Data Injection Tab Functions
+
+        // Select Data Source
+        function selectSource(element, sourceType) {
+            document.querySelectorAll('.source-option').forEach(opt => opt.classList.remove('selected'));
+            element.classList.add('selected');
+
+            if (sourceType === 'url') {
+                document.getElementById('urlInputGroup').style.display = 'block';
+                document.getElementById('fileInputGroup').style.display = 'none';
+            } else {
+                document.getElementById('urlInputGroup').style.display = 'none';
+                document.getElementById('fileInputGroup').style.display = 'block';
+            }
+        }
+
+        // Execute Data Extraction
+        function executeDataExtraction() {
+            const urlInput = document.getElementById('dataUrl').value;
+            const fileInput = document.getElementById('dataFile').files[0];
+            const extractionDetails = document.getElementById('extractionDetails').value;
+            const selectedModules = Array.from(document.querySelectorAll('.module-checkbox-group input[type="checkbox"]:checked')).map(cb => cb.value);
+
+            // Validate inputs
+            if (!urlInput && !fileInput) {
+                alert('Please provide a data source (URL or file)');
+                return;
+            }
+
+            if (!extractionDetails.trim()) {
+                alert('Please specify what data to extract');
+                return;
+            }
+
+            if (selectedModules.length === 0) {
+                alert('Please select at least one module');
+                return;
+            }
+
+            // Show loading state
+            const preview = document.getElementById('extractedDataPreview');
+            preview.innerHTML = '<div style="color: var(--gray-500);"><div style="font-size: 32px; margin-bottom: 12px;">⏳</div>Extracting data...</div>';
+            preview.classList.add('has-data');
+
+            // Simulate extraction (in real implementation, this would call backend API)
+            setTimeout(() => {
+                // Sample extracted data
+                const sampleData = {
+                    students: [
+                        { name: 'Aarav Sharma', class: 'Class 6', amount: '₹45,000', status: 'Pending', daysOverdue: 15 },
+                        { name: 'Priya Patel', class: 'Class 7', amount: '₹52,000', status: 'Pending', daysOverdue: 30 },
+                        { name: 'Rahul Verma', class: 'Class 8', amount: '₹48,500', status: 'Paid', daysOverdue: 0 },
+                        { name: 'Sneha Gupta', class: 'Class 6', amount: '₹45,000', status: 'Pending', daysOverdue: 45 }
+                    ],
+                    totalRecords: 4,
+                    extractedFields: ['name', 'class', 'amount', 'status', 'daysOverdue']
+                };
+
+                // Update preview
+                let htmlContent = '<div class="preview-data-content">';
+                htmlContent += '<div style="margin-bottom: 16px; font-weight: 600; color: var(--primary);">📊 Extracted Data (' + sampleData.totalRecords + ' records)</div>';
+
+                sampleData.students.forEach((student, index) => {
+                    htmlContent += `<div class="data-item">
+                        <div class="data-key">Student ${index + 1}:</div>
+                        <div class="data-value">${student.name} | ${student.class} | ${student.amount} | ${student.status} | ${student.daysOverdue} days</div>
+                    </div>`;
+                });
+
+                htmlContent += '</div>';
+                preview.innerHTML = htmlContent;
+                preview.classList.add('has-data');
+
+                // Update summary
+                updateProcessingSummary({
+                    totalRecords: sampleData.totalRecords,
+                    extractedFields: sampleData.extractedFields.length,
+                    modulesLinked: selectedModules.length,
+                    processingTime: '1.2s'
+                });
+
+            }, 1500);
+        }
+
+        // Generate Intelligence Template
+        function generateIntelligenceTemplate() {
+            const prompt = document.getElementById('intelligencePrompt').value;
+
+            if (!prompt.trim()) {
+                alert('Please enter a prompt to generate the intelligence template');
+                return;
+            }
+
+            // Show loading
+            alert('Generating Intelligence Template...\n\nPrompt: ' + prompt + '\n\nThis will analyze the prompt and create an optimized template configuration.');
+
+            // In a real implementation, this would:
+            // 1. Send the prompt to an AI service
+            // 2. Generate a template based on the prompt
+            // 3. Configure the intelligence template automatically
+            // 4. Return the generated template configuration
+        }
+
+        // Update Processing Summary
+        function updateProcessingSummary(data) {
+            document.getElementById('totalRecords').textContent = data.totalRecords;
+            document.getElementById('extractedFields').textContent = data.extractedFields;
+            document.getElementById('modulesLinked').textContent = data.modulesLinked;
+            document.getElementById('processingTime').textContent = data.processingTime;
+        }
+
+        // Update module count when checkboxes change
+        document.querySelectorAll('.module-checkbox-group input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const selectedCount = document.querySelectorAll('.module-checkbox-group input[type="checkbox"]:checked').length;
+                document.getElementById('modulesLinked').textContent = selectedCount;
+            });
         });
     </script>
 </body>
