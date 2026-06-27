@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Fees Intelligence Action Center | Institute Management System</title>
+    <title>Intelligence Action Center | Institute Management System</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -620,7 +620,7 @@
         <header class="header">
             <div class="header-top">
                 <div>
-                    <h1>⚡ Fees Intelligence Action Center</h1>
+                    <h1>⚡ Intelligence Action Center</h1>
                     <p>Execute intelligent actions with cross-module integration</p>
                 </div>
                 <div class="header-stats">
@@ -652,7 +652,7 @@
         </div>
 
         <!-- Filters -->
-        <div class="filter-section">
+<!--        <div class="filter-section">
             <div class="filter-group">
                 <label class="filter-label">Priority</label>
                 <select class="filter-select" id="priorityFilter">
@@ -694,37 +694,90 @@
                 </select>
             </div>
         </div>
-
+-->
         <!-- Data Injection Section -->
         <div id="injection-section" class="section-content active">
             <div class="intro-box" style="background: #dcfce7; border-left-color: #10b981; color: #166534; margin-bottom: 24px;">
                 <strong>📥 Data Injection for Intelligence Generation</strong><br>
-                Select modules, provide data sources, and let the system extract and analyze data to generate actionable intelligence for the Fees & Finance module.
+                Select modules, provide data sources, and let the system extract and analyze data to generate actionable intelligence.
             </div>
 
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                 <!-- Left Column: Module Selection & Data Input -->
                 <div>
+
+                    <!-- Data Source Input -->
+                    <div class="action-card">
+                        <div class="action-header">
+                            <div class="action-title">📄 Data Source Input</div>
+                        </div>
+
+                        <!-- Tab Buttons for Data Input -->
+                        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                            <button class="nav-tab active" id="tabUrl" onclick="showDataInput('url')" style="padding: 8px 16px; font-size: 12px;">🔗 URL</button>
+                            <button class="nav-tab" id="tabFile" onclick="showDataInput('file')" style="padding: 8px 16px; font-size: 12px;">📁 Upload File</button>
+                        </div>
+
+                        <!-- URL Input -->
+                        <div id="inputUrl" style="display: block;">
+                            <label style="font-size: 12px; color: var(--gray-500); margin-bottom: 6px; display: block;">Enter Data Source URL</label>
+                            <input type="url" id="dataUrl" placeholder="https://example.com/data/source" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px;">
+                            <p style="font-size: 11px; color: #64748b; margin-top: 8px;">Supported: APIs, JSON endpoints, CSV downloads</p>
+                        </div>
+
+                        <!-- File Upload -->
+                        <div id="inputFile" style="display: none;">
+                            <div style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 32px; text-align: center; cursor: pointer;" onclick="document.getElementById('fileInput').click();" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
+                                <div style="font-size: 36px; margin-bottom: 12px;">📂</div>
+                                <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;">Drag & drop files here or click to browse</div>
+                                <div style="font-size: 12px; color: #94a3b8;">Supported: PDF, TXT, CSV, XLSX (Max 10MB)</div>
+                                <input type="file" id="fileInput" style="display: none;" accept=".pdf,.txt,.csv,.xlsx" onchange="handleFileSelect(this)">
+                            </div>
+                            <div id="filePreview" style="display: none; margin-top: 12px; padding: 12px; background: #f1f5f9; border-radius: 8px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span id="fileIcon" style="font-size: 24px;">📄</span>
+                                    <div>
+                                        <div id="fileName" style="font-size: 13px; font-weight: 600;"></div>
+                                        <div id="fileSize" style="font-size: 11px; color: #64748b;"></div>
+                                    </div>
+                                    <button onclick="clearFile()" style="margin-left: auto; background: #fee2e2; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">✕</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Required Extraction Input -->
+                    <div class="action-card">
+                        <div class="action-header">
+                            <div class="action-title">🎯 Required Extraction Input</div>
+                        </div>
+                        <p style="font-size: 13px; color: var(--gray-500); margin-bottom: 16px;">
+                            Specify the details you need to extract from the data source.
+                        </p>
+                        <textarea id="requiredExtraction" rows="4" placeholder="E.g., Extract all details of provided data..." style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical;"></textarea>
+                    </div>
+
                     <!-- Module Selection -->
                     <div class="action-card">
                         <div class="action-header">
                             <div class="action-title">🗂️ Module Selection</div>
+                            <button class="btn btn-primary" onclick="previewExtraction()">👁️ Preview Extraction</button>
                         </div>
                         <p style="font-size: 13px; color: var(--gray-500); margin-bottom: 16px;">
-                            Select modules to associate with Fees data for cross-module intelligence generation.
+                            Select modules to associate with cross-module intelligence generation.
                         </p>
 
                         <div class="module-grid" style="grid-template-columns: repeat(2, 1fr); gap: 12px;">
                             <!-- Fees Module - Pre-selected Read-only -->
-                            <div style="background: #eef2ff; border: 2px solid #6366f1; border-radius: 12px; padding: 14px; cursor: not-allowed; opacity: 0.9;">
+                            <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s;" onclick="toggleModule(this, 'fees')">
                                 <div style="display: flex; align-items: center; gap: 10px;">
                                     <div style="font-size: 24px;">💰</div>
                                     <div>
-                                        <div style="font-size: 13px; font-weight: 600; color: #4f46e5;">Fees & Finance</div>
+                                        <div style="font-size: 13px; font-weight: 600;">Fees & Finance</div>
                                         <div style="font-size: 11px; color: #64748b;">Primary Module</div>
                                     </div>
                                     <div style="margin-left: auto;">
-                                        <input type="checkbox" checked disabled style="width: 18px; height: 18px; accent-color: #6366f1;">
+                                        <input type="checkbox" class="module-checkbox" data-module="fees" style="width: 18px; height: 18px; accent-color: #10b981;">
                                     </div>
                                 </div>
                             </div>
@@ -823,55 +876,7 @@
                         </div>
 
                         <div style="margin-top: 16px; padding: 12px; background: #fef3c7; border-radius: 8px; font-size: 12px; color: #92400e;">
-                            <strong>Selected Modules:</strong> <span id="selectedModules">Fees & Finance</span>
-                        </div>
-                    </div>
-
-                    <!-- Data Source Input -->
-                    <div class="action-card">
-                        <div class="action-header">
-                            <div class="action-title">📄 Data Source Input</div>
-                        </div>
-
-                        <!-- Tab Buttons for Data Input -->
-                        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-                            <button class="nav-tab active" id="tabUrl" onclick="showDataInput('url')" style="padding: 8px 16px; font-size: 12px;">🔗 URL</button>
-                            <button class="nav-tab" id="tabFile" onclick="showDataInput('file')" style="padding: 8px 16px; font-size: 12px;">📁 Upload File</button>
-                            <button class="nav-tab" id="tabText" onclick="showDataInput('text')" style="padding: 8px 16px; font-size: 12px;">📝 Paste Text</button>
-                        </div>
-
-                        <!-- URL Input -->
-                        <div id="inputUrl" style="display: block;">
-                            <label style="font-size: 12px; color: var(--gray-500); margin-bottom: 6px; display: block;">Enter Data Source URL</label>
-                            <input type="url" id="dataUrl" placeholder="https://example.com/data/source" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px;">
-                            <p style="font-size: 11px; color: #64748b; margin-top: 8px;">Supported: APIs, JSON endpoints, CSV downloads</p>
-                        </div>
-
-                        <!-- File Upload -->
-                        <div id="inputFile" style="display: none;">
-                            <div style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 32px; text-align: center; cursor: pointer;" onclick="document.getElementById('fileInput').click();" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
-                                <div style="font-size: 36px; margin-bottom: 12px;">📂</div>
-                                <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;">Drag & drop files here or click to browse</div>
-                                <div style="font-size: 12px; color: #94a3b8;">Supported: PDF, TXT, CSV, XLSX (Max 10MB)</div>
-                                <input type="file" id="fileInput" style="display: none;" accept=".pdf,.txt,.csv,.xlsx" onchange="handleFileSelect(this)">
-                            </div>
-                            <div id="filePreview" style="display: none; margin-top: 12px; padding: 12px; background: #f1f5f9; border-radius: 8px;">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <span id="fileIcon" style="font-size: 24px;">📄</span>
-                                    <div>
-                                        <div id="fileName" style="font-size: 13px; font-weight: 600;"></div>
-                                        <div id="fileSize" style="font-size: 11px; color: #64748b;"></div>
-                                    </div>
-                                    <button onclick="clearFile()" style="margin-left: auto; background: #fee2e2; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">✕</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Paste Text -->
-                        <div id="inputText" style="display: none;">
-                            <label style="font-size: 12px; color: var(--gray-500); margin-bottom: 6px; display: block;">Paste your data or text content</label>
-                            <textarea id="pasteText" rows="8" placeholder="Paste fee data, reports, or any text content here for analysis..." style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical;"></textarea>
-                            <p style="font-size: 11px; color: #64748b; margin-top: 8px;">Character count: <span id="charCount">0</span></p>
+                            <strong>Selected Modules:</strong> <span id="selectedModules"></span>
                         </div>
                     </div>
                 </div>
@@ -899,47 +904,29 @@
                         </div>
                     </div>
 
-                    <!-- Selected Data Summary -->
+                    <!-- Give Prompt Required Intelligence -->
                     <div class="action-card">
                         <div class="action-header">
-                            <div class="action-title">📋 Data Processing Summary</div>
+                            <div class="action-title">🧠 Give Prompt Required Intelligence</div>
                         </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <div style="background: #eef2ff; padding: 12px; border-radius: 8px;">
-                                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Primary Module</div>
-                                <div style="font-size: 13px; font-weight: 600; color: #4f46e5;">💰 Fees & Finance</div>
-                            </div>
-                            <div style="background: #f0fdf4; padding: 12px; border-radius: 8px;">
-                                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Linked Modules</div>
-                                <div style="font-size: 13px; font-weight: 600; color: #166534;" id="linkedModulesSummary">None selected</div>
-                            </div>
-                            <div style="background: #fef3c7; padding: 12px; border-radius: 8px;">
-                                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Data Source</div>
-                                <div style="font-size: 13px; font-weight: 600; color: #92400e;" id="dataSourceSummary">Not specified</div>
-                            </div>
-                            <div style="background: #fce7f3; padding: 12px; border-radius: 8px;">
-                                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Data Size</div>
-                                <div style="font-size: 13px; font-weight: 600; color: #9d174d;" id="dataSizeSummary">0 KB</div>
-                            </div>
-                        </div>
-
-                        <div class="action-buttons" style="margin-top: 20px;">
-                            <button class="btn btn-secondary" onclick="resetInjection()">🔄 Reset</button>
-                            <button class="btn btn-primary" onclick="previewExtraction()">👁️ Preview Extraction</button>
-                            <button class="btn btn-success" onclick="generateIntelligence()" style="flex: 1;">🚀 Generate Intelligence →</button>
-                        </div>
+                        <p style="font-size: 13px; color: var(--gray-500); margin-bottom: 16px;">
+                            Enter a prompt to automatically generate and configure the required Intelligence Template based on the extracted data.
+                        </p>
+                        <textarea id="intelligencePrompt" rows="5" placeholder="E.g., Generate a analysis template that identifies intelligence and suggests personalized strategies..." style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical;"></textarea>
+                        <!--<div class="action-buttons" style="margin-top: 16px;">
+                            <button class="btn btn-primary" onclick="generateIntelligenceTemplate()" style="flex: 1;">✨ Generate & Configure Template</button>
+                        </div>-->
                     </div>
 
                     <!-- Intelligence Generation Progress -->
                     <div id="generationProgress" class="action-card" style="display: none; background: #eef2ff;">
                         <div class="action-header">
-                            <div class="action-title">⚡ Generating Intelligence...</div>
+                            <div class="action-title">⚡ Generating Intelligence Template...</div>
                         </div>
 
                         <div style="margin-bottom: 16px;">
                             <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
-                                <span>Processing data...</span>
+                                <span>Processing template...</span>
                                 <span id="progressPercent">0%</span>
                             </div>
                             <div style="height: 8px; background: #cbd5e1; border-radius: 4px; overflow: hidden;">
@@ -953,6 +940,38 @@
                             <div style="padding: 6px 0;" id="stepAnalyze"><span style="color: #94a3b8;">○</span> Analyzing patterns</div>
                             <div style="padding: 6px 0;" id="stepCorrelate"><span style="color: #94a3b8;">○</span> Cross-module correlation</div>
                             <div style="padding: 6px 0;" id="stepGenerate"><span style="color: #94a3b8;">○</span> Generating insights</div>
+                        </div>
+                    </div>
+
+                    <!-- Selected Data Summary -->
+                    <div class="action-card">
+                        <div class="action-header">
+                            <div class="action-title">📋 Data Processing Summary</div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                            <!--<div style="background: #eef2ff; padding: 12px; border-radius: 8px;">
+                                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Primary Module</div>
+                                <div style="font-size: 13px; font-weight: 600; color: #4f46e5;">💰 Fees & Finance</div>
+                            </div>-->
+                            <div style="background: #fef3c7; padding: 12px; border-radius: 8px;">
+                                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Data Source</div>
+                                <div style="font-size: 13px; font-weight: 600; color: #92400e;" id="dataSourceSummary">URL Input</div>
+                            </div>
+                            <div style="background: #f0fdf4; padding: 12px; border-radius: 8px;">
+                                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Linked Modules</div>
+                                <div style="font-size: 13px; font-weight: 600; color: #166534;" id="linkedModulesSummary">None selected</div>
+                            </div>
+                            <!--
+                            <div style="background: #fce7f3; padding: 12px; border-radius: 8px;">
+                                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Data Size</div>
+                                <div style="font-size: 13px; font-weight: 600; color: #9d174d;" id="dataSizeSummary">0 KB</div>
+                            </div>-->
+                        </div>
+
+                        <div class="action-buttons" style="margin-top: 20px;">
+                            <button class="btn btn-secondary" onclick="resetInjection()">🔄 Reset</button>
+                            <button class="btn btn-success" onclick="generateIntelligence()" style="flex: 1;">🚀 Generate Intelligence →</button>
                         </div>
                     </div>
                 </div>
@@ -2281,7 +2300,7 @@
         }
 
         // Data Injection Functions
-        let selectedModules = ['fees'];
+        let selectedModules = [];
         let currentDataSource = null;
 
         function toggleModule(element, moduleId) {
@@ -2315,19 +2334,17 @@
                 'communication': 'Communication'
             };
             
-            const linked = selectedModules.filter(m => m !== 'fees').map(m => moduleNames[m] || m);
-            document.getElementById('selectedModules').textContent = 'Fees & Finance' + (linked.length ? ', ' + linked.join(', ') : '');
+            const linked = selectedModules.filter(m => m !== 'feess').map(m => moduleNames[m] || m);
+            document.getElementById('selectedModules').textContent = linked.length ? linked.join(', ') : '';
             document.getElementById('linkedModulesSummary').textContent = linked.length ? linked.join(', ') : 'None selected';
         }
 
         function showDataInput(type) {
             document.getElementById('inputUrl').style.display = type === 'url' ? 'block' : 'none';
             document.getElementById('inputFile').style.display = type === 'file' ? 'block' : 'none';
-            document.getElementById('inputText').style.display = type === 'text' ? 'block' : 'none';
             
             document.getElementById('tabUrl').classList.toggle('active', type === 'url');
             document.getElementById('tabFile').classList.toggle('active', type === 'file');
-            document.getElementById('tabText').classList.toggle('active', type === 'text');
             
             currentDataSource = type;
             updateDataSourceSummary();
@@ -2335,7 +2352,7 @@
 
         function updateDataSourceSummary() {
             const sourceNames = { 'url': 'URL Input', 'file': 'File Upload', 'text': 'Pasted Text' };
-            document.getElementById('dataSourceSummary').textContent = currentDataSource ? sourceNames[currentDataSource] : 'Not specified';
+            document.getElementById('dataSourceSummary').textContent = currentDataSource ? sourceNames[currentDataSource] : 'URL Input';
         }
 
         function handleDragOver(e) {
@@ -2401,7 +2418,7 @@
             const dataUrl = document.getElementById('dataUrl');
             if (dataUrl) {
                 dataUrl.addEventListener('input', function() {
-                    document.getElementById('dataSourceSummary').textContent = this.value ? 'URL Input' : 'Not specified';
+                    document.getElementById('dataSourceSummary').textContent = this.value ? 'URL Input' : 'URL Input';
                 });
             }
         });
@@ -2460,6 +2477,52 @@
             }, 1500);
         }
 
+        function generateIntelligenceTemplate() {
+            const prompt = document.getElementById('intelligencePrompt').value.trim();
+            
+            if (!prompt) {
+                alert('Please enter a prompt to generate the Intelligence Template.');
+                return;
+            }
+            
+            const progressSection = document.getElementById('generationProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressPercent = document.getElementById('progressPercent');
+            
+            progressSection.style.display = 'block';
+            
+            let progress = 0;
+            
+            const interval = setInterval(() => {
+                progress += 5;
+                progressBar.style.width = progress + '%';
+                progressPercent.textContent = progress + '%';
+                
+                if (progress >= 20) document.getElementById('stepExtract').innerHTML = '<span style="color: #10b981;">✓</span> Analyzing prompt requirements';
+                if (progress >= 40) document.getElementById('stepAnalyze').innerHTML = '<span style="color: #10b981;">✓</span> Matching extraction patterns';
+                if (progress >= 60) document.getElementById('stepCorrelate').innerHTML = '<span style="color: #10b981;">✓</span> Configuring template parameters';
+                if (progress >= 80) document.getElementById('stepGenerate').innerHTML = '<span style="color: #94a3b8;">○</span> Finalizing configuration';
+                if (progress >= 100) {
+                    document.getElementById('stepGenerate').innerHTML = '<span style="color: #10b981;">✓</span> Template configured successfully';
+                    clearInterval(interval);
+                    
+                    setTimeout(() => {
+                        progressSection.style.display = 'none';
+                        document.getElementById('progressBar').style.width = '0%';
+                        document.getElementById('progressPercent').textContent = '0%';
+                        
+                        // Reset steps
+                        document.getElementById('stepExtract').innerHTML = '<span style="color: #94a3b8;">○</span> Analyzing prompt requirements';
+                        document.getElementById('stepAnalyze').innerHTML = '<span style="color: #94a3b8;">○</span> Matching extraction patterns';
+                        document.getElementById('stepCorrelate').innerHTML = '<span style="color: #94a3b8;">○</span> Configuring template parameters';
+                        document.getElementById('stepGenerate').innerHTML = '<span style="color: #94a3b8;">○</span> Finalizing configuration';
+                        
+                        alert('Intelligence Template generated and configured successfully!\n\nBased on your prompt: "' + (prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt) + '"\n\nThe template has been automatically configured and is ready for use.');
+                    }, 500);
+                }
+            }, 100);
+        }
+
         function generateIntelligence() {
             const progressSection = document.getElementById('generationProgress');
             const progressBar = document.getElementById('progressBar');
@@ -2497,7 +2560,7 @@
 
         function resetInjection() {
             if (confirm('Reset all data injection settings?')) {
-                selectedModules = ['fees'];
+                selectedModules = [];
                 currentDataSource = null;
                 
                 // Reset checkboxes
@@ -2509,14 +2572,17 @@
                 
                 // Reset inputs
                 document.getElementById('dataUrl').value = '';
-                document.getElementById('pasteText').value = '';
+                const pasteText = document.getElementById('pasteText');
+                if (pasteText) pasteText.value = '';
+                document.getElementById('requiredExtraction').value = '';
+                document.getElementById('intelligencePrompt').value = '';
                 document.getElementById('charCount').textContent = '0';
                 clearFile();
                 
                 // Reset summary
-                document.getElementById('selectedModules').textContent = 'Fees & Finance';
+                document.getElementById('selectedModules').textContent = '';
                 document.getElementById('linkedModulesSummary').textContent = 'None selected';
-                document.getElementById('dataSourceSummary').textContent = 'Not specified';
+                document.getElementById('dataSourceSummary').textContent = 'URL Input';
                 document.getElementById('dataSizeSummary').textContent = '0 KB';
                 
                 // Reset extraction preview
