@@ -652,7 +652,7 @@
         </div>
 
         <!-- Filters -->
-        <div class="filter-section">
+<!--        <div class="filter-section">
             <div class="filter-group">
                 <label class="filter-label">Priority</label>
                 <select class="filter-select" id="priorityFilter">
@@ -694,7 +694,7 @@
                 </select>
             </div>
         </div>
-
+-->
         <!-- Data Injection Section -->
         <div id="injection-section" class="section-content active">
             <div class="intro-box" style="background: #dcfce7; border-left-color: #10b981; color: #166534; margin-bottom: 24px;">
@@ -705,10 +705,60 @@
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
                 <!-- Left Column: Module Selection & Data Input -->
                 <div>
+
+                    <!-- Data Source Input -->
+                    <div class="action-card">
+                        <div class="action-header">
+                            <div class="action-title">📄 Data Source Input</div>
+                        </div>
+
+                        <!-- Tab Buttons for Data Input -->
+                        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                            <button class="nav-tab active" id="tabUrl" onclick="showDataInput('url')" style="padding: 8px 16px; font-size: 12px;">🔗 URL</button>
+                            <button class="nav-tab" id="tabFile" onclick="showDataInput('file')" style="padding: 8px 16px; font-size: 12px;">📁 Upload File</button>
+                            <button class="nav-tab" id="tabText" onclick="showDataInput('text')" style="padding: 8px 16px; font-size: 12px;">📝 Paste Text</button>
+                        </div>
+
+                        <!-- URL Input -->
+                        <div id="inputUrl" style="display: block;">
+                            <label style="font-size: 12px; color: var(--gray-500); margin-bottom: 6px; display: block;">Enter Data Source URL</label>
+                            <input type="url" id="dataUrl" placeholder="https://example.com/data/source" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px;">
+                            <p style="font-size: 11px; color: #64748b; margin-top: 8px;">Supported: APIs, JSON endpoints, CSV downloads</p>
+                        </div>
+
+                        <!-- File Upload -->
+                        <div id="inputFile" style="display: none;">
+                            <div style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 32px; text-align: center; cursor: pointer;" onclick="document.getElementById('fileInput').click();" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
+                                <div style="font-size: 36px; margin-bottom: 12px;">📂</div>
+                                <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;">Drag & drop files here or click to browse</div>
+                                <div style="font-size: 12px; color: #94a3b8;">Supported: PDF, TXT, CSV, XLSX (Max 10MB)</div>
+                                <input type="file" id="fileInput" style="display: none;" accept=".pdf,.txt,.csv,.xlsx" onchange="handleFileSelect(this)">
+                            </div>
+                            <div id="filePreview" style="display: none; margin-top: 12px; padding: 12px; background: #f1f5f9; border-radius: 8px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span id="fileIcon" style="font-size: 24px;">📄</span>
+                                    <div>
+                                        <div id="fileName" style="font-size: 13px; font-weight: 600;"></div>
+                                        <div id="fileSize" style="font-size: 11px; color: #64748b;"></div>
+                                    </div>
+                                    <button onclick="clearFile()" style="margin-left: auto; background: #fee2e2; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">✕</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Paste Text -->
+                        <div id="inputText" style="display: none;">
+                            <label style="font-size: 12px; color: var(--gray-500); margin-bottom: 6px; display: block;">Paste your data or text content</label>
+                            <textarea id="pasteText" rows="8" placeholder="Paste fee data, reports, or any text content here for analysis..." style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical;"></textarea>
+                            <p style="font-size: 11px; color: #64748b; margin-top: 8px;">Character count: <span id="charCount">0</span></p>
+                        </div>
+                    </div>
+
                     <!-- Module Selection -->
                     <div class="action-card">
                         <div class="action-header">
                             <div class="action-title">🗂️ Module Selection</div>
+                            <button class="btn btn-primary" onclick="previewExtraction()">👁️ Preview Extraction</button>
                         </div>
                         <p style="font-size: 13px; color: var(--gray-500); margin-bottom: 16px;">
                             Select modules to associate with Fees data for cross-module intelligence generation.
@@ -826,54 +876,6 @@
                             <strong>Selected Modules:</strong> <span id="selectedModules">Fees & Finance</span>
                         </div>
                     </div>
-
-                    <!-- Data Source Input -->
-                    <div class="action-card">
-                        <div class="action-header">
-                            <div class="action-title">📄 Data Source Input</div>
-                        </div>
-
-                        <!-- Tab Buttons for Data Input -->
-                        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
-                            <button class="nav-tab active" id="tabUrl" onclick="showDataInput('url')" style="padding: 8px 16px; font-size: 12px;">🔗 URL</button>
-                            <button class="nav-tab" id="tabFile" onclick="showDataInput('file')" style="padding: 8px 16px; font-size: 12px;">📁 Upload File</button>
-                            <button class="nav-tab" id="tabText" onclick="showDataInput('text')" style="padding: 8px 16px; font-size: 12px;">📝 Paste Text</button>
-                        </div>
-
-                        <!-- URL Input -->
-                        <div id="inputUrl" style="display: block;">
-                            <label style="font-size: 12px; color: var(--gray-500); margin-bottom: 6px; display: block;">Enter Data Source URL</label>
-                            <input type="url" id="dataUrl" placeholder="https://example.com/data/source" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px;">
-                            <p style="font-size: 11px; color: #64748b; margin-top: 8px;">Supported: APIs, JSON endpoints, CSV downloads</p>
-                        </div>
-
-                        <!-- File Upload -->
-                        <div id="inputFile" style="display: none;">
-                            <div style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 32px; text-align: center; cursor: pointer;" onclick="document.getElementById('fileInput').click();" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
-                                <div style="font-size: 36px; margin-bottom: 12px;">📂</div>
-                                <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;">Drag & drop files here or click to browse</div>
-                                <div style="font-size: 12px; color: #94a3b8;">Supported: PDF, TXT, CSV, XLSX (Max 10MB)</div>
-                                <input type="file" id="fileInput" style="display: none;" accept=".pdf,.txt,.csv,.xlsx" onchange="handleFileSelect(this)">
-                            </div>
-                            <div id="filePreview" style="display: none; margin-top: 12px; padding: 12px; background: #f1f5f9; border-radius: 8px;">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <span id="fileIcon" style="font-size: 24px;">📄</span>
-                                    <div>
-                                        <div id="fileName" style="font-size: 13px; font-weight: 600;"></div>
-                                        <div id="fileSize" style="font-size: 11px; color: #64748b;"></div>
-                                    </div>
-                                    <button onclick="clearFile()" style="margin-left: auto; background: #fee2e2; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">✕</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Paste Text -->
-                        <div id="inputText" style="display: none;">
-                            <label style="font-size: 12px; color: var(--gray-500); margin-bottom: 6px; display: block;">Paste your data or text content</label>
-                            <textarea id="pasteText" rows="8" placeholder="Paste fee data, reports, or any text content here for analysis..." style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical;"></textarea>
-                            <p style="font-size: 11px; color: #64748b; margin-top: 8px;">Character count: <span id="charCount">0</span></p>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Right Column: Data Preview & Processing -->
@@ -898,7 +900,30 @@
                             <div id="extractedFields" style="background: #f1f5f9; border-radius: 8px; padding: 12px; max-height: 200px; overflow-y: auto;"></div>
                         </div>
                     </div>
+                    <!-- Intelligence Generation Progress -->
+                    <div id="generationProgress" class="action-card" style="display: none; background: #eef2ff;">
+                        <div class="action-header">
+                            <div class="action-title">⚡ Generating Intelligence...</div>
+                        </div>
 
+                        <div style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
+                                <span>Processing data...</span>
+                                <span id="progressPercent">0%</span>
+                            </div>
+                            <div style="height: 8px; background: #cbd5e1; border-radius: 4px; overflow: hidden;">
+                                <div id="progressBar" style="height: 100%; background: #6366f1; width: 0%; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+
+                        <div id="processingSteps" style="font-size: 12px; color: #64748b;">
+                            <div style="padding: 6px 0;"><span style="color: #10b981;">✓</span> Data validated</div>
+                            <div style="padding: 6px 0;" id="stepExtract"><span style="color: #94a3b8;">○</span> Extracting data fields</div>
+                            <div style="padding: 6px 0;" id="stepAnalyze"><span style="color: #94a3b8;">○</span> Analyzing patterns</div>
+                            <div style="padding: 6px 0;" id="stepCorrelate"><span style="color: #94a3b8;">○</span> Cross-module correlation</div>
+                            <div style="padding: 6px 0;" id="stepGenerate"><span style="color: #94a3b8;">○</span> Generating insights</div>
+                        </div>
+                    </div>
                     <!-- Selected Data Summary -->
                     <div class="action-card">
                         <div class="action-header">
@@ -926,33 +951,7 @@
 
                         <div class="action-buttons" style="margin-top: 20px;">
                             <button class="btn btn-secondary" onclick="resetInjection()">🔄 Reset</button>
-                            <button class="btn btn-primary" onclick="previewExtraction()">👁️ Preview Extraction</button>
                             <button class="btn btn-success" onclick="generateIntelligence()" style="flex: 1;">🚀 Generate Intelligence →</button>
-                        </div>
-                    </div>
-
-                    <!-- Intelligence Generation Progress -->
-                    <div id="generationProgress" class="action-card" style="display: none; background: #eef2ff;">
-                        <div class="action-header">
-                            <div class="action-title">⚡ Generating Intelligence...</div>
-                        </div>
-
-                        <div style="margin-bottom: 16px;">
-                            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
-                                <span>Processing data...</span>
-                                <span id="progressPercent">0%</span>
-                            </div>
-                            <div style="height: 8px; background: #cbd5e1; border-radius: 4px; overflow: hidden;">
-                                <div id="progressBar" style="height: 100%; background: #6366f1; width: 0%; transition: width 0.3s;"></div>
-                            </div>
-                        </div>
-
-                        <div id="processingSteps" style="font-size: 12px; color: #64748b;">
-                            <div style="padding: 6px 0;"><span style="color: #10b981;">✓</span> Data validated</div>
-                            <div style="padding: 6px 0;" id="stepExtract"><span style="color: #94a3b8;">○</span> Extracting data fields</div>
-                            <div style="padding: 6px 0;" id="stepAnalyze"><span style="color: #94a3b8;">○</span> Analyzing patterns</div>
-                            <div style="padding: 6px 0;" id="stepCorrelate"><span style="color: #94a3b8;">○</span> Cross-module correlation</div>
-                            <div style="padding: 6px 0;" id="stepGenerate"><span style="color: #94a3b8;">○</span> Generating insights</div>
                         </div>
                     </div>
                 </div>

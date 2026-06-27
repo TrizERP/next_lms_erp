@@ -91,7 +91,7 @@ datalist {
 .profile-img {
     width: 120px; /* Increased image size */
     height: 120px;
-    border-radius: 50%;
+    /*border-radius: 50%;*/
     object-fit: cover;
     border: 3px solid #ddd;
 }
