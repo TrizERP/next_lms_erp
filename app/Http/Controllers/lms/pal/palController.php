@@ -24,6 +24,7 @@ use App\Models\lms\contentmappingtypeModel;
 use App\Models\lms\topicModel;
 use App\Models\school_setup\sub_std_mapModel;
 use App\Services\OpenAIService;
+use App\Services\PAL\Integration\PedagogySuggestedContentService;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
 use function App\Helpers\neo4jCreateNode;
@@ -1402,6 +1403,104 @@ public function incrementContentVisit(Request $request)
     
     }
 
+    public function storeMasterySuggestedContent(Request $request)
+    {
+        $student_id = session()->get('user_id');
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+
+        $masteryResults = $request->input('mastery_results', []);
+        $standard_id = $request->input('standard_id');
+        $subject_id = $request->input('subject_id');
+        $chapter_id = $request->input('chapter_id');
+
+        if (empty($masteryResults)) {
+            return response()->json(['status' => 0, 'message' => 'No mastery data provided']);
+        }
+
+        $insertedCount = 0;
+        $hasContentUserProfile = \Illuminate\Support\Facades\Schema::hasColumn('content_master', 'user_profile_name');
+
+        foreach ($masteryResults as $result) {
+            $concept_id = $result['concept_id'] ?? null;
+            $mastery_level = $result['mastery_level'] ?? 0;
+
+            if (!$concept_id) continue;
+
+            // Determine student level based on mastery
+            $studentLevel = 'medium';
+            if ($mastery_level < 40) {
+                $studentLevel = 'easy'; // Weak/Needs practice
+            } elseif ($mastery_level < 70) {
+                $studentLevel = 'medium'; // Average/Developing
+            } else {
+                $studentLevel = 'hard'; // Strong/Mastered
+            }
+
+            // Get the level ID
+            $levelMapping = DB::table('lms_mapping_type')->where('name', $studentLevel)->first();
+            if (!$levelMapping) continue;
+
+            $studentLevelId = $levelMapping->id;
+
+            // Find content for this concept and level
+            $contentList = DB::table('content_master as cm')
+                ->join('content_mapping_type as cmt', 'cmt.content_id', '=', 'cm.id')
+                ->where('cmt.mapping_value_id', $studentLevelId)
+                ->where('cm.chapter_id', $chapter_id)
+                ->when($hasContentUserProfile, function ($query) {
+                    $query->where(function ($profileQuery) {
+                        $profileQuery->whereNull('cm.user_profile_name')
+                            ->orWhereRaw("LOWER(cm.user_profile_name) != 'student'");
+                    });
+                })
+                ->where(function ($query) use ($concept_id) {
+                    // Try to match the concept to topic_id
+                    // If the concept mapping logic changes, update this condition
+                    $query->where('cm.topic_id', $concept_id)
+                          ->orWhere('cm.subtopic_id', $concept_id)
+                          ->orWhereNull('cm.topic_id')
+                          ->orWhere('cm.topic_id', '0'); 
+                })
+                ->select('cm.id')
+                ->get();
+
+            // Insert into suggested_content if not exists
+            foreach ($contentList as $content) {
+                $exists = DB::table('suggested_content')
+                    ->where('type', 'pal_content')
+                    ->where('type_id', $content->id)
+                    ->where('student_id', $student_id)
+                    ->where('chapter_id', $chapter_id)
+                    ->exists();
+
+                if (!$exists) {
+                    DB::table('suggested_content')->insert([
+                        'type' => 'pal_content',
+                        'type_id' => $content->id,
+                        'student_id' => $student_id,
+                        'student_level' => $studentLevel,
+                        'content_visited' => 0,
+                        'standard_id' => $standard_id,
+                        'subject_id' => $subject_id,
+                        'chapter_id' => $chapter_id,
+                        'sub_institute_id' => $sub_institute_id,
+                        'syear' => $syear,
+                        'created_by' => $student_id,
+                        'created_at' => now()
+                    ]);
+                    $insertedCount++;
+                }
+            }
+        }
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => "Content stored successfully",
+            'inserted' => $insertedCount
+        ]);
+    }
+
     public function suggestedContent(Request $request)
 {
     $requestedLevel = $request->input('student_level');
@@ -1531,6 +1630,43 @@ public function incrementContentVisit(Request $request)
       * @param Request $request
       * @return \Illuminate\Http\JsonResponse
       */
+    /**
+     * Get pedagogy-engine driven suggested content for a chapter.
+     */
+    public function getPedagogySuggestedContent(Request $request, PedagogySuggestedContentService $pedagogyContent)
+    {
+        $type = $request->input('type');
+        $isAjax = $request->ajax() || $type === 'AJAX';
+
+        if ($type == 'API' || $isAjax) {
+            $student_id = $request->input('user_id', session()->get('user_id'));
+            $sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
+            $syear = $request->input('syear', session()->get('syear'));
+        } else {
+            $student_id = session()->get('user_id');
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');
+        }
+
+        $result = $pedagogyContent->getSuggestions([
+            'learner_id' => (int) $student_id,
+            'chapter_id' => (int) $request->input('chapter_id'),
+            'standard_id' => (int) $request->input('standard_id'),
+            'subject_id' => (int) $request->input('subject_id'),
+            'grade_id' => $request->input('grade_id'),
+            'sub_institute_id' => (int) $sub_institute_id,
+            'syear' => $syear,
+            'student_level' => $request->input('student_level'),
+            'device_type' => $request->input('device_type', 'desktop'),
+        ]);
+
+        if ($isAjax || $type == 'API') {
+            return response()->json($result);
+        }
+
+        return is_mobile($type, 'lms/pal/suggested_content', $result, 'view');
+    }
+
      public function getSuggestedContent(Request $request)
      {
          $type = $request->input('type');
