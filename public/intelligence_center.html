@@ -1012,36 +1012,77 @@
                         </div>
                     </div>
 
-                    <!-- Selected Data Summary -->
-                    <div class="action-card">
-                        <div class="action-header">
-                            <div class="action-title">📋 Data Processing Summary</div>
+                    <!-- Brain Hierarchy Section -->
+                    <div class="action-card" style="background: linear-gradient(135deg, #1e293b 0%, #334155 100%); padding: 20px;">
+                        <div style="text-align: center; margin-bottom: 16px;">
+                            <div style="font-size: 14px; font-weight: 600; color: white;">🧠 Intelligence Layer Hierarchy</div>
                         </div>
 
-                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                            <!--<div style="background: #eef2ff; padding: 12px; border-radius: 8px;">
-                                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Primary Module</div>
-                                <div style="font-size: 13px; font-weight: 600; color: #4f46e5;">💰 Fees & Finance</div>
-                            </div>-->
-                            <div style="background: #fef3c7; padding: 12px; border-radius: 8px;">
-                                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Data Source</div>
-                                <div style="font-size: 13px; font-weight: 600; color: #92400e;" id="dataSourceSummary">URL Input</div>
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 0;">
+                            <!-- Enterprise Brain -->
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: rgba(99, 102, 241, 0.3); border-radius: 8px; border: 2px solid #6366f1; width: 100%; max-width: 200px;">
+                                <span style="font-size: 18px;">🏢</span>
+                                <span style="font-size: 12px; font-weight: 600; color: white;">Enterprise Brain</span>
                             </div>
-                            <div style="background: #f0fdf4; padding: 12px; border-radius: 8px;">
-                                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Linked Modules</div>
-                                <div style="font-size: 13px; font-weight: 600; color: #166534;" id="linkedModulesSummary">None selected</div>
+                            <div style="color: #94a3b8; font-size: 16px; margin: 2px 0;">↓</div>
+                            
+                            <!-- Company Brain -->
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: rgba(16, 185, 129, 0.2); border-radius: 8px; border: 2px solid #10b981; width: 100%; max-width: 200px;">
+                                <span style="font-size: 18px;">🏗️</span>
+                                <span style="font-size: 12px; font-weight: 600; color: white;">Company Brain</span>
                             </div>
-                            <!--
-                            <div style="background: #fce7f3; padding: 12px; border-radius: 8px;">
-                                <div style="font-size: 11px; color: #64748b; margin-bottom: 4px;">Data Size</div>
-                                <div style="font-size: 13px; font-weight: 600; color: #9d174d;" id="dataSizeSummary">0 KB</div>
-                            </div>-->
+                            <div style="color: #94a3b8; font-size: 16px; margin: 2px 0;">↓</div>
+                            
+                            <!-- People Brain -->
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: rgba(59, 130, 246, 0.2); border-radius: 8px; border: 2px solid #3b82f6; width: 100%; max-width: 200px;">
+                                <span style="font-size: 18px;">👥</span>
+                                <span style="font-size: 12px; font-weight: 600; color: white;">People Brain</span>
+                            </div>
+                            <div style="color: #94a3b8; font-size: 16px; margin: 2px 0;">↓</div>
+                            
+                            <!-- Capability Brain -->
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: rgba(245, 158, 11, 0.2); border-radius: 8px; border: 2px solid #f59e0b; width: 100%; max-width: 200px;">
+                                <span style="font-size: 18px;">⚡</span>
+                                <span style="font-size: 12px; font-weight: 600; color: white;">Capability Brain</span>
+                            </div>
+                            <div style="color: #94a3b8; font-size: 16px; margin: 2px 0;">↓</div>
+                            
+                            <!-- Learning Brain -->
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: rgba(139, 92, 246, 0.2); border-radius: 8px; border: 2px solid #8b5cf6; width: 100%; max-width: 200px;">
+                                <span style="font-size: 18px;">📚</span>
+                                <span style="font-size: 12px; font-weight: 600; color: white;">Learning Brain</span>
+                            </div>
+                            <div style="color: #94a3b8; font-size: 16px; margin: 2px 0;">↓</div>
+                            
+                            <!-- Execution Brain -->
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: rgba(236, 72, 153, 0.2); border-radius: 8px; border: 2px solid #ec4899; width: 100%; max-width: 200px;">
+                                <span style="font-size: 18px;">🚀</span>
+                                <span style="font-size: 12px; font-weight: 600; color: white;">Execution Brain</span>
+                            </div>
+                            <div style="color: #94a3b8; font-size: 16px; margin: 2px 0;">↓</div>
+                            
+                            <!-- Decision Brain -->
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: rgba(20, 184, 166, 0.2); border-radius: 8px; border: 2px solid #14b8a6; width: 100%; max-width: 200px;">
+                                <span style="font-size: 18px;">🎯</span>
+                                <span style="font-size: 12px; font-weight: 600; color: white;">Decision Brain</span>
+                            </div>
+                            <div style="color: #94a3b8; font-size: 16px; margin: 2px 0;">↓</div>
+                            
+                            <!-- Action Brain -->
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 8px 16px; background: rgba(239, 68, 68, 0.3); border-radius: 8px; border: 2px solid #ef4444; width: 100%; max-width: 200px;">
+                                <span style="font-size: 18px;">⚡</span>
+                                <span style="font-size: 12px; font-weight: 600; color: white;">Action Brain</span>
+                            </div>
                         </div>
+                        
+                        <div style="text-align: center; margin-top: 16px; padding: 10px; background: rgba(255,255,255,0.1); border-radius: 8px;">
+                            <p style="font-size: 11px; font-style: italic; color: rgba(255,255,255,0.8);">💡 Everything becomes one story.</p>
+                        </div>
+                    </div>
 
-                        <div class="action-buttons" style="margin-top: 20px;">
-                            <button class="btn btn-secondary" onclick="resetInjection()">🔄 Reset</button>
-                            <button class="btn btn-success" onclick="generateIntelligence()" style="flex: 1;">🚀 Generate Intelligence →</button>
-                        </div>
+                    <div class="action-buttons" style="margin-top: 16px;">
+                        <button class="btn btn-secondary" onclick="resetInjection()">🔄 Reset</button>
+                        <button class="btn btn-success" onclick="generateIntelligence()" style="flex: 1;">🚀 Generate Intelligence →</button>
                     </div>
                 </div>
             </div>
