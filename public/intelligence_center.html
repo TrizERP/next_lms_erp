@@ -1,0 +1,2616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Intelligence Action Center</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #a5b4fc;
+            --secondary: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --purple: #8b5cf6;
+            --pink: #ec4899;
+            --teal: #14b8a6;
+            --orange: #f97316;
+            --dark: #1e293b;
+            --gray-50: #f8fafc;
+            --gray-100: #f1f5f9;
+            --gray-200: #e2e8f0;
+            --gray-300: #cbd5e1;
+            --gray-400: #94a3b8;
+            --gray-500: #64748b;
+            --white: #ffffff;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f4ff 0%, #e0e7ff 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container { max-width: 1600px; margin: 0 auto; }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 20px;
+            padding: 30px 40px;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .header h1 { font-size: 28px; font-weight: 700; }
+        .header p { opacity: 0.9; font-size: 14px; }
+
+        .header-stats {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .header-stat {
+            background: rgba(255,255,255,0.15);
+            padding: 12px 20px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-stat-value { font-size: 20px; font-weight: 700; }
+        .header-stat-label { font-size: 11px; opacity: 0.8; text-transform: uppercase; }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: var(--white);
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            color: var(--gray-500);
+            transition: all 0.2s;
+            box-shadow: var(--shadow);
+        }
+
+        .nav-tab:hover { background: var(--gray-100); }
+        .nav-tab.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Section Titles */
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-badge {
+            background: var(--gray-100);
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--gray-500);
+        }
+
+        /* Module Integration Grid */
+        .module-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .module-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            transition: all 0.2s;
+            border-left: 4px solid var(--primary);
+            cursor: pointer;
+        }
+
+        .module-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .module-card.student { border-left-color: #10b981; }
+        .module-card.fees { border-left-color: #6366f1; }
+        .module-card.staff { border-left-color: #f59e0b; }
+        .module-card.attendance { border-left-color: #3b82f6; }
+        .module-card.timetable { border-left-color: #8b5cf6; }
+        .module-card.exam { border-left-color: #ec4899; }
+        .module-card.library { border-left-color: #14b8a6; }
+        .module-card.lms { border-left-color: #f97316; }
+        .module-card.transport { border-left-color: #06b6d4; }
+        .module-card.hostel { border-left-color: #84cc16; }
+        .module-card.inventory { border-left-color: #a855f7; }
+        .module-card.communication { border-left-color: #22c55e; }
+        .module-card.visitor { border-left-color: #64748b; }
+        .module-card.certificate { border-left-color: #eab308; }
+        .module-card.discipline { border-left-color: #ef4444; }
+        .module-card.health { border-left-color: #f472b6; }
+        .module-card.homework { border-left-color: #0ea5e9; }
+
+        .module-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .module-card h3 {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 8px;
+        }
+
+        .module-card p {
+            font-size: 12px;
+            color: var(--gray-500);
+            margin-bottom: 12px;
+        }
+
+        .module-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .module-action-btn {
+            padding: 4px 10px;
+            background: var(--gray-100);
+            border: none;
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--gray-600);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .module-action-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Action Cards */
+        .action-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .action-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .action-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .action-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .action-badge.critical { background: #fee2e2; color: #991b1b; }
+        .action-badge.high { background: #ffedd5; color: #9a3412; }
+        .action-badge.medium { background: #fef3c7; color: #92400e; }
+        .action-badge.low { background: #dcfce7; color: #166534; }
+
+        .action-description {
+            font-size: 14px;
+            color: var(--gray-600);
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+
+        .action-meta {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .action-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--gray-500);
+        }
+
+        .action-meta-item strong { color: var(--dark); }
+
+        .action-modules {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .linked-module {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            background: var(--gray-100);
+            border-radius: 8px;
+            font-size: 12px;
+            color: var(--gray-600);
+        }
+
+        .linked-module span { font-size: 14px; }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+
+        .btn-secondary { background: var(--gray-100); color: var(--gray-600); }
+        .btn-secondary:hover { background: var(--gray-200); }
+
+        .btn-success { background: var(--secondary); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+
+        /* Cross-Module Workflow */
+        .workflow-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            border: 2px solid var(--primary-light);
+        }
+
+        .workflow-steps {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin: 20px 0;
+            overflow-x: auto;
+            padding: 10px 0;
+        }
+
+        .workflow-step {
+            flex: 0 0 auto;
+            padding: 16px 20px;
+            background: var(--gray-50);
+            border-radius: 12px;
+            text-align: center;
+            min-width: 140px;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .workflow-step.active {
+            border-color: var(--primary);
+            background: #eef2ff;
+        }
+
+        .workflow-step.completed {
+            border-color: var(--secondary);
+            background: #ecfdf5;
+        }
+
+        .workflow-step-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .workflow-step-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .workflow-step-module {
+            font-size: 10px;
+            color: var(--gray-500);
+            margin-top: 4px;
+        }
+
+        .workflow-arrow {
+            color: var(--gray-400);
+            font-size: 20px;
+        }
+
+        /* Filters */
+        .filter-section {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--gray-500);
+            text-transform: uppercase;
+        }
+
+        .filter-select {
+            padding: 10px 16px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 160px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        /* Stats Summary */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--gray-500);
+            text-transform: uppercase;
+        }
+
+        .stat-card.critical .stat-value { color: var(--danger); }
+        .stat-card.high .stat-value { color: var(--warning); }
+        .stat-card.medium .stat-value { color: var(--info); }
+        .stat-card.low .stat-value { color: var(--secondary); }
+
+        /* KPI Cards */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 16px;
+            margin-bottom: 30px;
+        }
+
+        .kpi-card {
+            background: var(--white);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border-top: 4px solid var(--primary);
+        }
+
+        .kpi-card.success { border-top-color: var(--secondary); }
+        .kpi-card.warning { border-top-color: var(--warning); }
+        .kpi-card.danger { border-top-color: var(--danger); }
+
+        .kpi-icon {
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .kpi-label {
+            font-size: 12px;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .kpi-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark);
+        }
+
+        .kpi-change {
+            font-size: 12px;
+            margin-top: 8px;
+        }
+
+        .kpi-change.positive { color: var(--secondary); }
+        .kpi-change.negative { color: var(--danger); }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--gray-100);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 18px;
+        }
+
+        /* Impact Matrix */
+        .impact-matrix {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin: 20px 0;
+        }
+
+        .impact-item {
+            padding: 16px;
+            background: var(--gray-50);
+            border-radius: 12px;
+        }
+
+        .impact-item h4 {
+            font-size: 13px;
+            color: var(--gray-500);
+            margin-bottom: 8px;
+        }
+
+        .impact-item p {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        /* Dependencies */
+        .dependency-list {
+            margin: 16px 0;
+        }
+
+        .dependency-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: var(--gray-50);
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .dependency-icon { font-size: 18px; }
+        .dependency-name { flex: 1; font-size: 13px; }
+        .dependency-type {
+            font-size: 11px;
+            padding: 2px 8px;
+            background: var(--gray-200);
+            border-radius: 4px;
+            color: var(--gray-600);
+        }
+
+        /* Hidden sections */
+        .section-content { display: none; }
+        .section-content.active { display: block; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header { padding: 20px; }
+            .header h1 { font-size: 22px; }
+            .module-grid { grid-template-columns: 1fr; }
+            .action-buttons { flex-direction: column; }
+            .workflow-steps { flex-direction: column; }
+            .workflow-arrow { transform: rotate(90deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-top">
+                <div>
+                    <h1>⚡ Intelligence Action Center</h1>
+                    <p>Execute intelligent actions with cross-module integration</p>
+                </div>
+                <div class="header-stats">
+                    <div class="header-stat">
+                        <div class="header-stat-value">15</div>
+                        <div class="header-stat-label">Actions</div>
+                    </div>
+                    <div class="header-stat">
+                        <div class="header-stat-value">16</div>
+                        <div class="header-stat-label">Modules</div>
+                    </div>
+                    <div class="header-stat">
+                        <div class="header-stat-value">8</div>
+                        <div class="header-stat-label">Active Workflows</div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showSection('injection')">📥 Data Injection</button>
+            <button class="nav-tab" onclick="showSection('overview')">📊 Overview</button>
+            <button class="nav-tab" onclick="showSection('agents')">🤖 AI Agents</button>
+            <button class="nav-tab" onclick="showSection('actions')">⚡ Action Items</button>
+            <button class="nav-tab" onclick="showSection('modules')">🔗 Module Integration</button>
+            <button class="nav-tab" onclick="showSection('workflows')">📋 Cross-Module Workflows</button>
+            <button class="nav-tab" onclick="showSection('recommendations')">💡 Recommendations</button>
+        </div>
+
+        <!-- Filters -->
+<!--        <div class="filter-section">
+            <div class="filter-group">
+                <label class="filter-label">Priority</label>
+                <select class="filter-select" id="priorityFilter">
+                    <option value="all">All Priorities</option>
+                    <option value="critical">Critical</option>
+                    <option value="high">High</option>
+                    <option value="medium">Medium</option>
+                    <option value="low">Low</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Module</label>
+                <select class="filter-select" id="moduleFilter">
+                    <option value="all">All Modules</option>
+                    <option value="student">Student Management</option>
+                    <option value="fees">Fees Management</option>
+                    <option value="attendance">Attendance</option>
+                    <option value="communication">Communication</option>
+                    <option value="transport">Transport</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Status</label>
+                <select class="filter-select" id="statusFilter">
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label class="filter-label">Owner</label>
+                <select class="filter-select" id="ownerFilter">
+                    <option value="all">All Owners</option>
+                    <option value="cfo">CFO</option>
+                    <option value="finance">Finance Team</option>
+                    <option value="principal">Principal</option>
+                    <option value="admin">Admin</option>
+                </select>
+            </div>
+        </div>
+-->
+        <!-- Data Injection Section -->
+        <div id="injection-section" class="section-content active">
+            <div class="intro-box" style="background: #dcfce7; border-left-color: #10b981; color: #166534; margin-bottom: 24px;">
+                <strong>📥 Data Injection for Intelligence Generation</strong><br>
+                Select modules, provide data sources, and let the system extract and analyze data to generate actionable intelligence.
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px;">
+                <!-- Left Column: Module Selection & Data Input -->
+                <div>
+
+                    <!-- Data Source Input -->
+                    <div class="action-card">
+                        <div class="action-header">
+                            <div class="action-title">📄 Data Source Input</div>
+                        </div>
+
+                        <!-- Tab Buttons for Data Input -->
+                        <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                            <button class="nav-tab active" id="tabUrl" onclick="showDataInput('url')" style="padding: 8px 16px; font-size: 12px;">🔗 URL</button>
+                            <button class="nav-tab" id="tabFile" onclick="showDataInput('file')" style="padding: 8px 16px; font-size: 12px;">📁 Upload File</button>
+                        </div>
+
+                        <!-- URL Input -->
+                        <div id="inputUrl" style="display: block;">
+                            <label style="font-size: 12px; color: var(--gray-500); margin-bottom: 6px; display: block;">Enter Data Source URL</label>
+                            <input type="url" id="dataUrl" placeholder="https://example.com/data/source" style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px;">
+                            <p style="font-size: 11px; color: #64748b; margin-top: 8px;">Supported: APIs, JSON endpoints, CSV downloads</p>
+                        </div>
+
+                        <!-- File Upload -->
+                        <div id="inputFile" style="display: none;">
+                            <div style="border: 2px dashed #cbd5e1; border-radius: 12px; padding: 32px; text-align: center; cursor: pointer;" onclick="document.getElementById('fileInput').click();" ondrop="handleDrop(event)" ondragover="handleDragOver(event)">
+                                <div style="font-size: 36px; margin-bottom: 12px;">📂</div>
+                                <div style="font-size: 14px; color: #64748b; margin-bottom: 8px;">Drag & drop files here or click to browse</div>
+                                <div style="font-size: 12px; color: #94a3b8;">Supported: PDF, TXT, CSV, XLSX (Max 10MB)</div>
+                                <input type="file" id="fileInput" style="display: none;" accept=".pdf,.txt,.csv,.xlsx" onchange="handleFileSelect(this)">
+                            </div>
+                            <div id="filePreview" style="display: none; margin-top: 12px; padding: 12px; background: #f1f5f9; border-radius: 8px;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span id="fileIcon" style="font-size: 24px;">📄</span>
+                                    <div>
+                                        <div id="fileName" style="font-size: 13px; font-weight: 600;"></div>
+                                        <div id="fileSize" style="font-size: 11px; color: #64748b;"></div>
+                                    </div>
+                                    <button onclick="clearFile()" style="margin-left: auto; background: #fee2e2; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px;">✕</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Required Extraction Input -->
+                    <div class="action-card">
+                        <div class="action-header">
+                            <div class="action-title">🎯 Required Extraction Input</div>
+                        </div>
+                        <p style="font-size: 13px; color: var(--gray-500); margin-bottom: 16px;">
+                            Specify the details you need to extract from the data source.
+                        </p>
+                        <textarea id="requiredExtraction" rows="4" placeholder="E.g., Extract all details of provided data..." style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical;"></textarea>
+                    </div>
+
+                    <!-- Module Selection -->
+                    <div class="action-card">
+                        <div class="action-header">
+                            <div class="action-title">🧠 Intelligence Module Selection</div>
+                            <button class="btn btn-primary" onclick="previewExtraction()">👁️ Preview Extraction</button>
+                        </div>
+                        <p style="font-size: 13px; color: var(--gray-500); margin-bottom: 16px;">
+                            Select an intelligence module to configure with cross-module intelligence generation.
+                        </p>
+
+                        <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s; margin-bottom: 12px;" onclick="toggleModule(this, 'hr')">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="action-badge" style="background: rgba(99, 102, 241, 0.2); color: #6366f1;">👔 HR</span>
+                                    <input type="checkbox" class="module-checkbox" data-module="hr" style="width: 18px; height: 18px; accent-color: #10b981;">
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; padding: 8px; background: #f1f5f9; border-radius: 8px;">
+                                <span style="padding: 4px 8px; background: #eef2ff; border-radius: 4px; font-size: 11px;">👤 Employee</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dcfce7; border-radius: 4px; font-size: 11px;">⚡ Capability</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #fef3c7; border-radius: 4px; font-size: 11px;">📉 Gap</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #f3e8ff; border-radius: 4px; font-size: 11px;">📚 Learning</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dbeafe; border-radius: 4px; font-size: 11px;">💡 Recommendation</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dcfce7; border-radius: 4px; font-size: 11px;">✅ Action</span>
+                            </div>
+                        </div>
+                        <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s; margin-bottom: 12px;" onclick="toggleModule(this, 'sales')">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="action-badge" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">📈 Performance Sales</span>
+                                    <input type="checkbox" class="module-checkbox" data-module="sales" style="width: 18px; height: 18px; accent-color: #10b981;">
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; padding: 8px; background: #f1f5f9; border-radius: 8px;">
+                                <span style="padding: 4px 8px; background: #fce7f3; border-radius: 4px; font-size: 11px;">🎯 Lead</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #fef3c7; border-radius: 4px; font-size: 11px;">💭 Intent</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #eef2ff; border-radius: 4px; font-size: 11px;">🔮 Prediction</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dbeafe; border-radius: 4px; font-size: 11px;">💡 Recommendation</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dcfce7; border-radius: 4px; font-size: 11px;">✅ Action</span>
+                            </div>
+                        </div>
+                        <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s; margin-bottom: 12px;" onclick="toggleModule(this, 'revenue')">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="action-badge" style="background: rgba(20, 184, 166, 0.2); color: #14b8a6;">💰 Revenue</span>
+                                    <input type="checkbox" class="module-checkbox" data-module="revenue" style="width: 18px; height: 18px; accent-color: #10b981;">
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; padding: 8px; background: #f1f5f9; border-radius: 8px;">
+                                <span style="padding: 4px 8px; background: #ccfbf1; border-radius: 4px; font-size: 11px;">⚙️ Machine</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #fee2e2; border-radius: 4px; font-size: 11px;">⚠️ Failure Risk</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #eef2ff; border-radius: 4px; font-size: 11px;">🔮 Prediction</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dbeafe; border-radius: 4px; font-size: 11px;">💡 Recommendation</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #fef3c7; border-radius: 4px; font-size: 11px;">🔧 Maintenance Action</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dcfce7; border-radius: 4px; font-size: 11px;">📤 Output</span>
+                            </div>
+                        </div>
+                        <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s;" onclick="toggleModule(this, 'manufacturing')">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <span class="action-badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;">🏭 Manufacturing</span>
+                                    <input type="checkbox" class="module-checkbox" data-module="manufacturing" style="width: 18px; height: 18px; accent-color: #10b981;">
+                                </div>
+                            </div>
+                            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; padding: 8px; background: #f1f5f9; border-radius: 8px;">
+                                <span style="padding: 4px 8px; background: #ccfbf1; border-radius: 4px; font-size: 11px;">⚙️ Machine</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #fee2e2; border-radius: 4px; font-size: 11px;">⚠️ Failure Risk</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #eef2ff; border-radius: 4px; font-size: 11px;">🔮 Prediction</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dbeafe; border-radius: 4px; font-size: 11px;">💡 Recommendation</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #fef3c7; border-radius: 4px; font-size: 11px;">🔧 Maintenance Action</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dcfce7; border-radius: 4px; font-size: 11px;">📤 Output</span>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 16px; padding: 12px; background: #fef3c7; border-radius: 8px; font-size: 12px; color: #92400e;">
+                            <strong>Selected Modules:</strong> <span id="selectedModules"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Data Preview & Processing -->
+                <div>
+                    <!-- Data Extraction Preview -->
+                    <div class="action-card">
+                        <div class="action-header">
+                            <div class="action-title">🔍 Extracted Data Preview</div>
+                            <span class="action-badge" style="background: #fef3c7; color: #92400e;" id="extractionStatus">Waiting for data...</span>
+                        </div>
+
+                        <div id="extractionPreview" style="background: #f8fafc; border-radius: 8px; padding: 16px; min-height: 200px; font-size: 12px; color: #64748b;">
+                            <div style="text-align: center; padding: 40px 20px;">
+                                <div style="font-size: 48px; margin-bottom: 12px; opacity: 0.5;">📊</div>
+                                <div style="font-size: 14px; margin-bottom: 8px;">No data loaded</div>
+                                <div style="font-size: 12px;">Provide a data source to see extraction preview</div>
+                            </div>
+                        </div>
+
+                        <div id="extractedData" style="display: none;">
+                            <h4 style="font-size: 13px; margin: 16px 0 12px;">Extracted Fields:</h4>
+                            <div id="extractedFields" style="background: #f1f5f9; border-radius: 8px; padding: 12px; max-height: 200px; overflow-y: auto;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Give Prompt Required Intelligence -->
+                    <div class="action-card">
+                        <div class="action-header">
+                            <div class="action-title">🧠 Give Prompt Required Intelligence</div>
+                        </div>
+                        <p style="font-size: 13px; color: var(--gray-500); margin-bottom: 16px;">
+                            Enter a prompt to automatically generate and configure the required Intelligence Template based on the extracted data.
+                        </p>
+                        <textarea id="intelligencePrompt" rows="5" placeholder="E.g., Generate a analysis template that identifies intelligence and suggests personalized strategies..." style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical;"></textarea>
+                        <!--<div class="action-buttons" style="margin-top: 16px;">
+                            <button class="btn btn-primary" onclick="generateIntelligenceTemplate()" style="flex: 1;">✨ Generate & Configure Template</button>
+                        </div>-->
+                    </div>
+
+                    <!-- Intelligence Generation Progress -->
+                    <div id="generationProgress" class="action-card" style="display: none; background: #eef2ff;">
+                        <div class="action-header">
+                            <div class="action-title">⚡ Generating Intelligence Template...</div>
+                        </div>
+
+                        <div style="margin-bottom: 16px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
+                                <span>Processing template...</span>
+                                <span id="progressPercent">0%</span>
+                            </div>
+                            <div style="height: 8px; background: #cbd5e1; border-radius: 4px; overflow: hidden;">
+                                <div id="progressBar" style="height: 100%; background: #6366f1; width: 0%; transition: width 0.3s;"></div>
+                            </div>
+                        </div>
+
+                        <div id="processingSteps" style="font-size: 12px; color: #64748b;">
+                            <div style="padding: 6px 0;"><span style="color: #10b981;">✓</span> Data validated</div>
+                            <div style="padding: 6px 0;" id="stepExtract"><span style="color: #94a3b8;">○</span> Extracting data fields</div>
+                            <div style="padding: 6px 0;" id="stepAnalyze"><span style="color: #94a3b8;">○</span> Analyzing patterns</div>
+                            <div style="padding: 6px 0;" id="stepCorrelate"><span style="color: #94a3b8;">○</span> Cross-module correlation</div>
+                            <div style="padding: 6px 0;" id="stepGenerate"><span style="color: #94a3b8;">○</span> Generating insights</div>
+                        </div>
+                    </div>
+
+                    <!-- Brain Hierarchy Section -->
+                    <div class="action-card" style="padding: 20px;">
+                        <div style="text-align: center; margin-bottom: 16px;">
+                            <div style="font-size: 14px; font-weight: 600;">🧠 Intelligence Layer Hierarchy</div>
+                        </div>
+
+                        <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px;">
+                            <!-- Enterprise Brain -->
+                            <div style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(99, 102, 241, 0.3); border-radius: 8px; border: 2px solid #6366f1;">
+                                <span style="font-size: 18px;">🏢</span>
+                                <span style="font-size: 11px; font-weight: 600;">Enterprise Brain</span>
+                            </div>
+                            <div style="color: #94a3b8; font-size: 20px;">→</div>
+                            
+                            <!-- Company Brain -->
+                            <div style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(16, 185, 129, 0.2); border-radius: 8px; border: 2px solid #10b981;">
+                                <span style="font-size: 18px;">🏗️</span>
+                                <span style="font-size: 11px; font-weight: 600;">Company Brain</span>
+                            </div>
+                            <div style="color: #94a3b8; font-size: 20px;">→</div>
+                            
+                            <!-- People Brain -->
+                            <div style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(59, 130, 246, 0.2); border-radius: 8px; border: 2px solid #3b82f6;">
+                                <span style="font-size: 18px;">👥</span>
+                                <span style="font-size: 11px; font-weight: 600;">People Brain</span>
+                            </div>
+                            <div style="color: #94a3b8; font-size: 20px;">→</div>
+                            
+                            <!-- Capability Brain -->
+                            <div style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(245, 158, 11, 0.2); border-radius: 8px; border: 2px solid #f59e0b;">
+                                <span style="font-size: 18px;">⚡</span>
+                                <span style="font-size: 11px; font-weight: 600;">Capability Brain</span>
+                            </div>
+                            <div style="color: #94a3b8; font-size: 20px;">→</div>
+                            
+                            <!-- Learning Brain -->
+                            <div style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(139, 92, 246, 0.2); border-radius: 8px; border: 2px solid #8b5cf6;">
+                                <span style="font-size: 18px;">📚</span>
+                                <span style="font-size: 11px; font-weight: 600;">Learning Brain</span>
+                            </div>
+                            <div style="color: #94a3b8; font-size: 20px;">→</div>
+                            
+                            <!-- Execution Brain -->
+                            <div style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(236, 72, 153, 0.2); border-radius: 8px; border: 2px solid #ec4899;">
+                                <span style="font-size: 18px;">🚀</span>
+                                <span style="font-size: 11px; font-weight: 600;">Execution Brain</span>
+                            </div>
+                            <div style="color: #94a3b8; font-size: 20px;">→</div>
+                            
+                            <!-- Decision Brain -->
+                            <div style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(20, 184, 166, 0.2); border-radius: 8px; border: 2px solid #14b8a6;">
+                                <span style="font-size: 18px;">🎯</span>
+                                <span style="font-size: 11px; font-weight: 600;">Decision Brain</span>
+                            </div>
+                            <div style="color: #94a3b8; font-size: 20px;">→</div>
+                            
+                            <!-- Action Brain -->
+                            <div style="display: flex; align-items: center; gap: 8px; padding: 10px 14px; background: rgba(239, 68, 68, 0.3); border-radius: 8px; border: 2px solid #ef4444;">
+                                <span style="font-size: 18px;">⚡</span>
+                                <span style="font-size: 11px; font-weight: 600;">Action Brain</span>
+                            </div>
+                        </div>
+                        
+                        <div style="text-align: center; margin-top: 16px; padding: 10px;border-radius: 8px;">
+                            <p style="font-size: 11px; font-style: italic;">💡 Everything becomes one story.</p>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons" style="margin-top: 16px;">
+                        <button class="btn btn-secondary" onclick="resetInjection()">🔄 Reset</button>
+                        <button class="btn btn-success" onclick="generateIntelligence()" style="flex: 1;">🚀 Generate Intelligence →</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overview Section -->
+        <div id="overview-section" class="section-content">
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon">💰</div>
+                    <div class="kpi-label">Total Revenue MTD</div>
+                    <div class="kpi-value">₹12.8L</div>
+                    <div class="kpi-change positive">↑ 18.5% vs last month</div>
+                </div>
+                <div class="kpi-card success">
+                    <div class="kpi-icon">✅</div>
+                    <div class="kpi-label">Collection Rate</div>
+                    <div class="kpi-value">87.5%</div>
+                    <div class="kpi-change positive">↑ 5.2% improvement</div>
+                </div>
+                <div class="kpi-card warning">
+                    <div class="kpi-icon">⏳</div>
+                    <div class="kpi-label">Outstanding</div>
+                    <div class="kpi-value">₹4.2L</div>
+                    <div class="kpi-change negative">↑ 12 students added</div>
+                </div>
+                <div class="kpi-card danger">
+                    <div class="kpi-icon">⚠️</div>
+                    <div class="kpi-label">Defaulters</div>
+                    <div class="kpi-value">47</div>
+                    <div class="kpi-change negative">Requires immediate action</div>
+                </div>
+            </div>
+
+            <!-- Stats Summary -->
+            <h2 class="section-title">Action Summary by Priority</h2>
+            <div class="stats-grid">
+                <div class="stat-card critical">
+                    <div class="stat-value">2</div>
+                    <div class="stat-label">Critical Actions</div>
+                </div>
+                <div class="stat-card high">
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">High Priority</div>
+                </div>
+                <div class="stat-card medium">
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">Medium Priority</div>
+                </div>
+                <div class="stat-card low">
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Low/Backlog</div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <h2 class="section-title">Quick Execute Actions</h2>
+            <div class="module-grid">
+                <div class="module-card fees" onclick="executeAction('view-defaulters')">
+                    <div class="module-icon" style="background: #eef2ff;">👥</div>
+                    <h3>View Defaulters List</h3>
+                    <p>Access comprehensive list of students with outstanding fees</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn">📋 View List</button>
+                        <button class="module-action-btn">📊 Analytics</button>
+                        <button class="module-action-btn">📧 Notify</button>
+                    </div>
+                </div>
+
+                <div class="module-card communication" onclick="executeAction('send-reminders')">
+                    <div class="module-icon" style="background: #dcfce7;">📱</div>
+                    <h3>Send Payment Reminders</h3>
+                    <p>Automated SMS/Email reminders to parents with pending fees</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn">📱 SMS All</button>
+                        <button class="module-action-btn">📧 Email All</button>
+                        <button class="module-action-btn">⏰ Schedule</button>
+                    </div>
+                </div>
+
+                <div class="module-card student" onclick="executeAction('export-report')">
+                    <div class="module-icon" style="background: #fef3c7;">📥</div>
+                    <h3>Export Collection Report</h3>
+                    <p>Generate comprehensive fee collection reports for review</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn">📊 PDF</button>
+                        <button class="module-action-btn">📗 Excel</button>
+                        <button class="module-action-btn">📑 Summary</button>
+                    </div>
+                </div>
+
+                <div class="module-card transport" onclick="executeAction('transport-fee')">
+                    <div class="module-icon" style="background: #ecfeff;">🚌</div>
+                    <h3>Transport Fee Review</h3>
+                    <p>Analyze transport fee collection and outstanding</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn">📍 Routes</button>
+                        <button class="module-action-btn">👤 Students</button>
+                        <button class="module-action-btn">💵 Pending</button>
+                    </div>
+                </div>
+
+                <div class="module-card attendance" onclick="executeAction('attendance-correlation')">
+                    <div class="module-icon" style="background: #f3e8ff;">📈</div>
+                    <h3>Attendance Correlation</h3>
+                    <p>Analyze payment behavior vs attendance patterns</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn">📊 Analyze</button>
+                        <button class="module-action-btn">🎯 Insights</button>
+                    </div>
+                </div>
+
+                <div class="module-card student" onclick="executeAction('student-profile')">
+                    <div class="module-icon" style="background: #ffe4e6;">🎓</div>
+                    <h3>Student Financial Profile</h3>
+                    <p>View detailed payment history and risk assessment</p>
+                    <div class="module-actions">
+                        <button class="module-action-btn">🔍 Search</button>
+                        <button class="module-action-btn">📋 All</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Agents Section -->
+        <div id="agents-section" class="section-content">
+            <div class="intro-box" style="background: #eef2ff; border-left-color: #6366f1; color: #3730a3; margin-bottom: 24px;">
+                <strong>🤖 Agentic AI for Fees & Finance Module</strong><br>
+                Autonomous AI agents built on ScholarClone's Fees Collection, NACH, Online Payment, Fee Circular, and Petty Cash sub-modules. Each agent operates autonomously — monitoring, analyzing, and acting without manual intervention.
+            </div>
+
+            <!-- Agent F-01 -->
+            <div class="action-card" style="border-left: 4px solid #ef4444;">
+                <div class="action-header">
+                    <div class="action-title">🤖 F-01: Autonomous Fees Defaulter Detection & Escalating Reminder Agent</div>
+                    <div style="display: flex; gap: 8px;">
+                        <span class="action-badge critical">High Priority</span>
+                        <span class="action-badge" style="background: #dcfce7; color: #166534;">● Running</span>
+                    </div>
+                </div>
+                <div class="action-description">
+                    <strong>Problem:</strong> School accounts staff manually identifies overdue fee accounts each month, then manually sends SMS/email reminders. With 500-2000+ students, this creates a 2-3 day workload each cycle, and late reminders result in cash flow issues.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Build:</strong> 2 Sprints</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Accounts Team</div>
+                    <div class="action-meta-item">⏱️ <strong>Schedule:</strong> Nightly 02:00 AM</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> +15% Collection</div>
+                </div>
+                
+                <!-- Workflow -->
+                <h4 style="font-size: 14px; margin: 20px 0 12px;">⚙️ Autonomous Workflow</h4>
+                <div style="display: flex; gap: 8px; overflow-x: auto; padding: 12px 0; margin-bottom: 16px;">
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: #dcfce7; border-radius: 8px; text-align: center; border: 2px solid #10b981;">
+                        <div style="font-size: 18px; margin-bottom: 4px;">✓</div>
+                        <div style="font-size: 11px; font-weight: 600;">Nightly Scan</div>
+                        <div style="font-size: 10px; color: #64748b;">All fee records</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: #dcfce7; border-radius: 8px; text-align: center; border: 2px solid #10b981;">
+                        <div style="font-size: 18px; margin-bottom: 4px;">✓</div>
+                        <div style="font-size: 11px; font-weight: 600;">Classification</div>
+                        <div style="font-size: 10px; color: #64748b;">Green/Orange/Critical</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: #eef2ff; border-radius: 8px; text-align: center; border: 2px solid #6366f1;">
+                        <div style="font-size: 18px; margin-bottom: 4px;">2</div>
+                        <div style="font-size: 11px; font-weight: 600;">Reminders</div>
+                        <div style="font-size: 10px; color: #64748b;">SMS/Email/Push</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: var(--gray-100); border-radius: 8px; text-align: center; border: 2px solid var(--gray-300);">
+                        <div style="font-size: 18px; margin-bottom: 4px;">3</div>
+                        <div style="font-size: 11px; font-weight: 600;">Fine Calc</div>
+                        <div style="font-size: 10px; color: #64748b;">Auto-apply</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: var(--gray-100); border-radius: 8px; text-align: center; border: 2px solid var(--gray-300);">
+                        <div style="font-size: 18px; margin-bottom: 4px;">4</div>
+                        <div style="font-size: 11px; font-weight: 600;">Escalation</div>
+                        <div style="font-size: 10px; color: #64748b;">Admin flagging</div>
+                    </div>
+                </div>
+
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Status Report</div>
+                    <div class="linked-module"><span>📋</span> Fees Late Master</div>
+                    <div class="linked-module"><span>👥</span> Student Master</div>
+                    <div class="linked-module"><span>📱</span> SMS/Email API</div>
+                    <div class="linked-module"><span>📅</span> Academic Calendar</div>
+                </div>
+
+                <h4 style="font-size: 13px; margin: 16px 0 12px;">📊 Expected KPIs</h4>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+                    <div style="background: #dcfce7; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #166534;">+15%</div>
+                        <div style="font-size: 11px; color: #64748b;">Collection Rate</div>
+                    </div>
+                    <div style="background: #eef2ff; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #4f46e5;">-3hrs</div>
+                        <div style="font-size: 11px; color: #64748b;">Staff Time/Week</div>
+                    </div>
+                    <div style="background: #fef3c7; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #92400e;">+25%</div>
+                        <div style="font-size: 11px; color: #64748b;">Cash Predictability</div>
+                    </div>
+                    <div style="background: #fee2e2; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #991b1b;">-80%</div>
+                        <div style="font-size: 11px; color: #64748b;">Fine Disputes</div>
+                    </div>
+                </div>
+
+                <div style="background: #fef3c7; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 12px;">
+                    <strong style="color: #92400e;">⚠️ RISK:</strong> <span style="color: #78350f;">Incorrect overdue classification due to data sync delays</span>
+                    <br><strong style="color: #92400e;">Mitigation:</strong> <span style="color: #78350f;">Implement 24-hour reconciliation buffer before nightly scan</span>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeAgent('F-01', 'scan')">▶️ Run Manual Scan</button>
+                    <button class="btn btn-success" onclick="executeAgent('F-01', 'configure')">⚙️ Configure</button>
+                    <button class="btn btn-secondary" onclick="executeAgent('F-01', 'report')">📊 View Report</button>
+                    <button class="btn btn-secondary" onclick="executeAgent('F-01', 'logs')">📜 View Logs</button>
+                </div>
+            </div>
+
+            <!-- Agent F-02 -->
+            <div class="action-card" style="border-left: 4px solid #8b5cf6;">
+                <div class="action-header">
+                    <div class="action-title">📋 F-02: Intelligent Fee Structure Recommendation & Auto-Circular Generation Agent</div>
+                    <div style="display: flex; gap: 8px;">
+                        <span class="action-badge high">High Priority</span>
+                        <span class="action-badge" style="background: #fef3c7; color: #92400e;">○ Standby</span>
+                    </div>
+                </div>
+                <div class="action-description">
+                    <strong>Problem:</strong> At the start of each academic year, admin staff manually creates fee structures per standard/quota, generates fee circulars, and distributes them. This process takes 3-5 days and is error-prone, with wrong amounts sometimes sent to parents.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Build:</strong> 3 Sprints</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Admin Team</div>
+                    <div class="action-meta-item">⏱️ <strong>Trigger:</strong> Academic Year Rollover</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> 5 days → 2 hrs</div>
+                </div>
+                
+                <!-- Workflow -->
+                <h4 style="font-size: 14px; margin: 20px 0 12px;">⚙️ Autonomous Workflow</h4>
+                <div style="display: flex; gap: 8px; overflow-x: auto; padding: 12px 0; margin-bottom: 16px;">
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: #eef2ff; border-radius: 8px; text-align: center; border: 2px solid #6366f1;">
+                        <div style="font-size: 18px; margin-bottom: 4px;">1</div>
+                        <div style="font-size: 11px; font-weight: 600;">Historical Analysis</div>
+                        <div style="font-size: 10px; color: #64748b;">Read 3 years data</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: var(--gray-100); border-radius: 8px; text-align: center; border: 2px solid var(--gray-300);">
+                        <div style="font-size: 18px; margin-bottom: 4px;">2</div>
+                        <div style="font-size: 11px; font-weight: 600;">Recommendation</div>
+                        <div style="font-size: 10px; color: #64748b;">Generate drafts</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: var(--gray-100); border-radius: 8px; text-align: center; border: 2px solid var(--gray-300);">
+                        <div style="font-size: 18px; margin-bottom: 4px;">3</div>
+                        <div style="font-size: 11px; font-weight: 600;">Admin Approval</div>
+                        <div style="font-size: 10px; color: #64748b;">Review & approve</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: var(--gray-100); border-radius: 8px; text-align: center; border: 2px solid var(--gray-300);">
+                        <div style="font-size: 18px; margin-bottom: 4px;">4</div>
+                        <div style="font-size: 11px; font-weight: 600;">Distribution</div>
+                        <div style="font-size: 10px; color: #64748b;">Bulk SMS/Email</div>
+                    </div>
+                </div>
+
+                <div class="action-modules">
+                    <div class="linked-module"><span>📊</span> Historical Fees Break-off</div>
+                    <div class="linked-module"><span>💰</span> Fees Collection Reports</div>
+                    <div class="linked-module"><span>📄</span> Fee Circular Master</div>
+                    <div class="linked-module"><span>👥</span> Student Standard Mapping</div>
+                    <div class="linked-module"><span>🏦</span> Bank Master</div>
+                </div>
+
+                <h4 style="font-size: 13px; margin: 16px 0 12px;">📊 Expected KPIs</h4>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+                    <div style="background: #dcfce7; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #166534;">5d→2hrs</div>
+                        <div style="font-size: 11px; color: #64748b;">Process Time</div>
+                    </div>
+                    <div style="background: #eef2ff; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #4f46e5;">-95%</div>
+                        <div style="font-size: 11px; color: #64748b;">Error Rate</div>
+                    </div>
+                    <div style="background: #fef3c7; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #92400e;">+20%</div>
+                        <div style="font-size: 11px; color: #64748b;">Parent Satisfaction</div>
+                    </div>
+                    <div style="background: #ccfbf1; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #0f766e;">+30%</div>
+                        <div style="font-size: 11px; color: #64748b;">Timely Submissions</div>
+                    </div>
+                </div>
+
+                <div style="background: #fef3c7; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 12px;">
+                    <strong style="color: #92400e;">⚠️ RISK:</strong> <span style="color: #78350f;">Incorrect fee amounts distributed to parents</span>
+                    <br><strong style="color: #92400e;">Mitigation:</strong> <span style="color: #78350f;">Mandatory 2-step approval: auto-generation → admin review → auto-distribution</span>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeAgent('F-02', 'trigger')">📋 Trigger Review</button>
+                    <button class="btn btn-success" onclick="executeAgent('F-02', 'preview')">👁️ Preview Circular</button>
+                    <button class="btn btn-secondary" onclick="executeAgent('F-02', 'configure')">⚙️ Configure Templates</button>
+                </div>
+            </div>
+
+            <!-- Agent F-03 -->
+            <div class="action-card" style="border-left: 4px solid #0f766e;">
+                <div class="action-header">
+                    <div class="action-title">📈 F-03: Predictive Fee Collection Forecasting & Cash Flow Intelligence Agent</div>
+                    <div style="display: flex; gap: 8px;">
+                        <span class="action-badge high">High Priority</span>
+                        <span class="action-badge" style="background: #dcfce7; color: #166534;">● Running</span>
+                    </div>
+                </div>
+                <div class="action-description">
+                    <strong>Problem:</strong> School management lacks early visibility into monthly/quarterly fee collection projections. Decisions about vendor payments, salary disbursals, and capital expenditures are made without cash flow data, leading to financial stress in low-collection months.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Build:</strong> 3 Sprints</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> CFO/Finance</div>
+                    <div class="action-meta-item">⏱️ <strong>Schedule:</strong> Weekly (Monday 09:00 AM)</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> +40% Predictability</div>
+                </div>
+                
+                <!-- Workflow -->
+                <h4 style="font-size: 14px; margin: 20px 0 12px;">⚙️ Autonomous Workflow</h4>
+                <div style="display: flex; gap: 8px; overflow-x: auto; padding: 12px 0; margin-bottom: 16px;">
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: #dcfce7; border-radius: 8px; text-align: center; border: 2px solid #10b981;">
+                        <div style="font-size: 18px; margin-bottom: 4px;">✓</div>
+                        <div style="font-size: 11px; font-weight: 600;">Weekly Data Pull</div>
+                        <div style="font-size: 10px; color: #64748b;">Mon 09:00 AM</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: #dcfce7; border-radius: 8px; text-align: center; border: 2px solid #10b981;">
+                        <div style="font-size: 18px; margin-bottom: 4px;">✓</div>
+                        <div style="font-size: 11px; font-weight: 600;">Pattern Analysis</div>
+                        <div style="font-size: 10px; color: #64748b;">Historical + Seasonal</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: #eef2ff; border-radius: 8px; text-align: center; border: 2px solid #6366f1;">
+                        <div style="font-size: 18px; margin-bottom: 4px;">3</div>
+                        <div style="font-size: 11px; font-weight: 600;">Forecast Gen</div>
+                        <div style="font-size: 10px; color: #64748b;">30/60/90 day</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: var(--gray-100); border-radius: 8px; text-align: center; border: 2px solid var(--gray-300);">
+                        <div style="font-size: 18px; margin-bottom: 4px;">4</div>
+                        <div style="font-size: 11px; font-weight: 600;">Risk ID</div>
+                        <div style="font-size: 10px; color: #64748b;">Defaulter cohorts</div>
+                    </div>
+                    <div style="color: #94a3b8; font-size: 20px; align-self: center;">→</div>
+                    <div style="flex: 0 0 auto; min-width: 120px; padding: 12px; background: var(--gray-100); border-radius: 8px; text-align: center; border: 2px solid var(--gray-300);">
+                        <div style="font-size: 18px; margin-bottom: 4px;">5</div>
+                        <div style="font-size: 11px; font-weight: 600;">Brief Publication</div>
+                        <div style="font-size: 10px; color: #64748b;">Mgmt Dashboard</div>
+                    </div>
+                </div>
+
+                <div class="action-modules">
+                    <div class="linked-module"><span>📊</span> Fees Monthly Report</div>
+                    <div class="linked-module"><span>💰</span> Fees Status Report</div>
+                    <div class="linked-module"><span>🏦</span> NACH History</div>
+                    <div class="linked-module"><span>📅</span> Academic Calendar</div>
+                    <div class="linked-module"><span>👥</span> Admission Count</div>
+                </div>
+
+                <h4 style="font-size: 13px; margin: 16px 0 12px;">📊 Expected KPIs</h4>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 16px;">
+                    <div style="background: #dcfce7; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #166534;">+40%</div>
+                        <div style="font-size: 11px; color: #64748b;">Cash Predictability</div>
+                    </div>
+                    <div style="background: #eef2ff; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #4f46e5;">-90%</div>
+                        <div style="font-size: 11px; color: #64748b;">Late Vendor Payments</div>
+                    </div>
+                    <div style="background: #fef3c7; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #92400e;">+50%</div>
+                        <div style="font-size: 11px; color: #64748b;">Decision Confidence</div>
+                    </div>
+                    <div style="background: #ccfbf1; padding: 12px; border-radius: 8px; text-align: center;">
+                        <div style="font-size: 20px; font-weight: 700; color: #0f766e;">-60%</div>
+                        <div style="font-size: 11px; color: #64748b;">Overdraft Usage</div>
+                    </div>
+                </div>
+
+                <!-- Live Monitor -->
+                <h4 style="font-size: 13px; margin: 16px 0 12px;">📡 Last Forecast (22 Jun 2026)</h4>
+                <div style="background: #f1f5f9; padding: 12px; border-radius: 8px; margin-bottom: 16px;">
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center;">
+                        <div>
+                            <div style="font-size: 18px; font-weight: 700; color: #10b981;">₹15.2L</div>
+                            <div style="font-size: 11px; color: #64748b;">Next 30 Days</div>
+                            <div style="font-size: 10px; color: #10b981;">High Confidence: 92%</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 18px; font-weight: 700; color: #6366f1;">₹42.5L</div>
+                            <div style="font-size: 11px; color: #64748b;">Next 90 Days</div>
+                            <div style="font-size: 10px; color: #6366f1;">Med Confidence: 85%</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 18px; font-weight: 700; color: #f59e0b;">23</div>
+                            <div style="font-size: 11px; color: #64748b;">High-Risk Accounts</div>
+                            <div style="font-size: 10px; color: #f59e0b;">Flagged for Intervention</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: #fef3c7; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 12px;">
+                    <strong style="color: #92400e;">⚠️ RISK:</strong> <span style="color: #78350f;">Forecast inaccuracy due to unprecedented events (pandemics, natural disasters)</span>
+                    <br><strong style="color: #92400e;">Mitigation:</strong> <span style="color: #78350f;">Include scenario planning with confidence intervals; flag low-confidence forecasts for human review</span>
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeAgent('F-03', 'forecast')">📈 Generate Forecast</button>
+                    <button class="btn btn-success" onclick="executeAgent('F-03', 'brief')">📄 View Brief</button>
+                    <button class="btn btn-secondary" onclick="executeAgent('F-03', 'configure')">⚙️ Configure</button>
+                    <button class="btn btn-secondary" onclick="executeAgent('F-03', 'history')">📜 Forecast History</button>
+                </div>
+            </div>
+
+            <!-- Implementation Roadmap -->
+            <div class="action-card" style="background: #eef2ff; border-left: 4px solid #6366f1;">
+                <div class="action-header">
+                    <div class="action-title">🗺️ Implementation Roadmap</div>
+                </div>
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+                    <div style="background: white; padding: 16px; border-radius: 8px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #4f46e5; margin-bottom: 8px;">Phase 1 (Sprint 1-2)</div>
+                        <div style="font-size: 13px; margin-bottom: 12px;">Quick Wins</div>
+                        <div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">Delivers immediate ROI with minimal infrastructure.</div>
+                        <div style="font-size: 11px; font-weight: 600; color: #166534;">✅ F-01: Defaulter Agent</div>
+                    </div>
+                    <div style="background: white; padding: 16px; border-radius: 8px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #4f46e5; margin-bottom: 8px;">Phase 2 (Sprint 3-6)</div>
+                        <div style="font-size: 13px; margin-bottom: 12px;">Core Intelligence</div>
+                        <div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">Builds predictive capabilities with LLM integration.</div>
+                        <div style="font-size: 11px; font-weight: 600; color: #0f766e;">⏳ F-02: Fee Structure, F-03: Forecasting</div>
+                    </div>
+                    <div style="background: white; padding: 16px; border-radius: 8px;">
+                        <div style="font-size: 14px; font-weight: 600; color: #4f46e5; margin-bottom: 8px;">Phase 3 (Sprint 7-10)</div>
+                        <div style="font-size: 13px; margin-bottom: 12px;">Advanced Automation</div>
+                        <div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">Complete automation with bank API integration.</div>
+                        <div style="font-size: 11px; font-weight: 600; color: #64748b;">📋 NACH, Refund, Sibling Agents</div>
+                    </div>
+                </div>
+
+                <div style="background: #fef3c7; padding: 12px; border-radius: 8px; margin-top: 16px; font-size: 12px;">
+                    <strong style="color: #92400e;">📋 Data Foundation Requirements:</strong>
+                    <span style="color: #78350f;">All phases require SMS API + Email SMTP configured, mobile push notification service, and role-based access control audit. Phase 2+ requires data anonymization pipeline and vendor DPA compliance with DPDP Act 2023.</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions Section -->
+        <div id="actions-section" class="section-content">
+            <h2 class="section-title">Intelligence Action Items</h2>
+            
+            <!-- Action Card 1 -->
+            <div class="action-card" data-priority="critical" data-modules="fees,student,communication">
+                <div class="action-header">
+                    <div class="action-title">🔴 Critical: Investigate Duplicate Cancellation</div>
+                    <span class="action-badge critical">P1 - Critical</span>
+                </div>
+                <div class="action-description">
+                    Receipt #49 was cancelled 3 times resulting in ₹43,500 discrepancy. This requires immediate audit trail verification and process correction.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 25 Jun 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Accounts Head</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> Low</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> High</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>👥</span> Student Management</div>
+                    <div class="linked-module"><span>📱</span> Communication</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeCrossModule('audit-cancellation')">🔍 Start Audit</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(1)">📋 View Details</button>
+                    <button class="btn btn-secondary" onclick="assignAction(1)">👤 Assign</button>
+                </div>
+            </div>
+
+            <!-- Action Card 2 -->
+            <div class="action-card" data-priority="critical" data-modules="fees,student,communication">
+                <div class="action-header">
+                    <div class="action-title">🔴 Critical: Resolve Cheque Returns</div>
+                    <span class="action-badge critical">P1 - Critical</span>
+                </div>
+                <div class="action-description">
+                    3 cheques returned due to insufficient funds (₹45,788). Immediate parent contact required for re-payment and future payment method review.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 23 Jun 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Accounts Team</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> Medium</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> High</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>👥</span> Student Management</div>
+                    <div class="linked-module"><span>📱</span> Communication</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-danger" onclick="executeCrossModule('cheque-recovery')">📞 Contact Parents</button>
+                    <button class="btn btn-primary" onclick="executeCrossModule('update-payment-method')">💳 Update Methods</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(2)">📋 View Details</button>
+                </div>
+            </div>
+
+            <!-- Action Card 3 -->
+            <div class="action-card" data-priority="high" data-modules="fees,it,communication">
+                <div class="action-header">
+                    <div class="action-title">🟠 High: Implement Pre-Submission Verification</div>
+                    <span class="action-badge high">P2 - High</span>
+                </div>
+                <div class="action-description">
+                    Wrong transactions cause 65% of cancellations. Implement confirmation step before final submission to reduce errors.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 30 Jun 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> IT Team</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> Medium</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> High</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>💻</span> IT/System</div>
+                    <div class="linked-module"><span>📱</span> Communication</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeCrossModule('setup-verification')">⚙️ Configure</button>
+                    <button class="btn btn-secondary" onclick="executeCrossModule('test-workflow')">🧪 Test</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(3)">📋 View Details</button>
+                </div>
+            </div>
+
+            <!-- Action Card 4 -->
+            <div class="action-card" data-priority="high" data-modules="fees,student,communication">
+                <div class="action-header">
+                    <div class="action-title">🟠 High: Launch Digital Payment Campaign</div>
+                    <span class="action-badge high">P2 - High</span>
+                </div>
+                <div class="action-description">
+                    62% cash usage increases operational risk. Offer 2% discount for online payments to shift parents to digital modes.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 15 Jul 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Management</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> Low</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> Medium</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>👥</span> Student Management</div>
+                    <div class="linked-module"><span>📱</span> Communication</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-success" onclick="executeCrossModule('setup-discount')">🏷️ Setup Discount</button>
+                    <button class="btn btn-primary" onclick="executeCrossModule('announce-campaign')">📢 Announce</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(4)">📋 View Details</button>
+                </div>
+            </div>
+
+            <!-- Action Card 5 -->
+            <div class="action-card" data-priority="high" data-modules="fees,student,communication">
+                <div class="action-header">
+                    <div class="action-title">🟠 High: Due Date Reminder System</div>
+                    <span class="action-badge high">P2 - High</span>
+                </div>
+                <div class="action-description">
+                    Implement automated SMS/Email reminders 7 days before due date to improve on-time payment rate.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 30 Jun 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Finance Team</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> Low</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> High</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>📱</span> Communication</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeCrossModule('setup-reminders')">⚙️ Configure</button>
+                    <button class="btn btn-secondary" onclick="executeCrossModule('preview-template')">👁️ Preview</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(5)">📋 View Details</button>
+                </div>
+            </div>
+
+            <!-- Action Card 6 -->
+            <div class="action-card" data-priority="medium" data-modules="fees,student,discipline">
+                <div class="action-header">
+                    <div class="action-title">🟡 Medium: Expand Co-curricular Programs</div>
+                    <span class="action-badge medium">P3 - Medium</span>
+                </div>
+                <div class="action-description">
+                    Co-curricular fees (₹1,05,000) are highest revenue contributor. Add new programs to increase revenue.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 05 Jul 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Admin</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> Medium</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> High</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>👥</span> Student Management</div>
+                    <div class="linked-module"><span>📋</span> Discipline/LMS</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeCrossModule('add-program')">➕ Add Program</button>
+                    <button class="btn btn-secondary" onclick="executeCrossModule('set-fees')">💰 Set Fees</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(6)">📋 View Details</button>
+                </div>
+            </div>
+
+            <!-- Action Card 7 -->
+            <div class="action-card" data-priority="medium" data-modules="fees,student,attendance,exam">
+                <div class="action-header">
+                    <div class="action-title">🟡 Medium: Early Warning System Rollout</div>
+                    <span class="action-badge medium">P3 - Medium</span>
+                </div>
+                <div class="action-description">
+                    Trigger alerts for students at retention risk based on payment behavior, attendance, and academic performance correlation.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 20 Jul 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> Principal</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> Low</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> Medium</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>📊</span> Attendance</div>
+                    <div class="linked-module"><span>📝</span> Exams</div>
+                    <div class="linked-module"><span>👥</span> Student</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeCrossModule('configure-alerts')">⚙️ Configure</button>
+                    <button class="btn btn-secondary" onclick="executeCrossModule('define-rules')">📋 Define Rules</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(7)">📋 View Details</button>
+                </div>
+            </div>
+
+            <!-- Action Card 8 -->
+            <div class="action-card" data-priority="low" data-modules="fees,lms,inventory">
+                <div class="action-header">
+                    <div class="action-title">🟢 Low: Deploy 90-Day Cash Forecast</div>
+                    <span class="action-badge low">P4 - Low</span>
+                </div>
+                <div class="action-description">
+                    Predictive model for working capital planning based on historical patterns and upcoming expenses.
+                </div>
+                <div class="action-meta">
+                    <div class="action-meta-item">📅 <strong>Deadline:</strong> 01 Aug 2026</div>
+                    <div class="action-meta-item">👤 <strong>Owner:</strong> CFO</div>
+                    <div class="action-meta-item">⏱️ <strong>Effort:</strong> High</div>
+                    <div class="action-meta-item">📊 <strong>Impact:</strong> High</div>
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>📈</span> Analytics</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeCrossModule('build-model')">🤖 Build Model</button>
+                    <button class="btn btn-secondary" onclick="executeCrossModule('view-forecast')">📊 View Forecast</button>
+                    <button class="btn btn-secondary" onclick="showActionDetails(8)">📋 View Details</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Module Integration Section -->
+        <div id="modules-section" class="section-content">
+            <h2 class="section-title">🧠 Intelligence Module Architecture <span class="section-badge">4 Modules</span></h2>
+            
+            <!-- HR Module -->
+            <div class="action-card" style="margin-bottom: 24px; border-left: 4px solid #6366f1;">
+                <div class="action-header">
+                    <div class="action-title">👔 HR Intelligence</div>
+                    <span class="action-badge" style="background: rgba(99, 102, 241, 0.2); color: #6366f1;">HR</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; padding: 20px; background: #f8fafc; border-radius: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #eef2ff; border-radius: 8px; border: 2px solid #6366f1;">
+                        <span style="font-size: 18px;">👤</span>
+                        <span style="font-size: 13px; font-weight: 600;">Employee</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #dcfce7; border-radius: 8px; border: 2px solid #10b981;">
+                        <span style="font-size: 18px;">⚡</span>
+                        <span style="font-size: 13px; font-weight: 600;">Capability</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #fef3c7; border-radius: 8px; border: 2px solid #f59e0b;">
+                        <span style="font-size: 18px;">📉</span>
+                        <span style="font-size: 13px; font-weight: 600;">Gap</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #f3e8ff; border-radius: 8px; border: 2px solid #8b5cf6;">
+                        <span style="font-size: 18px;">📚</span>
+                        <span style="font-size: 13px; font-weight: 600;">Learning</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #dbeafe; border-radius: 8px; border: 2px solid #3b82f6;">
+                        <span style="font-size: 18px;">💡</span>
+                        <span style="font-size: 13px; font-weight: 600;">Recommendation</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #dcfce7; border-radius: 8px; border: 2px solid #10b981;">
+                        <span style="font-size: 18px;">✅</span>
+                        <span style="font-size: 13px; font-weight: 600;">Action</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Sales Module -->
+            <div class="action-card" style="margin-bottom: 24px; border-left: 4px solid #ec4899;">
+                <div class="action-header">
+                    <div class="action-title">📈 Performance Sales Intelligence</div>
+                    <span class="action-badge" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">Performance Sales</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; padding: 20px; background: #f8fafc; border-radius: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #fce7f3; border-radius: 8px; border: 2px solid #ec4899;">
+                        <span style="font-size: 18px;">🎯</span>
+                        <span style="font-size: 13px; font-weight: 600;">Lead</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #fef3c7; border-radius: 8px; border: 2px solid #f59e0b;">
+                        <span style="font-size: 18px;">💭</span>
+                        <span style="font-size: 13px; font-weight: 600;">Intent</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #eef2ff; border-radius: 8px; border: 2px solid #6366f1;">
+                        <span style="font-size: 18px;">🔮</span>
+                        <span style="font-size: 13px; font-weight: 600;">Prediction</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #dbeafe; border-radius: 8px; border: 2px solid #3b82f6;">
+                        <span style="font-size: 18px;">💡</span>
+                        <span style="font-size: 13px; font-weight: 600;">Recommendation</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #dcfce7; border-radius: 8px; border: 2px solid #10b981;">
+                        <span style="font-size: 18px;">✅</span>
+                        <span style="font-size: 13px; font-weight: 600;">Action</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Revenue Module -->
+            <div class="action-card" style="margin-bottom: 24px; border-left: 4px solid #14b8a6;">
+                <div class="action-header">
+                    <div class="action-title">💰 Revenue Intelligence</div>
+                    <span class="action-badge" style="background: rgba(20, 184, 166, 0.2); color: #14b8a6;">Revenue</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; padding: 20px; background: #f8fafc; border-radius: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #ccfbf1; border-radius: 8px; border: 2px solid #14b8a6;">
+                        <span style="font-size: 18px;">⚙️</span>
+                        <span style="font-size: 13px; font-weight: 600;">Machine</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #fee2e2; border-radius: 8px; border: 2px solid #ef4444;">
+                        <span style="font-size: 18px;">⚠️</span>
+                        <span style="font-size: 13px; font-weight: 600;">Failure Risk</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #eef2ff; border-radius: 8px; border: 2px solid #6366f1;">
+                        <span style="font-size: 18px;">🔮</span>
+                        <span style="font-size: 13px; font-weight: 600;">Prediction</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #dbeafe; border-radius: 8px; border: 2px solid #3b82f6;">
+                        <span style="font-size: 18px;">💡</span>
+                        <span style="font-size: 13px; font-weight: 600;">Recommendation</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #fef3c7; border-radius: 8px; border: 2px solid #f59e0b;">
+                        <span style="font-size: 18px;">🔧</span>
+                        <span style="font-size: 13px; font-weight: 600;">Maintenance Action</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #dcfce7; border-radius: 8px; border: 2px solid #10b981;">
+                        <span style="font-size: 18px;">📤</span>
+                        <span style="font-size: 13px; font-weight: 600;">Output</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Manufacturing Module -->
+            <div class="action-card" style="margin-bottom: 24px; border-left: 4px solid #f59e0b;">
+                <div class="action-header">
+                    <div class="action-title">🏭 Manufacturing Intelligence</div>
+                    <span class="action-badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;">Manufacturing</span>
+                </div>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 10px; padding: 20px; background: #f8fafc; border-radius: 12px;">
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #ccfbf1; border-radius: 8px; border: 2px solid #14b8a6;">
+                        <span style="font-size: 18px;">⚙️</span>
+                        <span style="font-size: 13px; font-weight: 600;">Machine</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #fee2e2; border-radius: 8px; border: 2px solid #ef4444;">
+                        <span style="font-size: 18px;">⚠️</span>
+                        <span style="font-size: 13px; font-weight: 600;">Failure Risk</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #eef2ff; border-radius: 8px; border: 2px solid #6366f1;">
+                        <span style="font-size: 18px;">🔮</span>
+                        <span style="font-size: 13px; font-weight: 600;">Prediction</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #dbeafe; border-radius: 8px; border: 2px solid #3b82f6;">
+                        <span style="font-size: 18px;">💡</span>
+                        <span style="font-size: 13px; font-weight: 600;">Recommendation</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #fef3c7; border-radius: 8px; border: 2px solid #f59e0b;">
+                        <span style="font-size: 18px;">🔧</span>
+                        <span style="font-size: 13px; font-weight: 600;">Maintenance Action</span>
+                    </div>
+                    <span style="color: #94a3b8; font-size: 20px;">→</span>
+                    <div style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #dcfce7; border-radius: 8px; border: 2px solid #10b981;">
+                        <span style="font-size: 18px;">📤</span>
+                        <span style="font-size: 13px; font-weight: 600;">Output</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cross-Module Workflows Section -->
+        <div id="workflows-section" class="section-content">
+            <h2 class="section-title">Cross-Module Workflows</h2>
+
+            <!-- Workflow 1 -->
+            <div class="workflow-card">
+                <div class="action-header">
+                    <div class="action-title">📋 Student Onboarding with Fee Clearance</div>
+                    <span class="action-badge high">High Priority</span>
+                </div>
+                <div class="workflow-steps">
+                    <div class="workflow-step completed">
+                        <div class="workflow-step-icon">👥</div>
+                        <div class="workflow-step-title">Student Admission</div>
+                        <div class="workflow-step-module">Student Mgmt</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step completed">
+                        <div class="workflow-step-icon">💰</div>
+                        <div class="workflow-step-title">Fee Structure</div>
+                        <div class="workflow-step-module">Fees Mgmt</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step active">
+                        <div class="workflow-step-icon">📱</div>
+                        <div class="workflow-step-title">Send Welcome</div>
+                        <div class="workflow-step-module">Communication</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">📚</div>
+                        <div class="workflow-step-title">Assign Class</div>
+                        <div class="workflow-step-module">Timetable</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">🚌</div>
+                        <div class="workflow-step-title">Transport Setup</div>
+                        <div class="workflow-step-module">Transport</div>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeWorkflow('student-onboarding')">▶️ Start Workflow</button>
+                    <button class="btn btn-secondary" onclick="viewWorkflowDetails('student-onboarding')">📋 View Details</button>
+                </div>
+            </div>
+
+            <!-- Workflow 2 -->
+            <div class="workflow-card">
+                <div class="action-header">
+                    <div class="action-title">📋 Defaulter Follow-up & Recovery</div>
+                    <span class="action-badge critical">Critical</span>
+                </div>
+                <div class="workflow-steps">
+                    <div class="workflow-step completed">
+                        <div class="workflow-step-icon">💰</div>
+                        <div class="workflow-step-title">Identify Defaulters</div>
+                        <div class="workflow-step-module">Fees Mgmt</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step active">
+                        <div class="workflow-step-icon">📱</div>
+                        <div class="workflow-step-title">Send Reminder</div>
+                        <div class="workflow-step-module">Communication</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">📞</div>
+                        <div class="workflow-step-title">Phone Call</div>
+                        <div class="workflow-step-module">Visitor Mgmt</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">👥</div>
+                        <div class="workflow-step-title">Parent Meeting</div>
+                        <div class="workflow-step-module">Visitor Mgmt</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">📋</div>
+                        <div class="workflow-step-title">Create Promise</div>
+                        <div class="workflow-step-module">Fees Mgmt</div>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-danger" onclick="executeWorkflow('defaulter-recovery')">▶️ Start Recovery</button>
+                    <button class="btn btn-secondary" onclick="viewWorkflowDetails('defaulter-recovery')">📋 View Details</button>
+                    <button class="btn btn-secondary" onclick="viewDefaulterList()">👥 View Defaulters</button>
+                </div>
+            </div>
+
+            <!-- Workflow 3 -->
+            <div class="workflow-card">
+                <div class="action-header">
+                    <div class="action-title">📋 Exam Hall Access with Fee Clearance</div>
+                    <span class="action-badge medium">Medium</span>
+                </div>
+                <div class="workflow-steps">
+                    <div class="workflow-step completed">
+                        <div class="workflow-step-icon">📝</div>
+                        <div class="workflow-step-title">Exam Registration</div>
+                        <div class="workflow-step-module">Exams</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step completed">
+                        <div class="workflow-step-icon">💰</div>
+                        <div class="workflow-step-title">Fee Verification</div>
+                        <div class="workflow-step-module">Fees Mgmt</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step active">
+                        <div class="workflow-step-icon">📱</div>
+                        <div class="workflow-step-title">Send Admit Card</div>
+                        <div class="workflow-step-module">Communication</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">📋</div>
+                        <div class="workflow-step-title">Generate Hall</div>
+                        <div class="workflow-step-module">Exams</div>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeWorkflow('exam-clearance')">▶️ Run Clearance</button>
+                    <button class="btn btn-secondary" onclick="viewPendingClearance()">📊 Pending List</button>
+                </div>
+            </div>
+
+            <!-- Workflow 4 -->
+            <div class="workflow-card">
+                <div class="action-header">
+                    <div class="action-title">📋 Certificate Issuance with Fee Clearance</div>
+                    <span class="action-badge medium">Medium</span>
+                </div>
+                <div class="workflow-steps">
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">📜</div>
+                        <div class="workflow-step-title">Request Certificate</div>
+                        <div class="workflow-step-module">Certificates</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">💰</div>
+                        <div class="workflow-step-title">Fee Clearance</div>
+                        <div class="workflow-step-module">Fees Mgmt</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">✅</div>
+                        <div class="workflow-step-title">Verify Documents</div>
+                        <div class="workflow-step-module">Certificates</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">📱</div>
+                        <div class="workflow-step-title">Notify Parent</div>
+                        <div class="workflow-step-module">Communication</div>
+                    </div>
+                    <div class="workflow-arrow">→</div>
+                    <div class="workflow-step">
+                        <div class="workflow-step-icon">🏢</div>
+                        <div class="workflow-step-title">Schedule Pickup</div>
+                        <div class="workflow-step-module">Visitor Mgmt</div>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="executeWorkflow('certificate-clearance')">▶️ Process Requests</button>
+                    <button class="btn btn-secondary" onclick="viewPendingCertificates()">📋 Pending</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations Section -->
+        <div id="recommendations-section" class="section-content">
+            <h2 class="section-title">AI-Powered Recommendations</h2>
+
+            <div class="action-card">
+                <div class="action-header">
+                    <div class="action-title">💡 Strategic Recommendation: Digital Payment Shift</div>
+                </div>
+                <div class="action-description">
+                    <strong>Insight:</strong> 62% cash transactions are causing reconciliation delays and increasing operational risk.
+                    <br><br>
+                    <strong>Recommendation:</strong> Implement a phased digital payment migration:
+                    <ul style="margin: 10px 0 10px 20px;">
+                        <li>Week 1-2: Offer 2% discount for online/UPI payments</li>
+                        <li>Week 3-4: Mandate digital for fees above ₹10,000</li>
+                        <li>Month 2: Set up additional POS terminals at collection counters</li>
+                        <li>Month 3: Target 60% digital, 40% cash</li>
+                    </ul>
+                    <strong>Expected Impact:</strong> 15% reduction in reconciliation time, ₹50,000 annual savings
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>📱</span> Communication</div>
+                    <div class="linked-module"><span>👥</span> Student Management</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-success" onclick="implementRecommendation('digital-shift')">🚀 Implement Now</button>
+                    <button class="btn btn-secondary" onclick="scheduleRecommendation('digital-shift')">📅 Schedule</button>
+                    <button class="btn btn-secondary" onclick="dismissRecommendation('digital-shift')">✕ Dismiss</button>
+                </div>
+            </div>
+
+            <div class="action-card">
+                <div class="action-header">
+                    <div class="action-title">💡 Operational Recommendation: Pre-emptive Defaulter Alert</div>
+                </div>
+                <div class="action-description">
+                    <strong>Insight:</strong> Analysis shows 73% of students who miss 2 consecutive payments become defaulters.
+                    <br><br>
+                    <strong>Recommendation:</strong> Deploy ML-based early warning system that triggers intervention after first missed payment.
+                    <ul style="margin: 10px 0 10px 20px;">
+                        <li>Real-time monitoring of payment patterns</li>
+                        <li>Automated SMS after 7 days overdue</li>
+                        <li>Principal notification after 15 days</li>
+                        <li>Personal meeting scheduling after 30 days</li>
+                    </ul>
+                    <strong>Expected Impact:</strong> 40% reduction in defaulter rate, improved retention
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>📊</span> Attendance</div>
+                    <div class="linked-module"><span>📱</span> Communication</div>
+                    <div class="linked-module"><span>👥</span> Student</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-success" onclick="implementRecommendation('early-warning')">🚀 Implement Now</button>
+                    <button class="btn btn-secondary" onclick="viewPilotResults()">📊 Pilot Results</button>
+                </div>
+            </div>
+
+            <div class="action-card">
+                <div class="action-header">
+                    <div class="action-title">💡 Revenue Recommendation: Dynamic Fee Structuring</div>
+                </div>
+                <div class="action-description">
+                    <strong>Insight:</strong> Class 6-8 shows 25% lower collection rate compared to other classes.
+                    <br><br>
+                    <strong>Recommendation:</strong> Introduce flexible payment plans for middle school:
+                    <ul style="margin: 10px 0 10px 20px;">
+                        <li>Monthly installments option (12-month)</li>
+                        <li>Early bird discount (5% for annual payment)</li>
+                        <li>Sibling discount enhancement (15% from 10%)</li>
+                        <li>Need-based scholarship expansion</li>
+                    </ul>
+                    <strong>Expected Impact:</strong> 10% increase in collection rate, 5% retention improvement
+                </div>
+                <div class="action-modules">
+                    <div class="linked-module"><span>💰</span> Fees Management</div>
+                    <div class="linked-module"><span>👥</span> Student Management</div>
+                    <div class="linked-module"><span>👔</span> Staff/Admin</div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="implementRecommendation('dynamic-fee')">🚀 Implement Now</button>
+                    <button class="btn btn-secondary" onclick="analyzeClassImpact()">📊 Impact Analysis</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div class="modal" id="actionModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Action Details</div>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div id="modalContent">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Navigation
+        function showSection(section) {
+            document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.section-content').forEach(content => content.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(section + '-section').classList.add('active');
+        }
+
+        // Execute Action
+        function executeAction(action) {
+            console.log('Executing action:', action);
+            alert('Executing action: ' + action + '\n\nThis will navigate to the relevant module.');
+        }
+
+        // Cross-Module Execution
+        function executeCrossModule(action) {
+            console.log('Executing cross-module action:', action);
+            
+            const actionMessages = {
+                'audit-cancellation': 'Opening Fees Management → Audit Trail\nLinked: Student Management, Communication',
+                'cheque-recovery': 'Opening Communication → Send SMS/Email\nLinked: Student Management → Contact Parents',
+                'update-payment-method': 'Opening Student Profile → Update Payment Method\nLinked: Fees Management',
+                'setup-verification': 'Opening System Settings → Fee Collection\nLinked: Fees Management, Staff Management',
+                'test-workflow': 'Opening Test Environment → Fee Workflow\nLinked: All Modules',
+                'setup-discount': 'Opening Fees Structure → Add Discount Rule\nLinked: Fees Management, Communication',
+                'announce-campaign': 'Opening Communication → Create Announcement\nLinked: Student Management',
+                'setup-reminders': 'Opening Communication → Configure Templates\nLinked: Fees Management',
+                'preview-template': 'Opening Template Preview\nLinked: Communication',
+                'add-program': 'Opening LMS → Add Course\nLinked: Fees Management → Set Fees',
+                'set-fees': 'Opening Fees Structure → Co-curricular\nLinked: LMS',
+                'configure-alerts': 'Opening System → Alert Configuration\nLinked: Student, Attendance, Exam',
+                'define-rules': 'Opening Rules Engine\nLinked: All Modules',
+                'build-model': 'Opening Analytics → Build Forecast Model\nLinked: Fees Historical Data',
+                'view-forecast': 'Opening Dashboard → Cash Flow Forecast\nLinked: Fees Management'
+            };
+
+            alert('Cross-Module Action: ' + action + '\n\n' + (actionMessages[action] || 'Executing action across modules...'));
+        }
+
+        // Navigate to Module
+        function navigateTo(path) {
+            console.log('Navigating to:', path);
+            alert('Navigating to: ' + path + '\n\nThis would open the module in the IMS.');
+        }
+
+        // Execute Workflow
+        function executeWorkflow(workflow) {
+            alert('Starting Workflow: ' + workflow + '\n\nThis will initiate the cross-module workflow.');
+        }
+
+        // View Details
+        function viewWorkflowDetails(workflow) {
+            alert('Viewing details for: ' + workflow);
+        }
+
+        // View Defaulter List
+        function viewDefaulterList() {
+            alert('Opening Defaulter List\nLinked Modules:\n- Student Management\n- Fees Management\n- Communication\n- Attendance');
+        }
+
+        // View Pending Clearance
+        function viewPendingClearance() {
+            alert('Opening Pending Exam Clearance List\nLinked Modules:\n- Exams\n- Fees Management');
+        }
+
+        // View Pending Certificates
+        function viewPendingCertificates() {
+            alert('Opening Pending Certificate Requests\nLinked Modules:\n- Certificates\n- Fees Management\n- Communication');
+        }
+
+        // Show Action Details
+        function showActionDetails(id) {
+            const modal = document.getElementById('actionModal');
+            const content = document.getElementById('modalContent');
+            
+            const details = {
+                1: {
+                    title: 'Duplicate Cancellation Audit',
+                    impact: { revenue: '₹43,500 at risk', process: 'High priority audit needed' },
+                    dependencies: ['Fees Management', 'Student Management', 'Communication'],
+                    timeline: 'Complete within 48 hours'
+                },
+                2: {
+                    title: 'Cheque Return Recovery',
+                    impact: { revenue: '₹45,788 to recover', compliance: '3 parent contacts required' },
+                    dependencies: ['Fees Management', 'Student Management', 'Communication'],
+                    timeline: 'Complete within 72 hours'
+                }
+            };
+
+            content.innerHTML = `
+                <h3>${details[id]?.title || 'Action Details'}</h3>
+                <div class="impact-matrix">
+                    <div class="impact-item">
+                        <h4>Revenue Impact</h4>
+                        <p>${details[id]?.impact.revenue || 'TBD'}</p>
+                    </div>
+                    <div class="impact-item">
+                        <h4>Process Impact</h4>
+                        <p>${details[id]?.impact.process || 'TBD'}</p>
+                    </div>
+                </div>
+                <h4 style="margin: 16px 0 8px;">Dependencies</h4>
+                <div class="dependency-list">
+                    ${(details[id]?.dependencies || []).map(d => `
+                        <div class="dependency-item">
+                            <span class="dependency-icon">🔗</span>
+                            <span class="dependency-name">${d}</span>
+                            <span class="dependency-type">Required</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <p style="margin-top: 16px;"><strong>Timeline:</strong> ${details[id]?.timeline || 'TBD'}</p>
+                <div class="action-buttons" style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="closeModal()">Proceed</button>
+                    <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                </div>
+            `;
+            
+            modal.classList.add('active');
+        }
+
+        // Assign Action
+        function assignAction(id) {
+            alert('Assigning action to team member...\nThis would open the assignment dialog.');
+        }
+
+        // Implement Recommendation
+        function implementRecommendation(rec) {
+            alert('Implementing recommendation: ' + rec + '\n\nThis will configure the system automatically.');
+        }
+
+        // Schedule Recommendation
+        function scheduleRecommendation(rec) {
+            alert('Scheduling recommendation: ' + rec + '\n\nThis will open the scheduling dialog.');
+        }
+
+        // Dismiss Recommendation
+        function dismissRecommendation(rec) {
+            if (confirm('Dismiss this recommendation?')) {
+                alert('Recommendation dismissed.');
+            }
+        }
+
+        // View Pilot Results
+        function viewPilotResults() {
+            alert('Showing pilot results for Early Warning System\nBased on 100 students over 30 days.');
+        }
+
+        // Analyze Class Impact
+        function analyzeClassImpact() {
+            alert('Analyzing class-wise fee collection impact\nClass 6-8 identified as priority.');
+        }
+
+        // Close Modal
+        function closeModal() {
+            document.getElementById('actionModal').classList.remove('active');
+        }
+
+        // Data Injection Functions
+        let selectedModules = [];
+        let currentDataSource = null;
+
+        function toggleModule(element, moduleId) {
+            const checkbox = element.querySelector('input[type="checkbox"]');
+            checkbox.checked = !checkbox.checked;
+            
+            if (checkbox.checked) {
+                if (!selectedModules.includes(moduleId)) {
+                    selectedModules.push(moduleId);
+                }
+                element.style.borderColor = '#10b981';
+                element.style.background = '#f0fdf4';
+            } else {
+                selectedModules = selectedModules.filter(m => m !== moduleId);
+                element.style.borderColor = '#e2e8f0';
+                element.style.background = '#f8fafc';
+            }
+            
+            updateModuleSummary();
+        }
+
+        function updateModuleSummary() {
+            const moduleNames = {
+                'fees': 'Fees & Finance',
+                'student': 'Student',
+                'attendance': 'Attendance',
+                'exam': 'Exams',
+                'library': 'Library',
+                'transport': 'Transport',
+                'lms': 'LMS',
+                'communication': 'Communication'
+            };
+            
+            const linked = selectedModules.filter(m => m !== 'feess').map(m => moduleNames[m] || m);
+            document.getElementById('selectedModules').textContent = linked.length ? linked.join(', ') : '';
+            document.getElementById('linkedModulesSummary').textContent = linked.length ? linked.join(', ') : 'None selected';
+        }
+
+        function showDataInput(type) {
+            document.getElementById('inputUrl').style.display = type === 'url' ? 'block' : 'none';
+            document.getElementById('inputFile').style.display = type === 'file' ? 'block' : 'none';
+            
+            document.getElementById('tabUrl').classList.toggle('active', type === 'url');
+            document.getElementById('tabFile').classList.toggle('active', type === 'file');
+            
+            currentDataSource = type;
+            updateDataSourceSummary();
+        }
+
+        function updateDataSourceSummary() {
+            const sourceNames = { 'url': 'URL Input', 'file': 'File Upload', 'text': 'Pasted Text' };
+            document.getElementById('dataSourceSummary').textContent = currentDataSource ? sourceNames[currentDataSource] : 'URL Input';
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.target.style.borderColor = '#10b981';
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            e.target.style.borderColor = '#cbd5e1';
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                processFile(files[0]);
+            }
+        }
+
+        function handleFileSelect(input) {
+            if (input.files.length > 0) {
+                processFile(input.files[0]);
+            }
+        }
+
+        function processFile(file) {
+            const validTypes = ['application/pdf', 'text/plain', 'text/csv', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'];
+            if (!validTypes.includes(file.type) && !file.name.match(/\.(pdf|txt|csv|xlsx)$/i)) {
+                alert('Please upload a PDF, TXT, CSV, or XLSX file.');
+                return;
+            }
+            
+            if (file.size > 10 * 1024 * 1024) {
+                alert('File size must be less than 10MB.');
+                return;
+            }
+            
+            document.getElementById('filePreview').style.display = 'block';
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('fileSize').textContent = (file.size / 1024).toFixed(2) + ' KB';
+            document.getElementById('dataSizeSummary').textContent = (file.size / 1024).toFixed(2) + ' KB';
+            
+            const icon = file.name.match(/\.pdf$/i) ? '📄' : file.name.match(/\.xlsx?$/i) ? '📊' : '📝';
+            document.getElementById('fileIcon').textContent = icon;
+            
+            updateDataSourceSummary();
+        }
+
+        function clearFile() {
+            document.getElementById('fileInput').value = '';
+            document.getElementById('filePreview').style.display = 'none';
+            document.getElementById('dataSizeSummary').textContent = '0 KB';
+        }
+
+        // Character count for paste text
+        document.addEventListener('DOMContentLoaded', function() {
+            const pasteText = document.getElementById('pasteText');
+            if (pasteText) {
+                pasteText.addEventListener('input', function() {
+                    document.getElementById('charCount').textContent = this.value.length;
+                    document.getElementById('dataSizeSummary').textContent = (this.value.length / 1024).toFixed(2) + ' KB';
+                });
+            }
+            
+            // URL input
+            const dataUrl = document.getElementById('dataUrl');
+            if (dataUrl) {
+                dataUrl.addEventListener('input', function() {
+                    document.getElementById('dataSourceSummary').textContent = this.value ? 'URL Input' : 'URL Input';
+                });
+            }
+        });
+
+        function previewExtraction() {
+            const extractionPreview = document.getElementById('extractionPreview');
+            const extractionStatus = document.getElementById('extractionStatus');
+            const extractedData = document.getElementById('extractedData');
+            const extractedFields = document.getElementById('extractedFields');
+            
+            extractionStatus.textContent = 'Extracting...';
+            extractionStatus.style.background = '#eef2ff';
+            extractionStatus.style.color = '#4f46e5';
+            
+            // Simulate extraction
+            setTimeout(() => {
+                extractionPreview.innerHTML = `
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px;">
+                        <div style="background: white; padding: 12px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 20px; font-weight: 700; color: #ec4899;">847</div>
+                            <div style="font-size: 11px; color: #64748b;">Sales Leads</div>
+                        </div>
+                        <div style="background: white; padding: 12px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 20px; font-weight: 700; color: #6366f1;">24</div>
+                            <div style="font-size: 11px; color: #64748b;">Fields Extracted</div>
+                        </div>
+                        <div style="background: white; padding: 12px; border-radius: 8px; text-align: center;">
+                            <div style="font-size: 20px; font-weight: 700; color: #10b981;">156</div>
+                            <div style="font-size: 11px; color: #64748b;">Hot Leads</div>
+                        </div>
+                    </div>
+                    <div style="background: white; padding: 12px; border-radius: 8px;">
+                        <div style="font-size: 12px; color: #64748b; margin-bottom: 8px;">Sample Sales Leads:</div>
+                        <div style="font-size: 11px; font-family: monospace; background: #f8fafc; padding: 8px; border-radius: 4px; overflow-x: auto;">
+                            LEAD_ID | COMPANY | INTENT_SCORE | STATUS<br>
+                            L-1024 | TechCorp Solutions | 85% | Hot Lead<br>
+                            L-1056 | Innovate Inc | 72% | Warm Lead<br>
+                            L-1089 | DataDriven Ltd | 91% | Hot Lead
+                        </div>
+                    </div>
+                `;
+                
+                extractedFields.innerHTML = `
+                    <div style="padding: 4px 0;"><span style="color: #10b981;">✓</span> lead_id (String)</div>
+                    <div style="padding: 4px 0;"><span style="color: #10b981;">✓</span> company_name (String)</div>
+                    <div style="padding: 4px 0;"><span style="color: #10b981;">✓</span> contact_email (Email)</div>
+                    <div style="padding: 4px 0;"><span style="color: #10b981;">✓</span> intent_score (Integer)</div>
+                    <div style="padding: 4px 0;"><span style="color: #10b981;">✓</span> lead_status (Enum: Hot/Warm/Cold)</div>
+                    <div style="padding: 4px 0;"><span style="color: #10b981;">✓</span> predicted_close_date (Date)</div>
+                `;
+                
+                extractedData.style.display = 'block';
+                extractionStatus.textContent = 'Ready';
+                extractionStatus.style.background = '#dcfce7';
+                extractionStatus.style.color = '#166534';
+            }, 1500);
+        }
+
+        function generateIntelligenceTemplate() {
+            const prompt = document.getElementById('intelligencePrompt').value.trim();
+            
+            if (!prompt) {
+                alert('Please enter a prompt to generate the Intelligence Template.');
+                return;
+            }
+            
+            const progressSection = document.getElementById('generationProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressPercent = document.getElementById('progressPercent');
+            
+            progressSection.style.display = 'block';
+            
+            let progress = 0;
+            
+            const interval = setInterval(() => {
+                progress += 5;
+                progressBar.style.width = progress + '%';
+                progressPercent.textContent = progress + '%';
+                
+                if (progress >= 20) document.getElementById('stepExtract').innerHTML = '<span style="color: #10b981;">✓</span> Analyzing prompt requirements';
+                if (progress >= 40) document.getElementById('stepAnalyze').innerHTML = '<span style="color: #10b981;">✓</span> Matching extraction patterns';
+                if (progress >= 60) document.getElementById('stepCorrelate').innerHTML = '<span style="color: #10b981;">✓</span> Configuring template parameters';
+                if (progress >= 80) document.getElementById('stepGenerate').innerHTML = '<span style="color: #94a3b8;">○</span> Finalizing configuration';
+                if (progress >= 100) {
+                    document.getElementById('stepGenerate').innerHTML = '<span style="color: #10b981;">✓</span> Template configured successfully';
+                    clearInterval(interval);
+                    
+                    setTimeout(() => {
+                        progressSection.style.display = 'none';
+                        document.getElementById('progressBar').style.width = '0%';
+                        document.getElementById('progressPercent').textContent = '0%';
+                        
+                        // Reset steps
+                        document.getElementById('stepExtract').innerHTML = '<span style="color: #94a3b8;">○</span> Analyzing prompt requirements';
+                        document.getElementById('stepAnalyze').innerHTML = '<span style="color: #94a3b8;">○</span> Matching extraction patterns';
+                        document.getElementById('stepCorrelate').innerHTML = '<span style="color: #94a3b8;">○</span> Configuring template parameters';
+                        document.getElementById('stepGenerate').innerHTML = '<span style="color: #94a3b8;">○</span> Finalizing configuration';
+                        
+                        alert('Intelligence Template generated and configured successfully!\n\nBased on your prompt: "' + (prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt) + '"\n\nThe template has been automatically configured and is ready for use.');
+                    }, 500);
+                }
+            }, 100);
+        }
+
+        function generateIntelligence() {
+            const progressSection = document.getElementById('generationProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressPercent = document.getElementById('progressPercent');
+            
+            progressSection.style.display = 'block';
+            
+            const steps = ['stepExtract', 'stepAnalyze', 'stepCorrelate', 'stepGenerate'];
+            let progress = 0;
+            
+            const interval = setInterval(() => {
+                progress += 5;
+                progressBar.style.width = progress + '%';
+                progressPercent.textContent = progress + '%';
+                
+                if (progress >= 25) document.getElementById('stepExtract').innerHTML = '<span style="color: #10b981;">✓</span> Extracting data fields';
+                if (progress >= 50) document.getElementById('stepAnalyze').innerHTML = '<span style="color: #10b981;">✓</span> Analyzing patterns';
+                if (progress >= 75) document.getElementById('stepCorrelate').innerHTML = '<span style="color: #10b981;">✓</span> Cross-module correlation';
+                if (progress >= 100) {
+                    document.getElementById('stepGenerate').innerHTML = '<span style="color: #10b981;">✓</span> Generating insights';
+                    clearInterval(interval);
+                    
+                    setTimeout(() => {
+                        // Switch to Overview tab
+                        document.querySelectorAll('.nav-tab').forEach(tab => tab.classList.remove('active'));
+                        document.querySelectorAll('.section-content').forEach(sec => sec.classList.remove('active'));
+                        document.querySelectorAll('.nav-tab')[1].classList.add('active'); // Overview
+                        document.getElementById('overview-section').classList.add('active');
+                        
+                        alert('Intelligence generated successfully!\n\nOverview, Agents, Actions, and Recommendations have been updated with the analyzed data.');
+                    }, 500);
+                }
+            }, 100);
+        }
+
+        function resetInjection() {
+            if (confirm('Reset all data injection settings?')) {
+                selectedModules = [];
+                currentDataSource = null;
+                
+                // Reset checkboxes
+                document.querySelectorAll('.module-checkbox').forEach(cb => cb.checked = false);
+                document.querySelectorAll('.module-select-item').forEach(item => {
+                    item.style.borderColor = '#e2e8f0';
+                    item.style.background = '#f8fafc';
+                });
+                
+                // Reset inputs
+                document.getElementById('dataUrl').value = '';
+                const pasteText = document.getElementById('pasteText');
+                if (pasteText) pasteText.value = '';
+                document.getElementById('requiredExtraction').value = '';
+                document.getElementById('intelligencePrompt').value = '';
+                document.getElementById('charCount').textContent = '0';
+                clearFile();
+                
+                // Reset summary
+                document.getElementById('selectedModules').textContent = '';
+                document.getElementById('linkedModulesSummary').textContent = 'None selected';
+                document.getElementById('dataSourceSummary').textContent = 'URL Input';
+                document.getElementById('dataSizeSummary').textContent = '0 KB';
+                
+                // Reset extraction preview
+                document.getElementById('extractionPreview').innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px;">
+                        <div style="font-size: 48px; margin-bottom: 12px; opacity: 0.5;">📊</div>
+                        <div style="font-size: 14px; margin-bottom: 8px;">No data loaded</div>
+                        <div style="font-size: 12px;">Provide a data source to see extraction preview</div>
+                    </div>
+                `;
+                document.getElementById('extractedData').style.display = 'none';
+                document.getElementById('extractionStatus').textContent = 'Waiting for data...';
+                document.getElementById('generationProgress').style.display = 'none';
+                document.getElementById('progressBar').style.width = '0%';
+                document.getElementById('progressPercent').textContent = '0%';
+                
+                // Reset steps
+                ['stepExtract', 'stepAnalyze', 'stepCorrelate', 'stepGenerate'].forEach(id => {
+                    document.getElementById(id).innerHTML = '<span style="color: #94a3b8;">○</span> ' + document.getElementById(id).textContent.split('✓')[1];
+                });
+            }
+        }
+
+        // Agent Execution Functions
+        function executeAgent(agentId, action) {
+            const agentActions = {
+                'F-01': {
+                    'scan': 'Running manual defaulter scan...\n\nProcessing all fee records and sending appropriate reminders.',
+                    'configure': 'Opening F-01 Configuration...\n\nConfigure thresholds, escalation rules, and notification settings.',
+                    'report': 'Opening Defaulter Report...\n\nShowing all flagged accounts and their current status.',
+                    'logs': 'Opening Agent Activity Logs...\n\nDisplaying F-01 execution history.'
+                },
+                'F-02': {
+                    'trigger': 'Triggering Fee Structure Review...\n\nAnalyzing historical data and generating recommended structures.',
+                    'preview': 'Opening Circular Preview...\n\nShowing sample fee circular for review.',
+                    'configure': 'Opening Template Configuration...\n\nConfiguring Fee Circular Master templates.'
+                },
+                'F-03': {
+                    'forecast': 'Generating new cash flow forecast...\n\nAnalyzing latest data and producing updated projections.',
+                    'brief': 'Opening Weekly Intelligence Brief...\n\nDisplaying latest management brief with key insights.',
+                    'configure': 'Opening F-03 Configuration...\n\nConfiguring forecast parameters and thresholds.',
+                    'history': 'Opening Forecast History...\n\nDisplaying historical forecast accuracy analysis.'
+                }
+            };
+
+            const message = agentActions[agentId]?.[action] || 'Executing action...';
+            alert(agentId + ' - ' + action.toUpperCase() + '\n\n' + message);
+        }
+
+        // Filter functionality
+        document.querySelectorAll('.filter-select').forEach(select => {
+            select.addEventListener('change', function() {
+                console.log('Filter changed:', {
+                    priority: document.getElementById('priorityFilter').value,
+                    module: document.getElementById('moduleFilter').value,
+                    status: document.getElementById('statusFilter').value,
+                    owner: document.getElementById('ownerFilter').value
+                });
+            });
+        });
+
+        // Close modal on outside click
+        document.getElementById('actionModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+    </script>
+</body>
+</html>
