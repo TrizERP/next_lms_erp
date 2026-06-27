@@ -760,118 +760,93 @@
                     <!-- Module Selection -->
                     <div class="action-card">
                         <div class="action-header">
-                            <div class="action-title">🗂️ Module Selection</div>
+                            <div class="action-title">🧠 Intelligence Module Selection</div>
                             <button class="btn btn-primary" onclick="previewExtraction()">👁️ Preview Extraction</button>
                         </div>
                         <p style="font-size: 13px; color: var(--gray-500); margin-bottom: 16px;">
-                            Select modules to associate with cross-module intelligence generation.
+                            Select an intelligence module to configure with cross-module intelligence generation.
                         </p>
 
-                        <div class="module-grid" style="grid-template-columns: repeat(2, 1fr); gap: 12px;">
-                            <!-- Fees Module - Pre-selected Read-only -->
-                            <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s;" onclick="toggleModule(this, 'fees')">
+                        <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s; margin-bottom: 12px;" onclick="toggleModule(this, 'hr')">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
                                 <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="font-size: 24px;">💰</div>
-                                    <div>
-                                        <div style="font-size: 13px; font-weight: 600;">Fees & Finance</div>
-                                        <div style="font-size: 11px; color: #64748b;">Primary Module</div>
-                                    </div>
-                                    <div style="margin-left: auto;">
-                                        <input type="checkbox" class="module-checkbox" data-module="fees" style="width: 18px; height: 18px; accent-color: #10b981;">
-                                    </div>
+                                    <span class="action-badge" style="background: rgba(99, 102, 241, 0.2); color: #6366f1;">👔 HR</span>
+                                    <input type="checkbox" class="module-checkbox" data-module="hr" style="width: 18px; height: 18px; accent-color: #10b981;">
                                 </div>
                             </div>
-
-                            <!-- Other Modules - Selectable -->
-                            <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s;" onclick="toggleModule(this, 'student')">
+                            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; padding: 8px; background: #f1f5f9; border-radius: 8px;">
+                                <span style="padding: 4px 8px; background: #eef2ff; border-radius: 4px; font-size: 11px;">👤 Employee</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dcfce7; border-radius: 4px; font-size: 11px;">⚡ Capability</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #fef3c7; border-radius: 4px; font-size: 11px;">📉 Gap</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #f3e8ff; border-radius: 4px; font-size: 11px;">📚 Learning</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dbeafe; border-radius: 4px; font-size: 11px;">💡 Recommendation</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dcfce7; border-radius: 4px; font-size: 11px;">✅ Action</span>
+                            </div>
+                        </div>
+                        <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s; margin-bottom: 12px;" onclick="toggleModule(this, 'sales')">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
                                 <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="font-size: 24px;">👥</div>
-                                    <div>
-                                        <div style="font-size: 13px; font-weight: 600;">Student Management</div>
-                                        <div style="font-size: 11px; color: #64748b;">Optional</div>
-                                    </div>
-                                    <div style="margin-left: auto;">
-                                        <input type="checkbox" class="module-checkbox" data-module="student" style="width: 18px; height: 18px; accent-color: #10b981;">
-                                    </div>
+                                    <span class="action-badge" style="background: rgba(236, 72, 153, 0.2); color: #ec4899;">📈 Performance Sales</span>
+                                    <input type="checkbox" class="module-checkbox" data-module="sales" style="width: 18px; height: 18px; accent-color: #10b981;">
                                 </div>
                             </div>
-
-                            <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s;" onclick="toggleModule(this, 'attendance')">
+                            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; padding: 8px; background: #f1f5f9; border-radius: 8px;">
+                                <span style="padding: 4px 8px; background: #fce7f3; border-radius: 4px; font-size: 11px;">🎯 Lead</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #fef3c7; border-radius: 4px; font-size: 11px;">💭 Intent</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #eef2ff; border-radius: 4px; font-size: 11px;">🔮 Prediction</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dbeafe; border-radius: 4px; font-size: 11px;">💡 Recommendation</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dcfce7; border-radius: 4px; font-size: 11px;">✅ Action</span>
+                            </div>
+                        </div>
+                        <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s; margin-bottom: 12px;" onclick="toggleModule(this, 'revenue')">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
                                 <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="font-size: 24px;">📊</div>
-                                    <div>
-                                        <div style="font-size: 13px; font-weight: 600;">Attendance</div>
-                                        <div style="font-size: 11px; color: #64748b;">Optional</div>
-                                    </div>
-                                    <div style="margin-left: auto;">
-                                        <input type="checkbox" class="module-checkbox" data-module="attendance" style="width: 18px; height: 18px; accent-color: #10b981;">
-                                    </div>
+                                    <span class="action-badge" style="background: rgba(20, 184, 166, 0.2); color: #14b8a6;">💰 Revenue</span>
+                                    <input type="checkbox" class="module-checkbox" data-module="revenue" style="width: 18px; height: 18px; accent-color: #10b981;">
                                 </div>
                             </div>
-
-                            <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s;" onclick="toggleModule(this, 'exam')">
+                            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; padding: 8px; background: #f1f5f9; border-radius: 8px;">
+                                <span style="padding: 4px 8px; background: #ccfbf1; border-radius: 4px; font-size: 11px;">⚙️ Machine</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #fee2e2; border-radius: 4px; font-size: 11px;">⚠️ Failure Risk</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #eef2ff; border-radius: 4px; font-size: 11px;">🔮 Prediction</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dbeafe; border-radius: 4px; font-size: 11px;">💡 Recommendation</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #fef3c7; border-radius: 4px; font-size: 11px;">🔧 Maintenance Action</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dcfce7; border-radius: 4px; font-size: 11px;">📤 Output</span>
+                            </div>
+                        </div>
+                        <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s;" onclick="toggleModule(this, 'manufacturing')">
+                            <div style="display: flex; align-items: center; justify-content: space-between;">
                                 <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="font-size: 24px;">📝</div>
-                                    <div>
-                                        <div style="font-size: 13px; font-weight: 600;">Exams & Results</div>
-                                        <div style="font-size: 11px; color: #64748b;">Optional</div>
-                                    </div>
-                                    <div style="margin-left: auto;">
-                                        <input type="checkbox" class="module-checkbox" data-module="exam" style="width: 18px; height: 18px; accent-color: #10b981;">
-                                    </div>
+                                    <span class="action-badge" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;">🏭 Manufacturing</span>
+                                    <input type="checkbox" class="module-checkbox" data-module="manufacturing" style="width: 18px; height: 18px; accent-color: #10b981;">
                                 </div>
                             </div>
-
-                            <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s;" onclick="toggleModule(this, 'library')">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="font-size: 24px;">📚</div>
-                                    <div>
-                                        <div style="font-size: 13px; font-weight: 600;">Library</div>
-                                        <div style="font-size: 11px; color: #64748b;">Optional</div>
-                                    </div>
-                                    <div style="margin-left: auto;">
-                                        <input type="checkbox" class="module-checkbox" data-module="library" style="width: 18px; height: 18px; accent-color: #10b981;">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s;" onclick="toggleModule(this, 'transport')">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="font-size: 24px;">🚌</div>
-                                    <div>
-                                        <div style="font-size: 13px; font-weight: 600;">Transport</div>
-                                        <div style="font-size: 11px; color: #64748b;">Optional</div>
-                                    </div>
-                                    <div style="margin-left: auto;">
-                                        <input type="checkbox" class="module-checkbox" data-module="transport" style="width: 18px; height: 18px; accent-color: #10b981;">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s;" onclick="toggleModule(this, 'lms')">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="font-size: 24px;">🎓</div>
-                                    <div>
-                                        <div style="font-size: 13px; font-weight: 600;">LMS</div>
-                                        <div style="font-size: 11px; color: #64748b;">Optional</div>
-                                    </div>
-                                    <div style="margin-left: auto;">
-                                        <input type="checkbox" class="module-checkbox" data-module="lms" style="width: 18px; height: 18px; accent-color: #10b981;">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="module-select-item" style="background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s;" onclick="toggleModule(this, 'communication')">
-                                <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div style="font-size: 24px;">📱</div>
-                                    <div>
-                                        <div style="font-size: 13px; font-weight: 600;">Communication</div>
-                                        <div style="font-size: 11px; color: #64748b;">Optional</div>
-                                    </div>
-                                    <div style="margin-left: auto;">
-                                        <input type="checkbox" class="module-checkbox" data-module="communication" style="width: 18px; height: 18px; accent-color: #10b981;">
-                                    </div>
-                                </div>
+                            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 10px; padding: 8px; background: #f1f5f9; border-radius: 8px;">
+                                <span style="padding: 4px 8px; background: #ccfbf1; border-radius: 4px; font-size: 11px;">⚙️ Machine</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #fee2e2; border-radius: 4px; font-size: 11px;">⚠️ Failure Risk</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #eef2ff; border-radius: 4px; font-size: 11px;">🔮 Prediction</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dbeafe; border-radius: 4px; font-size: 11px;">💡 Recommendation</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #fef3c7; border-radius: 4px; font-size: 11px;">🔧 Maintenance Action</span>
+                                <span style="color: #94a3b8;">→</span>
+                                <span style="padding: 4px 8px; background: #dcfce7; border-radius: 4px; font-size: 11px;">📤 Output</span>
                             </div>
                         </div>
 
