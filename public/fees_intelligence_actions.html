@@ -716,7 +716,6 @@
                         <div style="display: flex; gap: 8px; margin-bottom: 16px;">
                             <button class="nav-tab active" id="tabUrl" onclick="showDataInput('url')" style="padding: 8px 16px; font-size: 12px;">🔗 URL</button>
                             <button class="nav-tab" id="tabFile" onclick="showDataInput('file')" style="padding: 8px 16px; font-size: 12px;">📁 Upload File</button>
-                            <button class="nav-tab" id="tabText" onclick="showDataInput('text')" style="padding: 8px 16px; font-size: 12px;">📝 Paste Text</button>
                         </div>
 
                         <!-- URL Input -->
@@ -745,13 +744,17 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <!-- Paste Text -->
-                        <div id="inputText" style="display: none;">
-                            <label style="font-size: 12px; color: var(--gray-500); margin-bottom: 6px; display: block;">Paste your data or text content</label>
-                            <textarea id="pasteText" rows="8" placeholder="Paste fee data, reports, or any text content here for analysis..." style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical;"></textarea>
-                            <p style="font-size: 11px; color: #64748b; margin-top: 8px;">Character count: <span id="charCount">0</span></p>
+                    <!-- Required Extraction Input -->
+                    <div class="action-card">
+                        <div class="action-header">
+                            <div class="action-title">🎯 Required Extraction Input</div>
                         </div>
+                        <p style="font-size: 13px; color: var(--gray-500); margin-bottom: 16px;">
+                            Specify the details you need to extract from the data source.
+                        </p>
+                        <textarea id="requiredExtraction" rows="4" placeholder="E.g., Extract all student names, fee amounts, and payment dates from the provided data..." style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical;"></textarea>
                     </div>
 
                     <!-- Module Selection -->
@@ -900,15 +903,30 @@
                             <div id="extractedFields" style="background: #f1f5f9; border-radius: 8px; padding: 12px; max-height: 200px; overflow-y: auto;"></div>
                         </div>
                     </div>
+
+                    <!-- Give Prompt Required Intelligence -->
+                    <div class="action-card">
+                        <div class="action-header">
+                            <div class="action-title">🧠 Give Prompt Required Intelligence</div>
+                        </div>
+                        <p style="font-size: 13px; color: var(--gray-500); margin-bottom: 16px;">
+                            Enter a prompt to automatically generate and configure the required Intelligence Template based on the extracted data.
+                        </p>
+                        <textarea id="intelligencePrompt" rows="5" placeholder="E.g., Generate a fee defaulters analysis template that identifies students with outstanding fees above Rs. 5000 and suggests personalized payment reminder strategies..." style="width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 13px; font-family: inherit; resize: vertical;"></textarea>
+                        <div class="action-buttons" style="margin-top: 16px;">
+                            <button class="btn btn-primary" onclick="generateIntelligenceTemplate()" style="flex: 1;">✨ Generate & Configure Template</button>
+                        </div>
+                    </div>
+
                     <!-- Intelligence Generation Progress -->
                     <div id="generationProgress" class="action-card" style="display: none; background: #eef2ff;">
                         <div class="action-header">
-                            <div class="action-title">⚡ Generating Intelligence...</div>
+                            <div class="action-title">⚡ Generating Intelligence Template...</div>
                         </div>
 
                         <div style="margin-bottom: 16px;">
                             <div style="display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 8px;">
-                                <span>Processing data...</span>
+                                <span>Processing template...</span>
                                 <span id="progressPercent">0%</span>
                             </div>
                             <div style="height: 8px; background: #cbd5e1; border-radius: 4px; overflow: hidden;">
@@ -924,6 +942,7 @@
                             <div style="padding: 6px 0;" id="stepGenerate"><span style="color: #94a3b8;">○</span> Generating insights</div>
                         </div>
                     </div>
+
                     <!-- Selected Data Summary -->
                     <div class="action-card">
                         <div class="action-header">
@@ -2322,11 +2341,9 @@
         function showDataInput(type) {
             document.getElementById('inputUrl').style.display = type === 'url' ? 'block' : 'none';
             document.getElementById('inputFile').style.display = type === 'file' ? 'block' : 'none';
-            document.getElementById('inputText').style.display = type === 'text' ? 'block' : 'none';
             
             document.getElementById('tabUrl').classList.toggle('active', type === 'url');
             document.getElementById('tabFile').classList.toggle('active', type === 'file');
-            document.getElementById('tabText').classList.toggle('active', type === 'text');
             
             currentDataSource = type;
             updateDataSourceSummary();
@@ -2459,6 +2476,52 @@
             }, 1500);
         }
 
+        function generateIntelligenceTemplate() {
+            const prompt = document.getElementById('intelligencePrompt').value.trim();
+            
+            if (!prompt) {
+                alert('Please enter a prompt to generate the Intelligence Template.');
+                return;
+            }
+            
+            const progressSection = document.getElementById('generationProgress');
+            const progressBar = document.getElementById('progressBar');
+            const progressPercent = document.getElementById('progressPercent');
+            
+            progressSection.style.display = 'block';
+            
+            let progress = 0;
+            
+            const interval = setInterval(() => {
+                progress += 5;
+                progressBar.style.width = progress + '%';
+                progressPercent.textContent = progress + '%';
+                
+                if (progress >= 20) document.getElementById('stepExtract').innerHTML = '<span style="color: #10b981;">✓</span> Analyzing prompt requirements';
+                if (progress >= 40) document.getElementById('stepAnalyze').innerHTML = '<span style="color: #10b981;">✓</span> Matching extraction patterns';
+                if (progress >= 60) document.getElementById('stepCorrelate').innerHTML = '<span style="color: #10b981;">✓</span> Configuring template parameters';
+                if (progress >= 80) document.getElementById('stepGenerate').innerHTML = '<span style="color: #94a3b8;">○</span> Finalizing configuration';
+                if (progress >= 100) {
+                    document.getElementById('stepGenerate').innerHTML = '<span style="color: #10b981;">✓</span> Template configured successfully';
+                    clearInterval(interval);
+                    
+                    setTimeout(() => {
+                        progressSection.style.display = 'none';
+                        document.getElementById('progressBar').style.width = '0%';
+                        document.getElementById('progressPercent').textContent = '0%';
+                        
+                        // Reset steps
+                        document.getElementById('stepExtract').innerHTML = '<span style="color: #94a3b8;">○</span> Analyzing prompt requirements';
+                        document.getElementById('stepAnalyze').innerHTML = '<span style="color: #94a3b8;">○</span> Matching extraction patterns';
+                        document.getElementById('stepCorrelate').innerHTML = '<span style="color: #94a3b8;">○</span> Configuring template parameters';
+                        document.getElementById('stepGenerate').innerHTML = '<span style="color: #94a3b8;">○</span> Finalizing configuration';
+                        
+                        alert('Intelligence Template generated and configured successfully!\n\nBased on your prompt: "' + (prompt.length > 50 ? prompt.substring(0, 50) + '...' : prompt) + '"\n\nThe template has been automatically configured and is ready for use.');
+                    }, 500);
+                }
+            }, 100);
+        }
+
         function generateIntelligence() {
             const progressSection = document.getElementById('generationProgress');
             const progressBar = document.getElementById('progressBar');
@@ -2508,7 +2571,10 @@
                 
                 // Reset inputs
                 document.getElementById('dataUrl').value = '';
-                document.getElementById('pasteText').value = '';
+                const pasteText = document.getElementById('pasteText');
+                if (pasteText) pasteText.value = '';
+                document.getElementById('requiredExtraction').value = '';
+                document.getElementById('intelligencePrompt').value = '';
                 document.getElementById('charCount').textContent = '0';
                 clearFile();
                 
