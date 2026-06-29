@@ -4,9 +4,11 @@ namespace App\Models\student;
 
 use App\Models\LibraryBookCirculation;
 use Illuminate\Database\Eloquent\Model;
+use Laravel\Sanctum\HasApiTokens;
 
 class tblstudentModel extends Model
 {
+    use HasApiTokens;
     protected $table = "tblstudent";
 
     public $timestamps = false;
