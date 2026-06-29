@@ -3,9 +3,11 @@
 namespace App\Models\user;
 
 use Illuminate\Database\Eloquent\Model;
+use Laravel\Sanctum\HasApiTokens;
 
 class tbluserModel extends Model
 {
+    use HasApiTokens;
     public $timestamps = false;
 
     protected $table = "tbluser";
