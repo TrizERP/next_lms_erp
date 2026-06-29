@@ -9,9 +9,6 @@
         "ext-curl": "*",
         "aws/aws-sdk-php": "^3.298",
         "barryvdh/laravel-dompdf": "^2.0",
-        "botman/botman": "^2.10",
-        "botman/driver-slack": "^2.0",
-        "botman/driver-web": "^2.0",
         "doctrine/dbal": "^3.8",
         "dompdf/dompdf": "^2.0",
         "guzzlehttp/guzzle": "^7.8",
@@ -32,7 +29,6 @@
         "setasign/fpdf": "^1.8",
         "setasign/fpdi": "^2.6",
         "smalot/pdfparser": "^2.11",
-        "spatie/laravel-async": "^2.0",
         "twilio/sdk": "^8.0",
         "yajra/laravel-datatables-oracle": "^10.0"
     },
