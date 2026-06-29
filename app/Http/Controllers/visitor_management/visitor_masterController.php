@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\user\tbluserModel;
 use App\Models\visitor_management\visitor_masterModel;
 use App\Models\visitor_management\visitor_typeModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;

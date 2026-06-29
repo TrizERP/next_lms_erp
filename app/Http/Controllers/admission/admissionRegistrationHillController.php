@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use App\Http\Controllers\easy_com\send_sms_parents\send_sms_parents_controller;
 use App\Http\Controllers\easy_com\send_email_parents\send_email_parents_controller;
 use Carbon\Carbon;

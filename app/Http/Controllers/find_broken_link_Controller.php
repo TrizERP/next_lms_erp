@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use GenTux\Jwt\GetsJwtToken;
-use GenTux\Jwt\JwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\JwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;

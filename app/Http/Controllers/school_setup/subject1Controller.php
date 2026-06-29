@@ -11,8 +11,8 @@ use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\ValidateInsertData;
 use Validator;
-// use GenTux\Jwt\JwtToken;
-// use GenTux\Jwt\GetsJwtToken;
+// use App\Vendor\Jwt\JwtToken;
+// use App\Vendor\Jwt\GetsJwtToken;
 // use function App\Helpers\aut_token;
 
 

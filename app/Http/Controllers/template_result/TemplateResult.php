@@ -7,7 +7,7 @@ use App\Models\result\result_html_model;
 use App\Models\result\student_attendance_master\student_attendance_master;
 use App\Models\school_setup\classteacherModel;
 use App\Models\settings\templateMasterModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;

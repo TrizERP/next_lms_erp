@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
 use App\Models\library\itemScanDetail;
 use App\Models\library\itemStatus;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;

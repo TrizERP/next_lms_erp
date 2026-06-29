@@ -12,7 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 
 class admissionFormController extends Controller
 {

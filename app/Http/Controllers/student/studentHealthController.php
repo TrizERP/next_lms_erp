@@ -4,7 +4,7 @@ namespace App\Http\Controllers\student;
 
 use App\Http\Controllers\Controller;
 use App\Models\student\studentHealthModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;

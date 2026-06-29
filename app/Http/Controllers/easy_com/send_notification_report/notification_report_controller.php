@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\easy_com\send_notification_report;
 
 use App\Http\Controllers\Controller;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;

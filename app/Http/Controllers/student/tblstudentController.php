@@ -34,7 +34,7 @@ use App\Models\student\tblstudentTcModel;
 use App\Models\student\Anacdotal;
 use App\Models\transportation\add_vehicle\add_transport_kilometer_rate;
 use App\Models\user\tbluserprofilemasterModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;

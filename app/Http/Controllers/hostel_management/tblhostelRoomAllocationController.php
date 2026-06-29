@@ -9,7 +9,7 @@ use App\Models\hostel_management\tblhostelRoomAllocationModel;
 use App\Models\student\tblstudentModel;
 use App\Models\user\tbluserModel;
 use App\Models\user\tbluserprofilemasterModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;

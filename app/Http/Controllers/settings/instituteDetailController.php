@@ -11,8 +11,8 @@ use function App\Helpers\employeeDetails;
 use App\Http\Controllers\HRMS\departmentController;
 use App\Http\Controllers\frontdesk\taskController;
 use Illuminate\Support\Facades\Storage;
-use GenTux\Jwt\GetsJwtToken;
-use GenTux\Jwt\JwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\JwtToken;
 use Validator;
 use DB;
 

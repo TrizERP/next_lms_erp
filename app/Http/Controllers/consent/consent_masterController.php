@@ -4,7 +4,7 @@ namespace App\Http\Controllers\consent;
 
 use App\Http\Controllers\Controller;
 use App\Models\consent\consent_masterModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;

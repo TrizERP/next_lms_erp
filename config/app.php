@@ -167,7 +167,7 @@ return [
         /*
          * Package Service Providers...
          */
-        GenTux\Jwt\Support\LaravelServiceProvider::class,
+        App\Vendor\Jwt\Support\LaravelServiceProvider::class,
         Mews\Captcha\CaptchaServiceProvider::class,
 
         /*

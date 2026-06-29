@@ -10,7 +10,7 @@ use App\Models\lms\lmsmappingtypeModel;
 use App\Models\lms\topicModel;
 use App\Models\lms\virtualclassroomModel;
 use App\Models\school_setup\sub_std_mapModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;

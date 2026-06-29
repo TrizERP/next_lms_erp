@@ -5,7 +5,7 @@ namespace App\Http\Controllers\front_desk\circular;
 use App\Http\Controllers\Controller;
 use App\Models\front_desk\circular\circular;
 use App\Models\school_setup\SchoolModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;

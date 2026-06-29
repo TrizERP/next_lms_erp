@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\front_desk\dicipline\diciplineDD;
 use App\Models\front_desk\dicipline\diciplineMaster;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use function App\Helpers\is_mobile;
 
 class diciplineMasterController extends Controller

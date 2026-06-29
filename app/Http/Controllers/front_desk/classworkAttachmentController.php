@@ -11,7 +11,7 @@ use function App\Helpers\SearchStudent;
 use Illuminate\Support\Facades\Storage;
 use App\Models\front_desk\classWorkModel;
 use App\Models\school_setup\SchoolModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Support\Facades\Validator;
 use DB;
 use App\Http\Controllers\AJAXController;

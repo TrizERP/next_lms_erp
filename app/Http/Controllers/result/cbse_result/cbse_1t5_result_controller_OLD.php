@@ -5,7 +5,7 @@ namespace App\Http\Controllers\result\cbse_result;
 use App\Http\Controllers\Controller;
 use App\Models\result\result_html_model;
 use DB;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use function App\Helpers\aut_token;

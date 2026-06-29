@@ -9,7 +9,7 @@ use function App\Helpers\is_mobile;
 use App\Models\settings\tblcustomfieldsModel;
 use App\Models\settings\masterFieldInstituteModel;
 use App\Models\settings\masterFieldModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 
 class admissionReportController extends Controller
 {

@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
 use App\Models\custom_module\customMapModule\donationModel;
 use App\Models\fees\bank_master\bankmasterModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Carbon\Carbon;
 use validator;
 use DB;

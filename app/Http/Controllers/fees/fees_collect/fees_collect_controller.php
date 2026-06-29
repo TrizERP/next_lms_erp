@@ -7,7 +7,7 @@ use App\Models\fees\bank_master\bankmasterModel;
 use App\Models\fees\map_year\map_year;
 use App\Models\fees\tblfeesConfigModel;
 use App\Models\school_setup\SchoolModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;

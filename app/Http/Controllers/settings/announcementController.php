@@ -9,7 +9,7 @@ use function App\Helpers\is_mobile;
 use Aws\S3\S3Client;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 
 class announcementController extends Controller
 {

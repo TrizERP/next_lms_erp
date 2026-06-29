@@ -4,7 +4,7 @@ namespace App\Http\Controllers\result\cbse_result;
 
 use App\Http\Controllers\Controller;
 use App\Models\school_setup\sub_std_mapModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;

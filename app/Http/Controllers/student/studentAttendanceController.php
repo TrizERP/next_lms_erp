@@ -4,7 +4,7 @@ namespace App\Http\Controllers\student;
 
 use App\Http\Controllers\Controller;
 use App\Models\student\tblstudentModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;

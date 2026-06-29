@@ -11,7 +11,7 @@ use App\Models\lms\questionpaperModel;
 use App\Models\lms\topicModel;
 use App\Models\lms\contentModel;
 use App\Models\student\tblstudentEnrollmentModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\aut_token;

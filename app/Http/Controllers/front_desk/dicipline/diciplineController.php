@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\front_desk\dicipline;
 
 use App\Http\Controllers\Controller;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;

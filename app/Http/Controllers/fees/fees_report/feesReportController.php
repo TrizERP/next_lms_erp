@@ -13,7 +13,7 @@ use function App\Helpers\FeeMonthId;
 use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Schema;
 use App\Models\fees\fees_title\fees_title;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Carbon\Carbon;
 
 class feesReportController extends Controller

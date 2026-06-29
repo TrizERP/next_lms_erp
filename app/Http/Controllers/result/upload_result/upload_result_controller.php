@@ -5,7 +5,7 @@ namespace App\Http\Controllers\result\upload_result;
 use App\Http\Controllers\Controller;
 use App\Models\result\upload_result\upload_result_model;
 use App\Models\student\tblstudentModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;

@@ -8,7 +8,7 @@ use App\Models\lms\lmsQuestionMappingModel;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
-class mapQuestion extends Command
+class MapQuestionCommand extends Command
 {
     /**
      * The name and signature of the console command.

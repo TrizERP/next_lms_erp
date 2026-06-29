@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use App\Models\school_setup\casteModel;
 use App\Models\school_setup\religionModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 
 class admissionRegistrationController extends Controller
 {

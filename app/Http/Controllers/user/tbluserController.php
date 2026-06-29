@@ -9,7 +9,7 @@ use App\Models\settings\tblcustomfieldsModel;
 use App\Models\settings\tblfields_dataModel;
 use App\Models\user\tbluserModel;
 use App\Models\user\tbluserprofilemasterModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;

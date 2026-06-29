@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\front_desk\school_detail;
 
 use App\Http\Controllers\Controller;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;

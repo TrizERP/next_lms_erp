@@ -4,7 +4,7 @@ namespace App\Http\Controllers\easy_com\send_email_parents;
 
 use App\Http\Controllers\Controller;
 use App\Models\easy_com\manage_sms_api\manage_sms_api;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;

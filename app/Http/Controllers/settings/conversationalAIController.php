@@ -11,8 +11,8 @@ use function App\Helpers\getTableFieldFromId;
 use App\Http\Controllers\student\tblstudentController;
 use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
 use Illuminate\Support\Facades\Http;
-use GenTux\Jwt\GetsJwtToken;
-use GenTux\Jwt\JwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\JwtToken;
 
 class conversationalAIController extends Controller
 {

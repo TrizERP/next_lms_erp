@@ -5,7 +5,7 @@ namespace App\Http\Controllers\school_setup;
 use App\Http\Controllers\Controller;
 use App\Models\school_setup\periodModel;
 use App\Models\school_setup\timetableModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;

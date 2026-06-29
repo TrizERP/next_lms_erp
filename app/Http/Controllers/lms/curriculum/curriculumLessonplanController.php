@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Validator;
-use GenTux\Jwt\GetsJwtToken;
-use GenTux\Jwt\JwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\JwtToken;
 use DB;
 
 class curriculumLessonplanController extends Controller

@@ -9,7 +9,7 @@ use App\Models\skill\matrix;
 use App\Models\skill\AssessmentLibrary;
 use App\Models\lms\counselling\OnetCareerCluster;
 use Illuminate\Support\Facades\Auth;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 

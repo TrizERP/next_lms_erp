@@ -8,7 +8,7 @@ use App\Models\LibraryBook;
 use App\Models\LibraryBookCirculation;
 use App\Models\LibraryItem;
 use App\Models\student\tblstudentModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;

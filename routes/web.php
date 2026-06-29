@@ -37,7 +37,7 @@ use App\Http\Controllers\school_setup\subjectElectiveController;
 use App\Http\Controllers\school_setup\mapTeacherController;
 use App\Http\Controllers\school_setup\docStdMappingController;
 use App\Http\Controllers\signupController;
-use App\Http\Controllers\institute_detail;
+use App\Http\Controllers\settings\instituteDetailController;
 use App\Http\Controllers\normClatureController;
 use App\Http\Controllers\lms\questionWiseReportController;
 use App\Http\Controllers\template_result\TemplateResult;
@@ -57,9 +57,9 @@ use App\Http\Controllers\Payroll\PayrollController;
 use App\Http\Controllers\HRMS\HrmsController;
 use App\Http\Controllers\library\BookController;
 use App\Http\Controllers\library\LibraryReportController;
-use App\Http\Controllers\sqaa\sqaa_controller;
-use App\Http\Controllers\sqaa\sqaaReportController;
-use App\Http\Controllers\sqaa\sqaaScoreReportController;
+use App\Http\Controllers\sqaa\SqaaController;
+use App\Http\Controllers\sqaa\SqaaReportController;
+use App\Http\Controllers\sqaa\SqaaScoreReportController;
 use App\Http\Controllers\leave\LeaveAuthorisationController;
 use App\Http\Controllers\leave\leave_report\LeaveReportController;
 use App\Http\Controllers\leave\leave_summary_report\LeaveSummaryReportController;
@@ -80,7 +80,7 @@ use App\Http\Controllers\neo4jGraph\StudentResultGraphController;
 use App\Services\Neo4jService;
 use App\Http\Controllers\lms\pal\palController;
 use App\Http\Controllers\lms\assessmentQuestionController;
-use App\Http\Controllers\lms\pedagogyEngineController;
+use App\Http\Controllers\lms\PedagogyEngineController;
 use App\Http\Controllers\FileController;
 
 // ============================================================
@@ -260,20 +260,18 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute','check_permissions
     Route::post('/whatsapp-sent-generate-show-report', [WhatsappController::class, 'whatsappSentGenerateReportDetails'])->name('whatsapp_sent_generate_report_details');
 Route::get('/whatsapp-show-reply/{wid}', [WhatsappController::class, 'whatsappShowReply'])->name('whatsapp_show_reply');
 
-    Route::resource('sqaa_master', sqaa_controller::class);
-    Route::resource('sqaa_score_report', sqaaScoreReportController::class);
-    Route::resource('sqaa_report_master', sqaaReportController::class);
-    Route::get('sqaa_document_report', [sqaaReportController::class,'sqaaDocReport'])->name('sqaa_document_report.index');
-    Route::get('sqaa_report_master/{id}/edit', 'sqaaReportController@edit')->name('sqaa_report_master.edit');
-    Route::put('sqaa_report_master/{id}', 'sqaaReportController@update')->name('sqaa_report_master.update');
+    Route::resource('sqaa_master', SqaaController::class);
+    Route::resource('sqaa_score_report', SqaaScoreReportController::class);
+    Route::resource('sqaa_report_master', SqaaReportController::class);
+    Route::get('sqaa_document_report', [SqaaReportController::class,'sqaaDocReport'])->name('sqaa_document_report.index');
     Route::get('setup-institute-details', [dashboardController::class, 'setup_details'])->name('setup-institute-details');
 
-    Route::get('get-level', [sqaa_controller::class,'get_level'])->name('get-level'); 
-    Route::get('gen-pdf', [sqaa_controller::class,'edit_gen_pdf'])->name('gen-pdf');
-    Route::post('gen-pdf-down', [sqaa_controller::class,'edit_gen_pdf'])->name('gen-pdf-down');    
-    Route::post('unlink-file', [sqaa_controller::class,'unlink_file'])->name('unlink-file');
+    Route::get('get-level', [SqaaController::class,'get_level'])->name('get-level'); 
+    Route::get('gen-pdf', [SqaaController::class,'edit_gen_pdf'])->name('gen-pdf');
+    Route::post('gen-pdf-down', [SqaaController::class,'edit_gen_pdf'])->name('gen-pdf-down');    
+    Route::post('unlink-file', [SqaaController::class,'unlink_file'])->name('unlink-file');
     
-    Route::POST('download-pdf', [sqaa_controller::class,'generatePdf'])->name('download-pdf');     
+    Route::POST('download-pdf', [SqaaController::class,'generatePdf'])->name('download-pdf');     
     
     Route::resource('questionExcelDownload', questionExcelDownloadController::class);
     Route::get('check_multilogin', [loginController::class,'check_multilogins'])->name('check_multilogin');
@@ -295,7 +293,7 @@ Route::get('dashboard', [dashboardController::class, 'index'])->name('dashboard'
 Route::get('dashboard/communication-details', [dashboardController::class, 'getCommunicationDetails'])->name('dashboard.communication.details')->middleware('session');
 // add by uma 
 Route::resource('norm-clature', normClatureController::class);
-Route::resource('add-institute-details', institute_detail::class);
+Route::resource('add-institute-details', instituteDetailController::class);
 
 // From Build
 Route::get('formbuilder/list', [UserFormbuilderController::class, 'index'])->name('formbuild.list')->middleware('session', 'menu', 'logRoute');

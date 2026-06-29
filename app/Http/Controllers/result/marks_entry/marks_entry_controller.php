@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\result\create_exam\exam_creation;
 use App\Models\result\marks_entry\marks_entry;
 use App\Models\result\std_grd_mapping\std_grd_maping;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;

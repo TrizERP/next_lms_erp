@@ -11,7 +11,7 @@ use App\Models\sqaa\sqaa_document;
 use Illuminate\Support\Facades\Storage;
 use DB;
 
-class sqaaScoreReportController extends Controller
+class SqaaScoreReportController extends Controller
 {
     //
     public function index(Request $request)

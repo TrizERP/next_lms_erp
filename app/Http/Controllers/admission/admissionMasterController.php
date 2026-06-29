@@ -10,7 +10,7 @@ use App\Models\admission\admissionRegistrationModel;
 use App\Models\settings\tblcustomfieldsModel;
 use Illuminate\Support\Facades\Schema;
 use function App\Helpers\is_mobile;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use DB;
 
 class admissionMasterController extends Controller

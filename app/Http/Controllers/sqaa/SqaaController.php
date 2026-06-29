@@ -15,7 +15,7 @@ use Aws\S3\S3Client;
 use DB;
 use PDF;
 
-class sqaa_controller extends Controller
+class SqaaController extends Controller
 {
     //
     public function index()

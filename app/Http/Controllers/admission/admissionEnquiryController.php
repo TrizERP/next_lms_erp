@@ -18,7 +18,7 @@ use function App\Helpers\is_mobile;
 use function App\Helpers\sendSMS;
 use function App\Helpers\SearchStudent;
 use App\Http\Controllers\admission\admissionRegistrationHillController;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Carbon\Carbon;
 use App\Models\settings\masterFieldModel;
 use App\Models\settings\masterFieldInstituteModel;

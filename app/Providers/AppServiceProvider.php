@@ -8,7 +8,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Blade;
-use App\View\Components\filters;
+use App\View\Components\Filters;
 use Illuminate\Support\Facades\Log;
 
 class AppServiceProvider extends ServiceProvider
@@ -30,7 +30,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        Blade::component('filters', filters::class);
+        Blade::component('filters', Filters::class);
         Paginator::useBootstrap();
 
         // if (env('APP_ENV') !== 'local') {

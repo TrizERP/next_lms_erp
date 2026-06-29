@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\result\cbse_result;
 
 use App\Http\Controllers\Controller;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;

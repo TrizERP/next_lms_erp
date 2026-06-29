@@ -4,7 +4,7 @@ namespace App\Http\Controllers\calendar\calendar;
 
 use App\Http\Controllers\Controller;
 use App\Models\calendar\calendar\calendar;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;

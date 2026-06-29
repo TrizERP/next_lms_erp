@@ -8,7 +8,7 @@ use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
 use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
 use App\Http\Controllers\fees\online_fees\online_fees_collect_controller;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
 use DB;

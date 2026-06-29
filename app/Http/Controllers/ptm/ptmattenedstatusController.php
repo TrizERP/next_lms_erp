@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ptm\ptmattenedstatusModel;
 use App\Models\school_setup\standardModel;
 use App\Models\user\tbluserModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;

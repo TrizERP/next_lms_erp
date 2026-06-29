@@ -23,7 +23,7 @@ use App\Models\school_setup\timetableModel;
 use App\Models\settings\tblcustomfieldsModel;
 use App\Models\settings\tblfields_dataModel;
 use App\Models\user\tbluserModel;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;

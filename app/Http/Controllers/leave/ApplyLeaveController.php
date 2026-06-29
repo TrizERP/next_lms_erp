@@ -14,7 +14,7 @@ use Yajra\DataTables\Facades\DataTables;
 use function App\Helpers\is_mobile;
 use DB;
 use Carbon\Carbon;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use App\Traits\Helpers;
 
 class ApplyLeaveController extends Controller

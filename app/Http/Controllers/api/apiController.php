@@ -4,8 +4,8 @@ namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
 use App\Models\easy_com\manage_sms_api\manage_sms_api;
-use GenTux\Jwt\GetsJwtToken;
-use GenTux\Jwt\JwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\JwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;

@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Storage;
 use function App\Helpers\is_mobile;
 use function App\Helpers\employeeDetails;
 use function App\Helpers\countDays;
-use GenTux\Jwt\GetsJwtToken;
+use App\Vendor\Jwt\GetsJwtToken;
 use DB;
 use PDF;
 use Validator;
