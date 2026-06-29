@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\settings\instituteDetailController;
 use App\Http\Controllers\neo4jGraph\StudentResultGraphController;
 use App\Http\Controllers\StudentGraphController;
+use App\Http\Controllers\api\ApiLoginController;
 
 
 
@@ -50,6 +51,7 @@ Route::controller(apiController::class)->group(function () {
     Route::get('testkey', 'testkey');
 });
 
+Route::post('api-login', [ApiLoginController::class, 'login'])->name('api.api-login');
 // 12-11-2024
 Route::get('crm-whatsapp', [\App\Http\Controllers\WhatsappController::class, 'whatsappCRM'])->withoutMiddleware([Authenticate::class])->name('crm-whatsapp');
 Route::get('crm-whatsapp-update', [\App\Http\Controllers\WhatsappController::class, 'updateCRMWhatsappStatus'])->withoutMiddleware([Authenticate::class])->name('updateCRMWhatsappStatus');
