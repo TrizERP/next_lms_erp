@@ -3,14 +3,21 @@
 namespace App\Http\Controllers\fees;
 
 use App\Http\Controllers\Controller;
+use App\Services\FeesIntelligenceService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use function App\Helpers\is_mobile;
 
 class FeesIntelligenceController extends Controller
 {
+    protected $intelligenceService;
+
+    public function __construct()
+    {
+        $this->intelligenceService = new FeesIntelligenceService();
+    }
+
     /**
      * Display the Fees Intelligence Center
      */
@@ -26,57 +33,35 @@ class FeesIntelligenceController extends Controller
         $res['module_name'] = 'fees';
         $res['sub_module_name'] = 'intelligence_center';
         
-        // Basic dashboard stats
-        $res['dashboard_stats'] = $this->getBasicDashboardStats($sub_institute_id, $academic_year);
+        // Get dashboard stats from service
+        try {
+            $res['dashboard_stats'] = $this->intelligenceService->getDashboardStats($sub_institute_id, $academic_year);
+        } catch (\Exception $e) {
+            Log::error('Dashboard stats error in index: ' . $e->getMessage());
+            $res['dashboard_stats'] = $this->getEmptyDashboardStats();
+        }
+        
         $res['recent_collections'] = [];
         $res['payment_methods'] = [];
-
+        
         return is_mobile($type, "fees.fees_intelligence", $res, "view");
     }
-    
+
     /**
-     * Get basic dashboard stats without service dependency
+     * Get empty dashboard stats as fallback
      */
-    private function getBasicDashboardStats($sub_institute_id, $academic_year)
+    private function getEmptyDashboardStats()
     {
-        try {
-            // Return safe defaults - no DB queries to avoid errors
-            return [
-                'total_collected' => 0,
-                'total_collected_formatted' => '₹0',
-                'collected_change' => 0,
-                'collection_rate' => 0,
-                'outstanding' => 0,
-                'outstanding_formatted' => '₹0',
-                'defaulter_count' => 0,
-                'total_payable' => 0
-            ];
-        } catch (\Exception $e) {
-            Log::error('Dashboard stats error: ' . $e->getMessage());
-            return [
-                'total_collected' => 0,
-                'total_collected_formatted' => '₹0',
-                'collected_change' => 0,
-                'collection_rate' => 0,
-                'outstanding' => 0,
-                'outstanding_formatted' => '₹0',
-                'defaulter_count' => 0,
-                'total_payable' => 0
-            ];
-        }
-    }
-    
-    private function formatCurrency($amount)
-    {
-        $amount = (float) $amount;
-        if ($amount >= 10000000) {
-            return '₹' . round($amount / 10000000, 1) . ' Cr';
-        } elseif ($amount >= 100000) {
-            return '₹' . round($amount / 100000, 1) . ' L';
-        } elseif ($amount >= 1000) {
-            return '₹' . round($amount / 1000, 1) . 'K';
-        }
-        return '₹' . number_format($amount);
+        return [
+            'total_collected' => 0,
+            'total_collected_formatted' => '₹0',
+            'collected_change' => 0,
+            'collection_rate' => 0,
+            'outstanding' => 0,
+            'outstanding_formatted' => '₹0',
+            'defaulter_count' => 0,
+            'total_payable' => 0
+        ];
     }
 
     /**
@@ -88,14 +73,14 @@ class FeesIntelligenceController extends Controller
             $sub_institute_id = session()->get('sub_institute_id');
             $academic_year = session()->get('syear');
 
-            $stats = $this->getBasicDashboardStats($sub_institute_id, $academic_year);
+            $stats = $this->intelligenceService->getDashboardStats($sub_institute_id, $academic_year);
 
             return response()->json([
                 'success' => true,
                 'data' => $stats
             ]);
         } catch (\Exception $e) {
-            Log::error('Dashboard stats error: ' . $e->getMessage());
+            Log::error('Dashboard stats API error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Error fetching dashboard stats',
@@ -114,7 +99,7 @@ class FeesIntelligenceController extends Controller
             $academic_year = session()->get('syear', date('Y'));
             $period = $request->input('period', 'monthly');
 
-            $data = $this->getCollectionDataInternal($sub_institute_id, $academic_year, $period);
+            $data = $this->intelligenceService->getCollectionData($sub_institute_id, $academic_year, $period);
 
             return response()->json([
                 'success' => true,
@@ -129,47 +114,6 @@ class FeesIntelligenceController extends Controller
             ], 500);
         }
     }
-    
-    private function getCollectionDataInternal($sub_institute_id, $academic_year, $period = 'monthly')
-    {
-        $data = [];
-        
-        if ($period === 'monthly') {
-            for ($month = 4; $month <= 12; $month++) {
-                $year = $academic_year;
-                if ($month > 12) {
-                    $month = $month - 12;
-                    $year = $academic_year + 1;
-                }
-                
-                $start = date('Y-m-01', strtotime("$year-" . str_pad($month, 2, '0', STR_PAD_LEFT) . "-01"));
-                $end = date('Y-m-t', strtotime($start));
-
-                $collected = DB::table('fees_collect')
-                    ->where('sub_institute_id', $sub_institute_id)
-                    ->whereBetween('create_date', [$start, $end])
-                    ->sum('total_paid');
-
-                $data['labels'][] = date('M', strtotime($start));
-                $data['collected'][] = (float) $collected;
-            }
-            
-            for ($month = 1; $month <= 3; $month++) {
-                $start = date('Y-m-01', strtotime(($academic_year + 1) . "-" . str_pad($month, 2, '0', STR_PAD_LEFT) . "-01"));
-                $end = date('Y-m-t', strtotime($start));
-
-                $collected = DB::table('fees_collect')
-                    ->where('sub_institute_id', $sub_institute_id)
-                    ->whereBetween('create_date', [$start, $end])
-                    ->sum('total_paid');
-
-                $data['labels'][] = date('M', strtotime($start));
-                $data['collected'][] = (float) $collected;
-            }
-        }
-        
-        return $data;
-    }
 
     /**
      * Get defaulters data
@@ -179,14 +123,9 @@ class FeesIntelligenceController extends Controller
         try {
             $sub_institute_id = session()->get('sub_institute_id', 1);
             $academic_year = session()->get('syear', date('Y'));
+            $standard_id = $request->input('standard_id');
 
-            $data = [
-                'defaulters' => [],
-                'stats' => [
-                    'total_pending' => 0,
-                    'defaulter_count' => 0
-                ]
-            ];
+            $data = $this->intelligenceService->getDefaultersData($sub_institute_id, $academic_year, $standard_id);
 
             return response()->json([
                 'success' => true,
@@ -208,10 +147,27 @@ class FeesIntelligenceController extends Controller
     public function generateIntelligence(Request $request): JsonResponse
     {
         try {
+            $sub_institute_id = session()->get('sub_institute_id', 1);
+            $academic_year = session()->get('syear', date('Y'));
+            $user_id = session()->get('user_id', 0);
+
+            $extraction_prompt = $request->input('extraction_prompt', '');
+            $intelligence_prompt = $request->input('intelligence_prompt', '');
+            $selected_modules = $request->input('selected_modules', []);
+
+            $result = $this->intelligenceService->generateIntelligence(
+                $sub_institute_id,
+                $academic_year,
+                $user_id,
+                $extraction_prompt,
+                $intelligence_prompt,
+                $selected_modules
+            );
+
             return response()->json([
                 'success' => true,
-                'message' => 'Intelligence generation placeholder',
-                'data' => []
+                'message' => 'Intelligence generated successfully',
+                'data' => $result
             ]);
         } catch (\Exception $e) {
             Log::error('Intelligence generation error: ' . $e->getMessage());
@@ -229,9 +185,15 @@ class FeesIntelligenceController extends Controller
     public function getRecommendations(Request $request): JsonResponse
     {
         try {
+            $sub_institute_id = session()->get('sub_institute_id', 1);
+            $academic_year = session()->get('syear', date('Y'));
+            $type = $request->input('type', 'all');
+
+            $data = $this->intelligenceService->getRecommendations($sub_institute_id, $academic_year, $type);
+
             return response()->json([
                 'success' => true,
-                'data' => $this->getDefaultRecommendations()
+                'data' => $data
             ]);
         } catch (\Exception $e) {
             Log::error('Recommendations error: ' . $e->getMessage());
@@ -242,30 +204,6 @@ class FeesIntelligenceController extends Controller
             ], 500);
         }
     }
-    
-    private function getDefaultRecommendations()
-    {
-        return [
-            [
-                'type' => 'strategic',
-                'title' => 'Digital Payment Shift',
-                'insight' => 'Cash transactions are causing reconciliation delays.',
-                'actions' => ['Offer 2% discount for online/UPI payments', 'Mandate digital for fees above ₹10,000'],
-                'expected_impact' => '15% reduction in reconciliation time',
-                'modules' => ['fees', 'communication', 'student'],
-                'priority' => 'high'
-            ],
-            [
-                'type' => 'operational',
-                'title' => 'Pre-emptive Defaulter Alert',
-                'insight' => 'Analysis shows students missing 2 consecutive payments become defaulters.',
-                'actions' => ['Real-time monitoring of payment patterns', 'Automated SMS after 7 days overdue'],
-                'expected_impact' => '40% reduction in defaulter rate',
-                'modules' => ['fees', 'attendance', 'communication'],
-                'priority' => 'high'
-            ]
-        ];
-    }
 
     /**
      * Get cross-module workflow suggestions
@@ -273,20 +211,14 @@ class FeesIntelligenceController extends Controller
     public function getCrossModuleWorkflows(Request $request): JsonResponse
     {
         try {
+            $sub_institute_id = session()->get('sub_institute_id', 1);
+            $academic_year = session()->get('syear', date('Y'));
+
+            $data = $this->intelligenceService->getCrossModuleWorkflows($sub_institute_id, $academic_year);
+
             return response()->json([
                 'success' => true,
-                'data' => [
-                    [
-                        'id' => 'wf_enrollment_fee',
-                        'title' => 'Student Enrollment → Fee Assignment',
-                        'description' => 'Automatically assign fees when a new student is enrolled.',
-                        'modules' => ['student', 'fees'],
-                        'trigger' => 'Student enrollment completed',
-                        'actions' => ['Auto-assign standard-wise fees', 'Generate payment schedule'],
-                        'status' => 'active',
-                        'execution_count' => 100
-                    ]
-                ]
+                'data' => $data
             ]);
         } catch (\Exception $e) {
             Log::error('Cross-module workflows error: ' . $e->getMessage());
@@ -304,40 +236,13 @@ class FeesIntelligenceController extends Controller
     public function getAIAgents(Request $request): JsonResponse
     {
         try {
+            $sub_institute_id = session()->get('sub_institute_id', 1);
+
+            $data = $this->intelligenceService->getAIAgents($sub_institute_id);
+
             return response()->json([
                 'success' => true,
-                'data' => [
-                    [
-                        'id' => 'F-01',
-                        'name' => 'Autonomous Fees Defaulter Detection Agent',
-                        'status' => 'running',
-                        'priority' => 'high',
-                        'description' => 'Automatically identifies overdue fee accounts and sends escalation reminders.',
-                        'kpis' => ['Automated Scans' => '100+', 'Reminders Sent' => '50+', 'Recovery Rate' => '85%'],
-                        'modules' => ['fees', 'communication'],
-                        'actions' => ['scan', 'configure', 'report', 'logs']
-                    ],
-                    [
-                        'id' => 'F-02',
-                        'name' => 'Fee Structure Review Agent',
-                        'status' => 'running',
-                        'priority' => 'medium',
-                        'description' => 'Analyzes fee structures and suggests optimal pricing.',
-                        'kpis' => ['Structures Analyzed' => '20+', 'Suggestions Made' => '10+', 'Acceptance Rate' => '70%'],
-                        'modules' => ['fees'],
-                        'actions' => ['trigger', 'preview', 'configure']
-                    ],
-                    [
-                        'id' => 'F-03',
-                        'name' => 'Cash Flow Forecasting Agent',
-                        'status' => 'running',
-                        'priority' => 'high',
-                        'description' => 'Predicts cash flow based on historical data and upcoming obligations.',
-                        'kpis' => ['Forecast Accuracy' => '92%', 'Predictions Made' => '30+', 'Cash Predictability' => '40%'],
-                        'modules' => ['fees'],
-                        'actions' => ['forecast', 'brief', 'configure', 'history']
-                    ]
-                ]
+                'data' => $data
             ]);
         } catch (\Exception $e) {
             Log::error('AI agents error: ' . $e->getMessage());
@@ -355,9 +260,26 @@ class FeesIntelligenceController extends Controller
     public function executeAgentAction(Request $request): JsonResponse
     {
         try {
+            $agent_id = $request->input('agent_id');
+            $action = $request->input('action');
+            $parameters = $request->input('parameters', []);
+
+            $sub_institute_id = session()->get('sub_institute_id', 1);
+            $academic_year = session()->get('syear', date('Y'));
+            $user_id = session()->get('user_id', 0);
+
+            $result = $this->intelligenceService->executeAgentAction(
+                $agent_id,
+                $action,
+                $parameters,
+                $sub_institute_id,
+                $academic_year,
+                $user_id
+            );
+
             return response()->json([
                 'success' => true,
-                'data' => ['message' => 'Action completed']
+                'data' => $result
             ]);
         } catch (\Exception $e) {
             Log::error('Agent action error: ' . $e->getMessage());
@@ -375,9 +297,15 @@ class FeesIntelligenceController extends Controller
     public function getActionItems(Request $request): JsonResponse
     {
         try {
+            $sub_institute_id = session()->get('sub_institute_id', 1);
+            $academic_year = session()->get('syear', date('Y'));
+            $priority = $request->input('priority');
+
+            $data = $this->intelligenceService->getActionItems($sub_institute_id, $academic_year, $priority);
+
             return response()->json([
                 'success' => true,
-                'data' => []
+                'data' => $data
             ]);
         } catch (\Exception $e) {
             Log::error('Action items error: ' . $e->getMessage());
@@ -395,13 +323,13 @@ class FeesIntelligenceController extends Controller
     public function getModuleIntegration(Request $request): JsonResponse
     {
         try {
+            $sub_institute_id = session()->get('sub_institute_id', 1);
+
+            $data = $this->intelligenceService->getModuleIntegration($sub_institute_id);
+
             return response()->json([
                 'success' => true,
-                'data' => [
-                    ['id' => 'student', 'name' => 'Student Management', 'icon' => '👥', 'integration_status' => 'connected'],
-                    ['id' => 'attendance', 'name' => 'Attendance', 'icon' => '📊', 'integration_status' => 'connected'],
-                    ['id' => 'communication', 'name' => 'Communication', 'icon' => '📱', 'integration_status' => 'connected']
-                ]
+                'data' => $data
             ]);
         } catch (\Exception $e) {
             Log::error('Module integration error: ' . $e->getMessage());
@@ -419,9 +347,15 @@ class FeesIntelligenceController extends Controller
     public function getFeesDataTable(Request $request): JsonResponse
     {
         try {
+            $sub_institute_id = session()->get('sub_institute_id', 1);
+            $academic_year = session()->get('syear', date('Y'));
+            $table = $request->input('table');
+
+            $data = $this->intelligenceService->getFeesDataTable($sub_institute_id, $academic_year, $table);
+
             return response()->json([
                 'success' => true,
-                'data' => ['data' => [], 'count' => 0]
+                'data' => $data
             ]);
         } catch (\Exception $e) {
             Log::error('Fees data table error: ' . $e->getMessage());
@@ -439,9 +373,15 @@ class FeesIntelligenceController extends Controller
     public function exportReport(Request $request): JsonResponse
     {
         try {
+            $sub_institute_id = session()->get('sub_institute_id', 1);
+            $academic_year = session()->get('syear', date('Y'));
+            $format = $request->input('format', 'pdf');
+
+            $result = $this->intelligenceService->exportReport($sub_institute_id, $academic_year, $format);
+
             return response()->json([
                 'success' => true,
-                'data' => ['message' => 'Export placeholder']
+                'data' => $result
             ]);
         } catch (\Exception $e) {
             Log::error('Export report error: ' . $e->getMessage());
