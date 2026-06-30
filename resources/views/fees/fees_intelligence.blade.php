@@ -2,8 +2,10 @@
     Fees Intelligence Center - Blade View
     Based on the HTML design from public/fees_intelligence_actions.html
 --}}
-@extends('layouts.app')
-@section('title', 'Fees Intelligence Center')
+@extends('layout')
+@section('container')
+<div id="page-wrapper">
+    <div class="container-fluid">
 
 @push('styles')
 <style>
@@ -1752,3 +1754,6 @@
     });
 </script>
 @endpush
+    </div>
+</div>
+@endsection
