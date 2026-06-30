@@ -931,8 +931,8 @@ $data['fees_structure'] = DB::table('fees_breackoff as fb')
         $cancellations = DB::table('fees_cancel')
             ->where('sub_institute_id', $sub_institute_id)
             ->where('syear', $academic_year)
-            ->select('receipt_no', DB::raw('COUNT(*) as count'))
-            ->groupBy('receipt_no')
+            ->select('reciept_id', DB::raw('COUNT(*) as count'))
+            ->groupBy('reciept_id')
             ->having('count', '>', 1)
             ->first();
 
@@ -941,7 +941,7 @@ $data['fees_structure'] = DB::table('fees_breackoff as fb')
                 'id' => 'act_001',
                 'priority' => 'critical',
                 'title' => 'Investigate Duplicate Cancellation',
-                'description' => "Receipt #{$cancellations->receipt_no} was cancelled {$cancellations->count} times.",
+                'description' => "Receipt #{$cancellations->reciept_id} was cancelled {$cancellations->count} times.",
                 'deadline' => date('Y-m-d', strtotime('+3 days')),
                 'owner' => 'Accounts Head',
                 'effort' => 'Low',
@@ -954,8 +954,9 @@ $data['fees_structure'] = DB::table('fees_breackoff as fb')
         $cheque_returns = DB::table('fees_collect')
             ->where('sub_institute_id', $sub_institute_id)
             ->where('syear', $academic_year)
+            ->where('is_deleted','N')
             ->where('payment_mode', 'cheque')
-            ->where('cheque_status', 'returned')
+            ->whereNotNull('is_waved')
             ->count();
 
         if ($cheque_returns > 0) {
