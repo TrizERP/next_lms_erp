@@ -58,6 +58,7 @@ use App\Http\Controllers\fees\feesAIController;
 use App\Http\Controllers\fees\fees_report\monthwiseReceiptPdfController;
 use App\Http\Controllers\fees\fees_report\feesModificationController;
 use App\Http\Controllers\fees\online_fees\confirmOnlineFeesController;
+use App\Http\Controllers\fees\FeesIntelligenceController;
 use Illuminate\Support\Facades\Route;
 
 Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
@@ -224,6 +225,26 @@ Route::get('payphi', function ($id = null) {
     Route::get('fees_report_datewise', [feesReportController::class, 'datewiseReportIndex'])->name('fees_report_datewise.index');
     Route::get('getFeesTitle', [feesReportController::class, 'getFeesTitle'])->name('getFeesTitle');
     Route::get('fees_donation_records', [feesReportController::class, 'fees_donation_records'])->name('fees_donation_records.index');
+
+    // ============ Fees Intelligence Center Routes ============
+    Route::resource('fees_intelligence', FeesIntelligenceController::class);
+    
+    // API routes for intelligence data
+    Route::prefix('intelligence')->group(function () {
+        Route::get('/dashboard-stats', [FeesIntelligenceController::class, 'getDashboardStats'])->name('fees.intelligence.dashboard-stats');
+        Route::get('/collection-data', [FeesIntelligenceController::class, 'getCollectionData'])->name('fees.intelligence.collection-data');
+        Route::get('/defaulters', [FeesIntelligenceController::class, 'getDefaultersData'])->name('fees.intelligence.defaulters');
+        Route::get('/recommendations', [FeesIntelligenceController::class, 'getRecommendations'])->name('fees.intelligence.recommendations');
+        Route::get('/workflows', [FeesIntelligenceController::class, 'getCrossModuleWorkflows'])->name('fees.intelligence.workflows');
+        Route::get('/agents', [FeesIntelligenceController::class, 'getAIAgents'])->name('fees.intelligence.agents');
+        Route::get('/action-items', [FeesIntelligenceController::class, 'getActionItems'])->name('fees.intelligence.action-items');
+        Route::get('/module-integration', [FeesIntelligenceController::class, 'getModuleIntegration'])->name('fees.intelligence.module-integration');
+        Route::get('/fees-datatable', [FeesIntelligenceController::class, 'getFeesDataTable'])->name('fees.intelligence.fees-datatable');
+        
+        Route::post('/generate', [FeesIntelligenceController::class, 'generateIntelligence'])->name('fees.intelligence.generate');
+        Route::post('/agent-execute', [FeesIntelligenceController::class, 'executeAgentAction'])->name('fees.intelligence.agent-execute');
+        Route::post('/export', [FeesIntelligenceController::class, 'exportReport'])->name('fees.intelligence.export');
+    });
 });
 
 Route::post('api/', [AJAXController::class, 'getOnlineFees'])->name('get-online-fees-list');
