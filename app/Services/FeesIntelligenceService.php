@@ -277,13 +277,13 @@ class FeesIntelligenceService
             $insights = $this->generateAIInsights($data, $intelligence_prompt);
             
             // Generate recommendations
-            $recommendations = $this->generateRecommendations($data);
+            $recommendations = $this->getRecommendations($sub_institute_id, $academic_year, 'all');
             
             // Generate action items
-            $action_items = $this->generateActionItems($data);
+            $action_items = $this->getActionItems($sub_institute_id, $academic_year);
             
             // Generate cross-module workflows
-            $workflows = $this->generateCrossModuleWorkflows($data);
+            $workflows = $this->getCrossModuleWorkflows($sub_institute_id, $academic_year);
 
             // Store in cache/database
             $cache_key = "fees_intelligence_{$sub_institute_id}_{$academic_year}";
