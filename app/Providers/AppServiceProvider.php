@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Blade;
 use App\View\Components\Filters;
 use Illuminate\Support\Facades\Log;
+use App\Services\FeesIntelligenceService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -20,7 +21,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        //
+        // Register Fees Intelligence Service as singleton
+        $this->app->singleton(FeesIntelligenceService::class, function ($app) {
+            return new FeesIntelligenceService();
+        });
     }
 
     /**

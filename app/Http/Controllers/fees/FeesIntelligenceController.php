@@ -14,11 +14,11 @@ use function App\Helpers\getAIKey;
 
 class FeesIntelligenceController extends Controller
 {
-    protected FeesIntelligenceService $intelligenceService;
+    protected $intelligenceService;
 
-    public function __construct(FeesIntelligenceService $intelligenceService)
+    public function __construct()
     {
-        $this->intelligenceService = $intelligenceService;
+        $this->intelligenceService = app(FeesIntelligenceService::class);
     }
 
     /**
@@ -27,17 +27,27 @@ class FeesIntelligenceController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = session()->get('sub_institute_id');
-        $academic_year = session()->get('syear');
-
+        
+        // Get session values with fallbacks
+        $sub_institute_id = session()->get('sub_institute_id', 1);
+        $academic_year = session()->get('syear', date('Y'));
+        
         $res['page_title'] = 'Fees Intelligence Center';
         $res['module_name'] = 'fees';
         $res['sub_module_name'] = 'intelligence_center';
-
-        // Get basic statistics for initial load from service
-        $res['dashboard_stats'] = $this->intelligenceService->getDashboardStats($sub_institute_id, $academic_year);
-        $res['recent_collections'] = $this->intelligenceService->getRecentCollections($sub_institute_id, $academic_year);
-        $res['payment_methods'] = $this->intelligenceService->getPaymentMethodsDistribution($sub_institute_id, $academic_year);
+        
+        try {
+            // Get basic statistics for initial load from service
+            $res['dashboard_stats'] = $this->intelligenceService->getDashboardStats($sub_institute_id, $academic_year);
+            $res['recent_collections'] = $this->intelligenceService->getRecentCollections($sub_institute_id, $academic_year);
+            $res['payment_methods'] = $this->intelligenceService->getPaymentMethodsDistribution($sub_institute_id, $academic_year);
+        } catch (\Exception $e) {
+            // Log error and set empty defaults
+            Log::error('FeesIntelligenceController index error: ' . $e->getMessage());
+            $res['dashboard_stats'] = [];
+            $res['recent_collections'] = [];
+            $res['payment_methods'] = [];
+        }
 
         return is_mobile($type, "fees.fees_intelligence", $res, "view");
     }
