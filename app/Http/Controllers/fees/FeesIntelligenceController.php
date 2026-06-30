@@ -26,8 +26,8 @@ class FeesIntelligenceController extends Controller
         $type = $request->input('type');
         
         // Get session values with fallbacks
-        $sub_institute_id = session()->get('sub_institute_id', 1);
-        $academic_year = session()->get('syear', date('Y'));
+        $sub_institute_id = session()->get('sub_institute_id');
+        $academic_year = session()->get('syear');
         
         $res['page_title'] = 'Fees Intelligence Center';
         $res['module_name'] = 'fees';
@@ -95,7 +95,7 @@ class FeesIntelligenceController extends Controller
     public function getCollectionData(Request $request): JsonResponse
     {
         try {
-            $sub_institute_id = session()->get('sub_institute_id', 1);
+            $sub_institute_id = session()->get('sub_institute_id', 195);
             $academic_year = session()->get('syear', date('Y'));
             $period = $request->input('period', 'monthly');
 
@@ -121,7 +121,7 @@ class FeesIntelligenceController extends Controller
     public function getDefaultersData(Request $request): JsonResponse
     {
         try {
-            $sub_institute_id = session()->get('sub_institute_id', 1);
+            $sub_institute_id = session()->get('sub_institute_id', 195);
             $academic_year = session()->get('syear', date('Y'));
             $standard_id = $request->input('standard_id');
 
@@ -147,9 +147,9 @@ class FeesIntelligenceController extends Controller
     public function generateIntelligence(Request $request): JsonResponse
     {
         try {
-            $sub_institute_id = session()->get('sub_institute_id', 1);
-            $academic_year = session()->get('syear', date('Y'));
-            $user_id = session()->get('user_id', 0);
+            $sub_institute_id = session()->get('sub_institute_id');
+            $academic_year = session()->get('syear');
+            $user_id = session()->get('user_id');
 
             $extraction_prompt = $request->input('extraction_prompt', '');
             $intelligence_prompt = $request->input('intelligence_prompt', '');
@@ -185,8 +185,8 @@ class FeesIntelligenceController extends Controller
     public function getRecommendations(Request $request): JsonResponse
     {
         try {
-            $sub_institute_id = session()->get('sub_institute_id', 1);
-            $academic_year = session()->get('syear', date('Y'));
+            $sub_institute_id = session()->get('sub_institute_id');
+            $academic_year = session()->get('syear');
             $type = $request->input('type', 'all');
 
             $data = $this->intelligenceService->getRecommendations($sub_institute_id, $academic_year, $type);
@@ -211,8 +211,8 @@ class FeesIntelligenceController extends Controller
     public function getCrossModuleWorkflows(Request $request): JsonResponse
     {
         try {
-            $sub_institute_id = session()->get('sub_institute_id', 1);
-            $academic_year = session()->get('syear', date('Y'));
+            $sub_institute_id = session()->get('sub_institute_id');
+            $academic_year = session()->get('syear');
 
             $data = $this->intelligenceService->getCrossModuleWorkflows($sub_institute_id, $academic_year);
 
@@ -236,7 +236,7 @@ class FeesIntelligenceController extends Controller
     public function getAIAgents(Request $request): JsonResponse
     {
         try {
-            $sub_institute_id = session()->get('sub_institute_id', 1);
+            $sub_institute_id = session()->get('sub_institute_id', 195);
 
             $data = $this->intelligenceService->getAIAgents($sub_institute_id);
 
@@ -264,7 +264,7 @@ class FeesIntelligenceController extends Controller
             $action = $request->input('action');
             $parameters = $request->input('parameters', []);
 
-            $sub_institute_id = session()->get('sub_institute_id', 1);
+            $sub_institute_id = session()->get('sub_institute_id', 195);
             $academic_year = session()->get('syear', date('Y'));
             $user_id = session()->get('user_id', 0);
 
@@ -297,7 +297,7 @@ class FeesIntelligenceController extends Controller
     public function getActionItems(Request $request): JsonResponse
     {
         try {
-            $sub_institute_id = session()->get('sub_institute_id', 1);
+            $sub_institute_id = session()->get('sub_institute_id', 195);
             $academic_year = session()->get('syear', date('Y'));
             $priority = $request->input('priority');
 
@@ -323,7 +323,7 @@ class FeesIntelligenceController extends Controller
     public function getModuleIntegration(Request $request): JsonResponse
     {
         try {
-            $sub_institute_id = session()->get('sub_institute_id', 1);
+            $sub_institute_id = session()->get('sub_institute_id', 195);
 
             $data = $this->intelligenceService->getModuleIntegration($sub_institute_id);
 
@@ -347,7 +347,7 @@ class FeesIntelligenceController extends Controller
     public function getFeesDataTable(Request $request): JsonResponse
     {
         try {
-            $sub_institute_id = session()->get('sub_institute_id', 1);
+            $sub_institute_id = session()->get('sub_institute_id', 195);
             $academic_year = session()->get('syear', date('Y'));
             $table = $request->input('table');
 
@@ -373,7 +373,7 @@ class FeesIntelligenceController extends Controller
     public function exportReport(Request $request): JsonResponse
     {
         try {
-            $sub_institute_id = session()->get('sub_institute_id', 1);
+            $sub_institute_id = session()->get('sub_institute_id', 195);
             $academic_year = session()->get('syear', date('Y'));
             $format = $request->input('format', 'pdf');
 

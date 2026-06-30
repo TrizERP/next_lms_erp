@@ -207,7 +207,7 @@ class FeesIntelligenceService
         try {
             $query = DB::table('fees_breackoff as fb')
                 ->join('tblstudent as s', 'fb.student_id', '=', 's.id')
-                ->leftJoin('standard as st', 's.current_standard', '=', 'st.id')
+                ->leftJoin('standard as st', 'fc.standard_id', '=', 'st.id')
                 ->leftJoin('division as d', 's.division_id', '=', 'd.id')
                 ->where('fb.sub_institute_id', $sub_institute_id)
                 ->where('fb.syear', $academic_year)
@@ -232,7 +232,7 @@ class FeesIntelligenceService
                 ->orderBy('pending_amount', 'desc');
 
             if ($standard_id) {
-                $query->where('s.current_standard', $standard_id);
+                $query->where('fc.standard_id', $standard_id);
             }
 
             $defaulters = $query->limit(100)->get();
@@ -316,8 +316,8 @@ class FeesIntelligenceService
         // Fees collection data
         $data['collections'] = DB::table('fees_collect')
             ->where('sub_institute_id', $sub_institute_id)
-            ->where('academic_year', $academic_year)
-
+            ->where('syear', $academic_year)
+            ->where('is_deleted', 'N')
             ->select(
                 DB::raw('SUM(amount) as total_collected'),
                 DB::raw('COUNT(*) as transaction_count'),
@@ -328,30 +328,35 @@ class FeesIntelligenceService
             ->get();
 
         // Fees structure data
-        $data['fees_structure'] = DB::table('fees_breackoff as fb')
-            ->join('fees_title as ft', 'fb.fees_title_id', '=', 'ft.id')
-            ->join('standard as st', 'fb.standard_id', '=', 'st.id')
-            ->where('fb.sub_institute_id', $sub_institute_id)
-            ->where('fb.academic_year', $academic_year)
-            ->select(
-                'ft.name as fees_name',
-                'st.name as standard_name',
-                DB::raw('SUM(fb.total_fees) as total_amount'),
-                DB::raw('COUNT(DISTINCT fb.student_id) as student_count')
-            )
-            ->groupBy('ft.name', 'st.name')
-            ->get();
+$data['fees_structure'] = DB::table('fees_breackoff as fb')
+    ->join('fees_title as ft', 'fb.fee_type_id', '=', 'ft.id')
+    ->join('standard as st', 'fb.standard_id', '=', 'st.id')
+    ->join('tblstudent_enrollment as te', function ($join) {
+        $join->on('te.standard_id', '=', 'fb.standard_id')
+             ->on('te.syear', '=', 'fb.syear')
+             ->on('te.sub_institute_id', '=', 'fb.sub_institute_id');
+    })
+    ->where('fb.sub_institute_id', $sub_institute_id)
+    ->where('fb.syear', $academic_year)
+    ->select(
+        'ft.fees_title as fees_name',
+        'st.name as standard_name',
+        DB::raw('SUM(fb.amount) as total_amount'),
+        DB::raw('COUNT(DISTINCT te.student_id) as student_count')
+    )
+    ->groupBy('ft.fees_title', 'st.name')
+    ->get();
 
         // Cancellation data
         $data['cancellations'] = DB::table('fees_cancel')
             ->where('sub_institute_id', $sub_institute_id)
-            ->where('academic_year', $academic_year)
+            ->where('syear', $academic_year)
             ->select(
-                DB::raw('SUM(cancel_amount) as total_cancelled'),
+                DB::raw('SUM(amountpaid) as total_cancelled'),
                 DB::raw('COUNT(*) as cancellation_count'),
-                'cancel_reason'
+                'cancel_type'
             )
-            ->groupBy('cancel_reason')
+            ->groupBy('cancel_type')
             ->get();
 
         // Student data
@@ -373,12 +378,13 @@ class FeesIntelligenceService
         // Standard-wise collection
         $data['standard_wise'] = DB::table('fees_collect as fc')
             ->join('tblstudent as s', 'fc.student_id', '=', 's.id')
-            ->leftJoin('standard as st', 's.current_standard', '=', 'st.id')
+            ->leftJoin('standard as st', 'fc.standard_id', '=', 'st.id')
             ->where('fc.sub_institute_id', $sub_institute_id)
-            ->where('fc.academic_year', $academic_year)
+            ->where('fc.syear', $academic_year)
+            ->where('fc.is_deleted', 'N')
             ->select(
                 'st.name as standard_name',
-                DB::raw('SUM(fc.total_paid) as total_collected'),
+                DB::raw('SUM(fc.amount) as total_collected'),
                 DB::raw('COUNT(DISTINCT fc.student_id) as student_count')
             )
             ->groupBy('st.name')
@@ -924,7 +930,7 @@ class FeesIntelligenceService
         // Critical: Duplicate cancellation check
         $cancellations = DB::table('fees_cancel')
             ->where('sub_institute_id', $sub_institute_id)
-            ->where('academic_year', $academic_year)
+            ->where('syear', $academic_year)
             ->select('receipt_no', DB::raw('COUNT(*) as count'))
             ->groupBy('receipt_no')
             ->having('count', '>', 1)
@@ -947,7 +953,7 @@ class FeesIntelligenceService
         // High: Cheque returns
         $cheque_returns = DB::table('fees_collect')
             ->where('sub_institute_id', $sub_institute_id)
-            ->where('academic_year', $academic_year)
+            ->where('syear', $academic_year)
             ->where('payment_mode', 'cheque')
             ->where('cheque_status', 'returned')
             ->count();
@@ -1041,15 +1047,15 @@ class FeesIntelligenceService
         $query = match ($table) {
             'fees_collect' => DB::table('fees_collect')
                 ->where('sub_institute_id', $sub_institute_id)
-                ->where('academic_year', $academic_year),
+                ->where('syear', $academic_year),
             
             'fees_cancel' => DB::table('fees_cancel')
                 ->where('sub_institute_id', $sub_institute_id)
-                ->where('academic_year', $academic_year),
+                ->where('syear', $academic_year),
             
             'fees_breackoff' => DB::table('fees_breackoff')
                 ->where('sub_institute_id', $sub_institute_id)
-                ->where('academic_year', $academic_year),
+                ->where('syear', $academic_year),
             
             'fees_title' => DB::table('fees_title')
                 ->where('sub_institute_id', $sub_institute_id),
@@ -1116,9 +1122,10 @@ class FeesIntelligenceService
         try {
             return DB::table('fees_collect as fc')
                 ->join('tblstudent as s', 'fc.student_id', '=', 's.id')
-                ->leftJoin('standard as st', 's.current_standard', '=', 'st.id')
+                ->leftJoin('standard as st', 'fc.standard_id', '=', 'st.id')
                 ->where('fc.sub_institute_id', $sub_institute_id)
-                ->where('fc.academic_year', $academic_year)
+                ->where('fc.syear', $academic_year)
+                ->where('fc.is_deleted', 'N')
                 ->select(
                     'fc.id',
                     'fc.receipt_no',
@@ -1126,10 +1133,10 @@ class FeesIntelligenceService
                     's.middle_name',
                     's.last_name',
                     'st.name as standard_name',
-                    'fc.total_paid',
-                    'fc.create_date'
+                    'fc.amount',
+                    'fc.receiptdate as create_date',
                 )
-                ->orderBy('fc.create_date', 'desc')
+                ->orderBy('fc.receiptdate', 'desc')
                 ->limit(10)
                 ->get()
                 ->map(function ($item) {
@@ -1151,8 +1158,8 @@ class FeesIntelligenceService
         try {
             $methods = DB::table('fees_collect')
                 ->where('sub_institute_id', $sub_institute_id)
-                ->where('academic_year', $academic_year)
-                ->select('payment_mode', DB::raw('SUM(total_paid) as total, COUNT(*) as count'))
+                ->where('syear', $academic_year)
+                ->select('payment_mode', DB::raw('SUM(amount) as total, COUNT(*) as count'))
                 ->groupBy('payment_mode')
                 ->get();
 
@@ -1174,12 +1181,12 @@ class FeesIntelligenceService
     {
         return DB::table('fees_breackoff as fb')
             ->where('fb.sub_institute_id', $sub_institute_id)
-            ->where('fb.academic_year', $academic_year)
-            ->whereRaw('(fb.total_fees - COALESCE((
-                SELECT SUM(fc.total_paid) 
+            ->where('fb.syear', $academic_year)
+            ->whereRaw('(fb.amount - COALESCE((
+                SELECT SUM(fc.amount) 
                 FROM fees_collect as fc 
-                WHERE fc.student_id = fb.student_id 
-                AND fc.academic_year = fb.academic_year
+                WHERE fc.standard_id = fb.standard_id 
+                AND fc.syear = fb.syear
             ), 0)) > 0')
             ->count();
     }
@@ -1188,19 +1195,18 @@ class FeesIntelligenceService
     {
         $total_students = DB::table('tblstudent')
             ->where('sub_institute_id', $sub_institute_id)
-            ->where('academic_year', $academic_year)
             ->count();
 
         $defaulter_count = $this->getDefaulterCount($sub_institute_id, $academic_year);
 
         $pending_amount = DB::table('fees_breackoff as fb')
             ->where('fb.sub_institute_id', $sub_institute_id)
-            ->where('fb.academic_year', $academic_year)
-            ->selectRaw('SUM(fb.total_fees - COALESCE((
-                SELECT SUM(fc.total_paid) 
+            ->where('fb.syear', $academic_year)
+            ->selectRaw('SUM(fb.amount - COALESCE((
+                SELECT SUM(fc.amount) 
                 FROM fees_collect as fc 
-                WHERE fc.student_id = fb.student_id 
-                AND fc.academic_year = fb.academic_year
+                WHERE fc.standard_id = fb.standard_id 
+                AND fc.syear = fb.syear
             ), 0)) as pending')
             ->value('pending');
 
@@ -1216,27 +1222,27 @@ class FeesIntelligenceService
     {
         return DB::table('fees_breackoff as fb')
             ->join('tblstudent as s', 'fb.student_id', '=', 's.id')
-            ->leftJoin('standard as st', 's.current_standard', '=', 'st.id')
+            ->leftJoin('standard as st', 'fc.standard_id', '=', 'st.id')
             ->where('fb.sub_institute_id', $sub_institute_id)
-            ->where('fb.academic_year', $academic_year)
+            ->where('fb.syear', $academic_year)
             ->select(
                 's.id as student_id',
                 's.first_name',
                 's.last_name',
                 'st.name as standard_name',
-                'fb.total_fees',
+                'fb.amount as total_fees',
                 'fb.create_date as assigned_date',
                 DB::raw('COALESCE((
-                    SELECT SUM(fc.total_paid) 
+                    SELECT SUM(fc.amount) 
                     FROM fees_collect as fc 
-                    WHERE fc.student_id = fb.student_id 
-                    AND fc.academic_year = fb.academic_year
+                    WHERE fc.standard_id = fb.standard_id 
+                    AND fc.syear = fb.syear
                 ), 0) as paid_amount'),
-                DB::raw('fb.total_fees - COALESCE((
-                    SELECT SUM(fc.total_paid) 
+                DB::raw('fb.amount - COALESCE((
+                    SELECT SUM(fc.amount) 
                     FROM fees_collect as fc 
-                    WHERE fc.student_id = fb.student_id 
-                    AND fc.academic_year = fb.academic_year
+                    WHERE fc.standard_id = fb.standard_id 
+                    AND fc.syear = fb.syear
                 ), 0) as pending_amount')
             )
             ->having('pending_amount', '>', 0);
