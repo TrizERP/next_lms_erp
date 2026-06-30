@@ -33,8 +33,9 @@ class FeesIntelligenceService
             // Current month collection
             $total_collected = DB::table('fees_collect')
                 ->where('sub_institute_id', $sub_institute_id)
-                ->whereBetween('create_date', [$month_start, $month_end])
-                ->sum('total_paid');
+                ->where('is_deleted', 'N')
+                ->whereBetween('receiptdate', [$month_start, $month_end])
+                ->sum('amount');
 
             // Previous month for comparison
             $prev_month_start = date('Y-m-01', strtotime('-1 month'));
@@ -42,14 +43,16 @@ class FeesIntelligenceService
 
             $prev_total_collected = DB::table('fees_collect')
                 ->where('sub_institute_id', $sub_institute_id)
-                ->whereBetween('create_date', [$prev_month_start, $prev_month_end])
-                ->sum('total_paid');
+                ->where('is_deleted', 'N')
+                ->whereBetween('receiptdate', [$prev_month_start, $prev_month_end])
+                ->sum('amount');
 
             // Total payable for the academic year
             $total_payable = DB::table('fees_breackoff')
                 ->where('sub_institute_id', $sub_institute_id)
-                ->where('academic_year', $academic_year)
-                ->sum('total_fees');
+                ->where('syear', $academic_year)
+                ->where('admission_year', $academic_year)
+                ->sum('amount');
 
             // Collection rate
             $collection_rate = $total_payable > 0 
@@ -65,8 +68,9 @@ class FeesIntelligenceService
             // Previous collection rate
             $prev_collection_rate = DB::table('fees_breackoff')
                 ->where('sub_institute_id', $sub_institute_id)
-                ->where('academic_year', $academic_year - 1)
-                ->sum('total_fees');
+                ->where('syear', $academic_year - 1)
+                ->where('admission_year', $academic_year - 1)
+                ->sum('amount');
 
             $prev_collection_rate = $prev_collection_rate > 0 
                 ? round(($prev_total_collected / $prev_collection_rate) * 100, 1) 
@@ -132,8 +136,9 @@ class FeesIntelligenceService
 
                     $collected = DB::table('fees_collect')
                         ->where('sub_institute_id', $sub_institute_id)
-                        ->whereBetween('create_date', [$start, $end])
-                        ->sum('total_paid');
+                        ->where('is_deleted', 'N')
+                        ->whereBetween('receiptdate', [$start, $end])
+                        ->sum('amount');
 
                     $monthName = date('M', strtotime($start));
                     
@@ -148,8 +153,9 @@ class FeesIntelligenceService
 
                     $collected = DB::table('fees_collect')
                         ->where('sub_institute_id', $sub_institute_id)
-                        ->whereBetween('create_date', [$start, $end])
-                        ->sum('total_paid');
+                        ->where('is_deleted', 'N')
+                        ->whereBetween('receiptdate', [$start, $end])
+                        ->sum('amount');
 
                     $data['labels'][] = date('M', strtotime($start));
                     $data['collected'][] = (float) $collected;
@@ -162,8 +168,9 @@ class FeesIntelligenceService
 
                     $collected = DB::table('fees_collect')
                         ->where('sub_institute_id', $sub_institute_id)
-                        ->whereBetween('create_date', [$week_start, $week_end])
-                        ->sum('total_paid');
+                        ->where('is_deleted', 'N')
+                        ->whereBetween('receiptdate', [$week_start, $week_end])
+                        ->sum('amount');
 
                     $data['labels'][] = "W" . (12 - $i);
                     $data['collected'][] = (float) $collected;
@@ -176,8 +183,9 @@ class FeesIntelligenceService
                     
                     $collected = DB::table('fees_collect')
                         ->where('sub_institute_id', $sub_institute_id)
-                        ->where('create_date', $date)
-                        ->sum('total_paid');
+                        ->where('is_deleted', 'N')
+                        ->where('receiptdate', $date)
+                        ->sum('amount');
 
                     $data['labels'][] = $day;
                     $data['collected'][] = (float) $collected;
@@ -202,7 +210,7 @@ class FeesIntelligenceService
                 ->leftJoin('standard as st', 's.current_standard', '=', 'st.id')
                 ->leftJoin('division as d', 's.division_id', '=', 'd.id')
                 ->where('fb.sub_institute_id', $sub_institute_id)
-                ->where('fb.academic_year', $academic_year)
+                ->where('fb.syear', $academic_year)
                 ->select(
                     's.id as student_id',
                     's.first_name',
@@ -210,12 +218,13 @@ class FeesIntelligenceService
                     's.last_name',
                     'st.name as standard_name',
                     'd.name as division_name',
-                    'fb.total_fees',
-                    'fb.total_fees - COALESCE((
-                        SELECT SUM(fc.total_paid) 
+                    'fb.amount',
+                    'fb.amount - COALESCE((
+                        SELECT SUM(fc.amount) 
                         FROM fees_collect as fc 
                         WHERE fc.student_id = fb.student_id 
-                        AND fc.academic_year = fb.academic_year
+                        AND fc.syear = fb.syear
+                        AND fc.is_deleted = "N"
                     ), 0) as pending_amount',
                     'fb.create_date as fee_assigned_date'
                 )
@@ -308,10 +317,11 @@ class FeesIntelligenceService
         $data['collections'] = DB::table('fees_collect')
             ->where('sub_institute_id', $sub_institute_id)
             ->where('academic_year', $academic_year)
+
             ->select(
-                DB::raw('SUM(total_paid) as total_collected'),
+                DB::raw('SUM(amount) as total_collected'),
                 DB::raw('COUNT(*) as transaction_count'),
-                DB::raw('AVG(total_paid) as average_transaction'),
+                DB::raw('AVG(amount) as average_transaction'),
                 'payment_mode'
             )
             ->groupBy('payment_mode')

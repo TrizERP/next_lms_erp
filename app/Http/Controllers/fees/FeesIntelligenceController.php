@@ -85,8 +85,8 @@ class FeesIntelligenceController extends Controller
     public function getDashboardStats(Request $request): JsonResponse
     {
         try {
-            $sub_institute_id = session()->get('sub_institute_id', 1);
-            $academic_year = session()->get('syear', date('Y'));
+            $sub_institute_id = session()->get('sub_institute_id');
+            $academic_year = session()->get('syear');
 
             $stats = $this->getBasicDashboardStats($sub_institute_id, $academic_year);
 
