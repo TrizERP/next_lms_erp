@@ -34,10 +34,10 @@ class FeesIntelligenceController extends Controller
         $res['module_name'] = 'fees';
         $res['sub_module_name'] = 'intelligence_center';
 
-        // Get basic statistics for initial load
-        $res['dashboard_stats'] = $this->getDashboardStats($sub_institute_id, $academic_year);
-        $res['recent_collections'] = $this->getRecentCollections($sub_institute_id, $academic_year);
-        $res['payment_methods'] = $this->getPaymentMethodsDistribution($sub_institute_id, $academic_year);
+        // Get basic statistics for initial load from service
+        $res['dashboard_stats'] = $this->intelligenceService->getDashboardStats($sub_institute_id, $academic_year);
+        $res['recent_collections'] = $this->intelligenceService->getRecentCollections($sub_institute_id, $academic_year);
+        $res['payment_methods'] = $this->intelligenceService->getPaymentMethodsDistribution($sub_institute_id, $academic_year);
 
         return is_mobile($type, "fees.fees_intelligence", $res, "view");
     }
@@ -375,132 +375,6 @@ class FeesIntelligenceController extends Controller
                 'message' => 'Error exporting report',
                 'error' => $e->getMessage()
             ], 500);
-        }
-    }
-
-    // ============ Private Helper Methods ============
-
-    private function getDashboardStats($sub_institute_id, $academic_year)
-    {
-        try {
-            // Total collected this month
-            $month_start = date('Y-m-01');
-            $month_end = date('Y-m-t');
-
-            $total_collected = DB::table('fees_collect')
-                ->where('sub_institute_id', $sub_institute_id)
-                ->whereBetween('create_date', [$month_start, $month_end])
-                ->sum('total_paid');
-
-            // Previous month for comparison
-            $prev_month_start = date('Y-m-01', strtotime('-1 month'));
-            $prev_month_end = date('Y-m-t', strtotime('-1 month'));
-
-            $prev_total_collected = DB::table('fees_collect')
-                ->where('sub_institute_id', $sub_institute_id)
-                ->whereBetween('create_date', [$prev_month_start, $prev_month_end])
-                ->sum('total_paid');
-
-            // Collection rate
-            $total_payable = DB::table('fees_breackoff')
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('academic_year', $academic_year)
-                ->sum('total_fees');
-
-            $collection_rate = $total_payable > 0 ? round(($total_collected / $total_payable) * 100, 1) : 0;
-
-            // Outstanding
-            $outstanding = $total_payable - $total_collected;
-
-            // Defaulter count
-            $defaulter_count = DB::table('fees_breackoff as fb')
-                ->join('tblstudent as s', 'fb.student_id', '=', 's.id')
-                ->where('fb.sub_institute_id', $sub_institute_id)
-                ->where('fb.academic_year', $academic_year)
-                ->whereRaw('(fb.total_fees - COALESCE((SELECT SUM(total_paid) FROM fees_collect WHERE student_id = fb.student_id AND academic_year = fb.academic_year), 0)) > 0')
-                ->count();
-
-            // Calculate changes
-            $collected_change = $prev_total_collected > 0 
-                ? round((($total_collected - $prev_total_collected) / $prev_total_collected) * 100, 1) 
-                : 0;
-
-            return [
-                'total_collected' => $total_collected,
-                'total_collected_formatted' => $this->formatCurrency($total_collected),
-                'collected_change' => $collected_change,
-                'collection_rate' => $collection_rate,
-                'outstanding' => $outstanding,
-                'outstanding_formatted' => $this->formatCurrency($outstanding),
-                'defaulter_count' => $defaulter_count,
-                'total_payable' => $total_payable
-            ];
-        } catch (\Exception $e) {
-            Log::error('Dashboard stats error: ' . $e->getMessage());
-            return [
-                'total_collected' => 0,
-                'total_collected_formatted' => '₹0',
-                'collected_change' => 0,
-                'collection_rate' => 0,
-                'outstanding' => 0,
-                'outstanding_formatted' => '₹0',
-                'defaulter_count' => 0,
-                'total_payable' => 0
-            ];
-        }
-    }
-
-    private function getRecentCollections($sub_institute_id, $academic_year)
-    {
-        try {
-            return DB::table('fees_collect as fc')
-                ->join('tblstudent as s', 'fc.student_id', '=', 's.id')
-                ->leftJoin('standard as st', 's.current_standard', '=', 'st.id')
-                ->where('fc.sub_institute_id', $sub_institute_id)
-                ->where('fc.academic_year', $academic_year)
-                ->select(
-                    'fc.id',
-                    'fc.receipt_no',
-                    's.first_name',
-                    's.middle_name',
-                    's.last_name',
-                    'st.name as standard_name',
-                    'fc.total_paid',
-                    'fc.create_date'
-                )
-                ->orderBy('fc.create_date', 'desc')
-                ->limit(10)
-                ->get()
-                ->map(function ($item) {
-                    $item->student_name = trim(($item->first_name ?? '') . ' ' . ($item->middle_name ?? '') . ' ' . ($item->last_name ?? ''));
-                    $item->date_formatted = date('d M Y', strtotime($item->create_date));
-                    return $item;
-                });
-        } catch (\Exception $e) {
-            Log::error('Recent collections error: ' . $e->getMessage());
-            return [];
-        }
-    }
-
-    private function getPaymentMethodsDistribution($sub_institute_id, $academic_year)
-    {
-        try {
-            $methods = DB::table('fees_collect')
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('academic_year', $academic_year)
-                ->select('payment_mode', DB::raw('SUM(total_paid) as total, COUNT(*) as count'))
-                ->groupBy('payment_mode')
-                ->get();
-
-            $total = $methods->sum('total');
-
-            return $methods->map(function ($item) use ($total) {
-                $item->percentage = $total > 0 ? round(($item->total / $total) * 100, 1) : 0;
-                return $item;
-            });
-        } catch (\Exception $e) {
-            Log::error('Payment methods error: ' . $e->getMessage());
-            return [];
         }
     }
 

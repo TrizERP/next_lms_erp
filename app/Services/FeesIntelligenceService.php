@@ -1098,6 +1098,66 @@ class FeesIntelligenceService
         ];
     }
 
+    /**
+     * Get recent fee collections
+     */
+    public function getRecentCollections($sub_institute_id, $academic_year)
+    {
+        try {
+            return DB::table('fees_collect as fc')
+                ->join('tblstudent as s', 'fc.student_id', '=', 's.id')
+                ->leftJoin('standard as st', 's.current_standard', '=', 'st.id')
+                ->where('fc.sub_institute_id', $sub_institute_id)
+                ->where('fc.academic_year', $academic_year)
+                ->select(
+                    'fc.id',
+                    'fc.receipt_no',
+                    's.first_name',
+                    's.middle_name',
+                    's.last_name',
+                    'st.name as standard_name',
+                    'fc.total_paid',
+                    'fc.create_date'
+                )
+                ->orderBy('fc.create_date', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(function ($item) {
+                    $item->student_name = trim(($item->first_name ?? '') . ' ' . ($item->middle_name ?? '') . ' ' . ($item->last_name ?? ''));
+                    $item->date_formatted = date('d M Y', strtotime($item->create_date));
+                    return $item;
+                });
+        } catch (\Exception $e) {
+            Log::error('Recent collections error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Get payment methods distribution
+     */
+    public function getPaymentMethodsDistribution($sub_institute_id, $academic_year)
+    {
+        try {
+            $methods = DB::table('fees_collect')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('academic_year', $academic_year)
+                ->select('payment_mode', DB::raw('SUM(total_paid) as total, COUNT(*) as count'))
+                ->groupBy('payment_mode')
+                ->get();
+
+            $total = $methods->sum('total');
+
+            return $methods->map(function ($item) use ($total) {
+                $item->percentage = $total > 0 ? round(($item->total / $total) * 100, 1) : 0;
+                return $item;
+            });
+        } catch (\Exception $e) {
+            Log::error('Payment methods error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
     // ============ Protected Helper Methods ============
 
     protected function getDefaulterCount($sub_institute_id, $academic_year): int
