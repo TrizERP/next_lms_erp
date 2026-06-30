@@ -7,7 +7,6 @@
 <div id="page-wrapper">
     <div class="container-fluid">
 
-@push('styles')
 <style>
     :root {
         --primary: #6366f1;
@@ -745,9 +744,6 @@
         .nav-tabs { overflow-x: auto; }
     }
 </style>
-@endpush
-
-@section('content')
 <div class="intelligence-container">
     <!-- Header -->
     <header class="intelligence-header">
@@ -1050,7 +1046,8 @@
         </div>
     </div>
 </div>
-
+    </div>
+</div>
 <!-- Modal -->
 <div class="modal" id="actionModal">
     <div class="modal-content">
@@ -1063,9 +1060,8 @@
         </div>
     </div>
 </div>
-@endsection
 
-@push('scripts')
+@include('includes.footerJs')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
     // Global state
@@ -1753,7 +1749,5 @@
         loadDashboardStats();
     });
 </script>
-@endpush
-    </div>
-</div>
+@include('includes.footer')
 @endsection
