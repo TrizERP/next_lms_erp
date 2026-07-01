@@ -7,6 +7,7 @@ use App\Http\Controllers\settings\instituteDetailController;
 use App\Http\Controllers\neo4jGraph\StudentResultGraphController;
 use App\Http\Controllers\StudentGraphController;
 use App\Http\Controllers\api\ApiLoginController;
+use App\Http\Controllers\api\MenuRightsController;
 
 
 
@@ -61,4 +62,5 @@ Route::get('/compliance/list',[instituteDetailController::class,'index']);
 Route::post('/compliance/create',[instituteDetailController::class,'store']);
 Route::post('/compliance/update/{id}',[instituteDetailController::class,'update']);
 Route::post('/compliance/delete/{id}',[instituteDetailController::class,'destroy']);
-
+//getmenu rights level wise
+Route::post('/menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMenuRightsLevelWise']);
