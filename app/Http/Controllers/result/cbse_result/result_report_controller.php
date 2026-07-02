@@ -416,10 +416,17 @@ if (!empty($date_arr)) {
             $data['WRT_data'] = $all_WRT_data;
             $data['all_student'] = $students_data;
 
+            $studentResultController = new \App\Http\Controllers\result\new_result\studentResultController;
+            $attendance = [];
+            foreach ($students_data as $student) {
+                $attendance[$student['student_id']] = $studentResultController->getTermAttendance($standard_id, $student['student_id'], $term_id, '');
+            }
+            $data['attendance'] = $attendance;
+
             return is_mobile($type, "result/result_report/classwise_report_show", $data, "view");
         }
 
-        if ($report_of == 'classwise_grade_report') 
+        if ($report_of == 'classwise_grade_report')
         {
             $all_student = SearchStudent($grade_id, $standard_id, $division_id, $sub_institute_id, $syear, $roll_no);
             $students_data = [];
