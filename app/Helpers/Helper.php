@@ -1093,8 +1093,8 @@ if (!function_exists('FeeBreakoffHeadWise')) {
                     ->on('ar.sub_institute_id', '=', 's.sub_institute_id');
             })
             ->leftJoin('admission_enquiry as ae', function ($join) {
-                $join->on('ae.id', '=', 'ar.enquiry_id')
-                    ->on('ar.sub_institute_id', '=', 'ae.sub_institute_id');
+                $join->on('ae.id', '=', 's.admission_id')
+                    ->on('ae.sub_institute_id', '=', 's.sub_institute_id');
             })
             ->selectRaw("s.*, se.syear, se.student_id, se.roll_no, se.grade_id, se.standard_id, se.section_id, se.student_quota,
                     se.start_date, se.end_date, se.enrollment_code, se.drop_code, se.drop_remarks, se.drop_remarks, se.term_id,
