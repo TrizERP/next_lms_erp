@@ -8,18 +8,19 @@ use App\Models\school_setup\academic_yearModel;
 use App\Models\school_setup\SchoolModel;
 use App\Models\school_setup\subjectModel;
 use App\Models\student\tblstudentModel;
-use App\Models\user\tbluserModel;
-use App\Models\tourModel;
 use App\Models\user\tbluserprofilemasterModel;
+use GenTux\Jwt\GetsJwtToken;
+use GenTux\Jwt\JwtToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use Laravel\Sanctum\PersonalAccessToken;
 
 class ApiLoginController extends Controller
 {
-    public function login(Request $request): JsonResponse
+    use GetsJwtToken;
+
+    public function login(Request $request, JwtToken $jwt): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'email'    => 'required|email',
@@ -406,51 +407,19 @@ if ($staffData) {
                         ];
                     })->values();
                 })
-                ->toArray();
-        }
-        $tokenUser = tbluserModel::find($user['id']) ?? tblstudentModel::find($user['id']);
-        $userToken = $tokenUser->createToken('api-token')->plainTextToken;
-
-        $checkMultiLogin = DB::table('general_data')
-            ->where(['fieldname' => 'multi_login', 'sub_institute_id' => $user['sub_institute_id']])
-            ->value('fieldvalue');
-
-        if ($checkMultiLogin === 'No') {
-            DB::table('tbluser')
-                ->where(['sub_institute_id' => $user['sub_institute_id'], 'id' => $user['id']])
-                ->update(['login_ip' => $userToken]);
+->toArray();
         }
 
-        $existingToken = PersonalAccessToken::where('tokenable_type', loginModel::class)
-            ->where('tokenable_id', $user['id'])
-            ->where('name', 'api-login')
-            ->first();
+        $payload = [
+            'id'              => $user['id'],
+            'sub_institute_id' => $user['sub_institute_id'],
+            'is_admin'        => $user['is_admin'],
+            'client_id'       => $user['client_id'],
+            'user_profile_id' => $user['user_profile_id'],
+            'is_student'      => $isStudent,
+        ];
 
-        if (! $existingToken && ($isStaff || ($user['plain_password'] != 'student'))) {
-            $tokenModel = loginModel::find($user['id']);
-            $tokenUser = tbluserModel::find($user['id']) ?? tblstudentModel::find($user['id']);
-            $userToken = $tokenUser->createToken('api-token')->plainTextToken;
-            if ($tokenModel) {
-                $tokenModel->tokens()->create([
-                    'name'      => 'api-login',
-                    'token'     => hash('sha256', $userToken),
-                    'abilities' => ['*'],
-                ]);
-            }
-        }
-
-        if (! $existingToken && $isStudent) {
-            $tokenModel = tblstudentModel::find($user['id']);
-            $tokenUser = tbluserModel::find($user['id']) ?? tblstudentModel::find($user['id']);
-            $userToken = $tokenUser->createToken('api-token')->plainTextToken;
-            if ($tokenModel) {
-                $tokenModel->tokens()->create([
-                    'name'      => 'api-login',
-                    'token'     =>$userToken,
-                    'abilities' => ['*'],
-                ]);
-            }
-        }
+        $userToken = $jwt->createToken($payload);
 
         $apiLoginUrl = url('/api/api-login');
         return response()->json([
