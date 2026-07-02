@@ -53,10 +53,13 @@
                               <th>{{isset($date_point[0]) ? $date_point[0] : '-'}}</th>
                            @endforeach
                         @endif
-                        <th>Total</th>
-                        <th>Percentage(%)</th>
-                        <th class="text-left">Grade</th>
-                     </tr>
+                         <th>Total</th>
+                         <th>Percentage(%)</th>
+                         <th class="text-left">Grade</th>
+                         @if(in_array(session()->get('sub_institute_id'),[76]))
+                         <th>Attendance</th>
+                         @endif
+                      </tr>
                   </thead>
                   <tbody>
                      @foreach($all_student as $key => $all_data)
@@ -121,10 +124,14 @@
                            @endif
                         @endforeach
                         @endif
-                        <td>{{$obtained_total}}/{{$total}}</td>
-                        <td>{{$percentage}}</td>
-                        <td>{{ \App\Helpers\getGrade($gradeScale, $total, $obtained_total) }}</td>
-                     </tr>
+                         <td>{{$obtained_total}}/{{$total}}</td>
+                         <td>{{$percentage}}</td>
+                         <td>{{ \App\Helpers\getGrade($gradeScale, $total, $obtained_total) }}</td>
+                         
+                         @if(in_array(session()->get('sub_institute_id'),[76]))
+                         <td>{{ isset($data['attendance'][$student_id]) ? $data['attendance'][$student_id] : '-' }}</td>
+                        @endif
+                      </tr>
                      @endforeach
                   </tbody>
                </table>
@@ -147,7 +154,7 @@
        buttons: [ 
            { 
                extend: 'pdfHtml5',
-               title: 'Inward Report',
+               title: 'Classwise Report',
                orientation: 'landscape',
                pageSize: 'LEGAL',                
                pageSize: 'A0',
