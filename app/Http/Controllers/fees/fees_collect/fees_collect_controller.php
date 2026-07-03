@@ -428,8 +428,7 @@ class fees_collect_controller extends Controller
         $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr,$syear,$sub_institute_id);
 
         //  OtherBreackOfMonthHead additional fees_title from helper.php
-        $other_bk_off_month_head_wise = OtherBreackOfMonthHead($stu_arr, $search_ids);
-
+        $other_bk_off_month_head_wise = OtherBreackOfMonthHead($stu_arr, $search_ids, $syear ,$sub_institute_id);
         //  FeeBreakoffHeadWise get fees_title from helper.php
         $head_wise_fees = FeeBreakoffHeadWise($stu_arr, null, null, null, $syear,'',$sub_institute_id);
         
@@ -444,13 +443,14 @@ class fees_collect_controller extends Controller
                 }
             }
         }
-
+        
         $other_fee_heads = [];
         foreach ($_REQUEST['fees_data'] as $id => $vals) {
             if (!in_array($id, $reg_fee_heads)) {
                 $other_fee_heads[] = $id;
             }
         }
+        // dd($other_fee_heads);
         //getting reg fee month_id that we need to pay
         $reg_months_pay = [];
         foreach ($reg_fee_bk as $month_id => $arr) {
@@ -484,7 +484,7 @@ class fees_collect_controller extends Controller
                 }
             }
         }
-        $last_syear = (session()->get('syear')-1);
+        $last_syear = ($syear-1);
         // last year fees start
         if (isset($_REQUEST['fees_data']['previous_fees']) && $_REQUEST['fees_data']['previous_fees'] != 0) {
             $other_bk_off2 = OtherBreackOff($stu_arr, $search_ids,'','','','',$sub_institute_id); // for previous year
@@ -639,6 +639,7 @@ foreach ($data as $row) {
         foreach ($ret_heds_with_id as $id => $arr) {
             $heds_with_id[$arr->fees_title] = $arr->id;
         }
+        
         $new_insert_arr = [];
         foreach ($reg_insert_arr as $month_id => $arr) {
             foreach ($arr as $id => $val) {
@@ -655,6 +656,7 @@ foreach ($data as $row) {
 //echo "<pre>";print_r($new_insert_arr);exit();
         // sort other breakoff month date
        // Custom sorting function
+
 uksort($other_bk_off_month_head_wise, function($a, $b) {
     $last4A = substr($a, -4);
     $last4B = substr($b, -4);
@@ -665,6 +667,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         return $a - $b; // If last 4 digits are the same, sort by the entire value
     }
 });
+// dd($other_bk_off_month_head_wise);
         $oth_insert_arr = [];
         foreach ($other_bk_off_month_head_wise as $month => $bk_off) {
             if (in_array($month, $oth_months_pay)) {
@@ -686,6 +689,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 }
             }
         }
+        // dd($oth_insert_arr);
         // echo "<pre>";print_r($oth_insert_arr);exit;
     // end 01/02/24
         $new_insert_other_arr = [];
@@ -702,7 +706,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             }
         }
         // echo "<pre>";print_r($new_insert_other_arr);exit;
-        
+        // dd($oth_insert_arr);
         // get discount add while collecting fees in array for fees
         $new_insert_arr = $this->add_discount($new_insert_arr, 'fees_collect');
         // get discount add while collecting fees in array for aditional fees
