@@ -64,3 +64,4 @@ Route::post('/compliance/update/{id}',[instituteDetailController::class,'update'
 Route::post('/compliance/delete/{id}',[instituteDetailController::class,'destroy']);
 //getmenu rights level wise
 Route::post('/menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMenuRightsLevelWise']);
+Route::get('/master-menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMasterMenuApi']);
