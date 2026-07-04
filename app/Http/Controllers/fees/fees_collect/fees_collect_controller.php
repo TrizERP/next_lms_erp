@@ -428,7 +428,7 @@ class fees_collect_controller extends Controller
         $other_bk_off_month_wise = OtherBreackOfMonth($stu_arr,$syear,$sub_institute_id);
 
         //  OtherBreackOfMonthHead additional fees_title from helper.php
-        $other_bk_off_month_head_wise = OtherBreackOfMonthHead($stu_arr, $search_ids, $syear ,$sub_institute_id);
+          $other_bk_off_month_head_wise = OtherBreackOfMonthHead($stu_arr, $search_ids, $syear ,$sub_institute_id);
         //  FeeBreakoffHeadWise get fees_title from helper.php
         $head_wise_fees = FeeBreakoffHeadWise($stu_arr, null, null, null, $syear,'',$sub_institute_id);
         
