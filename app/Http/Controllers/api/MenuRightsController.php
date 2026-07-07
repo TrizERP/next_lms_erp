@@ -329,7 +329,7 @@ class MenuRightsController extends Controller
                 'name' => $child->name,
                 'tblmenu_master_id' => $child->tblmenu_master_id,
                 'route_name' => $child->link,
-                'url' => route($child->link),
+                //'url' => $this->resolveMenuUrl($child->link),
             ];
 
             if ($child->name == 'Field Settings') {
@@ -372,4 +372,52 @@ class MenuRightsController extends Controller
         'data' => $menuData,
     ]);
 }
+
+    private function resolveMenuUrl($link)
+    {
+        $link = trim((string) $link);
+
+        if ($link === '' || $link === '#' || $link === 'javascript:void(0);') {
+            return '#';
+        }
+
+        if (preg_match('/^https?:\/\//i', $link)) {
+            return $link;
+        }
+
+        $normalizedPath = trim(str_replace('\\', '/', $link), '/');
+        $lastSegment = basename($normalizedPath);
+        $resourceRoute = str_replace('-', '_', $lastSegment) . '.index';
+
+        $routeCandidates = array_filter(array_unique([
+            $link,
+            trim($link, '\\/'),
+            str_replace(['\\', '/'], '.', trim($link, '\\/')),
+            $resourceRoute,
+        ]));
+
+        foreach ($routeCandidates as $routeName) {
+            if (Route::has($routeName)) {
+                return $this->toRelativeMenuUrl(route($routeName));
+            }
+        }
+
+        return $this->toRelativeMenuUrl(url($normalizedPath));
+    }
+
+    private function toRelativeMenuUrl($url)
+    {
+        if ($url === '#' || $url === 'javascript:void(0);') {
+            return $url;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+        $query = parse_url($url, PHP_URL_QUERY);
+
+        if ($path === null || $path === false) {
+            return trim((string) $url, '/');
+        }
+
+        return trim($path, '/') . ($query ? '?' . $query : '');
+    }
 }
