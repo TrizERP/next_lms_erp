@@ -8,6 +8,7 @@ use App\Http\Controllers\neo4jGraph\StudentResultGraphController;
 use App\Http\Controllers\StudentGraphController;
 use App\Http\Controllers\api\ApiLoginController;
 use App\Http\Controllers\api\MenuRightsController;
+use App\Http\Controllers\api\ApiLmsCourseController;
 
 
 
@@ -65,3 +66,14 @@ Route::post('/compliance/delete/{id}',[instituteDetailController::class,'destroy
 //getmenu rights level wise
 Route::post('/menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMenuRightsLevelWise']);
 Route::get('/master-menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMasterMenuApi']);
+
+Route::post('lms-courses', [ApiLmsCourseController::class, 'index']);
+Route::post('lms-courses/search', [ApiLmsCourseController::class, 'search']);
+Route::post('lms-chapters', [ApiLmsCourseController::class, 'chapters']);
+Route::post('lms-chapters/store', [ApiLmsCourseController::class, 'storeChapter']);
+Route::post('lms-create-content', [ApiLmsCourseController::class, 'createContent']);
+Route::post('lms-store-content', [ApiLmsCourseController::class, 'storeContent']);
+Route::post('lms-content-mapping-values', [ApiLmsCourseController::class, 'getContentMappingValues']);
+Route::post('lms-store-subject', [ApiLmsCourseController::class, 'storeSubject']);
+Route::post('lms-homework/get-subjects', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'getSubjects']);
+Route::post('lms-homework/get-chapters', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'getChapters']);
