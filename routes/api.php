@@ -9,6 +9,7 @@ use App\Http\Controllers\StudentGraphController;
 use App\Http\Controllers\api\ApiLoginController;
 use App\Http\Controllers\api\MenuRightsController;
 use App\Http\Controllers\api\ApiLmsCourseController;
+use App\Http\Controllers\api\ApiQuestionPaperController;
 
 
 

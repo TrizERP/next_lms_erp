@@ -152,21 +152,14 @@ class ApiLmsCourseController extends Controller
 
         $sub_institute_id_by_lms = ($getIsLms == 'Y') ? "(s.sub_institute_id = 1 or s.sub_institute_id = $sub_institute_id)" : "s.sub_institute_id = $sub_institute_id";
 
-        if (in_array($user_profile_name, ['Teacher', 'Lms Teacher'])){
+        if (strtoupper($user_profile_name) == 'LMS TEACHER' || strtoupper($user_profile_name) == 'TEACHER') {
+            $whereExtra = trim(ltrim($extra, ' AND '));
             $arr = DB::table('sub_std_map as s')
                 ->selectRaw("STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,
                     s.display_image,IFNULL(s.subject_category,'My Course') AS content_category,s.sub_institute_id")
                 ->join('standard AS STD', 'STD.id', '=', 's.standard_id')
-                ->Join('timetable AS t', function ($join) use ($user_id, $syear, $sub_institute_id, $extra) {
-                    $join->on('t.standard_id', '=', 's.standard_id')
-                        ->on('t.subject_id', '=', 's.subject_id')
-                        ->on('t.sub_institute_id', '=', 's.sub_institute_id')
-                        ->where('t.teacher_id', '=', $user_id)
-                        ->where('t.syear', '=', $syear)
-                        ->whereRaw($extra);
-                })
-                ->where('s.sub_institute_id', '=', $sub_institute_id)
-                ->where('s.subject_category', '!=', 'SEL')
+                ->whereRaw($sub_institute_id_by_lms)
+                ->whereRaw($whereExtra)
                 ->groupBy('s.subject_id', 's.standard_id', 's.subject_category')
                 ->orderBy('s.sort_order')
                 ->get();
@@ -176,7 +169,6 @@ class ApiLmsCourseController extends Controller
                     s.display_image,IFNULL(s.subject_category,'SEL') AS content_category,s.sub_institute_id")
                 ->join('standard AS STD', 'STD.id', '=', 's.standard_id')
                 ->whereRaw($sub_institute_id_by_lms)
-                ->where('s.allow_content', '=', 'Yes')
                 ->where('s.subject_category', '=', 'SEL')
                 ->groupBy('s.subject_id', 's.standard_id', 's.subject_category')
                 ->orderBy('s.sort_order')
