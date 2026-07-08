@@ -77,3 +77,8 @@ Route::post('lms-content-mapping-values', [ApiLmsCourseController::class, 'getCo
 Route::post('lms-store-subject', [ApiLmsCourseController::class, 'storeSubject']);
 Route::post('lms-homework/get-subjects', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'getSubjects']);
 Route::post('lms-homework/get-chapters', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'getChapters']);
+
+Route::middleware(StartSession::class)->group(function () {
+    Route::apiResource('question-paper', ApiQuestionPaperController::class);
+    Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
+});
