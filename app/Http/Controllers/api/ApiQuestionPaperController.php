@@ -19,10 +19,10 @@ class ApiQuestionPaperController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $sub_institute_id = $request->input('sub_institute_id') ?? $request->session()->get('sub_institute_id');
-        $syear = $request->input('syear') ?? $request->session()->get('syear');
-        $user_profile_name = $request->input('user_profile_name') ?? session()->get('user_profile_name');
-        $user_id = $request->input('user_id') ?? session()->get('user_id');
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+        $user_profile_name = $request->input('user_profile_name');
+        $user_id = $request->input('user_id');
 
         if (!$sub_institute_id || !$syear) {
             return response()->json([
@@ -134,9 +134,9 @@ class ApiQuestionPaperController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $sub_institute_id = $request->input('sub_institute_id') ?? $request->session()->get('sub_institute_id');
-        $syear = $request->input('syear') ?? $request->session()->get('syear');
-        $user_id = $request->input('user_id') ?? $request->session()->get('user_id');
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+        $user_id = $request->input('user_id');
 
         $open_date = $request->input('open_date') ? date('Y-m-d H:i:s', strtotime($request->input('open_date'))) : null;
         $close_date = $request->input('close_date') ? date('Y-m-d 23:59:59', strtotime($request->input('close_date'))) : null;
@@ -178,7 +178,7 @@ class ApiQuestionPaperController extends Controller
 
     public function show(Request $request, $id): JsonResponse
     {
-        $sub_institute_id = $request->input('sub_institute_id') ?? $request->session()->get('sub_institute_id');
+        $sub_institute_id = $request->input('sub_institute_id');
 
         $questionpaper = questionpaperModel::find($id);
 
@@ -214,9 +214,9 @@ class ApiQuestionPaperController extends Controller
 
     public function update(Request $request, $id): JsonResponse
     {
-        $sub_institute_id = $request->input('sub_institute_id') ?? $request->session()->get('sub_institute_id');
-        $syear = $request->input('syear') ?? $request->session()->get('syear');
-        $user_id = $request->input('user_id') ?? $request->session()->get('user_id');
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+        $user_id = $request->input('user_id');
         $question_ids = $request->input('questions') ? implode(",", $request->input('questions')) : '';
 
         $questionpaper = [
@@ -285,9 +285,9 @@ class ApiQuestionPaperController extends Controller
 
     public function search(Request $request): JsonResponse
     {
-        $sub_institute_id = $request->input('sub_institute_id') ?? $request->session()->get('sub_institute_id');
-        $user_id = $request->input('user_id') ?? session()->get('user_id');
-        $user_profile_name = $request->input('user_profile_name') ?? session()->get('user_profile_name');
+        $sub_institute_id = $request->input('sub_institute_id');
+        $user_id = $request->input('user_id');
+        $user_profile_name = $request->input('user_profile_name');
 
         $grade = $request->input('grade');
         $subject = $request->input('subject');
