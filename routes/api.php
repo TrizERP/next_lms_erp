@@ -83,3 +83,6 @@ Route::post('lms-homework/get-chapters', [\App\Http\Controllers\api\lms\StudentH
 Route::apiResource('question-paper', ApiQuestionPaperController::class);
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
 
+// Intelligence Lesson Plan - Lesson Plan -> Period -> Concepts hierarchy
+Route::match(['GET', 'POST'], 'intelligence/lesson-plans', [\App\Http\Controllers\api\lms\IntelligenceLessonPlanApiController::class, 'index']);
+
