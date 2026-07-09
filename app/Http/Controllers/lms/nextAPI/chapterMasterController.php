@@ -23,7 +23,12 @@ class chapterMasterController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()->messages()], 422);
+            return response()->json([
+                'status'  => false,
+                'message' => 'Validation failed.',
+                'errors'  => $validator->errors()->messages(),
+                'data'    => [],
+            ], 422);
         }
 
         $getChapterData = DB::table('chapter_master as a')
@@ -75,53 +80,74 @@ class chapterMasterController extends Controller
         $formattedResponse = [];
 
         foreach ($getChapterData as $chapterData) {
-            $chapterId = $chapterData->chapter_id;
+            $chapterId = (int) $chapterData->chapter_id;
 
             if (!isset($formattedResponse[$chapterId])) {
                 $formattedResponse[$chapterId] = [
-                    'chapter_id' => (int)$chapterData->chapter_id,
+                    'chapter_id'   => (int) $chapterData->chapter_id,
+                    'subject_id'   => (int) $chapterData->subject_id,
+                    'standard_id'  => (int) $chapterData->standard_id,
                     'chapter_name' => $chapterData->chapter_name,
-                    'concepts' => []
+                    'concepts'     => [],
                 ];
             }
 
-            // Build semantic data - exclude null values
+            // Build semantic data - decode JSON columns, drop null values.
             $semanticData = [
-                'semantic_id' => $chapterData->semantic_id,
-                'learning_objective' => $chapterData->learning_objective,
-                'total_concepts' => $chapterData->total_concepts,
-                'full_intelegance_json' => $chapterData->full_intelegance_json,
-                'knowledge' => json_decode($chapterData->knowledge,true),
-                'ability' => json_decode($chapterData->ability,true),
-                'skill' => json_decode($chapterData->skill,true),
-                'competency' => json_decode($chapterData->competency,true),
-                'blooms_level' => json_decode($chapterData->blooms_level,true),
-                'dok' => json_decode($chapterData->dok,true),
-                'prerequisites' => json_decode($chapterData->prerequisites,true),
-                'misconceptions' => json_decode($chapterData->misconceptions,true),
-                'real_world_applications' => json_decode($chapterData->real_world_applications,true),
-                'pedagogy' => json_decode($chapterData->pedagogy,true),
-                'learning_objectives' => json_decode($chapterData->learning_objectives,true),
-                'learning_outcomes' => json_decode($chapterData->learning_outcomes,true),
-                'assessment_blueprint' => json_decode($chapterData->assessment_blueprint,true)
+                'semantic_id'             => $chapterData->semantic_id !== null ? (int) $chapterData->semantic_id : null,
+                'learning_objective'      => $chapterData->learning_objective,
+                'total_concepts'          => $chapterData->total_concepts !== null ? (int) $chapterData->total_concepts : null,
+                'full_intelegance_json'   => $this->decodeJson($chapterData->full_intelegance_json),
+                'knowledge'               => $this->decodeJson($chapterData->knowledge),
+                'ability'                 => $this->decodeJson($chapterData->ability),
+                'skill'                   => $this->decodeJson($chapterData->skill),
+                'competency'              => $this->decodeJson($chapterData->competency),
+                'blooms_level'            => $this->decodeJson($chapterData->blooms_level),
+                'dok'                     => $this->decodeJson($chapterData->dok),
+                'prerequisites'           => $this->decodeJson($chapterData->prerequisites),
+                'misconceptions'          => $this->decodeJson($chapterData->misconceptions),
+                'real_world_applications' => $this->decodeJson($chapterData->real_world_applications),
+                'pedagogy'                => $this->decodeJson($chapterData->pedagogy),
+                'learning_objectives'     => $this->decodeJson($chapterData->learning_objectives),
+                'learning_outcomes'       => $this->decodeJson($chapterData->learning_outcomes),
+                'assessment_blueprint'    => $this->decodeJson($chapterData->assessment_blueprint),
             ];
 
-            // Remove null values
+            // Remove null values.
             $semanticData = array_filter($semanticData, function ($value) {
                 return $value !== null;
             });
 
             $formattedResponse[$chapterId]['concepts'][] = [
-                'concept_id' => (int)$chapterData->concept_id,
-                'concept_name' => $chapterData->concept_name,
+                'concept_id'          => (int) $chapterData->concept_id,
+                'concept_name'        => $chapterData->concept_name,
                 'concept_description' => $chapterData->concept_description,
-                'semantic' => $semanticData
+                'semantic'            => $semanticData ? (object) $semanticData : null,
             ];
         }
 
-        // Convert to array values to reset numeric keys
+        // Convert to array values to reset numeric keys.
         $finalResponse = array_values($formattedResponse);
 
-        return response()->json($finalResponse);
+        return response()->json([
+            'status'  => true,
+            'message' => count($finalResponse) ? 'Chapter data fetched successfully.' : 'No chapter data found.',
+            'data'    => $finalResponse,
+        ], 200);
+    }
+
+    /**
+     * Safely decode a JSON string column into an array.
+     * Returns null when the value is empty or not valid JSON.
+     */
+    private function decodeJson($value)
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $decoded = json_decode($value, true);
+
+        return json_last_error() === JSON_ERROR_NONE ? $decoded : $value;
     }
 }
