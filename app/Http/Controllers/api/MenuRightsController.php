@@ -263,4 +263,161 @@ class MenuRightsController extends Controller
 
         return response()->json(['status'=>1,'data'=>$res]);
     }
+
+    public function getMasterMenuApi(Request $request)
+    {
+        // return response()->json(['data'=>$request->all()]);
+        $sub_institute_id = $request->get('sub_institute_id');
+        $user_id = $request->get('user_id');
+        $main_menu_id = $request->menu_id;
+
+        $mainMenus = DB::table('rightside_menumaster as m')
+            ->whereRaw("FIND_IN_SET(?, m.sub_institute_id)", [$sub_institute_id])
+            ->where('m.parent_menu_id', 0)
+            ->where('m.main_menu_id', $main_menu_id)
+            ->orderBy('m.sort_order')
+            ->get();
+
+    $childMenus = DB::table('tbluser as u')
+        ->leftJoin('tblindividual_rights as i', function ($join) {
+            $join->on('u.id', '=', 'i.user_id')
+                ->on('u.sub_institute_id', '=', 'i.sub_institute_id');
+        })
+        ->leftJoin('tblgroupwise_rights as g', function ($join) {
+            $join->on('u.user_profile_id', '=', 'g.profile_id')
+                ->on('u.sub_institute_id', '=', 'g.sub_institute_id');
+        })
+        ->join('rightside_menumaster as m', function ($join) {
+            $join->on('i.menu_id', '=', 'm.tblmenu_master_id')
+                ->orOn('g.menu_id', '=', 'm.tblmenu_master_id');
+        })
+        ->join('tblmenumaster as mm', function ($join) use ($sub_institute_id) {
+            $join->on('mm.id', '=', 'm.tblmenu_master_id')
+                ->whereRaw("FIND_IN_SET(?, m.sub_institute_id)", [$sub_institute_id]);
+        })
+        ->select(
+            'm.id',
+            'm.name',
+            'm.icon',
+            'm.parent_menu_id',
+            'm.tblmenu_master_id',
+            'm.main_menu_id',
+            'm.sort_order',
+            'mm.link'
+        )
+        ->distinct()
+        ->where('u.sub_institute_id', $sub_institute_id)
+        ->where('u.status', 1)
+        ->where('u.id', $user_id)
+        ->where('m.main_menu_id', $main_menu_id)
+        ->orderBy('m.sort_order')
+        ->get()
+        ->groupBy('parent_menu_id');
+
+    $menuData = [];
+
+    foreach ($mainMenus as $mainMenu) {
+        if (!isset($childMenus[$mainMenu->id])) {
+            continue;
+        }
+
+        $children = [];
+
+        foreach ($childMenus[$mainMenu->id] as $child) {
+            $children[] = [
+                'id' => $child->id,
+                'name' => $child->name,
+                'tblmenu_master_id' => $child->tblmenu_master_id,
+                'route_name' => $child->link,
+                //'url' => $this->resolveMenuUrl($child->link),
+            ];
+
+            if ($child->name == 'Field Settings') {
+                $children[] = [
+                    'id' => null,
+                    'name' => 'Excel Import/Export',
+                    'type' => 'popup',
+                    'url' => env('APP_URL') . 'excel_upload/export_xlsx.php?sub_institute_iderp=' . $sub_institute_id,
+                ];
+
+                $children[] = [
+                    'id' => null,
+                    'name' => 'Import Data',
+                    'route_name' => 'import.data',
+                    'url' => route('import.data'),
+                ];
+
+                $children[] = [
+                    'id' => null,
+                    'name' => 'Workflow',
+                    'route_name' => 'workflow.index',
+                    'url' => route('workflow.index'),
+                ];
+            }
+        }
+
+        $menuData[] = [
+            'id' => $mainMenu->id,
+            'name' => $mainMenu->name,
+            'icon' => $mainMenu->icon,
+            'icon_url' => env('APP_URL') . '/admin_dep/images/side-' . $mainMenu->icon . '.png',
+            'active_icon_url' => env('APP_URL') . '/admin_dep/images/side-' . $mainMenu->icon . '-white.png',
+            'children' => $children,
+        ];
+    }
+
+    return response()->json([
+        'status' => true,
+        'message' => 'Master menu fetched successfully',
+        'data' => $menuData,
+    ]);
+}
+
+    private function resolveMenuUrl($link)
+    {
+        $link = trim((string) $link);
+
+        if ($link === '' || $link === '#' || $link === 'javascript:void(0);') {
+            return '#';
+        }
+
+        if (preg_match('/^https?:\/\//i', $link)) {
+            return $link;
+        }
+
+        $normalizedPath = trim(str_replace('\\', '/', $link), '/');
+        $lastSegment = basename($normalizedPath);
+        $resourceRoute = str_replace('-', '_', $lastSegment) . '.index';
+
+        $routeCandidates = array_filter(array_unique([
+            $link,
+            trim($link, '\\/'),
+            str_replace(['\\', '/'], '.', trim($link, '\\/')),
+            $resourceRoute,
+        ]));
+
+        foreach ($routeCandidates as $routeName) {
+            if (Route::has($routeName)) {
+                return $this->toRelativeMenuUrl(route($routeName));
+            }
+        }
+
+        return $this->toRelativeMenuUrl(url($normalizedPath));
+    }
+
+    private function toRelativeMenuUrl($url)
+    {
+        if ($url === '#' || $url === 'javascript:void(0);') {
+            return $url;
+        }
+
+        $path = parse_url($url, PHP_URL_PATH);
+        $query = parse_url($url, PHP_URL_QUERY);
+
+        if ($path === null || $path === false) {
+            return trim((string) $url, '/');
+        }
+
+        return trim($path, '/') . ($query ? '?' . $query : '');
+    }
 }
