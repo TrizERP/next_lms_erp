@@ -94,6 +94,9 @@
         "secure-http": false,
         "allow-plugins": {
             "php-http/discovery": true
+        },
+        "audit": {
+            "block-insecure": false
         }
     },
     "minimum-stability": "dev",
