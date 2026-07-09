@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\lms\lmsContentCategoryModel;
 use App\Models\lms\contentModel;
 use App\Models\lms\contentmappingtypeModel;
+use App\Models\lms\lmsQuestionMasterModel;
 use App\Models\lms\topicModel;
 use App\Models\student\tblstudentEnrollmentModel;
 use Illuminate\Http\JsonResponse;
@@ -735,6 +736,72 @@ $restrict_date = $request->input('restrict_date');
             'subject_id' => $subject_id,
             'standard_id' => $standard_id,
             'id' => $insertedId,
+        ], 200);
+    }
+
+    public function getLmsQuestions(Request $request): JsonResponse
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        if (!$sub_institute_id) {
+            try {
+                $sub_institute_id = $request->session()->get('sub_institute_id');
+            } catch (\Throwable $e) {
+                $sub_institute_id = null;
+            }
+        }
+
+        $subject_id = $request->input('subject_id');
+
+        $chapter_ids = $request->input('chapter_id', []);
+        $concept_ids = $request->input('concept_id', []);
+
+        if (is_string($chapter_ids)) {
+            $chapter_ids = $chapter_ids ? explode(',', $chapter_ids) : [];
+        }
+        if (is_string($concept_ids)) {
+            $concept_ids = $concept_ids ? explode(',', $concept_ids) : [];
+        }
+
+        $chapter_ids = array_filter(array_map('intval', (array) $chapter_ids));
+        $concept_ids = array_filter(array_map('intval', (array) $concept_ids));
+
+        if (!$subject_id) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Missing required field: subject_id is required.',
+            ], 422);
+        }
+
+        $query = lmsQuestionMasterModel::query()->where('subject_id', $subject_id);
+
+        if ($sub_institute_id) {
+            $query->where('sub_institute_id', $sub_institute_id);
+        }
+
+        if (!empty($chapter_ids)) {
+            $query->whereIn('chapter_id', $chapter_ids);
+        }
+
+        if (!empty($concept_ids)) {
+            $query->whereIn('concept_id', $concept_ids);
+        }
+
+        $questions = $query->get([
+            'id', 'question_type_id', 'grade_id', 'standard_id',
+            'subject_id', 'chapter_id', 'concept_id', 'topic_id',
+            'question_title', 'description', 'points', 'multiple_answer',
+            'concept', 'subconcept', 'pre_grade_topic', 'post_grade_topic',
+            'cross_curriculum_grade_topic', 'status', 'created_by', 'created_on'
+        ])->toArray();
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $questions,
+            'total' => count($questions),
+            'subject_id' => $subject_id,
+            'chapter_ids' => $chapter_ids,
+            'concept_ids' => $concept_ids,
         ], 200);
     }
 }

@@ -70,6 +70,7 @@ Route::get('/master-menu-rights', [App\Http\Controllers\api\MenuRightsController
 Route::post('lms-courses', [ApiLmsCourseController::class, 'index']);
 Route::post('lms-courses/search', [ApiLmsCourseController::class, 'search']);
 Route::post('lms-chapters', [ApiLmsCourseController::class, 'chapters']);
+Route::post('lms-questions', [ApiLmsCourseController::class, 'getLmsQuestions']);
 Route::post('lms-chapters/store', [ApiLmsCourseController::class, 'storeChapter']);
 Route::post('lms-create-content', [ApiLmsCourseController::class, 'createContent']);
 Route::post('lms-store-content', [ApiLmsCourseController::class, 'storeContent']);
