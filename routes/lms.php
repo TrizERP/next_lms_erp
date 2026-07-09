@@ -58,6 +58,7 @@ use App\Http\Controllers\lms\h5p\H5PScenarioController;
 use App\Http\Controllers\lms\h5p\H5PMCQController;
 use App\Http\Controllers\lms\h5p\H5PInteractiveVideoController;
 use App\Http\Controllers\lms\h5p\H5pFlashcardController;
+use App\Http\Controllers\lms\nextAPI\chapterMasterController;
 
 Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::get('o-net-data-category',[\App\Http\Controllers\lms\ONetOnlineDataController::class,'index'])->name('o-net-data-category.index');
@@ -328,6 +329,7 @@ Route::post('get-h5p-ai-output', [H5PIndexController::class, 'getH5pAIOutput'])-
 Route::post('get-h5p-ai-scenario', [H5PScenarioController::class, 'getH5pAIScenario'])->name('get-h5p-ai-scenario');
     Route::get('suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggestedContent');
 
+Route::resource('lms/new_chapter_master',chapterMasterController::class);
 
 
 // use App\Http\Controllers\lms\Neo4jSyncController;
