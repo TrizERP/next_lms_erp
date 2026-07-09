@@ -46,7 +46,7 @@ class lmsCurriculumController extends Controller
      *   {
      *     curriculum_data: {...},
      *     unit_data: [ {unit}, ... ],
-     *     period: [ {parent (parent_id null), children: [ {child}, ... ]}, ... ]
+     *     outcomes: [ {parent (parent_id null), children: [ {child}, ... ]}, ... ]
      *   }
      * ]
      */
@@ -83,7 +83,7 @@ class lmsCurriculumController extends Controller
                 $curricula[$curriculumId] = [
                     'curriculum_data' => $this->pick($row, $curriculumFields),
                     'unit_data'       => [],
-                    'period'          => [],
+                    'outcomes'        => [],
                     '_units'          => [], // temp index by unit_number
                     '_periods'        => [], // temp index by period id
                 ];
@@ -123,7 +123,7 @@ class lmsCurriculumController extends Controller
                     $tree[$parentId]['children'][] = $period;
                 }
             }
-            $curriculum['period'] = array_values($tree);
+            $curriculum['outcomes'] = array_values($tree);
 
             unset($curriculum['_units'], $curriculum['_periods']);
             $result[] = $curriculum;
