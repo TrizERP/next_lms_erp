@@ -31,7 +31,7 @@ class chapterMasterController extends Controller
             ], 422);
         }
 
-        $getChapterData = DB::table('chapter_master as a')
+        $query = DB::table('chapter_master as a')
             ->select(
                 'a.id as chapter_id',
                 'a.subject_id',
@@ -57,24 +57,28 @@ class chapterMasterController extends Controller
                 'c.learning_objectives',
                 'c.learning_outcomes',
                 'c.assessment_blueprint'
-                // Add other semantic fields as needed
             )
-            ->join('lms_concept as b', function ($query) use ($sub_institute_id) {
-                $query->on('b.chapter_id', '=', 'a.id')
+            ->join('lms_concept as b', function ($join) use ($sub_institute_id) {
+                $join->on('b.chapter_id', '=', 'a.id')
                     ->on('a.subject_id', '=', 'b.subject_id')
                     ->where('a.sub_institute_id', '=', $sub_institute_id);
             })
-            ->join('semantic_intelligence as c', function ($query) {
-                $query->on('c.chapter_id', '=', 'b.chapter_id')
-                    ->on('a.subject_id', '=', 'c.subject_id');
+            ->join('semantic_intelligence as c', function ($join) use ($sub_institute_id) {
+                $join->on('c.chapter_id', '=', 'b.chapter_id')
+                    ->on('a.subject_id', '=', 'c.subject_id')
+                    ->where('c.sub_institute_id', '=', $sub_institute_id);
             })
             ->where([
                 'a.sub_institute_id' => $sub_institute_id,
                 'a.standard_id' => $standard_id,
                 'a.subject_id' => $subject_id
             ])
-            ->groupBy('b.id')
-            ->get();
+            ->groupBy('b.id');
+
+        $perPage = (int) $request->input('per_page', 20);
+        $perPage = $perPage > 0 ? min($perPage, 100) : 20;
+
+        $getChapterData = $query->paginate($perPage);
 
         // Format the response
         $formattedResponse = [];
@@ -99,18 +103,18 @@ class chapterMasterController extends Controller
                 'total_concepts'          => $chapterData->total_concepts !== null ? (int) $chapterData->total_concepts : null,
                 'full_intelegance_json'   => $this->decodeJson($chapterData->full_intelegance_json),
                 'knowledge'               => $this->decodeJson($chapterData->knowledge),
-                'ability'                 => $this->decodeJson($chapterData->ability),
-                'skill'                   => $this->decodeJson($chapterData->skill),
-                'competency'              => $this->decodeJson($chapterData->competency),
-                'blooms_level'            => $this->decodeJson($chapterData->blooms_level),
-                'dok'                     => $this->decodeJson($chapterData->dok),
-                'prerequisites'           => $this->decodeJson($chapterData->prerequisites),
-                'misconceptions'          => $this->decodeJson($chapterData->misconceptions),
+                'ability'                => $this->decodeJson($chapterData->ability),
+                'skill'                  => $this->decodeJson($chapterData->skill),
+                'competency'             => $this->decodeJson($chapterData->competency),
+                'blooms_level'           => $this->decodeJson($chapterData->blooms_level),
+                'dok'                    => $this->decodeJson($chapterData->dok),
+                'prerequisites'          => $this->decodeJson($chapterData->prerequisites),
+                'misconceptions'         => $this->decodeJson($chapterData->misconceptions),
                 'real_world_applications' => $this->decodeJson($chapterData->real_world_applications),
-                'pedagogy'                => $this->decodeJson($chapterData->pedagogy),
-                'learning_objectives'     => $this->decodeJson($chapterData->learning_objectives),
-                'learning_outcomes'       => $this->decodeJson($chapterData->learning_outcomes),
-                'assessment_blueprint'    => $this->decodeJson($chapterData->assessment_blueprint),
+                'pedagogy'               => $this->decodeJson($chapterData->pedagogy),
+                'learning_objectives'    => $this->decodeJson($chapterData->learning_objectives),
+                'learning_outcomes'      => $this->decodeJson($chapterData->learning_outcomes),
+                'assessment_blueprint'   => $this->decodeJson($chapterData->assessment_blueprint),
             ];
 
             // Remove null values.
@@ -130,9 +134,17 @@ class chapterMasterController extends Controller
         $finalResponse = array_values($formattedResponse);
 
         return response()->json([
-            'status'  => true,
-            'message' => count($finalResponse) ? 'Chapter data fetched successfully.' : 'No chapter data found.',
-            'data'    => $finalResponse,
+            'status'     => true,
+            'message'    => count($finalResponse) ? 'Chapter data fetched successfully.' : 'No chapter data found.',
+            'data'       => $finalResponse,
+            'pagination' => [
+                'current_page' => $getChapterData->currentPage(),
+                'per_page'     => $getChapterData->perPage(),
+                'total'        => $getChapterData->total(),
+                'last_page'    => $getChapterData->lastPage(),
+                'from'         => $getChapterData->firstItem(),
+                'to'           => $getChapterData->lastItem(),
+            ],
         ], 200);
     }
 
