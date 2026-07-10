@@ -300,6 +300,111 @@ class ApiLmsCourseController extends Controller
         return $chapters;
     }
 
+    private function getChapterContentCategories($chapter_id, $subject_id, $standard_id, $sub_institute_id): array
+    {
+        $getIsLms = DB::table('school_setup')
+            ->where('Id', $sub_institute_id)
+            ->value('is_Lms');
+
+        $content_data = DB::table('content_master')
+            ->where(function ($query) use ($getIsLms, $sub_institute_id) {
+                if ($getIsLms == 'Y') {
+                    $query->where('content_master.sub_institute_id', '1')
+                        ->orWhere('content_master.sub_institute_id', $sub_institute_id);
+                } else {
+                    $query->where('content_master.sub_institute_id', $sub_institute_id);
+                }
+            })
+            ->where('content_master.subject_id', $subject_id)
+            ->where('content_master.standard_id', $standard_id)
+            ->where('content_master.chapter_id', $chapter_id)
+            ->where(function ($query) {
+                $query->whereNull('content_master.topic_id')
+                    ->orWhere('content_master.topic_id', '0');
+            })
+            ->get()
+            ->toArray();
+
+        $content_by_category = [];
+        foreach ($content_data as $content) {
+            $contentArray = (array)$content;
+            $cat = $contentArray['content_category'] ?? 'General';
+            $content_by_category[$cat][] = $contentArray;
+        }
+
+        $flash = DB::table('lms_flashcard')
+            ->where(['chapter_id' => $chapter_id, 'sub_institute_id' => $sub_institute_id, 'status' => 1])
+            ->get()
+            ->toArray();
+
+        $content_by_category['Flash Cards'] = array_map(function ($f) {
+            return (array)$f;
+        }, $flash);
+        $content_by_category['Mindmap'] = [];
+        $content_by_category['Virtual Lab'] = [];
+
+        return $content_by_category;
+    }
+
+    public function chapterContent(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'chapter_id' => 'required|integer',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors()->messages(),
+            ], 422);
+        }
+
+        $chapter_id = (int)$request->input('chapter_id');
+        $sub_institute_id = $request->input('sub_institute_id') ?? $this->sessionValue($request, 'sub_institute_id');
+
+        $chapterQuery = DB::table('chapter_master')
+            ->select('id', 'syear', 'sub_institute_id', 'grade_id', 'standard_id', 'subject_id', 'chapter_name', 'chapter_desc', 'availability', 'show_hide', 'sort_order')
+            ->where('id', $chapter_id);
+
+        if ($sub_institute_id) {
+            $chapterQuery->where(function ($query) use ($sub_institute_id) {
+                $query->where('sub_institute_id', $sub_institute_id)
+                    ->orWhere('sub_institute_id', 1);
+            });
+        }
+
+        $chapter = $chapterQuery->first();
+
+        if (!$chapter) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Chapter not found.',
+                'chapter_id' => $chapter_id,
+            ], 404);
+        }
+
+        $sub_institute_id = $sub_institute_id ?: $chapter->sub_institute_id;
+        $chapterArray = (array)$chapter;
+        $chapterArray['content_categories'] = $this->getChapterContentCategories(
+            $chapter->id,
+            $chapter->subject_id,
+            $chapter->standard_id,
+            $sub_institute_id
+        );
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $chapterArray,
+            'content_data' => [
+                $chapter->id => $chapterArray['content_categories'],
+            ],
+            'chapter_id' => $chapter->id,
+            'sub_institute_id' => $sub_institute_id,
+        ], 200);
+    }
+
     public function chapters(Request $request): JsonResponse
     {
         $sub_institute_id = $request->input('sub_institute_id') ?? $request->session()->get('sub_institute_id');
