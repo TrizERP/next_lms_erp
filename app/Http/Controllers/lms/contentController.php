@@ -1478,7 +1478,231 @@ public function generateGammaPDF(Request $request)
             ], 500);
         }
 
-}
+    }
+
+    public function storeGammaContent(Request $request)
+    {
+        $sub_institute_id = $request->sub_institute_id;
+        $syear = $request->input('syear') ?? $request->session()->get('syear');
+        $user_id = $request->input('user_id') ?? $request->session()->get('user_id');
+
+        $request->validate([
+            'prompt' => 'required|string|max:400000',
+            'chapter_name' => 'required|string',
+            'format' => 'nullable|in:presentation,document,social',
+            'export_format' => 'nullable|in:pdf,pptx',
+        ]);
+
+        $chapterName = $request->chapter_name;
+        $prompt = $request->prompt;
+        $format = $request->format ?? 'presentation';
+        $exportAs = $request->export_format ?? 'pdf';
+        $numCards = $request->slide_count ?? 10;
+        $themeId = env('GAMMA_THEME_ID');
+
+        $validThemes = ['simple', 'minimal', 'corporate', 'creative', 'bold', 'elegant', 'modern'];
+        if (empty($themeId) || !in_array($themeId, $validThemes)) {
+            $themeId = null;
+        }
+
+        $chapterData = chapterModel::select('chapter_master.*')
+            ->where([
+                'chapter_master.chapter_name' => $chapterName,
+            ])
+            ->first();
+
+        if (!$chapterData) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chapter not found: ' . $chapterName
+            ], 404);
+        }
+
+        try {
+            $requestJson = [
+                'inputText' => $prompt,
+                'textMode' => 'generate',
+                'format' => $format,
+                'numCards' => (int) $numCards,
+                'cardSplit' => 'auto',
+                'additionalInstructions' => $request->additional_instructions ?? '',
+                'exportAs' => $exportAs,
+                'textOptions' => [
+                    'amount' => 'detailed',
+                    'tone' => 'professional, inspiring',
+                    'audience' => 'students',
+                    'language' => 'en'
+                ],
+                'imageOptions' => [
+                    'source' => 'aiGenerated',
+                    'model' => 'imagen-4-pro',
+                    'style' => 'photorealistic'
+                ],
+                'cardOptions' => [
+                    'dimensions' => 'fluid'
+                ]
+            ];
+
+            if (!empty($themeId)) {
+                $requestJson['themeId'] = $themeId;
+            }
+
+            $generationResponse = Http::withHeaders([
+                'Content-Type' => 'application/json',
+                'X-API-KEY' => env('GAMMA_API_KEY'),
+            ])->timeout(60)->post(env('GAMMA_BASE_URL', 'https://public-api.gamma.app/v1.0/') . 'generations', $requestJson);
+                // return $generationResponse;
+            if (!$generationResponse->successful()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create generation',
+                    'error' => $generationResponse->json()
+                ], $generationResponse->status());
+            }
+
+            $generationId = $generationResponse->json('generationId');
+
+            if (!$generationId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No generation ID received'
+                ], 500);
+            }
+
+            $maxAttempts = 30;
+            $attempts = 0;
+            $status = 'processing';
+            $result = null;
+
+            while ($attempts < $maxAttempts && $status !== 'completed' && $status !== 'failed') {
+                $attempts++;
+
+                if ($attempts > 1) {
+                    sleep(5);
+                }
+
+                $pollResponse = Http::withHeaders([
+                    'X-API-KEY' => env('GAMMA_API_KEY'),
+                ])->timeout(30)->get(env('GAMMA_BASE_URL', 'https://public-api.gamma.app/v1.0/') . 'generations/' . $generationId);
+
+                if (!$pollResponse->successful()) {
+                    Log::warning('Poll attempt failed', [
+                        'attempt' => $attempts,
+                        'response' => $pollResponse->body()
+                    ]);
+                    continue;
+                }
+
+                $result = $pollResponse->json();
+                $status = $result['status'] ?? 'processing';
+
+                Log::info('Polling generation status', [
+                    'generation_id' => $generationId,
+                    'status' => $status,
+                    'attempt' => $attempts
+                ]);
+            }
+
+            if ($status !== 'completed') {
+                return response()->json([
+                    'success' => false,
+                    'message' => $status === 'failed' ? 'Generation failed' : 'Generation timeout',
+                    'generation_id' => $generationId,
+                    'status' => $status
+                ], 408);
+            }
+
+            $url = null;
+            $pdfUrl = null;
+
+            if (isset($result['presentation'])) {
+                $presentation = $result['presentation'];
+                if (isset($presentation['url'])) $url = $presentation['url'];
+                if (isset($presentation['shareUrl'])) $url = $presentation['shareUrl'];
+                if (isset($presentation['exportUrl'])) $pdfUrl = $presentation['exportUrl'];
+                if (isset($presentation['id'])) $url = "https://gamma.app/docs/" . $presentation['id'];
+            }
+
+            if (isset($result['url'])) $url = $result['url'];
+            if (isset($result['pdf_url'])) $pdfUrl = $result['pdf_url'];
+            if (isset($result['shareUrl'])) $url = $result['shareUrl'];
+            if (isset($result['exportUrl'])) $pdfUrl = $result['exportUrl'];
+            if (isset($result['presentation_url'])) $url = $result['presentation_url'];
+
+            if (isset($result['data']) && is_array($result['data'])) {
+                $nestedData = $result['data'];
+                if (isset($nestedData['url'])) $url = $nestedData['url'];
+                if (isset($nestedData['pdf_url'])) $pdfUrl = $nestedData['pdf_url'];
+                if (isset($nestedData['shareUrl'])) $url = $nestedData['shareUrl'];
+                if (isset($nestedData['exportUrl'])) $pdfUrl = $nestedData['exportUrl'];
+                if (isset($nestedData['presentation_url'])) $url = $nestedData['presentation_url'];
+
+                if (isset($nestedData['presentation'])) {
+                    $presentation = $nestedData['presentation'];
+                    if (isset($presentation['url'])) $url = $presentation['url'];
+                    if (isset($presentation['shareUrl'])) $url = $presentation['shareUrl'];
+                    if (isset($presentation['id'])) $url = "https://gamma.app/docs/" . $presentation['id'];
+                }
+            }
+
+            $gammaUrl = $url ?: $pdfUrl;
+            $fileUrl = $pdfUrl ?: $url;
+
+            $content = [
+                'grade_id' => $chapterData->grade_id,
+                'standard_id' => $chapterData->standard_id,
+                'subject_id' => $chapterData->subject_id,
+                'chapter_id' => $chapterData->id,
+                'topic_id' => null,
+                'title' => $chapterName,
+                'description' => $prompt,
+                'file_folder' => '/lms_content_file',
+                'filename' => $gammaUrl,
+                'url' => $fileUrl,
+                'file_type' => 'link',
+                'file_size' => null,
+                'show_hide' => '1',
+                'sort_order' => null,
+                'meta_tags' => null,
+                'content_category' => 'Classroom Presentation',
+                'created_by' => $user_id,
+                'sub_institute_id' => $sub_institute_id,
+                'restrict_date' => null,
+                'pre_grade_topic' => null,
+                'post_grade_topic' => null,
+                'cross_curriculum_grade_topic' => null,
+                'basic_advance' => '1',
+                'user_profile_name' => $request->user_profile_name,
+                'syear' => $syear,
+            ];
+
+            contentModel::insert($content);
+            $lastId = DB::getPDO()->lastInsertId();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Gamma content generated and stored successfully',
+                'data' => [
+                    'id' => $lastId,
+                    'gamma_url' => $gammaUrl,
+                    'file_url' => $fileUrl,
+                    'file_type' => 'link',
+                    'generation_id' => $generationId,
+                    'status' => $status,
+                    'credits_used' => $result['credits']['deducted'] ?? null,
+                    'credits_remaining' => $result['credits']['remaining'] ?? null,
+                ]
+            ], 201);
+
+        } catch (\Exception $e) {
+            Log::error('Gamma Content API Error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
 
 
