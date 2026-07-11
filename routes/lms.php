@@ -14,6 +14,7 @@ use App\Http\Controllers\lms\counselling\lmsCounsellingController;
 use App\Http\Controllers\lms\counselling\MBTIController;
 use App\Http\Controllers\lms\courseController;
 use App\Http\Controllers\lms\flashcard\flashcardController;
+use App\Http\Controllers\lms\gammaController;
 use App\Http\Controllers\lms\leaderboard\lbMasterController;
 use App\Http\Controllers\lms\lessonplan\lms_lessonplanController;
 use App\Http\Controllers\lms\lms_apiController;
@@ -83,6 +84,7 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::resource('content_master', contentController::class);
     Route::get('create_content_master', [contentController::class, 'createChapter'])->name('create_content_master');
     Route::post('store_content_master', [contentController::class, 'storeChapter'])->name('store_content_master');
+    Route::post('gamma_content_master', [contentController::class, 'storeGammaContent'])->name('gamma_content_master');
 
     Route::resource('virtual_classroom_master', virtualclassroomController::class);
 
@@ -235,6 +237,8 @@ Route::post('show_question_wise_report',
     Route::resource('lms_teacherResource', lms_teacherResourceController::class);
 
     Route::resource('lms_flashcard', flashcardController::class);
+    Route::resource('lms_gamma_ppt', gammaController::class);
+
     // Route::get('ajax_SaveAnnotations', 'lms\assignment\annotateAssignmentController@ajax_SaveAnnotations')->name('ajax_SaveAnnotations');
 
     Route::resource('subjectwise_graph', chapterController::class);
