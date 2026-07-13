@@ -71,10 +71,11 @@ class IntelligenceLessonPlanApiController extends Controller
                     '=',
                     'pp.lms_intelligence_lesson_plans_id'
                 )
+                ->join('tbluser as tu', 'tu.id', '=', 'pp.teacher_id')
                 ->whereIn('pp.lms_intelligence_lesson_plans_id', $lessonPlanIds)
                 ->orderBy('pp.scheduled_date')
                 ->orderBy('pp.id')
-                ->select('pp.*')
+                ->select('pp.*', DB::raw('concat(tu.first_name," ",tu.middle_name," ",tu.last_name) as teacher_name'))
                 ->get()
                 ->groupBy('lms_intelligence_lesson_plans_id');
 
