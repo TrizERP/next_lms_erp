@@ -111,6 +111,17 @@ class classwisetimetableController extends Controller
             ->get()
             ->toArray();
 
+        $used_period_ids = [];
+        foreach ($old_timetable_data as $week_day => $periods) {
+            foreach ($periods as $period_id => $data) {
+                $used_period_ids[$period_id] = true;
+            }
+        }
+
+        $period_data = array_values(array_filter($period_data, function($p) use ($used_period_ids) {
+            return isset($used_period_ids[$p['id']]);
+        }));
+
         $week_data = $this->getweeks();
 
         $html = '<table style="margin:0 auto;" width="80%">
