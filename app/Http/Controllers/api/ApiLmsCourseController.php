@@ -836,6 +836,43 @@ $restrict_date = $request->input('restrict_date');
         ], 200);
     }
 
+    public function getChapterConcepts(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'chapter_id' => 'required|integer',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors()->messages(),
+            ], 422);
+        }
+
+        $chapter_id = (int) $request->input('chapter_id');
+        $sub_institute_id = $request->input('sub_institute_id') ?? $this->sessionValue($request, 'sub_institute_id');
+
+        $query = DB::table('lms_concept')
+            ->select('*')
+            ->where('chapter_id', $chapter_id);
+
+        if ($sub_institute_id) {
+            $query->where('sub_institute_id', $sub_institute_id);
+        }
+
+        $concepts = $query->orderBy('id')->get()->toArray();
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $concepts,
+            'chapter_id' => $chapter_id,
+            'sub_institute_id' => $sub_institute_id,
+            'total' => count($concepts),
+        ], 200);
+    }
+
     public function getLmsQuestions(Request $request): JsonResponse
     {
         $sub_institute_id = $request->input('sub_institute_id');
