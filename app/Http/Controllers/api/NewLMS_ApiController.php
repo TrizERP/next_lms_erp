@@ -546,13 +546,14 @@ class NewLMS_ApiController extends Controller
         $profile_array = ["Admin", "Teacher", "LMS Teacher", "Student"];
 
         foreach ($profile_array as $key => $val) {
-            $sort_order = ($key + 1);
+            $sort_order = $key + 1;
+
             $data = [
-                'parent_id'        => '0',
+                'parent_id'        => ($val == 'Admin') ? 1 : 0,
                 'name'             => $val,
                 'description'      => $val,
                 'sort_order'       => $sort_order,
-                'status'           => '1',
+                'status'           => 1,
                 'sub_institute_id' => $sub_institute_id,
             ];
 
