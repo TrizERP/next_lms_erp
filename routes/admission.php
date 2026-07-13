@@ -67,3 +67,7 @@ Route::controller(admissionRegistrationController::class)->group(function () {
 Route::get('admission_enquiry', [admissionEnquiryController::class, 'create']); // for hills standalone
 Route::post('admission_enquiry/store', [admissionEnquiryController::class, 'store'])->name('admission_enquiry.storeNew'); // for hills standalone
 Route::post('admission_enquiry/payment_proof', [admissionEnquiryController::class, 'paymentProof'])->name('admission_enquiry.payment_proof'); // for hills standalone
+
+// API compatibility: some clients call the confirmation listing endpoint with PUT on the collection URL
+Route::match(['put', 'patch'], 'admission/admission_confirmation', [admissionRegistrationController::class, 'index'])
+    ->name('admission_confirmation.api_index');
