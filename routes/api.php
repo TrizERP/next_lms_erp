@@ -10,7 +10,9 @@ use App\Http\Controllers\api\ApiLoginController;
 use App\Http\Controllers\api\MenuRightsController;
 use App\Http\Controllers\api\ApiLmsCourseController;
 use App\Http\Controllers\api\ApiQuestionPaperController;
-
+use App\Http\Controllers\api\admissionEnquiryAPIController;
+use App\Http\Controllers\api\onlineAdmissionConfirmAPIController;
+use App\Http\Controllers\api\admissionRegistrationAPIController;
 
 
 // Student Assessment API - Get student assessment data with scores and levels
@@ -80,6 +82,31 @@ Route::post('lms-content-mapping-values', [ApiLmsCourseController::class, 'getCo
 Route::post('lms-store-subject', [ApiLmsCourseController::class, 'storeSubject']);
 Route::post('lms-homework/get-subjects', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'getSubjects']);
 Route::post('lms-homework/get-chapters', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'getChapters']);
+
+Route::controller(admissionEnquiryAPIController::class)->group(function () {
+    Route::get('admission_enquiry', 'index');
+    Route::post('admission_enquiry', 'store');
+    Route::match(['put', 'patch'], 'admission_enquiry/{id}', 'update');
+    Route::delete('admission_enquiry/{id}', 'destroy');
+});
+
+
+Route::controller(onlineAdmissionConfirmAPIController::class)->group(function () {
+    Route::get('online_admission_confirm', 'index');
+    Route::post('online_admission_confirm', 'store');
+    Route::get('online_admission_confirm/{id}', 'show');
+    Route::match(['put', 'patch'], 'online_admission_confirm/{id}', 'update');
+    Route::delete('online_admission_confirm/{id}', 'destroy');
+});
+
+Route::controller(admissionRegistrationAPIController::class)->group(function () {
+    Route::get('admission_registration', 'index');
+    Route::get('admission_registration/{id}/edit', 'edit');
+    Route::match(['put', 'patch'], 'admission_registration/{id}', 'update');
+    Route::delete('admission_registration/{id}', 'destroy');
+    Route::post('admission_student', 'saveStudent');
+    Route::get('ajax_getDivision', 'ajax_getDivision');
+});
 
 
 Route::apiResource('question-paper', ApiQuestionPaperController::class);

@@ -2,10 +2,13 @@
 
 namespace App\Models\admission;
 
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Model;
 
 class admissionEnquiryModel extends Model
 {
+    use SoftDeletes;
+
     protected $table = 'admission_enquiry';
 
     public $timestamps = false;
