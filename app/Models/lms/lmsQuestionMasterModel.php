@@ -32,7 +32,8 @@ class lmsQuestionMasterModel extends Model
         'created_by',
         'created_on',
         'answer',
-        'hint_text'
+        'hint_text',
+        'learning_outcome'
     ];
 
 }
