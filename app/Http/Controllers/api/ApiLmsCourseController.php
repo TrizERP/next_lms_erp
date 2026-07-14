@@ -838,24 +838,31 @@ $restrict_date = $request->input('restrict_date');
 
     public function getChapterConcepts(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'chapter_id' => 'required|integer',
+        $chapter_ids = $request->input('chapter_id', []);
+        if (is_string($chapter_ids)) {
+            $chapter_ids = $chapter_ids ? explode(',', $chapter_ids) : [];
+        }
+
+        $chapter_ids = array_filter(array_map('intval', (array) $chapter_ids));
+
+        $validator = Validator::make(['chapter_id' => $chapter_ids], [
+            'chapter_id' => 'required|array|min:1',
+            'chapter_id.*' => 'integer',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status_code' => 0,
-                'message' => 'Validation failed.',
+                'message' => 'Validation failed. At least one chapter_id is required.',
                 'errors' => $validator->errors()->messages(),
             ], 422);
         }
 
-        $chapter_id = (int) $request->input('chapter_id');
         $sub_institute_id = $request->input('sub_institute_id') ?? $this->sessionValue($request, 'sub_institute_id');
 
         $query = DB::table('lms_concept')
             ->select('*')
-            ->where('chapter_id', $chapter_id);
+            ->whereIn('chapter_id', $chapter_ids);
 
         if ($sub_institute_id) {
             $query->where('sub_institute_id', $sub_institute_id);
@@ -867,7 +874,7 @@ $restrict_date = $request->input('restrict_date');
             'status_code' => 1,
             'message' => 'SUCCESS',
             'data' => $concepts,
-            'chapter_id' => $chapter_id,
+            'chapter_id' => $chapter_ids,
             'sub_institute_id' => $sub_institute_id,
             'total' => count($concepts),
         ], 200);
