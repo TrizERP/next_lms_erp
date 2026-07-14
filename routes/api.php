@@ -72,6 +72,7 @@ Route::get('/master-menu-rights', [App\Http\Controllers\api\MenuRightsController
 
 Route::post('lms-courses', [ApiLmsCourseController::class, 'index']);
 Route::post('lms-courses/search', [ApiLmsCourseController::class, 'search']);
+Route::post('lms-chapter-concepts', [ApiLmsCourseController::class, 'getChapterConcepts']);
 Route::post('lms-chapters', [ApiLmsCourseController::class, 'chapters']);
 Route::post('lms-chapter-content', [ApiLmsCourseController::class, 'chapterContent']);
 Route::post('lms-questions', [ApiLmsCourseController::class, 'getLmsQuestions']);
@@ -114,4 +115,7 @@ Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search
 
 // Intelligence Lesson Plan - Lesson Plan -> Period -> Concepts hierarchy
 Route::match(['GET', 'POST'], 'intelligence/lesson-plans', [\App\Http\Controllers\api\lms\IntelligenceLessonPlanApiController::class, 'index']);
+
+// Intelligence Question Generation - MCQ / narrative items via DeepSeek LLM -> lms_question_master
+Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);
 
