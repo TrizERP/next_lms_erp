@@ -17,6 +17,35 @@ use Illuminate\Support\Facades\DB;
 
 class ApiQuestionPaperController extends Controller
 {
+    private function applyIndexFilters($query, Request $request)
+    {
+        $filters = [
+            'grade_id' => $request->input('grade_id', $request->input('grade')),
+            'standard_id' => $request->input('standard_id', $request->input('standard')),
+            'subject_id' => $request->input('subject_id', $request->input('subject')),
+        ];
+
+        foreach ($filters as $column => $value) {
+            if (is_array($value)) {
+                $value = array_values(array_filter($value, function ($item) {
+                    return $item !== null && $item !== '';
+                }));
+
+                if (!empty($value)) {
+                    $query->whereIn("question_paper.$column", $value);
+                }
+
+                continue;
+            }
+
+            if ($value !== null && $value !== '') {
+                $query->where("question_paper.$column", $value);
+            }
+        }
+
+        return $query;
+    }
+
     public function index(Request $request): JsonResponse
     {
         $sub_institute_id = $request->input('sub_institute_id');
@@ -86,6 +115,9 @@ class ApiQuestionPaperController extends Controller
                             ->where('sos.student_id', $student_id);
                     });
             })
+            ->tap(function ($query) use ($request) {
+                $this->applyIndexFilters($query, $request);
+            })
             ->groupBy('question_paper.id')
             ->get();
         } elseif ($user_profile_name == "Teacher") {
@@ -104,6 +136,9 @@ class ApiQuestionPaperController extends Controller
             ->leftJoin('subject', 'subject.id', '=', 'question_paper.subject_id')
             ->where('question_paper.syear', $syear)
             ->where('question_paper.created_by', $user_id)
+            ->tap(function ($query) use ($request) {
+                $this->applyIndexFilters($query, $request);
+            })
             ->orderBy('question_paper.id', 'desc')
             ->get();
         } else {
@@ -121,6 +156,9 @@ class ApiQuestionPaperController extends Controller
             ->join('academic_section', 'academic_section.id', '=', 'question_paper.grade_id')
             ->leftJoin('subject', 'subject.id', '=', 'question_paper.subject_id')
             ->where('question_paper.syear', $syear)
+            ->tap(function ($query) use ($request) {
+                $this->applyIndexFilters($query, $request);
+            })
             ->orderBy('question_paper.id', 'desc')
             ->get();
         }
