@@ -23,6 +23,7 @@ class ApiQuestionPaperController extends Controller
             'grade_id' => $request->input('grade_id', $request->input('grade')),
             'standard_id' => $request->input('standard_id', $request->input('standard')),
             'subject_id' => $request->input('subject_id', $request->input('subject')),
+            'exam_type' => $request->input('exam_type'),
         ];
 
         foreach ($filters as $column => $value) {
@@ -52,6 +53,7 @@ class ApiQuestionPaperController extends Controller
         $syear = $request->input('syear');
         $user_profile_name = $request->input('user_profile_name');
         $user_id = $request->input('user_id');
+        $exam_type = strtolower((string) $request->input('exam_type', ''));
 
         if (!$sub_institute_id || !$syear) {
             return response()->json([
@@ -114,7 +116,11 @@ class ApiQuestionPaperController extends Controller
             ->whereRaw($sub_institute_id_by_lms)
             ->where('question_paper.syear', $syear)
             ->where('standard.id', $student_standard_id)
-            ->where('question_paper.exam_type', 'online')
+            ->when($exam_type !== '', function ($query) use ($exam_type) {
+                $query->where('question_paper.exam_type', $exam_type);
+            }, function ($query) {
+                $query->where('question_paper.exam_type', 'online');
+            })
             ->where(function ($query) use ($sub_institute_id, $syear, $student_id) {
                 $query->where('ssm.elective_subject', '!=', 'Yes')
                     ->orWhereIn('ssm.subject_id', function ($inQuery) use ($sub_institute_id, $syear, $student_id) {
