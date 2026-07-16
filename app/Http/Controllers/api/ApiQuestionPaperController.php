@@ -73,7 +73,17 @@ class ApiQuestionPaperController extends Controller
             $stu_data = tblstudentEnrollmentModel::select('standard_id')->where([
                 'student_id' => $student_id,
                 'syear' => $syear,
-            ])->get()->toArray();
+            ])->first();
+
+            if (!$stu_data) {
+                return response()->json([
+                    'status_code' => 1,
+                    'message' => 'SUCCESS',
+                    'data' => []
+                ], 200);
+            }
+
+            $student_standard_id = $stu_data->standard_id;
 
             $questionpaper_data = questionpaperModel::select(
                 'question_paper.*',
@@ -87,9 +97,9 @@ class ApiQuestionPaperController extends Controller
             )
             ->join('standard', 'standard.id', '=', 'question_paper.standard_id')
             ->join('tblstudent_enrollment as se', function ($join) use ($student_id, $syear, $sub_institute_id) {
-                $join->on('se.student_id', '=', $student_id)
-                    ->on('se.syear', '=', $syear)
-                    ->on('se.sub_institute_id', '=', $sub_institute_id);
+                $join->where('se.student_id', $student_id)
+                    ->where('se.syear', $syear)
+                    ->where('se.sub_institute_id', $sub_institute_id);
             })
             ->join('academic_section', 'academic_section.id', '=', 'question_paper.grade_id')
             ->join('sub_std_map as ssm', function ($join) use ($sub_institute_id) {
@@ -99,11 +109,11 @@ class ApiQuestionPaperController extends Controller
             })
             ->leftJoin('lms_online_exam', function ($join) use ($student_id) {
                 $join->on('lms_online_exam.question_paper_id', '=', 'question_paper.id')
-                    ->on('lms_online_exam.student_id', '=', $student_id);
+                    ->where('lms_online_exam.student_id', $student_id);
             })
             ->whereRaw($sub_institute_id_by_lms)
             ->where('question_paper.syear', $syear)
-            ->where('standard.id', $stu_data[0]['standard_id'] ?? null)
+            ->where('standard.id', $student_standard_id)
             ->where('question_paper.exam_type', 'online')
             ->where(function ($query) use ($sub_institute_id, $syear, $student_id) {
                 $query->where('ssm.elective_subject', '!=', 'Yes')
