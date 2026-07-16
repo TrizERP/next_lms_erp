@@ -50,6 +50,7 @@ class questionpaperController extends Controller
     $marking_period_id = session()->get('term_id');
     $teacher = session()->get('user_profile_name');
     $user_id = session()->get('user_id');
+    $exam_type = strtolower((string) $request->input('exam_type', ''));
 
     // Add LMS conditional logic
     $getIsLms = DB::table('school_setup')
@@ -96,7 +97,11 @@ class questionpaperController extends Controller
             ->whereRaw($sub_institute_id_by_lms)
             ->where('question_paper.syear', $syear)
             ->where('standard.id', $stu_data[0]['standard_id'])
-            ->where('question_paper.exam_type', 'online')
+            ->when($exam_type !== '', function ($query) use ($exam_type) {
+                $query->where('question_paper.exam_type', $exam_type);
+            }, function ($query) {
+                $query->where('question_paper.exam_type', 'online');
+            })
             // Remove subject_id filter since it doesn't exist in the table
             ->where(function ($query) use ($sub_institute_id, $syear, $student_id) {
                 $query->where('ssm.elective_subject', '!=', 'Yes')
