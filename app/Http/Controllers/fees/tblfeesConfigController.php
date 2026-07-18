@@ -23,10 +23,20 @@ class tblfeesConfigController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->input('sub_institute_id', $request->session()->get('sub_institute_id'));
+        $syear = $request->input('syear', $request->session()->get('syear'));
 
-        $data = tblfeesConfigModel::where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get();
+        $query = tblfeesConfigModel::query();
+
+        if ($sub_institute_id !== null && $sub_institute_id !== '') {
+            $query->where('sub_institute_id', $sub_institute_id);
+        }
+
+        if ($syear !== null && $syear !== '') {
+            $query->where('syear', $syear);
+        }
+
+        $data = $query->get();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
@@ -53,8 +63,8 @@ class tblfeesConfigController extends Controller
      */
     public function store(Request $request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->input('sub_institute_id', $request->session()->get('sub_institute_id'));
+        $syear = $request->input('syear', $request->session()->get('syear'));
         $type = $request->input('type');
 
         $auto_head_value = $request->get('auto_head_counting');
@@ -77,7 +87,17 @@ class tblfeesConfigController extends Controller
         $request->request->add(['bank_logo' => $file_name]); //add request
         $data = $this->saveData($request);
 
-        $data = tblfeesConfigModel::where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get();
+        $query = tblfeesConfigModel::query();
+
+        if ($sub_institute_id !== null && $sub_institute_id !== '') {
+            $query->where('sub_institute_id', $sub_institute_id);
+        }
+
+        if ($syear !== null && $syear !== '') {
+            $query->where('syear', $syear);
+        }
+
+        $data = $query->get();
 
         $res['status_code'] = "1";
         $res['message'] = "Fees Config Added successfully";
@@ -89,15 +109,15 @@ class tblfeesConfigController extends Controller
     public function saveData(Request $request)
     {
         $newRequest = $request->all();
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->input('sub_institute_id', $request->session()->get('sub_institute_id'));
+        $syear = $request->input('syear', $request->session()->get('syear'));
         $user_id = $request->session()->get('user_id');
         $finalArray['sub_institute_id'] = $sub_institute_id;
         $finalArray['syear'] = $syear;
         $finalArray['created_by'] = $user_id;
         unset($newRequest['fees_bank_logo']);
         foreach ($newRequest as $key => $value) {
-            if ($key != '_method' && $key != '_token' && $key != 'submit') {
+            if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'type') {
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
@@ -114,11 +134,11 @@ class tblfeesConfigController extends Controller
     {
         $newRequest = $request->all();
         $id = $newRequest['id'];
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $sub_institute_id = $request->input('sub_institute_id', $request->session()->get('sub_institute_id'));
         $finalArray['sub_institute_id'] = $sub_institute_id;
         unset($newRequest['fees_bank_logo']);
         foreach ($newRequest as $key => $value) {
-            if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'id') {
+            if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'id' && $key != 'type') {
                 if (is_array($value)) {
                     $value = implode(",", $value);
                 }
@@ -150,7 +170,7 @@ class tblfeesConfigController extends Controller
     {
         $type = $request->input('type');
         $editData = tblfeesConfigModel::find($id)->toArray();
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $sub_institute_id = $request->input('sub_institute_id', $request->session()->get('sub_institute_id'));
 
         return view('fees/edit_fees_config', ['data' => $editData]);
     }
@@ -165,7 +185,7 @@ class tblfeesConfigController extends Controller
     public function update(Request $request, $id)
     {
 
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $sub_institute_id = $request->input('sub_institute_id', $request->session()->get('sub_institute_id'));
         $type = $request->input('type');
         $auto_head_value = $request->get('auto_head_counting');
         $auto_head_value = $auto_head_value ?? '';
