@@ -31,9 +31,9 @@ class s3excel_exportController extends Controller {
 	{
 		$type = $request->input('type');
 		$submit = $request->input('submit');
-		$sub_institute_id = session()->get('sub_institute_id');
-		$syear = session()->get('syear');
-        $res['fee_month'] = FeeMonthId();
+		$sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
+		$syear = $request->input('syear', session()->get('syear'));
+        $res['fee_month'] = FeeMonthId($syear, $sub_institute_id);
 		$res['status'] = 1;
 		$res['message'] = "Success";
 		
@@ -48,8 +48,8 @@ class s3excel_exportController extends Controller {
 	public function create(Request $request) 
 	{        
 		$type = $request->input('type');
-		$sub_institute_id = $request->session()->get('sub_institute_id');
-		$syear = $request->session()->get('syear');
+		$sub_institute_id = $request->input('sub_institute_id', $request->session()->get('sub_institute_id'));
+		$syear = $request->input('syear', $request->session()->get('syear'));
 		$grade = $request->input('grade');
         $standard = $request->input('standard'); 
         $division = $request->input('division'); 
@@ -69,6 +69,14 @@ class s3excel_exportController extends Controller {
             $extra .= " AND se.section_id = '".$division."'";
         }
         $NachData = DB::table('NACH_MASTER')->where('sub_institute_id',$sub_institute_id)->get()->toArray();
+        if(count($NachData) <= 0)
+        {
+            $res['status_code'] = 0;
+            $res['status'] = 0;
+            $res['message'] = "Missing NACH Settings.";
+            $res['fee_month'] = FeeMonthId($syear, $sub_institute_id);
+            return is_mobile($type, "fees/NACH/show_s3_excel_export", $res, "view");
+        }
         $NachData = $NachData[0];        
 
         $sql = "
@@ -131,7 +139,7 @@ class s3excel_exportController extends Controller {
         $res['standard'] = $standard;
         $res['grade'] = $grade;
 		$res['month_id'] = $month_id;
-        $res['fee_month'] = FeeMonthId();
+        $res['fee_month'] = FeeMonthId($syear, $sub_institute_id);
 		
 		return is_mobile($type, "fees/NACH/show_s3_excel_export", $res, "view");
 	}

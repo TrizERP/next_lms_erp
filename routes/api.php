@@ -14,6 +14,9 @@ use App\Http\Controllers\api\AiSopGenerationController;
 use App\Http\Controllers\api\admissionEnquiryAPIController;
 use App\Http\Controllers\api\onlineAdmissionConfirmAPIController;
 use App\Http\Controllers\api\admissionRegistrationAPIController;
+use App\Http\Controllers\fees\fees_cancel\feesCancelController;
+use App\Http\Controllers\fees\fees_circular\feesCircularController;
+use App\Http\Controllers\fees\fees_circular\feesCircularMasterController;
 
 
 // Student Assessment API - Get student assessment data with scores and levels
@@ -116,6 +119,19 @@ Route::controller(admissionRegistrationAPIController::class)->group(function () 
 
 Route::apiResource('question-paper', ApiQuestionPaperController::class);
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
+Route::post('fees-cancel/search', [feesCancelController::class, 'search']);
+
+// Fees Circular — stateless JSON entry points for the Next.js frontend.
+// Callers must send type=JSON (is_mobile then returns response()->json) plus
+// syear/sub_institute_id/user_id, which the controllers seed into session()
+// for the downstream fee helpers. api.php does not run StartSession.
+Route::post('fees-circular/filters', [feesCircularController::class, 'index']);
+Route::post('fees-circular/students', [feesCircularController::class, 'showStudent']);
+Route::post('fees-circular/generate', [feesCircularController::class, 'showCircular']);
+Route::post('fees-circular-master', [feesCircularMasterController::class, 'index']);
+Route::post('fees-circular-master/store', [feesCircularMasterController::class, 'store']);
+Route::post('fees-circular-master/{id}/update', [feesCircularMasterController::class, 'update']);
+Route::post('fees-circular-master/{id}/delete', [feesCircularMasterController::class, 'destroy']);
 
 // Intelligence Lesson Plan - Lesson Plan -> Period -> Concepts hierarchy
 Route::match(['GET', 'POST'], 'intelligence/lesson-plans', [\App\Http\Controllers\api\lms\IntelligenceLessonPlanApiController::class, 'index']);

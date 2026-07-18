@@ -16,6 +16,28 @@ use GenTux\Jwt\GetsJwtToken;
 class feesCancelController extends Controller
 {
     use GetsJwtToken;
+
+    public function search(Request $request)
+    {
+        $request->merge(['type' => 'API']);
+
+        $response = $this->create($request);
+
+        if (is_string($response)) {
+            $data = json_decode($response, true);
+
+            if (json_last_error() === JSON_ERROR_NONE) {
+                if (isset($data['status']) && !isset($data['status_code'])) {
+                    $data['status_code'] = (int) $data['status'];
+                    unset($data['status']);
+                }
+
+                return response()->json($data);
+            }
+        }
+
+        return $response;
+    }
     
     /**
      * Display a listing of the resource.
@@ -65,9 +87,9 @@ class feesCancelController extends Controller
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
         $receipt_no = $request->input('receipt_no');
-        $syear = $request->session()->get('syear');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $marking_period_id = session()->get('term_id');
+        $syear = $request->hasSession() ? $request->session()->get('syear') : null;
+        $sub_institute_id = $request->hasSession() ? $request->session()->get('sub_institute_id') : null;
+        $marking_period_id = $request->hasSession() ? $request->session()->get('term_id') : null;
 
         if($type=="API"){
             $syear = $request->syear;
