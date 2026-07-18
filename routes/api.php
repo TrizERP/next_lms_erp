@@ -10,6 +10,7 @@ use App\Http\Controllers\api\ApiLoginController;
 use App\Http\Controllers\api\MenuRightsController;
 use App\Http\Controllers\api\ApiLmsCourseController;
 use App\Http\Controllers\api\ApiQuestionPaperController;
+use App\Http\Controllers\api\AiSopGenerationController;
 use App\Http\Controllers\api\admissionEnquiryAPIController;
 use App\Http\Controllers\api\onlineAdmissionConfirmAPIController;
 use App\Http\Controllers\api\admissionRegistrationAPIController;
@@ -81,6 +82,9 @@ Route::post('lms-create-content', [ApiLmsCourseController::class, 'createContent
 Route::post('lms-store-content', [ApiLmsCourseController::class, 'storeContent']);
 Route::post('lms-content-mapping-values', [ApiLmsCourseController::class, 'getContentMappingValues']);
 Route::post('lms-store-subject', [ApiLmsCourseController::class, 'storeSubject']);
+Route::get('ai-sop', [AiSopGenerationController::class, 'index']);
+Route::post('ai-sop/generate', [AiSopGenerationController::class, 'generate']);
+Route::post('ai-sop/store', [AiSopGenerationController::class, 'store']);
 Route::post('lms-homework/get-subjects', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'getSubjects']);
 Route::post('lms-homework/get-chapters', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'getChapters']);
 
@@ -118,4 +122,11 @@ Route::match(['GET', 'POST'], 'intelligence/lesson-plans', [\App\Http\Controller
 
 // Intelligence Question Generation - MCQ / narrative items via DeepSeek LLM -> lms_question_master
 Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);
+
+Route::get('/departments', [\App\Http\Controllers\HRMS\departmentController::class, 'index']);
+Route::get('/departments/create', [\App\Http\Controllers\HRMS\departmentController::class, 'create']);
+Route::get('/department-employee-lists', [\App\Http\Controllers\HRMS\departmentController::class, 'departmentEmpLists']);
+Route::get('/sub-department-list', [\App\Http\Controllers\HRMS\departmentController::class, 'subDepartmentList']);
+Route::get('/department-employee-list', [\App\Http\Controllers\HRMS\departmentController::class, 'departmentEmployeeList']);
+Route::get('/departments/hierarchy', [\App\Http\Controllers\HRMS\departmentController::class, 'hierarchy']);
 

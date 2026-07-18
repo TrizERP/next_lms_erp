@@ -12,7 +12,7 @@ class departmentController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = session()->get('sub_institute_id');
+        $sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
 
         $departmentData = DB::table('hrms_departments as hdm')
         ->LeftJoin('tbluser as u',function($query) use($sub_institute_id){
@@ -44,7 +44,7 @@ class departmentController extends Controller
     public function create(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = session()->get('sub_institute_id');
+        $sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
         $res = session()->get('data');
 
         $res['departmentList'] = DB::table('hrms_departments')->where('status',1)->where('parent_id',0)->where('sub_institute_id',$sub_institute_id)->get()->toArray();
@@ -198,7 +198,7 @@ class departmentController extends Controller
     }
 
     public function subDepartmentList(Request $request){
-        $sub_institute_id = session()->get('sub_institute_id');
+        $sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
         $depIds = $request->depId;
 
          return DB::table('hrms_departments')
@@ -210,7 +210,7 @@ class departmentController extends Controller
     }
 
     public function departmentEmployeeList(Request $request){
-        $sub_institute_id = session()->get('sub_institute_id');
+        $sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
         $depIds = $request->depId;
         $where = "(department_id in ($depIds)";
         
@@ -228,5 +228,79 @@ class departmentController extends Controller
         ->groupBy('id')
         ->get()
         ->toArray();
+    }
+
+    public function hierarchy(Request $request)
+    {
+        $type = $request->input('type');
+        $sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
+
+        $departments = DB::table('hrms_departments')
+            ->where('status', 1)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->orderBy('parent_id', 'ASC')
+            ->orderBy('id', 'ASC')
+            ->get()
+            ->toArray();
+
+        $employees = DB::table('tbluser as u')
+            ->leftJoin('hrms_departments as dep', 'u.department_id', '=', 'dep.id')
+            ->select(
+                'u.id',
+                'u.employee_no',
+                'u.gender',
+                'u.image',
+                DB::raw('CONCAT_WS(" ", COALESCE(u.first_name,"-"), COALESCE(u.middle_name,"-"), COALESCE(u.last_name,"-")) as name'),
+                'u.mobile',
+                'u.department_id'
+            )
+            ->where('u.status', 1)
+            ->where('u.sub_institute_id', $sub_institute_id)
+            ->get()
+            ->toArray();
+
+        $employeesByDept = [];
+        foreach ($employees as $emp) {
+            $deptId = $emp->department_id ?: 0;
+            $employeesByDept[$deptId][] = $emp;
+        }
+
+        $parentDepts = [];
+        $childDepts = [];
+
+        foreach ($departments as $dept) {
+            if ($dept->parent_id == 0) {
+                $parentDepts[] = $dept;
+            } else {
+                $childDepts[$dept->parent_id][] = $dept;
+            }
+        }
+
+        $result = [];
+        foreach ($parentDepts as $parent) {
+            $deptData = [
+                'id' => $parent->id,
+                'name' => $parent->department,
+                'total_employees' => count($employeesByDept[$parent->id] ?? []),
+                'employees' => $employeesByDept[$parent->id] ?? [],
+                'sub_departments' => []
+            ];
+
+            if (isset($childDepts[$parent->id])) {
+                foreach ($childDepts[$parent->id] as $child) {
+                    $deptData['sub_departments'][] = [
+                        'id' => $child->id,
+                        'name' => $child->department,
+                        'total_employees' => count($employeesByDept[$child->id] ?? []),
+                        'employees' => $employeesByDept[$child->id] ?? []
+                    ];
+                }
+            }
+
+            $result[] = $deptData;
+        }
+
+        $res['departments'] = $result;
+        return is_mobile($type, "hierarchy", $res, "view");
     }
 }
