@@ -39,8 +39,10 @@ class s4excel_importController extends Controller {
 	public function index(Request $request) 
 	{
 		$type = $request->input('type');		
+		$sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
+		$syear = $request->input('syear', session()->get('syear'));
 		$res = array();		
-		$res['fee_month'] = FeeMonthId();
+		$res['fee_month'] = FeeMonthId($syear, $sub_institute_id);
 		
 		return is_mobile($type, "fees/NACH/show_s4_excel_import", $res, "view");
 	}
@@ -53,12 +55,20 @@ class s4excel_importController extends Controller {
 	public function store(Request $request) 
 	{        
 		$type = $request->input('type');
-		$sub_institute_id = $request->session()->get('sub_institute_id');
-		$syear = $request->session()->get('syear');
-		$user_id = $request->session()->get('user_id');
+		$sub_institute_id = $request->input('sub_institute_id', $request->session()->get('sub_institute_id'));
+		$syear = $request->input('syear', $request->session()->get('syear'));
+		$user_id = $request->input('user_id', $request->session()->get('user_id'));
 		$MONTH_ID = $request->input('month_id');
 
 		$NACH_master = DB::select("select * from fees_config_master f where f.sub_institute_id = '".$sub_institute_id."'");
+		if(count($NACH_master) <= 0)
+		{
+			$res['status_code'] = 0;
+			$res['status'] = 0;
+			$res['message'] = "Missing NACH Fee Configuration.";
+			$res['fee_month'] = FeeMonthId($syear, $sub_institute_id);
+			return is_mobile($type, "fees/NACH/show_s4_excel_import", $res, "view");
+		}
 		$NACH_master = json_decode(json_encode($NACH_master[0]),true);
 
 		define('FAILEDCHARGE', $NACH_master['nach_failed_charge']);
@@ -491,7 +501,7 @@ class s4excel_importController extends Controller {
 								'SUB_INSTITUTE_ID'         => $sub_institute_id,
 								'SYEAR'                    => $syear,
 								'SCREEN_NAME'              => 'general',
-								'CREATED_BY'               => session()->get('user_id'),
+								'CREATED_BY'               => $user_id,
 								'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
 							];
 
@@ -614,7 +624,7 @@ class s4excel_importController extends Controller {
 			$res['status_code'] = 0;
 			$res['message'] = "Please select file to import fees";
 		}
-		$res['fee_month'] = FeeMonthId();
+		$res['fee_month'] = FeeMonthId($syear, $sub_institute_id);
 		return is_mobile($type, "fees/NACH/show_s4_excel_import", $res, "view");
 	}
 	

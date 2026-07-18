@@ -29,15 +29,15 @@ class other_fees_title_controller extends Controller
                 $school_data['message'] = $data_arr['message'];
             }
         }
-        $data['data'] = $this->getData();
+        $data['data'] = $this->getData($request);
         $type = $request->input('type');
         return is_mobile($type, "fees/other_fees_title/show_other", $data, "view");
     }
 
-    function getData()
+    function getData(Request $request = null)
     {
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
+        $sub_institute_id = $request ? $request->input('sub_institute_id', session()->get('sub_institute_id')) : session()->get('sub_institute_id');
+        $syear = $request ? $request->input('syear', session()->get('syear')) : session()->get('syear');
 
         return DB::table('fees_other_head as ift')
             ->selectRaw("ift.*,if(ift.status = 1,'Active','Inactive') as status,if(ift.include_imprest = 'Y','Yes','No') as include_imprest")
