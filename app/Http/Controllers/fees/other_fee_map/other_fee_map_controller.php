@@ -13,6 +13,27 @@ use function App\Helpers\is_mobile;
 
 class other_fee_map_controller extends Controller
 {
+    protected function resolveRequestContext(Request $request): array
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+
+        if ($request->input('type') === 'API') {
+            if ($sub_institute_id === null || $sub_institute_id === '') {
+                $sub_institute_id = $request->input('sub_institute_id');
+            }
+
+            if ($syear === null || $syear === '') {
+                $syear = $request->input('syear');
+            }
+        }
+
+        return [
+            'sub_institute_id' => $sub_institute_id,
+            'syear' => $syear,
+            'type' => $request->input('type'),
+        ];
+    }
 
     /**
      * Display a listing of the resource.
@@ -21,23 +42,24 @@ class other_fee_map_controller extends Controller
      */
     public function index(Request $request)
     {
+        $context = $this->resolveRequestContext($request);
         if (session()->has('data')) { // check if it exists
             $data_arr = session('data'); // to retrieve value
             if (isset($data_arr['message'])) {
                 $data['message'] = $data_arr['message'];
             }
         }
-        $fee_month = FeeMonthId();
+        $fee_month = FeeMonthId($context['syear'], $context['sub_institute_id']);
         $fees_title = fees_title::select('id', 'display_name', 'fees_title', 'mandatory', 'syear', 'other_fee_id')
             ->where([
-                'sub_institute_id' => session()->get('sub_institute_id'),
-                'syear' => session()->get('syear'),
+                'sub_institute_id' => $context['sub_institute_id'],
+                'syear' => $context['syear'],
                 'fees_title_id' => 1
             ])->orderBy('sort_order')->get();
         $data['data']['ddMonth'] = $fee_month;
         $data['data']['heads'] = $fees_title;
         
-        $type = $request->input('type');
+        $type = $context['type'];
         return is_mobile($type, "fees/other_fee_map/show", $data, "view");
     }
 
@@ -49,13 +71,24 @@ class other_fee_map_controller extends Controller
     public function create(Request $request)
     {
         // session(['month_id' => $_REQUEST['month_id']]);
-        $type = $request->input('type');
+        $context = $this->resolveRequestContext($request);
+        $type = $context['type'];
         $fees_heads = $request->fees_heads;
+        $sub_institute_id = $context['sub_institute_id'];
+        $syear = $context['syear'];
         
-     // controller.php
-        $student_data = \App\Helpers\SearchStudent($_REQUEST['grade'],$_REQUEST['standard'],$_REQUEST['division'],'', '','', $_REQUEST['stu_name'],$_REQUEST['uniqueid'],$_REQUEST['mobile'],$_REQUEST['grno']);
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
+        $student_data = \App\Helpers\SearchStudent(
+            $request->input('grade'),
+            $request->input('standard'),
+            $request->input('division'),
+            $sub_institute_id,
+            $syear,
+            '',
+            $request->input('stu_name'),
+            $request->input('uniqueid'),
+            $request->input('mobile'),
+            $request->input('grno')
+        );
         $mp_id = $request->month_id;
 
         $fees_breckoff = DB::table('fees_breakoff_other')
@@ -65,8 +98,8 @@ class other_fee_map_controller extends Controller
         // echo "<pre>";print_r($fees_breckoff);exit;
         $fees_title['data'] = fees_title::select('id', 'display_name', 'fees_title', 'mandatory', 'syear', 'other_fee_id')
             ->where([
-                'sub_institute_id' => session()->get('sub_institute_id'),
-                'syear' => session()->get('syear'),
+                'sub_institute_id' => $context['sub_institute_id'],
+                'syear' => $context['syear'],
                 'fees_title_id' => 1
             ])
             ->whereRaw('id IN ("'.implode('","',$fees_heads).'")')
@@ -145,6 +178,7 @@ class other_fee_map_controller extends Controller
      */
     public function store(Request $request)
     {
+        $context = $this->resolveRequestContext($request);
         if (isset($_REQUEST['student_id'])) {
             foreach ($_REQUEST['student_id'] as $student_id => $val) {
                 foreach ($_REQUEST['values'] as $student_id1 => $arr) {
@@ -154,22 +188,22 @@ class other_fee_map_controller extends Controller
                             // if exists then delete
                            DB::table('fees_breakoff_other')
                                 ->where([
-                                    'syear' => session()->get('syear'),
+                                    'syear' => $context['syear'],
                                     'student_id' => $student_id,
                                     'fee_type_id' => $fee_type_id,
                                     'month_id' => $month_id,
-                                    'sub_institute_id' => session()->get('sub_institute_id')
+                                    'sub_institute_id' => $context['sub_institute_id']
                                 ])->delete();
                             //insert when amount > 0
                             if($amount>0){
                                 DB::table('fees_breakoff_other')->insert(
                                     array(
-                                        'syear' => session()->get('syear'),
+                                        'syear' => $context['syear'],
                                         'student_id' => $student_id,
                                         'fee_type_id' => $fee_type_id,
                                         'month_id' => $month_id,
                                         'amount' => $amount,
-                                        'sub_institute_id' => session()->get('sub_institute_id')
+                                        'sub_institute_id' => $context['sub_institute_id']
                                     )
                                 );
                             }
@@ -190,11 +224,11 @@ class other_fee_map_controller extends Controller
         }
 
         $type = $request->input('type');
-        $fee_month = FeeMonthId();
+        $fee_month = FeeMonthId($context['syear'], $context['sub_institute_id']);
         $fees_title = fees_title::select('id', 'display_name', 'fees_title', 'mandatory', 'syear', 'other_fee_id')
             ->where([
-                'sub_institute_id' => session()->get('sub_institute_id'),
-                'syear' => session()->get('syear'),
+                'sub_institute_id' => $context['sub_institute_id'],
+                'syear' => $context['syear'],
                 'fees_title_id' => 1
             ])->orderBy('sort_order')->get();
         $res['data']['ddMonth'] = $fee_month;
@@ -206,3 +240,5 @@ class other_fee_map_controller extends Controller
     }
 
 }
+
+

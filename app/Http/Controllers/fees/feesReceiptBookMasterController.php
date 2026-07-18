@@ -14,50 +14,83 @@ use function App\Helpers\is_mobile;
 
 class feesReceiptBookMasterController extends Controller
 {
-    public function index(Request $request)
+    protected function resolveRequestContext(Request $request): array
     {
-        $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
+
+        if ($request->input('type') === 'API') {
+            if ($sub_institute_id === null || $sub_institute_id === '') {
+                $sub_institute_id = $request->input('sub_institute_id');
+            }
+
+            if ($syear === null || $syear === '') {
+                $syear = $request->input('syear');
+            }
+        }
+
+        return [
+            'sub_institute_id' => $sub_institute_id,
+            'syear' => $syear,
+            'type' => $request->input('type'),
+        ];
+    }
+
+    public function index(Request $request)
+    {
+        $context = $this->resolveRequestContext($request);
+        $type = $context['type'];
+        $sub_institute_id = $context['sub_institute_id'];
+        $syear = $context['syear'];
         $marking_period_id = session()->get('term_id');
-        $data = feesReceiptBookMasterModel::selectRaw('fees_receipt_book_master.*')
+        $query = feesReceiptBookMasterModel::selectRaw('fees_receipt_book_master.*')
             ->selectRaw("group_concat(distinct academic_section.short_name) as grade")
             ->selectRaw("group_concat(distinct standard.name) as standard")
             ->selectRaw("CASE WHEN fees_receipt_book_master.status = 1 THEN 'Active' ELSE 'Inactive' END as status")
             ->selectRaw("group_concat(distinct fees_title.display_name ORDER BY fees_title.sort_order) as fees_head")
-            ->join('academic_section', 'fees_receipt_book_master.grade_id', '=', 'academic_section.id')
-            ->join('standard', function($join) use($marking_period_id) {
+            ->leftJoin('academic_section', 'fees_receipt_book_master.grade_id', '=', 'academic_section.id')
+            ->leftJoin('standard', function($join) use($marking_period_id) {
                 $join->on('fees_receipt_book_master.standard_id', '=', 'standard.id');
                 // ->when($marking_period_id,function($join)use($marking_period_id){
                 //     $join->where('standard.marking_period_id',$marking_period_id);
                 // });
             })
-            ->join('fees_title', 'fees_receipt_book_master.fees_head_id', '=', 'fees_title.id')
-            ->where([
-                'fees_receipt_book_master.sub_institute_id' => $sub_institute_id,
-                'fees_receipt_book_master.syear'            => $syear,
-            ])
-            ->groupBy('fees_receipt_book_master.receipt_id')
-            ->get();
+            ->leftJoin('fees_title', 'fees_receipt_book_master.fees_head_id', '=', 'fees_title.id');
+
+        if ($sub_institute_id !== null && $sub_institute_id !== '') {
+            $query->where('fees_receipt_book_master.sub_institute_id', $sub_institute_id);
+        }
+
+        if ($syear !== null && $syear !== '') {
+            $query->where('fees_receipt_book_master.syear', $syear);
+        }
+
+        $data = $query->groupBy('fees_receipt_book_master.receipt_id')->get();
 
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $res['data'] = $data;
+
+        if ($type === 'API') {
+            return response()->json([
+                'status' => 1,
+                'message' => 'Success',
+                'data' => $data,
+            ]);
+        }
 
         return is_mobile($type, "fees/show_fees_receipt_book", $res, "view");
     }
 
     public function create(Request $request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-        $type= $request->type;
-        if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
-            $syear = $request->syear;
-        }
+        $context = $this->resolveRequestContext($request);
+        $sub_institute_id = $context['sub_institute_id'];
+        $syear = $context['syear'];
+        $type= $context['type'];
 
         $res['feeHeadList'] = $this->feeHeadList($request);
+        $res['existingMappings'] = $this->existingMappings($request);
         $receiptId = feesReceiptBookMasterModel::selectRaw("MAX(CAST(receipt_id AS UNSIGNED))+1 AS newcode")->where([
             'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
         ])->get()->toArray();
@@ -77,8 +110,8 @@ class feesReceiptBookMasterController extends Controller
 
     public function standardList(Request $request)
     {
-        $syear = $request->session()->get('syear');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $context = $this->resolveRequestContext($request);
+        $sub_institute_id = $context['sub_institute_id'];
 
         return standardModel::where(['sub_institute_id' => $sub_institute_id])
             ->pluck('grade_id', 'id')->toArray();
@@ -86,8 +119,8 @@ class feesReceiptBookMasterController extends Controller
 
     public function gradeList(Request $request)
     {
-        $syear = $request->session()->get('syear');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $context = $this->resolveRequestContext($request);
+        $sub_institute_id = $context['sub_institute_id'];
 
         return academic_sectionModel::where(['sub_institute_id' => $sub_institute_id])
             ->pluck('title', 'id')->toArray();
@@ -95,8 +128,9 @@ class feesReceiptBookMasterController extends Controller
 
     public function feeHeadList(Request $request)
     {
-        $syear = $request->session()->get('syear');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $context = $this->resolveRequestContext($request);
+        $syear = $context['syear'];
+        $sub_institute_id = $context['sub_institute_id'];
 
 //        $feeHeadList = fees_title::where(['syear' => $syear,'sub_institute_id' => $sub_institute_id,'other_fee_id' => '0'])->get()->toArray();
         return fees_title::where([
@@ -104,17 +138,45 @@ class feesReceiptBookMasterController extends Controller
         ])->orderBy('sort_order')->get()->toArray();
     }
 
+    protected function existingMappings(Request $request)
+    {
+        $context = $this->resolveRequestContext($request);
+        $syear = $context['syear'];
+        $sub_institute_id = $context['sub_institute_id'];
+
+        $query = feesReceiptBookMasterModel::query()
+            ->select('receipt_id', 'grade_id', 'standard_id', 'fees_head_id');
+
+        if ($sub_institute_id !== null && $sub_institute_id !== '') {
+            $query->where('sub_institute_id', $sub_institute_id);
+        }
+
+        if ($syear !== null && $syear !== '') {
+            $query->where('syear', $syear);
+        }
+
+        return $query->get()->toArray();
+    }
+
     public function store(Request $request)
     {
         // echo "<pre>";print_r($request->all());exit;
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-        $type = $request->input('type');
+        $context = $this->resolveRequestContext($request);
+        $sub_institute_id = $context['sub_institute_id'];
+        $syear = $context['syear'];
+        $type = $context['type'];
         $standard_ids = $request['standard'];
         $grade_ids = $request['grade'];
         $fees_head_id = $request['fees_head_id'];
         $receipt_id = $request['receipt_id'];
         $submit = $request['submit'];
+
+        if ($sub_institute_id === null || $sub_institute_id === '' || $syear === null || $syear === '') {
+            $res['status_code'] = "0";
+            $res['message'] = "Institute ID and academic year are required.";
+
+            return is_mobile($type, "fees_receipt_book_master.index", $res);
+        }
 
         if ($submit == 'Update') {
             $chkExistHead = DB::table('fees_receipt_book_master')
@@ -173,8 +235,24 @@ class feesReceiptBookMasterController extends Controller
 
             foreach ($standard_ids as $key => $value) {
                 foreach ($fees_head_id as $k => $id) {
-                    $gradeList = $this->gradeList($request);
-                    $newGradeId = $standardList[$value];
+                    $newGradeId = $standardList[$value] ?? null;
+                    if ($newGradeId === null || $newGradeId === '') {
+                        $standardRecord = standardModel::query()
+                            ->where('id', $value)
+                            ->when($sub_institute_id !== null && $sub_institute_id !== '', function ($query) use ($sub_institute_id) {
+                                $query->where('sub_institute_id', $sub_institute_id);
+                            })
+                            ->first();
+                        $newGradeId = $standardRecord?->grade_id;
+                    }
+
+                    if ($newGradeId === null || $newGradeId === '') {
+                        $res['status_code'] = "0";
+                        $res['message'] = "Standard mapping not found for standard ID ".$value.".";
+
+                        return is_mobile($type, "fees_receipt_book_master.index", $res);
+                    }
+
                     $request->request->set('standard_id', $value);
                     $request->request->set('grade_id', $newGradeId);
                     $request->request->set('fees_head_id', $id);
@@ -200,8 +278,9 @@ class feesReceiptBookMasterController extends Controller
     public function saveData(Request $request)
     {
         $newRequest =  $request->except(['type']);
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        $context = $this->resolveRequestContext($request);
+        $sub_institute_id = $context['sub_institute_id'];
+        $syear = $context['syear'];
         $user_id = $request->session()->get('user_id');
         $finalArray['sub_institute_id'] = $sub_institute_id;
         $finalArray['syear'] = $syear;
@@ -224,9 +303,10 @@ class feesReceiptBookMasterController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        $type = $request->input('type');
-        $syear = $request->session()->get('syear');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $context = $this->resolveRequestContext($request);
+        $type = $context['type'];
+        $syear = $context['syear'];
+        $sub_institute_id = $context['sub_institute_id'];
         feesReceiptBookMasterModel::where([
             "receipt_id" => $id, 'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
         ])->delete();
@@ -238,23 +318,53 @@ class feesReceiptBookMasterController extends Controller
 
     public function edit(Request $request, $id)
     {
-        $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        $context = $this->resolveRequestContext($request);
+        $type = $context['type'];
+        $sub_institute_id = $context['sub_institute_id'];
+        $syear = $context['syear'];
 
         $editData = feesReceiptBookMasterModel::selectRaw('fees_receipt_book_master.*')
             ->selectRaw('GROUP_CONCAT(distinct standard_id) as standard_id')
             ->selectRaw('GROUP_CONCAT(distinct grade_id) as grade_id')
             ->selectRaw('GROUP_CONCAT(distinct fees_head_id) as fees_head_id')
-            ->where(['receipt_id' => $id, 'sub_institute_id' => $sub_institute_id, 'syear' => $syear])
+            ->where('receipt_id', $id)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->when($syear !== null && $syear !== '', function ($query) use ($syear) {
+                $query->where('syear', $syear);
+            })
             ->groupBy('receipt_id')
-            ->get()->toArray();
+            ->first();
 
-        $editData = $editData[0];
+        if (!$editData) {
+            if ($type === 'API') {
+                return response()->json([
+                    'status' => 0,
+                    'message' => 'Receipt book record not found.',
+                    'data' => null,
+                ], 404);
+            }
+
+            $res['status_code'] = 0;
+            $res['message'] = 'Receipt book record not found.';
+            return redirect()->route('fees_receipt_book_master.index')->with(['data' => $res]);
+        }
 
         $feeHeadList = $this->feeHeadList($request);
+
+        if ($type === 'API') {
+            return response()->json([
+                'status' => 1,
+                'message' => 'Success',
+                'data' => [
+                    'record' => $editData,
+                    'feeHeadList' => $feeHeadList,
+                    'existingMappings' => $this->existingMappings($request),
+                ],
+            ]);
+        }
+
         view()->share('feeHeadList', $feeHeadList);
 
-        return view('fees/edit_fees_receipt_book', ['data' => $editData]);
+        return view('fees/edit_fees_receipt_book', ['data' => $editData->toArray()]);
     }
 }

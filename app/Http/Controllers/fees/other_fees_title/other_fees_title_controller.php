@@ -34,10 +34,10 @@ class other_fees_title_controller extends Controller
         return is_mobile($type, "fees/other_fees_title/show_other", $data, "view");
     }
 
-    function getData(Request $request = null)
+    function getData(Request $request)
     {
-        $sub_institute_id = $request ? $request->input('sub_institute_id', session()->get('sub_institute_id')) : session()->get('sub_institute_id');
-        $syear = $request ? $request->input('syear', session()->get('syear')) : session()->get('syear');
+        $sub_institute_id = $request->input('sub_institute_id') ?? session()->get('sub_institute_id');
+        $syear = $request->input('syear') ?? session()->get('syear');
 
         return DB::table('fees_other_head as ift')
             ->selectRaw("ift.*,if(ift.status = 1,'Active','Inactive') as status,if(ift.include_imprest = 'Y','Yes','No') as include_imprest")
@@ -53,8 +53,8 @@ class other_fees_title_controller extends Controller
     public function create(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->input('sub_institute_id') ?? $request->session()->get('sub_institute_id');
+        $syear = $request->input('syear') ?? $request->session()->get('syear');
         $data = array();
 
         return is_mobile($type, 'fees/other_fees_title/add_other', $data, "view");
@@ -69,9 +69,9 @@ class other_fees_title_controller extends Controller
     public function store(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
-        $created_by = session()->get('user_id');
+        $sub_institute_id = $request->input('sub_institute_id') ?? session()->get('sub_institute_id');
+        $syear = $request->input('syear') ?? session()->get('syear');
+        $created_by = $request->input('user_id') ?? session()->get('user_id');
         $created_ip = $_SERVER['REMOTE_ADDR'];
 
         $values = array(
@@ -117,8 +117,8 @@ class other_fees_title_controller extends Controller
     public function edit(Request $request, $id)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->input('sub_institute_id') ?? $request->session()->get('sub_institute_id');
+        $syear = $request->input('syear') ?? $request->session()->get('syear');
         $data = DB::table('fees_other_head')
             ->where('id', $id)
             ->where('sub_institute_id', $sub_institute_id)
@@ -138,9 +138,9 @@ class other_fees_title_controller extends Controller
     public function update(Request $request, $id)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-        $updated_by = session()->get('user_id');
+        $sub_institute_id = $request->input('sub_institute_id') ?? $request->session()->get('sub_institute_id');
+        $syear = $request->input('syear') ?? $request->session()->get('syear');
+        $updated_by = $request->input('user_id') ?? session()->get('user_id');
 
         $finalArr = array(
             'display_name' => $request->input('display_name'),

@@ -14,6 +14,27 @@ use function App\Helpers\is_mobile;
 
 class fees_breackoff_controller extends Controller
 {
+    protected function resolveRequestContext(Request $request): array
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+
+        if ($request->input('type') === 'API') {
+            if ($sub_institute_id === null || $sub_institute_id === '') {
+                $sub_institute_id = $request->input('sub_institute_id');
+            }
+
+            if ($syear === null || $syear === '') {
+                $syear = $request->input('syear');
+            }
+        }
+
+        return [
+            'sub_institute_id' => $sub_institute_id,
+            'syear' => $syear,
+            'type' => $request->input('type'),
+        ];
+    }
 
     /**
      * Display a listing of the resource.
@@ -29,14 +50,15 @@ class fees_breackoff_controller extends Controller
             }
         }
 
-        $school_data['data'] = $this->getData();
+        $school_data['data'] = $this->getData($request);
         $type = $request->input('type');
 
         return is_mobile($type, "fees/fees_breackoff/show", $school_data, "view");
     }
 
-    function getData()
+    function getData(Request $request)
     {
+        $context = $this->resolveRequestContext($request);
         $marking_period_id=session()->get('term_id');
         $result = DB::table('fees_breackoff as fb')
             ->join('fees_title as ft', function ($join) {
@@ -54,8 +76,8 @@ class fees_breackoff_controller extends Controller
                 $join->whereRaw('d.id = fb.section_id');
             })->selectRaw('fb.syear,fb.admission_year,ft.display_name fees_head,sq.title quota,acs.title grade_name,
                 st.name sta_name,d.name div_name,fb.month_id,fb.amount')
-            ->where('fb.sub_institute_id', session()->get('sub_institute_id'))
-            ->where('fb.syear', session()->get('syear'))
+            ->where('fb.sub_institute_id', $context['sub_institute_id'])
+            ->where('fb.syear', $context['syear'])
             ->orderByRaw('ft.sort_order')
             ->get()->toArray();
 
@@ -85,11 +107,12 @@ class fees_breackoff_controller extends Controller
      */
     public function create(Request $request)
     {
-        $type = $request->input('type');
+        $context = $this->resolveRequestContext($request);
+        $type = $context['type'];
 
         $data = map_year::where([
-            'sub_institute_id' => session()->get('sub_institute_id'),
-            'syear'            => session()->get('syear'),
+            'sub_institute_id' => $context['sub_institute_id'],
+            'syear'            => $context['syear'],
         ])->get()->toArray();
         
         // added on 06-01-2025 to solve error of undefine array key 0 $data[0]
@@ -111,7 +134,7 @@ class fees_breackoff_controller extends Controller
             10 => 'Oct', 11 => 'Nov', 12 => 'Dec',
         ];
         $months_arr = [];
-        $syear = session()->get('syear');
+        $syear = $context['syear'];
 
         if($data[0]['type'] == "yearly_fees")
         {
@@ -181,6 +204,7 @@ class fees_breackoff_controller extends Controller
      */
     public function store(Request $request)
     {
+        $context = $this->resolveRequestContext($request);
         if (isset($_REQUEST['action']) && $_REQUEST['action'] == 'insert')
         {
             $all_data = $_REQUEST['NewValues'];
@@ -199,15 +223,32 @@ class fees_breackoff_controller extends Controller
                 }
             }
             $req = session()->get('req');
+            if (empty($req) || !isset($req['grade'], $req['standard'], $req['month'])) {
+                $req = [
+                    'grade' => $request->input('grade', []),
+                    'standard' => $request->input('standard', []),
+                    'month' => $request->input('month', []),
+                ];
+            }
+
+            if (empty($req['grade']) || empty($req['standard']) || empty($req['month'])) {
+                $res = [
+                    "status" => 0,
+                    "message" => "Grade, standard, and month are required to save fees structure.",
+                ];
+
+                $type = $request->input('type');
+                return is_mobile($type, "fees_breackoff.index", $res, "redirect");
+            }
 
             foreach ($req['grade'] as $grade_id => $grade) {
                 foreach ($req['standard'] as $std_id => $std) {
                     foreach ($all_data as $quota_id => $arr) {
                         foreach ($arr as $title_id => $amount) {
                             foreach ($req['month'] as $month_id => $on) {
-                                $syear = session()->get('syear');
-                                $admission_year = session()->get('syear');
-                                $sub_institute_id = session()->get('sub_institute_id');
+                                $syear = $context['syear'];
+                                $admission_year = $context['syear'];
+                                $sub_institute_id = $context['sub_institute_id'];
 
                                 $checkNewfeesBreakoff = fees_breackoff::where([
                                     'syear'            => $syear, 'admission_year' => $admission_year,
@@ -218,15 +259,15 @@ class fees_breackoff_controller extends Controller
 
                                 if (count($checkNewfeesBreakoff) == 0) {
                                     DB::table('fees_breackoff')->insert([
-                                        'syear'            => session()->get('syear'),
-                                        'admission_year'   => session()->get('syear'),
+                                        'syear'            => $context['syear'],
+                                        'admission_year'   => $context['syear'],
                                         'fee_type_id'      => $title_id,
                                         'quota'            => $quota_id,
                                         'grade_id'         => $grade,
                                         'standard_id'      => $std,
                                         'month_id'         => $month_id,
                                         'amount'           => $amount,
-                                        'sub_institute_id' => session()->get('sub_institute_id'),
+                                        'sub_institute_id' => $context['sub_institute_id'],
                                         'created_at'       => date('Y-m-d H:i:s'),
                                     ]);
                                 }
@@ -237,8 +278,8 @@ class fees_breackoff_controller extends Controller
                 }
             }
 
-            $cur_syear = session()->get('syear');
-            $sub_institute_id = session()->get('sub_institute_id');
+            $cur_syear = $context['syear'];
+            $sub_institute_id = $context['sub_institute_id'];
 
             $old_year = DB::table('tblstudent')
                 ->selectRaw('distinct(admission_year)')
@@ -273,9 +314,9 @@ class fees_breackoff_controller extends Controller
                         foreach ($all_data as $quota_id => $arr) {
                             foreach ($arr as $title_id => $amount) {
                                 foreach ($req['month'] as $month_id => $on) {
-                                    $syear = session()->get('syear');
+                                    $syear = $context['syear'];
                                     $admission_year = $year_arr->admission_year;
-                                    $sub_institute_id = session()->get('sub_institute_id');
+                                    $sub_institute_id = $context['sub_institute_id'];
 
                                     $checkOldfeesBreakoff = fees_breackoff::where([
                                         'syear'            => $syear, 'admission_year' => $admission_year,
@@ -286,7 +327,7 @@ class fees_breackoff_controller extends Controller
 
                                     if (count($checkOldfeesBreakoff) == 0) {
                                         DB::table('fees_breackoff')->insert([
-                                            'syear'            => session()->get('syear'),
+                                            'syear'            => $context['syear'],
                                             'admission_year'   => $year_arr->admission_year,
                                             'fee_type_id'      => $title_id,
                                             'quota'            => $quota_id,
@@ -294,7 +335,7 @@ class fees_breackoff_controller extends Controller
                                             'standard_id'      => $std,
                                             'month_id'         => $month_id,
                                             'amount'           => $amount,
-                                            'sub_institute_id' => session()->get('sub_institute_id'),
+                                            'sub_institute_id' => $context['sub_institute_id'],
                                             'created_at'       => date('Y-m-d H:i:s'),
                                         ]);
                                     }
@@ -349,8 +390,8 @@ class fees_breackoff_controller extends Controller
 
             $where_arr = [
                 'other_fee_id'     => 0,
-                'sub_institute_id' => session()->get('sub_institute_id'),
-                'syear'            => session()->get('syear'),
+                'sub_institute_id' => $context['sub_institute_id'],
+                'syear'            => $context['syear'],
             ];
 
             $fees_title = DB::table('fees_title')
@@ -361,7 +402,7 @@ class fees_breackoff_controller extends Controller
             }
 
             $where_arr = [
-                'sub_institute_id' => session()->get('sub_institute_id'),
+                'sub_institute_id' => $context['sub_institute_id'],
             ];
             $student_quota = DB::table('student_quota')
                 ->where($where_arr)->get();
