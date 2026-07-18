@@ -6,148 +6,112 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Cache; 
 
 class chapterMasterController extends Controller
 {
     public function index(Request $request)
     {
-        $subject_id = $request->subject_id;
-        $standard_id = $request->standard_id;
-        $sub_institute_id = $request->sub_institute_id;
-        $syear = $request->syear;
-
+        // 1. Strict Validation to ensure we receive numbers
         $validator = Validator::make($request->all(), [
-            'sub_institute_id' => 'required',
-            'standard_id' => 'required',
-            'subject_id' => 'required'
+            'sub_institute_id' => 'required|integer',
+            'standard_id'      => 'required|integer',
+            'subject_id'       => 'required|integer'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
-                'status'  => false,
-                'message' => 'Validation failed.',
-                'errors'  => $validator->errors()->messages(),
-                'data'    => [],
+                'status'  => false, 
+                'message' => 'Validation failed.', 
+                'errors'  => $validator->errors()->messages()
             ], 422);
         }
 
-        $query = DB::table('chapter_master as a')
-            ->select(
-                'a.id as chapter_id',
-                'a.subject_id',
-                'a.standard_id',
-                'a.chapter_name',
-                'b.id as concept_id',
-                'b.name as concept_name',
-                'b.description as concept_description',
-                'c.id as semantic_id',
-                'c.learning_objective',
-                'c.total_concepts',
-                'c.full_intelegance_json',
-                'c.knowledge',
-                'c.ability',
-                'c.skill',
-                'c.competency',
-                'c.blooms_level',
-                'c.dok',
-                'c.prerequisites',
-                'c.misconceptions',
-                'c.real_world_applications',
-                'c.pedagogy',
-                'c.learning_objectives',
-                'c.learning_outcomes',
-                'c.assessment_blueprint'
-            )
-            ->join('lms_concept as b', function ($join) use ($sub_institute_id) {
-                $join->on('b.chapter_id', '=', 'a.id')
-                    ->on('a.subject_id', '=', 'b.subject_id')
-                    ->where('a.sub_institute_id', '=', $sub_institute_id);
-            })
-            ->join('semantic_intelligence as c', function ($join) use ($sub_institute_id) {
-                $join->on('c.chapter_id', '=', 'b.chapter_id')
-                    ->on('a.subject_id', '=', 'c.subject_id')
-                    ->where('c.sub_institute_id', '=', $sub_institute_id);
-            })
-            ->where([
-                'a.sub_institute_id' => $sub_institute_id,
-                'a.standard_id' => $standard_id,
-                'a.subject_id' => $subject_id
-            ])
-            ->groupBy('b.id');
-
+        // 2. Cast to Integers to force MySQL to use Indexes efficiently
+        $subInstituteId = (int) $request->sub_institute_id;
+        $standardId     = (int) $request->standard_id;
+        $subjectId      = (int) $request->subject_id;
+        
         $perPage = (int) $request->input('per_page', 20);
         $perPage = $perPage > 0 ? min($perPage, 100) : 20;
+        $page    = (int) $request->input('page', 1);
 
-        $getChapterData = $query->paginate($perPage);
+        // 3. Unique Cache Key (Data is cached for 1 Hour)
+        $cacheKey = "chapters_v1_{$subInstituteId}_{$standardId}_{$subjectId}_page_{$page}_limit_{$perPage}";
+        
+        return Cache::remember($cacheKey, 3600, function () use ($subInstituteId, $standardId, $subjectId, $perPage) {
+            
+            // 4. Paginate Chapters (Database Level)
+            $paginatedChapters = DB::table('chapter_master')
+                ->select('id as chapter_id', 'subject_id', 'standard_id', 'chapter_name')
+                ->where('sub_institute_id', $subInstituteId)
+                ->where('standard_id', $standardId)
+                ->where('subject_id', $subjectId)
+                ->paginate($perPage);
 
-        // Format the response
-        $formattedResponse = [];
+            $chapterIds = collect($paginatedChapters->items())->pluck('chapter_id')->toArray();
+            $formattedResponse = [];
 
-        foreach ($getChapterData as $chapterData) {
-            $chapterId = (int) $chapterData->chapter_id;
-
-            if (!isset($formattedResponse[$chapterId])) {
-                $formattedResponse[$chapterId] = [
-                    'chapter_id'   => (int) $chapterData->chapter_id,
-                    'subject_id'   => (int) $chapterData->subject_id,
-                    'standard_id'  => (int) $chapterData->standard_id,
-                    'chapter_name' => $chapterData->chapter_name,
+            // 5. Setup Structure with Semantic object at the root of Chapter
+            foreach ($paginatedChapters->items() as $chapter) {
+                $formattedResponse[$chapter->chapter_id] = [
+                    'chapter_id'   => (int) $chapter->chapter_id,
+                    'subject_id'   => (int) $chapter->subject_id,
+                    'standard_id'  => (int) $chapter->standard_id,
+                    'chapter_name' => $chapter->chapter_name,
+                    'semantic'     => null, 
                     'concepts'     => [],
                 ];
             }
 
-            // Build semantic data - decode JSON columns, drop null values.
-            $semanticData = [
-                'semantic_id'             => $chapterData->semantic_id !== null ? (int) $chapterData->semantic_id : null,
-                'learning_objective'      => $chapterData->learning_objective,
-                'total_concepts'          => $chapterData->total_concepts !== null ? (int) $chapterData->total_concepts : null,
-                'full_intelegance_json'   => $this->decodeJson($chapterData->full_intelegance_json),
-                'knowledge'               => $this->decodeJson($chapterData->knowledge),
-                'ability'                => $this->decodeJson($chapterData->ability),
-                'skill'                  => $this->decodeJson($chapterData->skill),
-                'competency'             => $this->decodeJson($chapterData->competency),
-                'blooms_level'           => $this->decodeJson($chapterData->blooms_level),
-                'dok'                    => $this->decodeJson($chapterData->dok),
-                'prerequisites'          => $this->decodeJson($chapterData->prerequisites),
-                'misconceptions'         => $this->decodeJson($chapterData->misconceptions),
-                'real_world_applications' => $this->decodeJson($chapterData->real_world_applications),
-                'pedagogy'               => $this->decodeJson($chapterData->pedagogy),
-                'learning_objectives'    => $this->decodeJson($chapterData->learning_objectives),
-                'learning_outcomes'      => $this->decodeJson($chapterData->learning_outcomes),
-                'assessment_blueprint'   => $this->decodeJson($chapterData->assessment_blueprint),
-            ];
+            if (!empty($chapterIds)) {
+                // 6. Fetch related Concepts
+                $concepts = DB::table('lms_concept')
+                    ->select('id as concept_id', 'chapter_id', 'name as concept_name', 'description as concept_description')
+                    ->whereIn('chapter_id', $chapterIds)
+                    ->get();
 
-            // Remove null values.
-            $semanticData = array_filter($semanticData, function ($value) {
-                return $value !== null;
-            });
+                // 7. Fetch lightweight Semantic data
+                $semantics = DB::table('semantic_intelligence')
+                    ->select('id as semantic_id', 'chapter_id', 'learning_objective', 'total_concepts','full_intelegance_json')
+                    ->whereIn('chapter_id', $chapterIds)
+                    ->get();
 
-            $formattedResponse[$chapterId]['concepts'][] = [
-                'concept_id'          => (int) $chapterData->concept_id,
-                'concept_name'        => $chapterData->concept_name,
-                'concept_description' => $chapterData->concept_description,
-                'semantic'            => $semanticData ? (object) $semanticData : null,
-            ];
-        }
+                // 8. Attach Semantic Data
+                foreach ($semantics as $semantic) {
+                    $formattedResponse[$semantic->chapter_id]['semantic'] = (object) [
+                        'semantic_id'        => (int) $semantic->semantic_id,
+                        'learning_objective' => $semantic->learning_objective,
+                        'total_concepts'     => $semantic->total_concepts !== null ? (int) $semantic->total_concepts : null,
+                        'full_intelegance_json' => $this->decodeJson($semantic->full_intelegance_json),
+                    ];
+                }
 
-        // Convert to array values to reset numeric keys.
-        $finalResponse = array_values($formattedResponse);
+                // 9. Attach Concepts
+                foreach ($concepts as $concept) {
+                    $formattedResponse[$concept->chapter_id]['concepts'][] = [
+                        'concept_id'          => (int) $concept->concept_id,
+                        'concept_name'        => $concept->concept_name,
+                        'concept_description' => $concept->concept_description,
+                    ];
+                }
+            }
 
-        return response()->json([
-            'status'     => true,
-            'message'    => count($finalResponse) ? 'Chapter data fetched successfully.' : 'No chapter data found.',
-            'data'       => $finalResponse,
-            'pagination' => [
-                'current_page' => $getChapterData->currentPage(),
-                'per_page'     => $getChapterData->perPage(),
-                'total'        => $getChapterData->total(),
-                'last_page'    => $getChapterData->lastPage(),
-                'from'         => $getChapterData->firstItem(),
-                'to'           => $getChapterData->lastItem(),
-            ],
-        ], 200);
+            return response()->json([
+                'status'     => true,
+                'message'    => count($formattedResponse) ? 'Chapter data fetched successfully.' : 'No chapter data found.',
+                'data'       => array_values($formattedResponse),
+                'pagination' => [
+                    'current_page' => $paginatedChapters->currentPage(),
+                    'per_page'     => $paginatedChapters->perPage(),
+                    'total'        => $paginatedChapters->total(),
+                    'last_page'    => $paginatedChapters->lastPage(),
+                    'from'         => $paginatedChapters->firstItem(),
+                    'to'           => $paginatedChapters->lastItem(),
+                ],
+            ], 200);
+        });
     }
-
     /**
      * Safely decode a JSON string column into an array.
      * Returns null when the value is empty or not valid JSON.

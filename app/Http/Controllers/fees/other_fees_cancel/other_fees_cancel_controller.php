@@ -32,8 +32,8 @@ class other_fees_cancel_controller extends Controller
     {
         $type = $request->input('type');
         $submit = $request->input('submit');
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
+        $sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
+        $syear = $request->input('syear', session()->get('syear'));
         $res['status'] = 1;
         $res['message'] = "Success";
 
@@ -61,9 +61,9 @@ class other_fees_cancel_controller extends Controller
         $uniqueid = $request->input('uniqueid');
         $other_fees_title_selected = $request->input('other_fees_title');
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-        $marking_period_id = session()->get('term_id');
+        $sub_institute_id = $request->input('sub_institute_id', $request->session()->get('sub_institute_id'));
+        $syear = $request->input('syear', $request->session()->get('syear'));
+        $marking_period_id = $request->input('term_id', session()->get('term_id'));
         $extraSearchArray = [];
         $extraSearchArrayRaw = " 1=1 ";
 
@@ -161,8 +161,8 @@ tblstudent.enrollment_no,tblstudent.mobile,standard.name AS std_name,division.na
     public function store(Request $request)
     {
         // dd($request);
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->input('sub_institute_id', $request->session()->get('sub_institute_id'));
+        $syear = $request->input('syear', $request->session()->get('syear'));
         $type = $request->get('type');
         $students = $request->get('students');
         $division_id = $request->get('division_id');
@@ -170,7 +170,7 @@ tblstudent.enrollment_no,tblstudent.mobile,standard.name AS std_name,division.na
         $deduction_head_id = $request->get('other_fees_title');
         $date_of_cancel = $request->input('date_of_cancel');
         $reason_of_cancel = $request->input('reason_of_cancel');
-        $created_by = session()->get('user_id');
+        $created_by = $request->input('user_id', session()->get('user_id'));
         $created_ip = $_SERVER['REMOTE_ADDR'];
 
         foreach ($students as $key => $id) {

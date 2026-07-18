@@ -14,6 +14,33 @@ use function App\Helpers\is_mobile;
 
 class feesCircularMasterController extends Controller
 {
+    private function seedRequestSession(Request $request): void
+    {
+        $termId = $request->input('term_id', $request->input('marking_period_id'));
+        $context = [
+            'syear' => $request->input('syear'),
+            'sub_institute_id' => $request->input('sub_institute_id'),
+            'user_id' => $request->input('user_id'),
+            'term_id' => $termId,
+            'marking_period_id' => $termId,
+        ];
+
+        foreach ($context as $key => $value) {
+            if ($value !== null && $value !== '') {
+                session()->put($key, $value);
+            }
+        }
+    }
+
+    private function contextValue(Request $request, string $key, $default = null)
+    {
+        if ($request->hasSession()) {
+            return $request->session()->get($key, $default);
+        }
+
+        return session()->get($key, $default);
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -22,9 +49,10 @@ class feesCircularMasterController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-        $marking_period_id = session()->get('term_id');
+        $this->seedRequestSession($request);
+        $sub_institute_id = $this->contextValue($request, 'sub_institute_id');
+        $syear = $this->contextValue($request, 'syear');
+        $marking_period_id = $this->contextValue($request, 'term_id');
         $data = feesCircularMasterModel::select('fees_circular_master.*', 'standard.name as standard_name',
             'academic_section.title as grade_name')
             ->join('standard', function ($join) use($marking_period_id){
@@ -64,8 +92,9 @@ class feesCircularMasterController extends Controller
      */
     public function store(Request $request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        $this->seedRequestSession($request);
+        $sub_institute_id = $this->contextValue($request, 'sub_institute_id');
+        $syear = $this->contextValue($request, 'syear');
         $type = $request->input('type');
         $data = $this->saveData($request);
         $data = feesCircularMasterModel::where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get();
@@ -80,9 +109,10 @@ class feesCircularMasterController extends Controller
     public function saveData(Request $request)
     {
         $newRequest = $request->all();
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
-        $user_id = session()->get('user_id');
+        $this->seedRequestSession($request);
+        $sub_institute_id = $this->contextValue($request, 'sub_institute_id');
+        $syear = $this->contextValue($request, 'syear');
+        $user_id = $this->contextValue($request, 'user_id');
         $created_on = date('Y-m-d H:i:s');
         $created_ip_address = $_SERVER['REMOTE_ADDR'];
         $finalArray['grade_id'] = $newRequest['grade'];
@@ -110,8 +140,9 @@ class feesCircularMasterController extends Controller
     {
         $newRequest = $request->all();
         $id = $newRequest['id'];
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $user_id = session()->get('user_id');
+        $this->seedRequestSession($request);
+        $sub_institute_id = $this->contextValue($request, 'sub_institute_id');
+        $user_id = $this->contextValue($request, 'user_id');
         $updated_on = date('Y-m-d H:i:s');
 
         $finalArray['grade_id'] = $newRequest['grade'];
@@ -152,7 +183,8 @@ class feesCircularMasterController extends Controller
     {
         $type = $request->input('type');
         $editData = feesCircularMasterModel::find($id)->toArray();
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $this->seedRequestSession($request);
+        $sub_institute_id = $this->contextValue($request, 'sub_institute_id');
 
         return view('fees/fees_circular/edit_fees_circular_master', ['data' => $editData]);
     }
@@ -167,7 +199,8 @@ class feesCircularMasterController extends Controller
     public function update(Request $request, $id)
     {
 
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $this->seedRequestSession($request);
+        $sub_institute_id = $this->contextValue($request, 'sub_institute_id');
         $type = $request->input('type');
         $request->request->add(['id' => $id]);
         $data = $this->updateData($request);

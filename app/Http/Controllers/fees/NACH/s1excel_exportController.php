@@ -27,8 +27,8 @@ class s1excel_exportController extends Controller {
 	{
 		$type = $request->input('type');
 		$submit = $request->input('submit');
-		$sub_institute_id = session()->get('sub_institute_id');
-		$syear = session()->get('syear');
+		$sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
+		$syear = $request->input('syear', session()->get('syear'));
 		// $res['status'] = 1;
 		// $res['message'] = "Success";
         $res = array();
@@ -44,8 +44,8 @@ class s1excel_exportController extends Controller {
 	public function create(Request $request) 
 	{
 		$type = $request->input('type');
-		$sub_institute_id = $request->session()->get('sub_institute_id');
-		$syear = $request->session()->get('syear');
+		$sub_institute_id = $request->input('sub_institute_id', $request->session()->get('sub_institute_id'));
+		$syear = $request->input('syear', $request->session()->get('syear'));
 		$from_date = $request->input('from_date');
 		$to_date = $request->input('to_date'); 
 
@@ -75,7 +75,7 @@ class s1excel_exportController extends Controller {
 
         // $NachData = DB::select("SELECT * FROM NACH_MASTER WHERE sub_institute_id = '".$sub_institute_id."'");
         // $NachData = json_decode(json_encode($NachData),true);
-        $marking_period_id = session()->get('term_id');
+        $marking_period_id = $request->input('term_id', session()->get('term_id'));
         $studentData = DB::table('tblstudent_payment_method_mapping as pm')
         ->selectRaw('bd.*, pm.payment_method, CONCAT_WS(" ", s.first_name, s.last_name) as student_name, s.id as student_id,ac.type_name AS ac_type, s.enrollment_no, s.mobile')
         ->join('tblstudent_bank_detail as bd', 'bd.student_id', '=', 'pm.student_id')
@@ -245,7 +245,14 @@ class s1excel_exportController extends Controller {
 
 
     $name = "NACH_S1_EXPORT_".date("Y_m_d_H_i_s");
-    $objWriter->save("storage/NachExcel/$name.xlsx");
+    $directory = "storage/NachExcel";
+    if (!file_exists($directory) && !mkdir($directory, 0777, true) && !is_dir($directory)) {
+        throw new \RuntimeException("Unable to create NACH export directory.");
+    }
+    if (!is_writable($directory)) {
+        chmod($directory, 0777);
+    }
+    $objWriter->save("$directory/$name.xlsx");
 
     //echo "<br><br><a href='../storage/NachExcel/$name.xlsx' class=btn_medium>Download Excel</a>";
     return "../storage/NachExcel/$name.xlsx";

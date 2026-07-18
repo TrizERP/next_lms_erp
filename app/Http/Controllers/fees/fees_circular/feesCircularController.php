@@ -22,6 +22,74 @@ use function App\Helpers\SearchStudent;
 
 class feesCircularController extends Controller
 {
+    private function seedRequestSession(Request $request): void
+    {
+        $termId = $request->input('term_id', $request->input('marking_period_id'));
+        $context = [
+            'syear' => $request->input('syear'),
+            'sub_institute_id' => $request->input('sub_institute_id'),
+            'user_id' => $request->input('user_id'),
+            'term_id' => $termId,
+            'marking_period_id' => $termId,
+        ];
+
+        foreach ($context as $key => $value) {
+            if ($value !== null && $value !== '') {
+                session()->put($key, $value);
+            }
+        }
+    }
+
+    private function contextValue(Request $request, string $key, $default = null)
+    {
+        if ($request->hasSession()) {
+            return $request->session()->get($key, $default);
+        }
+
+        return session()->get($key, $default);
+    }
+
+    private function fallbackStudentCircularRow($student): array
+    {
+        $name = trim(implode(' ', array_filter([
+            data_get($student, 'first_name'),
+            data_get($student, 'middle_name'),
+            data_get($student, 'last_name'),
+        ])));
+
+        $stdDiv = implode('/', array_filter([
+            data_get($student, 'standard_name'),
+            data_get($student, 'division_name'),
+        ]));
+
+        return [
+            'total_fees' => [],
+            'stu_data' => [
+                'student_id' => data_get($student, 'id'),
+                'enrollment' => data_get($student, 'enrollment_no'),
+                'name' => $name,
+                'stddiv' => $stdDiv,
+                'admission' => data_get($student, 'admission_year'),
+                'email' => data_get($student, 'email'),
+                'pending' => 0,
+                'mobile' => data_get($student, 'mobile'),
+                'uniqueid' => data_get($student, 'uniqueid'),
+                'std_id' => data_get($student, 'standard_id'),
+                'grade_id' => data_get($student, 'grade_id'),
+                'div_id' => data_get($student, 'section_id'),
+                'student_quota' => data_get($student, 'student_quota'),
+                'previous_year_imprest_balance' => 0,
+            ],
+            'month_arr' => [],
+            'search_ids' => [],
+            'final_fee' => [],
+            'final_fee_new' => [],
+            'cheque_return_charges' => [0],
+            'final_fee_name' => [],
+            'search_id' => [],
+        ];
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -30,8 +98,9 @@ class feesCircularController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
-        $syear = $request->session()->get('syear');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $this->seedRequestSession($request);
+        $syear = $this->contextValue($request, 'syear');
+        $sub_institute_id = $this->contextValue($request, 'sub_institute_id');
         $months = FeeMonthId();
 
         $result = DB::table('fees_receipt_book_master')->selectRaw('*,GROUP_CONCAT(fees_head_id) heads')
@@ -52,14 +121,15 @@ class feesCircularController extends Controller
        public function showStudent(Request $request)
     {
         $type = $request->input('type');
-        $syear = $request->session()->get('syear');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $this->seedRequestSession($request);
+        $syear = $this->contextValue($request, 'syear');
+        $sub_institute_id = $this->contextValue($request, 'sub_institute_id');
         $grade = $request->input('grade');
         $standard = $request->input('standard');
         $division = $request->input('division');
         $month = $request->input('month');
         $receipt_id = $request->input('receipt_id');
-        $marking_period_id = session()->get('marking_period_id');
+        $marking_period_id = $this->contextValue($request, 'marking_period_id');
 
         $months = FeeMonthId();
 
@@ -114,7 +184,15 @@ class feesCircularController extends Controller
         // Step 2: Enrich with getBk()
         $gb = [];
         foreach ($studentData as $student) {
-            $gb[] = $this->getBk($request, $student['id']);
+            $studentId = data_get($student, 'id');
+            if ($studentId) {
+                $studentFeeData = $this->getBk($request, $studentId);
+                if (empty($studentFeeData) && in_array($type, ['API', 'JSON'])) {
+                    $gb[] = $this->fallbackStudentCircularRow($student);
+                } else {
+                    $gb[] = $studentFeeData;
+                }
+            }
         }
 
         $result = DB::table('fees_receipt_book_master')
@@ -469,9 +547,10 @@ public function getBk(Request $request, $id)
         public function showCircular(Request $request)
     {
         $type = $request->input('type');
+        $this->seedRequestSession($request);
         $student_ids = $request->input('students');
-        $syear = $request->session()->get('syear');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $this->contextValue($request, 'syear');
+        $sub_institute_id = $this->contextValue($request, 'sub_institute_id');
         $month = $request->input('month');
         $receipt_id = $request->input('receipt_id');
         $grade_id = $request->input('grade_id');
@@ -563,7 +642,7 @@ public function getBk(Request $request, $id)
                 $logs = [];
                 $logs['MONTH'] = $month;
                 $logs['STUDENT_ID'] = $student_id;
-                $logs['CREATED_BY'] = $request->session()->get('user_id');
+                $logs['CREATED_BY'] = $this->contextValue($request, 'user_id');
                 $logs['SYEAR'] = $syear;
                 $logs['SUB_INSTITUTE_ID'] = $sub_institute_id;
                 $logs['RECEIPT_BOOK_ID'] = $receiptBook[0]['receipt_id'];
