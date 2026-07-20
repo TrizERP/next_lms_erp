@@ -1482,6 +1482,8 @@ public function generateGammaPDF(Request $request)
 
     public function storeGammaContent(Request $request)
     {
+        @set_time_limit(600);
+
         $sub_institute_id = $request->sub_institute_id;
         $syear = $request->input('syear') ?? $request->session()->get('syear');
         $user_id = $request->input('user_id') ?? $request->session()->get('user_id');
@@ -1491,13 +1493,14 @@ public function generateGammaPDF(Request $request)
             'chapter_name' => 'required|string',
             'format' => 'nullable|in:presentation,document,social',
             'export_format' => 'nullable|in:pdf,pptx',
+            'slide_count' => 'nullable|integer|min:1|max:50',
         ]);
 
         $chapterName = $request->chapter_name;
         $prompt = $request->prompt;
         $format = $request->format ?? 'presentation';
         $exportAs = $request->export_format ?? 'pdf';
-        $numCards = $request->slide_count ?? 10;
+        $numCards = (int) $request->input('slide_count', 30);
         $themeId = env('GAMMA_THEME_ID');
 
         $validThemes = ['simple', 'minimal', 'corporate', 'creative', 'bold', 'elegant', 'modern'];
@@ -1547,10 +1550,19 @@ public function generateGammaPDF(Request $request)
                 $requestJson['themeId'] = $themeId;
             }
 
+            Log::info('Gamma content generation request', [
+                'chapter_name' => $chapterName,
+                'slide_count' => $numCards,
+                'format' => $format,
+                'export_format' => $exportAs,
+                'sub_institute_id' => $sub_institute_id,
+                'user_id' => $user_id,
+            ]);
+
             $generationResponse = Http::withHeaders([
                 'Content-Type' => 'application/json',
                 'X-API-KEY' => env('GAMMA_API_KEY'),
-            ])->timeout(60)->post(env('GAMMA_BASE_URL', 'https://public-api.gamma.app/v1.0/') . 'generations', $requestJson);
+            ])->timeout(120)->post(env('GAMMA_BASE_URL', 'https://public-api.gamma.app/v1.0/') . 'generations', $requestJson);
                 // return $generationResponse;
             if (!$generationResponse->successful()) {
                 return response()->json([
@@ -1569,7 +1581,7 @@ public function generateGammaPDF(Request $request)
                 ], 500);
             }
 
-            $maxAttempts = 30;
+            $maxAttempts = 90;
             $attempts = 0;
             $status = 'processing';
             $result = null;
@@ -1583,7 +1595,7 @@ public function generateGammaPDF(Request $request)
 
                 $pollResponse = Http::withHeaders([
                     'X-API-KEY' => env('GAMMA_API_KEY'),
-                ])->timeout(30)->get(env('GAMMA_BASE_URL', 'https://public-api.gamma.app/v1.0/') . 'generations/' . $generationId);
+                ])->timeout(60)->get(env('GAMMA_BASE_URL', 'https://public-api.gamma.app/v1.0/') . 'generations/' . $generationId);
 
                 if (!$pollResponse->successful()) {
                     Log::warning('Poll attempt failed', [
@@ -1681,12 +1693,14 @@ public function generateGammaPDF(Request $request)
 
             return response()->json([
                 'success' => true,
+                'status_code' => 1,
                 'message' => 'Gamma content generated and stored successfully',
                 'data' => [
                     'id' => $lastId,
                     'gamma_url' => $gammaUrl,
                     'file_url' => $fileUrl,
                     'file_type' => 'link',
+                    'slide_count' => $numCards,
                     'generation_id' => $generationId,
                     'status' => $status,
                     'credits_used' => $result['credits']['deducted'] ?? null,

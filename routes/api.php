@@ -85,6 +85,7 @@ Route::post('lms-create-content', [ApiLmsCourseController::class, 'createContent
 Route::post('lms-store-content', [ApiLmsCourseController::class, 'storeContent']);
 Route::post('lms-content-mapping-values', [ApiLmsCourseController::class, 'getContentMappingValues']);
 Route::post('lms-store-subject', [ApiLmsCourseController::class, 'storeSubject']);
+Route::post('lms/gamma-content-master', [\App\Http\Controllers\lms\contentController::class, 'storeGammaContent']);
 Route::get('ai-sop', [AiSopGenerationController::class, 'index']);
 Route::post('ai-sop/generate', [AiSopGenerationController::class, 'generate']);
 Route::post('ai-sop/store', [AiSopGenerationController::class, 'store']);
@@ -121,7 +122,7 @@ Route::apiResource('question-paper', ApiQuestionPaperController::class);
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
 Route::post('fees-cancel/search', [feesCancelController::class, 'search']);
 
-// Fees Circular — stateless JSON entry points for the Next.js frontend.
+// Fees Circular - stateless JSON entry points for the Next.js frontend.
 // Callers must send type=JSON (is_mobile then returns response()->json) plus
 // syear/sub_institute_id/user_id, which the controllers seed into session()
 // for the downstream fee helpers. api.php does not run StartSession.
@@ -139,10 +140,15 @@ Route::match(['GET', 'POST'], 'intelligence/lesson-plans', [\App\Http\Controller
 // Intelligence Question Generation - MCQ / narrative items via DeepSeek LLM -> lms_question_master
 Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);
 
+// Semantic Intelligence - read-only chapter intelligence for presentation generators
+Route::get('semantic-intelligence', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'index']);
+Route::get('semantic-intelligence/{extraction_id}/result', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'show']);
+
 Route::get('/departments', [\App\Http\Controllers\HRMS\departmentController::class, 'index']);
 Route::get('/departments/create', [\App\Http\Controllers\HRMS\departmentController::class, 'create']);
 Route::get('/department-employee-lists', [\App\Http\Controllers\HRMS\departmentController::class, 'departmentEmpLists']);
 Route::get('/sub-department-list', [\App\Http\Controllers\HRMS\departmentController::class, 'subDepartmentList']);
 Route::get('/department-employee-list', [\App\Http\Controllers\HRMS\departmentController::class, 'departmentEmployeeList']);
 Route::get('/departments/hierarchy', [\App\Http\Controllers\HRMS\departmentController::class, 'hierarchy']);
+
 
