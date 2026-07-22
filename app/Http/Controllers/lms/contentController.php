@@ -1617,10 +1617,19 @@ public function generateGammaPDF(Request $request)
                         'body' => $geminiResponse->body(),
                     ]);
 
-                    return response()->json([
+                    $geminiPayload = $geminiResponse->json();
+                    $retryAfterSeconds = $this->geminiRetryDelaySeconds($geminiPayload);
+                    $statusCode = $geminiResponse->status() === 429 ? 429 : 502;
+                    $responseBody = [
                         'success' => false,
-                        'message' => $this->geminiContentErrorMessage($geminiResponse->json(), $geminiResponse->status()),
-                    ], 502);
+                        'message' => $this->geminiContentErrorMessage($geminiPayload, $geminiResponse->status()),
+                    ];
+
+                    if ($retryAfterSeconds !== null) {
+                        $responseBody['retry_after_seconds'] = $retryAfterSeconds;
+                    }
+
+                    return response()->json($responseBody, $statusCode);
                 }
 
                 $generatedContent = $this->extractGeminiText($geminiResponse->json());
@@ -1936,6 +1945,15 @@ public function generateGammaPDF(Request $request)
 
     private function geminiContentErrorMessage($payload, $status)
     {
+        if ($status === 429) {
+            $retryAfterSeconds = $this->geminiRetryDelaySeconds($payload);
+            $retryText = $retryAfterSeconds !== null
+                ? ' Please retry in about ' . $retryAfterSeconds . ' seconds.'
+                : ' Please retry after a short wait.';
+
+            return 'Gemini generation quota was exceeded.' . $retryText;
+        }
+
         if (is_array($payload)) {
             $message = $payload['error']['message'] ?? $payload['message'] ?? null;
             if ($message) {
@@ -1944,6 +1962,30 @@ public function generateGammaPDF(Request $request)
         }
 
         return 'Gemini generation failed with status ' . $status . '.';
+    }
+
+    private function geminiRetryDelaySeconds($payload)
+    {
+        if (!is_array($payload)) {
+            return null;
+        }
+
+        $message = $payload['error']['message'] ?? $payload['message'] ?? '';
+        if (is_string($message) && preg_match('/retry in\s+([0-9]+(?:\.[0-9]+)?)s/i', $message, $matches)) {
+            return (int) ceil((float) $matches[1]);
+        }
+
+        $details = $payload['error']['details'] ?? $payload['details'] ?? [];
+        if (is_array($details)) {
+            foreach ($details as $detail) {
+                $retryDelay = $detail['retryDelay'] ?? null;
+                if (is_string($retryDelay) && preg_match('/^([0-9]+(?:\.[0-9]+)?)s$/', $retryDelay, $matches)) {
+                    return (int) ceil((float) $matches[1]);
+                }
+            }
+        }
+
+        return null;
     }
 
     private function renderGeneratedContentPdf($content, $chapterName, $contentType)
@@ -1964,8 +2006,7 @@ public function generateGammaPDF(Request $request)
 
     private function generatedContentHtml($content, $chapterName, $contentType)
     {
-        $escaped = e($content);
-        $body = nl2br($escaped);
+        $body = $this->formatGeneratedPdfBody($content);
         $title = e($chapterName . ' ' . $contentType);
 
         return <<<HTML
@@ -1974,8 +2015,16 @@ public function generateGammaPDF(Request $request)
 <head>
   <meta charset="utf-8">
   <style>
-    body { font-family: DejaVu Sans, sans-serif; color: #0f172a; font-size: 13px; line-height: 1.55; }
+    body { font-family: DejaVu Sans, sans-serif; color: #0f172a; font-size: 13px; line-height: 1.55; margin: 32px; }
     h1 { color: #1e3a8a; font-size: 24px; margin: 0 0 18px; }
+    h2 { color: #1e40af; font-size: 18px; margin: 22px 0 8px; }
+    h3 { color: #334155; font-size: 15px; margin: 16px 0 6px; }
+    p { margin: 0 0 10px; }
+    ul, ol { margin: 0 0 12px 22px; padding: 0; }
+    li { margin: 0 0 6px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    th, td { border: 1px solid #cbd5e1; padding: 7px 8px; vertical-align: top; }
+    th { background: #eff6ff; font-weight: bold; }
     .content { white-space: normal; }
   </style>
 </head>
@@ -1985,6 +2034,18 @@ public function generateGammaPDF(Request $request)
 </body>
 </html>
 HTML;
+    }
+
+    private function formatGeneratedPdfBody($content)
+    {
+        $content = trim((string) $content);
+        $content = preg_replace('/^```(?:html)?\s*|\s*```$/i', '', $content);
+
+        if ($content !== strip_tags($content)) {
+            return strip_tags($content, '<h1><h2><h3><h4><p><br><strong><b><em><i><ul><ol><li><table><thead><tbody><tr><th><td>');
+        }
+
+        return nl2br(e($content));
     }
 
     private function classroomActivityPrompt($chapterName, $boardName, $standardName, $subjectName)
