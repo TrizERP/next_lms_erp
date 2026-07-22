@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Storage;
 use App\Services\OpenAIService;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -1491,6 +1493,7 @@ public function generateGammaPDF(Request $request)
         $request->validate([
             'prompt' => 'required|string|max:400000',
             'chapter_name' => 'required|string',
+            'content_type' => 'required|string',
             'format' => 'nullable|in:presentation,document,social',
             'export_format' => 'nullable|in:pdf,pptx',
             'slide_count' => 'nullable|integer|min:1|max:50',
@@ -1498,8 +1501,10 @@ public function generateGammaPDF(Request $request)
 
         $chapterName = $request->chapter_name;
         $prompt = $request->prompt;
-        $format = $request->format ?? 'presentation';
-        $exportAs = $request->export_format ?? 'pdf';
+        $contentType = trim((string) $request->input('content_type'));
+        $isPresentation = strcasecmp($contentType, 'Presentation') === 0;
+        $format = $isPresentation ? 'presentation' : 'document';
+        $exportAs = $isPresentation ? 'pptx' : 'pdf';
         $numCards = (int) $request->input('slide_count', 30);
         $themeId = env('GAMMA_THEME_ID');
 
@@ -1519,6 +1524,208 @@ public function generateGammaPDF(Request $request)
                 'success' => false,
                 'message' => 'Chapter not found: ' . $chapterName
             ], 404);
+        }
+
+        $subjectName = DB::table('sub_std_map')
+            ->where('subject_id', $chapterData->subject_id)
+            ->where('standard_id', $chapterData->standard_id)
+            ->where(function ($query) use ($chapterData) {
+                $query->where('sub_institute_id', $chapterData->sub_institute_id)
+                    ->orWhere('sub_institute_id', 1);
+            })
+            ->orderByDesc('sub_institute_id')
+            ->value('display_name');
+
+        if (!$subjectName) {
+            $subjectName = DB::table('subject')
+                ->where('id', $chapterData->subject_id)
+                ->value('subject_name');
+        }
+
+        $standardName = DB::table('standard')
+            ->where('id', $chapterData->standard_id)
+            ->value('name');
+
+        $boardName = $request->input('board_name');
+        if (!$boardName && is_string($standardName) && preg_match('/^([A-Za-z]+)[-\s]+(.+)$/', $standardName, $matches)) {
+            $boardName = strtoupper($matches[1]);
+            $standardName = trim($matches[2]);
+        }
+
+        $isClassroomActivity = in_array(strtolower($contentType), [
+            'classroom activity',
+            'classroom activities',
+        ], true);
+
+        if ($isClassroomActivity) {
+            $contentType = 'Classroom Activity';
+            if (trim((string) $prompt) === '') {
+                $prompt = $this->classroomActivityPrompt(
+                    $chapterName,
+                    $boardName ?: 'CBSE',
+                    $standardName,
+                    $subjectName
+                );
+            }
+        }
+
+        if (!$isPresentation) {
+            $apiKey = env('GEMINI_API_KEY');
+            if (!$apiKey) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gemini API key is not configured. Please set GEMINI_API_KEY in the backend .env file.',
+                ], 500);
+            }
+
+            try {
+                $model = env('GEMINI_MODEL', 'gemini-2.5-flash');
+                $baseUrl = rtrim(env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'), '/');
+
+                Log::info('Gemini content generation request', [
+                    'chapter_name' => $chapterName,
+                    'content_type' => $contentType,
+                    'sub_institute_id' => $sub_institute_id,
+                    'user_id' => $user_id,
+                ]);
+
+                $geminiResponse = Http::timeout((int) env('GEMINI_REQUEST_TIMEOUT', 120))
+                    ->retry(1, 500)
+                    ->withHeaders([
+                        'Content-Type' => 'application/json',
+                        'x-goog-api-key' => $apiKey,
+                    ])
+                    ->post("{$baseUrl}/models/{$model}:generateContent", [
+                        'contents' => [
+                            [
+                                'role' => 'user',
+                                'parts' => [
+                                    ['text' => $prompt],
+                                ],
+                            ],
+                        ],
+                        'generationConfig' => [
+                            'temperature' => 0.35,
+                            'topP' => 0.9,
+                            'maxOutputTokens' => 24000,
+                        ],
+                    ]);
+
+                if (!$geminiResponse->successful()) {
+                    Log::warning('Gemini content generation failed', [
+                        'status' => $geminiResponse->status(),
+                        'body' => $geminiResponse->body(),
+                    ]);
+
+                    $geminiPayload = $geminiResponse->json();
+                    $retryAfterSeconds = $this->geminiRetryDelaySeconds($geminiPayload);
+                    $statusCode = $geminiResponse->status() === 429 ? 429 : 502;
+                    $responseBody = [
+                        'success' => false,
+                        'message' => $this->geminiContentErrorMessage($geminiPayload, $geminiResponse->status()),
+                    ];
+
+                    if ($retryAfterSeconds !== null) {
+                        $responseBody['retry_after_seconds'] = $retryAfterSeconds;
+                    }
+
+                    return response()->json($responseBody, $statusCode);
+                }
+
+                $generatedContent = $this->extractGeminiText($geminiResponse->json());
+                if (!$generatedContent) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Gemini returned empty content. Please try again.',
+                    ], 502);
+                }
+
+                $pdf = $this->renderGeneratedContentPdf($generatedContent, $chapterName, $contentType);
+                $safeChapter = preg_replace('/[^A-Za-z0-9_-]+/', '_', strtolower($chapterName));
+                $safeType = preg_replace('/[^A-Za-z0-9_-]+/', '_', strtolower($contentType));
+                $fileName = trim($safeType, '_') . '_' . trim($safeChapter, '_') . '_' . time() . '.pdf';
+                $spacesPath = 'public/lms_content_file/' . $fileName;
+                $disk = Storage::disk('digitalocean');
+                $uploaded = $disk->put($spacesPath, $pdf, 'public');
+
+                if (!$uploaded || !$disk->exists($spacesPath)) {
+                    Log::error('DigitalOcean Spaces PDF upload failed', [
+                        'path' => $spacesPath,
+                        'chapter_name' => $chapterName,
+                        'content_type' => $contentType,
+                    ]);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'PDF was generated, but upload to DigitalOcean Spaces failed.',
+                        'data' => [
+                            'storage_path' => $spacesPath,
+                        ],
+                    ], 500);
+                }
+
+                $fileUrl = $disk->url($spacesPath);
+                if (empty($fileUrl)) {
+                    $endpoint = rtrim((string) env('DO_SPACES_ENDPOINT'), '/');
+                    $bucket = trim((string) env('DO_SPACES_BUCKET'), '/');
+                    $fileUrl = $endpoint && $bucket
+                        ? "{$endpoint}/{$bucket}/{$spacesPath}"
+                        : $spacesPath;
+                }
+
+                $content = [
+                    'grade_id' => $chapterData->grade_id,
+                    'standard_id' => $chapterData->standard_id,
+                    'subject_id' => $chapterData->subject_id,
+                    'chapter_id' => $chapterData->id,
+                    'topic_id' => null,
+                    'title' => $chapterName . ' ' . $contentType,
+                    'description' => $prompt,
+                    'file_folder' => '/lms_content_file',
+                    'filename' => $fileName,
+                    'url' => $fileUrl,
+                    'file_type' => 'pdf',
+                    'file_size' => strlen($pdf) ?: null,
+                    'show_hide' => '1',
+                    'sort_order' => null,
+                    'meta_tags' => null,
+                    'content_category' => $contentType,
+                    'created_by' => $user_id,
+                    'sub_institute_id' => $sub_institute_id,
+                    'restrict_date' => null,
+                    'pre_grade_topic' => null,
+                    'post_grade_topic' => null,
+                    'cross_curriculum_grade_topic' => null,
+                    'basic_advance' => '1',
+                    'user_profile_name' => $request->user_profile_name,
+                    'syear' => $syear,
+                ];
+
+                contentModel::insert($content);
+                $lastId = DB::getPDO()->lastInsertId();
+
+                return response()->json([
+                    'success' => true,
+                    'status_code' => 1,
+                    'message' => $contentType . ' generated with Gemini and stored successfully',
+                    'data' => [
+                        'id' => $lastId,
+                        'file_url' => $fileUrl,
+                        'storage_path' => $spacesPath,
+                        'filename' => $fileName,
+                        'file_type' => 'pdf',
+                        'content_category' => $contentType,
+                        'model' => $model,
+                    ],
+                ], 201);
+            } catch (\Exception $e) {
+                Log::error('Gemini Content API Error: ' . $e->getMessage());
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'An error occurred: ' . $e->getMessage(),
+                ], 500);
+            }
         }
 
         try {
@@ -1676,7 +1883,7 @@ public function generateGammaPDF(Request $request)
                 'show_hide' => '1',
                 'sort_order' => null,
                 'meta_tags' => null,
-                'content_category' => 'Classroom Presentation',
+                'content_category' => $contentType,
                 'created_by' => $user_id,
                 'sub_institute_id' => $sub_institute_id,
                 'restrict_date' => null,
@@ -1694,7 +1901,7 @@ public function generateGammaPDF(Request $request)
             return response()->json([
                 'success' => true,
                 'status_code' => 1,
-                'message' => 'Gamma content generated and stored successfully',
+                'message' => 'Presentation generated with Gamma and stored successfully',
                 'data' => [
                     'id' => $lastId,
                     'gamma_url' => $gammaUrl,
@@ -1716,6 +1923,160 @@ public function generateGammaPDF(Request $request)
                 'message' => 'An error occurred: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function extractGeminiText($payload)
+    {
+        if (!is_array($payload)) {
+            return '';
+        }
+
+        $parts = $payload['candidates'][0]['content']['parts'] ?? [];
+        $text = '';
+
+        foreach ($parts as $part) {
+            if (isset($part['text']) && is_string($part['text'])) {
+                $text .= $part['text'] . "\n";
+            }
+        }
+
+        return trim($text);
+    }
+
+    private function geminiContentErrorMessage($payload, $status)
+    {
+        if ($status === 429) {
+            $retryAfterSeconds = $this->geminiRetryDelaySeconds($payload);
+            $retryText = $retryAfterSeconds !== null
+                ? ' Please retry in about ' . $retryAfterSeconds . ' seconds.'
+                : ' Please retry after a short wait.';
+
+            return 'Gemini generation quota was exceeded.' . $retryText;
+        }
+
+        if (is_array($payload)) {
+            $message = $payload['error']['message'] ?? $payload['message'] ?? null;
+            if ($message) {
+                return 'Gemini generation failed: ' . $message;
+            }
+        }
+
+        return 'Gemini generation failed with status ' . $status . '.';
+    }
+
+    private function geminiRetryDelaySeconds($payload)
+    {
+        if (!is_array($payload)) {
+            return null;
+        }
+
+        $message = $payload['error']['message'] ?? $payload['message'] ?? '';
+        if (is_string($message) && preg_match('/retry in\s+([0-9]+(?:\.[0-9]+)?)s/i', $message, $matches)) {
+            return (int) ceil((float) $matches[1]);
+        }
+
+        $details = $payload['error']['details'] ?? $payload['details'] ?? [];
+        if (is_array($details)) {
+            foreach ($details as $detail) {
+                $retryDelay = $detail['retryDelay'] ?? null;
+                if (is_string($retryDelay) && preg_match('/^([0-9]+(?:\.[0-9]+)?)s$/', $retryDelay, $matches)) {
+                    return (int) ceil((float) $matches[1]);
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private function renderGeneratedContentPdf($content, $chapterName, $contentType)
+    {
+        $options = new Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isFontSubsettingEnabled', true);
+        $options->set('isRemoteEnabled', true);
+
+        $dompdf = new Dompdf($options);
+        $html = $this->generatedContentHtml($content, $chapterName, $contentType);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        return $dompdf->output();
+    }
+
+    private function generatedContentHtml($content, $chapterName, $contentType)
+    {
+        $body = $this->formatGeneratedPdfBody($content);
+        $title = e($chapterName . ' ' . $contentType);
+
+        return <<<HTML
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: DejaVu Sans, sans-serif; color: #0f172a; font-size: 13px; line-height: 1.55; margin: 32px; }
+    h1 { color: #1e3a8a; font-size: 24px; margin: 0 0 18px; }
+    h2 { color: #1e40af; font-size: 18px; margin: 22px 0 8px; }
+    h3 { color: #334155; font-size: 15px; margin: 16px 0 6px; }
+    p { margin: 0 0 10px; }
+    ul, ol { margin: 0 0 12px 22px; padding: 0; }
+    li { margin: 0 0 6px; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; }
+    th, td { border: 1px solid #cbd5e1; padding: 7px 8px; vertical-align: top; }
+    th { background: #eff6ff; font-weight: bold; }
+    .content { white-space: normal; }
+  </style>
+</head>
+<body>
+  <h1>{$title}</h1>
+  <div class="content">{$body}</div>
+</body>
+</html>
+HTML;
+    }
+
+    private function formatGeneratedPdfBody($content)
+    {
+        $content = trim((string) $content);
+        $content = preg_replace('/^```(?:html)?\s*|\s*```$/i', '', $content);
+
+        if ($content !== strip_tags($content)) {
+            return strip_tags($content, '<h1><h2><h3><h4><p><br><strong><b><em><i><ul><ol><li><table><thead><tbody><tr><th><td>');
+        }
+
+        return nl2br(e($content));
+    }
+
+    private function classroomActivityPrompt($chapterName, $boardName, $standardName, $subjectName)
+    {
+        $boardGradeStandard = trim(implode(' ', array_filter([
+            trim((string) $boardName),
+            trim((string) $standardName),
+        ])));
+
+        $subjectName = trim((string) $subjectName) ?: 'Subject';
+        $chapterName = trim((string) $chapterName) ?: 'Chapter';
+        $boardGradeStandard = $boardGradeStandard ?: 'Board/Grade/Standard';
+
+        return <<<PROMPT
+Generate a classroom activity using Inquiry-based Learning for {$chapterName} for {$boardGradeStandard} {$subjectName}.
+
+The inquiry-based learning activity should include interactive elements such as role-playing, quizzes, puzzles, or simulations, following educational best practices.
+
+The activity must:
+
+Align with the chapter's learning objectives.
+Focus on student engagement.
+Enhance knowledge retention and application of knowledge.
+
+Incorporate the following elements:
+
+Clear activity instructions for the teacher.
+Materials/resources required for the activity.
+Step-by-step implementation instructions for the classroom.
+Assessment criteria to measure learning outcomes.
+PROMPT;
     }
 }
 
