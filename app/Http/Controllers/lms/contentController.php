@@ -1502,7 +1502,13 @@ public function generateGammaPDF(Request $request)
         $chapterName = $request->chapter_name;
         $prompt = $request->prompt;
         $contentType = trim((string) $request->input('content_type'));
-        $isPresentation = strcasecmp($contentType, 'Presentation') === 0;
+        $normalizedContentType = strtolower(str_replace(['-', ' '], '_', $contentType));
+        $isPresentation = $normalizedContentType === 'presentation';
+        if ($isPresentation) {
+            $contentType = 'Presentation';
+        } elseif ($normalizedContentType === 'remedial_class') {
+            $contentType = 'Remedial Class';
+        }
         $format = $isPresentation ? 'presentation' : 'document';
         $exportAs = $isPresentation ? 'pptx' : 'pdf';
         $numCards = (int) $request->input('slide_count', 30);
