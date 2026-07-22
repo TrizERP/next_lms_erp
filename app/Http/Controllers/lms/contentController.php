@@ -1545,7 +1545,9 @@ public function generateGammaPDF(Request $request)
                     'dimensions' => 'fluid'
                 ]
             ];
-
+// echo "<pre>";
+// print_r($requestJson);
+// exit();
             if (!empty($themeId)) {
                 $requestJson['themeId'] = $themeId;
             }
