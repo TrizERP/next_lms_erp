@@ -895,6 +895,8 @@ $restrict_date = $request->input('restrict_date');
 
         $chapter_ids = $request->input('chapter_id', []);
         $concept_ids = $request->input('concept_id', []);
+        $dok_ids     = $request->input('dok_id', []);
+        $bloom_ids   = $request->input('bloom_id', []);
 
         if (is_string($chapter_ids)) {
             $chapter_ids = $chapter_ids ? explode(',', $chapter_ids) : [];
@@ -902,9 +904,17 @@ $restrict_date = $request->input('restrict_date');
         if (is_string($concept_ids)) {
             $concept_ids = $concept_ids ? explode(',', $concept_ids) : [];
         }
+        if (is_string($dok_ids)) {
+            $dok_ids = $dok_ids ? explode(',', $dok_ids) : [];
+        }
+        if (is_string($bloom_ids)) {
+            $bloom_ids = $bloom_ids ? explode(',', $bloom_ids) : [];
+        }
 
         $chapter_ids = array_filter(array_map('intval', (array) $chapter_ids));
         $concept_ids = array_filter(array_map('intval', (array) $concept_ids));
+        $dok_ids     = array_filter(array_map('intval', (array) $dok_ids));
+        $bloom_ids   = array_filter(array_map('intval', (array) $bloom_ids));
 
         if (!$subject_id) {
             return response()->json([
@@ -927,6 +937,29 @@ $restrict_date = $request->input('restrict_date');
             $query->whereIn('concept_id', $concept_ids);
         }
 
+        // DOK / Bloom filters: mapping_value_ids from lms_mapping_type
+        // (children of parents 9 = Depth of Knowledge, 82 = Blooms Taxonomy),
+        // matched through lms_question_mapping.
+        if (!empty($dok_ids)) {
+            $query->whereExists(function ($q) use ($dok_ids) {
+                $q->select(DB::raw(1))
+                    ->from('lms_question_mapping as qm_dok')
+                    ->whereColumn('qm_dok.questionmaster_id', 'lms_question_master.id')
+                    ->where('qm_dok.mapping_type_id', 9)
+                    ->whereIn('qm_dok.mapping_value_id', $dok_ids);
+            });
+        }
+
+        if (!empty($bloom_ids)) {
+            $query->whereExists(function ($q) use ($bloom_ids) {
+                $q->select(DB::raw(1))
+                    ->from('lms_question_mapping as qm_bloom')
+                    ->whereColumn('qm_bloom.questionmaster_id', 'lms_question_master.id')
+                    ->where('qm_bloom.mapping_type_id', 82)
+                    ->whereIn('qm_bloom.mapping_value_id', $bloom_ids);
+            });
+        }
+
         $questions = $query->get([
             'id', 'question_type_id', 'grade_id', 'standard_id',
             'subject_id', 'chapter_id', 'concept_id', 'topic_id',
@@ -943,6 +976,45 @@ $restrict_date = $request->input('restrict_date');
             'subject_id' => $subject_id,
             'chapter_ids' => $chapter_ids,
             'concept_ids' => $concept_ids,
+            'dok_ids' => $dok_ids,
+            'bloom_ids' => $bloom_ids,
+        ], 200);
+    }
+
+    /**
+     * GET /api/question-mapping-levels
+     *
+     * DOK and Bloom level options for question filtering, straight from
+     * lms_mapping_type (children of parent 9 = Depth of Knowledge and
+     * parent 82 = Blooms Taxonomy). Nothing is hardcoded client-side, so
+     * adding a new level row (e.g. a DOK level 4 label) shows up automatically.
+     */
+    public function getQuestionMappingLevels(): JsonResponse
+    {
+        $children = DB::table('lms_mapping_type')
+            ->whereIn('parent_id', [9, 82])
+            ->where('status', 1)
+            ->orderBy('id')
+            ->get(['id', 'name', 'parent_id']);
+
+        $dok = [];
+        $bloom = [];
+        foreach ($children as $child) {
+            $option = ['id' => (int) $child->id, 'name' => trim($child->name)];
+            if ((int) $child->parent_id === 9) {
+                $dok[] = $option;
+            } else {
+                $bloom[] = $option;
+            }
+        }
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => [
+                'dok' => $dok,
+                'bloom' => $bloom,
+            ],
         ], 200);
     }
 }
