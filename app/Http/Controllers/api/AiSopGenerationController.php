@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -199,6 +200,132 @@ class AiSopGenerationController extends Controller
             return response()->json([
                 'status_code' => 0,
                 'message' => 'Something went wrong while generating the SOP. Please try again later.',
+            ], 500);
+        }
+    }
+
+    public function departmentJobRoles(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'department_id' => 'required|integer|min:1',
+            'sub_institute_id' => 'nullable|integer|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $data = $validator->validated();
+
+        try {
+            if (!Schema::hasTable('s_user_jobrole')) {
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => 'Job role mapping table is not available.',
+                ], 500);
+            }
+
+            $mappingColumns = Schema::getColumnListing('s_user_jobrole');
+            $roleColumns = Schema::hasTable('s_jobrole') ? Schema::getColumnListing('s_jobrole') : [];
+            $hasMappingColumn = static fn (string $column): bool => in_array($column, $mappingColumns, true);
+            $hasRoleColumn = static fn (string $column): bool => in_array($column, $roleColumns, true);
+
+            $query = DB::table('s_user_jobrole as suj')
+                ->where('suj.department_id', $data['department_id']);
+
+            if (!empty($data['sub_institute_id']) && $hasMappingColumn('sub_institute_id')) {
+                $query->where('suj.sub_institute_id', $data['sub_institute_id']);
+            }
+
+            if ($hasMappingColumn('deleted_at')) {
+                $query->whereNull('suj.deleted_at');
+            }
+
+            if ($hasMappingColumn('status')) {
+                $query->where(function ($statusQuery) {
+                    $statusQuery->whereNull('suj.status')
+                        ->orWhere('suj.status', 1)
+                        ->orWhere('suj.status', '1')
+                        ->orWhere('suj.status', 'Active');
+                });
+            }
+
+            $roleNameExpression = null;
+            $roleIdExpression = null;
+
+            if ($hasMappingColumn('jobrole_id') && $hasRoleColumn('id')) {
+                $query->leftJoin('s_jobrole as sj', 'sj.id', '=', 'suj.jobrole_id');
+                $roleIdExpression = 'COALESCE(suj.jobrole_id, suj.id)';
+
+                if ($hasRoleColumn('jobrole')) {
+                    $roleNameExpression = $hasMappingColumn('jobrole')
+                        ? 'COALESCE(sj.jobrole, suj.jobrole)'
+                        : 'sj.jobrole';
+                } elseif ($hasRoleColumn('name')) {
+                    $roleNameExpression = $hasMappingColumn('jobrole')
+                        ? 'COALESCE(sj.name, suj.jobrole)'
+                        : 'sj.name';
+                }
+            }
+
+            if (!$roleNameExpression) {
+                if ($hasMappingColumn('jobrole')) {
+                    $roleNameExpression = 'suj.jobrole';
+                } elseif ($hasMappingColumn('job_role')) {
+                    $roleNameExpression = 'suj.job_role';
+                } elseif ($hasMappingColumn('role_name')) {
+                    $roleNameExpression = 'suj.role_name';
+                } elseif ($hasMappingColumn('name')) {
+                    $roleNameExpression = 'suj.name';
+                }
+            }
+
+            if (!$roleNameExpression) {
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => 'No supported job role name column was found in s_user_jobrole.',
+                ], 500);
+            }
+
+            $roleIdExpression = $roleIdExpression ?: ($hasMappingColumn('id') ? 'suj.id' : 'NULL');
+
+            $roles = $query
+                ->selectRaw($roleIdExpression . ' as id')
+                ->selectRaw($roleNameExpression . ' as name')
+                ->distinct()
+                ->orderBy('name')
+                ->get()
+                ->filter(static fn ($role) => trim((string) $role->name) !== '')
+                ->values()
+                ->map(static function ($role) {
+                    $name = trim((string) $role->name);
+
+                    return [
+                        'id' => $role->id,
+                        'name' => $name,
+                        'label' => $name,
+                        'value' => $name,
+                    ];
+                });
+
+            return response()->json([
+                'status_code' => 1,
+                'message' => 'SUCCESS',
+                'data' => $roles,
+            ], 200);
+        } catch (\Throwable $exception) {
+            Log::error('AI SOP department job role lookup failed', [
+                'message' => $exception->getMessage(),
+                'department_id' => $data['department_id'] ?? null,
+            ]);
+
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Unable to load mapped job roles. Please try again.',
             ], 500);
         }
     }
