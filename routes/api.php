@@ -87,6 +87,7 @@ Route::post('lms-content-mapping-values', [ApiLmsCourseController::class, 'getCo
 Route::post('lms-store-subject', [ApiLmsCourseController::class, 'storeSubject']);
 Route::post('lms/gamma-content-master', [\App\Http\Controllers\lms\contentController::class, 'storeGammaContent']);
 Route::get('ai-sop', [AiSopGenerationController::class, 'index']);
+Route::get('ai-sop/department-job-roles', [AiSopGenerationController::class, 'departmentJobRoles']);
 Route::post('ai-sop/generate', [AiSopGenerationController::class, 'generate']);
 Route::post('ai-sop/store', [AiSopGenerationController::class, 'store']);
 Route::post('lms-homework/get-subjects', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'getSubjects']);
