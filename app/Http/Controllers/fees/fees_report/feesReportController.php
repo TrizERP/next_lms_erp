@@ -19,6 +19,26 @@ use Carbon\Carbon;
 class feesReportController extends Controller
 {
     use GetsJwtToken;
+
+    protected function isApiRequest(Request $request): bool
+    {
+        return in_array(strtoupper((string) $request->input('type')), ['API', 'JSON'], true)
+            || $request->expectsJson()
+            || $request->wantsJson();
+    }
+
+    protected function apiResponse(Request $request, array $data, int $status = 200)
+    {
+        if ($this->isApiRequest($request)) {
+            if (isset($data['status_code']) && !isset($data['status'])) {
+                $data['status'] = (string) $data['status_code'];
+            }
+
+            return response()->json($data, $status);
+        }
+
+        return null;
+    }
     
     /**
      * Display a listing of the resource.
@@ -62,6 +82,10 @@ class feesReportController extends Controller
         $res['status_code'] = "1";
         $res['get_users'] = $get_users;
         $res['message'] = "Success";
+
+        if ($response = $this->apiResponse($request, $res)) {
+            return $response;
+        }
 
         return is_mobile($type, "fees/fees_report/index", $res, "view");
     }
@@ -253,6 +277,10 @@ class feesReportController extends Controller
         $res['months'] = FeeMonthId($syear,$sub_institute_id);
         $res['seprateDetails'] =$request->input('seprateDetails');
 
+        if ($response = $this->apiResponse($request, $res)) {
+            return $response;
+        }
+
         // echo "<pre>";print_r($res['fees_data']);exit;
         return is_mobile($type, "fees/fees_report/index", $res, "view");
     }
@@ -283,7 +311,14 @@ class feesReportController extends Controller
         }
 
         $datewiseData = [];
-        $selTitle = [];  
+        $selTitle = [];
+        $selectedFeesHeads = $request->input('fees_head', []);
+        if(!is_array($selectedFeesHeads)){
+            $selectedFeesHeads = $selectedFeesHeads ? [$selectedFeesHeads] : [];
+        }
+        $selectedFeesHeads = array_values(array_filter($selectedFeesHeads, function ($feeTitleId) {
+            return $feeTitleId !== null && $feeTitleId !== '';
+        }));
 
         if($request->has('search')){
             // echo "<pre>";print_r($request->all());exit;
@@ -292,7 +327,7 @@ class feesReportController extends Controller
             $fees_columns = "";
             $other_columns = "";
             $columns = "";
-            foreach ($request->fees_head as $key => $feeTitleId) {
+            foreach ($selectedFeesHeads as $key => $feeTitleId) {
                 if($feeTitleId!=''){
                     $title = DB::table('fees_title')->where('id',$feeTitleId)->value('fees_title');
                     $selTitle[] = $title;
@@ -318,6 +353,31 @@ class feesReportController extends Controller
                         $other_columns .= "NULL as total_" . $columnAlias . ",";
                     }
                 }
+            }
+
+            if(empty($selectedFeesHeads)){
+                $res['school_details'] = null;
+                $res['status'] = 1;
+                $res['message'] = 'No records found.';
+                $res['payment_mode'] = $sub_institute_id==76 ? ['Cash'=>'CASH','Cheque'=>'CHEQUE','POS'=>'POS','Online'=>'ONLINE','UPI'=>'UPI','RTGS/NEFT'=>'RTGS/NEFT'] : ['Cash'=>'Cash','Cheque'=>'Cheque','DD'=>'DD','Online'=>'Online','NACH'=>'NACH','UPI'=>'UPI','Swipe1'=>'Swipe1','Swipe2'=>'Swipe2','Swipe3'=>'Swipe3','POS'=>'POS'];
+                $res['receipt_title'] = DB::table('fees_receipt_book_master')->where(['sub_institute_id' => $sub_institute_id,'status' => 1])
+                ->selectRaw('*,GROUP_CONCAT(DISTINCT standard_id) as standards,GROUP_CONCAT(DISTINCT fees_head_id) as heads')
+                ->orderBy('sort_order', 'asc')
+                ->groupBy('sort_order')
+                ->get()
+                ->toArray();
+                $res['feesHead'] = fees_title::where(['sub_institute_id' => $sub_institute_id,'syear' => $syear])
+                ->orderBy('sort_order', 'asc')
+                ->pluck('display_name', 'fees_title')
+                ->toArray();
+                $res['selreceipt_title'] = isset($request->receipt_title) ? $request->receipt_title : '';
+                $res['selPaymentMode'] = isset($request->payment_mode) ? $request->payment_mode : '';
+                $res['selfeesHead'] = $selectedFeesHeads;
+                $res['selTitle'] = $selTitle;
+                $res['selFromDate'] = isset($request->from_date) ? $request->from_date : now();
+                $res['selToDate'] = isset($request->to_date) ? $request->to_date : now();
+                $res['datewiseData'] = [];
+                return is_mobile($type, "fees/fees_report/datewiseFeesReport", $res, "view");
             }
 
             $receipt_book= DB::table('fees_receipt_book_master')->where(['sub_institute_id' => $sub_institute_id,'status' => 1,'syear'=>$syear])
@@ -417,7 +477,7 @@ class feesReportController extends Controller
             
             foreach ($fees_data as $key => $value) {
                 $value->total_amount = 0;
-                foreach ($request->fees_head as $key => $feeTitleId) {
+                foreach ($selectedFeesHeads as $key => $feeTitleId) {
                     $feesTitle = DB::table('fees_title')->where('id',$feeTitleId)->value('fees_title');
                     $property = 'total_' . $feesTitle;
 
@@ -432,8 +492,11 @@ class feesReportController extends Controller
             }
             // echo "<pre>";print_r($datewiseData);exit;
             if(empty($datewiseData)){
-                $res['status']=0;
-                $res['message']='No Data Found';
+                $res['status']=1;
+                $res['message']='No records found.';
+            } else {
+                $res['status']=1;
+                $res['message']='Datewise summary report loaded successfully.';
             }
             $res['school_details'] = $receipt_book;
         }
@@ -458,7 +521,7 @@ class feesReportController extends Controller
 
         $res['selreceipt_title'] = isset($request->receipt_title) ? $request->receipt_title : '';
         $res['selPaymentMode'] = isset($request->payment_mode) ? $request->payment_mode : '';
-        $res['selfeesHead'] = isset($request->fees_head) ? $request->fees_head : [];
+        $res['selfeesHead'] = $selectedFeesHeads;
         $res['selTitle'] = $selTitle;
         $res['selFromDate'] = isset($request->from_date) ? $request->from_date : now();
         $res['selToDate'] = isset($request->to_date) ? $request->to_date : now();
@@ -535,3 +598,6 @@ class feesReportController extends Controller
         return view('fees/fees_report/fees_donation_records', ['records' => $records]);
     }
 }
+
+
+

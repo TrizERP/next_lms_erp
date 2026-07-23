@@ -329,15 +329,17 @@
                     $all_segments = request()->segments();
                     $search = $all_segments[1] ?? $all_segments[0];
                     $bread = DB::table('tblmenumaster')->whereRaw('link LIKE "'.$search.'%"')->get();
+                    $breadItem = $bread[0] ?? null;
                     $i = 1;
-                    request()->session()->put('current_menu_id', $bread[0]->id ?? '');
+                    request()->session()->put('current_menu_id', $breadItem->id ?? '');
                     @endphp
                     @if(count($bread)>0)
                     @php
-                    $main = DB::table('tblmenumaster')->where('id',$bread[0]->parent_menu_id)->get();
+                    $main = DB::table('tblmenumaster')->where('id', $breadItem->parent_menu_id ?? 0)->get();
+                    $mainItem = $main[0] ?? null;
                     @endphp
-                    <li class="breadcrumb-item"><a href="{{ route('home') }}">{{$main[0]->name ?? ''}}</a></li>
-                    <li class="breadcrumb-item "><a href="{{ route($bread[0]->link) }}" class="text-dark">{{$bread[0]->name ?? ''}}</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('home') }}">{{$mainItem->name ?? ''}}</a></li>
+                    <li class="breadcrumb-item "><a href="{{ isset($breadItem->link) ? route($breadItem->link) : route('home') }}" class="text-dark">{{$breadItem->name ?? ''}}</a></li>
                     @else
                     @foreach($all_segments as $segment)
                     @php

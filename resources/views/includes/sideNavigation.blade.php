@@ -51,21 +51,23 @@ $school_logo = session()->get('school_logo');
                     inner join tblclient c on c.id = s.client_id
                     where s.Id = $sub_institute_id");
 
-                    $db_host = $client_data[0]->db_host;
-                    $db_user = $client_data[0]->db_user;
-                    $db_password = $client_data[0]->db_password;
-                    $client_name = $client_data[0]->client_name;
-                    $hrms_folder = $client_data[0]->hrms_folder;
-                    $hrms_db_hrms = $client_data[0]->db_hrms;
+                    $client = $client_data[0] ?? null;
+
+                    $db_host = $client->db_host ?? '';
+                    $db_user = $client->db_user ?? '';
+                    $db_password = $client->db_password ?? '';
+                    $client_name = $client->client_name ?? '';
+                    $hrms_folder = $client->hrms_folder ?? '';
+                    $hrms_db_hrms = $client->db_hrms ?? '';
                     $hrms_rights = 0;//$client_data[0]->rights;
-                    $library_db = $client_data[0]->db_library;
-                    $library_rights = $client_data[0]->library_rights;
+                    $library_db = $client->db_library ?? '';
+                    $library_rights = $client->library_rights ?? 0;
                     $library_host = $db_host;
                     $library_user = $db_user;
                     $library_password = $db_password;
-                    $solution_db = $client_data[0]->db_solution;
-                    $school_name = $client_data[0]->SchoolName;
-                    $school_logo = $client_data[0]->logo;
+                    $solution_db = $client->db_solution ?? '';
+                    $school_name = $client->SchoolName ?? '';
+                    $school_logo = $client->logo ?? '';
 
                     $lms_data = DB::select("select *,if(db_lms is null,0,1) as lms_rights 
                         from school_setup s 
