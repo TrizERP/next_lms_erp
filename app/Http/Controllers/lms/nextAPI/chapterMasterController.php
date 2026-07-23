@@ -37,7 +37,10 @@ class chapterMasterController extends Controller
         $page    = (int) $request->input('page', 1);
 
         // 3. Unique Cache Key (Data is cached for 1 Hour)
-        $cacheKey = "chapters_v1_{$subInstituteId}_{$standardId}_{$subjectId}_page_{$page}_limit_{$perPage}";
+        //    v2: response shape changed — full_intelegance_json removed from the list
+        //    payload (now fetched lazily). Bumping the version invalidates any v1
+        //    cache entries still holding the old heavy shape.
+        $cacheKey = "chapters_v2_{$subInstituteId}_{$standardId}_{$subjectId}_page_{$page}_limit_{$perPage}";
         
         return Cache::remember($cacheKey, 3600, function () use ($subInstituteId, $standardId, $subjectId, $perPage) {
             
@@ -71,19 +74,23 @@ class chapterMasterController extends Controller
                     ->whereIn('chapter_id', $chapterIds)
                     ->get();
 
-                // 7. Fetch lightweight Semantic data
+                // 7. Fetch lightweight Semantic data.
+                //    NOTE: full_intelegance_json is intentionally NOT selected here.
+                //    That column is the heavy blob (hundreds of KB per chapter) and is
+                //    only needed when a user opens a concept's intelligence drawer.
+                //    It is fetched lazily, per chapter, via
+                //    GET /api/semantic-intelligence/{chapter_id}/result.
                 $semantics = DB::table('semantic_intelligence')
-                    ->select('id as semantic_id', 'chapter_id', 'learning_objective', 'total_concepts','full_intelegance_json')
+                    ->select('id as semantic_id', 'chapter_id', 'learning_objective', 'total_concepts')
                     ->whereIn('chapter_id', $chapterIds)
                     ->get();
 
-                // 8. Attach Semantic Data
+                // 8. Attach lightweight Semantic Data (summary only, no intelligence blob)
                 foreach ($semantics as $semantic) {
                     $formattedResponse[$semantic->chapter_id]['semantic'] = (object) [
                         'semantic_id'        => (int) $semantic->semantic_id,
                         'learning_objective' => $semantic->learning_objective,
                         'total_concepts'     => $semantic->total_concepts !== null ? (int) $semantic->total_concepts : null,
-                        'full_intelegance_json' => $this->decodeJson($semantic->full_intelegance_json),
                     ];
                 }
 
