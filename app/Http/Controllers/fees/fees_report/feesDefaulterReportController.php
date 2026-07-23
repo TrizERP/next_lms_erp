@@ -25,9 +25,18 @@ class feesDefaulterReportController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
+        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        if (in_array($type, ['API', 'JSON'])) {
+            $sub_institute_id = $request->input('sub_institute_id', $sub_institute_id);
+            $syear = $request->input('syear', $syear);
+        }
 
         $res['status_code'] = "1";
         $res['message'] = "Success";
+        $res['sub_institute_id'] = $sub_institute_id;
+        $res['syear'] = $syear;
 
         return is_mobile($type, "fees/fees_report/show_fees_defaulter_report", $res, "view");
     }
@@ -46,6 +55,11 @@ class feesDefaulterReportController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $marking_period_id = session()->get('term_id');
+
+        if (in_array($type, ['API', 'JSON'])) {
+            $sub_institute_id = $request->input('sub_institute_id', $sub_institute_id);
+            $syear = $request->input('syear', $syear);
+        }
 
         $extraSearchArray = array();
         $extraSearchArrayRaw = " 1=1 ";

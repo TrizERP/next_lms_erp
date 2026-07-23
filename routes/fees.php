@@ -179,15 +179,15 @@ Route::get('payphi', function ($id = null) {
         Route::post('cancel_imprest_fees', 'cancelImprestFees')->name('cancel_imprest_fees');
     });
 
-    Route::post('fees/fees_collection_report', [feesReportController::class, 'showFees'])->name('show_fees_collection_report');
+    Route::post('fees_collection_report', [feesReportController::class, 'showFees'])->name('show_fees_collection_report');
 
-    Route::post('fees/fees_payout_report', [feesPayoutController::class, 'showFeesPayout'])->name('show_fees_payout_report');
+    Route::post('fees_payout_report', [feesPayoutController::class, 'showFeesPayout'])->name('show_fees_payout_report');
 
-    Route::post('fees/fees_overall_report', [feesOverallReportController::class, 'showFeesOverall'])->name('show_fees_overall_report');
+    Route::post('fees_overall_report', [feesOverallReportController::class, 'showFeesOverall'])->name('show_fees_overall_report');
 
-    Route::post('fees/fees_defaulter_report', [feesDefaulterReportController::class, 'showFeesDefaulter'])->name('show_fees_defaulter_report');
+    Route::post('fees_defaulter_report', [feesDefaulterReportController::class, 'showFeesDefaulter'])->name('show_fees_defaulter_report');
 
-    Route::post('fees/fees_status_report', [feesStatusController::class, 'feesStatusReport'])->name('show_fees_status_report');
+    Route::post('fees_status_report', [feesStatusController::class, 'feesStatusReport'])->name('show_fees_status_report');
 
     Route::get('pdfview', array('as' => 'pdfview', 'uses' => 'ItemController@pdfview'));
 

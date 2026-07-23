@@ -32,7 +32,7 @@ if (!function_exists('is_mobile')) {
                 unset($data["status_code"]);
             }
 
-            return json_encode($data);
+            return response()->json($data);
         }
         else if ($type == "JSON") {
             if (isset($data["status_code"])) {
@@ -1356,18 +1356,19 @@ if (!function_exists('OtherBreackOff')) {
                     $q->where('receiptdate', '<=', $request['to_date']);
                 })->get()->toArray();
 
+            $total_paid = isset($paid_fees[0]->total_paid) ? $paid_fees[0]->total_paid : 0;
+
             if (isset($final_bk[$arr->fee_type_id])) {
-                $final_bk[$arr->fee_type_id] = $final_bk[$arr->fee_type_id] + ($arr->tot_amount - $paid_fees[0]->total_paid);
+                $final_bk[$arr->fee_type_id] = $final_bk[$arr->fee_type_id] + ($arr->tot_amount - $total_paid);
             } else {
-                $final_bk[$arr->fee_type_id] = ($arr->tot_amount - $paid_fees[0]->total_paid);
+                $final_bk[$arr->fee_type_id] = ($arr->tot_amount - $total_paid);
             }
 
             // start 27-07-2021 Added by divya for getting other_fees break off amount for fees overallhead wise report
             $other_fees_final_bk[$student_id][$arr->fee_type_id][$month_id]['bf_amount'] = $arr->tot_amount;
-            $other_fees_final_bk[$student_id][$arr->fee_type_id][$month_id]['paid_amount'] = $paid_fees[0]->total_paid;
+            $other_fees_final_bk[$student_id][$arr->fee_type_id][$month_id]['paid_amount'] = $total_paid;
             // end 27-07-2021 Added by divya for getting other_fees break off amount for fees overallhead wise report
         }
-
         $fees_title = fees_title::select('id', 'display_name', 'fees_title', 'mandatory', 'syear', 'other_fee_id')
             ->where([
                 'sub_institute_id' => $sub_institute_id,
@@ -2098,7 +2099,7 @@ if (!function_exists('LMSSearchChain')) {
                         ->where('sub_std_map.standard_id', $std_val)
                         ->where('sub_std_map.sub_institute_id', $sub_institute_id)
                         ->whereRaw($extra)
-                        ->whereRaw(getLmsCondition($sub_institute_id, 'subject')) // ✅ FIXED here
+                        ->whereRaw(getLmsCondition($sub_institute_id, 'subject')) // Ã¢Å“â€¦ FIXED here
                         ->pluck('subject.subject_name', 'subject.id');
 
 
@@ -2469,14 +2470,19 @@ if (!function_exists('get_string')) {
         if($sub_institute_id==''){
             $sub_institute_id = session()->get('sub_institute_id');
         }
-        if($sub_institute_id==''){
+        if($syear==''){
             $syear = session()->get('syear');
         }
+
 
         $data = map_year::where([
             'sub_institute_id' => $sub_institute_id,
             'syear' => $syear,
         ])->get()->toArray();
+
+        if (count($data) == 0) {
+            return array();
+        }
 
         $start_month = $data[0]['from_month'];
         $end_month = $data[0]['to_month'];

@@ -70,9 +70,15 @@ class feesCancelReportController extends Controller
                 u.last_name) AS cancelled_by,sq.title as student_quota_name")
             ->where('te.syear', $syear)
             ->where('fc.sub_institute_id', $sub_institute_id)
-            ->where('fc.syear', $syear)
-            ->where('fc.cancel_type', $cancel_type)
-            ->whereRaw("date_format(fc.cancel_date,'%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "'");
+            ->where('fc.syear', $syear);
+
+        if ($cancel_type != '') {
+            $result = $result->where('fc.cancel_type', $cancel_type);
+        }
+
+        if ($from_date != '' && $to_date != '') {
+            $result = $result->whereRaw("date_format(fc.cancel_date,'%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "'");
+        }
 
         if ($standard != '') {
             $result = $result->where('fc.standard_id', $standard);

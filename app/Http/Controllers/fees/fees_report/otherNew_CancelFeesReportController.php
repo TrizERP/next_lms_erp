@@ -28,6 +28,10 @@ class otherNew_CancelFeesReportController extends Controller
         $res['message'] = "Success";
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
+        if (in_array($type, ['API', 'JSON'])) {
+            $sub_institute_id = $request->input('sub_institute_id', $sub_institute_id);
+        }
+
         $feesOtherHead_data = other_fees_title::select("*")
             ->where(["sub_institute_id" => $sub_institute_id])
             ->where("status", '=', '1')
@@ -51,6 +55,11 @@ class otherNew_CancelFeesReportController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $marking_period_id = session()->get('term_id');
+
+        if (in_array($type, ['API', 'JSON'])) {
+            $sub_institute_id = $request->input('sub_institute_id', $sub_institute_id);
+            $syear = $request->input('syear', $syear);
+        }
 
         $extraSearch = "1 = 1 ";
 

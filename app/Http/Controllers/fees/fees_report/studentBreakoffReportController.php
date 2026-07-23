@@ -3,8 +3,6 @@
 namespace App\Http\Controllers\fees\fees_report;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
-use App\Models\student\tblstudentModel;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -17,9 +15,7 @@ use function App\Helpers\OtherBreackOff;
 use function App\Helpers\FeeMonthId;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
-use function App\Helpers\OtherBreackOfMonth;
 use function App\Helpers\get_map_month;
-use App\Models\fees\map_year\map_year;
 
 class studentBreakoffReportController extends Controller
 {
@@ -32,19 +28,32 @@ class studentBreakoffReportController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
-        $months_arr = get_map_month();
-        // echo "<pre>";print_r($months_arr);exit;
-        $res['status_code'] = "1";
-        $res['message'] = "Success";
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+
+        if (in_array($type, ['API', 'JSON'])) {
+            $sub_institute_id = $request->get('sub_institute_id', $sub_institute_id);
+            $syear = $request->get('syear', $syear);
+        }
+
+        $months_arr = get_map_month($sub_institute_id, $syear);
+        if (empty($months_arr)) {
+            $res['status_code'] = 0;
+            $res['message'] = 'Fees year mapping is not configured for the selected academic year';
+            $res['months_arr'] = [];
+            return is_mobile($type, 'fees/fees_report/student_breakoff_report', $res, 'view');
+        }
+
+        $res['status_code'] = '1';
+        $res['message'] = 'Success';
         $res['months_arr'] = $months_arr;
 
-        return is_mobile($type, "fees/fees_report/student_breakoff_report", $res, "view");
+        return is_mobile($type, 'fees/fees_report/student_breakoff_report', $res, 'view');
     }
 
     public function create(Request $request)
     {
-        // echo("hi");die;
-        $type = $request->input("type");
+        $type = $request->input('type');
         $grade = $request->input('grade');
         $standard = $request->input('standard');
         $division = $request->input('division');
@@ -56,16 +65,27 @@ class studentBreakoffReportController extends Controller
         $month = $request->input('month');
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
-        $marking_period_id = session()->get('term_id');
-        $months_arr = get_map_month();
-        $name = $first_name ?? $last_name ?? '';
-        // get student details
-        $student_data = SearchStudent($grade, $standard, $division, "", "", "", $name, "", "", $enrollment_no, "");
 
-        $responce_arr = [];
+        if (in_array($type, ['API', 'JSON'])) {
+            $sub_institute_id = $request->get('sub_institute_id', $sub_institute_id);
+            $syear = $request->get('syear', $syear);
+        }
+
+        $months_arr = get_map_month($sub_institute_id, $syear);
+        if (empty($months_arr)) {
+            $res['status_code'] = 0;
+            $res['message'] = 'Fees year mapping is not configured for the selected academic year';
+            $res['fees_data'] = [];
+            $res['months_arr'] = [];
+            $res['fees_titles'] = [];
+            return is_mobile($type, 'fees/fees_report/student_breakoff_report', $res, 'view');
+        }
+
+        $name = $first_name ?? $last_name ?? '';
+        $student_data = SearchStudent($grade, $standard, $division, $sub_institute_id, $syear, '', $name, $uniqueid, $mobile_no, $enrollment_no, '');
+
         $final_array = [];
-        $other_bk_off=[];
-        $month_arr = FeeMonthId();
+        $month_arr = FeeMonthId($syear, $sub_institute_id);
         $currunt_month = date('m');
         $currunt_year = date('Y');
         $currunt_month_id = $currunt_month . $currunt_year;
@@ -74,34 +94,31 @@ class studentBreakoffReportController extends Controller
         foreach ($month_arr as $id => $arr) {
             if ($id == $currunt_month_id) {
                 $search_ids[] = $id;
-                // break;
             } else {
                 $search_ids[] = $id;
             }
         }
-        if(isset($month)){
+
+        if (isset($month) && !empty($month)) {
             $search_ids = $month;
         }
+
         foreach ($student_data as $id => $arr) {
             $stu_arr = ['0' => $arr['id']];
-            // $student_ids, $from_date = null, $to_date = null, $fees_head = null, $syear = ''
-            $final_array[] = FeeBreakoffHeadWise($stu_arr,"","","","",$month); //for current year
+            $final_array[] = FeeBreakoffHeadWise($stu_arr, '', '', '', $syear, $search_ids, $sub_institute_id);
             $final_array[$id][$arr['id']]['quota'] = $arr['student_quota'];
-            $final_array[$id][$arr['id']]['uniqueid'] = $arr['uniqueid']; 
-            $final_array[$id][$arr['id']]['otherfees'] = OtherBreackOff($stu_arr,$search_ids);                                   
-       
+            $final_array[$id][$arr['id']]['uniqueid'] = $arr['uniqueid'];
+            $final_array[$id][$arr['id']]['otherfees'] = OtherBreackOff($stu_arr, $search_ids, '', '', '', $syear, $sub_institute_id);
         }
+
         $get_fees_titles = DB::table('fees_title')
-        ->select('display_name', 'fees_title')
-        ->where('sub_institute_id', session()->get('sub_institute_id'))
-        ->where('syear', session()->get('syear'))
-        ->get()->toArray();
-              
-        // echo "<pre>";
-        // print_r($final_array);
-        // exit;
-        $res['status_code'] = 1;
-        $res['message'] = "Success";
+            ->select('display_name', 'fees_title')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('syear', $syear)
+            ->get()->toArray();
+
+        $res['status_code'] = count($final_array) > 0 ? 1 : 0;
+        $res['message'] = count($final_array) > 0 ? 'Success' : 'No records found';
         $res['fees_data'] = $final_array;
         $res['months_arr'] = $months_arr;
         $res['grade_id'] = $grade;
@@ -113,10 +130,7 @@ class studentBreakoffReportController extends Controller
         $res['mobile_no'] = $mobile_no;
         $res['month'] = $month;
         $res['fees_titles'] = $get_fees_titles;
-        //  echo "<pre>";print_r($final_array);exit;
-        return is_mobile($type, "fees/fees_report/student_breakoff_report", $res, "view");
+
+        return is_mobile($type, 'fees/fees_report/student_breakoff_report', $res, 'view');
     }
-
-    
-
 }

@@ -81,38 +81,53 @@ class admissionRegistrationAPIController extends Controller
         $sub_institute_id = $request->input('sub_institute_id');
         $marking_period_id = $request->input('term_id');
         $syear = $request->input('syear');
+
         if ($sub_institute_id == 198) // For Mahaeshvari school
         {
             $data = DB::table('admission_enquiry as ae')
-                ->join('admission_form as af', function ($join) {
-                    $join->whereRaw('ae.id = af.enquiry_id LEFT JOIN admission_registration ar ON ae.id = ar.enquiry_id');
+                ->leftJoin('admission_form as af', function ($join) {
+                    $join->on('ae.id', '=', 'af.enquiry_id');
                 })
-                ->selectRaw("ae.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,CONCAT_WS(',',ae.house_no,
+                ->leftJoin('admission_registration as ar', function ($join) {
+                    $join->on('ae.id', '=', 'ar.enquiry_id');
+                })
+                ->selectRaw("ae.*,af.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,CONCAT_WS(',',ae.house_no,
                     ae.`building_name_appratment_name_society_name`,ae.district_name,ae.pin_code,ae.state) AS address,
-			        ae.previous_standard,ae.mother_name,ae.mobile_number_mother ,ae.place_of_birth,ar.enquiry_id as registration_enquiry_id, ae.remarks AS enquiry_remark, ae.fees_remark AS enquiry_remark2")
+                    ae.previous_standard,ae.mother_name,ae.mobile_number_mother ,ae.place_of_birth,ar.enquiry_id as registration_enquiry_id, ae.remarks AS enquiry_remark, ae.fees_remark AS enquiry_remark2")
                 ->where('ae.id', $id)
                 ->where('ae.sub_institute_id', $sub_institute_id)
                 ->get()->toArray();
         } else {
             $data = DB::table('admission_enquiry as ae')
-                ->join('admission_form as af', function ($join) use($sub_institute_id) {
-                    $join->on('ae.id', '=', 'af.enquiry_id')->where('af.sub_institute_id',$sub_institute_id);
-                })->leftJoin('admission_registration as ar', function ($join) use($sub_institute_id) {
-                    $join->on('ae.id', '=', 'ar.enquiry_id')->where('ar.sub_institute_id',$sub_institute_id);
+                ->leftJoin('admission_form as af', function ($join) use ($sub_institute_id) {
+                    $join->on('ae.id', '=', 'af.enquiry_id')->where('af.sub_institute_id', $sub_institute_id);
+                })->leftJoin('admission_registration as ar', function ($join) use ($sub_institute_id) {
+                    $join->on('ae.id', '=', 'ar.enquiry_id')->where('ar.sub_institute_id', $sub_institute_id);
                 })
-                ->selectRaw("ae.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,ar.enquiry_id as registration_enquiry_id, ae.remarks AS enquiry_remark, ae.fees_remark AS enquiry_remark2")
+                ->selectRaw("ae.*,af.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,ar.enquiry_id as registration_enquiry_id, ae.remarks AS enquiry_remark, ae.fees_remark AS enquiry_remark2")
                 ->where('ae.id', $id)
                 ->where('ae.sub_institute_id', $sub_institute_id)
                 ->get()->toArray();
         }
-        
+
         $data = array_map(function ($value) {
             return (array) $value;
         }, $data);
         $editData = $data;
-        $checkStudent = tblstudentModel::where(['admission_id' => $id])->where('sub_institute_id',$sub_institute_id)->get()->toArray();
 
-        $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_registration"])
+        if (empty($editData)) {
+            return response()->json([
+                'status_code' => '0',
+                'message' => 'Admission registration record not found.',
+                'editData' => null,
+                'data' => null,
+            ], 404);
+        }
+
+        $editRecord = $editData[0];
+        $checkStudent = tblstudentModel::where(['admission_id' => $id])->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+
+        $dataCustomFields = tblcustomfieldsModel::where(['status' => '1', 'table_name' => 'admission_registration'])
             ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)  and user_type="" ')
             ->orderBy('sort_order', 'ASC')
             ->get();
@@ -126,8 +141,6 @@ class admissionRegistrationAPIController extends Controller
             $i++;
         }
 
-        // echo "<pre>";print_r($dataCustomFields);exit;
-
         if (count($checkStudent) > 0) {
             $res['display_save_student'] = '0';
         } else {
@@ -136,59 +149,54 @@ class admissionRegistrationAPIController extends Controller
 
         $category = studentQuotaModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
 
-        if (isset($editData[0]['enrollment_no']) && $editData[0]['enrollment_no'] != '') {
-            $res['new_enrollment_no'] = $editData[0]['enrollment_no'];
+        if (isset($editRecord['enrollment_no']) && $editRecord['enrollment_no'] != '') {
+            $res['new_enrollment_no'] = $editRecord['enrollment_no'];
         } else {
-            $enroll = $this->max_enrollment_no($sub_institute_id, $editData[0]['admission_standard'], $syear);
+            $enroll = $this->max_enrollment_no($sub_institute_id, $editRecord['admission_standard'], $syear);
             $res['new_enrollment_no'] = isset($enroll) ? $enroll : 0;
         }
-        // if enrollment no already exists then get new enrollment and make add button hidden 
+
         $array = [201, 202, 203, 204];
 
-		$checkGrnoExist = tblstudentModel::where('enrollment_no', $res['new_enrollment_no'])
-		    ->where('sub_institute_id', $sub_institute_id)
-		    ->when(in_array($sub_institute_id, $array), function ($query) use ($syear) {
-		        $query->where('admission_year', $syear);
-		    })
-		    ->get()
-		    ->toArray();
+        $checkGrnoExist = tblstudentModel::where('enrollment_no', $res['new_enrollment_no'])
+            ->where('sub_institute_id', $sub_institute_id)
+            ->when(in_array($sub_institute_id, $array), function ($query) use ($syear) {
+                $query->where('admission_year', $syear);
+            })
+            ->get()
+            ->toArray();
 
-        if(!empty($checkGrnoExist) && $res['display_save_student']==1){
-            $res['new_enrollment_no'] = $this->max_enrollment_no($sub_institute_id, $editData[0]['admission_standard'], $syear);
-            $res['display_save_student']=0;
+        if (!empty($checkGrnoExist) && $res['display_save_student'] == 1) {
+            $res['new_enrollment_no'] = $this->max_enrollment_no($sub_institute_id, $editRecord['admission_standard'], $syear);
+            $res['display_save_student'] = 0;
         }
-        // echo "<pre>";print_r($res['display_save_student']);exit;
 
         $standard = standardModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
-
         $bloodgroupData = bloodgroupModel::select()->get();
 
         $getDiv = DB::table('std_div_map as sdm')
-            ->join('standard as s', function ($join) use($marking_period_id) {
+            ->join('standard as s', function ($join) use ($marking_period_id) {
                 $join->whereRaw('s.id =sdm.standard_id AND s.sub_institute_id = sdm.sub_institute_id');
-                // ->when($marking_period_id,function($query) use ($marking_period_id){
-                //     $query->where('tblstudent.marking_period_id',$marking_period_id);
-                // });
             })->join('division as d', function ($join) {
                 $join->whereRaw('d.id = sdm.division_id AND d.sub_institute_id = sdm.sub_institute_id');
             })->selectRaw('d.id,d.name,sdm.standard_id')
             ->where('sdm.sub_institute_id', $sub_institute_id)
-            ->where('sdm.standard_id', $editData[0]['admission_standard'])->get()->toArray();
+            ->where('sdm.standard_id', $editRecord['admission_standard'])
+            ->get()->toArray();
 
         $getDiv = array_map(function ($value) {
             return (array) $value;
         }, $getDiv);
 
-        $res['status_code'] = "1";
-        $res['message'] = "Successfully";
-        $res['editData'] = $editData['0'];
+        $res['status_code'] = '1';
+        $res['message'] = 'Successfully';
+        $res['editData'] = $editRecord;
         $res['standard'] = $standard;
         $res['bloodgroup_data'] = $bloodgroupData;
         $res['custom_fields'] = $dataCustomFields;
-        //  added on 2024-08-27
         $res['religion_data'] = religionModel::select()->get();
         $res['caste_data'] = casteModel::select()->get();
-        // end 2024-08-27
+
         if (count($getDiv) > 0) {
             $res['division'] = $getDiv;
         }
@@ -657,3 +665,5 @@ class admissionRegistrationAPIController extends Controller
             ->where('sdm.standard_id', $standard_id)->get()->toArray();
     }
 }
+
+
