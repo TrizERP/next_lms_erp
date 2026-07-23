@@ -80,6 +80,7 @@ Route::post('lms-chapter-concepts', [ApiLmsCourseController::class, 'getChapterC
 Route::post('lms-chapters', [ApiLmsCourseController::class, 'chapters']);
 Route::post('lms-chapter-content', [ApiLmsCourseController::class, 'chapterContent']);
 Route::post('lms-questions', [ApiLmsCourseController::class, 'getLmsQuestions']);
+Route::get('question-mapping-levels', [ApiLmsCourseController::class, 'getQuestionMappingLevels']);
 Route::post('lms-chapters/store', [ApiLmsCourseController::class, 'storeChapter']);
 Route::post('lms-create-content', [ApiLmsCourseController::class, 'createContent']);
 Route::post('lms-store-content', [ApiLmsCourseController::class, 'storeContent']);
