@@ -14,6 +14,9 @@ use App\Http\Controllers\api\AiSopGenerationController;
 use App\Http\Controllers\api\admissionEnquiryAPIController;
 use App\Http\Controllers\api\onlineAdmissionConfirmAPIController;
 use App\Http\Controllers\api\admissionRegistrationAPIController;
+use App\Http\Controllers\api\ClassTeacherApiController;
+use App\Http\Controllers\api\TeacherDailyReportApiController;
+use App\Http\Controllers\api\UserLogReportApiController;
 use App\Http\Controllers\fees\fees_cancel\feesCancelController;
 use App\Http\Controllers\fees\fees_circular\feesCircularController;
 use App\Http\Controllers\fees\fees_circular\feesCircularMasterController;
@@ -121,6 +124,11 @@ Route::controller(admissionRegistrationAPIController::class)->group(function () 
 
 
 Route::apiResource('question-paper', ApiQuestionPaperController::class);
+Route::apiResource('class-teachers', ClassTeacherApiController::class)->except(['show']);
+Route::get('user-logs/bootstrap', [UserLogReportApiController::class, 'bootstrap']);
+Route::post('user-logs/search', [UserLogReportApiController::class, 'search']);
+Route::post('teacher-daily-reports/search', [TeacherDailyReportApiController::class, 'search']);
+Route::get('teacher-daily-reports/{teacherId}/details', [TeacherDailyReportApiController::class, 'details']);
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
 Route::post('fees-cancel/search', [feesCancelController::class, 'search']);
 
@@ -153,4 +161,25 @@ Route::get('/sub-department-list', [\App\Http\Controllers\HRMS\departmentControl
 Route::get('/department-employee-list', [\App\Http\Controllers\HRMS\departmentController::class, 'departmentEmployeeList']);
 Route::get('/departments/hierarchy', [\App\Http\Controllers\HRMS\departmentController::class, 'hierarchy']);
 
+
+
+use App\Http\Controllers\api\UserManagementApiController;
+
+Route::controller(UserManagementApiController::class)->group(function () {
+    Route::get('users', 'index');
+    Route::post('users', 'store');
+    Route::get('users/{id}', 'show');
+    Route::post('users/{id}', 'update');
+    Route::post('users/{id}/deactivate', 'destroy');
+    Route::get('user-profiles', 'profiles');
+    Route::post('user-profiles', 'storeProfile');
+    Route::post('user-profiles/{id}', 'updateProfile');
+    Route::post('user-profiles/{id}/delete', 'destroyProfile');
+    Route::get('user-reports/bootstrap', 'reportBootstrap');
+    Route::post('user-reports/search', 'report');
+});
+
+
+Route::get('teacher-transfer', [\App\Http\Controllers\api\TeacherTransferApiController::class, 'index']);
+Route::post('teacher-transfer', [\App\Http\Controllers\api\TeacherTransferApiController::class, 'store']);
 
