@@ -26,8 +26,14 @@
                 </div>
                 <br><br>
 
-                <div class="col-lg-12 col-sm-12 col-xs-12" style="overflow:auto;">
-                    <table id="subject_list" class="table table-striped table-bordered" style="width:100%">
+                @php
+                    $chapterWiseContent = $data['chapter_wise_content'] ?? collect();
+                    $conceptWiseContent = $data['concept_wise_content'] ?? collect();
+                @endphp
+
+                <div class="col-lg-12 col-sm-12 col-xs-12" style="margin-bottom: 30px; overflow:auto;">
+                    <h4 style="margin-bottom: 15px;">Chapter-wise Content</h4>
+                    <table id="chapter_subject_list" class="table table-striped table-bordered" style="width:100%">
                         <thead>
                             <tr>
                                 <th>Sr. No.</th>
@@ -45,20 +51,20 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @if(count($data['data']) > 0)
+                            @if($chapterWiseContent->count() > 0)
                             @php $i = 1;@endphp
-                            @foreach($data['data'] as $key => $chdata)
+                            @foreach($chapterWiseContent as $chdata)
                             <tr>
-                                <td>@php echo $i++;@endphp</td>
-                                <td>{{$chdata->grade_name}}</td>
-                                <td>{{$chdata->standard_name}}</td>
-                                <td>{{$chdata->subject_name}}</td>
-                                <td>{{$chdata->chapter_name}}</td>
-                                <td>@if(isset($chdata->topic_name)){{$chdata->topic_name}}@else - @endif</td>
-                                <td>@if(isset($chdata->sub_topic_name)){{$chdata->sub_topic_name}}@else - @endif</td>
-                                <td>{{$chdata->title}}</td>
-                                <td>{{$chdata->content_category}}</td>
-                                <td><a target="_blank" href="{{ Storage::disk('digitalocean')->url('public'.$chdata->file_folder.'/'.$chdata->filename)}}">{{$chdata->filename}}</a></td>
+                                <td>{{ $i++ }}</td>
+                                <td>{{ $chdata->grade_name }}</td>
+                                <td>{{ $chdata->standard_name }}</td>
+                                <td>{{ $chdata->subject_name }}</td>
+                                <td>{{ $chdata->chapter_name }}</td>
+                                <td>{{ $chdata->topic_name ?? '-' }}</td>
+                                <td>{{ $chdata->sub_topic_name ?? '-' }}</td>
+                                <td>{{ $chdata->title }}</td>
+                                <td>{{ $chdata->content_category }}</td>
+                                <td><a target="_blank" href="{{ Storage::disk('digitalocean')->url('public'.$chdata->file_folder.'/'.$chdata->filename) }}">{{ $chdata->filename }}</a></td>
                                 <td>
                                     @if($chdata->show_hide == 1)
                                     Show
@@ -78,7 +84,68 @@
                             </tr>
                             @endforeach
                             @else
-                                <tr><td colspan="10"><center>No records</center></td></tr>
+                                <tr><td colspan="12"><center>No chapter-wise records</center></td></tr>
+                            @endif
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="col-lg-12 col-sm-12 col-xs-12" style="overflow:auto;">
+                    <h4 style="margin-bottom: 15px;">Concept-wise Content</h4>
+                    <table id="concept_subject_list" class="table table-striped table-bordered" style="width:100%">
+                        <thead>
+                            <tr>
+                                <th>Sr. No.</th>
+                                <th>Academic Section</th>
+                                <th>Standard</th>
+                                <th>Subject</th>
+                                <th>Chapter Name</th>
+                                <th>Concept Name</th>
+                                <th>Topic Name</th>
+                                <th>Sub Topic Name</th>
+                                <th>Content Title</th>
+                                <th>Content Category</th>
+                                <th>Content Link</th>
+                                <th>Show/Hide</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if($conceptWiseContent->count() > 0)
+                            @php $i = 1;@endphp
+                            @foreach($conceptWiseContent as $chdata)
+                            <tr>
+                                <td>{{ $i++ }}</td>
+                                <td>{{ $chdata->grade_name }}</td>
+                                <td>{{ $chdata->standard_name }}</td>
+                                <td>{{ $chdata->subject_name }}</td>
+                                <td>{{ $chdata->chapter_name }}</td>
+                                <td>{{ $chdata->concept_name ?? '-' }}</td>
+                                <td>{{ $chdata->topic_name ?? '-' }}</td>
+                                <td>{{ $chdata->sub_topic_name ?? '-' }}</td>
+                                <td>{{ $chdata->title }}</td>
+                                <td>{{ $chdata->content_category }}</td>
+                                <td><a target="_blank" href="{{ Storage::disk('digitalocean')->url('public'.$chdata->file_folder.'/'.$chdata->filename) }}">{{ $chdata->filename }}</a></td>
+                                <td>
+                                    @if($chdata->show_hide == 1)
+                                    Show
+                                    @else
+                                    Hide
+                                    @endif
+                                </td>
+                                <td style="display: inline-flex;">
+                                    <a href="{{ route('content_master.edit',['id'=>$chdata->id,'std_id'=>$chdata->standard_id])}}"><button type="button" class="btn btn-info btn-outline btn-circle btn m-r-5"><i class="ti-pencil-alt"></i></button></a>
+
+                                    <form action="{{ route('content_master.destroy', $chdata->id)}}" method="post">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button onclick="return confirmDelete();" type="submit" class="btn btn-info btn-outline btn-circle btn m-r-5"><i class="ti-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                            @endforeach
+                            @else
+                                <tr><td colspan="13"><center>No concept-wise records</center></td></tr>
                             @endif
                         </tbody>
                     </table>
