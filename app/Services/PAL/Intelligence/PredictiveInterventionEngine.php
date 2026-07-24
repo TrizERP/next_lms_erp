@@ -124,7 +124,9 @@ class PredictiveInterventionEngine
             'session_frequency' => $this->calculateFrequencySignal($lastWeek),
             'session_duration' => $this->calculateDurationSignal($lastWeek, $prevWeek),
             'error_recovery' => $this->calculateErrorRecoverySignal($learnerId),
-            'frustration_indicators' => $this->getFrustrationSignal($learnerId),
+            // Key must match the weight in predictDisengagement() ('frustration'),
+            // otherwise the 0.20 frustration weight is silently dropped.
+            'frustration' => $this->getFrustrationSignal($learnerId),
         ];
     }
 
