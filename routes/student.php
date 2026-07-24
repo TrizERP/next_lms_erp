@@ -24,12 +24,14 @@ use App\Http\Controllers\student\rollOverController;
 use App\Http\Controllers\student\student_certificate_reportController;
 use App\Http\Controllers\student\studentAttendanceController;
 use App\Http\Controllers\student\studentCertificateController;
+use App\Http\Controllers\student\StudentCertificateApiController;
 use App\Http\Controllers\student\studentChangeRequestTypeController;
 use App\Http\Controllers\student\studentHealthController;
 use App\Http\Controllers\student\studentHomeworkController;
 use App\Http\Controllers\student\studentHomeworkSubmissionController;
 use App\Http\Controllers\student\studentHWController;
 use App\Http\Controllers\student\studentIcardController;
+use App\Http\Controllers\student\StudentIcardApiController;
 use App\Http\Controllers\student\studentInfirmaryController;
 use App\Http\Controllers\student\studentQuotaController;
 use App\Http\Controllers\student\studentReportController;
@@ -251,3 +253,24 @@ Route::get('dicipline_alone/create', [diciplineController::class,'create'])->nam
 Route::post('dicipline_alone/store', [diciplineController::class,'store'])->name('dicipline_alone.store');
 
 Route::get('search_students', [studentSearchController::class,'searchBydata'])->name('search_students.search');
+
+Route::prefix('student/api/student_certificate')->group(function () {
+    Route::get('templates', [StudentCertificateApiController::class, 'templates']);
+    Route::post('search', [StudentCertificateApiController::class, 'search']);
+    Route::post('preview', [StudentCertificateApiController::class, 'preview']);
+    Route::post('save', [StudentCertificateApiController::class, 'save']);
+    Route::get('history', [StudentCertificateApiController::class, 'history']);
+});
+
+Route::prefix('student/api/student_icard')->group(function () {
+    Route::get('metadata', [StudentIcardApiController::class, 'metadata']);
+    Route::post('search', [StudentIcardApiController::class, 'search']);
+    Route::post('preview', [StudentIcardApiController::class, 'preview']);
+});
+
+Route::prefix('student/api/teacher_icard')->group(function () {
+    Route::get('metadata', [\App\Http\Controllers\student\TeacherIcardApiController::class, 'metadata']);
+    Route::post('search', [\App\Http\Controllers\student\TeacherIcardApiController::class, 'search']);
+    Route::post('preview', [\App\Http\Controllers\student\TeacherIcardApiController::class, 'preview']);
+});
+
