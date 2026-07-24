@@ -15,6 +15,7 @@ use App\Http\Controllers\api\admissionEnquiryAPIController;
 use App\Http\Controllers\api\onlineAdmissionConfirmAPIController;
 use App\Http\Controllers\api\admissionRegistrationAPIController;
 use App\Http\Controllers\api\ClassTeacherApiController;
+use App\Http\Controllers\api\AcademicSetupApiController;
 use App\Http\Controllers\api\TeacherDailyReportApiController;
 use App\Http\Controllers\api\UserLogReportApiController;
 use App\Http\Controllers\fees\fees_cancel\feesCancelController;
@@ -127,6 +128,10 @@ Route::get('user-logs/bootstrap', [UserLogReportApiController::class, 'bootstrap
 Route::post('user-logs/search', [UserLogReportApiController::class, 'search']);
 Route::post('teacher-daily-reports/search', [TeacherDailyReportApiController::class, 'search']);
 Route::get('teacher-daily-reports/{teacherId}/details', [TeacherDailyReportApiController::class, 'details']);
+Route::get('academic-setup/{module}', [AcademicSetupApiController::class, 'index']);
+Route::post('academic-setup/{module}', [AcademicSetupApiController::class, 'store']);
+Route::match(['put', 'patch'], 'academic-setup/{module}/{id}', [AcademicSetupApiController::class, 'update']);
+Route::delete('academic-setup/{module}/{id}', [AcademicSetupApiController::class, 'destroy']);
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
 Route::post('fees-cancel/search', [feesCancelController::class, 'search']);
 
