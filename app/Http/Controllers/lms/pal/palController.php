@@ -342,9 +342,10 @@ class palController extends Controller
   public function misconception(Request $request)
 {
     $chapter_id = $request->chapter_id;
-    $student_id = session()->get('user_id');
-    $sub_institute_id = session()->get('sub_institute_id');
-    $syear = session()->get('syear');
+    // API/SPA clients (no server session) pass these explicitly; fall back to session for web.
+    $student_id = $request->get('user_id') ?: session()->get('user_id');
+    $sub_institute_id = $request->get('sub_institute_id') ?: session()->get('sub_institute_id');
+    $syear = $request->get('syear') ?: session()->get('syear');
 
     $data = $this->getMisconceptionQuestions($student_id, $chapter_id);
     $questionIds = array_map(function ($question) {
@@ -383,9 +384,10 @@ class palController extends Controller
 public function generateMisconceptionContent(Request $request)
 {
     $chapter_id = $request->input('chapter_id');
-    $student_id = session()->get('user_id');
-    $sub_institute_id = session()->get('sub_institute_id');
-    $syear = session()->get('syear');
+    // API/SPA clients (no server session) pass these explicitly; fall back to session for web.
+    $student_id = $request->get('user_id') ?: session()->get('user_id');
+    $sub_institute_id = $request->get('sub_institute_id') ?: session()->get('sub_institute_id');
+    $syear = $request->get('syear') ?: session()->get('syear');
 
     if (empty($chapter_id)) {
         return response()->json(['status' => 0, 'message' => 'Chapter is required']);
@@ -2055,8 +2057,9 @@ public function getData($request)
         $questionpaper_id = $id;
 
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $user_id = $request->session()->get('user_id');
+        // API/SPA clients (no server session) pass these explicitly; fall back to session for web.
+        $sub_institute_id = $request->get('sub_institute_id') ?: $request->session()->get('sub_institute_id');
+        $user_id = $request->get('user_id') ?: $request->session()->get('user_id');
         $online_exam_id = $request->get('online_exam_id');
         $data['user_id'] = $online_exam_id;
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\PAL;
+namespace App\Http\Controllers\api\PAL;
 
 use App\Http\Controllers\Controller;
 use App\Services\PAL\Intelligence\IntelligenceService;
@@ -547,6 +547,15 @@ class PALAPIController extends Controller
      */
     public function getTeacherInsights(Request $request): JsonResponse
     {
+        // Role-based access: teacher insights are a staff/admin tool.
+        $auth = $request->attributes->get('pal_auth');
+        if (($auth['role'] ?? null) === 'student') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Teacher insights are only available to staff and administrators.',
+            ], 403);
+        }
+
         $request->validate([
             'learner_id' => 'required|integer',
             'classroom_id' => 'required|integer',

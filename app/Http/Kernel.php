@@ -74,5 +74,6 @@ class Kernel extends HttpKernel
         'logRoute'=>\App\Http\Middleware\LogRouteMiddleware::class,
         'jwt' => \GenTux\Jwt\Http\JwtMiddleware::class,
         'check_permissions' =>\App\Http\Middleware\checkPermission::class,
+        'pal.auth' => \App\Http\Middleware\PalApiAuth::class,
     ];
 }
