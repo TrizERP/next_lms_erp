@@ -13,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Schema;
 use App\Services\OpenAIService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -37,16 +38,60 @@ class contentController extends Controller
         }else{
         $sub_institute_id = $request->session()->get('sub_institute_id');
         }
-        $data['content_data'] = contentModel::select('content_master.*','standard.name as standard_name','academic_section.title as grade_name',
-        'subject_name','chapter_name','tm.name as topic_name','stm.name as sub_topic_name')
-        ->join('standard', 'standard.id', '=', 'content_master.standard_id')
-        ->join('academic_section', 'academic_section.id', '=', 'content_master.grade_id')
-        ->join('subject', 'subject.id', '=', 'content_master.subject_id')       
-        ->join('chapter_master as cm','cm.id','=','content_master.chapter_id')
-        ->leftjoin('topic_master as tm','tm.id','=','content_master.topic_id')
-        ->leftjoin('topic_master as stm','stm.id','=','content_master.sub_topic_id')
-        ->where('content_master.sub_institute_id',$sub_institute_id)                      
-        ->get();
+        $hasConceptColumn = Schema::hasColumn('content_master', 'concept_id');
+        $hasConceptTable = Schema::hasTable('lms_concept');
+
+        $conceptNameSelect = ($hasConceptColumn && $hasConceptTable)
+            ? 'lc.name as concept_name'
+            : DB::raw('NULL as concept_name');
+
+        $buildContentQuery = function (bool $joinConcept = false) use ($sub_institute_id, $conceptNameSelect, $hasConceptColumn, $hasConceptTable) {
+            $query = contentModel::select(
+                'content_master.*',
+                'standard.name as standard_name',
+                'academic_section.title as grade_name',
+                'subject_name',
+                'chapter_name',
+                'tm.name as topic_name',
+                'stm.name as sub_topic_name',
+                $conceptNameSelect
+            )
+            ->join('standard', 'standard.id', '=', 'content_master.standard_id')
+            ->join('academic_section', 'academic_section.id', '=', 'content_master.grade_id')
+            ->join('subject', 'subject.id', '=', 'content_master.subject_id')
+            ->join('chapter_master as cm', 'cm.id', '=', 'content_master.chapter_id')
+            ->leftJoin('topic_master as tm', 'tm.id', '=', 'content_master.topic_id')
+            ->leftJoin('topic_master as stm', 'stm.id', '=', 'content_master.sub_topic_id')
+            ->where('content_master.sub_institute_id', $sub_institute_id);
+
+            if ($hasConceptColumn && $hasConceptTable) {
+                if ($joinConcept) {
+                    $query->join('lms_concept as lc', 'lc.id', '=', 'content_master.concept_id');
+                } else {
+                    $query->leftJoin('lms_concept as lc', 'lc.id', '=', 'content_master.concept_id');
+                }
+            }
+
+            return $query;
+        };
+
+        $data['chapter_wise_content'] = $hasConceptColumn
+            ? $buildContentQuery(false)
+                ->whereNull('content_master.concept_id')
+                ->orderByDesc('content_master.created_at')
+                ->get()
+            : $buildContentQuery(false)
+                ->orderByDesc('content_master.created_at')
+                ->get();
+
+        $data['concept_wise_content'] = ($hasConceptColumn && $hasConceptTable)
+            ? $buildContentQuery(true)
+                ->whereNotNull('content_master.concept_id')
+                ->orderByDesc('content_master.created_at')
+                ->get()
+            : collect();
+
+        $data['content_data'] = $data['chapter_wise_content']->merge($data['concept_wise_content']);
 
         return $data;
     }

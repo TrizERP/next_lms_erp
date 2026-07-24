@@ -15,6 +15,7 @@ class contentModel extends Model
         'standard_id',
         'subject_id',
         'chapter_id',
+        'concept_id',
         'topic_id',
         'sub_topic_id',
         'lo_master_ids',
