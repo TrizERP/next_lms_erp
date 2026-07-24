@@ -17,6 +17,7 @@ use App\Http\Controllers\api\admissionRegistrationAPIController;
 use App\Http\Controllers\api\ClassTeacherApiController;
 use App\Http\Controllers\api\AcademicSetupApiController;
 use App\Http\Controllers\api\TransportationApiController;
+use App\Http\Controllers\api\GeneralSetupApiController;
 use App\Http\Controllers\api\TeacherDailyReportApiController;
 use App\Http\Controllers\api\UserLogReportApiController;
 use App\Http\Controllers\fees\fees_cancel\feesCancelController;
@@ -139,6 +140,10 @@ Route::get('transportation-setup/{module}', [TransportationApiController::class,
 Route::post('transportation-setup/{module}', [TransportationApiController::class, 'store']);
 Route::match(['put', 'patch'], 'transportation-setup/{module}/{id}', [TransportationApiController::class, 'update']);
 Route::delete('transportation-setup/{module}/{id}', [TransportationApiController::class, 'destroy']);
+Route::get('general-setup/{module}', [GeneralSetupApiController::class, 'index']);
+Route::post('general-setup/{module}', [GeneralSetupApiController::class, 'store']);
+Route::match(['put', 'patch'], 'general-setup/{module}/{id}', [GeneralSetupApiController::class, 'update']);
+Route::delete('general-setup/{module}/{id}', [GeneralSetupApiController::class, 'destroy']);
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
 Route::post('fees-cancel/search', [feesCancelController::class, 'search']);
 
