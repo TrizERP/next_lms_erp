@@ -521,7 +521,20 @@ class studentAttendanceController extends Controller
         }
 
         // get student list 
-        $student_data = $res['student_data'] =  SearchStudent($grade_id, $standard_id, $division_id,"","", "","","", "", $enroll,"",$batch);
+        $student_data = $res['student_data'] = SearchStudent(
+            $grade_id,
+            $standard_id,
+            $division_id,
+            $sub_institute_id,
+            $syear,
+            "",
+            "",
+            "",
+            "",
+            $enroll,
+            "",
+            $batch
+        );
 
         $from_date = $selected_year . "-" . $month . "-01";
         $to_date = date('Y-m-t', strtotime($selected_year . "-" . $month));
