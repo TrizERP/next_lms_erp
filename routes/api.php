@@ -20,6 +20,7 @@ use App\Http\Controllers\api\TransportationApiController;
 use App\Http\Controllers\api\GeneralSetupApiController;
 use App\Http\Controllers\api\TeacherDailyReportApiController;
 use App\Http\Controllers\api\UserLogReportApiController;
+use App\Http\Controllers\api\InventoryApiController;
 use App\Http\Controllers\fees\fees_cancel\feesCancelController;
 use App\Http\Controllers\fees\fees_circular\feesCircularController;
 use App\Http\Controllers\fees\fees_circular\feesCircularMasterController;
@@ -158,6 +159,11 @@ Route::get('general-setup/{module}', [GeneralSetupApiController::class, 'index']
 Route::post('general-setup/{module}', [GeneralSetupApiController::class, 'store']);
 Route::match(['put', 'patch'], 'general-setup/{module}/{id}', [GeneralSetupApiController::class, 'update']);
 Route::delete('general-setup/{module}/{id}', [GeneralSetupApiController::class, 'destroy']);
+Route::get('inventory/{module}', [InventoryApiController::class, 'index'])->where('module', '^(?!reports$).+');
+Route::get('inventory/reports/{module}', [InventoryApiController::class, 'reportIndex']);
+Route::post('inventory/{module}', [InventoryApiController::class, 'store'])->where('module', '^(?!reports$).+');
+Route::match(['put', 'patch'], 'inventory/{module}/{id}', [InventoryApiController::class, 'update'])->where('module', '^(?!reports$).+');
+Route::delete('inventory/{module}/{id}', [InventoryApiController::class, 'destroy'])->where('module', '^(?!reports$).+');
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
 Route::post('fees-cancel/search', [feesCancelController::class, 'search']);
 
