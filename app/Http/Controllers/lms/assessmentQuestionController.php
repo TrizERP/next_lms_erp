@@ -1563,7 +1563,8 @@ private function getReviewUrgency($curveData)
             $chapter_id = $request->get('chapter_id');
             $concept_id = $request->get('concept_id');
             $questionCount = (int) $request->get('question_count', 5);
-            $sub_institute_id = $request->session()->get('sub_institute_id');
+            // API/SPA clients (no server session) pass sub_institute_id explicitly.
+            $sub_institute_id = $request->get('sub_institute_id') ?: $request->session()->get('sub_institute_id');
 
             if (!$student_id) {
                 return response()->json([
@@ -1964,7 +1965,8 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
         try {
             $student_id = $request->get('student_id');
             $answers = $request->get('answers', []);
-            $sub_institute_id = $request->session()->get('sub_institute_id');
+            // API/SPA clients (no server session) pass sub_institute_id explicitly.
+            $sub_institute_id = $request->get('sub_institute_id') ?: $request->session()->get('sub_institute_id');
 
             \Log::info('Submit Practice Request:', [
                 'student_id' => $student_id,
@@ -2256,7 +2258,8 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
     {
         $student_id = $request->get('student_id');
         $limit = (int) $request->get('limit', 10);
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        // API/SPA clients (no server session) pass sub_institute_id explicitly.
+        $sub_institute_id = $request->get('sub_institute_id') ?: $request->session()->get('sub_institute_id');
 
         if (!$student_id) {
             return response()->json([
@@ -2318,7 +2321,8 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
     public function getSpacedRepetition(Request $request)
     {
         $student_id = $request->get('student_id');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        // API/SPA clients (no server session) pass sub_institute_id explicitly.
+        $sub_institute_id = $request->get('sub_institute_id') ?: $request->session()->get('sub_institute_id');
 
         if (!$student_id) {
             return response()->json([

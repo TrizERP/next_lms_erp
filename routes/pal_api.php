@@ -1,7 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\PAL\PALAPIController;
+use App\Http\Controllers\api\PAL\PALAPIController;
 
 /*
 |--------------------------------------------------------------------------
@@ -12,9 +12,13 @@ use App\Http\Controllers\Api\PAL\PALAPIController;
 | These APIs are designed for data-agnostic operation - data provided
 | by backend team via database, services consume via models
 |
+| Secured by the `pal.auth` middleware: central JWT authentication plus
+| per-learner tenant/ownership scoping (students see only their own record;
+| staff/admins are scoped to their own institute/client).
+|
 */
 
-Route::prefix('api/pal')->group(function () {
+Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
     
     // ==================== INTELLIGENCE LAYER ====================
     
