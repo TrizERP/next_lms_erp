@@ -12,38 +12,51 @@ use Illuminate\Support\Facades\Log;
 class TelemetryService
 {
     /**
-     * Process xAPI statement
-     * @param array $statement
+     * Process an xAPI statement for an authenticated learner.
+     *
+     * The learner id is supplied by the controller (already ownership-checked by
+     * PalApiAuth) and stored as the numeric `actor_id`. The client-supplied xAPI
+     * `actor` (an mbox/account, often an email) is NOT trusted for identity — it
+     * is preserved only inside `raw_statement`.
+     *
+     * @param  array     $statement
+     * @param  int       $learnerId   authenticated learner (numeric)
+     * @param  int|null  $sessionId   optional numeric learning-session id
      * @return TelemetryEvent
      */
-    public function processStatement(array $statement): TelemetryEvent
+    public function processStatement(array $statement, int $learnerId, ?int $sessionId = null): TelemetryEvent
     {
         $normalized = $this->normalizeStatement($statement);
-        
+
         return TelemetryEvent::create([
-            'actor_id' => $normalized['actor'],
+            'actor_id' => $learnerId,
+            'session_id' => $sessionId,
             'verb' => $normalized['verb'],
             'object_id' => $normalized['object'],
             'context_id' => $normalized['context'],
             'result' => $normalized['result'],
+            'duration_seconds' => $normalized['duration_seconds'],
             'raw_statement' => $statement,
             'timestamp' => $normalized['timestamp'],
         ]);
     }
 
     /**
-     * Process multiple statements in batch
-     * @param array $statements
+     * Process multiple statements in batch for one authenticated learner.
+     *
+     * @param  array     $statements
+     * @param  int       $learnerId
+     * @param  int|null  $sessionId
      * @return array
      */
-    public function processBatch(array $statements): array
+    public function processBatch(array $statements, int $learnerId, ?int $sessionId = null): array
     {
         $processed = 0;
         $failed = 0;
 
         foreach ($statements as $statement) {
             try {
-                $this->processStatement($statement);
+                $this->processStatement((array) $statement, $learnerId, $sessionId);
                 $processed++;
             } catch (\Exception $e) {
                 Log::error('xAPI statement processing failed', [
@@ -66,7 +79,7 @@ class TelemetryService
      */
     public function getSessionSummary(int $sessionId): array
     {
-        $events = TelemetryEvent::where('context_id', $sessionId)->get();
+        $events = TelemetryEvent::where('session_id', $sessionId)->get();
 
         return [
             'session_id' => $sessionId,
@@ -102,8 +115,8 @@ class TelemetryService
             'period' => $period,
             'total_time_seconds' => $events->sum('duration_seconds'),
             'total_events' => $events->count(),
-            'avg_session_time' => $events->count() > 0 
-                ? $events->sum('duration_seconds') / $events->groupBy('context_id')->count() 
+            'avg_session_time' => $events->count() > 0
+                ? $events->sum('duration_seconds') / max(1, $events->groupBy('session_id')->count())
                 : 0,
             'time_by_verb' => $events->groupBy('verb')
                 ->map(fn($g) => $g->sum('duration_seconds'))
@@ -146,13 +159,38 @@ class TelemetryService
     protected function normalizeStatement(array $statement): array
     {
         return [
-            'actor' => $statement['actor']['mbox'] ?? $statement['actor']['account'] ?? null,
             'verb' => $this->normalizeVerb($statement['verb']['id'] ?? ''),
             'object' => $statement['object']['id'] ?? null,
             'context' => $statement['context']['registration'] ?? null,
             'result' => $statement['result'] ?? null,
+            'duration_seconds' => $this->extractDurationSeconds($statement['result'] ?? null),
             'timestamp' => $statement['timestamp'] ?? now(),
         ];
+    }
+
+    /**
+     * Best-effort duration in seconds from an xAPI result: a numeric
+     * `duration_seconds`, or an ISO-8601 `duration` (e.g. "PT1M30S"). Returns 0
+     * when absent or unparseable.
+     */
+    protected function extractDurationSeconds($result): int
+    {
+        if (! is_array($result)) {
+            return 0;
+        }
+        if (isset($result['duration_seconds']) && is_numeric($result['duration_seconds'])) {
+            return max(0, (int) $result['duration_seconds']);
+        }
+        $duration = $result['duration'] ?? null;
+        if (is_string($duration) && $duration !== '') {
+            try {
+                $interval = new \DateInterval($duration);
+                return ($interval->d * 86400) + ($interval->h * 3600) + ($interval->i * 60) + $interval->s;
+            } catch (\Throwable $e) {
+                return 0;
+            }
+        }
+        return 0;
     }
 
     protected function normalizeVerb(string $verb): string

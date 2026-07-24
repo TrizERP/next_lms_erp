@@ -156,6 +156,7 @@ class TelemetryEvent extends Model
     
     protected $fillable = [
         'actor_id',
+        'session_id',
         'verb',
         'object_id',
         'context_id',
@@ -164,8 +165,8 @@ class TelemetryEvent extends Model
         'timestamp',
         'duration_seconds',
     ];
-    
-    protected $casts = ['result' => 'array', 'raw_statement' => 'array', 'duration_seconds' => 'integer'];
+
+    protected $casts = ['session_id' => 'integer', 'result' => 'array', 'raw_statement' => 'array', 'duration_seconds' => 'integer'];
 }
 
 class Reflection extends Model

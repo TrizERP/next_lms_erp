@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\api\PAL\PALAPIController;
+use App\Http\Controllers\api\PAL\PalWorkspaceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -19,7 +20,16 @@ use App\Http\Controllers\api\PAL\PALAPIController;
 */
 
 Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
-    
+
+    // ==================== WORKSPACE (student PAL landing) ====================
+    // Stateless replacement for the legacy /lms/pal web flow. The literal
+    // /workspace/students route is declared before the {learnerId} wildcard,
+    // and {learnerId} is constrained to digits so the two never collide.
+    Route::get('/workspace/students', [PalWorkspaceController::class, 'students']);
+    Route::get('/workspace/preview', [PalWorkspaceController::class, 'preview']);
+    Route::get('/workspace/{learnerId}', [PalWorkspaceController::class, 'workspace'])
+        ->where('learnerId', '[0-9]+');
+
     // ==================== INTELLIGENCE LAYER ====================
     
     // Learner State APIs
