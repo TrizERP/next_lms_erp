@@ -84,6 +84,7 @@ Route::get('question-mapping-levels', [ApiLmsCourseController::class, 'getQuesti
 Route::post('lms-chapters/store', [ApiLmsCourseController::class, 'storeChapter']);
 Route::post('lms-create-content', [ApiLmsCourseController::class, 'createContent']);
 Route::post('lms-store-content', [ApiLmsCourseController::class, 'storeContent']);
+Route::post('lms-chapter-content/upload', [ApiLmsCourseController::class, 'uploadContent']);
 Route::post('lms-content-mapping-values', [ApiLmsCourseController::class, 'getContentMappingValues']);
 Route::post('lms-store-subject', [ApiLmsCourseController::class, 'storeSubject']);
 Route::post('lms/gamma-content-master', [\App\Http\Controllers\lms\contentController::class, 'storeGammaContent']);
@@ -93,6 +94,19 @@ Route::post('ai-sop/generate', [AiSopGenerationController::class, 'generate']);
 Route::post('ai-sop/store', [AiSopGenerationController::class, 'store']);
 Route::post('lms-homework/get-subjects', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'getSubjects']);
 Route::post('lms-homework/get-chapters', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'getChapters']);
+// Student Homework (assign) + Student Homework Report
+Route::post('lms-homework/list', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'index']);
+Route::post('lms-homework/store', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'store']);
+Route::post('lms-homework/show/{id}', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'show']);
+Route::post('lms-homework/update/{id}', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'update']);
+Route::post('lms-homework/delete/{id}', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'destroy']);
+Route::post('lms-homework/bulk-delete', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'bulkDelete']);
+Route::post('lms-homework/students', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'studentsList']);
+Route::post('lms-homework/homework-subjects', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'homeworkSubjects']);
+// Homework Submission (entry) + Student Homework Submission Report
+Route::post('lms-homework/submission-list', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionList']);
+Route::post('lms-homework/submission-store', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionStore']);
+Route::post('lms-homework/submission-report', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionReport']);
 
 Route::controller(admissionEnquiryAPIController::class)->group(function () {
     Route::get('admission_enquiry', 'index');

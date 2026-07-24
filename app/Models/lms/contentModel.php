@@ -32,6 +32,8 @@ class contentModel extends Model
         'show_hide',
         'meta_tags',
         'content_category',
+        'content_type',
+        'presentation_type',
         'syear',
         'sub_institute_id',
         'restrict_date',
