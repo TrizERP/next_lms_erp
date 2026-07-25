@@ -53,8 +53,9 @@ class studentReportController extends Controller
 
     public function edit(Request $request,$id)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        // Prefer request params (headless type=API calls) and fall back to session.
+        $sub_institute_id = $request->input('sub_institute_id') ?: $request->session()->get('sub_institute_id');
+        $syear = $request->input('syear') ?: $request->session()->get('syear');
 
         /* START Get Student Details */
         $student_id_arr = [

@@ -36,20 +36,22 @@ class lmsActivityStreamController extends Controller
     {
         $type = $request->input('type');
       
+        // Prefer request params (headless API/type=API calls) and fall back to
+        // the Laravel session for classic Blade requests.
         $request=$request->merge([
-            'sub_institute_id' => session()->get('sub_institute_id'),
-            'syear' => session()->get('syear'),
-            'user_id' => session()->get('user_id'),
-            'user_profile' => session()->get('user_profile_name'),
-            'user_profile_id'=> session()->get('user_profile_id'),
-            'term_id'=> session()->get('term_id'),
+            'sub_institute_id' => $request->input('sub_institute_id') ?: session()->get('sub_institute_id'),
+            'syear' => $request->input('syear') ?: session()->get('syear'),
+            'user_id' => $request->input('user_id') ?: session()->get('user_id'),
+            'user_profile' => $request->input('user_profile') ?: session()->get('user_profile_name'),
+            'user_profile_id'=> $request->input('user_profile_id') ?: session()->get('user_profile_id'),
+            'term_id'=> $request->input('term_id') ?: session()->get('term_id'),
         ]);
         // echo "<pre>";print_r(session()->all());exit;
         $res['todaytitle'] = date('l, M d, Y');
         $res['upcoming'] = $this->upcomingActivity($request);
         $res['today'] = $this->todayActivity($request);
         $res['recent'] = $this->recentActivity($request);
-        $res['checkList'] = DB::table('task')->where('TASK_ALLOCATED',session()->get('user_id'))->where('task_type','=','Daily Task')->where('TASK_DATE',date('Y-m-d'))->get()->toArray();
+        $res['checkList'] = DB::table('task')->where('TASK_ALLOCATED',$request->input('user_id'))->where('task_type','=','Daily Task')->where('TASK_DATE',date('Y-m-d'))->get()->toArray();
         // echo "<pre>";print_r($res);exit;
         return is_mobile($type, 'lms/newActivityStream', $res, "view");
     }
