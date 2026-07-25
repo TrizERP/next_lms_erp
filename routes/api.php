@@ -204,3 +204,46 @@ Route::controller(UserManagementApiController::class)->group(function () {
 Route::get('teacher-transfer', [\App\Http\Controllers\api\TeacherTransferApiController::class, 'index']);
 Route::post('teacher-transfer', [\App\Http\Controllers\api\TeacherTransferApiController::class, 'store']);
 
+// Complaint module - stateless JSON entry points for the Next.js frontend.
+// Kept separate from frontdesk\complaintController, which is unchanged and still
+// serves the Blade screens. The delete route is declared before the {id} update
+// route so it is not swallowed by it.
+Route::get('complaints', [\App\Http\Controllers\api\ComplaintApiController::class, 'index']);
+Route::post('complaints', [\App\Http\Controllers\api\ComplaintApiController::class, 'store']);
+Route::post('complaints/{id}/delete', [\App\Http\Controllers\api\ComplaintApiController::class, 'destroy']);
+Route::post('complaints/{id}', [\App\Http\Controllers\api\ComplaintApiController::class, 'update']);
+
+// Consent module - stateless JSON entry points for the Next.js frontend.
+// Kept separate from the App\Http\Controllers\consent controllers, which are
+// unchanged and still serve the Blade screens.
+Route::get('consents/students', [\App\Http\Controllers\api\ConsentApiController::class, 'students']);
+Route::get('consents', [\App\Http\Controllers\api\ConsentApiController::class, 'index']);
+Route::post('consents/delete', [\App\Http\Controllers\api\ConsentApiController::class, 'destroy']);
+Route::post('consents', [\App\Http\Controllers\api\ConsentApiController::class, 'store']);
+
+// Front desk module - stateless JSON entry points for the Next.js frontend.
+// Kept separate from frontdesk\frontdeskController, which is unchanged and still
+// serves the Blade screens. `report` and `{id}/delete` are declared before the
+// `{id}` routes so they are not swallowed by them.
+Route::get('front-desk/report', [\App\Http\Controllers\api\FrontDeskApiController::class, 'report']);
+Route::get('front-desk', [\App\Http\Controllers\api\FrontDeskApiController::class, 'index']);
+Route::get('front-desk/{id}', [\App\Http\Controllers\api\FrontDeskApiController::class, 'show']);
+Route::post('front-desk', [\App\Http\Controllers\api\FrontDeskApiController::class, 'store']);
+Route::post('front-desk/{id}/delete', [\App\Http\Controllers\api\FrontDeskApiController::class, 'destroy']);
+Route::post('front-desk/{id}', [\App\Http\Controllers\api\FrontDeskApiController::class, 'update']);
+
+// Petty cash module - stateless JSON entry points for the Next.js frontend.
+// Kept separate from the frontdesk PettyCash* controllers, which are unchanged
+// and still serve the Blade screens. The literal `heads` and `report` segments
+// are declared before the `{id}` routes so they are not swallowed by them.
+Route::get('petty-cash/heads', [\App\Http\Controllers\api\PettyCashApiController::class, 'headIndex']);
+Route::post('petty-cash/heads', [\App\Http\Controllers\api\PettyCashApiController::class, 'headStore']);
+Route::post('petty-cash/heads/{id}/delete', [\App\Http\Controllers\api\PettyCashApiController::class, 'headDestroy']);
+Route::post('petty-cash/heads/{id}', [\App\Http\Controllers\api\PettyCashApiController::class, 'headUpdate']);
+Route::get('petty-cash/report', [\App\Http\Controllers\api\PettyCashApiController::class, 'report']);
+Route::get('petty-cash', [\App\Http\Controllers\api\PettyCashApiController::class, 'index']);
+Route::get('petty-cash/{id}', [\App\Http\Controllers\api\PettyCashApiController::class, 'show']);
+Route::post('petty-cash', [\App\Http\Controllers\api\PettyCashApiController::class, 'store']);
+Route::post('petty-cash/{id}/delete', [\App\Http\Controllers\api\PettyCashApiController::class, 'destroy']);
+Route::post('petty-cash/{id}', [\App\Http\Controllers\api\PettyCashApiController::class, 'update']);
+
