@@ -30,10 +30,11 @@ class lmsLeaderboardController extends Controller
 
     public function getData($request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $user_profile_id = $request->session()->get('user_profile_id');
-        $user_id = $request->session()->get('user_id');
-        $syear = $request->session()->get('syear');
+        // Prefer request params (headless type=API calls) and fall back to session.
+        $sub_institute_id = $request->input('sub_institute_id') ?: $request->session()->get('sub_institute_id');
+        $user_profile_id = $request->input('user_profile_id') ?: $request->session()->get('user_profile_id');
+        $user_id = $request->input('user_id') ?: $request->session()->get('user_id');
+        $syear = $request->input('syear') ?: $request->session()->get('syear');
 
         $data = $modulewise_points = [];
 

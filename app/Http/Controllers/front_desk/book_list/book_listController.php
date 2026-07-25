@@ -29,21 +29,21 @@ class book_listController extends Controller
             }
         }
 
-        $school_data['data'] = $this->getData();
+        $school_data['data'] = $this->getData($request);
 
         $type = $request->input('type');
 
         return is_mobile($type, "front_desk/book_list/show", $school_data, "view");
     }
 
-    function getData()
+    function getData($request = null)
     {
-
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
-        $user_profile_id = session()->get('user_profile_id');
-        $user_profile_name = session()->get('user_profile_name');
-        $user_id = session()->get('user_id');
+        // Prefer request params (headless type=API calls) and fall back to session.
+        $sub_institute_id = ($request ? $request->input('sub_institute_id') : null) ?: session()->get('sub_institute_id');
+        $syear = ($request ? $request->input('syear') : null) ?: session()->get('syear');
+        $user_profile_id = ($request ? $request->input('user_profile_id') : null) ?: session()->get('user_profile_id');
+        $user_profile_name = ($request ? ($request->input('user_profile') ?: $request->input('user_profile_name')) : null) ?: session()->get('user_profile_name');
+        $user_id = ($request ? $request->input('user_id') : null) ?: session()->get('user_id');
 
         if (strtoupper($user_profile_name) == 'TEACHER') {
 
@@ -155,20 +155,25 @@ class book_listController extends Controller
             $file_name = "attachment_".$name.'.'.$ext; // 2025-02-18 changes spelling at attechment to attachment
             $path = $file->storeAs('public/book_list/', $file_name);
         }
+        // Prefer request params (headless type=API) and fall back to session;
+        // use $request->input with defaults so a missing key can't 500 and the
+        // NOT NULL columns (message/date_) always receive a value.
         $values = [
-            'syear'            => session()->get('syear'),
-            'standard_id'      => $_REQUEST['standard'],
-            'title'            => $_REQUEST['title'],
-            'message'          => $_REQUEST['message'],
+            'syear'            => $request->input('syear') ?: session()->get('syear'),
+            'standard_id'      => $request->input('standard') ?: 0,
+            'title'            => $request->input('title'),
+            'message'          => $request->input('message') ?? '',
             'file_name'        => $file_name,
-            'link'             => $_REQUEST['link'],
-            'date_'            => $_REQUEST['date_'],
-            'sub_institute_id' => session()->get('sub_institute_id'),
+            'link'             => $request->input('link') ?? '',
+            'date_'            => $request->input('date_') ?: now()->format('Y-m-d'),
+            'sub_institute_id' => $request->input('sub_institute_id') ?: session()->get('sub_institute_id'),
             'created_at'       => now(),
             'updated_at'       => now(),
-            'subject_id'       => $_REQUEST['subject'],
-            'chapter_id'       => $_REQUEST['chapter'],
-            'topic_id'         => $_REQUEST['topic'],
+            // chapter_id / topic_id are NOT NULL int columns (default 0) — coerce
+            // empty (no chapter/topic selected) to 0 instead of null.
+            'subject_id'       => $request->input('subject') ?: 0,
+            'chapter_id'       => $request->input('chapter') ?: 0,
+            'topic_id'         => $request->input('topic') ?: 0,
         ];
         DB::table('book_list')->insert($values);
 
@@ -232,7 +237,8 @@ class book_listController extends Controller
     {
         $sub_id = $request->input("sub_id");
         $std_id = $request->input("std_id");
-        $sub_institute_id = $request->session()->get("sub_institute_id");
+        // Prefer request param (headless type=API calls) and fall back to session.
+        $sub_institute_id = $request->input("sub_institute_id") ?: $request->session()->get("sub_institute_id");
 
         return chapterModel::where([
             'chapter_master.sub_institute_id' => $sub_institute_id,
