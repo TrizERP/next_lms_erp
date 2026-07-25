@@ -328,7 +328,8 @@ class lmsPortfolioController extends Controller
     {
         $chapter_id = $request->input("chapter_id");
         $chapter_ids = explode(",", $chapter_id);
-        $sub_institute_id = $request->session()->get("sub_institute_id");
+        // Prefer request param (headless type=API calls) and fall back to session.
+        $sub_institute_id = $request->input("sub_institute_id") ?: $request->session()->get("sub_institute_id");
 
         // Add LMS conditional logic - same as used in questionpaperController
         $getIsLms = DB::table('school_setup')
