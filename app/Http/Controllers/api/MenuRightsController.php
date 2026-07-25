@@ -29,6 +29,12 @@ class MenuRightsController extends Controller
         $user_profile_id = $request->get('user_profile_id');
         $user_profile_name = $request->get('user_profile_name');
 
+        // Initialize so branches with no sub/child menus don't throw
+        // "Undefined variable" when building the response (menu 500 fix).
+        $finalSubMenu = [];
+        $finalSubChildMenu = [];
+        $finalQuickMenu = [];
+
         $routeName = Route::currentRouteName();
         $route = explode('.', $routeName);
 

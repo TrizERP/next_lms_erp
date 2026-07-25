@@ -42,7 +42,9 @@ class onlineExamController extends Controller
         }
 
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        // Request-with-session fallback so token/API clients (no Laravel session)
+        // can load a paper to attempt.
+        $sub_institute_id = $request->get('sub_institute_id') ?: $request->session()->get('sub_institute_id');
         $questionpaper_id = $request->get('questionpaper_id');
         $data['questionpaper_data'] = questionpaperModel::find($questionpaper_id)->toArray();
 
@@ -76,8 +78,9 @@ class onlineExamController extends Controller
         //Clear session for timer
         Session::forget('session_quiz');
 
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $user_id = $request->session()->get('user_id');
+        // Request-with-session fallback so token/API clients can submit.
+        $sub_institute_id = $request->get('sub_institute_id') ?: $request->session()->get('sub_institute_id');
+        $user_id = $request->get('user_id') ?: $request->session()->get('user_id');
 
         //$questionpaper_details = $this->get_questionpaper_details($request->get('questionpaper_id'));
         $result = $this->get_calculate_marks($request);
@@ -175,6 +178,21 @@ class onlineExamController extends Controller
         //     lmsOnlineExamAnswerModel::insert($online_exam_answer);        
         // }
         //END Insert into lms_online_exam_answer table
+
+        // API/JSON clients get the ids back (no cross-origin redirect a browser
+        // SPA can't follow); web keeps the redirect to the result page.
+        $type = $request->input('type');
+        if ($type == 'API' || $type == 'JSON') {
+            return response()->json([
+                'status_code'       => 1,
+                'message'           => 'Exam submitted successfully',
+                'questionpaper_id'  => $request->get('questionpaper_id'),
+                'online_exam_id'    => $online_exam_id,
+                'total_right'       => $result['total_right_ans'],
+                'total_wrong'       => $result['total_wrong_ans'],
+                'obtain_marks'      => $result['obtain_marks'],
+            ]);
+        }
 
         //return is_mobile($type,'lms/online_exam_result',$res,"view");
         return redirect()->route('online_exam.show',[$request->get('questionpaper_id'),"online_exam_id"=> $online_exam_id]);
@@ -348,8 +366,10 @@ class onlineExamController extends Controller
         $questionpaper_id = $id;
 
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $user_id = $request->session()->get('user_id');
+        // Request-with-session fallback: pass the student's user_id to view a
+        // specific learner's result headlessly (staff reviewing / SPA).
+        $sub_institute_id = $request->get('sub_institute_id') ?: $request->session()->get('sub_institute_id');
+        $user_id = $request->get('user_id') ?: $request->session()->get('user_id');
         $online_exam_id = $request->get('online_exam_id');
         $data['user_id'] = $online_exam_id;
 
