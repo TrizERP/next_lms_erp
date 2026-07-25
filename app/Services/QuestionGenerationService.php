@@ -29,6 +29,28 @@ class QuestionGenerationService
     // Bloom's taxonomy order used for quota allocation.
     protected const BLOOM_LEVELS = ['Remember', 'Understand', 'Apply', 'Analyze', 'Evaluate', 'Create'];
 
+    /**
+     * lms_mapping_type parent groups used to auto-tag generated questions in
+     * lms_question_mapping. Same hardcoded ids the map:question command uses.
+     */
+    protected const DOK_MAPPING_TYPE_ID   = 9;  // "Depth of Knowledge (Easy, Medium, Hard)"
+    protected const BLOOM_MAPPING_TYPE_ID = 82; // "Blooms Taxonomy (...)"
+
+    /**
+     * Teacher-facing DOK labels by numeric level, matched case-insensitively
+     * against the children of parent 9. Level 4 tries the preferred names first
+     * and falls back to Hard until a dedicated level-4 row exists in the table.
+     */
+    protected const DOK_LABEL_CANDIDATES = [
+        1 => ['easy'],
+        2 => ['medium'],
+        3 => ['hard'],
+        4 => ['challenge', 'advanced', 'expert', 'extended thinking', 'very hard', 'hard'],
+    ];
+
+    /** @var array|null Per-request cache of DOK/Bloom child rows from lms_mapping_type. */
+    protected ?array $mappingCatalog = null;
+
     // DoK / difficulty / marks ladder, keyed by Bloom level.
     protected const BLOOM_META = [
         'Remember' => ['dok' => 1, 'difficulty' => 'Easy',   'points' => 1, 'sub_type' => 'Very Short Answer'],
@@ -641,6 +663,8 @@ literal column name. Write no other keys.
      `knowledge_refs`     one or more exact `knowledge` values from `knowledge_items`
      `ability_ref`        exactly one exact `ability` value, or null for pure recall
      `misconception_refs` exact `misconception` values, or []
+     `competency_ref`     the exact `competency` value the item operationalises,
+                          or null when none applies (optional key)
    And `learning_outcome` is a JSON array of exact `outcome` strings.
    All refs must match the slice CHARACTER FOR CHARACTER. Never paraphrase a ref.
    Never invent a ref to satisfy a rule. An item you cannot ground with at least one
@@ -759,6 +783,30 @@ PROMPT;
             return $common . <<<PROMPT
 
 ## CONSTRUCTION RULES (MCQ)
+
+## CBSE TYPOLOGY (2025-26 board pattern — answer.sub_type, one per row)
+
+  "MCQ"              Stand-alone item. The default.
+  "Assertion-Reason" Understand, Analyze or Evaluate only. `question_title` carries
+                     "Assertion (A): ..." and "Reason (R): ..." on separate lines.
+                     Options are EXACTLY the four standard CBSE choices:
+                       A: Both A and R are true, and R is the correct explanation of A
+                       B: Both A and R are true, but R is not the correct explanation of A
+                       C: A is true but R is false
+                       D: A is false but R is true
+                     These fixed options are exempt from the forbidden-option,
+                     parallel-length and key-rotation rules below. Build A and R so a
+                     slice misconception leads to a predictable wrong option. At most
+                     ceil({$total} / 4) Assertion-Reason items per batch.
+  "Case-Based MCQ"   Apply or Analyze only. Put a 40-60 word stimulus in
+                     `answer.stimulus`, assembled ONLY from `evidence` or
+                     `real_world_applications`. The stem interrogates the stimulus —
+                     it must be unanswerable without reading it.
+
+Competency focus: CBSE papers weight ~50% of items as competency-focused
+(scenario-embedded, Assertion-Reason, or Case-Based). Let the quota's
+Apply/Analyze/Evaluate share carry that weight; keep Remember/Understand items as
+plain stand-alone MCQs unless Assertion-Reason fits naturally.
 
 question_title (the stem)
 - Self-contained: answerable without reading the options.
@@ -883,11 +931,12 @@ PROMPT;
       "answer": {
         "v": "ans-2.0",
         "question_type": "mcq",
-        "sub_type": "MCQ",
+        "sub_type": "MCQ|Assertion-Reason|Case-Based MCQ",
+        "competency_ref": "exact competency | null",
         "bloom_level": "Remember|Understand|Apply|Analyze|Evaluate|Create",
         "dok_level": 1,
         "difficulty": "Easy|Medium|Hard",
-        "stimulus": null,
+        "stimulus": "null, or 40-60 word stimulus (required for Case-Based MCQ)",
         "estimated_time_seconds": 70,
         "options": [
           {"label":"A","text":"...","is_correct":false,"distractor_type":"misconception|near_miss|overgeneral|plausible","misconception_ref":null,"knowledge_ref":null,"rationale":"..."},
@@ -994,7 +1043,8 @@ SCHEMA;
             "properties": {
               "v": { "const": "ans-2.0" },
               "question_type": { "const": "mcq" },
-              "sub_type": { "const": "MCQ" },
+              "sub_type": { "enum": ["MCQ", "Assertion-Reason", "Case-Based MCQ"] },
+              "competency_ref": { "type": ["string", "null"] },
               "bloom_level": { "enum": ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"] },
               "dok_level": { "enum": [1, 2, 3, 4] },
               "difficulty": { "enum": ["Easy", "Medium", "Hard"] },
@@ -1070,6 +1120,7 @@ SCHEMA;
               "v": { "const": "ans-2.0" },
               "question_type": { "const": "narrative" },
               "sub_type": { "enum": ["Very Short Answer", "Short Answer", "Long Answer", "Assertion Reason", "Case Study"] },
+              "competency_ref": { "type": ["string", "null"] },
               "bloom_level": { "enum": ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"] },
               "dok_level": { "enum": [1, 2, 3, 4] },
               "difficulty": { "enum": ["Easy", "Medium", "Hard"] },
@@ -1385,8 +1436,11 @@ SCHEMA;
             } else {
                 $ans = $row['answer'];
                 if ($type === 'mcq') {
-                    if (($ans['sub_type'] ?? null) !== 'MCQ') {
-                        $reason = "row {$i}: mcq sub_type must be MCQ";
+                    // CBSE 2025-26 select-response typologies.
+                    if (!in_array($ans['sub_type'] ?? null, ['MCQ', 'Assertion-Reason', 'Case-Based MCQ'], true)) {
+                        $reason = "row {$i}: mcq sub_type must be MCQ, Assertion-Reason or Case-Based MCQ";
+                    } elseif (($ans['sub_type'] ?? null) === 'Case-Based MCQ' && trim((string) ($ans['stimulus'] ?? '')) === '') {
+                        $reason = "row {$i}: Case-Based MCQ requires answer.stimulus";
                     } elseif (empty($ans['options']) || count($ans['options']) !== 4) {
                         $reason = "row {$i}: mcq must have exactly 4 options";
                     } elseif (empty($ans['correct_option']) || !in_array($ans['correct_option'], ['A','B','C','D'], true)) {
@@ -1433,10 +1487,89 @@ SCHEMA;
         ];
     }
 
+    /**
+     * Load (once per request) the active DOK and Bloom child rows from
+     * lms_mapping_type, keyed by lower-cased name.
+     */
+    protected function mappingCatalog(): array
+    {
+        if ($this->mappingCatalog !== null) {
+            return $this->mappingCatalog;
+        }
+
+        $catalog = ['dok' => [], 'bloom' => []];
+
+        $children = DB::table('lms_mapping_type')
+            ->whereIn('parent_id', [self::DOK_MAPPING_TYPE_ID, self::BLOOM_MAPPING_TYPE_ID])
+            ->where('status', 1)
+            ->get(['id', 'name', 'parent_id']);
+
+        foreach ($children as $child) {
+            $bucket = (int) $child->parent_id === self::DOK_MAPPING_TYPE_ID ? 'dok' : 'bloom';
+            $catalog[$bucket][mb_strtolower(trim($child->name))] = [
+                'id'   => (int) $child->id,
+                'name' => trim($child->name),
+            ];
+        }
+
+        return $this->mappingCatalog = $catalog;
+    }
+
+    /**
+     * Build lms_question_mapping rows (DOK + Bloom) for one inserted question,
+     * derived from the validated answer envelope. Rows follow the existing
+     * convention: mapping_type_id = parent group, mapping_value_id = child,
+     * reasons = child name.
+     */
+    protected function buildQuestionMappings(int $questionId, array $answer): array
+    {
+        $catalog = $this->mappingCatalog();
+        $rows = [];
+
+        // DOK: numeric level (1-4) -> teacher-facing label row under parent 9.
+        $dok = (int) ($answer['dok_level'] ?? 0);
+        if ($dok >= 1) {
+            $candidates = self::DOK_LABEL_CANDIDATES[min($dok, 4)] ?? [];
+            foreach ($candidates as $candidate) {
+                if (isset($catalog['dok'][$candidate])) {
+                    $rows[] = [
+                        'questionmaster_id' => $questionId,
+                        'mapping_type_id'   => self::DOK_MAPPING_TYPE_ID,
+                        'mapping_value_id'  => $catalog['dok'][$candidate]['id'],
+                        'reasons'           => $catalog['dok'][$candidate]['name'],
+                    ];
+                    break;
+                }
+            }
+        }
+
+        // Bloom: canonical level -> child row under parent 82. The table uses
+        // slightly different spellings (Analyse, Creating), so match on the
+        // first four letters: reme/unde/appl/anal/eval/crea are all distinct.
+        $bloom = mb_strtolower(trim((string) ($answer['bloom_level'] ?? '')));
+        if ($bloom !== '') {
+            $prefix = mb_substr($bloom, 0, 4);
+            foreach ($catalog['bloom'] as $name => $info) {
+                if (mb_substr($name, 0, 4) === $prefix) {
+                    $rows[] = [
+                        'questionmaster_id' => $questionId,
+                        'mapping_type_id'   => self::BLOOM_MAPPING_TYPE_ID,
+                        'mapping_value_id'  => $info['id'],
+                        'reasons'           => $info['name'],
+                    ];
+                    break;
+                }
+            }
+        }
+
+        return $rows;
+    }
+
     protected function persist(array $resp, string $type, array $ctx, array $meta): array
     {
         $insertedIds = [];
         $insertedQuestions = [];
+        $mappingRows = [];
         $skippedDup = 0;
         $conceptId = $ctx['concept_id'];
         $questionTypeId = $ctx['question_type_id'];
@@ -1511,7 +1644,13 @@ SCHEMA;
             if ($id) {
                 $insertedIds[] = $id;
                 $insertedQuestions[] = $this->questionPreview((int) $id, $row, $type);
+                // Auto-tag DOK + Bloom in lms_question_mapping from the answer envelope.
+                $mappingRows = array_merge($mappingRows, $this->buildQuestionMappings((int) $id, $answer));
             }
+        }
+
+        if (!empty($mappingRows)) {
+            DB::table('lms_question_mapping')->insert($mappingRows);
         }
 
         return [
@@ -1519,6 +1658,7 @@ SCHEMA;
             'skipped_duplicate' => $skippedDup,
             'ids'               => $insertedIds,
             'questions'         => $insertedQuestions,
+            'mappings_inserted' => count($mappingRows),
         ];
     }
 
@@ -1744,6 +1884,7 @@ SCHEMA;
                 'requested'             => $requested,
                 'generated'             => $generated,
                 'inserted'              => $persist['inserted'],
+                'mappings_inserted'     => $persist['mappings_inserted'] ?? 0,
                 'skipped_duplicate'     => $persist['skipped_duplicate'],
                 'skipped_invalid'       => count($invalidReasons),
                 'invalid_reasons'       => $invalidReasons,

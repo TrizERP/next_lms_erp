@@ -74,7 +74,7 @@ class LearnerStateEngine
     {
         $session = \App\Models\PAL\LearningSession::find($sessionId);
         
-        if (!$session || $session->learner_id !== $learnerId) {
+        if (!$session || (int) $session->learner_id !== $learnerId) {
             return ['error' => 'Session not found'];
         }
 
@@ -295,9 +295,9 @@ class LearnerStateEngine
             'subject_id' => $subjectId,
             'concepts' => $competencies,
             'overall_mastery' => $competencies->avg('mastery_score') ?? 0,
-            ' mastered_concepts' => $competencies->where('status', 'mastered')->count(),
-            ' learning_concepts' => $competencies->where('status', 'learning')->count(),
-            ' new_concepts' => $competencies->where('status', 'new')->count(),
+            'mastered_concepts' => $competencies->where('status', 'mastered')->count(),
+            'learning_concepts' => $competencies->where('status', 'learning')->count(),
+            'new_concepts' => $competencies->where('status', 'new')->count(),
         ];
     }
 

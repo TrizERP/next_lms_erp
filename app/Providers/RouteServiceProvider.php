@@ -106,6 +106,8 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapSkillRoutes();
 
         $this->mapCustomModuleApiRoutes();
+
+        $this->mapHostelApiRoutes();
     }
 
     /**
@@ -128,6 +130,14 @@ class RouteServiceProvider extends ServiceProvider
         Route::namespace($this->namespace)
             ->middleware('web')
             ->group(base_path('routes/custom_module.php'));
+    }
+
+    protected function mapHostelApiRoutes()
+    {
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/api_hostel.php'));
     }
 
     /**

@@ -95,7 +95,7 @@ class BehavioralAnalyticsService
     {
         $session = LearningSession::find($sessionId);
         
-        if (!$session || $session->learner_id !== $learnerId) {
+        if (!$session || (int) $session->learner_id !== $learnerId) {
             return ['error' => 'Session not found'];
         }
 

@@ -25,7 +25,9 @@ return [
     'api_type' => env('DEEPSEEK_API_TYPE', 'DEEPSEEK_API_KEY'),
 
     // Pinned prompt / envelope versions (see question-generation prompt pack).
-    'prompt_version' => 'qgen-sys-2.0',
+    // 2.1: CBSE 2025-26 typology (Assertion-Reason / Case-Based MCQ sub_types)
+    //      + optional competency_ref provenance.
+    'prompt_version' => 'qgen-sys-2.1',
     'answer_envelope_version' => 'ans-2.0',
 
     // Runtime controls.

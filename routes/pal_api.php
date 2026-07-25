@@ -1,7 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\PAL\PALAPIController;
+use App\Http\Controllers\api\PAL\PALAPIController;
+use App\Http\Controllers\api\PAL\PalWorkspaceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -12,10 +13,23 @@ use App\Http\Controllers\Api\PAL\PALAPIController;
 | These APIs are designed for data-agnostic operation - data provided
 | by backend team via database, services consume via models
 |
+| Secured by the `pal.auth` middleware: central JWT authentication plus
+| per-learner tenant/ownership scoping (students see only their own record;
+| staff/admins are scoped to their own institute/client).
+|
 */
 
-Route::prefix('api/pal')->group(function () {
-    
+Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
+
+    // ==================== WORKSPACE (student PAL landing) ====================
+    // Stateless replacement for the legacy /lms/pal web flow. The literal
+    // /workspace/students route is declared before the {learnerId} wildcard,
+    // and {learnerId} is constrained to digits so the two never collide.
+    Route::get('/workspace/students', [PalWorkspaceController::class, 'students']);
+    Route::get('/workspace/preview', [PalWorkspaceController::class, 'preview']);
+    Route::get('/workspace/{learnerId}', [PalWorkspaceController::class, 'workspace'])
+        ->where('learnerId', '[0-9]+');
+
     // ==================== INTELLIGENCE LAYER ====================
     
     // Learner State APIs

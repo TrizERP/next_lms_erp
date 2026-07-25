@@ -75,5 +75,6 @@ class Kernel extends HttpKernel
         'jwt' => \GenTux\Jwt\Http\JwtMiddleware::class,
         'check_permissions' =>\App\Http\Middleware\checkPermission::class,
         'api.session' => \App\Http\Middleware\ApiSessionHydrator::class,
+        'pal.auth' => \App\Http\Middleware\PalApiAuth::class,
     ];
 }

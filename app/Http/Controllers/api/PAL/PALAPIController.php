@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\PAL;
+namespace App\Http\Controllers\api\PAL;
 
 use App\Http\Controllers\Controller;
 use App\Services\PAL\Intelligence\IntelligenceService;
@@ -10,6 +10,7 @@ use App\Services\PAL\Telemetry\TelemetryService;
 use App\Services\PAL\AI\AIOrchestrationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
 
 /**
  * PAL V4 API Controller
@@ -315,12 +316,49 @@ class PALAPIController extends Controller
             'device_type',
         ]);
 
+        // Never trust the client-supplied sub_institute_id: scope content to the
+        // (already ownership-verified) learner's own institute so a caller can't
+        // enumerate another tenant's content by passing a foreign institute id.
+        $params['sub_institute_id'] = $this->resolveContentInstitute(
+            $request->attributes->get('pal_auth'),
+            (int) $request->input('learner_id'),
+            (int) $request->input('sub_institute_id')
+        );
+
         $result = $engine->getSuggestions($params);
 
         return response()->json([
             'success' => true,
             'data' => $result,
         ]);
+    }
+
+    /**
+     * Resolve the institute whose content a learner-scoped request may read.
+     *
+     * The multi-client super admin (is_admin === 2) may target an institute
+     * explicitly; everyone else is pinned to the learner's own institute (the
+     * learner id is already ownership-verified by PalApiAuth), falling back to
+     * the caller's own institute — never the raw client-supplied value.
+     */
+    private function resolveContentInstitute(?array $auth, int $learnerId, int $requestedSub): int
+    {
+        if ((int) ($auth['is_admin'] ?? 0) === 2 && $requestedSub > 0) {
+            return $requestedSub;
+        }
+
+        $learnerSub = DB::table('tblstudent')->where('id', $learnerId)->value('sub_institute_id')
+            ?? DB::table('tbluser')->where('id', $learnerId)->value('sub_institute_id');
+        if ($learnerSub !== null && $learnerSub !== '') {
+            return (int) $learnerSub;
+        }
+
+        $callerInstitutes = array_values(array_filter(
+            array_map('trim', explode(',', (string) ($auth['sub_institute_id'] ?? ''))),
+            'strlen'
+        ));
+        $callerFirst = (int) ($callerInstitutes[0] ?? 0);
+        return $callerFirst > 0 ? $callerFirst : $requestedSub;
     }
 
     /**
@@ -379,9 +417,18 @@ class PALAPIController extends Controller
      */
     public function processxAPI(Request $request): JsonResponse
     {
-        $statement = $request->all();
-        
-        $event = $this->telemetry->processStatement($statement);
+        // learner_id is required so PalApiAuth can ownership-scope the ingest,
+        // and so the event is attributed to a numeric learner (not the mbox).
+        $request->validate([
+            'learner_id' => 'required|integer',
+            'session_id' => 'nullable|integer',
+        ]);
+
+        $event = $this->telemetry->processStatement(
+            $request->all(),
+            (int) $request->input('learner_id'),
+            $request->filled('session_id') ? (int) $request->input('session_id') : null
+        );
 
         return response()->json([
             'success' => true,
@@ -395,9 +442,17 @@ class PALAPIController extends Controller
      */
     public function processxAPIBatch(Request $request): JsonResponse
     {
-        $statements = $request->get('statements', []);
-        
-        $result = $this->telemetry->processBatch($statements);
+        $request->validate([
+            'learner_id' => 'required|integer',
+            'session_id' => 'nullable|integer',
+            'statements' => 'required|array',
+        ]);
+
+        $result = $this->telemetry->processBatch(
+            $request->get('statements', []),
+            (int) $request->input('learner_id'),
+            $request->filled('session_id') ? (int) $request->input('session_id') : null
+        );
 
         return response()->json([
             'success' => true,
@@ -547,6 +602,15 @@ class PALAPIController extends Controller
      */
     public function getTeacherInsights(Request $request): JsonResponse
     {
+        // Role-based access: teacher insights are a staff/admin tool.
+        $auth = $request->attributes->get('pal_auth');
+        if (($auth['role'] ?? null) === 'student') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Teacher insights are only available to staff and administrators.',
+            ], 403);
+        }
+
         $request->validate([
             'learner_id' => 'required|integer',
             'classroom_id' => 'required|integer',

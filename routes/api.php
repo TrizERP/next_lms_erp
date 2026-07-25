@@ -14,6 +14,13 @@ use App\Http\Controllers\api\AiSopGenerationController;
 use App\Http\Controllers\api\admissionEnquiryAPIController;
 use App\Http\Controllers\api\onlineAdmissionConfirmAPIController;
 use App\Http\Controllers\api\admissionRegistrationAPIController;
+use App\Http\Controllers\api\ClassTeacherApiController;
+use App\Http\Controllers\api\AcademicSetupApiController;
+use App\Http\Controllers\api\TransportationApiController;
+use App\Http\Controllers\api\GeneralSetupApiController;
+use App\Http\Controllers\api\TeacherDailyReportApiController;
+use App\Http\Controllers\api\UserLogReportApiController;
+use App\Http\Controllers\api\InventoryApiController;
 use App\Http\Controllers\fees\fees_cancel\feesCancelController;
 use App\Http\Controllers\fees\fees_circular\feesCircularController;
 use App\Http\Controllers\fees\fees_circular\feesCircularMasterController;
@@ -80,9 +87,11 @@ Route::post('lms-chapter-concepts', [ApiLmsCourseController::class, 'getChapterC
 Route::post('lms-chapters', [ApiLmsCourseController::class, 'chapters']);
 Route::post('lms-chapter-content', [ApiLmsCourseController::class, 'chapterContent']);
 Route::post('lms-questions', [ApiLmsCourseController::class, 'getLmsQuestions']);
+Route::get('question-mapping-levels', [ApiLmsCourseController::class, 'getQuestionMappingLevels']);
 Route::post('lms-chapters/store', [ApiLmsCourseController::class, 'storeChapter']);
 Route::post('lms-create-content', [ApiLmsCourseController::class, 'createContent']);
 Route::post('lms-store-content', [ApiLmsCourseController::class, 'storeContent']);
+Route::post('lms-chapter-content/upload', [ApiLmsCourseController::class, 'uploadContent']);
 Route::post('lms-content-mapping-values', [ApiLmsCourseController::class, 'getContentMappingValues']);
 Route::post('lms-store-subject', [ApiLmsCourseController::class, 'storeSubject']);
 Route::post('lms/gamma-content-master', [\App\Http\Controllers\lms\contentController::class, 'storeGammaContent']);
@@ -92,6 +101,19 @@ Route::post('ai-sop/generate', [AiSopGenerationController::class, 'generate']);
 Route::post('ai-sop/store', [AiSopGenerationController::class, 'store']);
 Route::post('lms-homework/get-subjects', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'getSubjects']);
 Route::post('lms-homework/get-chapters', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'getChapters']);
+// Student Homework (assign) + Student Homework Report
+Route::post('lms-homework/list', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'index']);
+Route::post('lms-homework/store', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'store']);
+Route::post('lms-homework/show/{id}', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'show']);
+Route::post('lms-homework/update/{id}', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'update']);
+Route::post('lms-homework/delete/{id}', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'destroy']);
+Route::post('lms-homework/bulk-delete', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'bulkDelete']);
+Route::post('lms-homework/students', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'studentsList']);
+Route::post('lms-homework/homework-subjects', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'homeworkSubjects']);
+// Homework Submission (entry) + Student Homework Submission Report
+Route::post('lms-homework/submission-list', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionList']);
+Route::post('lms-homework/submission-store', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionStore']);
+Route::post('lms-homework/submission-report', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionReport']);
 
 Route::controller(admissionEnquiryAPIController::class)->group(function () {
     Route::get('admission_enquiry', 'index');
@@ -120,6 +142,28 @@ Route::controller(admissionRegistrationAPIController::class)->group(function () 
 
 
 Route::apiResource('question-paper', ApiQuestionPaperController::class);
+Route::apiResource('class-teachers', ClassTeacherApiController::class)->except(['show']);
+Route::get('user-logs/bootstrap', [UserLogReportApiController::class, 'bootstrap']);
+Route::post('user-logs/search', [UserLogReportApiController::class, 'search']);
+Route::post('teacher-daily-reports/search', [TeacherDailyReportApiController::class, 'search']);
+Route::get('teacher-daily-reports/{teacherId}/details', [TeacherDailyReportApiController::class, 'details']);
+Route::get('academic-setup/{module}', [AcademicSetupApiController::class, 'index']);
+Route::post('academic-setup/{module}', [AcademicSetupApiController::class, 'store']);
+Route::match(['put', 'patch'], 'academic-setup/{module}/{id}', [AcademicSetupApiController::class, 'update']);
+Route::delete('academic-setup/{module}/{id}', [AcademicSetupApiController::class, 'destroy']);
+Route::get('transportation-setup/{module}', [TransportationApiController::class, 'index']);
+Route::post('transportation-setup/{module}', [TransportationApiController::class, 'store']);
+Route::match(['put', 'patch'], 'transportation-setup/{module}/{id}', [TransportationApiController::class, 'update']);
+Route::delete('transportation-setup/{module}/{id}', [TransportationApiController::class, 'destroy']);
+Route::get('general-setup/{module}', [GeneralSetupApiController::class, 'index']);
+Route::post('general-setup/{module}', [GeneralSetupApiController::class, 'store']);
+Route::match(['put', 'patch'], 'general-setup/{module}/{id}', [GeneralSetupApiController::class, 'update']);
+Route::delete('general-setup/{module}/{id}', [GeneralSetupApiController::class, 'destroy']);
+Route::get('inventory/{module}', [InventoryApiController::class, 'index'])->where('module', '^(?!reports$).+');
+Route::get('inventory/reports/{module}', [InventoryApiController::class, 'reportIndex']);
+Route::post('inventory/{module}', [InventoryApiController::class, 'store'])->where('module', '^(?!reports$).+');
+Route::match(['put', 'patch'], 'inventory/{module}/{id}', [InventoryApiController::class, 'update'])->where('module', '^(?!reports$).+');
+Route::delete('inventory/{module}/{id}', [InventoryApiController::class, 'destroy'])->where('module', '^(?!reports$).+');
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
 Route::post('fees-cancel/search', [feesCancelController::class, 'search']);
 
@@ -152,4 +196,68 @@ Route::get('/sub-department-list', [\App\Http\Controllers\HRMS\departmentControl
 Route::get('/department-employee-list', [\App\Http\Controllers\HRMS\departmentController::class, 'departmentEmployeeList']);
 Route::get('/departments/hierarchy', [\App\Http\Controllers\HRMS\departmentController::class, 'hierarchy']);
 
+
+
+use App\Http\Controllers\api\UserManagementApiController;
+
+Route::controller(UserManagementApiController::class)->group(function () {
+    Route::get('users', 'index');
+    Route::post('users', 'store');
+    Route::get('users/{id}', 'show');
+    Route::post('users/{id}', 'update');
+    Route::post('users/{id}/deactivate', 'destroy');
+    Route::get('user-profiles', 'profiles');
+    Route::post('user-profiles', 'storeProfile');
+    Route::post('user-profiles/{id}', 'updateProfile');
+    Route::post('user-profiles/{id}/delete', 'destroyProfile');
+    Route::get('user-reports/bootstrap', 'reportBootstrap');
+    Route::post('user-reports/search', 'report');
+});
+
+
+Route::get('teacher-transfer', [\App\Http\Controllers\api\TeacherTransferApiController::class, 'index']);
+Route::post('teacher-transfer', [\App\Http\Controllers\api\TeacherTransferApiController::class, 'store']);
+
+// Complaint module - stateless JSON entry points for the Next.js frontend.
+// Kept separate from frontdesk\complaintController, which is unchanged and still
+// serves the Blade screens. The delete route is declared before the {id} update
+// route so it is not swallowed by it.
+Route::get('complaints', [\App\Http\Controllers\api\ComplaintApiController::class, 'index']);
+Route::post('complaints', [\App\Http\Controllers\api\ComplaintApiController::class, 'store']);
+Route::post('complaints/{id}/delete', [\App\Http\Controllers\api\ComplaintApiController::class, 'destroy']);
+Route::post('complaints/{id}', [\App\Http\Controllers\api\ComplaintApiController::class, 'update']);
+
+// Consent module - stateless JSON entry points for the Next.js frontend.
+// Kept separate from the App\Http\Controllers\consent controllers, which are
+// unchanged and still serve the Blade screens.
+Route::get('consents/students', [\App\Http\Controllers\api\ConsentApiController::class, 'students']);
+Route::get('consents', [\App\Http\Controllers\api\ConsentApiController::class, 'index']);
+Route::post('consents/delete', [\App\Http\Controllers\api\ConsentApiController::class, 'destroy']);
+Route::post('consents', [\App\Http\Controllers\api\ConsentApiController::class, 'store']);
+
+// Front desk module - stateless JSON entry points for the Next.js frontend.
+// Kept separate from frontdesk\frontdeskController, which is unchanged and still
+// serves the Blade screens. `report` and `{id}/delete` are declared before the
+// `{id}` routes so they are not swallowed by them.
+Route::get('front-desk/report', [\App\Http\Controllers\api\FrontDeskApiController::class, 'report']);
+Route::get('front-desk', [\App\Http\Controllers\api\FrontDeskApiController::class, 'index']);
+Route::get('front-desk/{id}', [\App\Http\Controllers\api\FrontDeskApiController::class, 'show']);
+Route::post('front-desk', [\App\Http\Controllers\api\FrontDeskApiController::class, 'store']);
+Route::post('front-desk/{id}/delete', [\App\Http\Controllers\api\FrontDeskApiController::class, 'destroy']);
+Route::post('front-desk/{id}', [\App\Http\Controllers\api\FrontDeskApiController::class, 'update']);
+
+// Petty cash module - stateless JSON entry points for the Next.js frontend.
+// Kept separate from the frontdesk PettyCash* controllers, which are unchanged
+// and still serve the Blade screens. The literal `heads` and `report` segments
+// are declared before the `{id}` routes so they are not swallowed by them.
+Route::get('petty-cash/heads', [\App\Http\Controllers\api\PettyCashApiController::class, 'headIndex']);
+Route::post('petty-cash/heads', [\App\Http\Controllers\api\PettyCashApiController::class, 'headStore']);
+Route::post('petty-cash/heads/{id}/delete', [\App\Http\Controllers\api\PettyCashApiController::class, 'headDestroy']);
+Route::post('petty-cash/heads/{id}', [\App\Http\Controllers\api\PettyCashApiController::class, 'headUpdate']);
+Route::get('petty-cash/report', [\App\Http\Controllers\api\PettyCashApiController::class, 'report']);
+Route::get('petty-cash', [\App\Http\Controllers\api\PettyCashApiController::class, 'index']);
+Route::get('petty-cash/{id}', [\App\Http\Controllers\api\PettyCashApiController::class, 'show']);
+Route::post('petty-cash', [\App\Http\Controllers\api\PettyCashApiController::class, 'store']);
+Route::post('petty-cash/{id}/delete', [\App\Http\Controllers\api\PettyCashApiController::class, 'destroy']);
+Route::post('petty-cash/{id}', [\App\Http\Controllers\api\PettyCashApiController::class, 'update']);
 
