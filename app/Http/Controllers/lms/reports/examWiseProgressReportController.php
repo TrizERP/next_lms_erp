@@ -159,8 +159,32 @@ class examWiseProgressReportController extends Controller
         $subject_data = sub_std_mapModel::where(['sub_institute_id' => $sub_institute_id, 'standard_id' => $standard])
             ->orderBy('display_name')->get()->toArray();
 
+        // Clean per-(student, exam) best score + attempt count. The legacy
+        // student_data query collapses marks to a single MAX across all exams
+        // (so every exam column showed the same value); this matrix keeps each
+        // exam's own best score so the report can render a correct grid.
+        $marks_matrix = array();
+        if (! empty($exams)) {
+            $perExam = DB::table('lms_online_exam as le')
+                ->join('question_paper as qp', 'qp.id', '=', 'le.question_paper_id')
+                ->whereIn('qp.id', $exams)
+                ->where('qp.sub_institute_id', $sub_institute_id)
+                ->groupBy('le.student_id', 'qp.id')
+                ->selectRaw('le.student_id, qp.id AS exam_id, MAX(le.total_right) AS obtain,
+                    MAX(le.total_right + le.total_wrong) AS answered, COUNT(le.id) AS attempts')
+                ->get();
+            foreach ($perExam as $row) {
+                $marks_matrix[$row->student_id][$row->exam_id] = array(
+                    'obtain'   => $row->obtain,
+                    'answered' => $row->answered,
+                    'attempts' => $row->attempts,
+                );
+            }
+        }
+
         $res['status_code'] = 1;
         $res['message'] = "Success";
+        $res['marks_matrix'] = $marks_matrix;
         $res['student_data'] = $data;
         $res['marks_data'] = $marks_array;
         $res['all_marks_col']= $maxCount;
@@ -182,8 +206,15 @@ class examWiseProgressReportController extends Controller
     {
         $std_id = $request->input("std_id");
         $sub_id = $request->input("sub_id");
-        $sub_institute_id = session()->get("sub_institute_id");
-        $syear = session()->get("syear");
+        // Request-with-session fallback so token/API clients (no Laravel session)
+        // can list the exams for the report's exam multi-select.
+        if ($request->input('type') == 'API' || $request->input('type') == 'JSON') {
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');
+        } else {
+            $sub_institute_id = session()->get("sub_institute_id");
+            $syear = session()->get("syear");
+        }
 
         return questionpaperModel::where([
             'sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id, 'subject_id' => $sub_id, 'syear' => $syear,

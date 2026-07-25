@@ -594,6 +594,20 @@ function loadChapters(subjectId, standardId) {
     });
 }
 
+// Real DOK/Bloom level ids from the DB (previously hard-coded 101-103 / 201-206,
+// which don't exist as real mapping_value_ids — so validate/preview selected
+// nothing). Resolve the real id by matching the first 4 letters of the name.
+var AI_DOK_LEVELS = @json($data['difficulty_levels'] ?? []);
+var AI_BLOOM_LEVELS = @json($data['bloom_taxonomy'] ?? []);
+function aiLevelId(levels, name) {
+    var n = String(name).toLowerCase().replace(/[^a-z]/g, '').slice(0, 4);
+    for (var i = 0; i < levels.length; i++) {
+        var ln = String(levels[i].name).toLowerCase().replace(/[^a-z]/g, '').slice(0, 4);
+        if (ln === n) return levels[i].id;
+    }
+    return null;
+}
+
 // Update difficulty total
 function updateDifficultyTotal() {
     var easy = parseInt($("#difficulty_easy").val());
@@ -616,9 +630,9 @@ function updateDifficultyTotal() {
     
     // Update hidden field
     var dist = [
-        {id: 101, name: 'Easy', percentage: easy},
-        {id: 102, name: 'Medium', percentage: medium},
-        {id: 103, name: 'Hard', percentage: hard}
+        {id: aiLevelId(AI_DOK_LEVELS, 'Easy'), name: 'Easy', percentage: easy},
+        {id: aiLevelId(AI_DOK_LEVELS, 'Medium'), name: 'Medium', percentage: medium},
+        {id: aiLevelId(AI_DOK_LEVELS, 'Hard'), name: 'Hard', percentage: hard}
     ];
     $("#difficulty_distribution").val(JSON.stringify(dist));
 }
@@ -651,12 +665,12 @@ function updateTaxonomyTotal() {
     
     // Update hidden field
     var dist = [
-        {id: 201, name: 'Remember', percentage: remember},
-        {id: 202, name: 'Understand', percentage: understand},
-        {id: 203, name: 'Apply', percentage: apply},
-        {id: 204, name: 'Analyze', percentage: analyze},
-        {id: 205, name: 'Evaluate', percentage: evaluate},
-        {id: 206, name: 'Create', percentage: create}
+        {id: aiLevelId(AI_BLOOM_LEVELS, 'Remember'), name: 'Remember', percentage: remember},
+        {id: aiLevelId(AI_BLOOM_LEVELS, 'Understand'), name: 'Understand', percentage: understand},
+        {id: aiLevelId(AI_BLOOM_LEVELS, 'Apply'), name: 'Apply', percentage: apply},
+        {id: aiLevelId(AI_BLOOM_LEVELS, 'Analyze'), name: 'Analyze', percentage: analyze},
+        {id: aiLevelId(AI_BLOOM_LEVELS, 'Evaluate'), name: 'Evaluate', percentage: evaluate},
+        {id: aiLevelId(AI_BLOOM_LEVELS, 'Create'), name: 'Create', percentage: create}
     ];
     $("#taxonomy_distribution").val(JSON.stringify(dist));
 }
@@ -746,9 +760,9 @@ function validateQuestions() {
         success: function(response) {
             if (response.status_code === 1) {
                 // Update available counts
-                $("#easy_available").text("Available: " + (response.difficulty_counts[101]?.count || 0));
-                $("#medium_available").text("Available: " + (response.difficulty_counts[102]?.count || 0));
-                $("#hard_available").text("Available: " + (response.difficulty_counts[103]?.count || 0));
+                $("#easy_available").text("Available: " + (response.difficulty_counts[aiLevelId(AI_DOK_LEVELS, 'Easy')]?.count || 0));
+                $("#medium_available").text("Available: " + (response.difficulty_counts[aiLevelId(AI_DOK_LEVELS, 'Medium')]?.count || 0));
+                $("#hard_available").text("Available: " + (response.difficulty_counts[aiLevelId(AI_DOK_LEVELS, 'Hard')]?.count || 0));
                 
                 $("#difficultyValidation").html(
                     '<div class="validation-message validation-success">' +

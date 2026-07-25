@@ -1168,19 +1168,20 @@ public function search_question($all_data){
         $user_id = $request->session()->get('user_id');
         $user_profile_name = $request->session()->get('user_profile_name');
         
-        // Get difficulty levels (parent_id = 1)
+        // Get difficulty / DOK levels (real top-level type id = 9; the old
+        // hard-coded 1 doesn't exist in the DB — matches getQuestionMappingLevels).
         $data['difficulty_levels'] = lmsmappingtypeModel::select('*')
-            ->where(['parent_id' => '1', 'status' => '1'])
+            ->where(['parent_id' => '9', 'status' => '1'])
             ->orWhere(function($query) {
-                $query->where('parent_id', '1')->where('globally', '1');
+                $query->where('parent_id', '9')->where('globally', '1');
             })
             ->get()->toArray();
-        
-        // Get Bloom's Taxonomy (parent_id = 2)
+
+        // Get Bloom's Taxonomy (real top-level type id = 82; was hard-coded 2).
         $data['bloom_taxonomy'] = lmsmappingtypeModel::select('*')
-            ->where(['parent_id' => '2', 'status' => '1'])
+            ->where(['parent_id' => '82', 'status' => '1'])
             ->orWhere(function($query) {
-                $query->where('parent_id', '2')->where('globally', '1');
+                $query->where('parent_id', '82')->where('globally', '1');
             })
             ->get()->toArray();
         
@@ -1277,11 +1278,11 @@ public function search_question($all_data){
             $difficultyMappings = DB::table('lms_question_mapping as lqm')
                 ->join('lms_mapping_type as lmt', 'lmt.id', '=', 'lqm.mapping_value_id')
                 ->whereIn('lqm.questionmaster_id', $questionIds)
-                ->where('lqm.mapping_type_id', 1) // Difficulty type
+                ->where('lqm.mapping_type_id', 9) // Difficulty / DOK type (was 1)
                 ->groupBy('lqm.mapping_value_id')
                 ->select('lqm.mapping_value_id', DB::raw('count(*) as count'), DB::raw('group_concat(lqm.questionmaster_id) as question_ids'))
                 ->get();
-            
+
             foreach ($difficultyMappings as $dm) {
                 $difficultyCounts[$dm->mapping_value_id] = [
                     'count' => $dm->count,
@@ -1293,7 +1294,7 @@ public function search_question($all_data){
             $taxonomyMappings = DB::table('lms_question_mapping as lqm')
                 ->join('lms_mapping_type as lmt', 'lmt.id', '=', 'lqm.mapping_value_id')
                 ->whereIn('lqm.questionmaster_id', $questionIds)
-                ->where('lqm.mapping_type_id', 2) // Bloom's taxonomy type
+                ->where('lqm.mapping_type_id', 82) // Bloom's taxonomy type (was 2)
                 ->groupBy('lqm.mapping_value_id')
                 ->select('lqm.mapping_value_id', DB::raw('count(*) as count'), DB::raw('group_concat(lqm.questionmaster_id) as question_ids'))
                 ->get();
@@ -1444,16 +1445,16 @@ public function search_question($all_data){
             // Find difficulty
             $difficulty = null;
             foreach ($mappings as $m) {
-                if ($m->mapping_type_id == 1) { // Difficulty type
+                if ($m->mapping_type_id == 9) { // Difficulty / DOK type (was 1)
                     $difficulty = $m->mapping_value_id;
                     break;
                 }
             }
-            
+
             // Find taxonomy
             $taxonomy = null;
             foreach ($mappings as $m) {
-                if ($m->mapping_type_id == 2) { // Bloom's taxonomy
+                if ($m->mapping_type_id == 82) { // Bloom's taxonomy (was 2)
                     $taxonomy = $m->mapping_value_id;
                     break;
                 }
