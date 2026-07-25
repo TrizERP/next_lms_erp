@@ -490,6 +490,434 @@ class StudentHomeworkApiController extends Controller
         ], 404);
     }
 
+    /**
+     * List students (by grade/standard/division) for the homework assign screen.
+     * Token-auth API counterpart of the session-based SearchStudent() used by studentHomeworkController::create().
+     */
+    public function studentsList(Request $request): JsonResponse
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+        $grade = $request->input('grade');
+        $standard = $request->input('standard');
+        $division = $request->input('division');
+
+        if (!$sub_institute_id || !$syear) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'sub_institute_id and syear are required',
+            ], 422);
+        }
+
+        $query = DB::table('tblstudent as s')
+            ->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw('se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id');
+            })
+            ->join('standard as st', function ($join) {
+                $join->whereRaw('st.id = se.standard_id AND st.sub_institute_id = se.sub_institute_id');
+            })
+            ->join('division as d', function ($join) {
+                $join->whereRaw('d.id = se.section_id AND d.sub_institute_id = se.sub_institute_id');
+            })
+            ->selectRaw("s.id, CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) AS student_name,
+                s.enrollment_no, s.gender, s.mobile, se.roll_no,
+                se.standard_id, st.name AS standard_name, se.section_id AS division_id, d.name AS division_name")
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->where('se.syear', $syear)
+            ->whereNull('se.end_date');
+
+        if ($grade) {
+            $query->where('se.grade_id', $grade);
+        }
+        if ($standard) {
+            $query->where('se.standard_id', $standard);
+        }
+        if ($division) {
+            $query->where('se.section_id', $division);
+        }
+
+        $data = $query->orderBy('student_name')->get()->toArray();
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $data,
+        ], 200);
+    }
+
+    /**
+     * Standard-filtered subject dropdown.
+     * API counterpart of studentHomeworkController::ajax_getHomeworkSubjects().
+     */
+    public function homeworkSubjects(Request $request): JsonResponse
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+        $standard_id = $request->input('standard_id');
+        $division_id = $request->input('division_id');
+        $user_profile_name = $request->input('user_profile_name');
+        $teacher_id = $request->input('user_id');
+
+        if (!$sub_institute_id || !$standard_id) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'sub_institute_id and standard_id are required',
+            ], 422);
+        }
+
+        if ($user_profile_name === 'Admin' || !$user_profile_name) {
+            $data = DB::table('sub_std_map as s')
+                ->selectRaw("s.subject_id, s.display_name, s.standard_id, '' as academic_section_id, '' as division_id, '' as teacher_id")
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->where('s.standard_id', $standard_id)
+                ->groupByRaw('s.subject_id, s.standard_id')
+                ->orderBy('s.display_name')
+                ->get()
+                ->toArray();
+        } else {
+            $data = DB::table('sub_std_map as s')
+                ->join('timetable as t', function ($join) {
+                    $join->whereRaw('t.standard_id = s.standard_id AND t.sub_institute_id = s.sub_institute_id AND t.subject_id = s.subject_id');
+                })
+                ->selectRaw('s.subject_id, s.display_name, t.academic_section_id, t.standard_id, t.division_id, t.teacher_id')
+                ->where('s.sub_institute_id', $sub_institute_id)
+                ->where('t.syear', $syear)
+                ->where('s.standard_id', $standard_id)
+                ->when($division_id, function ($q) use ($division_id) {
+                    $q->where('t.division_id', $division_id);
+                })
+                ->when($user_profile_name === 'Teacher' && $teacher_id, function ($q) use ($teacher_id) {
+                    $q->where('t.teacher_id', $teacher_id);
+                })
+                ->groupByRaw('s.subject_id, s.standard_id')
+                ->orderBy('s.display_name')
+                ->get()
+                ->toArray();
+        }
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'subjects' => $data,
+        ], 200);
+    }
+
+    /**
+     * Bulk hard-delete homework rows (Student Homework Report action).
+     * API counterpart of studentHomeworkController::multipleDelete().
+     */
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $ids = $request->input('selected_students', $request->input('ids'));
+        if (is_string($ids)) {
+            $ids = array_filter(array_map('trim', explode(',', $ids)), fn ($id) => $id !== '');
+        }
+
+        if (empty($ids)) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'No homework selected',
+            ], 422);
+        }
+
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+
+        $deleted = DB::table('homework')
+            ->whereIn('id', $ids)
+            ->when($sub_institute_id, function ($q) use ($sub_institute_id) {
+                $q->where('sub_institute_id', $sub_institute_id);
+            })
+            ->when($syear, function ($q) use ($syear) {
+                $q->where('syear', $syear);
+            })
+            ->delete();
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'Student Homework Deleted Successfully',
+            'deleted' => $deleted,
+        ], 200);
+    }
+
+    /**
+     * List unsubmitted homework rows for the Homework Submission entry screen.
+     * API counterpart of studentHomeworkSubmissionController::create().
+     */
+    public function submissionList(Request $request): JsonResponse
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+        $grade = $request->input('grade');
+        $standard = $request->input('standard');
+        $division = $request->input('division');
+        $subject = $request->input('subject');
+        $submission_date = $request->input('submission_date');
+
+        if (!$sub_institute_id || !$syear) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'sub_institute_id and syear are required',
+            ], 422);
+        }
+
+        $server = $request->getSchemeAndHttpHost();
+
+        $query = DB::table('homework as ah')
+            ->join('tblstudent as s', function ($join) {
+                $join->whereRaw('s.id = ah.student_id');
+            })
+            ->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw('(s.id = se.student_id AND ah.syear = se.syear AND se.end_date IS NULL)');
+            })
+            ->join('standard as cs', function ($join) {
+                $join->whereRaw('(cs.id = ah.standard_id)');
+            })
+            ->join('division as ss', function ($join) {
+                $join->whereRaw('(ss.id = ah.division_id)');
+            })
+            ->selectRaw("ah.id, ah.id AS checkbox, se.roll_no, s.enrollment_no,
+                CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) AS student_name,
+                cs.name AS standard, ss.name AS division, s.email, s.mobile,
+                ah.title, ah.description,
+                if(ah.image IS NULL OR ah.image = '', '', concat('$server/storage/student/', ah.image)) AS image,
+                DATE_FORMAT(ah.submission_date, '%d-%m-%Y') AS submission_date,
+                DATE_FORMAT(ah.date, '%d-%m-%Y') AS homework_date, ah.submission_remarks")
+            ->where('se.syear', $syear)
+            ->where('ah.completion_status', '=', 'N')
+            ->where('s.sub_institute_id', $sub_institute_id);
+
+        if ($grade) {
+            $query->where('se.grade_id', $grade);
+        }
+        if ($standard) {
+            $query->where('ah.standard_id', $standard);
+        }
+        if ($division) {
+            $query->where('ah.division_id', $division);
+        }
+        if ($subject) {
+            $query->where('ah.subject_id', $subject);
+        }
+        if ($submission_date) {
+            $query->whereRaw("DATE_FORMAT(ah.submission_date, '%Y-%m-%d') = ?", [$submission_date]);
+        }
+
+        $data = $query->orderBy('ah.id', 'DESC')->get()->toArray();
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $data,
+        ], 200);
+    }
+
+    /**
+     * Record homework submissions (per homework row: file + AI validation + logging).
+     * API counterpart of studentHomeworkSubmissionController::store().
+     * Expects multipart: students[] = homework ids, image[<hwId>] = file, submission_remarks[<hwId>] = string.
+     */
+    public function submissionStore(Request $request): JsonResponse
+    {
+        $students = $request->input('students', []);
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+        $user_id = $request->input('user_id') ?? $request->input('teacher_id');
+        $user_name = $request->input('user_name', 'api');
+        $submission_remarks = $request->input('submission_remarks', []);
+
+        if (!is_array($students)) {
+            $students = array_filter(array_map('trim', explode(',', (string) $students)), fn ($id) => $id !== '');
+        }
+
+        if (empty($students) || !$sub_institute_id || !$syear) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'students, sub_institute_id and syear are required',
+            ], 422);
+        }
+
+        $updated = 0;
+        foreach ($students as $hw_id) {
+            $file_name = $file_size = $ext = '';
+            $uploadedFile = null;
+            $imageFiles = $request->file('image');
+            if (is_array($imageFiles) && isset($imageFiles[$hw_id])) {
+                $uploadedFile = $imageFiles[$hw_id];
+                $originalname = $uploadedFile->getClientOriginalName();
+                $file_size = $uploadedFile->getSize();
+                $ext = File::extension($originalname);
+                $file_name = 'homework-submission-' . $user_name . date('YmdHis') . '-' . $hw_id . '.' . $ext;
+                $uploadedFile->storeAs('public/student/', $file_name);
+            }
+
+            $homeworkRow = studentHomeworkModel::where([
+                'id' => $hw_id,
+                'syear' => $syear,
+                'sub_institute_id' => $sub_institute_id,
+            ])->first();
+
+            if (!$homeworkRow) {
+                continue;
+            }
+
+            $arr = [
+                'submission_remarks' => '',
+                'completion_status' => 'Y',
+                'submission_image' => $file_name,
+                'submission_image_size' => $file_size,
+                'submission_image_type' => $ext,
+                'updated_by' => $user_id,
+                'updated_on' => date('Y-m-d H:i:s'),
+            ];
+
+            $aiJsonResponse = null;
+            if ($uploadedFile) {
+                try {
+                    $client = new \GuzzleHttp\Client(['verify' => false]);
+                    $response = $client->request('POST', 'https://moncey10-homework-validation-system.hf.space/homework/validate', [
+                        'multipart' => [
+                            ['name' => 'student_id', 'contents' => $homeworkRow->student_id],
+                            ['name' => 'homework_id', 'contents' => $hw_id],
+                            [
+                                'name' => 'student_file',
+                                'contents' => fopen($uploadedFile->getPathname(), 'r'),
+                                'filename' => $uploadedFile->getClientOriginalName(),
+                            ],
+                        ],
+                    ]);
+                    $aiJsonResponse = $response->getBody()->getContents();
+                    $body = json_decode($aiJsonResponse, true);
+                    $arr['submission_remarks'] = $body['submission_remarks']
+                        ?? 'Dear Student, your homework submission has been received. You will be notified with feedback soon.';
+                    $arr['ai_generated_file'] = !empty($body['annotated_pdf'])
+                        ? 'https://moncey10-homework-validation-system.hf.space/storage/' . $body['annotated_pdf']
+                        : null;
+                } catch (\Exception $e) {
+                    $arr['submission_remarks'] = (is_array($submission_remarks) ? ($submission_remarks[$hw_id] ?? null) : null)
+                        ?? 'Dear Student, your homework submission has been received. You will be notified with feedback soon.';
+                    $arr['ai_generated_file'] = null;
+                }
+            } else {
+                $arr['submission_remarks'] = is_array($submission_remarks) ? ($submission_remarks[$hw_id] ?? '') : '';
+            }
+
+            DB::table('ai_interaction_logs')->insert([
+                'menu_type' => 'homework',
+                'student_level' => $homeworkRow->student_level,
+                'student_id' => $homeworkRow->student_id,
+                'prompt_by_user' => $homeworkRow->prompt,
+                'response_ai' => $aiJsonResponse,
+                'sub_institute_id' => $sub_institute_id,
+                'syear' => $syear,
+                'created_by' => $user_id,
+                'created_at' => date('Y-m-d H:i:s'),
+            ]);
+
+            $ok = studentHomeworkModel::where([
+                'id' => $hw_id,
+                'syear' => $syear,
+                'sub_institute_id' => $sub_institute_id,
+            ])->update($arr);
+
+            if ($ok) {
+                $updated++;
+            }
+        }
+
+        return response()->json([
+            'status_code' => $updated > 0 ? 1 : 0,
+            'message' => $updated > 0 ? 'Homework Submited successfully' : 'Failed to submit homework please try again',
+            'updated' => $updated,
+        ], 200);
+    }
+
+    /**
+     * Homework submission report.
+     * API counterpart of studentHomeworkSubmissionController::studentHomeworkSubmissionReport()
+     * (the student-profile alias bug from the web version is corrected here: ah instead of h).
+     */
+    public function submissionReport(Request $request): JsonResponse
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+        $subject = $request->input('subject');
+        $grade = $request->input('grade');
+        $standard = $request->input('standard');
+        $division = $request->input('division');
+        $from_date = $request->input('from_date');
+        $to_date = $request->input('to_date');
+        $status = $request->input('status');
+        $user_id = $request->input('user_id');
+        $user_profile = $request->input('user_profile_name');
+
+        if (!$sub_institute_id || !$syear) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'sub_institute_id and syear are required',
+            ], 422);
+        }
+
+        $server = $request->getSchemeAndHttpHost();
+
+        $query = DB::table('homework as ah')
+            ->join('tblstudent as s', function ($join) {
+                $join->whereRaw('s.id = ah.student_id AND s.sub_institute_id = ah.sub_institute_id');
+            })
+            ->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw('(s.id = se.student_id AND se.end_date IS NULL)');
+            })
+            ->join('standard as cs', function ($join) {
+                $join->whereRaw('(cs.id = ah.standard_id)');
+            })
+            ->join('division as ss', function ($join) {
+                $join->whereRaw('(ss.id = ah.division_id)');
+            })
+            ->join('tbluser as tu', function ($join) {
+                $join->whereRaw('tu.id = ah.created_by')->where('tu.status', 1);
+            })
+            ->selectRaw("ah.*, s.enrollment_no, CONCAT_WS(' ', s.first_name, s.middle_name, s.last_name) AS student_name,
+                concat_ws('-', cs.name, ss.name) AS std_div, s.mobile,
+                DATE_FORMAT(ah.date, '%d-%m-%Y') AS homework_date, ah.title, ah.description,
+                if(ah.image IS NULL OR ah.image = '', '', concat('$server/storage/student/', ah.image)) AS image,
+                if(ah.submission_image IS NULL OR ah.submission_image = '', '', concat('$server/storage/student/', ah.submission_image)) AS submission_file,
+                DATE_FORMAT(ah.submission_date, '%d-%m-%Y') AS submission_date_fmt, ah.submission_remarks, ah.ai_generated_file,
+                CONCAT_WS(' ', tu.first_name, tu.last_name) AS submission_taken_by")
+            ->where('se.syear', $syear)
+            ->where('ah.sub_institute_id', $sub_institute_id)
+            ->where('ah.syear', $syear)
+            ->when($user_profile === 'Student' && $user_id, function ($q) use ($user_id) {
+                $q->where('ah.student_id', $user_id);
+            });
+
+        if ($standard) {
+            $query->where('ah.standard_id', $standard);
+        }
+        if ($subject) {
+            $query->where('ah.subject_id', $subject);
+        }
+        if ($division) {
+            $query->where('ah.division_id', $division);
+        }
+        if ($grade) {
+            $query->where('se.grade_id', $grade);
+        }
+        if ($status && $status !== '--Select Status--') {
+            $query->where('ah.completion_status', $status);
+        }
+        if ($from_date && $to_date) {
+            $query->whereRaw("DATE_FORMAT(ah.submission_date, '%Y-%m-%d') BETWEEN ? AND ?", [$from_date, $to_date]);
+        }
+
+        $data = $query->orderBy('ah.id', 'DESC')->get()->toArray();
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $data,
+        ], 200);
+    }
+
     public function getSubjects(Request $request): JsonResponse
     {
         $sub_institute_id = $request->input('sub_institute_id');
