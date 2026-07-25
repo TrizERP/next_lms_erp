@@ -184,7 +184,8 @@ class lmsSyllabusController extends Controller
     public function getCurriculums(Request $request){
         $standard = $request->standard;
         $subject = $request->subject;
-        $sub_institute_id = session()->get('sub_institute_id');
+        // Prefer request param (headless type=API calls) and fall back to session.
+        $sub_institute_id = $request->input('sub_institute_id') ?: session()->get('sub_institute_id');
 
         $data = DB::table('lms_curriculum')
                 ->where(['standard_id'=>$standard,'subject_id'=>$subject,'sub_institute_id'=>$sub_institute_id])
