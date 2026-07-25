@@ -41,8 +41,9 @@ class questionWiseReportController extends Controller
         $subject = $request->subject;
         $order_by = $request->order_by;
         $question_paper_id = $request->exam;
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
+        // Prefer request params (headless type=API calls) and fall back to session.
+        $sub_institute_id = $request->input('sub_institute_id') ?: session()->get('sub_institute_id');
+        $syear = $request->input('syear') ?: session()->get('syear');
         $res['action']=$action = $request->action;
         // return $request;exit;
         $examData = questionpaperModel::where([
