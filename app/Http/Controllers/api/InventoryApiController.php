@@ -217,8 +217,22 @@ class InventoryApiController extends Controller
             if (in_array($module, ['vendors', 'taxes'], true)) {
                 return DB::table($table)->where('sub_institute_id', $tenant)->orderByDesc('id')->get();
             }
-            if (in_array($module, ['item-categories', 'item-sub-categories', 'items'], true)) {
+            if ($module === 'item-categories') {
                 return DB::table($table)->where('sub_institute_id', $tenant)->orderByDesc('id')->get();
+            }
+            if ($module === 'item-sub-categories') {
+                return DB::table('inventory_item_sub_category_master as sub_category')
+                    ->join('inventory_item_category_master as category', 'category.id', '=', 'sub_category.category_id')
+                    ->select('sub_category.*', 'category.title as category_name')
+                    ->where('sub_category.sub_institute_id', $tenant)->orderByDesc('sub_category.id')->get();
+            }
+            if ($module === 'items') {
+                return DB::table('inventory_item_master as item')
+                    ->join('inventory_item_category_master as category', 'category.id', '=', 'item.category_id')
+                    ->join('inventory_item_sub_category_master as sub_category', 'sub_category.id', '=', 'item.sub_category_id')
+                    ->join('inventory_item_type as item_type', 'item_type.id', '=', 'item.item_type_id')
+                    ->select('item.*', 'category.title as category_name', 'sub_category.title as sub_category_name', 'item_type.title as item_type_name')
+                    ->where('item.sub_institute_id', $tenant)->orderByDesc('item.id')->get();
             }
             return DB::table($table)->where('sub_institute_id', $tenant)->where('syear', $syear)->orderByDesc('id')->get();
         }
@@ -241,7 +255,7 @@ class InventoryApiController extends Controller
                 $this->dateFilters($query, $request, 'requisition.requisition_date');
                 if ($request->filled('requisition_by')) $query->where('requisition.requisition_by', $request->integer('requisition_by'));
                 if ($request->filled('item_id')) $query->where('requisition.item_id', $request->integer('item_id'));
-                if ($request->filled('status')) $query->where('requisition.requisition_status', $request->integer('status'));
+                if ($request->filled('requisition_status')) $query->where('requisition.requisition_status', $request->integer('requisition_status'));
                 return $query->orderByDesc('requisition.requisition_no')->get();
             case 'quotations':
                 return DB::table('inventory_item_quotation_details as quotation')
@@ -278,7 +292,7 @@ class InventoryApiController extends Controller
             case 'reports/staff-wise':
                 $query = DB::table('inventory_requisition_details as requisition')->join('inventory_item_master as item', 'item.id', '=', 'requisition.item_id')->join('inventory_item_category_master as category', 'category.id', '=', 'item.category_id')->join('tbluser as user', function ($join) { $join->on('user.id', '=', 'requisition.requisition_by')->where('user.status', 1); })->select(DB::raw("concat_ws(' ', user.first_name, user.middle_name, user.last_name) as requisition_by_name"), 'requisition.requisition_no', 'requisition.requisition_by', 'requisition.item_qty', 'requisition.approved_qty', 'requisition.requisition_approved_date as requisition_date', 'item.title as item_name', 'category.title as category')->where('requisition.sub_institute_id', $tenant);
                 $this->dateFilters($query, $request, 'requisition.requisition_approved_date');
-                if ($request->filled('user_id')) $query->where('requisition.requisition_by', $request->integer('user_id'));
+                if ($request->filled('requisition_by')) $query->where('requisition.requisition_by', $request->integer('requisition_by'));
                 return $query->get();
             case 'reports/delivery-status':
                 $query = DB::table('inventory_requisition_details as requisition')->join('inventory_item_master as item', 'item.id', '=', 'requisition.item_id')->join('inventory_allocation_details as allocation', function ($join) { $join->on('allocation.requisition_details_id', '=', 'requisition.id')->on('allocation.item_id', '=', 'requisition.item_id'); })->join('tbluser as user', 'user.id', '=', 'requisition.requisition_by')->leftJoin('tbluser as approver', 'approver.id', '=', 'requisition.requisition_approved_by')->join('inventory_requisition_status_master as status', 'status.id', '=', 'requisition.requisition_status')->select(DB::raw("concat_ws(' ', user.first_name, user.middle_name, user.last_name) as requisition_by_name"), 'requisition.item_unit', 'requisition.requisition_by', 'requisition.requisition_date', 'requisition.requisition_no', 'item.title as item_name', 'requisition.item_qty', 'requisition.expected_delivery_time', 'requisition.remarks', 'status.title as requisition_status', DB::raw("concat_ws(' ', approver.first_name, approver.middle_name, approver.last_name) as requisition_approved_by"), 'requisition.requisition_approved_remarks', 'requisition.requisition_approved_date', DB::raw("'Delivered' as delivery_status"), 'allocation.created_on as delivery_date')->where('requisition.sub_institute_id', $tenant)->where('requisition.syear', $syear);
@@ -615,7 +629,7 @@ class InventoryApiController extends Controller
             'requisition-approvals' => ['requisition_id' => 'required_without:id|integer', 'requisition_status' => 'required|integer', 'approved_qty' => 'required|numeric|min:0'],
             'quotations' => ['vendor_id' => 'required|integer', 'item_id' => 'required|integer', 'qty' => 'required|numeric|min:0.01', 'rate' => 'required|numeric|min:0', 'unit' => 'required|string|max:50'],
             'purchase-orders' => ['vendor_id' => 'required|integer', 'item_id' => 'required|integer', 'price' => 'required|numeric|min:0', 'qty' => 'required|numeric|min:0.01'],
-            'purchase-order-negotiations' => ['po_number' => 'required|string', 'negotiated_rate' => 'required|numeric|min:0', 'po_approval_status' => 'required|integer'],
+            'purchase-order-negotiations' => ['po_number' => 'required|string', 'item_id' => 'required|integer', 'price' => 'required|numeric|min:0', 'qty' => 'required|numeric|min:0.01', 'dis_per' => 'required|numeric|min:0', 'tax_per' => 'required|numeric|min:0', 'po_approval_status' => 'required|integer'],
             'receivables' => ['po_number' => 'required|string', 'item_id' => 'required|integer', 'actual_received_qty' => 'required|numeric|min:0.01'],
             'allocations' => ['item_id' => 'required|integer', 'requisition_by' => 'required|integer', 'location_of_material' => 'required|string', 'person_responsible' => 'required|string'],
             'returns' => ['requisition_by' => 'required|integer', 'item_id' => 'required|integer', 'return_qty' => 'required|numeric|min:0.01'],
@@ -640,8 +654,18 @@ class InventoryApiController extends Controller
                 $tax = $afterDiscount * ((float) $request->input('tax_per', 0) / 100);
                 return ['inventory_generate_po_details', array_merge($common, ['po_number' => 'PO-'.$syear.'-'.str_pad((string) (DB::table('inventory_generate_po_details')->where('sub_institute_id', $tenant)->where('syear', $syear)->count() + 1), 5, '0', STR_PAD_LEFT), 'item_id' => $request->integer('item_id'), 'vendor_id' => $request->integer('vendor_id'), 'price' => $request->input('price'), 'qty' => $request->input('qty'), 'amount' => $amount, 'dis_per' => $request->input('dis_per', 0), 'dis_amount_value' => $discount, 'after_dis_amount' => $afterDiscount, 'tax_per' => $request->input('tax_per', 0), 'tax_amount_value' => $tax, 'after_tax_amount' => $afterDiscount + $tax, 'amount_per_item' => $amount, 'transportation_charge' => $request->input('transportation_charge'), 'installation_charge' => $request->input('installation_charge'), 'delivery_time' => $request->input('delivery_time'), 'po_place_of_delivery' => $request->input('po_place_of_delivery'), 'payment_terms' => $request->input('payment_terms'), 'remarks' => $request->input('remarks'), 'created_by' => $user, 'created_on' => now(), 'created_ip_address' => $request->ip()])];
             case 'purchase-order-negotiations':
-                $updated = DB::table('inventory_generate_po_details')->where('po_number', $request->input('po_number'))->where('sub_institute_id', $tenant)->where('syear', $syear)->update(['price' => $request->input('negotiated_rate'), 'po_approval_status' => $request->integer('po_approval_status'), 'remarks' => $request->input('remarks')]);
-                if (! $updated) throw new \RuntimeException('Purchase order not found.');
+                $po = DB::table('inventory_generate_po_details')->where('po_number', $request->input('po_number'))->where('item_id', $request->integer('item_id'))->where('sub_institute_id', $tenant)->where('syear', $syear)->lockForUpdate()->first();
+                if (! $po) throw new \RuntimeException('Purchase-order item not found.');
+                $amount = (float) $request->input('price') * (float) $request->input('qty');
+                $discount = $amount * ((float) $request->input('dis_per') / 100);
+                $afterDiscount = $amount - $discount;
+                $tax = $afterDiscount * ((float) $request->input('tax_per') / 100);
+                $approval = ['po_approval_status' => $request->integer('po_approval_status'), 'po_approval_remark' => $request->input('po_approval_remark'), 'po_approved_by' => $user, 'po_approved_date' => now()];
+                DB::table('inventory_generate_po_details')->where('po_number', $request->input('po_number'))->where('sub_institute_id', $tenant)->where('syear', $syear)->update($approval);
+                DB::table('inventory_negotiate_po_details')->updateOrInsert(
+                    ['po_number' => $request->input('po_number'), 'item_id' => $request->integer('item_id'), 'sub_institute_id' => $tenant, 'syear' => $syear],
+                    array_merge($approval, ['vendor_id' => $po->vendor_id, 'price' => $request->input('price'), 'qty' => $request->input('qty'), 'amount' => $amount, 'dis_per' => $request->input('dis_per'), 'dis_amount_value' => $discount, 'after_dis_amount' => $afterDiscount, 'tax_per' => $request->input('tax_per'), 'tax_amount_value' => $tax, 'after_tax_amount' => $afterDiscount + $tax, 'amount_per_item' => $amount, 'created_by' => $user, 'created_on' => now(), 'created_ip_address' => $request->ip()])
+                );
                 return ['inventory_generate_po_details', []];
             case 'receivables':
                 $po = DB::table('inventory_generate_po_details')->where('po_number', $request->input('po_number'))->where('item_id', $request->integer('item_id'))->where('sub_institute_id', $tenant)->where('syear', $syear)->first();
@@ -678,7 +702,7 @@ class InventoryApiController extends Controller
             'master-setups' => ['gst_registration_no' => 'required|string|max:255', 'gst_registration_date' => 'required|date', 'cst_registration_no' => 'required|string|max:255', 'cst_registration_date' => 'required|date', 'po_no_prefix' => 'required|string|max:255', 'item_setting_for_requisition' => 'required|string|max:100'],
             'item-categories' => ['title' => 'required|string|max:255', 'description' => 'required|string|max:255', 'status' => ['required', Rule::in(['Yes', 'No'])]],
             'item-sub-categories' => ['category_id' => ['required', 'integer', Rule::exists('inventory_item_category_master', 'id')->where(fn ($query) => $query->where('sub_institute_id', $tenant))], 'title' => 'required|string|max:255', 'description' => 'required|string|max:255', 'status' => ['required', Rule::in(['Yes', 'No'])]],
-            'items' => ['category_id' => 'required|integer', 'sub_category_id' => 'required|integer', 'item_type_id' => 'required|integer', 'item_name' => 'required|string|max:255', 'description' => 'required|string|max:255', 'item_status' => 'required|string|max:255'],
+            'items' => ['category_id' => 'required|integer', 'sub_category_id' => 'required|integer', 'item_type_id' => 'required|integer', 'title' => 'required|string|max:255', 'description' => 'required|string|max:255', 'item_status' => 'required|string|max:255'],
             'taxes' => ['title' => 'required|string|max:255', 'amount_percentage' => 'required|numeric|min:0', 'status' => ['required', Rule::in(['Yes', 'No'])]],
             'vendors' => ['vendor_name' => 'required|string|max:255'],
         ][$module];
@@ -689,16 +713,33 @@ class InventoryApiController extends Controller
             'master-setups' => ['gst_registration_no', 'gst_registration_date', 'cst_registration_no', 'cst_registration_date', 'po_no_prefix', 'item_setting_for_requisition'],
             'item-categories' => ['title', 'description', 'status'],
             'item-sub-categories' => ['category_id', 'title', 'description', 'status'],
-            'items' => ['category_id', 'sub_category_id', 'item_type_id', 'description', 'opening_stock', 'minimum_stock', 'item_status'],
+            'items' => ['category_id', 'sub_category_id', 'item_type_id', 'title', 'description', 'opening_stock', 'minimum_stock', 'item_status'],
             'taxes' => ['title', 'amount_percentage', 'description_1', 'status', 'sort_order'],
             'vendors' => ['vendor_name', 'contact_number', 'short_name', 'sort_order', 'address', 'email', 'file_number', 'file_location', 'company_name', 'business_type', 'office_address', 'office_contact_person', 'office_number', 'office_email', 'tin_no', 'tin_date', 'registration_no', 'registration_date', 'serivce_tax_no', 'serivce_tax_date', 'pan_no', 'bank_account_no', 'bank_name', 'bank_branch', 'bank_ifsc_code'],
         ][$module];
         $values = $request->only($allowed);
         if ($module === 'items') {
-            $values['title'] = $request->input('item_name');
-            $values['item_attachment'] = '';
+            if ($request->hasFile('item_attachment')) {
+                $values['item_attachment'] = $request->file('item_attachment')->storeAs(
+                    'public/inventory_item',
+                    now()->format('YmdHis').'_'.preg_replace('/[^A-Za-z0-9._-]/', '_', $request->file('item_attachment')->getClientOriginalName())
+                );
+                $values['item_attachment'] = basename($values['item_attachment']);
+            } elseif (! $id) {
+                $values['item_attachment'] = '';
+            }
         }
-        if ($module === 'master-setups') $values['logo'] = '';
+        if ($module === 'master-setups') {
+            if ($request->hasFile('logo')) {
+                $values['logo'] = $request->file('logo')->storeAs(
+                    'public/inventory_master',
+                    now()->format('YmdHis').'_'.preg_replace('/[^A-Za-z0-9._-]/', '_', $request->file('logo')->getClientOriginalName())
+                );
+                $values['logo'] = basename($values['logo']);
+            } elseif (! $id) {
+                $values['logo'] = '';
+            }
+        }
         $values = array_merge($values, ['sub_institute_id' => $tenant, 'syear' => $syear]);
         if (in_array($module, ['taxes', 'vendors'], true)) {
             $values['created_by'] = $request->integer('user_id');
