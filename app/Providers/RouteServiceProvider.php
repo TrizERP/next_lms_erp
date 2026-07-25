@@ -65,6 +65,8 @@ class RouteServiceProvider extends ServiceProvider
 
         $this->mapResultRoutes();
 
+        $this->mapResultApiRoutes();
+
         $this->mapSettingsRoutes();
 
         $this->mapStudentRoutes();
@@ -172,6 +174,17 @@ class RouteServiceProvider extends ServiceProvider
         Route::middleware('web')
             ->namespace($this->namespace)
             ->group(base_path('routes/result.php'));
+    }
+
+    /**
+     * Stateless REST APIs for the Result module (Next.js frontend).
+     */
+    protected function mapResultApiRoutes()
+    {
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/resultapi.php'));
     }
 
     protected function mapStudentRoutes()
