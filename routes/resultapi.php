@@ -35,6 +35,7 @@ use App\Http\Controllers\api\result\UploadResultApiController;
 use App\Http\Controllers\api\result\WorkingDayMasterApiController;
 use App\Http\Controllers\api\result\WrtProgressReportApiController;
 use App\Http\Controllers\api\result\WrtReportApiController;
+use App\Http\Controllers\api\sqaa\SqaaApiController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -47,6 +48,13 @@ use Illuminate\Support\Facades\Route;
 | legacy session context from the token so existing business logic runs
 | unchanged. Docs: docs/result-api/README.md
 */
+
+Route::group(['prefix' => 'sqaa', 'middleware' => ['api.session']], function () {
+    Route::get('levels', [SqaaApiController::class, 'levels']);
+    Route::get('entry/{menuId}', [SqaaApiController::class, 'entry']);
+    Route::post('entry', [SqaaApiController::class, 'store']);
+    Route::get('document-report', [SqaaApiController::class, 'documentReport']);
+});
 
 Route::group(['prefix' => 'result', 'middleware' => ['api.session']], function () {
 
