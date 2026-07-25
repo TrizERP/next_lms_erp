@@ -29,7 +29,8 @@ class lbMasterController extends Controller
 
     public function getData($request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        // Prefer request param (headless type=API calls) and fall back to session.
+        $sub_institute_id = $request->input('sub_institute_id') ?: $request->session()->get('sub_institute_id');
         $marking_period_id = session()->get('term_id');
 
         $data['lbmaster_data'] = lb_masterModel::select('lb_master.*', 'a.title', 's.name')
@@ -70,7 +71,8 @@ class lbMasterController extends Controller
      */
     public function store(Request $request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        // Prefer request param (headless type=API calls) and fall back to session.
+        $sub_institute_id = $request->input('sub_institute_id') ?: $request->session()->get('sub_institute_id');
         $show_hide = $request->get('show_hide');
         $show_hide_val = $show_hide ?? '';
         $per_value = 0;
@@ -122,7 +124,11 @@ class lbMasterController extends Controller
             ->where('standard_id', $standard_id)
             ->where('module_name', $module_name);
         if ($id != "") {
-            $data = $data->where('id', $id);
+            // On update, a duplicate means ANOTHER row (not this one) with the same
+            // grade/standard/module. The original `where('id',$id)` matched only the
+            // row being edited, so update always reported "Already Exist" and never
+            // saved. Exclude self so genuine edits go through.
+            $data = $data->where('id', '!=', $id);
         }
 
         $data = $data->get()->toArray();
@@ -166,9 +172,16 @@ class lbMasterController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        // Prefer request param (headless type=API calls) and fall back to session.
+        $sub_institute_id = $request->input('sub_institute_id') ?: $request->session()->get('sub_institute_id');
         $show_hide = $request->get('show_hide');
         $show_hide_val = $show_hide ?? '';
+        // Persist per_value on update too (mirrors store; only exampass/examfail
+        // send it — other modules default to 0). Originally update dropped it.
+        $per_value = 0;
+        if ($request->has('per_value')) {
+            $per_value = $request->get('per_value');
+        }
 
         //Check if Subject Already Exist or not
         $exist = $this->check_exist($request->get('grade'), $request->get('standard'), $request->get('module_name'),
@@ -178,6 +191,7 @@ class lbMasterController extends Controller
                 'grade_id'         => $request->get('grade'),
                 'standard_id'      => $request->get('standard'),
                 'module_name'      => $request->get('module_name'),
+                'per_value'        => $per_value,
                 'description'      => $request->get('description'),
                 'points'           => $request->get('points'),
                 'status'           => $show_hide_val,
