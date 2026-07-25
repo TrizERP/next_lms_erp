@@ -359,3 +359,11 @@ Route::resource('lms/new_curriculum',newCurricuumController::class);
 //     return view('recommend');
 // });
 // Route::get('/sync-neo4j', [Neo4jSyncController::class, 'sync']);
+Route::prefix('lms/api/teacher_resource')->group(function () {
+    Route::get('/', [\App\Http\Controllers\lms\teacher_resource\TeacherResourceApiController::class, 'index']);
+    Route::get('{id}', [\App\Http\Controllers\lms\teacher_resource\TeacherResourceApiController::class, 'show']);
+    Route::post('store', [\App\Http\Controllers\lms\teacher_resource\TeacherResourceApiController::class, 'store']);
+    Route::post('update/{id}', [\App\Http\Controllers\lms\teacher_resource\TeacherResourceApiController::class, 'update']);
+    Route::post('delete/{id}', [\App\Http\Controllers\lms\teacher_resource\TeacherResourceApiController::class, 'destroy']);
+});
+
