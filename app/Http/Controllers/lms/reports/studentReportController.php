@@ -61,7 +61,24 @@ class studentReportController extends Controller
         $student_id_arr = [
             0 => $id,
         ];
-        $student_data = getStudents($student_id_arr);
+        // Pass tenant explicitly so headless (type=API) calls don't fall back to
+        // an empty session inside getStudents (which would return no rows).
+        $student_data = getStudents($student_id_arr, $sub_institute_id, $syear);
+        if (!isset($student_data[$id])) {
+            return is_mobile($request->input('type'), "lms/reports/final_student_report", [
+                'status_code' => 0,
+                'message' => 'Student not found for the selected academic year.',
+                'student_id' => $id,
+                'student_data' => [],
+                'all_subject_arr' => [],
+                'exam_arr' => [],
+                'grand_total' => 0,
+                'grand_obtained' => 0,
+                'linechart_data' => '',
+                'current_subject' => '',
+                'lo_arr' => [],
+            ], "view");
+        }
         $student_data = $student_data[$id];
         /* END Get Student Details */
 
