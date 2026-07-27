@@ -379,6 +379,7 @@ class itemScanController extends Controller
                 $q->where('li.item_code', $request->item_code);
             })
             ->whereNull('isd.item_code') // this ensures it's "not scanned"
+            ->whereNull('li.item_status')
             ->get();
 
         return is_mobile($type, "library/bookVarification/varifyPending", $res, "view");    
