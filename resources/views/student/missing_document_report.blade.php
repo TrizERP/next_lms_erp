@@ -31,9 +31,9 @@
                     $division_id = $data['division_id'];
                 }
             @endphp   
-            <form action="{{ route('missing_document_report.create') }}" enctype="multipart/form-data">                
+            <form id="documentReportForm" action="{{ route('missing_document_report.create') }}" method="GET" enctype="multipart/form-data">                
                 @csrf  
-                <div class="row">                    
+                <div class="row">
                     {{ App\Helpers\SearchChain('4','single','grade,std,div',$grade_id,$standard_id,$division_id) }}
                     <div class="col-md-4 form-group mt-3">
                         <label for="">User Type</label>
@@ -45,8 +45,8 @@
 
                     <div class="col-md-12 form-group mt-3">
                         <center>
-                        <input type="submit" name="submit" value="Search" class="btn btn-success" >  
-                        </center>                   
+                        <button type="submit" name="submit" value="search" class="btn btn-success">Search</button>
+                        </center>
                     </div>
                 </div>              
             </form>
@@ -118,7 +118,24 @@
                     </tbody>
                 </table>
             </div>
-        </div>    
+
+            @if(count($result_report) > 0)
+            <div class="row">
+                <div class="col-md-12 form-group mt-3 mb-3">
+                    <center>
+                        <button type="button" id="downloadDocuments" class="btn btn-primary download-btn"
+                            data-url="{{ route('missing_document_report.download_bulk') }}"
+                            data-grade="{{ $grade_id }}"
+                            data-standard="{{ $standard_id }}"
+                            data-division="{{ $division_id }}"
+                            data-user_type="{{ $data['user_type'] ?? 'student' }}">
+                            Download Documents
+                        </button>
+                    </center>
+                </div>
+            </div>
+            @endif
+        </div>
         @endif
     </div>
 </div>
@@ -161,7 +178,28 @@ $(document).ready(function() {
             $('#standard').prop('required',true);
         }
         // alert(val);
-    })
+    });
+
+    $(document).on('click', '.download-btn', function() {
+        var $btn = $(this);
+
+        var params = $.param({
+            grade     : $btn.data('grade')     || '',
+            standard  : $btn.data('standard')  || '',
+            division  : $btn.data('division')  || '',
+            user_type : $btn.data('user_type') || 'student'
+        });
+
+        var originalText = $btn.html();
+        $btn.prop('disabled', true).html('Preparing ZIP, please wait...');
+
+        // the response is a file download, so the page itself is not reloaded
+        window.location.href = $btn.data('url') + '?' + params;
+
+        setTimeout(function() {
+            $btn.prop('disabled', false).html(originalText);
+        }, 8000);
+    });
 
     var table = $('#example').DataTable( {
          select: true,          
