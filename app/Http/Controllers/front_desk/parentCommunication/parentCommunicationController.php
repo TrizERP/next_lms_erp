@@ -443,7 +443,7 @@ class parentCommunicationController extends Controller
                 ->where("se.syear", "=", $syear)
                 ->where("pc.syear", "=", $syear)
                 ->where("ct.teacher_id", "=", $teacher_id)
-                ->orderBy('student_name')
+                ->orderBy('pc.date_','DESC')
                 ->groupBy('pc.id')
                 ->get()->toarray();
                 
