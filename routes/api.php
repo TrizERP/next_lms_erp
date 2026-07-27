@@ -115,6 +115,25 @@ Route::post('lms-homework/submission-list', [\App\Http\Controllers\api\lms\Stude
 Route::post('lms-homework/submission-store', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionStore']);
 Route::post('lms-homework/submission-report', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionReport']);
 
+// ------------------------------------------------------------------
+// LMS Assignment / Assignment Submission / Annotate Assignment
+// (dedicated LmsAssignmentApiController - token-auth counterparts of the
+//  session/blade controllers under App\Http\Controllers\lms\assignment)
+// ------------------------------------------------------------------
+// Module 1 - Assignment (teacher create)
+Route::post('lms-assignment/subjects', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'subjects']);
+Route::post('lms-assignment/students', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'students']);
+Route::post('lms-assignment/exam-papers', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'examPapers']);
+Route::post('lms-assignment/store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'store']);
+Route::post('lms-assignment/list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'index']);
+// Module 2 - Assignment Submission (student upload)
+Route::post('lms-assignment/submission-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionList']);
+Route::post('lms-assignment/submission-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionStore']);
+// Module 3 - Annotate Assignment (teacher review / grade)
+Route::post('lms-assignment/annotate-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateList']);
+Route::post('lms-assignment/annotate-questions', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateQuestions']);
+Route::post('lms-assignment/annotate-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateStore']);
+
 Route::controller(admissionEnquiryAPIController::class)->group(function () {
     Route::get('admission_enquiry', 'index');
     Route::post('admission_enquiry', 'store');

@@ -36,20 +36,22 @@ class lmsActivityStreamController extends Controller
     {
         $type = $request->input('type');
       
+        // Prefer request params (headless API/type=API calls) and fall back to
+        // the Laravel session for classic Blade requests.
         $request=$request->merge([
-            'sub_institute_id' => session()->get('sub_institute_id'),
-            'syear' => session()->get('syear'),
-            'user_id' => session()->get('user_id'),
-            'user_profile' => session()->get('user_profile_name'),
-            'user_profile_id'=> session()->get('user_profile_id'),
-            'term_id'=> session()->get('term_id'),
+            'sub_institute_id' => $request->input('sub_institute_id') ?: session()->get('sub_institute_id'),
+            'syear' => $request->input('syear') ?: session()->get('syear'),
+            'user_id' => $request->input('user_id') ?: session()->get('user_id'),
+            'user_profile' => $request->input('user_profile') ?: session()->get('user_profile_name'),
+            'user_profile_id'=> $request->input('user_profile_id') ?: session()->get('user_profile_id'),
+            'term_id'=> $request->input('term_id') ?: session()->get('term_id'),
         ]);
         // echo "<pre>";print_r(session()->all());exit;
         $res['todaytitle'] = date('l, M d, Y');
         $res['upcoming'] = $this->upcomingActivity($request);
         $res['today'] = $this->todayActivity($request);
         $res['recent'] = $this->recentActivity($request);
-        $res['checkList'] = DB::table('task')->where('TASK_ALLOCATED',session()->get('user_id'))->where('task_type','=','Daily Task')->where('TASK_DATE',date('Y-m-d'))->get()->toArray();
+        $res['checkList'] = DB::table('task')->where('TASK_ALLOCATED',$request->input('user_id'))->where('task_type','=','Daily Task')->where('TASK_DATE',date('Y-m-d'))->get()->toArray();
         // echo "<pre>";print_r($res);exit;
         return is_mobile($type, 'lms/newActivityStream', $res, "view");
     }
@@ -175,16 +177,20 @@ class lmsActivityStreamController extends Controller
         $standard_id = $division_id = $classStdId = $classDivId = '';
         if($profileName=="Student"){
             $studentData = $this->studentData($user_id,$sub_institute_id,$syear);
-            $classStdId = $standard_id = $studentData['standard_id'];
-            $classDivId = $division_id = $studentData['section_id'];
+            // studentData() returns '' when the student isn't found for the year.
+            $classStdId = $standard_id = is_array($studentData) ? ($studentData['standard_id'] ?? '') : '';
+            $classDivId = $division_id = is_array($studentData) ? ($studentData['section_id'] ?? '') : '';
         }else if ($profileName=="Teacher"){
             $getTeacherData = DB::table('timetable as h')->where('h.teacher_id',$user_id)
             ->selectRaw('GROUP_CONCAT(DISTINCT h.standard_id) AS standard_id,GROUP_CONCAT(DISTINCT h.division_id) AS division_id')->where(['h.sub_institute_id'=>$sub_institute_id,'h.syear'=>$syear])->groupBy('h.teacher_id')->first();
-            $standard_id = $getTeacherData->standard_id;
-            $division_id = $getTeacherData->division_id;
+            // Null-safe: a teacher with no timetable rows returns null. Default the
+            // CSV to '0' so downstream "... IN (".$standard_id.")" stays valid SQL
+            // (IN (0) simply matches nothing) instead of erroring on "IN ()".
+            $standard_id = $getTeacherData?->standard_id ?: '0';
+            $division_id = $getTeacherData?->division_id ?: '0';
             $classTeacher = DB::table('class_teacher')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->first();
-            $classStdId = ($classTeacher->standard_id) ? : '';
-            $classDivId = ($classTeacher->division_id) ? : '';
+            $classStdId = $classTeacher?->standard_id ?: '';
+            $classDivId = $classTeacher?->division_id ?: '';
         }
 
         // class schedule data from timetable
@@ -272,16 +278,20 @@ class lmsActivityStreamController extends Controller
         $standard_id = $division_id = $classStdId = $classDivId = '';
         if($profileName=="Student"){
             $studentData = $this->studentData($user_id,$sub_institute_id,$syear);
-            $classStdId = $standard_id = $studentData['standard_id'];
-            $classDivId = $division_id = $studentData['section_id'];
+            // studentData() returns '' when the student isn't found for the year.
+            $classStdId = $standard_id = is_array($studentData) ? ($studentData['standard_id'] ?? '') : '';
+            $classDivId = $division_id = is_array($studentData) ? ($studentData['section_id'] ?? '') : '';
         }else if ($profileName=="Teacher"){
             $getTeacherData = DB::table('timetable as h')->where('h.teacher_id',$user_id)
             ->selectRaw('GROUP_CONCAT(DISTINCT h.standard_id) AS standard_id,GROUP_CONCAT(DISTINCT h.division_id) AS division_id')->where(['h.sub_institute_id'=>$sub_institute_id,'h.syear'=>$syear])->groupBy('h.teacher_id')->first();
-            $standard_id = $getTeacherData->standard_id;
-            $division_id = $getTeacherData->division_id;
+            // Null-safe: a teacher with no timetable rows returns null. Default the
+            // CSV to '0' so downstream "... IN (".$standard_id.")" stays valid SQL
+            // (IN (0) simply matches nothing) instead of erroring on "IN ()".
+            $standard_id = $getTeacherData?->standard_id ?: '0';
+            $division_id = $getTeacherData?->division_id ?: '0';
             $classTeacher = DB::table('class_teacher')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->first();
-            $classStdId = ($classTeacher->standard_id) ? : '';
-            $classDivId = ($classTeacher->division_id) ? : '';
+            $classStdId = $classTeacher?->standard_id ?: '';
+            $classDivId = $classTeacher?->division_id ?: '';
         }
 
         // class schedule data from timetable
@@ -377,16 +387,20 @@ class lmsActivityStreamController extends Controller
         $standard_id = $division_id = $classStdId = $classDivId = '';
         if($profileName=="Student"){
             $studentData = $this->studentData($user_id,$sub_institute_id,$syear);
-            $classStdId = $standard_id = $studentData['standard_id'];
-            $classDivId = $division_id = $studentData['section_id'];
+            // studentData() returns '' when the student isn't found for the year.
+            $classStdId = $standard_id = is_array($studentData) ? ($studentData['standard_id'] ?? '') : '';
+            $classDivId = $division_id = is_array($studentData) ? ($studentData['section_id'] ?? '') : '';
         }else if ($profileName=="Teacher"){
             $getTeacherData = DB::table('timetable as h')->where('h.teacher_id',$user_id)
             ->selectRaw('GROUP_CONCAT(DISTINCT h.standard_id) AS standard_id,GROUP_CONCAT(DISTINCT h.division_id) AS division_id')->where(['h.sub_institute_id'=>$sub_institute_id,'h.syear'=>$syear])->groupBy('h.teacher_id')->first();
-            $standard_id = $getTeacherData->standard_id;
-            $division_id = $getTeacherData->division_id;
+            // Null-safe: a teacher with no timetable rows returns null. Default the
+            // CSV to '0' so downstream "... IN (".$standard_id.")" stays valid SQL
+            // (IN (0) simply matches nothing) instead of erroring on "IN ()".
+            $standard_id = $getTeacherData?->standard_id ?: '0';
+            $division_id = $getTeacherData?->division_id ?: '0';
             $classTeacher = DB::table('class_teacher')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear])->first();
-            $classStdId = ($classTeacher->standard_id) ? : '';
-            $classDivId = ($classTeacher->division_id) ? : '';
+            $classStdId = $classTeacher?->standard_id ?: '';
+            $classDivId = $classTeacher?->division_id ?: '';
         }
 
         // class schedule data from timetable

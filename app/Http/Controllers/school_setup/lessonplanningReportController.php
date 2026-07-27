@@ -23,7 +23,8 @@ class lessonplanningReportController extends Controller
 
     public function getData($request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        // Prefer request param (headless type=API calls) and fall back to session.
+        $sub_institute_id = $request->input('sub_institute_id') ?: $request->session()->get('sub_institute_id');
         /*$marking_period_id = session()->get('term_id');
         return lessonplanningModel::from("lessonplan as l")
             ->select('l.id', 'l.title', 'l.description', 'l.school_date',

@@ -13,7 +13,8 @@ class lmsDashboardController extends Controller
 {
     public function index(Request $request)
     {
-        $userProfile = session()->get('user_profile_name');
+        // Prefer request user_profile (headless type=API calls) and fall back to session.
+        $userProfile = $request->input('user_profile') ?: session()->get('user_profile_name');
         return $this->getDashboard($request, $userProfile);
     }
 
