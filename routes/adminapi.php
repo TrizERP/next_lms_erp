@@ -1,6 +1,13 @@
 <?php
 
 use App\Http\Controllers\api\adminapiController;
+use App\Http\Controllers\api\StudentSearchApiController;
+use App\Http\Controllers\api\BulkStudentApiController;
+use App\Http\Controllers\api\StudentInfirmaryApiController;
+use App\Http\Controllers\api\StudentCareApiController;
+use App\Http\Controllers\api\StudentSetupApiController;
+use App\Http\Controllers\api\StudentOptionalSubjectApiController;
+use App\Http\Controllers\api\StudentRegistrationApiController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -93,3 +100,26 @@ Route::controller(adminapiController::class)->group(function () {
 
     Route::post('get_studentCapturePhotosAPI', 'get_studentCapturePhotosAPI');
 });
+
+Route::post('get_adminStudentSearch', [StudentSearchApiController::class, 'search']);
+Route::put('get_adminStudentSearch/{studentId}', [StudentSearchApiController::class, 'update']);
+Route::get('bulk-students/metadata', [BulkStudentApiController::class, 'metadata']);
+Route::post('bulk-students/search', [BulkStudentApiController::class, 'search']);
+Route::put('bulk-students', [BulkStudentApiController::class, 'update']);
+Route::get('student-infirmary', [StudentInfirmaryApiController::class, 'index']);
+Route::get('student-infirmary/students', [StudentInfirmaryApiController::class, 'students']);
+Route::post('student-infirmary', [StudentInfirmaryApiController::class, 'store']);
+Route::put('student-infirmary/{id}', [StudentInfirmaryApiController::class, 'update']);
+Route::delete('student-infirmary/{id}', [StudentInfirmaryApiController::class, 'destroy']);
+Route::get('student-care/{module}', [StudentCareApiController::class, 'index']);
+Route::post('student-care/{module}', [StudentCareApiController::class, 'store']);
+Route::put('student-care/{module}/{id}', [StudentCareApiController::class, 'update']);
+Route::delete('student-care/{module}/{id}', [StudentCareApiController::class, 'destroy']);
+Route::get('student-setup/{resource}', [StudentSetupApiController::class, 'index']);
+Route::post('student-setup/{resource}', [StudentSetupApiController::class, 'store']);
+Route::put('student-setup/{resource}/{id}', [StudentSetupApiController::class, 'update']);
+Route::delete('student-setup/{resource}/{id}', [StudentSetupApiController::class, 'destroy']);
+Route::post('student-optional-subject/search', [StudentOptionalSubjectApiController::class, 'search']);
+Route::put('student-optional-subject', [StudentOptionalSubjectApiController::class, 'sync']);
+Route::get('student-registration/metadata', [StudentRegistrationApiController::class, 'metadata']);
+Route::post('student-registration', [StudentRegistrationApiController::class, 'store']);
