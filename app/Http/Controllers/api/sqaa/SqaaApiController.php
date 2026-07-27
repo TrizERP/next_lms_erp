@@ -78,7 +78,7 @@ class SqaaApiController extends Controller
     {
         $validated = $request->validate([
             'menu_id' => ['required', 'integer', Rule::exists('sqaa_master', 'id')],
-            'mark' => ['required', 'integer', 'between:1,4'],
+            'mark' => ['required', 'integer', 'between:0,4'],
             'documents' => ['required', 'array', 'min:1'],
             'documents.*.document_id' => ['required', 'integer', Rule::exists('sqaa_documant_master', 'id')],
             'documents.*.title' => ['nullable', 'string'],
