@@ -4,6 +4,9 @@ namespace App\Http\Controllers\api\lms;
 
 use App\Http\Controllers\Controller;
 use App\Models\lms\assignment\lms_assignmentModel;
+use App\Models\lms\lmsOfflineExamModel;
+use App\Models\lms\lmsOfflineExamAnswerModel;
+use App\Models\lms\questionpaperModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -360,5 +363,312 @@ class LmsAssignmentApiController extends Controller
             'message' => 'SUCCESS',
             'data' => $data,
         ], 200);
+    }
+
+    // ==================================================================
+    // MODULE 2 - Assignment Submission (student upload screen)
+    // ==================================================================
+
+    /**
+     * List the logged-in student's assignments for the submission screen.
+     * Counterpart of assignmentSubmissionController::index()/getData().
+     * Identity (student) comes from user_id in the token-authenticated body.
+     */
+    public function submissionList(Request $request): JsonResponse
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+        $student_id = $request->input('user_id') ?? $request->input('student_id');
+
+        if (!$sub_institute_id || !$syear) {
+            return $this->fail('sub_institute_id and syear are required');
+        }
+        if (!$student_id) {
+            return $this->fail('user_id (student) is required');
+        }
+
+        $server = $request->getSchemeAndHttpHost();
+
+        $data = DB::table('lms_assignment as a')
+            ->join('subject as s', function ($join) {
+                $join->whereRaw('s.id = a.subject_id');
+            })
+            ->selectRaw("a.*, s.subject_name,
+                IF(a.exam_pdf IS NULL OR a.exam_pdf = '', '', CONCAT('$server/storage/', a.exam_pdf)) AS exam_pdf_url,
+                IF(a.submission_image IS NULL OR a.submission_image = '', '',
+                    CONCAT('$server/storage/lms_assignment_submission/', a.submission_image)) AS submission_file_url,
+                DATE_FORMAT(a.created_date, '%d-%m-%Y') AS created_date_fmt,
+                DATE_FORMAT(a.submission_date, '%d-%m-%Y') AS submission_date_fmt")
+            ->where('a.sub_institute_id', $sub_institute_id)
+            ->where('a.syear', $syear)
+            ->where('a.student_id', $student_id)
+            ->orderBy('a.id', 'DESC')
+            ->get()->toArray();
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $data,
+        ], 200);
+    }
+
+    /**
+     * Store student submissions: one uploaded file per assignment.
+     * Mirrors assignmentSubmissionController::store() over multipart:
+     *   image[<assignment_id>] = file
+     */
+    public function submissionStore(Request $request): JsonResponse
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+        $student_id = $request->input('user_id') ?? $request->input('student_id');
+
+        if (!$sub_institute_id || !$syear || !$student_id) {
+            return $this->fail('sub_institute_id, syear and user_id are required');
+        }
+
+        $imageFiles = $request->file('image');
+        if (!is_array($imageFiles) || empty($imageFiles)) {
+            return $this->fail('Please choose at least one file to upload.');
+        }
+
+        $updated = 0;
+        foreach ($imageFiles as $assignment_id => $file) {
+            if (!$file) {
+                continue;
+            }
+            $originalname = $file->getClientOriginalName();
+            $ext = File::extension($originalname);
+            $file_name = 'assignment_' . $assignment_id . '-' . date('YmdHis') . '-' . $student_id . '.' . $ext;
+            $file->storeAs('public/lms_assignment_submission', $file_name);
+
+            $ok = lms_assignmentModel::where([
+                'id' => $assignment_id,
+                'syear' => $syear,
+                'sub_institute_id' => $sub_institute_id,
+                'student_id' => $student_id,
+            ])->update([
+                'submission_image' => $file_name,
+                'student_submitted_date' => date('Y-m-d'),
+                'student_submission_status' => 'Y',
+                'student_submitted_by' => $student_id,
+            ]);
+
+            if ($ok) {
+                $updated++;
+            }
+        }
+
+        return response()->json([
+            'status_code' => $updated > 0 ? 1 : 0,
+            'message' => $updated > 0 ? 'Assignment Submited successfully' : 'Failed to submit assignment please try again',
+            'updated' => $updated,
+        ], $updated > 0 ? 200 : 422);
+    }
+
+    // ==================================================================
+    // MODULE 3 - Annotate Assignment (teacher review / grade screen)
+    // ==================================================================
+
+    /**
+     * List all assignments for the teacher's annotate screen.
+     * Counterpart of annotateAssignmentController::index()/getData().
+     */
+    public function annotateList(Request $request): JsonResponse
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+        $standard_id = $request->input('standard_id');
+        $division_id = $request->input('division_id');
+        $subject_id = $request->input('subject_id');
+
+        if (!$sub_institute_id || !$syear) {
+            return $this->fail('sub_institute_id and syear are required');
+        }
+
+        $server = $request->getSchemeAndHttpHost();
+
+        $query = DB::table('lms_assignment as a')
+            ->join('subject as s', function ($join) {
+                $join->whereRaw('s.id = a.subject_id');
+            })
+            ->join('tblstudent as ts', function ($join) {
+                $join->whereRaw('ts.id = a.student_id');
+            })
+            ->leftJoin('standard as st', function ($join) {
+                $join->whereRaw('st.id = a.standard_id');
+            })
+            ->selectRaw("a.*, s.subject_name, st.name AS standard_name,
+                CONCAT_WS(' ', ts.first_name, ts.middle_name, ts.last_name) AS student_name,
+                IF(a.exam_pdf IS NULL OR a.exam_pdf = '', '', CONCAT('$server/storage/', a.exam_pdf)) AS exam_pdf_url,
+                IF(a.submission_image IS NULL OR a.submission_image = '', '',
+                    CONCAT('$server/storage/lms_assignment_submission/', a.submission_image)) AS submission_file_url,
+                DATE_FORMAT(a.created_date, '%d-%m-%Y') AS created_date_fmt,
+                DATE_FORMAT(a.submission_date, '%d-%m-%Y') AS submission_date_fmt")
+            ->where('a.sub_institute_id', $sub_institute_id)
+            ->where('a.syear', $syear);
+
+        if ($standard_id) {
+            $query->where('a.standard_id', $standard_id);
+        }
+        if ($division_id) {
+            $query->where('a.division_id', $division_id);
+        }
+        if ($subject_id) {
+            $query->where('a.subject_id', $subject_id);
+        }
+
+        $data = $query->orderBy('a.id', 'DESC')->get()->toArray();
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $data,
+        ], 200);
+    }
+
+    /**
+     * Load one assignment's question paper + questions for the grading screen.
+     * Counterpart of annotateAssignmentController::edit().
+     */
+    public function annotateQuestions(Request $request): JsonResponse
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $assignment_id = $request->input('assignment_id');
+
+        if (!$sub_institute_id) {
+            return $this->fail('sub_institute_id is required');
+        }
+        if (!$assignment_id) {
+            return $this->fail('assignment_id is required');
+        }
+
+        $assignment = lms_assignmentModel::find($assignment_id);
+        if (!$assignment) {
+            return $this->fail('Assignment not found', 404);
+        }
+        $assignment = $assignment->toArray();
+
+        $paper = questionpaperModel::find($assignment['exam_id']);
+        if (!$paper) {
+            return $this->fail('Question paper not found for this assignment', 404);
+        }
+        $paper = $paper->toArray();
+
+        $questions = [];
+        if (!empty($paper['question_ids'])) {
+            $questions = DB::table('lms_question_master')
+                ->whereRaw('id in (' . $paper['question_ids'] . ')')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->get()->toArray();
+        }
+
+        $server = $request->getSchemeAndHttpHost();
+        $assignment['submission_file_url'] = !empty($assignment['submission_image'])
+            ? $server . '/storage/lms_assignment_submission/' . $assignment['submission_image']
+            : '';
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => [
+                'assignment' => $assignment,
+                'question_paper' => $paper,
+                'questions' => json_decode(json_encode($questions), true),
+            ],
+        ], 200);
+    }
+
+    /**
+     * Record the teacher's review/grade of a submitted assignment.
+     * Mirrors annotateAssignmentController::store(): inserts an offline exam +
+     * per-question answers, then flags the assignment as teacher-reviewed.
+     * Expects JSON: hid_question_paper_id, hid_assignment_id, hid_student_id,
+     * questions { <question_id>: <marks> }, teacher_remarks.
+     */
+    public function annotateStore(Request $request): JsonResponse
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+        $user_id = $request->input('user_id') ?? $request->input('teacher_id');
+        $question_paper_id = $request->input('hid_question_paper_id') ?? $request->input('question_paper_id');
+        $assignment_id = $request->input('hid_assignment_id') ?? $request->input('assignment_id');
+        $student_id = $request->input('hid_student_id') ?? $request->input('student_id');
+        $question_arr = $request->input('questions', []);
+        $teacher_remarks = $request->input('teacher_remarks');
+
+        if (!$sub_institute_id || !$assignment_id || !$question_paper_id || !$student_id) {
+            return $this->fail('sub_institute_id, assignment, question paper and student are required');
+        }
+
+        if (!is_array($question_arr)) {
+            $question_arr = [];
+        }
+
+        $paper = questionpaperModel::find($question_paper_id);
+        if (!$paper) {
+            return $this->fail('Question paper not found', 404);
+        }
+        $paper = $paper->toArray();
+
+        // Any MCQ question left untoggled by the teacher counts as 0 (wrong).
+        if (!empty($paper['question_ids'])) {
+            $questionData = DB::table('lms_question_master')
+                ->whereRaw('id in (' . $paper['question_ids'] . ')')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->get()->toArray();
+            foreach ($questionData as $v) {
+                if (!isset($question_arr[$v->id])) {
+                    $question_arr[$v->id] = 0;
+                }
+            }
+        }
+
+        $total_wrong = $total_right = $obtain_marks = 0;
+        foreach ($question_arr as $marks) {
+            if ((float) $marks == 0) {
+                $total_wrong++;
+            } else {
+                $total_right++;
+            }
+            $obtain_marks += (float) $marks;
+        }
+
+        $offline_exam_id = lmsOfflineExamModel::insertGetId([
+            'student_id' => $student_id,
+            'question_paper_id' => $question_paper_id,
+            'assignment_id' => $assignment_id,
+            'total_right' => $total_right,
+            'total_wrong' => $total_wrong,
+            'obtain_marks' => $obtain_marks,
+            'created_by' => $user_id,
+            'syear' => $syear,
+            'sub_institute_id' => $sub_institute_id,
+        ]);
+
+        foreach ($question_arr as $qid => $marks) {
+            lmsOfflineExamAnswerModel::insert([
+                'question_paper_id' => $question_paper_id,
+                'offline_exam_id' => $offline_exam_id,
+                'student_id' => $student_id,
+                'question_id' => $qid,
+                'ans_status' => ((float) $marks == 0) ? 'wrong' : 'right',
+                'created_by' => $user_id,
+            ]);
+        }
+
+        lms_assignmentModel::where(['id' => $assignment_id])->update([
+            'teacher_id' => $user_id,
+            'teacher_remarks' => $teacher_remarks,
+            'teacher_submission_date' => date('Y-m-d'),
+            'teacher_submission_status' => 'Y',
+        ]);
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'Assignment Reviewed Successfully',
+            'obtain_marks' => $obtain_marks,
+            'offline_exam_id' => $offline_exam_id,
+        ], 201);
     }
 }
