@@ -14,6 +14,7 @@ use GenTux\Jwt\JwtToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class ApiLoginController extends Controller
@@ -42,7 +43,7 @@ class ApiLoginController extends Controller
 
        $staffQuery = loginModel::select(
     DB::raw('id,CONCAT_WS(" ",COALESCE(first_name,"-"),COALESCE(last_name,"-")) as user_name,password,name_suffix,first_name,middle_name,last_name,email,mobile,gender,
-        birthdate,address,city,state,pincode,user_profile_id,join_year,image,plain_password,
+        birthdate,address,city,state,pincode,user_profile_id,join_year,image,
         sub_institute_id,client_id,is_admin,status,created_on as last_login,expire_date')
 )->where(['email' => $email, 'status' => '1']);
 
@@ -50,7 +51,7 @@ $staffData = $staffQuery->first();
 $isStaff = $isStudent= false;
 if ($staffData) {
     $isStaff = true;
-    if ($staffData->password != $password) {
+    if (! $this->verifyAndUpgradePassword($staffData, $password, false)) {
         return response()->json([
             'status'  => 0,
             'message' => 'Invalid User Id And Password',
@@ -64,7 +65,7 @@ if ($staffData) {
     $studentQuery = tblstudentModel::select(
         DB::raw('id,CONCAT_WS(" ",COALESCE(first_name,"-"),COALESCE(last_name,"-")) as user_name,password,"" as name_suffix,first_name,middle_name,last_name,email,
             mobile,gender,dob as birthdate,address,city,state,pincode,user_profile_id,
-            admission_year as join_year,image,"student" as plain_password,
+            admission_year as join_year,image,
             sub_institute_id,"" as client_id,"" as is_admin,status,created_on as last_login,expire_date')
     )->where(['email' => $email, 'status' => '1']);   
     
@@ -78,7 +79,7 @@ if ($staffData) {
         ], 401);
     }
 
-    if ($studentData->password != md5($password)) {
+    if (! $this->verifyAndUpgradePassword($studentData, $password, true)) {
         return response()->json([
             'status'  => 0,
             'message' => 'Invalid User Id And Password',
@@ -93,7 +94,7 @@ if ($staffData) {
         $profileParentId = $profileData[0]['parent_id'] ?? null;
         $rightsMenusIds = 0;
 
-        if ($user['plain_password'] == 'student' || $user['plain_password'] == 'Student' || $user['plain_password'] == 'STUDENT') {
+        if ($isStudent) {
             $rightsMenusIds = DB::table('tblstudent as u')
                 ->leftJoin('tblindividual_rights as i', function ($join) {
                     $join->on('u.id', '=', 'i.user_id')->on('u.sub_institute_id', '=', 'i.sub_institute_id');
@@ -320,7 +321,7 @@ if ($staffData) {
             ->pluck('subject_id')
             ->toArray();
 
-        if ($user['plain_password'] == 'student' || $user['plain_password'] == 'Student' || $user['plain_password'] == 'STUDENT') {
+        if ($isStudent) {
             $currentSyear = null;
 
             if (! empty($getTermId) && isset($getTermId[0]['syear'])) {
@@ -587,5 +588,33 @@ if ($staffData) {
             'total'   => $data->count(),
             'data'    => $data,
         ], 200);
+    }
+
+    /**
+     * Verify Laravel hashes and upgrade a legacy password after one successful
+     * login. Remove the legacy branch after the password-reset campaign.
+     */
+    private function verifyAndUpgradePassword($account, string $password, bool $legacyMd5): bool
+    {
+        $storedPassword = (string) $account->password;
+
+        if (Hash::check($password, $storedPassword)) {
+            if (Hash::needsRehash($storedPassword)) {
+                $account->password = Hash::make($password);
+                $account->save();
+            }
+
+            return true;
+        }
+
+        $legacyPassword = $legacyMd5 ? md5($password) : $password;
+        if (! hash_equals($storedPassword, $legacyPassword)) {
+            return false;
+        }
+
+        $account->password = Hash::make($password);
+        $account->save();
+
+        return true;
     }
 }
