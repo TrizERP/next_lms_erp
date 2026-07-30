@@ -3016,38 +3016,60 @@ if (Str::startsWith($order_id, 'pay_')) {
 
     public function razorpay_response_handler(Request $request)
     {
-        $input = $request->all();
+        $input = $request->validate([
+            'student_id' => ['required', 'integer'],
+            'inserted_id' => ['required', 'integer'],
+            'razorpay_payment_id' => ['required', 'string', 'max:255'],
+            'razorpay_order_id' => ['required', 'string', 'max:255'],
+            'razorpay_signature' => ['required', 'string', 'max:255'],
+        ]);
         // echo "<pre>";
         // print_r($input);
         // exit;
 
-        $student_id = $_REQUEST["student_id"];
-        $medium_data = DB::select("SELECT a.*,e.grade_id,CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name, t.mobile FROM tblstudent_enrollment e
-        inner join academic_section a on e.grade_id = a.id
-        INNER JOIN fees_online_maping fom ON fom.syear=e.syear AND fom.sub_institute_id=e.sub_institute_id
-        INNER JOIN tblstudent t ON t.id=e.student_id
+        $student_id = $input['student_id'];
+        $medium_data = DB::table('tblstudent_enrollment as e')
+            ->join('academic_section as a', 'e.grade_id', '=', 'a.id')
+            ->join('fees_online_maping as fom', function ($join) {
+                $join->on('fom.syear', '=', 'e.syear')
+                    ->on('fom.sub_institute_id', '=', 'e.sub_institute_id');
+            })
+            ->join('tblstudent as t', 't.id', '=', 'e.student_id')
+            ->where('e.student_id', $student_id)
+            ->orderByDesc('e.syear')
+            ->select('a.*', 'e.grade_id', 't.mobile')
+            ->first();
 
-        WHERE e.student_id = '" . $student_id . "' ORDER BY e.syear DESC LIMIT 1");
+        abort_if(! $medium_data, 404, 'Student payment configuration not found.');
+
+        $pendingPayment = DB::table('fees_payment')
+            ->where('id', $input['inserted_id'])
+            ->where('student_id', $student_id)
+            ->first();
+
+        abort_if(! $pendingPayment, 404, 'Pending payment not found.');
+        abort_unless(
+            hash_equals((string) $pendingPayment->razorpay_order_id, $input['razorpay_order_id']),
+            422,
+            'Payment order mismatch.'
+        );
 
         $get_map_bank_detail = DB::table("fees_razorpay")
-            ->where(["sub_institute_id" => session()->get("sub_institute_id"), "medium" => $medium_data[0]->medium])
-            ->get();
+            ->where([
+                "sub_institute_id" => $pendingPayment->sub_institute_id,
+                "medium" => $medium_data->medium,
+            ])
+            ->first();
 
-        $update_arr = array(
-            "razorpay_order_id" => $input['razorpay_payment_id'],
-            "updated_at" => now()
-        );
+        abort_if(! $get_map_bank_detail, 404, 'Razorpay configuration not found.');
 
-        $where_arr = array(
-            "id" => $_REQUEST["inserted_id"]
-        );
-        // echo "<pre>"; print_r($response); exit;
-        DB::table("fees_payment")
-            ->where($where_arr)
-            ->update($update_arr);
+        $api = new Api($get_map_bank_detail->key_id, $get_map_bank_detail->key_secret);
+        $api->utility->verifyPaymentSignature([
+            'razorpay_order_id' => $input['razorpay_order_id'],
+            'razorpay_payment_id' => $input['razorpay_payment_id'],
+            'razorpay_signature' => $input['razorpay_signature'],
+        ]);
 
-        $api = new Api($get_map_bank_detail[0]->key_id, $get_map_bank_detail[0]->key_secret);
-        $payment = $api->payment->fetch($input['razorpay_payment_id']);
         if (count($input) && !empty($input['razorpay_payment_id'])) {
             try {
 
@@ -3059,14 +3081,14 @@ if (Str::startsWith($order_id, 'pay_')) {
 
                 $res_josn = json_encode($response);
                 $get_all_data = DB::table("fees_payment")
-                    ->where(["id" => $_REQUEST["inserted_id"]])
+                    ->where(["id" => $input["inserted_id"]])
                     ->get();
                 $payment_status_res = $response['status'];
                 $payment_status = ($payment_status_res == "captured") ? 'PS' : 'PR';
 
 
                 $update_arr = array(
-                    "razorpay_order_id" => $input['razorpay_payment_id'],
+                    "razorpay_payment_id" => $input['razorpay_payment_id'],
                     "razorpay_payment_status" => $payment_status,
                     "razorpay_dashboard_ps" => $payment_status_res,
                     "icici_bank_res" => $payment_status_res,
@@ -3075,7 +3097,7 @@ if (Str::startsWith($order_id, 'pay_')) {
                 );
 
                 $where_arr = array(
-                    "id" => $_REQUEST["inserted_id"]
+                    "id" => $input["inserted_id"]
                 );
 
 
@@ -3109,7 +3131,7 @@ if (Str::startsWith($order_id, 'pay_')) {
                 return $e->getMessage();
                 $res_josn = json_encode($e->getMessage());
                 $get_all_data = DB::table("fees_payment")
-                    ->where(["id" => $_REQUEST["inserted_id"]])
+                    ->where(["id" => $input["inserted_id"]])
                     ->get();
                 $payment_status = "PF";
 
@@ -3119,7 +3141,7 @@ if (Str::startsWith($order_id, 'pay_')) {
                     "updated_at" => now()
                 );
                 $where_arr = array(
-                    "id" => $_REQUEST["inserted_id"]
+                    "id" => $input["inserted_id"]
                 );
                 // echo '<pre>'; print_r($where_arr); exit;
                 DB::table("fees_payment")

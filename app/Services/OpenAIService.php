@@ -902,8 +902,7 @@ class OpenAIService
     protected function getAttendance($studentId)
     {
         try {
-            $url = "https://erp.triz.co.in/student/studentAttendanceChatAPI?type=API&sub_institute_id=254&syear=2024&enrollment_no={$studentId}&token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdHVkZW50X2lkIjo5NzM4Miwic3ViX2luc3RpdHV0ZV9pZCI6MX0.gvRa2kggWK5F1J-qYxZdFWhdRx8ZIqzlzT7pwmlWDAM";
-            $response = Http::get($url);
+            $response = $this->attendanceRequest($studentId);
             
             $data = json_decode($response->getBody(), true);
 
@@ -927,8 +926,7 @@ class OpenAIService
     protected function getYearlyAttendance($studentId)
     {
         try {
-            $url = "https://erp.triz.co.in/student/studentAttendanceChatAPI?type=API&sub_institute_id=254&syear=2024&enrollment_no={$studentId}&token=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdHVkZW50X2lkIjo5NzM4Miwic3ViX2luc3RpdHV0ZV9pZCI6MX0.gvRa2kggWK5F1J-qYxZdFWhdRx8ZIqzlzT7pwmlWDAM";
-            $response = Http::get($url);
+            $response = $this->attendanceRequest($studentId);
             
             $data = json_decode($response->getBody(), true);
 
@@ -948,6 +946,25 @@ class OpenAIService
             Log::error('API Error: ' . $e->getMessage());
             return 'Sorry for the inconvenience, please contact site admin.';
         }
+    }
+
+    private function attendanceRequest($studentId)
+    {
+        $token = config('services.attendance.token');
+        if (empty($token)) {
+            throw new \RuntimeException('Attendance API token is not configured.');
+        }
+
+        return Http::acceptJson()
+            ->timeout(10)
+            ->get(config('services.attendance.url'), [
+                'type' => 'API',
+                'sub_institute_id' => config('services.attendance.sub_institute_id'),
+                'syear' => config('services.attendance.syear'),
+                'enrollment_no' => $studentId,
+                'token' => $token,
+            ])
+            ->throw();
     }
 
     protected function getPendingFees($studentId)

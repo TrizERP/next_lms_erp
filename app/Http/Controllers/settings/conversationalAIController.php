@@ -1048,7 +1048,6 @@ class conversationalAIController extends Controller
             'term_id' => $term,
             'type'=>"API",
             'token'=>$token,
-           // "token"=>"eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdHVkZW50X2lkIjo5NzM4Miwic3ViX2luc3RpdHV0ZV9pZCI6MX0.gvRa2kggWK5F1J-qYxZdFWhdRx8ZIqzlzT7pwmlWDAM"
         ];
         
         $payload = json_encode($postData);
