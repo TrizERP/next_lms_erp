@@ -299,3 +299,12 @@ Route::post('document-templates/{id}/duplicate', [\App\Http\Controllers\api\Docu
 Route::post('document-templates/{id}/restore/{version}', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'restore']);
 Route::post('document-templates/{id}/delete', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'destroy']);
 Route::post('document-templates/{id}', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'update']);
+
+// Fields Configuration module - stateless JSON entry points for the Next.js
+// frontend. Distinct from the legacy `add_fields` web routes, which are unchanged.
+Route::get('fields-configuration', [\App\Http\Controllers\api\CustomFieldApiController::class, 'index']);
+Route::post('fields-configuration/update-sort', [\App\Http\Controllers\api\CustomFieldApiController::class, 'updateSortOrder']);
+Route::post('fields-configuration', [\App\Http\Controllers\api\CustomFieldApiController::class, 'store']);
+Route::get('fields-configuration/{id}', [\App\Http\Controllers\api\CustomFieldApiController::class, 'show']);
+Route::post('fields-configuration/{id}', [\App\Http\Controllers\api\CustomFieldApiController::class, 'update']);
+Route::post('fields-configuration/{id}/delete', [\App\Http\Controllers\api\CustomFieldApiController::class, 'destroy']);
