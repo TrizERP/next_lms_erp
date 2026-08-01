@@ -217,9 +217,7 @@ Route::get('/departments/hierarchy', [\App\Http\Controllers\HRMS\departmentContr
 
 
 
-use App\Http\Controllers\api\UserManagementApiController;
-
-Route::controller(UserManagementApiController::class)->group(function () {
+Route::controller(\App\Http\Controllers\api\UserManagementApiController::class)->group(function () {
     Route::get('users', 'index');
     Route::post('users', 'store');
     Route::get('users/{id}', 'show');
@@ -232,6 +230,19 @@ Route::controller(UserManagementApiController::class)->group(function () {
     Route::get('user-reports/bootstrap', 'reportBootstrap');
     Route::post('user-reports/search', 'report');
 });
+
+Route::get('groupwise-rights', [\App\Http\Controllers\api\GroupwiseRightsApiController::class, 'index']);
+Route::get('groupwise-rights/{profileId}/matrix', [\App\Http\Controllers\api\GroupwiseRightsApiController::class, 'matrix']);
+Route::post('groupwise-rights', [\App\Http\Controllers\api\GroupwiseRightsApiController::class, 'store']);
+Route::get('individual-rights', [\App\Http\Controllers\api\IndividualRightsApiController::class, 'index']);
+Route::get('individual-rights/{profileId}/users', [\App\Http\Controllers\api\IndividualRightsApiController::class, 'users']);
+Route::get('individual-rights/{profileId}/{userId}/matrix', [\App\Http\Controllers\api\IndividualRightsApiController::class, 'matrix']);
+Route::post('individual-rights', [\App\Http\Controllers\api\IndividualRightsApiController::class, 'store']);
+Route::get('mobile-app-rights/bootstrap', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'bootstrap']);
+Route::get('mobile-app-rights/{profileId}/rights', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'rights']);
+Route::post('mobile-app-rights/rights', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'saveRights']);
+Route::get('mobile-app-rights/config', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'configIndex']);
+Route::post('mobile-app-rights/config/{id}', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'updateConfig']);
 
 
 Route::get('teacher-transfer', [\App\Http\Controllers\api\TeacherTransferApiController::class, 'index']);
@@ -308,3 +319,10 @@ Route::post('fields-configuration', [\App\Http\Controllers\api\CustomFieldApiCon
 Route::get('fields-configuration/{id}', [\App\Http\Controllers\api\CustomFieldApiController::class, 'show']);
 Route::post('fields-configuration/{id}', [\App\Http\Controllers\api\CustomFieldApiController::class, 'update']);
 Route::post('fields-configuration/{id}/delete', [\App\Http\Controllers\api\CustomFieldApiController::class, 'destroy']);
+
+
+
+
+
+
+
