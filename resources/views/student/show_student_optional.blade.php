@@ -95,6 +95,7 @@
                                 <thead>
                                 <tr>
                                     <th><input id="checkall" onchange="checkAll(this);" type="checkbox"></th>
+                                    <th>Roll No</th>
                                     <th>{{App\Helpers\get_string('studentname','request')}}</th>
                                     <th>{{App\Helpers\get_string('grno','request')}}</th>
                                     <th>{{App\Helpers\get_string('uniqueid','request')}}</th>
@@ -112,6 +113,7 @@
                                 @foreach($student_data as $key => $data)
                                     <tr>
                                         <td><input id="{{$data['stu_id']}}" value="{{$data['stu_id']}}" name="students[]" type="checkbox"></td>
+                                        <td>{{$data->roll_no}}</td>
                                         <td>{{$data->first_name}} {{$data->middle_name}} {{$data->last_name}}</td>
                                         <td>{{$data->enrollment_no}}</td>
                                         <td>{{$data->uniqueid}}</td>
