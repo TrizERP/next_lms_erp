@@ -68,6 +68,13 @@ Route::controller(apiController::class)->group(function () {
 });
 
 Route::post('api-login', [ApiLoginController::class, 'login'])->name('api.api-login');
+
+// Stateless replacements for the legacy session/Blade ERP migration modules.
+// These are deliberately separate from the old controllers so the Next.js
+// application never has to manufacture a Laravel session.
+Route::get('migration-modules/{module}', [\App\Http\Controllers\api\MigrationModulesApiController::class, 'index']);
+Route::post('migration-modules/{module}', [\App\Http\Controllers\api\MigrationModulesApiController::class, 'store']);
+Route::delete('migration-modules/{module}/{id}', [\App\Http\Controllers\api\MigrationModulesApiController::class, 'destroy']);
 // 12-11-2024
 Route::get('crm-whatsapp', [\App\Http\Controllers\WhatsappController::class, 'whatsappCRM'])->withoutMiddleware([Authenticate::class])->name('crm-whatsapp');
 Route::get('crm-whatsapp-update', [\App\Http\Controllers\WhatsappController::class, 'updateCRMWhatsappStatus'])->withoutMiddleware([Authenticate::class])->name('updateCRMWhatsappStatus');
