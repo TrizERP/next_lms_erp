@@ -92,6 +92,7 @@
 											<th>
 												<input id="checkall" onchange="checkAll(this);" type="checkbox">
 											</th>
+											<th>Roll No</th>
 											<th>{{App\Helpers\get_string('grno','request')}}</th>
 											<th>{{App\Helpers\get_string('studentname','request')}}</th>
 											<th>{{App\Helpers\get_string('standard','request')}}</th>
@@ -105,6 +106,7 @@
                                         @foreach($data['student_data'] as $key => $value)
                                         <tr>
                                         <td><input id="{{$value['id']}}" value="{{$value['id']}}" name="students[]" type="checkbox"></td>
+											<td>{{$value['roll_no']}}</td>
                                             <td>{{$value['enrollment_no']}}</td>
                                             <td>{{App\Helpers\sortStudentName("",$value['first_name'],$value['middle_name'],$value['last_name'])}}</td>
                                             <td>{{$value['standard_name']}}</td>
