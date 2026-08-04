@@ -104,10 +104,10 @@ class OnboardingApiController extends Controller
             return $this->failure('Onboarding step not found.', 404);
         }
 
-        $module = OnboardingModuleModel::where('id', $step->module_id)
-            ->whereIn('sub_institute_id', [0, $subInstituteId])
-            ->where('status', 1)
-            ->first();
+        // Writes obey the same visibility rule as reads: a step belonging to a
+        // module this school has no menu for cannot be updated either.
+        $module = $this->progress->modulesForTenant($subInstituteId)
+            ->firstWhere('id', (int) $step->module_id);
 
         if (! $module) {
             return $this->failure('This onboarding step is not available for your institute.', 403);
@@ -159,10 +159,14 @@ class OnboardingApiController extends Controller
         ];
     }
 
+    /**
+     * Same visibility rule as the overview list — a module the school has no
+     * menu for is not reachable by URL either, so the two views can never
+     * disagree about what this tenant can onboard.
+     */
     private function resolveModule(string $moduleKey, int $subInstituteId): ?OnboardingModuleModel
     {
-        return OnboardingModuleModel::forTenant($subInstituteId)
-            ->firstWhere('module_key', $moduleKey);
+        return $this->progress->findModuleForTenant($moduleKey, $subInstituteId);
     }
 
     /**
@@ -174,18 +178,7 @@ class OnboardingApiController extends Controller
     {
         $menuTitle = $module->menu_title;
 
-        $menus = [];
-        if ($menuTitle) {
-            $menus = DB::table('tblmenumaster')
-                ->select('id', 'name', 'link', 'menu_type', 'icon', 'youtube_link', 'pdf_link', 'database_table')
-                ->where('menu_title', $menuTitle)
-                ->where('status', 1)
-                ->whereRaw('find_in_set(?, sub_institute_id)', [$subInstituteId])
-                ->orderBy('sort_order')
-                ->get()
-                ->map(static fn ($row) => (array) $row)
-                ->all();
-        }
+        $menus = $menuTitle ? $this->moduleSubMenus($menuTitle, $subInstituteId) : [];
 
         // `sub_institute_id = 0` is the global default; a tenant row overrides it.
         $requirements = DB::table('requirement_gathering')
@@ -244,7 +237,87 @@ class OnboardingApiController extends Controller
             'requirements' => $requirementText,
             'import_fields' => $importFields,
             'responsibilities' => $responsibilities,
+            'users' => $this->tenantUsers($subInstituteId),
         ];
+    }
+
+    /**
+     * The module's sub-menus, in the order and shape the sidebar shows them.
+     *
+     * `ORDER BY sort_order` is wrong here and was the reason this list came out
+     * scrambled: `sort_order` restarts at 1 under every parent, so sorting a
+     * group that spans several parents by it interleaves unrelated branches.
+     * The rows are ordered by the sidebar walk instead — the same index that
+     * orders the modules — so a module's sub-menus read exactly as they do in
+     * the sidebar.
+     *
+     * `level`, `parent_menu_id` and `parent_name` ride along so the client can
+     * nest the list under its parents rather than only indent it.
+     */
+    private function moduleSubMenus(string $menuTitle, int $subInstituteId): array
+    {
+        $positions = $this->progress->menuPositions($subInstituteId);
+
+        return DB::table('tblmenumaster as m')
+            ->leftJoin('tblmenumaster as p', 'p.id', '=', 'm.parent_menu_id')
+            ->select(
+                'm.id', 'm.name', 'm.link', 'm.menu_type', 'm.icon',
+                'm.youtube_link', 'm.pdf_link', 'm.database_table',
+                'm.level', 'm.parent_menu_id', 'm.sort_order',
+                DB::raw('p.name as parent_name')
+            )
+            ->where('m.menu_title', $menuTitle)
+            ->where('m.status', 1)
+            ->whereRaw('find_in_set(?, m.sub_institute_id)', [$subInstituteId])
+            ->get()
+            ->map(static function ($row) use ($positions) {
+                $menu = (array) $row;
+                $menu['level'] = (int) $row->level;
+                $menu['parent_menu_id'] = (int) $row->parent_menu_id;
+                $menu['sort_order'] = (int) $row->sort_order;
+                $menu['sidebar_position'] = $positions[(int) $row->id] ?? null;
+
+                return $menu;
+            })
+            // Anything the walk did not reach cannot be placed, so it trails the
+            // rows that can — it never displaces them.
+            ->sortBy(static fn ($menu) => $menu['sidebar_position'] ?? PHP_INT_MAX)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Staff of this institute, for assigning a step to a real person.
+     *
+     * Read live from `tbluser` joined to `tbluserprofilemaster` — there is no
+     * static or seeded list anywhere in the onboarding feature, so a school sees
+     * exactly its own current, active staff and nothing else. Tenant-scoped by
+     * hand, like every other query in this codebase.
+     */
+    private function tenantUsers(int $subInstituteId): array
+    {
+        return DB::table('tbluser as u')
+            ->leftJoin('tbluserprofilemaster as p', 'p.id', '=', 'u.user_profile_id')
+            ->where('u.sub_institute_id', $subInstituteId)
+            ->where('u.status', 1)
+            ->selectRaw(
+                "u.id,
+                 TRIM(CONCAT_WS(' ', NULLIF(u.first_name,''), NULLIF(u.last_name,''))) as name,
+                 u.user_name,
+                 u.email,
+                 COALESCE(p.name, '') as profile_name"
+            )
+            ->orderByRaw("TRIM(CONCAT_WS(' ', NULLIF(u.first_name,''), NULLIF(u.last_name,'')))")
+            ->get()
+            ->map(static fn ($row) => [
+                'id' => (int) $row->id,
+                // Fall back through the identifiers the row actually has, so a
+                // user with no first/last name still renders as something usable.
+                'name' => $row->name ?: ($row->user_name ?: $row->email ?: ('User #' . $row->id)),
+                'profile_name' => $row->profile_name,
+            ])
+            ->values()
+            ->all();
     }
 
     private function success(string $message, array $data)

@@ -34,6 +34,9 @@ class OnboardingProgressService
     private array $tableCache = [];
     private array $columnCache = [];
 
+    /** The sidebar walk is asked for by the list, the detail and the write path. */
+    private array $sidebarCache = [];
+
     /**
      * Full journey for one module, with every step resolved to a status.
      *
@@ -54,7 +57,7 @@ class OnboardingProgressService
         }
 
         return [
-            'module' => $this->presentModule($module),
+            'module' => $this->presentModule($module, $subInstituteId),
             'steps' => $resolved,
             'summary' => $this->summarise($resolved),
         ];
@@ -67,7 +70,8 @@ class OnboardingProgressService
      */
     public function tenantOverview(int $subInstituteId, int $syear): array
     {
-        $modules = OnboardingModuleModel::forTenant($subInstituteId);
+        $modules = $this->modulesForTenant($subInstituteId);
+
         if ($modules->isEmpty()) {
             return ['modules' => [], 'summary' => $this->summarise([])];
         }
@@ -92,7 +96,7 @@ class OnboardingProgressService
             $all = array_merge($all, $resolved);
 
             $summary = $this->summarise($resolved);
-            $out[] = $this->presentModule($module) + [
+            $out[] = $this->presentModule($module, $subInstituteId) + [
                 'summary' => $summary,
                 'next_step' => $this->firstIncomplete($resolved),
             ];
@@ -361,8 +365,201 @@ class OnboardingProgressService
         return null;
     }
 
-    private function presentModule(OnboardingModuleModel $module): array
+    /**
+     * The modules this school actually sees, in this school's own menu order.
+     *
+     * The journey definitions in `onboarding_module` are a catalogue, not the
+     * display list. Which of them appear — and in what sequence — is driven
+     * entirely by `tblmenumaster` for this tenant:
+     *
+     *   - `menu_title` present in the school's menu  → shown, positioned exactly
+     *     where the sidebar puts that group.
+     *   - `menu_title` set but absent from the menu  → hidden. The school does
+     *     not have that module, so there is nothing to onboard.
+     *   - `menu_title` null                          → shown last. The journey is
+     *     deliberately not tied to the menu tree, so it is kept rather than
+     *     silently dropped.
+     *
+     * Two schools with different menus therefore get different onboarding lists,
+     * each in the order its staff already know from the sidebar.
+     */
+    public function modulesForTenant(int $subInstituteId)
     {
+        $titles = $this->sidebarIndex($subInstituteId)['titles'];
+
+        $visible = OnboardingModuleModel::forTenant($subInstituteId)
+            ->filter(fn ($module) => empty($module->menu_title) || isset($titles[$module->menu_title]));
+
+        return $this->orderBySchoolMenu($visible, $titles);
+    }
+
+    /** Resolve one module, applying the same visibility rule as the list. */
+    public function findModuleForTenant(string $moduleKey, int $subInstituteId): ?OnboardingModuleModel
+    {
+        return $this->modulesForTenant($subInstituteId)->firstWhere('module_key', $moduleKey);
+    }
+
+    /**
+     * Sidebar position of every menu row this school can see, keyed by menu id.
+     *
+     * Exposed so the sub-module list on the module detail screen can be sorted
+     * by the same walk that orders the modules themselves — the two must agree,
+     * and re-deriving the order in the controller would let them drift.
+     *
+     * @return array<int, int> menu id => 1-based position in the sidebar
+     */
+    public function menuPositions(int $subInstituteId): array
+    {
+        return $this->sidebarIndex($subInstituteId)['menus'];
+    }
+
+    private function orderBySchoolMenu($modules, array $titles)
+    {
+        if ($modules->isEmpty()) {
+            return $modules->values();
+        }
+
+        // A padded string rather than a tuple: PHP compares arrays by LENGTH
+        // before content, so any array-valued key silently mis-sorts here.
+        $key = static fn ($module) => sprintf(
+            // 0 = the school has this module in its menu, 1 = it does not and
+            // the module falls to the end on its template order.
+            '%d.%08d.%08d.%s',
+            isset($titles[$module->menu_title]) ? 0 : 1,
+            $titles[$module->menu_title] ?? 0,
+            max(0, (int) $module->sort_order),
+            (string) $module->module_name
+        );
+
+        return $modules->sortBy($key)->values();
+    }
+
+    /**
+     * Number every menu row in the order the sidebar reads them.
+     *
+     * A plain `ORDER BY sort_order` cannot express sidebar order: `sort_order`
+     * is scoped to a parent, so every submenu restarts at 1 and a level-3 row's
+     * own value says nothing about where it sits overall.
+     *
+     * So this walks the tenant's menu tree the way MenuMiddleware builds it —
+     * roots by `sort_order`, then each row's children by `sort_order`, parent
+     * before children — and stamps an incrementing position on each row as it
+     * is visited. Pre-order numbering means one integer per row now encodes the
+     * full hierarchy: comparing two positions gives the sidebar's answer, with
+     * no ancestor paths to compare and no array-length trap to fall into.
+     *
+     * A `menu_title` group spans several menu rows, sometimes under different
+     * parents (Result lives under both "Exam (Master)" and "Reports"). Its
+     * position is that of its first row in the walk, i.e. where a member of
+     * staff scanning the sidebar top-down first meets that module.
+     *
+     * @return array{
+     *     menus: array<int,int>,             menu id      => position
+     *     titles: array<string,int>,         menu_title   => position of its first row
+     *     roots: array<int,array>,           root menu id => {id, name, sort_order}
+     *     sections: array<string,int|null>   menu_title   => the root it sits under
+     * }
+     */
+    private function sidebarIndex(int $subInstituteId): array
+    {
+        if (isset($this->sidebarCache[$subInstituteId])) {
+            return $this->sidebarCache[$subInstituteId];
+        }
+
+        // Ordered here so every child bucket below inherits sidebar order for
+        // free. `id` breaks the ties that `sort_order` alone leaves — duplicate
+        // sort_order values are common — so the sequence is deterministic
+        // rather than left to whatever the server returns.
+        $rows = DB::table('tblmenumaster')
+            ->select('id', 'parent_menu_id', 'level', 'sort_order', 'name', 'menu_title')
+            ->where('status', 1)
+            ->whereRaw('find_in_set(?, sub_institute_id)', [$subInstituteId])
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $visible = [];
+        foreach ($rows as $row) {
+            $visible[(int) $row->id] = $row;
+        }
+
+        $roots = [];
+        $children = [];
+        $detached = [];
+
+        foreach ($rows as $row) {
+            $parentId = (int) $row->parent_menu_id;
+
+            if ($parentId === 0) {
+                $roots[] = $row;
+            } elseif ($parentId === (int) $row->id || ! isset($visible[$parentId])) {
+                // Either self-parented or hanging off a menu this school cannot
+                // see. Neither renders in the sidebar.
+                $detached[] = $row;
+            } else {
+                $children[$parentId][] = $row;
+            }
+        }
+
+        $menus = [];
+        $titles = [];
+        $sections = [];
+        $seq = 0;
+
+        // $rootId is the top-level menu this row hangs under — carried down so a
+        // module can name its sidebar section without a second traversal. Null
+        // for a detached row, which belongs to no section the school can see.
+        $walk = function ($row, ?int $rootId) use (&$walk, &$children, &$menus, &$titles, &$sections, &$seq) {
+            $id = (int) $row->id;
+            if (isset($menus[$id])) {
+                return; // Already numbered — also the guard against a parent cycle.
+            }
+
+            $menus[$id] = ++$seq;
+
+            $title = (string) $row->menu_title;
+            if ($title !== '' && ! isset($titles[$title])) {
+                $titles[$title] = $menus[$id];
+                $sections[$title] = $rootId;
+            }
+
+            foreach ($children[$id] ?? [] as $child) {
+                $walk($child, $rootId);
+            }
+        };
+
+        $rootIndex = [];
+        foreach ($roots as $root) {
+            $rootIndex[(int) $root->id] = [
+                'id' => (int) $root->id,
+                'name' => $root->name,
+                'sort_order' => (int) $root->sort_order,
+            ];
+
+            $walk($root, (int) $root->id);
+        }
+
+        // Numbered after everything that does render, so a module reachable only
+        // through an invisible parent can never jump ahead of one the staff can
+        // actually navigate to.
+        foreach ($detached as $row) {
+            $walk($row, null);
+        }
+
+        return $this->sidebarCache[$subInstituteId] = [
+            'menus' => $menus,
+            'titles' => $titles,
+            'roots' => $rootIndex,
+            'sections' => $sections,
+        ];
+    }
+
+    private function presentModule(OnboardingModuleModel $module, int $subInstituteId): array
+    {
+        $index = $this->sidebarIndex($subInstituteId);
+        $title = (string) $module->menu_title;
+        $rootId = $title !== '' ? ($index['sections'][$title] ?? null) : null;
+
         return [
             'id' => (int) $module->id,
             'module_key' => $module->module_key,
@@ -372,6 +569,11 @@ class OnboardingProgressService
             'icon' => $module->icon,
             'sort_order' => (int) $module->sort_order,
             'is_tenant_override' => (int) $module->sub_institute_id !== 0,
+            // Where the sidebar puts this module, and which top-level menu it
+            // sits under — enough for the client to group the journey list into
+            // the same sections, in the same order, as the sidebar itself.
+            'menu_position' => $title !== '' ? ($index['titles'][$title] ?? null) : null,
+            'menu_parent' => $rootId !== null ? ($index['roots'][$rootId] ?? null) : null,
         ];
     }
 
