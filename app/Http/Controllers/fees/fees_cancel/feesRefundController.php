@@ -11,6 +11,7 @@ use App\Models\student\tblstudentModel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use function App\Helpers\FeeMonthId;
@@ -590,8 +591,11 @@ class feesRefundController extends Controller
         $feesRefundLog['remarks'] = $refund_remark;
 
         foreach ($fees_title as $fees_title_name => $fees_title_id) {
-            if(isset($refund_amount[$fees_title_id])){
-            $feesRefundLog[$fees_title_id] = $refund_amount[$fees_title_id];
+            // Legacy fee masters sometimes use numeric fee-head IDs (for
+            // example, "8") while fees_refund has only named columns. Never
+            // use an arbitrary request/master value as an INSERT column.
+            if (isset($refund_amount[$fees_title_id]) && Schema::hasColumn('fees_refund', $fees_title_id)) {
+                $feesRefundLog[$fees_title_id] = $refund_amount[$fees_title_id];
             }
         }
 
