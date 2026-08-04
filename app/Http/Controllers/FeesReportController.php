@@ -112,7 +112,7 @@ class FeesReportController extends Controller
         return response()->json(['error' => 'Invalid date format'], 400);
     }
 
-    $baseUrl = "https://erp.triz.co.in/";
+    $baseUrl = rtrim(config('services.erp.url'), '/') . '/';
     $apiEndpoint = strtolower(str_replace(' ', '_', $reportType)) . "_report/create"; 
     $url = $baseUrl .$reportName."/". $apiEndpoint . "?";  
     $queryParams = http_build_query([
@@ -121,11 +121,11 @@ class FeesReportController extends Controller
         'from_date' => $fromDate,
         'to_date' => $toDate,
         'sub_institute_id' => $subInstituteId,
-        'token'=> 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NDA4MjU0NTYsInVzZXJfaWQiOjEwMDIsInN1Yl9pbnN0aXR1dGVfaWQiOjEsIm1vYmlsZSI6Ijk5NzkxNzY1NjIifQ.dhGbQPmJiidmH8b2zBo3HePl-lduftwAPM6dTeG90f0'
+        'token'=> config('services.erp.token')
     ]);
 
     $url .= $queryParams; 
-    Log::info('Generated API Request URL:', ['url' => $url]);
+    Log::info('Generated ERP report API request.', ['endpoint' => $apiEndpoint]);
 
     try {
         $response = Http::timeout(60)->get($url);
@@ -291,7 +291,7 @@ public function getDoughnutChartData(Request $request)
             Log::error('Error parsing dates:', ['fromDate' => $fromDate, 'toDate' => $toDate, 'error' => $e->getMessage()]);
             return response()->json(['error' => 'Invalid date format'], 400);
         }
-    $baseUrl = "https://erp.triz.co.in/";
+    $baseUrl = rtrim(config('services.erp.url'), '/') . '/';
     $apiEndpoint = strtolower(str_replace(' ', '_', $reportType)) . "_report/create"; 
 
     Log::info('Generated API Endpoint:', ['apiEndpoint' => $apiEndpoint]);
@@ -304,12 +304,12 @@ public function getDoughnutChartData(Request $request)
         'from_date' => $fromDate,
         'to_date' => $toDate,
         'sub_institute_id' => $subInstituteId,
-        'token'=> 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NDA4MjU0NTYsInVzZXJfaWQiOjEwMDIsInN1Yl9pbnN0aXR1dGVfaWQiOjEsIm1vYmlsZSI6Ijk5NzkxNzY1NjIifQ.dhGbQPmJiidmH8b2zBo3HePl-lduftwAPM6dTeG90f0'
+        'token'=> config('services.erp.token')
     ]);
 
     $url .= $queryParams; 
 
-    Log::info('Generated API Request URL:', ['url' => $url]);
+    Log::info('Generated ERP report API request.', ['endpoint' => $apiEndpoint]);
 
     try {
         $response = Http::timeout(60)->get($url);
@@ -465,7 +465,7 @@ public function getScatterChartData(Request $request)
         return response()->json(['error' => 'Invalid date format'], 400);
     }
 
-    $baseUrl = "https://erp.triz.co.in/";
+    $baseUrl = rtrim(config('services.erp.url'), '/') . '/';
     $apiEndpoint = strtolower(str_replace(' ', '_', $reportType)) . "_report/create"; 
     $url = $baseUrl.$reportName ."/". $apiEndpoint . "?";  
 
@@ -475,12 +475,12 @@ public function getScatterChartData(Request $request)
         'from_date' => $fromDate,
         'to_date' => $toDate,
         'sub_institute_id' => $subInstituteId,
-        'token'=> 'eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE3NDA4MjU0NTYsInVzZXJfaWQiOjEwMDIsInN1Yl9pbnN0aXR1dGVfaWQiOjEsIm1vYmlsZSI6Ijk5NzkxNzY1NjIifQ.dhGbQPmJiidmH8b2zBo3HePl-lduftwAPM6dTeG90f0'
+        'token'=> config('services.erp.token')
     ]);
 
     $url .= $queryParams; 
     // Log the full request URL
-    Log::info('Generated API Request URL:', ['url' => $url]);
+    Log::info('Generated ERP report API request.', ['endpoint' => $apiEndpoint]);
 
     // Make the API call
     try {

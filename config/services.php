@@ -43,4 +43,16 @@ return [
             'tolerance' => env('STRIPE_WEBHOOK_TOLERANCE', 300),
         ],
     ],
+
+    'attendance' => [
+        'url' => env('ATTENDANCE_API_URL', 'https://erp.triz.co.in/student/studentAttendanceChatAPI'),
+        'token' => env('ATTENDANCE_API_TOKEN'),
+        'sub_institute_id' => env('ATTENDANCE_SUB_INSTITUTE_ID'),
+        'syear' => env('ATTENDANCE_SYEAR'),
+    ],
+
+    'erp' => [
+        'url' => env('ERP_API_URL', 'https://erp.triz.co.in'),
+        'token' => env('ERP_API_TOKEN'),
+    ],
 ];
