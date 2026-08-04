@@ -24,6 +24,8 @@ use App\Http\Controllers\api\InventoryApiController;
 use App\Http\Controllers\fees\fees_cancel\feesCancelController;
 use App\Http\Controllers\fees\fees_circular\feesCircularController;
 use App\Http\Controllers\fees\fees_circular\feesCircularMasterController;
+use App\Http\Controllers\api\FeesDashboardApiController;
+use App\Http\Controllers\api\FeesRefundApiController;
 
 
 // Student Assessment API - Get student assessment data with scores and levels
@@ -68,6 +70,12 @@ Route::controller(apiController::class)->group(function () {
 });
 
 Route::post('api-login', [ApiLoginController::class, 'login'])->name('api.api-login');
+Route::post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
+Route::middleware('api.session')->prefix('fees-refund')->group(function () {
+    Route::post('search', [FeesRefundApiController::class, 'search']);
+    Route::post('detail/{studentId}', [FeesRefundApiController::class, 'detail']);
+    Route::post('save', [FeesRefundApiController::class, 'save']);
+});
 
 // Stateless replacements for the legacy session/Blade ERP migration modules.
 // These are deliberately separate from the old controllers so the Next.js
