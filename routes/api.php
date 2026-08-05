@@ -70,6 +70,8 @@ Route::controller(apiController::class)->group(function () {
 });
 
 Route::post('api-login', [ApiLoginController::class, 'login'])->name('api.api-login');
+// Isolated mobile Own Profile API; legacy profile controllers are unchanged.
+Route::middleware('api.session')->get('own-profile', [\App\Http\Controllers\api\OwnProfileApiController::class, 'show']);
 Route::post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
 Route::middleware('api.session')->prefix('fees-refund')->group(function () {
     Route::post('search', [FeesRefundApiController::class, 'search']);
