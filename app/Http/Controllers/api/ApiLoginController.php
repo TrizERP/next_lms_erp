@@ -314,6 +314,9 @@ if ($staffData) {
 
         $subjects = [];
         $studentAcademic = [];
+        $schoolSyear = DB::table('school_setup')
+            ->where('Id', $user['sub_institute_id'])
+            ->value('syear');
 
         $studentSubjectIds = DB::table('student_optional_subject')
             ->where('student_id', $user['id'])
@@ -442,6 +445,7 @@ if ($staffData) {
                 'user_profile_id'  => $user['user_profile_id'],
                 'profile_parent_id'=> $profileParentId,
                 'sub_institute_id' => $user['sub_institute_id'],
+                'mobile_syear'            => $schoolSyear,
                 'client_id'        => $user['client_id'],
                 'is_admin'         => $user['is_admin'],
                 'join_year'        => $user['join_year'],
