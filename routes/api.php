@@ -26,10 +26,12 @@ use App\Http\Controllers\fees\fees_circular\feesCircularController;
 use App\Http\Controllers\fees\fees_circular\feesCircularMasterController;
 use App\Http\Controllers\api\FeesDashboardApiController;
 use App\Http\Controllers\api\FeesRefundApiController;
+use App\Http\Controllers\api\TeacherAssignmentMobileApiController;
 
 
 // Student Assessment API - Get student assessment data with scores and levels
 Route::get('/student-assessment', [StudentGraphController::class, 'getStudentAssessment']);
+Route::middleware('api.session')->group(function () { Route::post('teacher/assignments/standards', [TeacherAssignmentMobileApiController::class, 'standards']); Route::post('teacher/assignments/divisions', [TeacherAssignmentMobileApiController::class, 'divisions']); });
 
 /*
 |--------------------------------------------------------------------------
@@ -72,6 +74,12 @@ Route::controller(apiController::class)->group(function () {
 Route::post('api-login', [ApiLoginController::class, 'login'])->name('api.api-login');
 // Isolated mobile Own Profile API; legacy profile controllers are unchanged.
 Route::middleware('api.session')->get('own-profile', [\App\Http\Controllers\api\OwnProfileApiController::class, 'show']);
+Route::middleware('api.session')->prefix('hrms')->group(function () {
+    Route::get('today', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'today']);
+    Route::post('punch', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'punch']);
+    Route::get('attendance', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'attendance']);
+    Route::get('leaves', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'leaves']);
+});
 Route::post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
 Route::middleware('api.session')->prefix('fees-refund')->group(function () {
     Route::post('search', [FeesRefundApiController::class, 'search']);
