@@ -3169,6 +3169,7 @@ if (Str::startsWith($order_id, 'pay_')) {
         // Get student data
         $medium_data = DB::select("SELECT a.*,e.grade_id,
             CONCAT_WS('_',t.first_name,t.middle_name,t.last_name) AS student_name,
+            t.uniqueid AS school_name,
             t.mobile,
             CONCAT_WS('_',t.first_name,t.middle_name,t.last_name,t.enrollment_no,s.name,d.name) AS uniqueid,
             t.email
@@ -3211,7 +3212,7 @@ if (Str::startsWith($order_id, 'pay_')) {
         $paymode = '9';
 
         $mandatory_fields = "{$reference_no}|{$submerchant_id}|{$amount}";
-        $optional_fields = "{$medium_data[0]->student_name}|{$medium_data[0]->mobile}|{$medium_data[0]->email}|{$student_id}|{$medium_data[0]->grade_id}|{$medium_data[0]->medium}|{$student_id}";
+        $optional_fields = "{$medium_data[0]->student_name}|{$medium_data[0]->mobile}|{$medium_data[0]->email}|{$student_id}|{$medium_data[0]->grade_id}|{$medium_data[0]->medium}|{$medium_data[0]->school_name}|{$student_id}";
 
         $plain_url = "https://api.razorpay.com/v1/checkout/embedded?" . http_build_query([
             'merchantid' => $merchant_id,
@@ -3274,6 +3275,7 @@ if (Str::startsWith($order_id, 'pay_')) {
             "encrypt_request" => $encrypt_url,
             "inserted_id" => $id,
             "student_name" => $medium_data[0]->student_name,
+            "school_name" => $medium_data[0]->school_name,
             "medium" => $medium_data[0]->uniqueid, 
             "order_id" => $razorpayOrder['id'],
             "key" => $get_map_bank_detail->key_id,

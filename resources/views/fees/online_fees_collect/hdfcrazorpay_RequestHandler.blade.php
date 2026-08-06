@@ -16,6 +16,7 @@
                         <h5>Online Fees Payment</h5>
                     </div>
                     <div class="card-body text-center">
+                        <h6>{{ $data['school_name'] }}</h6>
                         <h6>{{ $data['student_name'] }}</h6>
                         <p><strong>Medium:</strong> {{ $data['medium'] }}</p>
                         <p><strong>Amount:</strong> ₹{{ number_format($data['amount']/100, 2) }}</p>
@@ -24,7 +25,7 @@
                             <input type="hidden" name="key_id" value="{{ $data['key'] }}">
                             <input type="hidden" name="amount" value="{{ $data['amount'] }}">
                             <input type="hidden" name="order_id" value="{{ $data['order_id'] }}">
-                            <input type="hidden" name="name" value="{{ $data['student_name'] }}">
+                            <input type="hidden" name="name" value="{{ $data['school_name'] }}">
                             <input type="hidden" name="description" value="{{ $data['medium'] }}">
 
                             {{-- Include fallback query parameters for callback --}}

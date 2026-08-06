@@ -219,6 +219,10 @@ class studentReportController extends Controller
             // Optional subjects handled via subquery below to prevent duplicates
             ->leftJoin('transport_school_shift', 'transport_vehicle.school_shift', '=', 'transport_school_shift.id')
             ->leftJoin('tblstudent_bank_detail', 'tblstudent_bank_detail.student_id', '=', 'tblstudent.id')
+            ->leftJoin('tblstudent_past_education', function ($join) use ($sub_institute_id) {
+                $join->on('tblstudent_past_education.student_id', '=', 'tblstudent.id')
+                    ->where('tblstudent_past_education.sub_institute_id', '=', $sub_institute_id);
+            })
             ->leftJoin('tblstudent_tc_details', function($join) use($syear,$sub_institute_id){
                 $join->on('tblstudent_tc_details.student_id', '=', 'tblstudent.id')
                     ->where('tblstudent_tc_details.syear', $syear)
