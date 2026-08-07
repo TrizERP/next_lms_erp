@@ -48,6 +48,7 @@ class OnboardingApiController extends Controller
                 'sub_institute_id' => $subInstituteId,
                 'syear' => $syear,
                 'school_name' => session()->get('school_name'),
+                'current_user_name' => trim((string) session()->get('name')) ?: session()->get('user_name'),
             ],
         ]);
     }
@@ -72,7 +73,11 @@ class OnboardingApiController extends Controller
             'steps' => $journey['steps'],
             'summary' => $journey['summary'],
             'resources' => $this->moduleResources($module, $subInstituteId),
-            'context' => ['sub_institute_id' => $subInstituteId, 'syear' => $syear],
+            'context' => [
+                'sub_institute_id' => $subInstituteId,
+                'syear' => $syear,
+                'current_user_name' => trim((string) session()->get('name')) ?: session()->get('user_name'),
+            ],
         ]);
     }
 
