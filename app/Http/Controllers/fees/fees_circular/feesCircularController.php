@@ -106,6 +106,7 @@ class feesCircularController extends Controller
         $result = DB::table('fees_receipt_book_master')->selectRaw('*,GROUP_CONCAT(fees_head_id) heads')
             ->where('syear', $syear)
             ->where('sub_institute_id', $sub_institute_id)
+            ->where('status', 1)
             ->groupByRaw("receipt_line_1,receipt_line_2,receipt_line_3,receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number")
             ->get()->toArray();
         $result = json_decode(json_encode($result), true);
@@ -199,6 +200,7 @@ class feesCircularController extends Controller
             ->selectRaw('*,GROUP_CONCAT(fees_head_id) heads')
             ->where('syear', $syear)
             ->where('sub_institute_id', $sub_institute_id)
+            ->where('status', 1)
             ->groupByRaw('receipt_line_1,receipt_line_2,receipt_line_3,receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number')
             ->get()->toArray();
 

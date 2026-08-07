@@ -1094,6 +1094,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             ->where('fees_receipt_book_master.grade_id', $_REQUEST['grade_id'])
             ->where('fees_receipt_book_master.standard_id', $_REQUEST['standard_id'])
             ->where('fees_receipt_book_master.syear', $syear)
+            ->where('fees_receipt_book_master.status', 1)
             ->where('fees_receipt_book_master.sub_institute_id',$sub_institute_id)
             ->groupBy('fees_receipt_book_master.receipt_line_1', 'fees_receipt_book_master.receipt_line_2', 'fees_receipt_book_master.receipt_line_3', 'fees_receipt_book_master.receipt_line_4', 'fees_receipt_book_master.receipt_prefix', 'fees_receipt_book_master.receipt_logo', 'fees_receipt_book_master.last_receipt_number')
             ->orderBy('fees_title.sort_order')
@@ -1456,6 +1457,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             ->where('grade_id', $_REQUEST['grade_id'])
             ->where('standard_id', $_REQUEST['standard_id'])
             ->where('syear', $syear)
+            ->where('status', 1)
             ->where('sub_institute_id',$sub_institute_id)
             ->groupByRaw('receipt_line_1,receipt_line_2,receipt_line_3,receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number,receipt_id')
             ->get()->toArray();
