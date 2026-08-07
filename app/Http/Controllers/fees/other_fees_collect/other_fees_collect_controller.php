@@ -23,8 +23,8 @@ class other_fees_collect_controller extends Controller
     {
         $type = $request->input('type');
         $submit = $request->input('submit');
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
+        $sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
+        $syear = $request->input('syear', session()->get('syear'));
         $res['status'] = 1;
         $res['message'] = "Success";
 
@@ -51,9 +51,9 @@ class other_fees_collect_controller extends Controller
         $uniqueid = $request->input('uniqueid');
         $other_fees_title_selected = $request->input('other_fees_title');
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-        $marking_period_id = session()->get('term_id');
+        $sub_institute_id = $request->input('sub_institute_id', $request->session()->get('sub_institute_id'));
+        $syear = $request->input('syear', $request->session()->get('syear'));
+        $marking_period_id = $request->input('term_id', session()->get('term_id'));
 
         $extraSearchArray = array();
         $extraSearchArrayRaw = " 1=1 ";
@@ -158,8 +158,8 @@ class other_fees_collect_controller extends Controller
     public function store(Request $request)
     {
         // dd($request);
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->input('sub_institute_id', $request->session()->get('sub_institute_id'));
+        $syear = $request->input('syear', $request->session()->get('syear'));
         $type = $request->get('type');
         $students = $request->get('students');
         $division_id = $request->get('division_id');
@@ -174,7 +174,7 @@ class other_fees_collect_controller extends Controller
         $cheque_no = $request->get('cheque_no');
         $cheque_date = $request->input('cheque_date');
         $amount_of_deduction = $request->input('amount_of_deduction');
-        $created_by = session()->get('user_id');
+        $created_by = $request->input('user_id', session()->get('user_id'));
         $created_ip = $_SERVER['REMOTE_ADDR'];
 
         $new_html = '';
@@ -270,8 +270,9 @@ class other_fees_collect_controller extends Controller
         foreach ($students as $key => $student_id) {
             $result = DB::table('fees_receipt_book_master')
                 ->selectRaw('*,GROUP_CONCAT(fees_head_id) heads')
-                ->where('syear', session()->get('syear'))
-                ->where('sub_institute_id', session()->get('sub_institute_id'))
+                ->where('syear', $syear)
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('status', 1)
                 ->groupByRaw('receipt_line_1,receipt_line_2,receipt_line_3,receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number')
                 ->get()->toArray();
 
@@ -332,7 +333,7 @@ class other_fees_collect_controller extends Controller
             $recHtml .= '</td>';
             $recHtml .= '</tr>';
 
-            $syear1 = session()->get('syear');
+            $syear1 = $syear;
             $syear2 = $syear1 + 1;
             $edu_year = "$syear1-$syear2";
 
