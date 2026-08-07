@@ -92,7 +92,7 @@
                             <table class="table table-stripped">
                                 <tr>
                                     <td>{{ App\Helpers\get_string('uniqueid','request')}}</td>
-                                    <td><?php echo $data['stu_data']['student_id']; ?></td>
+                                    <td><?php echo $data['stu_data']['uniqueid']; ?></td>
                                 </tr>
                                 <tr>
                                     <td>{{ App\Helpers\get_string('studentname','request')}}</td>

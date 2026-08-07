@@ -197,7 +197,7 @@ class feesDefaulterReportController extends Controller
             ->where('sub_institute_id', session()->get('sub_institute_id'))
             ->where('syear', session()->get('syear'))
             ->where('other_fee_id', '>', 0)
-            ->orderBy('other_fee_id')
+            ->orderByRaw('CAST(`other_fee_id` AS UNSIGNED) ASC')
             ->get()->toArray();
 
         // dynamic fees titles

@@ -3147,8 +3147,7 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
                 $table_range .= '<td class="data_center">' . $value . '</td>';
             }
         }
-        $table_range .= '<tr>
-        </thead></table>';
+        $table_range .= '</tr></thead></table>';
 
         //co grade range
         if (!empty($co_grade_range)) {
@@ -3225,7 +3224,7 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
                 $title = "6_10";
             }
             $grade_scale = DB::table('grade_master')->where('grade_name', $title)->first();
-            $query = DB::table('grade_master_data')->where('sub_institute_id', $sub_institute_id)->where('syear', $syear)->where('grade_id', $grade_scale->id);
+            $query = DB::table('grade_master_data')->where('sub_institute_id', $sub_institute_id)->where('syear', $syear)->where('grade_id', $grade_scale->id)->orderByDesc('breakoff');
         }
         // $ret_grade = $query->toSql();
 

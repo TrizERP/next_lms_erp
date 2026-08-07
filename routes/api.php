@@ -24,10 +24,14 @@ use App\Http\Controllers\api\InventoryApiController;
 use App\Http\Controllers\fees\fees_cancel\feesCancelController;
 use App\Http\Controllers\fees\fees_circular\feesCircularController;
 use App\Http\Controllers\fees\fees_circular\feesCircularMasterController;
+use App\Http\Controllers\api\FeesDashboardApiController;
+use App\Http\Controllers\api\FeesRefundApiController;
+use App\Http\Controllers\api\TeacherAssignmentMobileApiController;
 
 
 // Student Assessment API - Get student assessment data with scores and levels
 Route::get('/student-assessment', [StudentGraphController::class, 'getStudentAssessment']);
+Route::middleware('api.session')->group(function () { Route::post('teacher/assignments/standards', [TeacherAssignmentMobileApiController::class, 'standards']); Route::post('teacher/assignments/divisions', [TeacherAssignmentMobileApiController::class, 'divisions']); });
 
 /*
 |--------------------------------------------------------------------------
@@ -68,6 +72,27 @@ Route::controller(apiController::class)->group(function () {
 });
 
 Route::post('api-login', [ApiLoginController::class, 'login'])->name('api.api-login');
+// Isolated mobile Own Profile API; legacy profile controllers are unchanged.
+Route::middleware('api.session')->get('own-profile', [\App\Http\Controllers\api\OwnProfileApiController::class, 'show']);
+Route::middleware('api.session')->prefix('hrms')->group(function () {
+    Route::get('today', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'today']);
+    Route::post('punch', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'punch']);
+    Route::get('attendance', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'attendance']);
+    Route::get('leaves', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'leaves']);
+});
+Route::post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
+Route::middleware('api.session')->prefix('fees-refund')->group(function () {
+    Route::post('search', [FeesRefundApiController::class, 'search']);
+    Route::post('detail/{studentId}', [FeesRefundApiController::class, 'detail']);
+    Route::post('save', [FeesRefundApiController::class, 'save']);
+});
+
+// Stateless replacements for the legacy session/Blade ERP migration modules.
+// These are deliberately separate from the old controllers so the Next.js
+// application never has to manufacture a Laravel session.
+Route::get('migration-modules/{module}', [\App\Http\Controllers\api\MigrationModulesApiController::class, 'index']);
+Route::post('migration-modules/{module}', [\App\Http\Controllers\api\MigrationModulesApiController::class, 'store']);
+Route::delete('migration-modules/{module}/{id}', [\App\Http\Controllers\api\MigrationModulesApiController::class, 'destroy']);
 // 12-11-2024
 Route::get('crm-whatsapp', [\App\Http\Controllers\WhatsappController::class, 'whatsappCRM'])->withoutMiddleware([Authenticate::class])->name('crm-whatsapp');
 Route::get('crm-whatsapp-update', [\App\Http\Controllers\WhatsappController::class, 'updateCRMWhatsappStatus'])->withoutMiddleware([Authenticate::class])->name('updateCRMWhatsappStatus');
@@ -217,9 +242,7 @@ Route::get('/departments/hierarchy', [\App\Http\Controllers\HRMS\departmentContr
 
 
 
-use App\Http\Controllers\api\UserManagementApiController;
-
-Route::controller(UserManagementApiController::class)->group(function () {
+Route::controller(\App\Http\Controllers\api\UserManagementApiController::class)->group(function () {
     Route::get('users', 'index');
     Route::post('users', 'store');
     Route::get('users/{id}', 'show');
@@ -232,6 +255,19 @@ Route::controller(UserManagementApiController::class)->group(function () {
     Route::get('user-reports/bootstrap', 'reportBootstrap');
     Route::post('user-reports/search', 'report');
 });
+
+Route::get('groupwise-rights', [\App\Http\Controllers\api\GroupwiseRightsApiController::class, 'index']);
+Route::get('groupwise-rights/{profileId}/matrix', [\App\Http\Controllers\api\GroupwiseRightsApiController::class, 'matrix']);
+Route::post('groupwise-rights', [\App\Http\Controllers\api\GroupwiseRightsApiController::class, 'store']);
+Route::get('individual-rights', [\App\Http\Controllers\api\IndividualRightsApiController::class, 'index']);
+Route::get('individual-rights/{profileId}/users', [\App\Http\Controllers\api\IndividualRightsApiController::class, 'users']);
+Route::get('individual-rights/{profileId}/{userId}/matrix', [\App\Http\Controllers\api\IndividualRightsApiController::class, 'matrix']);
+Route::post('individual-rights', [\App\Http\Controllers\api\IndividualRightsApiController::class, 'store']);
+Route::get('mobile-app-rights/bootstrap', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'bootstrap']);
+Route::get('mobile-app-rights/{profileId}/rights', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'rights']);
+Route::post('mobile-app-rights/rights', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'saveRights']);
+Route::get('mobile-app-rights/config', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'configIndex']);
+Route::post('mobile-app-rights/config/{id}', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'updateConfig']);
 
 
 Route::get('teacher-transfer', [\App\Http\Controllers\api\TeacherTransferApiController::class, 'index']);
@@ -279,4 +315,60 @@ Route::get('petty-cash/{id}', [\App\Http\Controllers\api\PettyCashApiController:
 Route::post('petty-cash', [\App\Http\Controllers\api\PettyCashApiController::class, 'store']);
 Route::post('petty-cash/{id}/delete', [\App\Http\Controllers\api\PettyCashApiController::class, 'destroy']);
 Route::post('petty-cash/{id}', [\App\Http\Controllers\api\PettyCashApiController::class, 'update']);
+
+
+/*
+|--------------------------------------------------------------------------
+| Module-wise onboarding
+|--------------------------------------------------------------------------
+|
+| Guarded by `api.session`, which performs real JWT validation before
+| hydrating the legacy session keys. The onboarding surface deliberately does
+| NOT use the `session` + `type=API` convention of the older screens: that pair
+| short-circuits both SessionMiddleware and checkPermission on caller-supplied
+| input. Tenant scope is read from the validated token payload, never from
+| request input.
+|
+| Replaces the Blade screens at /Onboarding and /transport_Onboarding, which
+| stay in place for the legacy UI.
+|
+*/
+Route::group(['prefix' => 'onboarding', 'middleware' => ['api.session']], function () {
+    Route::get('overview', [\App\Http\Controllers\api\OnboardingApiController::class, 'overview']);
+    Route::get('modules/{moduleKey}', [\App\Http\Controllers\api\OnboardingApiController::class, 'show']);
+    Route::post('steps/{stepId}', [\App\Http\Controllers\api\OnboardingApiController::class, 'updateStep']);
+});
+// Document Templates module - stateless JSON entry points for the Next.js
+// frontend's drag-and-drop template designer (/document-templates). Distinct
+// from the legacy `template_master` screens, which are unchanged.
+// Literal segments (`merge-fields`, `merge-data`, `preview-students`) are
+// declared before the `{id}` routes so they are not swallowed by them, and the
+// same holds for `{id}/...` sub-paths against `{id}`.
+Route::get('document-templates/merge-fields', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'mergeFields']);
+Route::get('document-templates/merge-data', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'mergeData']);
+Route::get('document-templates/preview-students', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'previewStudents']);
+Route::get('document-templates', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'index']);
+Route::get('document-templates/{id}/versions', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'versions']);
+Route::get('document-templates/{id}/versions/{version}', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'versionContent']);
+Route::get('document-templates/{id}', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'show']);
+Route::post('document-templates', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'store']);
+Route::post('document-templates/{id}/duplicate', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'duplicate']);
+Route::post('document-templates/{id}/restore/{version}', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'restore']);
+Route::post('document-templates/{id}/delete', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'destroy']);
+Route::post('document-templates/{id}', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'update']);
+
+// Fields Configuration module - stateless JSON entry points for the Next.js
+// frontend. Distinct from the legacy `add_fields` web routes, which are unchanged.
+Route::get('fields-configuration', [\App\Http\Controllers\api\CustomFieldApiController::class, 'index']);
+Route::post('fields-configuration/update-sort', [\App\Http\Controllers\api\CustomFieldApiController::class, 'updateSortOrder']);
+Route::post('fields-configuration', [\App\Http\Controllers\api\CustomFieldApiController::class, 'store']);
+Route::get('fields-configuration/{id}', [\App\Http\Controllers\api\CustomFieldApiController::class, 'show']);
+Route::post('fields-configuration/{id}', [\App\Http\Controllers\api\CustomFieldApiController::class, 'update']);
+Route::post('fields-configuration/{id}/delete', [\App\Http\Controllers\api\CustomFieldApiController::class, 'destroy']);
+
+
+
+
+
+
 

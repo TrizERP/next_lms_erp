@@ -807,68 +807,65 @@ if(in_array($sub_institute_id, $cn))
     {
         try {
             if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
+                return response()->json([
+                    'status'  => '2',
+                    'message' => 'Token Auth Failed',
+                    'data'    => [],
+                ], 401);
             }
         } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+            return response()->json([
+                'status'  => '2',
+                'message' => $e->getMessage(),
+                'data'    => [],
+            ], 401);
         }
 
-        $type = $request->input("type");
-        $mobile_no = $request->input("mobile_no");
-        $sub_institute_id = $request->input("sub_institute_id");
-        $gcm_regid = $request->input("gcm_regid");
-        $imei_no = $request->input("imei_no");
-        $curr_version = $request->input("curr_version");
-        $new_version = $request->input("new_version");
+        $validator = Validator::make($request->all(), [
+            'mobile_no'        => 'required|string',
+            'sub_institute_id' => 'required',
+            'gcm_regid'        => 'nullable|string',
+            'imei_no'          => 'nullable|string',
+            'curr_version'     => 'nullable|string',
+            'new_version'      => 'nullable|string',
+        ]);
 
-        if ($mobile_no != "" && $sub_institute_id != "" && $gcm_regid != "" && $imei_no != "") {
-
-            $check_record_count = DB::table('gcm_users')
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('mobile_no', $mobile_no)
-                ->get()->toArray();
-
-            if (count($check_record_count) > 0) {
-                $updated_on = date("Y-m-d H:i:s"); // Get the current date and time in the specified format.
-
-                DB::table("gcm_users") // Specify the table "gcm_users" for the query.
-                    ->where([ // Specify the conditions for the update operation.
-                        "sub_institute_id" => $sub_institute_id, // Match the "sub_institute_id" column.
-                        "imei_no" => $imei_no, // Match the "imei_no" column.
-                        "mobile_no" => $mobile_no // Match the "mobile_no" column.
-                    ])
-                    ->update([ // Define the columns and values to update.
-                        "gcm_regid" => $gcm_regid, // Set the "gcm_regid" column to the new value.
-                        "updated_on" => $updated_on // Set the "updated_on" column to the current date and time.
-                    ]);
-
-                $res['status'] = 1;
-                $res['message'] = "Record Updated Successfully";
-            } else {
-                $data = [
-                    'mobile_no'        => $mobile_no,
-                    'gcm_regid'        => $gcm_regid,
-                    'imei_no'          => $imei_no,
-                    'sub_institute_id' => $sub_institute_id,
-                    'curr_version'     => $curr_version,
-                    'new_version'      => $new_version,
-                ];
-
-                DB::table('gcm_users')->insert($data);
-
-                $res['status'] = 1;
-                $res['message'] = "Record Added Successfully";
-            }
-        } else {
-            $res['status'] = 0;
-            $res['message'] = "Parameter Missing";
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => 0,
+                'message' => 'Parameter Missing',
+                'errors'  => $validator->errors(),
+            ], 422);
         }
 
-        return json_encode($res);
+        $keys = [
+            'sub_institute_id' => $request->input('sub_institute_id'),
+            'mobile_no'        => $request->input('mobile_no'),
+            'imei_no'          => $request->input('imei_no'),
+        ];
+
+        try {
+            $exists = DB::table('gcm_users')->where($keys)->exists();
+
+            DB::table('gcm_users')->updateOrInsert($keys, [
+                'gcm_regid'    => $request->input('gcm_regid'),
+                'imei_no'      => $request->input('imei_no'),
+                'curr_version' => $request->input('curr_version'),
+                'new_version'  => $request->input('new_version'),
+                'updated_on'   => now(),
+            ]);
+
+            return response()->json([
+                'status'  => 1,
+                'message' => $exists ? 'Record Updated Successfully' : 'Record Added Successfully',
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 0,
+                'message' => 'Something went wrong',
+                'error'   => $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function login_hills(Request $request, JwtToken $jwt)

@@ -14,6 +14,7 @@ use GenTux\Jwt\JwtToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class ApiLoginController extends Controller
@@ -50,7 +51,7 @@ $staffData = $staffQuery->first();
 $isStaff = $isStudent= false;
 if ($staffData) {
     $isStaff = true;
-    if ($staffData->password != $password) {
+    if (! $this->verifyAndUpgradePassword($staffData, $password, false)) {
         return response()->json([
             'status'  => 0,
             'message' => 'Invalid User Id And Password',
@@ -78,7 +79,7 @@ if ($staffData) {
         ], 401);
     }
 
-    if ($studentData->password != md5($password)) {
+    if (! $this->verifyAndUpgradePassword($studentData, $password, true)) {
         return response()->json([
             'status'  => 0,
             'message' => 'Invalid User Id And Password',
@@ -313,6 +314,9 @@ if ($staffData) {
 
         $subjects = [];
         $studentAcademic = [];
+        $schoolSyear = DB::table('school_setup')
+            ->where('Id', $user['sub_institute_id'])
+            ->value('syear');
 
         $studentSubjectIds = DB::table('student_optional_subject')
             ->where('student_id', $user['id'])
@@ -441,6 +445,7 @@ if ($staffData) {
                 'user_profile_id'  => $user['user_profile_id'],
                 'profile_parent_id'=> $profileParentId,
                 'sub_institute_id' => $user['sub_institute_id'],
+                'mobile_syear'            => $schoolSyear,
                 'client_id'        => $user['client_id'],
                 'is_admin'         => $user['is_admin'],
                 'join_year'        => $user['join_year'],
@@ -587,5 +592,34 @@ if ($staffData) {
             'total'   => $data->count(),
             'data'    => $data,
         ], 200);
+    }
+
+    /**
+     * Supports Laravel-hashed passwords while retaining compatibility with
+     * legacy raw staff and MD5 student password values. Legacy credentials
+     * are upgraded after a successful login.
+     */
+    private function verifyAndUpgradePassword($account, string $password, bool $legacyMd5): bool
+    {
+        $storedPassword = (string) $account->password;
+
+        if (Hash::check($password, $storedPassword)) {
+            if (Hash::needsRehash($storedPassword)) {
+                $account->password = Hash::make($password);
+                $account->save();
+            }
+
+            return true;
+        }
+
+        $legacyPassword = $legacyMd5 ? md5($password) : $password;
+        if (! hash_equals($storedPassword, $legacyPassword)) {
+            return false;
+        }
+
+        $account->password = Hash::make($password);
+        $account->save();
+
+        return true;
     }
 }

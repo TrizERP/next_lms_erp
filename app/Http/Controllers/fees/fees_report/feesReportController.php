@@ -92,6 +92,24 @@ class feesReportController extends Controller
 
     public function create(Request $request)
     {
+        $request->validate([
+            'grade' => ['nullable', 'array'],
+            'grade.*' => ['integer'],
+            'standard' => ['nullable', 'array'],
+            'standard.*' => ['integer'],
+            'division' => ['nullable', 'array'],
+            'division.*' => ['integer'],
+            'enrollment_no' => ['nullable', 'string', 'max:100', 'regex:/^[\pL\pN._\/-]+$/u'],
+            'name' => ['nullable', 'string', 'max:150', 'regex:/^[\pL\pM .\'-]+$/u'],
+            'mb_no' => ['nullable', 'string', 'max:30', 'regex:/^[0-9+() -]+$/'],
+            'from_date' => ['nullable', 'date_format:Y-m-d'],
+            'to_date' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from_date'],
+            'payment_mode' => ['nullable', 'string', 'max:50', 'regex:/^[\pL\pN ._\/-]+$/u'],
+            'user_name' => ['nullable', 'integer'],
+            'sub_institute_id' => ['nullable', 'integer'],
+            'syear' => ['nullable', 'integer'],
+        ]);
+
         $type = $request->input("type");
         $grade = $request->input('grade');
         $standard = $request->input('standard');

@@ -173,6 +173,7 @@ class circularController extends Controller
                     ->where("sub_institute_id", "=", $sub_institute_id)
                     ->where("t.type", "=", $action)
                     ->orderBy('c.date_', 'DESC')
+                    ->orderBy('c.created_at', 'DESC')
                     ->get()->toArray();
 
                 $response['data'] = $result_data;
