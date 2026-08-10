@@ -1,0 +1,12 @@
+_neo4jInternalId,bloom_level,chapter_id,conceptId,difficulty_level,displayLabel,estimated_mastery_minutes,id,lesson_id,mastery_threshold,name,pedagogy_tag,standard_id,sub_institute_id,subject_id,syear
+373816,esay,1,1,12,Concept:test,,1,12,0.00,test,1,1,1,1,2024
+373817,esay,27,3,3,"Concept:test 19-05",2,3,2,12.60,"test 19-05",3,39,1,3975,2021
+375430,understand,8560,4,,"Concept:Introduction to rational numbers",,4,1874,0.00,"Introduction to rational numbers",,42,1,3976,2026
+375431,understand,8560,5,,"Concept:Representation on the number line",,5,1874,0.00,"Representation on the number line",,42,1,3976,2026
+375432,understand,8560,6,,"Concept:Density of rational numbers and its proof",,6,1874,0.00,"Density of rational numbers and its proof",,42,1,3976,2026
+375433,understand,8560,7,,"Concept:Finding rational numbers between two rational",,7,1874,0.00,"Finding rational numbers between two rational",,42,1,3976,2026
+375434,understand,8560,8,,"Concept:Decimal representation of rational numbers",,8,1874,0.00,"Decimal representation of rational numbers",,42,1,3976,2026
+375435,understand,8560,9,,"Concept:Introduction to irrational numbers",,9,1874,0.00,"Introduction to irrational numbers",,42,1,3976,2026
+375436,understand,8560,10,,"Concept:Proof of irrationality of √2 and √3",,10,1874,0.00,"Proof of irrationality of √2 and √3",,42,1,3976,2026
+375437,understand,8560,11,,"Concept:The square root spiral",,11,1874,0.00,"The square root spiral",,42,1,3976,2026
+375448,,8560,12,,"Concept:The square root spiral",,12,1875,0.00,"The square root spiral",,42,1,3976,2026

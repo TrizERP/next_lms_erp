@@ -1,0 +1,4 @@
+_neo4jInternalId,assessmenttypologyId,bloom_levels,category,curriculum_id,displayLabel,total_marks,weightage_pct
+374287,1,"[""remember"","" understand""]","Remembering / Understanding",66,"AssessmentTypology:Remembering / Understanding",43,54
+374288,2,"[""apply""]",Applying,66,AssessmentTypology:Applying,19,24
+374289,3,"[""analyse"","" evaluate"","" create""]","Analysing / Evaluating / Creating",66,"AssessmentTypology:Analysing / Evaluating / Creating",18,22
