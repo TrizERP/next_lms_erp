@@ -34,6 +34,7 @@ class contentModel extends Model
         'content_category',
         'content_type',
         'presentation_type',
+        'source',
         'syear',
         'sub_institute_id',
         'restrict_date',

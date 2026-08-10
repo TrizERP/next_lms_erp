@@ -7,6 +7,7 @@ use App\Models\lms\lmsContentCategoryModel;
 use App\Models\lms\contentModel;
 use App\Models\lms\contentmappingtypeModel;
 use App\Models\lms\lmsQuestionMasterModel;
+use App\Models\lms\answermasterModel;
 use App\Models\lms\topicModel;
 use App\Models\student\tblstudentEnrollmentModel;
 use Illuminate\Http\JsonResponse;
@@ -256,8 +257,10 @@ class ApiLmsCourseController extends Controller
             ->where('Id', $sub_institute_id)
             ->value('is_Lms');
 
-        foreach ($chapters as &$chapter) {
-            $content_data = DB::table('content_master')
+        $chapterIds = array_column($chapters, 'id');
+
+        if (!empty($chapterIds)) {
+            $contentQuery = DB::table('content_master')
                 ->where(function ($query) use ($getIsLms, $sub_institute_id) {
                     if ($getIsLms == 'Y') {
                         $query->where('content_master.sub_institute_id', '1')
@@ -268,45 +271,60 @@ class ApiLmsCourseController extends Controller
                 })
                 ->where('content_master.subject_id', $subject_id)
                 ->where('content_master.standard_id', $standard_id)
-                ->where('content_master.chapter_id', $chapter['id'])
+                ->whereIn('content_master.chapter_id', $chapterIds)
                 ->where(function ($query) {
                     $query->whereNull('content_master.topic_id')
                         ->orWhere('content_master.topic_id', '0');
-                })
-                ->get()
-                ->toArray();
+                });
 
-            $content_by_category = [];
-            foreach ($content_data as $content) {
+            $allContent = $contentQuery->get()->toArray();
+
+            $contentByChapter = [];
+            foreach ($allContent as $content) {
                 $contentArray = (array)$content;
+                $chapterId = $contentArray['chapter_id'];
                 $cat = $contentArray['content_category'] ?? 'General';
-                $content_by_category[$cat][] = $contentArray;
+                $contentByChapter[$chapterId][$cat][] = $contentArray;
             }
 
-            $chapter['content_categories'] = $content_by_category;
-
-            $flash = DB::table('lms_flashcard')
-                ->where(['chapter_id' => $chapter['id'], 'sub_institute_id' => $sub_institute_id, 'status' => 1])
+            $flashCards = DB::table('lms_flashcard')
+                ->whereIn('chapter_id', $chapterIds)
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('status', 1)
                 ->get()
                 ->toArray();
-            $chapter['content_categories']['Flash Cards'] = array_map(function ($f) {
-                return (array)$f;
-            }, $flash);
 
-            $chapter['content_categories']['Mindmap'] = [];
-            $chapter['content_categories']['Virtual Lab'] = [];
+            $flashByChapter = [];
+            foreach ($flashCards as $flash) {
+                $flashArray = (array)$flash;
+                $flashByChapter[$flashArray['chapter_id']][] = $flashArray;
+            }
+
+            foreach ($chapters as &$chapter) {
+                $chapter['content_categories'] = $contentByChapter[$chapter['id']] ?? [];
+                $chapter['content_categories']['Flash Cards'] = $flashByChapter[$chapter['id']] ?? [];
+                $chapter['content_categories']['Mindmap'] = [];
+                $chapter['content_categories']['Virtual Lab'] = [];
+            }
+        } else {
+            foreach ($chapters as &$chapter) {
+                $chapter['content_categories'] = [];
+                $chapter['content_categories']['Flash Cards'] = [];
+                $chapter['content_categories']['Mindmap'] = [];
+                $chapter['content_categories']['Virtual Lab'] = [];
+            }
         }
 
         return $chapters;
     }
 
-    private function getChapterContentCategories($chapter_id, $subject_id, $standard_id, $sub_institute_id): array
+    private function getChapterContentCategories($chapter_id, $subject_id, $standard_id, $sub_institute_id, ?bool $conceptWise = null, ?string $source = null, ?string $contentCategory = null): array
     {
         $getIsLms = DB::table('school_setup')
             ->where('Id', $sub_institute_id)
             ->value('is_Lms');
 
-        $content_data = DB::table('content_master')
+        $contentQuery = DB::table('content_master')
             ->where(function ($query) use ($getIsLms, $sub_institute_id) {
                 if ($getIsLms == 'Y') {
                     $query->where('content_master.sub_institute_id', '1')
@@ -321,9 +339,29 @@ class ApiLmsCourseController extends Controller
             ->where(function ($query) {
                 $query->whereNull('content_master.topic_id')
                     ->orWhere('content_master.topic_id', '0');
-            })
-            ->get()
-            ->toArray();
+            });
+
+        if ($conceptWise !== null) {
+            if ($conceptWise) {
+                $contentQuery->whereNotNull('content_master.concept_id')
+                    ->where('content_master.concept_id', '!=', 0);
+            } else {
+                $contentQuery->where(function ($query) {
+                    $query->whereNull('content_master.concept_id')
+                        ->orWhere('content_master.concept_id', 0);
+                });
+            }
+        }
+
+        if ($source !== null && $source !== '') {
+            $contentQuery->where('content_master.source', $source);
+        }
+
+        if ($contentCategory !== null && $contentCategory !== '') {
+            $contentQuery->where('content_master.content_category', $contentCategory);
+        }
+
+        $content_data = $contentQuery->get()->toArray();
 
         $content_by_category = [];
         foreach ($content_data as $content) {
@@ -385,12 +423,19 @@ class ApiLmsCourseController extends Controller
         }
 
         $sub_institute_id = $sub_institute_id ?: $chapter->sub_institute_id;
+        $conceptWise = $request->has('concept_wise') ? filter_var($request->input('concept_wise'), FILTER_VALIDATE_BOOLEAN) : null;
+        $source = $request->input('source');
+        $contentCategory = $request->input('content_category');
+
         $chapterArray = (array)$chapter;
         $chapterArray['content_categories'] = $this->getChapterContentCategories(
             $chapter->id,
             $chapter->subject_id,
             $chapter->standard_id,
-            $sub_institute_id
+            $sub_institute_id,
+            $conceptWise,
+            $source,
+            $contentCategory
         );
 
         return response()->json([
@@ -1108,6 +1153,99 @@ class ApiLmsCourseController extends Controller
             'concept_ids' => $concept_ids,
             'dok_ids' => $dok_ids,
             'bloom_ids' => $bloom_ids,
+        ], 200);
+    }
+
+    public function getQuestionBank(Request $request): JsonResponse
+    {
+        $chapterId = $request->input('chapter_id');
+        $topicId = $request->input('topic_id');
+        $questionType = $request->input('question_type');
+
+        if (!$chapterId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Missing required field: chapter_id is required.',
+                'data' => [],
+            ], 422);
+        }
+
+        $query = lmsQuestionMasterModel::query()
+            ->where('chapter_id', $chapterId)
+            ->join('question_type_master', 'question_type_master.id', '=', 'lms_question_master.question_type_id')
+            ->select(
+                'lms_question_master.id',
+                'lms_question_master.chapter_id',
+                'lms_question_master.topic_id',
+                'lms_question_master.question_title',
+                'question_type_master.question_type',
+                'lms_question_master.points as marks',
+                'lms_question_master.answer as model_answer'
+            );
+
+        if ($topicId) {
+            $query->where('lms_question_master.topic_id', $topicId);
+        }
+
+        if ($questionType) {
+            if (is_numeric($questionType)) {
+                $query->where('lms_question_master.question_type_id', (int) $questionType);
+            } else {
+                $query->where('question_type_master.question_type', trim($questionType));
+            }
+        }
+
+        $questions = $query->orderByDesc('lms_question_master.id')->get()->toArray();
+
+        $questionIds = array_column($questions, 'id');
+        $optionsByQuestion = [];
+
+        if (!empty($questionIds)) {
+            $options = answermasterModel::whereIn('question_id', $questionIds)
+                ->orderBy('id')
+                ->get(['question_id', 'answer', 'correct_answer'])
+                ->toArray();
+
+            $labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+            foreach ($options as $option) {
+                $qid = (int) $option['question_id'];
+                $idx = count($optionsByQuestion[$qid] ?? []);
+                $label = $labels[$idx] ?? chr(65 + $idx);
+
+                $optionsByQuestion[$qid][] = [
+                    'label' => $label,
+                    'text' => (string) $option['answer'],
+                    'is_correct' => (bool) $option['correct_answer'],
+                ];
+            }
+        }
+
+        $data = [];
+        foreach ($questions as $question) {
+            $qid = (int) $question['id'];
+            $questionTypeLabel = strtoupper((string) ($question['question_type'] ?? ''));
+            if ($questionTypeLabel === 'MCQ' || $questionTypeLabel === 'MULTIPLE_CHOICE') {
+                $questionTypeLabel = 'MCQ';
+            } elseif ($questionTypeLabel === 'NARRATIVE' || $questionTypeLabel === 'SUBJECTIVE') {
+                $questionTypeLabel = 'Narrative';
+            }
+
+            $data[] = [
+                'id' => (int) $question['id'],
+                'chapter_id' => (int) $question['chapter_id'],
+                'topic_id' => $question['topic_id'] !== null ? (int) $question['topic_id'] : null,
+                'question' => (string) ($question['question_title'] ?? ''),
+                'question_type' => $questionTypeLabel,
+                'options' => $optionsByQuestion[$qid] ?? [],
+                'model_answer' => $question['model_answer'] !== null ? (string) $question['model_answer'] : null,
+                'marks' => (int) ($question['marks'] ?? 1),
+            ];
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Questions fetched successfully.',
+            'data' => $data,
         ], 200);
     }
 
