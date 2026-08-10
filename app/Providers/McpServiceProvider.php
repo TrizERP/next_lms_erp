@@ -3,8 +3,13 @@
 namespace App\Providers;
 
 use App\Mcp\ToolRegistry;
+use App\Mcp\Tools\AdmissionsConfirmTool;
+use App\Mcp\Tools\AdmissionsGetEnquiryDetailsTool;
+use App\Mcp\Tools\AdmissionsListEnquiriesTool;
+use App\Mcp\Tools\AdmissionsValidateConfirmationTool;
 use App\Mcp\Tools\AdmissionsTodayTool;
 use App\Mcp\Tools\FeesCollectionReportTool;
+use App\Mcp\Tools\FeesGetPendingTool;
 use App\Mcp\Tools\StudentSearchTool;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
@@ -20,11 +25,21 @@ class McpServiceProvider extends ServiceProvider
         $this->app->singleton(StudentSearchTool::class);
         $this->app->singleton(FeesCollectionReportTool::class);
         $this->app->singleton(AdmissionsTodayTool::class);
+        $this->app->singleton(AdmissionsListEnquiriesTool::class);
+        $this->app->singleton(AdmissionsGetEnquiryDetailsTool::class);
+        $this->app->singleton(AdmissionsValidateConfirmationTool::class);
+        $this->app->singleton(AdmissionsConfirmTool::class);
+        $this->app->singleton(FeesGetPendingTool::class);
 
         $this->app->tag([
             StudentSearchTool::class,
             FeesCollectionReportTool::class,
             AdmissionsTodayTool::class,
+            AdmissionsListEnquiriesTool::class,
+            AdmissionsGetEnquiryDetailsTool::class,
+            AdmissionsValidateConfirmationTool::class,
+            AdmissionsConfirmTool::class,
+            FeesGetPendingTool::class,
         ], 'mcp.tools');
 
         $this->app->singleton(ToolRegistry::class, function ($app) {
