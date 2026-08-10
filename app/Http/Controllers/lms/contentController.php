@@ -1741,6 +1741,7 @@ public function generateGammaPDF(Request $request)
                     'sort_order' => null,
                     'meta_tags' => null,
                     'content_category' => $contentType,
+                    'source' => 'Gamma AI',
                     'created_by' => $user_id,
                     'sub_institute_id' => $sub_institute_id,
                     'restrict_date' => null,
