@@ -46,6 +46,10 @@ class InactiveStudentReportController extends Controller
     public function customFields(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $type = $request->input('type');
+        if (in_array($type, ["API", "JSON"])) {
+            $sub_institute_id = $request->sub_institute_id;
+        }
 
         $tblcustoms = DB::table("tblcustom_fields")
         ->whereRaw("status=1 AND (common_to_all= 1 or sub_institute_id=$sub_institute_id) AND is_deleted != 'Y'")
@@ -82,6 +86,10 @@ class InactiveStudentReportController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
+        if (in_array($type, ["API", "JSON"])) {
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }
         $marking_period_id=session()->get('term_id');
 
        // Define default values and mappings
@@ -101,7 +109,7 @@ class InactiveStudentReportController extends Controller
         // Map dynamic fields and headers
         $res['dynamicFields'] = $dynamicFields = $request->input('dynamicFields') ?? [];
         $searchArr1 = ['first_name', 'last_name', 'place_of_birth', 'student_mobile','optional_subjects','admission_year'];
-        $replaceArr1 = ['First Name', 'Surname', get_string('birthplace','request'), get_string('studentmobile','request'),'Optional Subjects','Fees Year'];
+        $replaceArr1 = ['First Name', 'Surname', get_string('birthplace','request',$sub_institute_id), get_string('studentmobile','request',$sub_institute_id),'Optional Subjects','Fees Year'];
 
         $array = [
             'tblstudent.enrollment_no as enrollment_no',
@@ -113,11 +121,11 @@ class InactiveStudentReportController extends Controller
             'batch.title as batch',
         ];
         $header = [
-            'enrollment_no' => get_string('grno', 'request'),
+            'enrollment_no' => get_string('grno', 'request', $sub_institute_id),
             'student_name' => 'Student Name',
-            'grade'=>get_string('academicsection', 'request'),
-            'standard' => get_string('standard', 'request'),
-            'division' => get_string('division', 'request'),
+            'grade'=>get_string('academicsection', 'request', $sub_institute_id),
+            'standard' => get_string('standard', 'request', $sub_institute_id),
+            'division' => get_string('division', 'request', $sub_institute_id),
             'batch' => 'Batch',
         ];
 

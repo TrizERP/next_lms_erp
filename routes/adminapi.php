@@ -122,4 +122,5 @@ Route::delete('student-setup/{resource}/{id}', [StudentSetupApiController::class
 Route::post('student-optional-subject/search', [StudentOptionalSubjectApiController::class, 'search']);
 Route::put('student-optional-subject', [StudentOptionalSubjectApiController::class, 'sync']);
 Route::get('student-registration/metadata', [StudentRegistrationApiController::class, 'metadata']);
+Route::get('student-registration/next-enrollment-no', [StudentRegistrationApiController::class, 'nextEnrollmentNo']);
 Route::post('student-registration', [StudentRegistrationApiController::class, 'store']);

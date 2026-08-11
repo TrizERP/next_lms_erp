@@ -94,10 +94,14 @@ class dicipline_reportController extends Controller
         //     })
         //     ->get()->toarray();
 
-        // added on 02/05/24 by uma 
+        // added on 02/05/24 by uma
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $type = $request->input('type');
+        if (in_array($type, ["API", "JSON"])) {
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }
         $res['grade_id'] = $grade = $request->grade;
         $res['standard_id'] = $standard = $request->standard;
         $res['division_id'] = $division = $request->division;
@@ -109,7 +113,7 @@ class dicipline_reportController extends Controller
         $res['to_date'] = $to_date = $request->to_date;
         
         // serach student from helper  serachStudent function
-        $studentLists = SearchStudent($grade, $standard, $division, "","","", $stu_name , $uniqueid, $mobile, $grno,"","");
+        $studentLists = SearchStudent($grade, $standard, $division, $sub_institute_id, $syear, "", $stu_name , $uniqueid, $mobile, $grno,"","");
        
         $studentArr = [];
         $newKey = 0;
@@ -139,7 +143,14 @@ class dicipline_reportController extends Controller
                 $filteredData = array_values(array_filter($studentLists, function ($item) use ($student_id) {
                     return $item['id'] == $student_id;
                 }));
-                $studentData = isset($filteredData[0]) ? $filteredData[0] : '';
+                $studentData = isset($filteredData[0]) ? $filteredData[0] : [];
+                if (!empty($studentData)) {
+                    $studentData['student_name'] = trim(
+                        ($studentData['first_name'] ?? '') . ' ' .
+                        ($studentData['middle_name'] ?? '') . ' ' .
+                        ($studentData['last_name'] ?? '')
+                    );
+                }
 
                 // Calculate flag text
                 $flag_text = '';
@@ -168,6 +179,8 @@ class dicipline_reportController extends Controller
             }
 
             $res['student_summary'] = array_values($studentSummary);
+            $res['status_code'] = 1;
+            $res['message'] = "Success";
         }
 
         $res['data'] = $studentArr;
