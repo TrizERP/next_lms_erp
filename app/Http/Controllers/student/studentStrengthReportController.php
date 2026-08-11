@@ -24,14 +24,22 @@ class studentStrengthReportController extends Controller
 
     public function create(Request $request)
     {
+        $type = $request->input('type');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        if (in_array($type, ["API", "JSON"])) {
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }
+
         $query = DB::table('standard')
-        ->leftJoin('tblstudent_enrollment', function ($join) use($request){
+        ->leftJoin('tblstudent_enrollment', function ($join) use($request, $sub_institute_id, $syear){
             $join->on('tblstudent_enrollment.standard_id', '=', 'standard.id')
-                ->where('tblstudent_enrollment.sub_institute_id', session()->get('sub_institute_id'))
+                ->where('tblstudent_enrollment.sub_institute_id', $sub_institute_id)
                 ->when(!isset($request['general']), function ($query) {
                     return $query->whereNull('tblstudent_enrollment.end_date');
                 })
-                ->where('tblstudent_enrollment.syear', session()->get('syear'));
+                ->where('tblstudent_enrollment.syear', $syear);
         })
         ->leftJoin('tblstudent', 'tblstudent_enrollment.student_id', '=', 'tblstudent.id')
         ->Join('division', 'tblstudent_enrollment.section_id', '=', 'division.id')
@@ -44,13 +52,15 @@ class studentStrengthReportController extends Controller
         // ->where('standard.name', '!=', 'Nursery')
         // ->orWhere('standard.name', '1');
        // Add group by date, standard, and division
-       if(!in_array('division',$request['standard_wise']) ){
+       $standardWise = $request['standard_wise'] ?? [];
+       $divisionWise = in_array('division', $standardWise);
+       if(!$divisionWise){
             $query->groupBy('standard.name');
+            $query->orderBy('standard.name');
        }else{
             $query->groupBy('standard.name', 'division.name');
+            $query->orderBy('standard.name')->orderBy('division.name');
        }
-       
-        $query->orderByRaw('standard.id,division.id');
         // Filter by start_date or admission_date
         if ($request['one_date'] === 'start') {
             $query->whereBetween('tblstudent_enrollment.start_date', [date('Y-m-d', strtotime($request['from_date'])), date('Y-m-d', strtotime($request['to_date']))]);
@@ -65,6 +75,7 @@ class studentStrengthReportController extends Controller
             $query->leftJoin('religion', 'tblstudent.religion', '=', 'religion.id');
             $query->whereIn('tblstudent.religion', $request['religion']);
             foreach ($request['religion'] as $religionId) {
+                $religionId = (int) $religionId;
                 $query->addSelect(
                     DB::raw("SUM(CASE WHEN religion.id = $religionId and tblstudent.gender = 'M' THEN 1 ELSE 0 END) as m_religion_$religionId")
                 );
@@ -77,10 +88,11 @@ class studentStrengthReportController extends Controller
     
         // Filter by caste
         if (isset($request['cast'])) {
-            $castId = implode(",", $request['cast']);
+            $castIds = array_map('intval', $request['cast']);
+            $castId = implode(",", $castIds);
             $query->leftJoin('caste', 'tblstudent.cast', '=', 'caste.id');
             $query->whereRaw('tblstudent.cast IN (' . $castId . ')');
-            foreach ($request['cast'] as $castId) {
+            foreach ($castIds as $castId) {
                 $query->addSelect(
                     DB::raw("SUM(CASE WHEN caste.id = $castId and tblstudent.gender = 'M' THEN 1 ELSE 0 END) as m_cast_$castId")
                 );
@@ -93,10 +105,11 @@ class studentStrengthReportController extends Controller
     
         // Filter by student_quota
         if (isset($request['quota'])) {
-            $quotaId = implode(",", $request['quota']);
+            $quotaIds = array_map('intval', $request['quota']);
+            $quotaId = implode(",", $quotaIds);
             $query->leftJoin('student_quota', 'tblstudent_enrollment.student_quota', '=', 'student_quota.id');
             $query->whereRaw('tblstudent_enrollment.student_quota IN (' . $quotaId . ')');
-            foreach ($request['quota'] as $quotaId) {
+            foreach ($quotaIds as $quotaId) {
                 $query->addSelect(
                     DB::raw("SUM(CASE WHEN tblstudent_enrollment.student_quota = $quotaId and tblstudent.gender = 'M' THEN 1 ELSE 0 END) as m_quota_$quotaId")
                 );
@@ -110,6 +123,9 @@ class studentStrengthReportController extends Controller
         // Filter by strength (M/F)
         if (isset($request['strength'])) {
             foreach ($request['strength'] as $gender) {
+                if (!in_array($gender, ['M', 'F'], true)) {
+                    continue;
+                }
                 $query->addSelect(
                     DB::raw("SUM(CASE WHEN tblstudent.gender = '$gender' THEN 1 ELSE 0 END) as $gender")
                 );
@@ -123,14 +139,14 @@ class studentStrengthReportController extends Controller
                     $query->WhereBetween('tblstudent.admission_date', [date('Y-m-d', strtotime($request['from_date'])), date('Y-m-d', strtotime($request['to_date']))]);
 
                     $query->addSelect(
-                        DB::raw("SUM(CASE WHEN tblstudent.admission_date BETWEEN '" . date('y-m-d', strtotime($request['from_date'])) . "' AND '" . date('y-m-d', strtotime($request['to_date'])) . "' THEN 1 ELSE 0 END) as new_add")
+                        DB::raw("SUM(CASE WHEN tblstudent.admission_date BETWEEN '" . date('Y-m-d', strtotime($request['from_date'])) . "' AND '" . date('Y-m-d', strtotime($request['to_date'])) . "' THEN 1 ELSE 0 END) as new_add")
                     );
                 }
                 if ($generalOption === 'take_lc') {
                     $query->WhereBetween('tblstudent_enrollment.end_date', [date('Y-m-d', strtotime($request['from_date'])), date('Y-m-d', strtotime($request['to_date']))]);
                     
                     $query->addSelect(
-                        DB::raw("SUM(CASE WHEN tblstudent_enrollment.end_date BETWEEN '" . date('y-m-d', strtotime($request['from_date'])) . "' AND '" . date('y-m-d', strtotime($request['to_date'])) . "' THEN 1 ELSE 0 END) as take_lc")
+                        DB::raw("SUM(CASE WHEN tblstudent_enrollment.end_date BETWEEN '" . date('Y-m-d', strtotime($request['from_date'])) . "' AND '" . date('Y-m-d', strtotime($request['to_date'])) . "' THEN 1 ELSE 0 END) as take_lc")
                     );
                 }
             }

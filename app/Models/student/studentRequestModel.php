@@ -22,6 +22,9 @@ class studentRequestModel extends Model
         'CREATED_BY',
         'CREATED_ON',
         'STANDARD_ID',
-        'SECTION_ID'
+        'SECTION_ID',
+        'STATUS',
+        'DECIDED_BY',
+        'DECIDED_ON',
     ];
 }

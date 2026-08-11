@@ -38,6 +38,10 @@ class missingDocumentReportController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
+        if (in_array($type, ["API", "JSON"])) {
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }
         $grade_id = $request->input("grade");
         $standard_id = $request->input("standard");
         $division_id = $request->input("division");
@@ -76,6 +80,7 @@ class missingDocumentReportController extends Controller
             ->where('s.sub_institute_id', $sub_institute_id)
             ->groupBy('s.id')->get()->toArray();
         }else{
+            $result = [];
             $res['status_code']=0;
             $res['message'] = "User Type Not Selected";
         }
@@ -86,8 +91,10 @@ class missingDocumentReportController extends Controller
         ->where('student_document_type.user_type',$user_type)
         ->get()->toArray();
 
-        $res['status_code'] = 1;
-        $res['message'] = "Success";
+        if (!isset($res['status_code'])) {
+            $res['status_code'] = 1;
+            $res['message'] = "Success";
+        }
         $res['result_report'] = $result;
         $res['docment_type_data'] = $docment_type_data;
         $res['grade_id'] = $grade_id;

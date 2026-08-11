@@ -151,7 +151,12 @@ class studentReportController extends Controller
             $safeField = str_replace(" ", "_", $fielValue);
             $safeLabel = str_replace(" ", "_", $customDetails->field_label);
 
-            $array[] = "{$customDetails->table_name}.{$safeField} AS {$safeLabel}";
+            if (in_array($customDetails->table_name, ['tblstudent_family_history', 'result_reportcard_marks'], true)) {
+                // These tables are one-to-many per student; aggregate to avoid duplicate rows.
+                $array[] = "MAX({$customDetails->table_name}.{$safeField}) AS {$safeLabel}";
+            } else {
+                $array[] = "{$customDetails->table_name}.{$safeField} AS {$safeLabel}";
+            }
 
                 $makeKey = strtolower(str_replace(" ","_",$customDetails->field_label));
                 $header[$makeKey] = ucfirst(str_replace(['_'], [' '], str_replace($searchArr1, $replaceArr1, $customDetails->field_label)));
@@ -264,9 +269,7 @@ class studentReportController extends Controller
                 $q->orderByRaw("CAST(SUBSTRING_INDEX(enrollment_no, '-', -1) AS UNSIGNED) ASC");
             });
 
-            if (!$hasFamilyHistory) {
-                $query->groupBy('tblstudent.id');
-            }
+            $query->groupBy('tblstudent.id');
 
             $student_data = $query->get();
 

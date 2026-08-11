@@ -12,9 +12,16 @@ class AgeWiseReportController extends Controller
     public function index(Request $request)
     {
         $gradeId = $request->get('grade_id', $request->get('grade', 0));
+        $standardId = $request->get('standard', 0);
+        $divisionId = $request->get('division', 0);
+        $type = $request->get('type');
         $sub_institute_id = session()->get('sub_institute_id', 0);
-        $medium = $request->get('medium', 'PRIMARY');
         $syear = session()->get('syear');
+        if (in_array($type, ["API", "JSON"])) {
+            $sub_institute_id = $request->get('sub_institute_id', 0);
+            $syear = $request->get('syear');
+        }
+        $medium = $request->get('medium', 'PRIMARY');
 
         // Age ranges
         $minAge = 5;
@@ -29,6 +36,10 @@ class AgeWiseReportController extends Controller
 
         if ($gradeId && $gradeId > 0) {
             $classesQuery->where('grade_id', $gradeId);
+        }
+
+        if ($standardId && $standardId > 0) {
+            $classesQuery->where('id', $standardId);
         }
 
         $classRecords = $classesQuery->get();
@@ -46,6 +57,8 @@ class AgeWiseReportController extends Controller
                 'minAge' => $minAge,
                 'maxAge' => $maxAge,
                 'grade_id' => $gradeId,
+                'standard_id' => $standardId,
+                'division_id' => $divisionId,
                 'sub_institute_id' => $sub_institute_id,
             ];
             $type = $request->type;
@@ -69,6 +82,9 @@ class AgeWiseReportController extends Controller
             ->where('e.end_date', null)
             ->whereNotNull('s.gender')
             ->where('s.gender', '!=', '')
+            ->when($divisionId && $divisionId > 0, function ($query) use ($divisionId) {
+                $query->where('e.section_id', $divisionId);
+            })
             ->groupBy('age', 'e.standard_id', 's.gender')
             ->orderBy('age')
             ->get();
@@ -122,6 +138,8 @@ class AgeWiseReportController extends Controller
             'minAge' => $minAge,
             'maxAge' => $maxAge,
             'grade_id' => $gradeId,
+            'standard_id' => $standardId,
+            'division_id' => $divisionId,
             'sub_institute_id' => $sub_institute_id,
         ];
 
