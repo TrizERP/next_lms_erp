@@ -761,14 +761,17 @@ else
 
     public function studentResultPDFAPI(Request $request)
     {
-        try {
-            if (!$this->jwtToken()->validate()) {
-                $response = array('status' => '2', 'message' => 'Token Auth Failed', 'data' => array());
+        $type = $request->input('type');
+        if ($type == "API") {
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = array('status' => '2', 'message' => 'Token Auth Failed', 'data' => array());
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = array('status' => '2', 'message' => $e->getMessage(), 'data' => array());
                 return response()->json($response, 401);
             }
-        } catch (\Exception $e) {
-            $response = array('status' => '2', 'message' => $e->getMessage(), 'data' => array());
-            return response()->json($response, 401);
         }
 
         $response = array();
@@ -794,7 +797,7 @@ else
 
             foreach ($reg_bk_off as $key => $val) 
             {
-                if($val->student_quota != '2383' && ($val->month_id == '42025' || $val->month_id == '72025')) 
+                if($val->student_quota != '2383' && ($val->month_id == '42026' || $val->month_id == '72026' || $val->month_id == '102026')) 
                 //($val->month_id == '42025' || $val->month_id == '72025') && 
                     $total_bf = $total_bf + $val->bkoff;
                 else
