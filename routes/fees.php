@@ -41,6 +41,8 @@ use App\Http\Controllers\fees\NACH\s3excel_exportController;
 use App\Http\Controllers\fees\NACH\s4excel_importController;
 use App\Http\Controllers\fees\online_fees\online_fees_collect_controller;
 use App\Http\Controllers\fees\online_fees\online_fees_settigs_controller;
+use App\Http\Controllers\fees\online_fees\online_fees_settings_api_controller;
+use App\Http\Controllers\fees\online_fees\online_fees_payment_api_controller;
 use App\Http\Controllers\fees\online_fees\online_fees_split_controller;
 use App\Http\Controllers\fees\other_fee_map\other_fee_map_controller;
 use App\Http\Controllers\fees\other_fees_cancel\other_fees_cancel_controller;
@@ -50,6 +52,7 @@ use App\Http\Controllers\fees\tblfeesConfigController;
 use App\Http\Controllers\fees\tblfeesHeadTypeMasterController;
 use App\Http\Controllers\fees\tblfeesLateController;
 use App\Http\Controllers\fees\update_fees_breackoff\update_fees_breackoff_controller;
+use App\Http\Controllers\fees\update_fees_breackoff\update_fees_breackoff_api_controller;
 use App\Http\Controllers\fees\fees_breackoff\monthlyBreakoffController;
 use App\Http\Controllers\fees\fees_month_header\feesMonthHeadercontroller;
 use App\Http\Controllers\fees\fees_report\studentBreakoffReportController;
@@ -103,12 +106,18 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
 
     Route::resource('other_fee_map', other_fee_map_controller::class);
     Route::resource('cheque_cash', cheque_cash_controller::class);
-    Route::resource('map_year', map_year_controller::class);
+    // The Blade controller scopes records from session().  Hydrate that session
+    // from the validated JWT for New ERP/API requests, while retaining the
+    // normal browser session path for the legacy Blade screen.
+    Route::resource('map_year', map_year_controller::class)->middleware('api.session');
     Route::resource('fees_breackoff', fees_breackoff_controller::class);
     Route::resource('bank_master', bank_master_controller::class);
     Route::resource('fees_collect', fees_collect_controller::class);
     Route::resource('college_fees_collect', college_fees_collect_controller::class);
     Route::resource('online_fees', online_fees_settigs_controller::class);
+    Route::resource('online_fees_settings_api', online_fees_settings_api_controller::class)->middleware('api.session');
+    Route::post('online_fees_payment_api/{gateway}', [online_fees_payment_api_controller::class, 'initiate'])->middleware('api.session');
+    Route::get('online_fees_payment_api/{gateway}/preview', [online_fees_payment_api_controller::class, 'preview'])->middleware('api.session');
     Route::resource('online_fees_split', online_fees_split_controller::class);
     Route::resource('cheque_reconciliation', ChequeReconciliationController::class);
     Route::resource('feesAI', feesAIController::class);    
@@ -146,7 +155,10 @@ Route::get('payphi', function ($id = null) {
     })->name('payphi');
 
     Route::post('api/get-fees-list', [AJAXController::class, 'getFees'])->name('get-fees-list');
-    Route::resource('update_fees_breackoff', update_fees_breackoff_controller::class);
+    // Hydrate the legacy controller's session values from the authenticated
+    // API request when this screen is used by the New ERP.
+    Route::resource('update_fees_breackoff', update_fees_breackoff_controller::class)->middleware('api.session');
+    Route::resource('update_fees_breackoff_api', update_fees_breackoff_api_controller::class)->middleware('api.session');
 
     Route::post('fees_collect/show_student', ['as' => 'fees_collect.show_student', 'uses' => 'fees\fees_collect\fees_collect_controller@show_student']);
     Route::post('college_fees_collect/show_student', ['as' => 'college_fees_collect.show_student', 'uses' => 'fees\college_fees_collect\college_fees_collect_controller@show_student']);
