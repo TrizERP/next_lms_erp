@@ -385,7 +385,9 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'l
     // Route::post('/school_setup/subject_master/insert_data','school_setup\subject1Controller@insert_data');
 
     Route::resource('classwisetimetable', classwisetimetableController::class);
-    Route::post('ajax_getClasswiseTimetable', [classwisetimetableController::class, 'getClasswiseTimetable'])->name('ajax_getClasswiseTimetable');
+    Route::post('ajax_getClasswiseTimetable', [classwisetimetableController::class, 'getClasswiseTimetable'])
+        ->middleware('api.session')
+        ->name('ajax_getClasswiseTimetable');
     Route::get('ajax_Batch_Timetable', [timetableController::class, 'getBatchTimetable'])->name('ajax_Batch_Timetable');
 
     Route::get('ajax_New_Standard_Div', [timetableController::class, 'getNewStandardDiv'])->name('ajax_New_Standard_Div');
@@ -398,7 +400,9 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'l
 
     Route::post('ajax_getproxyperiod', [proxyController::class, 'getproxyperiod'])->name('ajax_getproxyperiod');
     Route::resource('facultywisetimetable', facultywisetimetableController::class);
-    Route::post('ajax_getFacultywiseTimetable', [facultywisetimetableController::class, 'getFacultywiseTimetable'])->name('ajax_getFacultywiseTimetable');
+    Route::post('ajax_getFacultywiseTimetable', [facultywisetimetableController::class, 'getFacultywiseTimetable'])
+        ->middleware('api.session')
+        ->name('ajax_getFacultywiseTimetable');
 
     Route::resource('proxy_report', proxyReportController::class);
     Route::post('ajax_getproxyreport', [proxyReportController::class, 'getproxyreport'])->name('ajax_getproxyreport');
