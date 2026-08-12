@@ -76,6 +76,10 @@ class admissionEnquiryModel extends Model
         'fees_circular_html',
         'fees_circular_form_no',
         'interaction_date',
-        'interaction_remarks'
+        'interaction_remarks',
+        'institute_branch',
+        'activity_date',
+        'activity_time',
+        'activity_remarks'
     ];
 }

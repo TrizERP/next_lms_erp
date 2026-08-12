@@ -91,7 +91,7 @@ class admissionRegistrationAPIController extends Controller
                 ->leftJoin('admission_registration as ar', function ($join) {
                     $join->on('ae.id', '=', 'ar.enquiry_id');
                 })
-                ->selectRaw("ae.*,af.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,CONCAT_WS(',',ae.house_no,
+                ->selectRaw("ae.*,af.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,ae.admission_standard as admission_standard,CONCAT_WS(',',ae.house_no,
                     ae.`building_name_appratment_name_society_name`,ae.district_name,ae.pin_code,ae.state) AS address,
                     ae.previous_standard,ae.mother_name,ae.mobile_number_mother ,ae.place_of_birth,ar.enquiry_id as registration_enquiry_id, ae.remarks AS enquiry_remark, ae.fees_remark AS enquiry_remark2")
                 ->where('ae.id', $id)
@@ -104,7 +104,11 @@ class admissionRegistrationAPIController extends Controller
                 })->leftJoin('admission_registration as ar', function ($join) use ($sub_institute_id) {
                     $join->on('ae.id', '=', 'ar.enquiry_id')->where('ar.sub_institute_id', $sub_institute_id);
                 })
-                ->selectRaw("ae.*,af.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,ar.enquiry_id as registration_enquiry_id, ae.remarks AS enquiry_remark, ae.fees_remark AS enquiry_remark2")
+                ->selectRaw("ae.*,af.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,
+                    ae.admission_standard as admission_standard,
+                    COALESCE(ar.mother_name, ae.mother_name) as mother_name,
+                    COALESCE(ar.mother_mobile_number, ae.mobile_number_mother) as mother_mobile_number,
+                    ar.enquiry_id as registration_enquiry_id, ae.remarks AS enquiry_remark, ae.fees_remark AS enquiry_remark2")
                 ->where('ae.id', $id)
                 ->where('ae.sub_institute_id', $sub_institute_id)
                 ->get()->toArray();
@@ -148,6 +152,12 @@ class admissionRegistrationAPIController extends Controller
         }
 
         $category = studentQuotaModel::where(['sub_institute_id' => $sub_institute_id])->get()->toArray();
+
+        if (empty($editRecord['register_number'])) {
+            $res['next_register_number'] = (int) admissionRegistrationModel::where('sub_institute_id', $sub_institute_id)->count() + 1;
+        } else {
+            $res['next_register_number'] = $editRecord['register_number'];
+        }
 
         if (isset($editRecord['enrollment_no']) && $editRecord['enrollment_no'] != '') {
             $res['new_enrollment_no'] = $editRecord['enrollment_no'];
