@@ -27,7 +27,11 @@ class ptmattenedstatusController extends Controller
     {
         $type = $request->input('type');
         $submit = $request->input('submit');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
+        if($type=="API"){
+            $sub_institute_id = $request->input('sub_institute_id');
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+        }
         $res['status_code'] = 1;
         $res['message'] = "Success";
         $marking_period_id = session()->get('term_id');
@@ -65,8 +69,13 @@ class ptmattenedstatusController extends Controller
         $ptm_title = $request->input('ptm_title');
         $date = $request->input('date');
         $type = $request->input('type');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        if($type=="API"){
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');
+        }
         $marking_period_id = session()->get('term_id');
 
         $result = DB::table('ptm_time_slots_master as PTS')
@@ -121,9 +130,15 @@ class ptmattenedstatusController extends Controller
         $standard_id = $request->get('standard_id');
         $attened_remarks = $request->input('attened_remarks');
         $attened_status = $request->input('attened_status');
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-        $created_by = $request->session()->get('user_id');
+        if($type=="API"){
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');
+            $created_by = $request->input('user_id');
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');
+            $created_by = $request->session()->get('user_id');
+        }
         $created_ip = $_SERVER['REMOTE_ADDR'];
         $stdDivs = $request->input('std_div');
         $mobiles = $request->input('mobile');
@@ -420,8 +435,13 @@ class ptmattenedstatusController extends Controller
 
     public function ptmReport(Request $request){
         $type= $request->type;
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
+        if($type=="API"){
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');
+        }else{
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');
+        }
 
         $from_date=$to_date=now();
         if($request->has('Search')){
