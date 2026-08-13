@@ -162,12 +162,18 @@ class inventory_negotiate_poController extends Controller
         $data = inventory_negotiate_poModel::find($id);
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
-        $po_data = inventory_generate_poModel::where(['id' => $id])->get()->toArray();
+        if (! $data) {
+            return back()->with('error', 'Negotiate PO data not found.');
+        }
+        $po_number = $data->po_number;
+
+        $po_data = inventory_generate_poModel::where('po_number', $po_number)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('syear', $request->session()->get('syear'))
+            ->get()->toArray();
         if (empty($po_data)) {
-    // Handle error (PO not found)
-    return back()->with('error', 'PO data not found.');
-}
-        $po_number = $po_data[0]['po_number'];
+            return back()->with('error', 'PO data not found.');
+        }
 
         $generate_po_data = DB::table("inventory_generate_po_details as gp")
             ->join('inventory_vendor_master as vm', function ($join) {
@@ -259,6 +265,14 @@ $item_data = DB::table("inventory_generate_po_details as gp")
             "tax_amount_value"   => $request->tax_amount_value[$item_id],
             "after_tax_amount"   => $request->after_tax_amount[$item_id],
             "amount_per_item"    => ($request->price[$item_id] * $request->qty[$item_id]),
+            "transportation_charge" => $request->transportation_charge,
+            "installation_charge"   => $request->installation_charge,
+            "delivery_time"         => $request->delivery_time,
+            "po_place_of_delivery"  => $request->po_place_of_delivery,
+            "payment_terms"         => $request->payment_terms,
+            "remarks"               => $request->remarks,
+            "po_approval_status"    => $request->po_approval_status,
+            "po_approval_remark"    => $request->po_approval_remark,
             "po_approved_by"     => $updated_by,
             "po_approved_date"   => date('Y-m-d H:i:s'),
         ];

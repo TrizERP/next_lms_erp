@@ -266,20 +266,120 @@ class InventoryApiController extends Controller
                     ->select('quotation.*', 'item.title as item_name', 'vendor.vendor_name', 'status.title as approval_status', DB::raw("concat_ws(' ', approver.first_name, approver.middle_name, approver.last_name) as approved_by_name"))
                     ->where('quotation.sub_institute_id', $tenant)->where('quotation.syear', $syear)->orderByDesc('quotation.id')->get();
             case 'purchase-orders':
-            case 'purchase-order-negotiations':
                 return DB::table('inventory_generate_po_details as po')->join('inventory_item_master as item', 'item.id', '=', 'po.item_id')->join('inventory_vendor_master as vendor', 'vendor.id', '=', 'po.vendor_id')->leftJoin('inventory_requisition_status_master as status', 'status.id', '=', 'po.po_approval_status')->select('po.*', 'item.title as item_name', 'vendor.vendor_name', 'vendor.company_name', 'status.title as status')->where('po.sub_institute_id', $tenant)->where('po.syear', $syear)->orderByDesc('po.id')->get();
+            case 'purchase-order-negotiations':
+                return DB::table('inventory_generate_po_details as po')
+                    ->join('inventory_item_master as item', 'item.id', '=', 'po.item_id')
+                    ->join('inventory_vendor_master as vendor', 'vendor.id', '=', 'po.vendor_id')
+                    ->leftJoin('inventory_requisition_status_master as status', 'status.id', '=', 'po.po_approval_status')
+                    ->leftJoin('inventory_negotiate_po_details as np', function ($join) {
+                        $join->on('np.item_id', '=', 'po.item_id')
+                             ->on('np.po_number', '=', 'po.po_number')
+                             ->on('np.sub_institute_id', '=', 'po.sub_institute_id')
+                             ->on('np.syear', '=', 'po.syear');
+                    })
+                    ->select('po.*', 'item.title as item_name', 'vendor.vendor_name', 'vendor.company_name', 'status.title as status',
+                        DB::raw('COALESCE(np.price, po.price) as price'),
+                        DB::raw('COALESCE(np.qty, po.qty) as qty'),
+                        DB::raw('COALESCE(np.amount, po.amount) as amount'),
+                        DB::raw('COALESCE(np.dis_per, po.dis_per) as dis_per'),
+                        DB::raw('COALESCE(np.dis_amount_value, po.dis_amount_value) as dis_amount_value'),
+                        DB::raw('COALESCE(np.after_dis_amount, po.after_dis_amount) as after_dis_amount'),
+                        DB::raw('COALESCE(np.tax_per, po.tax_per) as tax_per'),
+                        DB::raw('COALESCE(np.tax_amount_value, po.tax_amount_value) as tax_amount_value'),
+                        DB::raw('COALESCE(np.after_tax_amount, po.after_tax_amount) as after_tax_amount'),
+                        DB::raw('COALESCE(np.amount_per_item, po.amount_per_item) as amount_per_item')
+                    )
+                    ->where('po.sub_institute_id', $tenant)->where('po.syear', $syear)
+                    ->orderByDesc('po.id')->get();
             case 'receivables':
-                return DB::table('inventory_item_receivable_details as receipt')->leftJoin('inventory_item_master as item', 'item.id', '=', 'receipt.item_id')->select('receipt.*', 'item.title as item_name')->where('receipt.sub_institute_id', $tenant)->where('receipt.syear', $syear)->orderByDesc('receipt.id')->get();
+                return DB::table('inventory_item_receivable_details as receipt')
+                    ->leftJoin('inventory_item_master as item', 'item.id', '=', 'receipt.item_id')
+                    ->select(
+                        'receipt.ID as id',
+                        'receipt.PURCHASE_ORDER_NO as po_number',
+                        'receipt.ITEM_ID as item_id',
+                        'receipt.ORDER_QTY as qty',
+                        'receipt.PREVIOUS_RECEIVED_QTY as previous_received_qty',
+                        'receipt.ACTUAL_RECEIVED_QTY as actual_received_qty',
+                        'receipt.PENDING_QTY as pending_qty',
+                        'receipt.REMARKS as remarks',
+                        'receipt.WARRANTY_START_DATE as warranty_start_date',
+                        'receipt.WARRANTY_END_DATE as warranty_end_date',
+                        'receipt.BILL_NO as bill_no',
+                        'receipt.BILL_DATE as bill_date',
+                        'receipt.CHALLAN_NO as challan_no',
+                        'receipt.CHALLAN_DATE as challan_date',
+                        'receipt.RECEIVED_BY as received_by',
+                        'receipt.RECEIVED_DATE as received_date',
+                        'receipt.GATEPASS_NO as gatepass_no',
+                        'receipt.CHEQUE_NO as cheque_no',
+                        'receipt.BANK_NAME as bank_name',
+                        'item.title as item_name'
+                    )
+                    ->where('receipt.sub_institute_id', $tenant)->where('receipt.syear', $syear)
+                    ->orderByDesc('receipt.id')->get();
             case 'allocations':
-                $query = DB::table('inventory_allocation_details as allocation')->leftJoin('inventory_requisition_details as requisition', 'requisition.id', '=', 'allocation.requisition_details_id')->leftJoin('inventory_item_master as item', 'item.id', '=', 'allocation.item_id')->leftJoin('tbluser as user', 'user.id', '=', 'requisition.requisition_by')->select('allocation.*', 'item.title as item_name', 'requisition.approved_qty', DB::raw("concat_ws(' ', user.first_name, user.middle_name, user.last_name) as requisition_by_name"))->where('allocation.sub_institute_id', $tenant)->where('allocation.syear', $syear);
+                $query = DB::table('inventory_allocation_details as allocation')
+                    ->leftJoin('inventory_requisition_details as requisition', 'requisition.id', '=', 'allocation.requisition_details_id')
+                    ->leftJoin('inventory_item_master as item', 'item.id', '=', 'allocation.item_id')
+                    ->leftJoin('tbluser as user', 'user.id', '=', 'requisition.requisition_by')
+                    ->select(
+                        'allocation.ID as id',
+                        'allocation.REQUISITION_DETAILS_ID as requisition_details_id',
+                        'allocation.REQUISITION_ID as requisition_by',
+                        'allocation.LOCATION_OF_MATERIAL as location_of_material',
+                        'allocation.PERSON_RESPONSIBLE as person_responsible',
+                        'allocation.ITEM_ID as item_id',
+                        'allocation.CREATED_BY as created_by',
+                        'allocation.CREATED_ON as created_on',
+                        'item.title as item_name',
+                        'requisition.approved_qty',
+                        DB::raw("concat_ws(' ', user.first_name, user.middle_name, user.last_name) as requisition_by_name")
+                    )
+                    ->where('allocation.sub_institute_id', $tenant)->where('allocation.syear', $syear);
                 $this->dateFilters($query, $request, 'requisition.requisition_date');
                 if ($request->filled('item_id')) $query->where('allocation.item_id', $request->integer('item_id'));
                 if ($request->filled('requisition_by')) $query->where('requisition.requisition_by', $request->integer('requisition_by'));
                 return $query->orderByDesc('allocation.id')->get();
             case 'returns':
-                return DB::table('inventory_item_return_details as returned')->leftJoin('inventory_item_master as item', 'item.id', '=', 'returned.item_id')->leftJoin('tbluser as user', 'user.id', '=', 'returned.requisition_by')->select('returned.*', 'item.title as item_name', DB::raw("concat_ws(' ', user.first_name, user.middle_name, user.last_name) as user_name"))->where('returned.sub_institute_id', $tenant)->where('returned.syear', $syear)->orderByDesc('returned.id')->get();
+                return DB::table('inventory_item_return_details as returned')
+                    ->leftJoin('inventory_item_master as item', 'item.id', '=', 'returned.item_id')
+                    ->leftJoin('tbluser as user', 'user.id', '=', 'returned.requisition_by')
+                    ->select(
+                        'returned.ID as id',
+                        'returned.REQUISITION_ID as requisition_id',
+                        'returned.ITEM_ID as item_id',
+                        'returned.RETURN_DATE as return_date',
+                        'returned.REMARKS as remarks',
+                        'returned.RETURN_QTY as return_qty',
+                        'returned.REQUISITION_BY as requisition_by',
+                        'returned.CREATED_BY as created_by',
+                        'returned.CREATED_ON as created_on',
+                        'item.title as item_name',
+                        DB::raw("concat_ws(' ', user.first_name, user.middle_name, user.last_name) as user_name")
+                    )
+                    ->where('returned.sub_institute_id', $tenant)->where('returned.syear', $syear)
+                    ->orderByDesc('returned.id')->get();
             case 'defectives':
-                return DB::table('inventory_item_defective_details as defective')->leftJoin('inventory_item_master as item', 'item.id', '=', 'defective.item_id')->select('defective.*', 'item.title as item_name')->where('defective.sub_institute_id', $tenant)->where('defective.syear', $syear)->orderByDesc('defective.id')->get();
+                return DB::table('inventory_item_defective_details as defective')
+                    ->leftJoin('inventory_item_master as item', 'item.id', '=', 'defective.item_id')
+                    ->select(
+                        'defective.ID as id',
+                        'defective.ITEM_ID as item_id',
+                        'defective.WARRANTY_START_DATE as warranty_start_date',
+                        'defective.WARRANTY_END_DATE as warranty_end_date',
+                        'defective.DEFECT_REMARKS as defect_remarks',
+                        'defective.ITEM_GIVEN_TO as item_given_to',
+                        'defective.ESTIMATED_RECEIVED_DATE as estimated_received_date',
+                        'defective.ACTUAL_RECEIVED_DATE as actual_received_date',
+                        'defective.REMARKS as remarks',
+                        'defective.CREATED_BY as created_by',
+                        'defective.CREATED_ON as created_on',
+                        'item.title as item_name'
+                    )
+                    ->where('defective.sub_institute_id', $tenant)->where('defective.syear', $syear)
+                    ->orderByDesc('defective.id')->get();
             case 'direct-purchases':
                 return DB::table('inventory_item_direct_purchase as purchase')
                     ->join('inventory_vendor_master as vendor', function ($join) { $join->on('vendor.id', '=', 'purchase.vendor_id')->on('vendor.sub_institute_id', '=', 'purchase.sub_institute_id'); })
@@ -343,6 +443,7 @@ class InventoryApiController extends Controller
         if (isset(self::MASTER_TABLES[$module])) return $this->saveMaster($request, $module, $id);
         if (str_starts_with($module, 'reports/')) return $this->failure('Reports are read-only.', 405);
         if ($module === 'purchase-orders' && is_array($request->input('items'))) return $this->savePurchaseOrder($request, $id);
+        if ($module === 'purchase-order-negotiations' && is_array($request->input('items'))) return $this->saveNegotiatePo($request, $id);
         if ($module === 'quotations' && is_array($request->input('items'))) return $this->saveQuotations($request, $id);
         if ($module === 'direct-purchases' && is_array($request->input('items'))) return $this->saveDirectPurchases($request, $id);
         if ($module === 'requisition-approvals' && is_array($request->input('approvals'))) return $this->saveRequisitionApprovals($request);
@@ -366,7 +467,7 @@ class InventoryApiController extends Controller
                     DB::table('inventory_requisition_details')->where('id', $requisitionId)->update(['approved_qty' => $request->input('approved_qty'), 'requisition_status' => $request->integer('requisition_status'), 'requisition_approved_remarks' => $request->input('remarks'), 'requisition_approved_by' => $user, 'requisition_approved_date' => now()->toDateString()]);
                     return;
                 }
-                [$table, $values] = $this->workflowValues($request, $module, $tenant, $syear, $user);
+                [$table, $values] = $this->workflowValues($request, $module, $tenant, $syear, $user, $id);
                 if ($values === []) return;
                 if ($id) DB::table($table)->where('id', $id)->where('sub_institute_id', $tenant)->where('syear', $syear)->update($values);
                 else DB::table($table)->insert($values);
@@ -429,6 +530,94 @@ class InventoryApiController extends Controller
             return $this->failure($exception->getMessage());
         }
         return response()->json(['status_code' => 1, 'message' => $id ? 'PO Updated Successfully' : 'PO generated Successfully', 'data' => []]);
+    }
+
+    private function saveNegotiatePo(Request $request, ?int $id)
+    {
+        $validator = Validator::make($request->all(), [
+            'po_number' => 'required|string|max:50',
+            'items' => 'required|array|min:1',
+            'items.*.item_id' => 'required|integer',
+            'items.*.price' => 'required|numeric|min:0',
+            'items.*.qty' => 'required|numeric|min:0.01',
+            'items.*.dis_per' => 'required|numeric|min:0',
+            'items.*.tax_per' => 'required|numeric|min:0',
+            'po_approval_status' => 'required|integer',
+            'po_approval_remark' => 'nullable|string',
+            'transportation_charge' => 'nullable|numeric|min:0',
+            'installation_charge' => 'nullable|numeric|min:0',
+            'delivery_time' => 'nullable|date',
+            'po_place_of_delivery' => 'nullable|string',
+            'payment_terms' => 'nullable|string',
+            'remarks' => 'nullable|string',
+        ]);
+        if ($validator->fails()) return $this->failure($validator->messages()->first(), 422, $validator->errors());
+        $tenant = $request->integer('sub_institute_id');
+        $syear = $request->integer('syear');
+        $user = $request->integer('user_id');
+        $poNumber = $request->input('po_number');
+        try {
+            DB::transaction(function () use ($request, $tenant, $syear, $user, $poNumber) {
+                DB::table('inventory_generate_po_details')
+                    ->where('po_number', $poNumber)
+                    ->where('sub_institute_id', $tenant)
+                    ->where('syear', $syear)
+                    ->update([
+                        'po_approval_status' => $request->integer('po_approval_status'),
+                        'po_approval_remark' => $request->input('po_approval_remark'),
+                        'po_approved_by' => $user,
+                        'po_approved_date' => now(),
+                    ]);
+                foreach ($request->input('items') as $item) {
+                    $po = DB::table('inventory_generate_po_details')
+                        ->where('po_number', $poNumber)
+                        ->where('item_id', (int) $item['item_id'])
+                        ->where('sub_institute_id', $tenant)
+                        ->where('syear', $syear)
+                        ->lockForUpdate()
+                        ->first();
+                    if (! $po) throw new \RuntimeException('Purchase-order item not found.');
+                    $amount = (float) $item['price'] * (float) $item['qty'];
+                    $discount = $amount * ((float) $item['dis_per'] / 100);
+                    $afterDiscount = $amount - $discount;
+                    $tax = $afterDiscount * ((float) $item['tax_per'] / 100);
+                    $approval = [
+                        'po_approval_status' => $request->integer('po_approval_status'),
+                        'po_approval_remark' => $request->input('po_approval_remark'),
+                        'po_approved_by' => $user,
+                        'po_approved_date' => now(),
+                    ];
+                    DB::table('inventory_negotiate_po_details')->updateOrInsert(
+                        ['po_number' => $poNumber, 'item_id' => (int) $item['item_id'], 'sub_institute_id' => $tenant, 'syear' => $syear],
+                        array_merge($approval, [
+                            'vendor_id' => $po->vendor_id,
+                            'price' => $item['price'],
+                            'qty' => $item['qty'],
+                            'amount' => $amount,
+                            'dis_per' => $item['dis_per'],
+                            'dis_amount_value' => $discount,
+                            'after_dis_amount' => $afterDiscount,
+                            'tax_per' => $item['tax_per'],
+                            'tax_amount_value' => $tax,
+                            'after_tax_amount' => $afterDiscount + $tax,
+                            'amount_per_item' => $amount,
+                            'transportation_charge' => $request->input('transportation_charge'),
+                            'installation_charge' => $request->input('installation_charge'),
+                            'delivery_time' => $request->input('delivery_time') ?: null,
+                            'po_place_of_delivery' => $request->input('po_place_of_delivery'),
+                            'payment_terms' => $request->input('payment_terms'),
+                            'remarks' => $request->input('remarks'),
+                            'created_by' => $user,
+                            'created_on' => now(),
+                            'created_ip_address' => $request->ip(),
+                        ])
+                    );
+                }
+            });
+        } catch (\RuntimeException $exception) {
+            return $this->failure($exception->getMessage());
+        }
+        return response()->json(['status_code' => 1, 'message' => $id ? 'Negotiate PO updated successfully.' : 'Negotiate PO created successfully.', 'data' => []]);
     }
 
     private function saveQuotations(Request $request, ?int $id)
@@ -638,7 +827,7 @@ class InventoryApiController extends Controller
         ][$module] ?? [];
     }
 
-    private function workflowValues(Request $request, string $module, int $tenant, int $syear, int $user): array
+    private function workflowValues(Request $request, string $module, int $tenant, int $syear, int $user, ?int $id = null): array
     {
         $common = ['sub_institute_id' => $tenant, 'syear' => $syear];
         switch ($module) {
@@ -668,24 +857,77 @@ class InventoryApiController extends Controller
                 );
                 return ['inventory_generate_po_details', []];
             case 'receivables':
-                $po = DB::table('inventory_generate_po_details')->where('po_number', $request->input('po_number'))->where('item_id', $request->integer('item_id'))->where('sub_institute_id', $tenant)->where('syear', $syear)->first();
+                $po = DB::table('inventory_negotiate_po_details')->where('po_number', $request->input('po_number'))->where('item_id', $request->integer('item_id'))->where('sub_institute_id', $tenant)->where('syear', $syear)->first();
+                if (! $po) {
+                    $po = DB::table('inventory_generate_po_details')->where('po_number', $request->input('po_number'))->where('item_id', $request->integer('item_id'))->where('sub_institute_id', $tenant)->where('syear', $syear)->first();
+                }
                 if (! $po) throw new \RuntimeException('Approved purchase-order item not found.');
-                $previous = (float) DB::table('inventory_item_receivable_details')->where('purchase_order_no', $request->input('po_number'))->where('item_id', $request->integer('item_id'))->where('sub_institute_id', $tenant)->where('syear', $syear)->sum('actual_received_qty');
+                $previousQuery = DB::table('inventory_item_receivable_details')->where('PURCHASE_ORDER_NO', $request->input('po_number'))->where('ITEM_ID', $request->integer('item_id'))->where('SUB_INSTITUTE_ID', $tenant)->where('SYEAR', $syear);
+                if ($id) $previousQuery->where('ID', '!=', $id);
+                $previous = (float) $previousQuery->sum('ACTUAL_RECEIVED_QTY');
                 $received = (float) $request->input('actual_received_qty');
                 if ($previous + $received > (float) $po->qty) throw new \RuntimeException('Received quantity cannot exceed the pending PO quantity.');
-                return ['inventory_item_receivable_details', array_merge($common, ['purchase_order_no' => $request->input('po_number'), 'item_id' => $request->integer('item_id'), 'order_qty' => $po->qty, 'previous_received_qty' => $previous, 'actual_received_qty' => $received, 'pending_qty' => (float) $po->qty - $previous - $received, 'remarks' => $request->input('remarks'), 'warranty_start_date' => $request->input('warranty_start_date'), 'warranty_end_date' => $request->input('warranty_end_date'), 'bill_no' => $request->input('bill_no'), 'bill_date' => $request->input('bill_date'), 'challan_no' => $request->input('challan_no'), 'challan_date' => $request->input('challan_date'), 'received_by' => $user, 'received_date' => now(), 'created_by' => $user, 'created_on' => now(), 'created_ip_address' => $request->ip()])];
+                $values = ['PURCHASE_ORDER_NO' => $request->input('po_number'), 'ITEM_ID' => $request->integer('item_id'), 'ORDER_QTY' => $po->qty, 'PREVIOUS_RECEIVED_QTY' => $previous, 'ACTUAL_RECEIVED_QTY' => $received, 'PENDING_QTY' => (float) $po->qty - $previous - $received, 'RECEIVED_BY' => $user, 'RECEIVED_DATE' => now()];
+                foreach (['remarks' => 'REMARKS', 'warranty_start_date' => 'WARRANTY_START_DATE', 'warranty_end_date' => 'WARRANTY_END_DATE', 'bill_no' => 'BILL_NO', 'bill_date' => 'BILL_DATE', 'challan_no' => 'CHALLAN_NO', 'challan_date' => 'CHALLAN_DATE'] as $requestKey => $dbKey) {
+                    if ($request->has($requestKey)) $values[$dbKey] = $request->input($requestKey);
+                }
+                if (! $id) $values = array_merge($values, ['CREATED_BY' => $user, 'CREATED_ON' => now(), 'CREATED_IP_ADDRESS' => $request->ip()]);
+                return ['inventory_item_receivable_details', array_merge($common, $values)];
             case 'allocations':
-                $requisition = DB::table('inventory_requisition_details as requisition')->join('inventory_requisition_status_master as status', 'status.id', '=', 'requisition.requisition_status')->select('requisition.*')->where('requisition.item_id', $request->integer('item_id'))->where('requisition.requisition_by', $request->integer('requisition_by'))->where('requisition.sub_institute_id', $tenant)->where('requisition.syear', $syear)->where('status.title', 'APPROVED')->orderByDesc('requisition.id')->first();
-                if (! $requisition) throw new \RuntimeException('Approved requisition not found.');
-                return ['inventory_allocation_details', array_merge($common, ['requisition_details_id' => $requisition->id, 'requisition_id' => $requisition->requisition_no, 'location_of_material' => $request->input('location_of_material'), 'person_responsible' => $request->input('person_responsible'), 'item_id' => $request->integer('item_id'), 'created_by' => $user, 'created_on' => now(), 'created_ip_address' => $request->ip()])];
+                $itemId = $request->integer('item_id');
+                $requisitionById = $request->integer('requisition_by');
+                $requisitionDetailsId = null;
+                if ($id) {
+                    $existing = DB::table('inventory_allocation_details')->where('ID', $id)->where('SUB_INSTITUTE_ID', $tenant)->where('SYEAR', $syear)->first();
+                    if ($existing) {
+                        $requisitionDetailsId = $existing->REQUISITION_DETAILS_ID;
+                    }
+                }
+                $needsNewRequisition = !$requisitionDetailsId;
+                if (!$needsNewRequisition && $requisitionDetailsId) {
+                    $currentRequisition = DB::table('inventory_requisition_details')->where('id', $requisitionDetailsId)->where('sub_institute_id', $tenant)->where('syear', $syear)->first();
+                    if ($currentRequisition && ($currentRequisition->item_id != $itemId || $currentRequisition->requisition_by != $requisitionById)) {
+                        $needsNewRequisition = true;
+                    }
+                }
+                if ($needsNewRequisition) {
+                    $requisition = DB::table('inventory_requisition_details as requisition')->join('inventory_requisition_status_master as status', 'status.id', '=', 'requisition.requisition_status')->select('requisition.*')->where('requisition.item_id', $itemId)->where('requisition.requisition_by', $requisitionById)->where('requisition.sub_institute_id', $tenant)->where('requisition.syear', $syear)->where('status.title', 'APPROVED')->orderByDesc('requisition.id')->first();
+                    if (! $requisition) throw new \RuntimeException('Approved requisition not found.');
+                    $requisitionDetailsId = $requisition->id;
+                }
+                $values = ['REQUISITION_DETAILS_ID' => $requisitionDetailsId, 'REQUISITION_ID' => $requisitionById, 'LOCATION_OF_MATERIAL' => $request->input('location_of_material'), 'PERSON_RESPONSIBLE' => $request->input('person_responsible'), 'ITEM_ID' => $itemId];
+                if (! $id) $values = array_merge($values, ['CREATED_BY' => $user, 'CREATED_ON' => now(), 'CREATED_IP_ADDRESS' => $request->ip()]);
+                return ['inventory_allocation_details', array_merge($common, $values)];
             case 'returns':
-                $allocation = DB::table('inventory_allocation_details as allocation')->join('inventory_requisition_details as requisition', 'requisition.id', '=', 'allocation.requisition_details_id')->select('allocation.requisition_id', 'requisition.id as requisition_details_id', 'requisition.approved_qty')->where('allocation.item_id', $request->integer('item_id'))->where('requisition.requisition_by', $request->integer('requisition_by'))->where('allocation.sub_institute_id', $tenant)->where('allocation.syear', $syear)->orderByDesc('allocation.id')->first();
+                $itemId = $request->integer('item_id');
+                $requisitionById = $request->integer('requisition_by');
+                $allocation = null;
+                $existingReturnId = null;
+                if ($id) {
+                    $existingReturn = DB::table('inventory_item_return_details')->where('ID', $id)->where('SUB_INSTITUTE_ID', $tenant)->where('SYEAR', $syear)->first();
+                    if ($existingReturn) {
+                        $existingReturnId = $existingReturn->ID;
+                        $allocation = DB::table('inventory_allocation_details as allocation')->join('inventory_requisition_details as requisition', 'requisition.id', '=', 'allocation.requisition_details_id')->select('allocation.REQUISITION_ID', 'requisition.id as requisition_details_id', 'requisition.approved_qty')->where('allocation.ITEM_ID', $itemId)->where('requisition.requisition_by', $requisitionById)->where('allocation.SUB_INSTITUTE_ID', $tenant)->where('allocation.SYEAR', $syear)->orderByDesc('allocation.ID')->first();
+                    }
+                }
+                if (!$allocation) {
+                    $allocation = DB::table('inventory_allocation_details as allocation')->join('inventory_requisition_details as requisition', 'requisition.id', '=', 'allocation.requisition_details_id')->select('allocation.REQUISITION_ID', 'requisition.id as requisition_details_id', 'requisition.approved_qty')->where('allocation.ITEM_ID', $itemId)->where('requisition.requisition_by', $requisitionById)->where('allocation.SUB_INSTITUTE_ID', $tenant)->where('allocation.SYEAR', $syear)->orderByDesc('allocation.ID')->first();
+                }
                 if (! $allocation) throw new \RuntimeException('Allocated item was not found for this user.');
-                $alreadyReturned = (float) DB::table('inventory_item_return_details')->where('requisition_id', $allocation->requisition_id)->where('item_id', $request->integer('item_id'))->where('requisition_by', $request->integer('requisition_by'))->where('sub_institute_id', $tenant)->where('syear', $syear)->sum('return_qty');
+                $returnedQuery = DB::table('inventory_item_return_details')->where('REQUISITION_ID', $allocation->REQUISITION_ID)->where('ITEM_ID', $itemId)->where('REQUISITION_BY', $requisitionById)->where('SUB_INSTITUTE_ID', $tenant)->where('SYEAR', $syear);
+                if ($existingReturnId) $returnedQuery->where('ID', '!=', $existingReturnId);
+                $alreadyReturned = (float) $returnedQuery->sum('RETURN_QTY');
                 if ($alreadyReturned + (float) $request->input('return_qty') > (float) $allocation->approved_qty) throw new \RuntimeException('Return quantity cannot exceed the allocated balance.');
-                return ['inventory_item_return_details', array_merge($common, ['requisition_id' => $allocation->requisition_id, 'item_id' => $request->integer('item_id'), 'return_date' => now()->toDateString(), 'remarks' => $request->input('remarks'), 'return_qty' => $request->input('return_qty'), 'requisition_by' => $request->integer('requisition_by'), 'created_by' => $user, 'created_on' => now(), 'created_ip_address' => $request->ip()])];
+                $values = ['REQUISITION_ID' => $allocation->REQUISITION_ID, 'ITEM_ID' => $itemId, 'RETURN_DATE' => now()->toDateString(), 'REMARKS' => $request->input('remarks'), 'RETURN_QTY' => $request->input('return_qty'), 'REQUISITION_BY' => $requisitionById];
+                if (! $id) $values = array_merge($values, ['CREATED_BY' => $user, 'CREATED_ON' => now(), 'CREATED_IP_ADDRESS' => $request->ip()]);
+                return ['inventory_item_return_details', array_merge($common, $values)];
             case 'defectives':
-                return ['inventory_item_defective_details', array_merge($common, ['item_id' => $request->integer('item_id'), 'warranty_start_date' => $request->input('warranty_start_date'), 'warranty_end_date' => $request->input('warranty_end_date'), 'defect_remarks' => $request->input('defect_remarks'), 'item_given_to' => $request->input('item_given_to'), 'estimated_received_date' => $request->input('estimated_received_date'), 'actual_received_date' => $request->input('actual_received_date'), 'remarks' => $request->input('remarks'), 'created_by' => $user, 'created_on' => now(), 'created_ip_address' => $request->ip()])];
+                $values = ['ITEM_ID' => $request->integer('item_id')];
+                foreach (['warranty_start_date' => 'WARRANTY_START_DATE', 'warranty_end_date' => 'WARRANTY_END_DATE', 'defect_remarks' => 'DEFECT_REMARKS', 'item_given_to' => 'ITEM_GIVEN_TO', 'estimated_received_date' => 'ESTIMATED_RECEIVED_DATE', 'actual_received_date' => 'ACTUAL_RECEIVED_DATE', 'remarks' => 'REMARKS'] as $requestKey => $dbKey) {
+                    if ($request->has($requestKey)) $values[$dbKey] = $request->input($requestKey);
+                }
+                if (! $id) $values = array_merge($values, ['CREATED_BY' => $user, 'CREATED_ON' => now(), 'CREATED_IP_ADDRESS' => $request->ip()]);
+                return ['inventory_item_defective_details', array_merge($common, $values)];
             case 'direct-purchases':
                 $item = DB::table('inventory_item_master')->where('id', $request->integer('item_id'))->where('sub_institute_id', $tenant)->first();
                 if (! $item) throw new \RuntimeException('Inventory item not found.');

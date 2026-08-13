@@ -10,10 +10,17 @@
             </div>            
         </div>        
         <div class="card">
-               @if(!empty($data['message']))
-            <div class="alert alert-success alert-block">
+            @php $banner = session('data'); @endphp
+            @if(!empty($banner['message']))
+            <div class="alert {{ (($banner['status_code'] ?? $banner['status'] ?? 1) == 1) ? 'alert-success' : 'alert-danger' }} alert-block">
                 <button type="button" class="close" data-dismiss="alert">×</button>
-                <strong>{{ $data['message'] }}</strong>
+                <strong>{{ $banner['message'] }}</strong>
+            </div>
+            @endif
+            @if(session('fail'))
+            <div class="alert alert-danger alert-block">
+                <button type="button" class="close" data-dismiss="alert">×</button>
+                <strong>{{ session('fail') }}</strong>
             </div>
             @endif
            

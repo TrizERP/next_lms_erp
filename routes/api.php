@@ -202,6 +202,9 @@ Route::get('academic-setup/{module}', [AcademicSetupApiController::class, 'index
 Route::post('academic-setup/{module}', [AcademicSetupApiController::class, 'store']);
 Route::match(['put', 'patch'], 'academic-setup/{module}/{id}', [AcademicSetupApiController::class, 'update']);
 Route::delete('academic-setup/{module}/{id}', [AcademicSetupApiController::class, 'destroy']);
+// Bulk routes are declared first so they are not shadowed by the {module} rules.
+Route::post('transportation-setup/student-mappings/bulk', [TransportationApiController::class, 'bulkStore']);
+Route::post('transportation-setup/student-mappings/bulk-delete', [TransportationApiController::class, 'bulkDestroy']);
 Route::get('transportation-setup/{module}', [TransportationApiController::class, 'index']);
 Route::post('transportation-setup/{module}', [TransportationApiController::class, 'store']);
 Route::match(['put', 'patch'], 'transportation-setup/{module}/{id}', [TransportationApiController::class, 'update']);
