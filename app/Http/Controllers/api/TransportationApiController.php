@@ -129,7 +129,52 @@ class TransportationApiController extends Controller
                 })
                 ->select('student.id', DB::raw("concat_ws(' ', student.first_name, student.middle_name, student.last_name) as name"), 'student.enrollment_no')
                 ->where('student.sub_institute_id', $tenantId)->orderBy('student.first_name')->get(),
+            // Grade → standard → division, the same three chained dropdowns the
+            // Blade student-mapping search renders through SearchChain().
+            'grades' => DB::table('academic_section')->select('id', 'title as name')
+                ->where('sub_institute_id', $tenantId)->orderBy('sort_order')->get(),
+            'standards' => DB::table('standard')->select('id', 'name', 'grade_id as parent_id')
+                ->where('sub_institute_id', $tenantId)->orderBy('sort_order')->get(),
+            'divisions' => DB::table('division')->select('id', 'name')
+                ->where('sub_institute_id', $tenantId)->orderBy('name')->get(),
         ];
+    }
+
+    /**
+     * Stops each vehicle can serve, derived from route → bus and route → stop.
+     *
+     * The Blade screen fetched this one dropdown at a time from
+     * `api/get-stop-list`; sending the whole map once lets the Next.js grid
+     * cascade every row without a round trip per select.
+     */
+    private function vehicleStops(int $tenantId, int $syear)
+    {
+        return DB::table('transport_route_bus as route_bus')
+            ->join('transport_route as route', 'route.id', '=', 'route_bus.route_id')
+            ->join('transport_route_stop as route_stop', 'route_stop.route_id', '=', 'route.id')
+            ->join('transport_stop as stop', 'stop.id', '=', 'route_stop.stop_id')
+            ->join('transport_vehicle as vehicle', 'vehicle.id', '=', 'route_bus.bus_id')
+            ->select('vehicle.id as vehicle_id', 'vehicle.school_shift as shift_id', 'stop.id as stop_id', 'stop.stop_name')
+            ->where('vehicle.sub_institute_id', $tenantId)
+            ->where('route.syear', $syear)
+            ->distinct()
+            ->orderBy('stop.stop_name')
+            ->get();
+    }
+
+    /** Seats already taken per vehicle+shift, counting only enrolled students. */
+    private function reservedSeats(int $tenantId, int $syear)
+    {
+        return DB::table('transport_map_student as mapping')
+            ->join('tblstudent_enrollment as enrollment', function ($join) use ($syear) {
+                $join->on('enrollment.student_id', '=', 'mapping.student_id')
+                    ->where('enrollment.syear', $syear)->whereNull('enrollment.end_date');
+            })
+            ->select('mapping.from_bus_id as vehicle_id', 'mapping.from_shift_id as shift_id',
+                DB::raw('count(distinct mapping.student_id) as reserved'))
+            ->where('mapping.sub_institute_id', $tenantId)->where('mapping.syear', $syear)
+            ->groupBy('mapping.from_bus_id', 'mapping.from_shift_id')
+            ->get();
     }
 
     public function index(Request $request, string $module)
@@ -180,7 +225,7 @@ class TransportationApiController extends Controller
                 $records = DB::table('transport_school_shift')->where('sub_institute_id', $tenantId)->orderBy('shift_title')->get();
                 break;
             case 'student-mappings':
-                $records = $this->studentMappings($tenantId, $syear);
+                $records = $this->studentMappings($request, $tenantId, $syear);
                 break;
             case 'van-wise-report':
                 $records = $this->vanWise($request);
@@ -190,28 +235,129 @@ class TransportationApiController extends Controller
                 break;
         }
 
+        $extra = [];
+        if ($module === 'student-mappings') {
+            // Everything the mapping grid needs to cascade shift → vehicle →
+            // stop and to price a row, in one response.
+            $extra = [
+                'students' => $this->studentSearch($request, $tenantId, $syear),
+                'vehicle_stops' => $this->vehicleStops($tenantId, $syear),
+                'reserved_seats' => $this->reservedSeats($tenantId, $syear),
+            ];
+        }
+
         return response()->json([
             'status_code' => 1,
             'message' => 'Success',
-            'data' => array_merge(['records' => $records], $this->options($request)),
+            'data' => array_merge(['records' => $records], $this->options($request), $extra),
         ]);
     }
 
-    private function studentMappings(int $tenantId, int $syear)
+    /**
+     * Students already mapped for the academic year.
+     *
+     * The joins are left joins on purpose: a shift, vehicle or stop deleted
+     * after the mapping was made must not make the student silently disappear
+     * from the list — that row is exactly the one an operator needs to fix.
+     */
+    private function studentMappings(Request $request, int $tenantId, int $syear)
     {
-        return DB::table('transport_map_student as mapping')
+        $query = DB::table('transport_map_student as mapping')
             ->join('tblstudent as student', 'student.id', '=', 'mapping.student_id')
-            ->join('transport_school_shift as from_shift', 'from_shift.id', '=', 'mapping.from_shift_id')
-            ->join('transport_vehicle as from_vehicle', 'from_vehicle.id', '=', 'mapping.from_bus_id')
-            ->join('transport_stop as from_stop', 'from_stop.id', '=', 'mapping.from_stop')
-            ->join('transport_school_shift as to_shift', 'to_shift.id', '=', 'mapping.to_shift_id')
-            ->join('transport_vehicle as to_vehicle', 'to_vehicle.id', '=', 'mapping.to_bus_id')
-            ->join('transport_stop as to_stop', 'to_stop.id', '=', 'mapping.to_stop')
+            ->leftJoin('tblstudent_enrollment as enrollment', function ($join) use ($syear) {
+                $join->on('enrollment.student_id', '=', 'mapping.student_id')
+                    ->where('enrollment.syear', $syear)->whereNull('enrollment.end_date');
+            })
+            ->leftJoin('standard', 'standard.id', '=', 'enrollment.standard_id')
+            ->leftJoin('division', 'division.id', '=', 'enrollment.section_id')
+            ->leftJoin('transport_school_shift as from_shift', 'from_shift.id', '=', 'mapping.from_shift_id')
+            ->leftJoin('transport_vehicle as from_vehicle', 'from_vehicle.id', '=', 'mapping.from_bus_id')
+            ->leftJoin('transport_stop as from_stop', 'from_stop.id', '=', 'mapping.from_stop')
+            ->leftJoin('transport_school_shift as to_shift', 'to_shift.id', '=', 'mapping.to_shift_id')
+            ->leftJoin('transport_vehicle as to_vehicle', 'to_vehicle.id', '=', 'mapping.to_bus_id')
+            ->leftJoin('transport_stop as to_stop', 'to_stop.id', '=', 'mapping.to_stop')
             ->select('mapping.*', DB::raw("concat_ws(' ', student.first_name, student.middle_name, student.last_name) as student_name"),
-                'student.enrollment_no', 'from_shift.shift_title as from_shift_name', 'from_vehicle.title as from_vehicle_name',
+                'student.enrollment_no', 'student.mobile', 'student.address',
+                DB::raw("concat_ws(' / ', standard.name, division.name) as standard_division"),
+                'enrollment.grade_id', 'enrollment.standard_id', 'enrollment.section_id',
+                'from_shift.shift_title as from_shift_name', 'from_vehicle.title as from_vehicle_name',
                 'from_stop.stop_name as from_stop_name', 'to_shift.shift_title as to_shift_name',
                 'to_vehicle.title as to_vehicle_name', 'to_stop.stop_name as to_stop_name')
-            ->where('mapping.sub_institute_id', $tenantId)->where('mapping.syear', $syear)->orderBy('student.first_name')->get();
+            ->where('mapping.sub_institute_id', $tenantId)->where('mapping.syear', $syear);
+
+        $this->applyStudentFilters($query, $request);
+
+        return $query->orderBy('student.first_name')->get();
+    }
+
+    /**
+     * Students matching the search filters, each carrying the mapping already
+     * on file. This is the Blade `map_student.create` grid, as data.
+     *
+     * At least one filter is required — an unfiltered search would return the
+     * whole school.
+     */
+    private function studentSearch(Request $request, int $tenantId, int $syear)
+    {
+        $filters = ['grade', 'standard', 'division', 'name', 'grno', 'area', 'student_id'];
+        if (! collect($filters)->contains(fn ($filter) => $request->filled($filter))) {
+            return [];
+        }
+
+        $query = DB::table('tblstudent as student')
+            ->join('tblstudent_enrollment as enrollment', function ($join) use ($syear) {
+                $join->on('enrollment.student_id', '=', 'student.id')
+                    ->where('enrollment.syear', $syear)->whereNull('enrollment.end_date');
+            })
+            ->leftJoin('standard', 'standard.id', '=', 'enrollment.standard_id')
+            ->leftJoin('division', 'division.id', '=', 'enrollment.section_id')
+            ->leftJoin('transport_map_student as mapping', function ($join) use ($syear, $tenantId) {
+                $join->on('mapping.student_id', '=', 'student.id')
+                    ->where('mapping.syear', $syear)->where('mapping.sub_institute_id', $tenantId);
+            })
+            ->leftJoin('transport_school_shift as from_shift', 'from_shift.id', '=', 'mapping.from_shift_id')
+            ->select('student.id as student_id',
+                DB::raw("concat_ws(' ', student.first_name, student.middle_name, student.last_name) as student_name"),
+                'student.enrollment_no', 'student.mobile', 'student.address',
+                DB::raw("concat_ws(' / ', standard.name, division.name) as standard_division"),
+                'enrollment.grade_id', 'enrollment.standard_id', 'enrollment.section_id', 'enrollment.roll_no',
+                'mapping.id as mapping_id', 'mapping.from_shift_id', 'mapping.from_bus_id', 'mapping.from_stop',
+                'mapping.to_shift_id', 'mapping.to_bus_id', 'mapping.to_stop', 'mapping.distance', 'mapping.amount',
+                'from_shift.shift_rate', 'from_shift.km_amount')
+            ->where('student.sub_institute_id', $tenantId);
+
+        $this->applyStudentFilters($query, $request);
+
+        if ($request->filled('student_id')) {
+            $query->where('student.id', $request->integer('student_id'));
+        }
+
+        return $query->orderByRaw('standard.sort_order, division.id, enrollment.roll_no')->get();
+    }
+
+    /** Grade / standard / division / name / GR number / area filters. */
+    private function applyStudentFilters($query, Request $request): void
+    {
+        foreach (['grade' => 'enrollment.grade_id', 'standard' => 'enrollment.standard_id', 'division' => 'enrollment.section_id'] as $input => $column) {
+            if ($request->filled($input)) {
+                $query->where($column, $request->integer($input));
+            }
+        }
+        if ($request->filled('grno')) {
+            $query->where('student.enrollment_no', $request->input('grno'));
+        }
+        if ($request->filled('name')) {
+            $name = '%'.$request->input('name').'%';
+            $query->where(function ($inner) use ($name) {
+                $inner->where('student.first_name', 'like', $name)
+                    ->orWhere('student.middle_name', 'like', $name)
+                    ->orWhere('student.last_name', 'like', $name);
+            });
+        }
+        // "Area" means the pickup stop the student is already mapped to.
+        if ($request->filled('area')) {
+            $query->where('mapping.from_stop', $request->integer('area'));
+        }
     }
 
     private function vanWise(Request $request)
@@ -305,9 +451,24 @@ class TransportationApiController extends Controller
         $values = $this->values($request, $module, $tenantId, $syear);
 
         if ($module === 'student-mappings') {
+            // A student holds at most one mapping per academic year.
+            $existing = DB::table('transport_map_student')
+                ->where('sub_institute_id', $tenantId)->where('syear', $syear)
+                ->where('student_id', $request->integer('student_id'))
+                ->when($id, fn ($query) => $query->where('id', '<>', $id))->exists();
+            if ($existing) {
+                return $this->failure('This student is already mapped for the selected academic year. Edit the existing mapping instead.');
+            }
             if ($capacityError = $this->capacityError($request, $id)) {
                 return $this->failure($capacityError);
             }
+        }
+        if ($module === 'rates') {
+            if ($duplicate = $this->rateDuplicate($request, $tenantId, $syear, $id)) {
+                return $this->failure($duplicate);
+            }
+            // The list screen sorts on created_on, so an edited slab surfaces.
+            $values['created_on'] = now();
         }
         if (in_array($module, ['shifts', 'routes', 'stops'], true)) {
             $duplicateColumn = ['shifts' => 'shift_title', 'routes' => 'route_name', 'stops' => 'stop_name'][$module];
@@ -375,17 +536,68 @@ class TransportationApiController extends Controller
         return $values;
     }
 
-    private function capacityError(Request $request, ?int $id): ?string
+    /**
+     * A rate slab clashes when its label is reused, or when its distance band
+     * overlaps another band for the same institute and academic year — an
+     * overlap makes the fare for a distance ambiguous.
+     */
+    private function rateDuplicate(Request $request, int $tenantId, int $syear, ?int $id): ?string
     {
+        $scoped = fn () => DB::table('transport_kilometer_rate')
+            ->where('sub_institute_id', $tenantId)->where('syear', $syear)
+            ->when($id, fn ($query) => $query->where('id', '<>', $id));
+
+        $label = trim((string) $request->input('distance_from_school'));
+        if ($scoped()->whereRaw('UPPER(distance_from_school) = ?', [strtoupper($label)])->exists()) {
+            return 'A rate with this distance from school already exists for the selected academic year.';
+        }
+
+        $from = (float) $request->input('from_distance');
+        $to = (float) $request->input('to_distance');
+        $overlap = $scoped()
+            ->whereRaw('CAST(from_distance AS DECIMAL(12,2)) <= ?', [$to])
+            ->whereRaw('CAST(to_distance AS DECIMAL(12,2)) >= ?', [$from])
+            ->first();
+        if ($overlap) {
+            return "Distance range {$from}-{$to} overlaps the existing range {$overlap->from_distance}-{$overlap->to_distance}.";
+        }
+
+        return null;
+    }
+
+    /**
+     * Null when the pickup vehicle can still take one more student.
+     *
+     * Seats are counted per student rather than per row, and only for students
+     * still enrolled this year — a dropped student must not hold a seat.
+     */
+    private function capacityError(Request $request, ?int $id, ?int $studentId = null): ?string
+    {
+        $tenantId = $request->integer('sub_institute_id');
+        $syear = $request->integer('syear');
+        $shiftId = $request->integer('from_shift_id');
         $vehicle = DB::table('transport_vehicle')->where('id', $request->integer('from_bus_id'))
-            ->where('school_shift', $request->integer('from_shift_id'))->where('sub_institute_id', $request->integer('sub_institute_id'))->first();
+            ->where('school_shift', $shiftId)->where('sub_institute_id', $tenantId)->first();
         if (! $vehicle) {
             return 'The selected pickup vehicle does not belong to the selected shift.';
         }
-        $reserved = DB::table('transport_map_student')->where('from_bus_id', $vehicle->id)
-            ->where('from_shift_id', $request->integer('from_shift_id'))->where('sub_institute_id', $request->integer('sub_institute_id'))
-            ->where('syear', $request->integer('syear'))->when($id, fn ($query) => $query->where('id', '<>', $id))->count();
-        return $reserved >= (int) $vehicle->sitting_capacity ? 'The selected vehicle has no remaining capacity.' : null;
+        $capacity = (int) $vehicle->sitting_capacity;
+        if ($capacity <= 0) {
+            return null;
+        }
+        $studentId = $studentId ?: $request->integer('student_id');
+        $reserved = DB::table('transport_map_student as mapping')
+            ->join('tblstudent_enrollment as enrollment', function ($join) use ($syear) {
+                $join->on('enrollment.student_id', '=', 'mapping.student_id')
+                    ->where('enrollment.syear', $syear)->whereNull('enrollment.end_date');
+            })
+            ->where('mapping.from_bus_id', $vehicle->id)->where('mapping.from_shift_id', $shiftId)
+            ->where('mapping.sub_institute_id', $tenantId)->where('mapping.syear', $syear)
+            ->when($id, fn ($query) => $query->where('mapping.id', '<>', $id))
+            ->when($studentId, fn ($query) => $query->where('mapping.student_id', '<>', $studentId))
+            ->distinct()->count('mapping.student_id');
+
+        return $reserved >= $capacity ? 'The selected vehicle has no remaining capacity.' : null;
     }
 
     private function table(string $module): string
@@ -411,10 +623,157 @@ class TransportationApiController extends Controller
             return $this->failure('Reports are read-only.', 405);
         }
         $table = $this->table($module);
-        $deleted = DB::table($table)->where('id', $id)->where('sub_institute_id', $request->integer('sub_institute_id'))->delete();
+        $deleted = DB::table($table)->where('id', $id)->where('sub_institute_id', $request->integer('sub_institute_id'))
+            ->when($this->isYearScoped($module), fn ($query) => $query->where('syear', $request->integer('syear')))
+            ->delete();
         if (! $deleted) {
             return $this->failure('Record not found.', 404);
         }
         return response()->json(['status_code' => 1, 'message' => 'Data Deleted Successfully.', 'data' => []]);
+    }
+
+    private function isYearScoped(string $module): bool
+    {
+        return in_array($module, ['routes', 'stops', 'rates', 'route-buses', 'route-stops', 'student-mappings'], true);
+    }
+
+    /**
+     * Bulk upsert of the student-mapping grid.
+     *
+     * Mirrors the Blade screen: every submitted row replaces that student's
+     * mapping for the academic year. Rows are validated independently so one
+     * bad row does not discard the rest of the grid; the response reports what
+     * was saved and what was skipped.
+     */
+    public function bulkStore(Request $request)
+    {
+        if ($response = $this->guard($request, 'student-mappings', 'add')) {
+            return $response;
+        }
+        $tenantId = $request->integer('sub_institute_id');
+        $syear = $request->integer('syear');
+        $rows = $request->input('mappings');
+        if (! is_array($rows) || empty($rows)) {
+            return $this->failure('No student mapping was submitted.');
+        }
+        if (count($rows) > 500) {
+            return $this->failure('Save at most 500 students at a time.');
+        }
+
+        $rules = $this->rules('student-mappings', $tenantId);
+        $saved = 0;
+        $skipped = [];
+        // Seats taken by earlier rows of this same submission, so a batch
+        // cannot overfill a vehicle one row at a time.
+        $claimed = [];
+
+        foreach ($rows as $index => $row) {
+            $row = is_array($row) ? $row : [];
+            $label = $row['student_name'] ?? ('Row '.($index + 1));
+            $validator = Validator::make($row, $rules);
+            if ($validator->fails()) {
+                $skipped[] = "{$label}: ".$validator->messages()->first();
+                continue;
+            }
+
+            $seatKey = $row['from_bus_id'].'-'.$row['from_shift_id'];
+            $capacityRequest = new Request(array_merge($row, [
+                'sub_institute_id' => $tenantId,
+                'syear' => $syear,
+            ]));
+            $capacityError = $this->capacityError($capacityRequest, null, (int) $row['student_id']);
+            if (! $capacityError && ($claimed[$seatKey] ?? 0) > 0) {
+                $capacityError = $this->batchCapacityError($tenantId, $syear, $row, $claimed[$seatKey]);
+            }
+            if ($capacityError) {
+                $skipped[] = "{$label}: {$capacityError}";
+                continue;
+            }
+            $claimed[$seatKey] = ($claimed[$seatKey] ?? 0) + 1;
+
+            $values = array_merge($this->values($capacityRequest, 'student-mappings', $tenantId, $syear), [
+                'updated_at' => now(),
+            ]);
+
+            DB::transaction(function () use ($tenantId, $syear, $row, $values) {
+                DB::table('transport_map_student')
+                    ->where('sub_institute_id', $tenantId)->where('syear', $syear)
+                    ->where('student_id', (int) $row['student_id'])->delete();
+                DB::table('transport_map_student')->insert($values + ['created_at' => now()]);
+            });
+            $saved++;
+        }
+
+        if ($saved === 0) {
+            return $this->failure($skipped ? implode(' ', $skipped) : 'No student mapping was saved.');
+        }
+
+        $message = "{$saved} student(s) mapped successfully.";
+        if ($skipped) {
+            $message .= ' Skipped: '.implode(' ', $skipped);
+        }
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => $message,
+            'data' => ['saved' => $saved, 'skipped' => $skipped],
+        ]);
+    }
+
+    /** Capacity check that also accounts for seats claimed earlier in the batch. */
+    private function batchCapacityError(int $tenantId, int $syear, array $row, int $claimed): ?string
+    {
+        $vehicle = DB::table('transport_vehicle')->where('id', (int) $row['from_bus_id'])
+            ->where('school_shift', (int) $row['from_shift_id'])->where('sub_institute_id', $tenantId)->first();
+        if (! $vehicle) {
+            return 'The selected pickup vehicle does not belong to the selected shift.';
+        }
+        $capacity = (int) $vehicle->sitting_capacity;
+        if ($capacity <= 0) {
+            return null;
+        }
+        $reserved = DB::table('transport_map_student as mapping')
+            ->join('tblstudent_enrollment as enrollment', function ($join) use ($syear) {
+                $join->on('enrollment.student_id', '=', 'mapping.student_id')
+                    ->where('enrollment.syear', $syear)->whereNull('enrollment.end_date');
+            })
+            ->where('mapping.from_bus_id', (int) $row['from_bus_id'])
+            ->where('mapping.from_shift_id', (int) $row['from_shift_id'])
+            ->where('mapping.sub_institute_id', $tenantId)->where('mapping.syear', $syear)
+            ->where('mapping.student_id', '<>', (int) $row['student_id'])
+            ->distinct()->count('mapping.student_id');
+
+        return ($reserved + $claimed) >= $capacity ? 'The selected vehicle has no remaining capacity.' : null;
+    }
+
+    /** Bulk unmap students for the current academic year. */
+    public function bulkDestroy(Request $request)
+    {
+        if ($response = $this->guard($request, 'student-mappings', 'delete')) {
+            return $response;
+        }
+        $students = $request->input('student_ids');
+        if (! is_array($students) || empty($students)) {
+            return $this->failure('No student was selected.');
+        }
+        $students = array_values(array_filter(array_map('intval', $students)));
+        if (empty($students)) {
+            return $this->failure('No student was selected.');
+        }
+
+        $deleted = DB::table('transport_map_student')
+            ->where('sub_institute_id', $request->integer('sub_institute_id'))
+            ->where('syear', $request->integer('syear'))
+            ->whereIn('student_id', $students)->delete();
+
+        if (! $deleted) {
+            return $this->failure('No mapping was found for the selected student(s).', 404);
+        }
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => "{$deleted} student(s) unmapped successfully.",
+            'data' => ['deleted' => $deleted],
+        ]);
     }
 }
