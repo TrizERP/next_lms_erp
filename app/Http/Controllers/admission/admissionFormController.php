@@ -199,6 +199,207 @@ class admissionFormController extends Controller
     }
 
     /**
+     * Corrected variant of index() for the Admission Registration Report.
+     *
+     * Added as a new method (rather than editing index()) per project rule: existing
+     * controller functions must not be modified. Fix vs index(): the enquiry-status
+     * exclusion is NULL-safe. index() used `where('ae.status','!=','cancel')`, which
+     * in SQL silently drops every row where status is NULL (`NULL != 'cancel'` is
+     * NULL, not true) - and most enquiries have a NULL status until someone
+     * explicitly cancels them, so nearly everything was being excluded.
+     *
+     * @return Response
+     */
+    public function indexAdmissionRegistrationReport(Request $request)
+    {
+        $type = $request->input('type');
+        $sub_institute_id = $request->session()->get("sub_institute_id");
+        $syear = session()->get("syear");
+        $marking_period_id = session()->get('term_id');
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
+        }
+
+        $data = DB::table('admission_enquiry as ae')
+            ->leftJoin('admission_form as af', function ($join) {
+                $join->whereRaw('ae.id = af.enquiry_id');
+            })
+            ->leftJoin('admission_registration_v1 as ar', function ($join) {
+                $join->whereRaw('ar.enquiry_id = af.enquiry_id');
+            })->leftJoin('tblstudent as ts', function ($join) {
+                $join->whereRaw('ts.admission_id = ae.id AND ts.admission_year = ae.syear AND ts.sub_institute_id = ae.sub_institute_id');
+            })->leftJoin('standard as s', function ($join) use ($sub_institute_id,$marking_period_id) {
+                $join->whereRaw("s.id = ae.admission_standard AND s.sub_institute_id = '".$sub_institute_id."'");
+            })
+            ->selectRaw('ae.*,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name,af.form_no,
+                af.admission_docket_no,af.registration_no,af.id as form_id,af.admission_form_fee,af.receipt_id,af.receipt_html,ar.transport_fees')
+            ->where('ae.sub_institute_id', $sub_institute_id)
+            ->where('ae.syear', $syear)
+            ->where(function ($q) {
+                $q->whereNull('ae.status')->orWhere('ae.status', '!=', 'cancel');
+            })
+            ->groupBy('ae.id')->get()->toArray();
+
+        $data = array_map(function ($value) {
+            return (array) $value;
+        }, $data);
+
+        $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_form"])
+        ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->orderBy('sort_order', 'ASC')
+        ->get();
+
+        $res['dataCustomFields']=$customFields;
+
+        $res['status_code'] = 1;
+        $res['message'] = "Success";
+        $res['data'] = $data;
+
+        return is_mobile($type, 'admission/form/show_admission_form', $res, 'view');
+    }
+
+    /**
+     * Corrected variant of edit() for the Admission Registration Report.
+     *
+     * Added as a new method (rather than editing edit()) per project rule: existing
+     * controller functions must not be modified. Fixes vs edit():
+     *  - Bare `*` in the select clashed between admission_enquiry and admission_form
+     *    columns that share a name (created_on, status, remarks, ...); since
+     *    admission_form is unpopulated in the current admission flow, its NULL
+     *    values silently overwrote the real admission_enquiry values (e.g.
+     *    created_on always came back NULL, breaking date-range filtering). Now
+     *    scoped to `ae.*` so admission_enquiry's own values are never clobbered.
+     *  - `$selected_standard[0]['grade']` crashed with "Undefined array key 0"
+     *    whenever the enquiry's admission_standard didn't resolve to a row in
+     *    `standard` for this sub_institute_id; now falls back to ''.
+     *  - Adds `registration_status` (admission_registration.status) so the report's
+     *    Open/Close status filter has a real field to compare against - the
+     *    original admission_enquiry.status field never holds Open/Close values.
+     *
+     * @param  int  $id
+     * @return Response
+     */
+    public function editAdmissionRegistrationReport(Request $request, $id)
+    {
+        $type = $request->input('type');
+        $sub_institute_id = $request->session()->get("sub_institute_id");
+        $syear = $request->session()->get("syear");
+        $marking_period_id = session()->get('term_id');
+
+        if($type=="API"){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id');
+            $syear = $request->get('syear');
+        }
+
+        if ($sub_institute_id == 46) //for Mountlitera Zee School
+        {
+            $extra_fileds = ",ae.counciler_name";
+        } else {
+            $extra_fileds = ",af.counciler_name";
+        }
+
+        if ($sub_institute_id == 198)//for MAHESHWARI school
+        {
+            $data = DB::table('admission_enquiry as ae')
+                ->leftJoin('admission_form as af', function ($join) use($sub_institute_id){
+                    $join->on('ae.id', '=', 'af.enquiry_id')->on('ae.enquiry_no','=','af.enquiry_no')->where('af.sub_institute_id',$sub_institute_id);
+                })
+                ->leftJoin('admission_registration as ar', function ($join) use($sub_institute_id){
+                    $join->on('ae.id', '=', 'ar.enquiry_id')->where('ar.sub_institute_id',$sub_institute_id);
+                })
+                ->selectRaw("ae.*,ae.id as id,ae.enquiry_no,CONCAT_WS(',',ae.house_no,ae.`building_name_appratment_name_society_name`,
+                ae.district_name,ae.pin_code,ae.state) AS address,ae.father_occupation,ae.mother_occupation,ae.annual_income,af.form_no,ar.status as registration_status")
+                ->where('ae.id', $id)
+                ->where('ae.sub_institute_id',$sub_institute_id)->get()->toArray();
+        } else {
+            $data = DB::table('admission_enquiry as ae')
+                ->leftJoin('admission_form as af', function ($join) use($sub_institute_id){
+                    $join->on('ae.id', '=', 'af.enquiry_id')->on('ae.enquiry_no','=','af.enquiry_no')->where('af.sub_institute_id',$sub_institute_id);
+                })
+                ->leftJoin('admission_registration as ar', function ($join) use($sub_institute_id){
+                    $join->on('ae.id', '=', 'ar.enquiry_id')->where('ar.sub_institute_id',$sub_institute_id);
+                })
+                ->selectRaw("ae.*,ae.id as id,ae.enquiry_no,ae.admission_standard,af.form_no,ar.status as registration_status ".$extra_fileds)
+                ->where('ae.id', $id)
+                ->where('ae.sub_institute_id',$sub_institute_id)->get()->toArray();
+        }
+
+        $data = array_map(function ($value) {
+            return (array) $value;
+        }, $data);
+
+        $editData = $data;
+
+        $selected_standard = DB::table('standard as s')
+            ->join('academic_section as a', function ($join) use($marking_period_id) {
+                $join->whereRaw('a.id = s.grade_id AND a.sub_institute_id = s.sub_institute_id');
+            })
+            ->selectRaw("s.id,s.grade_id,s.sub_institute_id,s.name AS std_name,s.short_name AS std_sort_name,
+                a.title AS grade,a.short_name AS grade_short_name")
+            ->where('s.id', $editData[0]['admission_standard'])
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->get()->toArray();
+        $selected_standard = json_decode(json_encode($selected_standard), true);
+
+        if (isset($editData[0]['form_no']) && $editData[0]['form_no'] != '') {
+            $FORM_NO = $editData[0]['form_no'];
+        } else {
+            $FORM_NO = $this->get_form_no($sub_institute_id, $syear, $selected_standard[0]['grade'] ?? '');
+        }
+
+        $standard = standardModel::where(['sub_institute_id' => $sub_institute_id])
+        ->get()->toArray();
+
+        $dataCustomFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_form"])
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1)  and user_type="" ')
+            ->orderBy('sort_order', 'ASC')
+            ->get();
+
+        $fieldsData = tblfields_dataModel::get()->toArray();
+        $i = 0;
+        $finalfieldsData = array();
+        foreach ($fieldsData as $key => $value) {
+            $finalfieldsData[$value['field_id']][$i]['display_text'] = $value['display_text'];
+            $finalfieldsData[$value['field_id']][$i]['display_value'] = $value['display_value'];
+            $i++;
+        }
+        $res['status_code'] = "1";
+        $res['message'] = "Successfully";
+        $res['editData'] = $editData['0'];
+        $res['form_no'] = $FORM_NO;
+        $res['standard'] = $standard;
+        $res['custom_fields'] = $dataCustomFields;
+        if (count($finalfieldsData) > 0) {
+            $res['data_fields'] = $finalfieldsData;
+        }
+
+        return is_mobile($type, 'admission/form/edit_admission_form', $res, 'view');
+    }
+
+    /**
      * Update the specified resource in storage.
      *
      * @param  Request  $request

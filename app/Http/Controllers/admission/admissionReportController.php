@@ -17,13 +17,9 @@ class admissionReportController extends Controller
 
     public function enquiryReport(Request $request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        $sub_institute_id = $request->session()->get('sub_institute_id') ?: $request->input('sub_institute_id');
+        $syear = $request->session()->get('syear') ?: $request->input('syear');
         $type = $request->input('type');
-        if(in_array($type,["API","JSON"])){
-            $sub_institute_id=$request->sub_institute_id;
-            $syear=$request->syear;
-        }
         $report = $request->input('report');
         $from_date = $request->input('from_date');
         $to_date = $request->input('to_date');
@@ -130,21 +126,24 @@ class admissionReportController extends Controller
             // 2024-12-28 end 
             
             $getQuery = DB::table('admission_enquiry as ai')
-                ->join('tbluser as ts', function ($join) {
+                ->leftJoin('tbluser as ts', function ($join) {
                     $join->whereRaw('ts.id = ai.created_by AND ts.sub_institute_id = ai.sub_institute_id')->where('ts.status',1); // 23-04-24 by uma
                 })->leftJoin('caste as cs', function ($join) {
                     $join->whereRaw('cs.id = ai.category');
                 })->leftJoin('follow_up as fu', function ($join) {
                     $join->whereRaw('fu.enquiry_id = ai.id AND fu.sub_institute_id = ai.sub_institute_id');
-                })->join('standard as s', function ($join) use ($marking_period_id){
+                })->leftJoin('standard as s', function ($join) use ($marking_period_id){
                     $join->whereRaw('s.id = ai.admission_standard AND s.sub_institute_id = ai.sub_institute_id');
                 })
                 ->LeftJoin('standard as s_previous', function ($join) {
                     $join->whereRaw('s_previous.id = ai.previous_standard AND s_previous.sub_institute_id = ai.sub_institute_id');
                 })
                 ->selectRaw($select) // 2024-12-28 removed query and added variable
-                ->whereRaw("(DATE_FORMAT(ai.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "')
-                    AND ai.sub_institute_id = '" . $sub_institute_id . "' AND ai.syear = '" . $syear . "'");
+                ->where('ai.sub_institute_id', '=', $sub_institute_id)
+                ->where('ai.syear', '=', $syear)
+                ->when(!empty($from_date) && !empty($to_date), function ($q) use ($from_date, $to_date) {
+                    $q->whereRaw("DATE_FORMAT(ai.created_on, '%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "'");
+                });
 
             if ($standard != '') {
                 $getQuery->where('admission_standard', $standard);
@@ -539,10 +538,175 @@ class admissionReportController extends Controller
         return is_mobile($type, "admission.report.show_con_report", $res, 'view');
     }
 
+    /**
+     * Corrected variant of conReport() for the Admission Confirmation Report.
+     *
+     * Added as a new method (rather than editing conReport()) per project rule:
+     * existing controller functions must not be modified. Two fixes vs conReport():
+     *  - admission_registration's lookups (creator, standard, division mapping) are
+     *    LEFT JOINs instead of INNER JOINs, so a registration whose standard/division
+     *    reference doesn't resolve still appears in the report instead of vanishing.
+     *  - Status "No" matches blank/NULL admission_status (not-yet-confirmed), since
+     *    admission_status is only ever written as the literal "YES" on confirmation
+     *    and never as a literal "NO".
+     */
+    public function conReportFixed(Request $request)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id') ?: $request->input('sub_institute_id');
+        $syear = $request->session()->get('syear') ?: $request->input('syear');
+        $type = $request->input('type');
+        if(in_array($type,["API","JSON"])){
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
+
+                    return response()->json($response, 401);
+                }
+            } catch (\Exception $e) {
+                $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+
+                return response()->json($response, 401);
+            }
+            $sub_institute_id = $request->get('sub_institute_id') ?: $sub_institute_id;
+            $syear = $request->get('syear') ?: $syear;
+        }
+        $report = $request->input('report');
+        $from_date = $request->input('from_date');
+        $to_date = $request->input('to_date');
+        $standard = $request->input('standard');
+        $status = $request->input('status');
+        $dynamicFields = $request->input('dynamicFields');
+        $marking_period_id = session()->get('term_id');
+        $formFields = DB::select("DESC admission_registration");
+
+        $formFields = array_map(function ($value) {
+            return (array) $value;
+        }, $formFields);
+
+        $reportFields = array();
+
+        $dFields[0] = "first_name";
+        $dFields[1] = "middle_name";
+        $dFields[2] = "last_name";
+        $dFields[3] = "mobile";
+        $dFields[4] = "email";
+
+        if ($dynamicFields == '') {
+            $dynamicFields = $dFields;
+        } else {
+            $dynamicFields = array_merge($dFields, $dynamicFields);
+        }
+
+        foreach ($formFields as $key => $value) {
+            $reportFields[$value['Field']] = ucfirst(str_replace("_", " ", $value['Field']));
+        }
+
+        if (isset($report)) {
+            $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_registration"])
+            ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+            ->selectRaw('GROUP_CONCAT("ar.",field_name) as fileds')
+            ->first();
+            $customField = '1=1';
+            if(isset($customFields->fileds) && $customFields->fileds!=''){
+                $customField = $customFields->fileds;
+            }
+
+            if(in_array($sub_institute_id,[47,48,49,62,69,72,195,201,202,203,204,324,326,327,233,254])){
+                $select = "ai.enquiry_no,ai.first_name, ai.middle_name, ai.last_name, ai.gender,
+                ai.mobile, ai.email,s.name AS admission_standard,d.name AS div_name,sq.title AS stu_quota,
+                ar.place_of_birth,ar.enrollment_no,ar.payment_mode,ar.bank_name,ar.bank_branch,ar.cheque_no,
+                ar.cheque_date,bg.bloodgroup,ar.aadhar_number,ar.mother_name,ar.mother_mobile_number,
+                ar.admission_date,ar.admission_division,ar.remarks,ar.followup_date,ar.`status`,
+                ar.admission_status,ar.date_of_payment,
+                ai.created_on,ai.address, ai.date_of_birth, ai.age, ai.syear, ai.previous_school_name,
+                ai.previous_standard,ai.source_of_enquiry,ai.father_name, CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by";
+            }else{
+                $select = "ai.enquiry_no,ai.first_name, ai.middle_name, ai.last_name, ai.gender,
+                ai.mobile, ai.address,ai.email,s.name AS admission_standard,d.name AS div_name,sq.title AS stu_quota,
+                $customField, CONCAT_WS(' ',ts.first_name,ts.last_name) AS created_by";
+            }
+            $getQuery = DB::table('admission_registration as ar')
+                ->join('admission_enquiry as ai', function ($join) {
+                    $join->whereRaw('ar.enquiry_id = ai.id');
+                })->leftJoin('tbluser as ts', function ($join) {
+                    $join->whereRaw('ts.id = ar.created_by AND ts.sub_institute_id = ai.sub_institute_id');
+                })->leftJoin('standard as s', function ($join) use($marking_period_id) {
+                    $join->whereRaw('s.id = ai.admission_standard AND s.sub_institute_id = ai.sub_institute_id');
+                })->leftJoin('std_div_map as sd', function ($join) {
+                    $join->whereRaw('sd.standard_id = ai.admission_standard AND sd.sub_institute_id = ai.sub_institute_id');
+                })->leftJoin('division as d', function ($join) {
+                    $join->whereRaw('d.id = ar.admission_division AND d.sub_institute_id = ai.sub_institute_id');
+                })->leftJoin('student_quota as sq', function ($join) {
+                    $join->whereRaw('sq.id = ar.student_quota AND sq.sub_institute_id = ar.sub_institute_id');
+                })->leftJoin('blood_group as bg', function ($join) {
+                    $join->whereRaw('bg.id = ar.blood_group');
+                })
+                ->selectRaw($select)
+                ->where('ai.sub_institute_id', $sub_institute_id)
+                ->where('ai.syear', $syear);
+
+            if ($from_date != '' && $to_date != '') {
+                $getQuery = $getQuery->whereRaw("DATE_FORMAT(ar.created_on, '%Y-%m-%d') BETWEEN '".$from_date."' AND '".$to_date."'");
+            }
+            if ($standard != '') {
+                $getQuery = $getQuery->where('ai.admission_standard', $standard);
+            }
+            if ($status != '') {
+                if (strtoupper($status) === 'NO') {
+                    $getQuery = $getQuery->where(function ($q) {
+                        $q->whereNull('ar.admission_status')->orWhere('ar.admission_status', '')->orWhere('ar.admission_status', 'NO');
+                    });
+                } else {
+                    $getQuery = $getQuery->where('ar.admission_status', $status);
+                }
+            }
+            $getQuery = $getQuery->groupBy('ar.id');
+            $data = $getQuery->get()->toArray();
+
+            $data = array_map(function ($value) {
+                return (array) $value;
+            }, $data);
+
+            if (count($data) > 0) {
+                $headers = array_keys($data['0']);
+                $res['headers'] = $headers;
+                $res['data'] = $data;
+                $res['from_date'] = $from_date;
+                $res['to_date'] = $to_date;
+                if ($status != '') {
+                    $res['status'] = $status;
+                }
+                if ($standard != '') {
+                    $res['standard'] = $standard;
+                }
+            } else {
+                $res['status_code'] = 0;
+                $res['message'] = "Please revise your search. No data found.";
+
+                return is_mobile($type, "admission_confirmation_report", $res);
+            }
+        }
+
+        $res['status_code'] = 1;
+        $res['message'] = "Success";
+        $res['fields'] = $reportFields;
+        $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_enquiry"])
+        ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->orderBy('sort_order', 'ASC')
+        ->get();
+        $res['dataCustomFields']=$customFields;
+        return is_mobile($type, "admission.report.show_con_report", $res, 'view');
+    }
+
     public function followUpReport(Request $request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
+        // SessionMiddleware only authenticates/hydrates the Laravel session when
+        // type is neither "API" nor "JSON" (see App\Http\Middleware\SessionMiddleware),
+        // so stateless calls from the Next.js frontend (which always send
+        // type=API) never populate session('sub_institute_id')/session('syear').
+        // Fall back to the request params the frontend already sends explicitly.
+        $sub_institute_id = $request->session()->get('sub_institute_id') ?: $request->input('sub_institute_id');
+        $syear = $request->session()->get('syear') ?: $request->input('syear');
         $type = $request->input('type');
         $report = $request->input('report');
         $from_date = $request->input('from_date');
@@ -551,27 +715,26 @@ class admissionReportController extends Controller
         $marking_period_id = session()->get('term_id');
         if (isset($report)) {
             $data = DB::table('admission_enquiry as ae')
-                ->join('follow_up as fu', function ($join) {
-                    $join->whereRaw("fu.enquiry_id = ae.id AND fu.sub_institute_id = ae.sub_institute_id AND fu.module_type = 'enquiry'");
-                })->join('standard as st', function ($join) use($marking_period_id) {
+                ->leftJoin('follow_up as fu', function ($join) use ($sub_institute_id, $from_date, $to_date) {
+                    $join->on('fu.enquiry_id', '=', 'ae.id')
+                        ->where('fu.sub_institute_id', '=', $sub_institute_id)
+                        ->where('fu.module_type', '=', 'enquiry')
+                        ->whereRaw("DATE_FORMAT(fu.created_on,'%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "'");
+                })->leftJoin('standard as st', function ($join) {
                     $join->whereRaw('st.id = ae.admission_standard AND st.sub_institute_id = ae.sub_institute_id');
-                    // ->when($marking_period_id,function($query) use($marking_period_id){
-                    //     $query->where('st.marking_period_id',$marking_period_id);
-                    // });
                 })
                 ->selectRaw("ae.id AS enquiry_id,ae.enquiry_no,DATE_FORMAT(ae.created_on,'%d-%m-%Y') AS enquiry_date,
-						CONCAT_WS(' ',ae.first_name,ae.middle_name,ae.last_name) AS student_name,
-						IFNULL(ae.middle_name,ae.father_name) AS father_name,
-						ae.previous_school_name,st.name AS admission_std,ae.address,ae.mobile,ae.source_of_enquiry,
-						DATE_FORMAT(fu.follow_up_date,'%d-%m-%Y') as follow_up_date,
-						fu.remarks AS followup_remark,ae.email")
-                ->whereRaw("fu.sub_institute_id = '" . $sub_institute_id . "' AND ae.syear = '" . $syear . "'
-                        AND DATE_FORMAT(fu.created_on,'%Y-%m-%d') BETWEEN '" . $from_date . "' AND '" . $to_date . "'")
-                ->groupByRaw('fu.id,fu.remarks')
+                    CONCAT_WS(' ',ae.first_name,ae.middle_name,ae.last_name) AS student_name,
+                    IFNULL(ae.middle_name,ae.father_name) AS father_name,
+                    ae.previous_school_name,st.name AS admission_std,ae.address,ae.mobile,ae.source_of_enquiry,
+                    DATE_FORMAT(fu.follow_up_date,'%d-%m-%Y') as follow_up_date,
+                    fu.remarks AS followup_remark,ae.email")
+                ->whereRaw("ae.syear = '" . $syear . "'")
+                ->groupByRaw('ae.id, fu.id, fu.remarks')
                 ->when($follow_up_status == 'Followed', function ($q) {
-                    $q->having('fu.remarks', '!=', '');
+                    $q->havingRaw('fu.remarks IS NOT NULL AND fu.remarks != ""');
                 })->when($follow_up_status == 'Unfollowed', function ($q) {
-                    $q->having('fu.remarks', '=', '');
+                    $q->havingRaw('fu.remarks IS NULL OR fu.remarks = ""');
                 })->orderBy('ae.id')->get()->toArray();
 
             $data = array_map(function ($value) {

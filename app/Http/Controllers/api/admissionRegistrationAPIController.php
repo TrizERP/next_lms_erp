@@ -221,6 +221,148 @@ class admissionRegistrationAPIController extends Controller
     }
 
     /**
+     * Corrected variant of index() for the Admission Without Confirmation Report.
+     *
+     * Added as a new method (rather than editing index()) per project rule: existing
+     * controller functions must not be modified. Fixes vs index():
+     *  - `join('admission_form as af', ...)` was a mandatory INNER JOIN; admission_form
+     *    is never populated by the current admission_enquiry -> admission_registration
+     *    flow, so it silently excluded every row. Changed to a LEFT JOIN.
+     *  - `where('ae.status','!=','cancel')` silently drops rows where status is NULL
+     *    (SQL: `NULL != 'cancel'` is NULL, not true), which is nearly every enquiry
+     *    until it's explicitly cancelled. Now NULL-safe.
+     *  - `groupBy(['ae.first_name','ae.middle_name','ae.last_name'])` collapsed
+     *    distinct enquiries that happen to share a name into a single row. Now
+     *    grouped by `ae.id` instead.
+     *
+     * @return Response
+     */
+    public function indexWithoutConfirmationReport(Request $request)
+    {
+        $type = $request->input('type', 'API');
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+
+        $data = DB::table('admission_enquiry as ae')
+            ->leftJoin('admission_form as af', function ($join) {
+                $join->on('ae.id', '=', 'af.enquiry_id');
+            })->leftJoin('tblstudent as ts', function ($join) {
+                $join->on('ts.admission_id', '=', 'ae.id')->on('ts.admission_year', '=', 'ae.syear')->on('ts.sub_institute_id', '=', 'ae.sub_institute_id');
+            })->leftJoin('standard as s', function ($join) {
+                $join->on('s.id', '=', 'ae.admission_standard')->on('ts.sub_institute_id', '=', 'ae.sub_institute_id');
+            })
+            ->leftJoin('admission_registration_v1 as ar', function ($join) use($sub_institute_id) {
+                $join->whereRaw('ar.enquiry_id = af.enquiry_id')->where('ar.sub_institute_id', $sub_institute_id);
+            })
+            ->selectRaw("ae.*,COUNT(ts.id) AS total_student_count,ae.remarks AS enquiry_remark,s.name AS std_name,ar.transport_fees")
+            ->where('ae.sub_institute_id', $sub_institute_id)
+            ->where('ae.syear', $syear)
+            ->where(function ($q) {
+                $q->whereNull('ae.status')->orWhere('ae.status', '!=', 'cancel');
+            })
+            ->groupBy('ae.id')
+            ->get()->toArray();
+
+        $data = array_map(function ($value) {
+            return (array) $value;
+        }, $data);
+
+        $customFields = tblcustomfieldsModel::where(['status' => "1", 'table_name' => "admission_registration"])
+        ->whereRaw('(sub_institute_id = '.$sub_institute_id.' OR common_to_all = 1) and user_type="" ')
+        ->orderBy('sort_order', 'ASC')
+        ->get();
+
+        $res['custom_fields']=$customFields;
+
+        $res['status_code'] = 1;
+        $res['message'] = "Success";
+        $res['data'] = $data;
+
+        return is_mobile($type, 'admission/registration/show_admission_registration', $res, 'view');
+    }
+
+    /**
+     * Corrected variant of edit() for the Admission Without Confirmation Report.
+     *
+     * Added as a new method (rather than editing edit()) per project rule: existing
+     * controller functions must not be modified. edit() selects bare `ae.*,af.*,ar.*`;
+     * since admission_enquiry/admission_form/admission_registration all have a
+     * `created_on` column, and admission_form/admission_registration are NULL for an
+     * enquiry that isn't registered yet, `created_on` in the result silently became
+     * NULL for exactly the unregistered enquiries this report needs to list -
+     * breaking its date-range filter for every genuine candidate. This adds an
+     * unambiguous `enquiry_created_on` alias (`ae.created_on`) alongside the
+     * existing fields so it can no longer be clobbered. Kept lean (no enrollment
+     * number/division/bloodgroup lookups from edit()) since this method only feeds
+     * the report's list+detail read path, not the registration edit form.
+     *
+     * @param  int  $id
+     * @return Response
+     */
+    public function editWithoutConfirmationReport(Request $request, $id)
+    {
+        $type = $request->input('type', 'API');
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+
+        if ($sub_institute_id == 198) // For Mahaeshvari school
+        {
+            $data = DB::table('admission_enquiry as ae')
+                ->leftJoin('admission_form as af', function ($join) {
+                    $join->on('ae.id', '=', 'af.enquiry_id');
+                })
+                ->leftJoin('admission_registration as ar', function ($join) {
+                    $join->on('ae.id', '=', 'ar.enquiry_id');
+                })
+                ->selectRaw("ae.*,af.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,ae.admission_standard as admission_standard,CONCAT_WS(',',ae.house_no,
+                    ae.`building_name_appratment_name_society_name`,ae.district_name,ae.pin_code,ae.state) AS address,
+                    ae.previous_standard,ae.mother_name,ae.mobile_number_mother ,ae.place_of_birth,ar.enquiry_id as registration_enquiry_id, ae.remarks AS enquiry_remark, ae.fees_remark AS enquiry_remark2, ae.created_on as enquiry_created_on, ar.status as registration_status")
+                ->where('ae.id', $id)
+                ->where('ae.sub_institute_id', $sub_institute_id)
+                ->get()->toArray();
+        } else {
+            $data = DB::table('admission_enquiry as ae')
+                ->leftJoin('admission_form as af', function ($join) use ($sub_institute_id) {
+                    $join->on('ae.id', '=', 'af.enquiry_id')->where('af.sub_institute_id', $sub_institute_id);
+                })->leftJoin('admission_registration as ar', function ($join) use ($sub_institute_id) {
+                    $join->on('ae.id', '=', 'ar.enquiry_id')->where('ar.sub_institute_id', $sub_institute_id);
+                })
+                ->selectRaw("ae.*,af.*,ar.*,ae.id as id,ae.enquiry_no as enquiry_no,
+                    ae.admission_standard as admission_standard,
+                    COALESCE(ar.mother_name, ae.mother_name) as mother_name,
+                    COALESCE(ar.mother_mobile_number, ae.mobile_number_mother) as mother_mobile_number,
+                    ar.enquiry_id as registration_enquiry_id, ae.remarks AS enquiry_remark, ae.fees_remark AS enquiry_remark2, ae.created_on as enquiry_created_on, ar.status as registration_status")
+                ->where('ae.id', $id)
+                ->where('ae.sub_institute_id', $sub_institute_id)
+                ->get()->toArray();
+        }
+
+        $data = array_map(function ($value) {
+            return (array) $value;
+        }, $data);
+        $editData = $data;
+
+        if (empty($editData)) {
+            $res = [
+                'status_code' => '0',
+                'message' => 'Admission registration record not found.',
+                'editData' => null,
+                'data' => null,
+            ];
+
+            return is_mobile($type, 'admission/registration/edit_admission_registration', $res, 'view');
+        }
+
+        $res = [
+            'status_code' => '1',
+            'message' => 'Successfully',
+            'editData' => $editData[0],
+        ];
+
+        return is_mobile($type, 'admission/registration/edit_admission_registration', $res, 'view');
+    }
+
+    /**
      * Update the specified resource in storage.
      *
      * @param  Request  $request
