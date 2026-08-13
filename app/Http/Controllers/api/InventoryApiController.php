@@ -144,6 +144,7 @@ class InventoryApiController extends Controller
             'po_vendors' => DB::table('inventory_vendor_master as vendor')->join('inventory_item_quotation_details as quotation', 'quotation.vendor_id', '=', 'vendor.id')->select('vendor.id', 'vendor.vendor_name as name')->where('quotation.sub_institute_id', $tenant)->where('quotation.syear', $syear)->distinct()->orderBy('vendor.vendor_name')->get(),
             'po_quotation_items' => DB::table('inventory_item_quotation_details as quotation')->join('inventory_item_master as item', 'item.id', '=', 'quotation.item_id')->select('quotation.item_id as id', 'item.title as name', 'quotation.vendor_id', 'quotation.price')->where('quotation.sub_institute_id', $tenant)->where('quotation.syear', $syear)->orderBy('item.title')->get(),
             'po_numbers' => collect([['id' => $this->nextPoNumber($tenant, $syear), 'name' => $this->nextPoNumber($tenant, $syear)]]),
+            'po_items' => DB::table('inventory_negotiate_po_details as inp')->join('inventory_item_master as i', 'i.id', '=', 'inp.item_id')->leftJoin('inventory_item_receivable_details as ir', function ($join) { $join->on('ir.PURCHASE_ORDER_NO', '=', 'inp.po_number')->on('ir.ITEM_ID', '=', 'inp.item_id'); })->select('inp.item_id', 'i.title as item_name', 'inp.qty', DB::raw('IFNULL(ir.PREVIOUS_RECEIVED_QTY,0) as previous_receive_qty'), DB::raw('IFNULL(ir.ACTUAL_RECEIVED_QTY,0) as actual_received_qty'), DB::raw('IFNULL(ir.PENDING_QTY,0) as pending_qty'), 'ir.REMARKS', 'ir.WARRANTY_START_DATE', 'ir.WARRANTY_END_DATE', 'ir.BILL_NO', 'ir.BILL_DATE', 'ir.CHALLAN_NO', 'ir.CHALLAN_DATE')->where('inp.sub_institute_id', $tenant)->where('inp.syear', $syear)->orderByDesc('inp.id')->get(),
             'requisitions' => DB::table('inventory_requisition_details as requisition')->join('inventory_item_master as item', 'item.id', '=', 'requisition.item_id')->select('requisition.id', DB::raw("concat(requisition.requisition_no, ' - ', item.title) as name"))->where('requisition.sub_institute_id', $tenant)->where('requisition.syear', $syear)->orderByDesc('requisition.id')->get(),
             'requisition_users' => $this->requisitionUsers($request),
             'requisition_categories' => DB::table('inventory_item_category_master')->select('id', 'title as name')->where('sub_institute_id', $tenant)->orderBy('title')->get(),
@@ -153,6 +154,23 @@ class InventoryApiController extends Controller
             'direct_purchase_settings' => $this->directPurchaseSettings($tenant),
             'requisition_numbers' => collect([['id' => $this->nextRequisitionNumber($tenant, $syear), 'name' => $this->nextRequisitionNumber($tenant, $syear)]]),
         ];
+    }
+
+    public function poItems(Request $request)
+    {
+        $poNumber = $request->input('po_number');
+        if (!$poNumber) return response()->json(['status_code' => 1, 'message' => 'Success', 'data' => []]);
+        $tenant = $request->integer('sub_institute_id');
+        $syear = $request->integer('syear');
+        $items = DB::table('inventory_negotiate_po_details as inp')
+            ->join('inventory_item_master as i', 'i.id', '=', 'inp.item_id')
+            ->leftJoin('inventory_item_receivable_details as ir', function ($join) {
+                $join->on('ir.PURCHASE_ORDER_NO', '=', 'inp.po_number')->on('ir.ITEM_ID', '=', 'inp.item_id');
+            })
+            ->select('inp.item_id', 'i.title as item_name', 'inp.qty', DB::raw('IFNULL(ir.PREVIOUS_RECEIVED_QTY,0) as previous_receive_qty'), DB::raw('IFNULL(ir.ACTUAL_RECEIVED_QTY,0) as actual_received_qty'), DB::raw('IFNULL(ir.PENDING_QTY,0) as pending_qty'), 'ir.REMARKS', 'ir.WARRANTY_START_DATE', 'ir.WARRANTY_END_DATE', 'ir.BILL_NO', 'ir.BILL_DATE', 'ir.CHALLAN_NO', 'ir.CHALLAN_DATE')
+            ->where('inp.sub_institute_id', $tenant)->where('inp.syear', $syear)->where('inp.po_number', $poNumber)
+            ->orderByDesc('inp.id')->get();
+        return response()->json(['status_code' => 1, 'message' => 'Success', 'data' => $items]);
     }
 
     private function requisitionUsers(Request $request)
@@ -449,6 +467,7 @@ class InventoryApiController extends Controller
         if ($module === 'requisition-approvals' && is_array($request->input('approvals'))) return $this->saveRequisitionApprovals($request);
         if ($module === 'requisitions' && $id) return $this->updateRequisition($request, $id);
         if ($module === 'requisitions' && is_array($request->input('items'))) return $this->saveRequisitions($request);
+        if ($module === 'receivables' && is_array($request->input('items'))) return $this->saveReceivables($request);
 
         $rules = $this->workflowRules($module);
         $validator = Validator::make($request->all(), $rules);
@@ -934,6 +953,61 @@ class InventoryApiController extends Controller
                 return ['inventory_item_direct_purchase', array_merge($common, ['vendor_id' => $request->integer('vendor_id'), 'category_id' => $item->category_id, 'sub_category_id' => $item->sub_category_id, 'item_id' => $request->integer('item_id'), 'item_qty' => $request->input('qty'), 'price' => $request->input('rate'), 'amount' => $request->input('qty') * $request->input('rate'), 'challan_no' => $request->input('challan_no'), 'challan_date' => $request->input('challan_date'), 'bill_no' => $request->input('bill_no'), 'bill_date' => $request->input('bill_date'), 'remarks' => $request->input('remarks'), 'created_by' => $user, 'created_on' => now(), 'created_ip' => $request->ip()])];
         }
         throw new \RuntimeException('Unknown Inventory workflow.');
+    }
+
+    private function saveReceivables(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'po_number' => 'required|string|max:50',
+            'items' => 'required|array|min:1',
+            'items.*.item_id' => 'required|integer',
+            'items.*.actual_received_qty' => 'required|numeric|min:0',
+        ]);
+        if ($validator->fails()) return $this->failure($validator->messages()->first(), 422, $validator->errors());
+        $tenant = $request->integer('sub_institute_id');
+        $syear = $request->integer('syear');
+        $user = $request->integer('user_id');
+        $poNumber = $request->input('po_number');
+        $po = DB::table('inventory_negotiate_po_details')->where('po_number', $poNumber)->where('sub_institute_id', $tenant)->where('syear', $syear)->first();
+        if (!$po) $po = DB::table('inventory_generate_po_details')->where('po_number', $poNumber)->where('sub_institute_id', $tenant)->where('syear', $syear)->first();
+        if (!$po) throw new \RuntimeException('Approved purchase-order not found.');
+        try {
+            DB::transaction(function () use ($request, $tenant, $syear, $user, $poNumber) {
+                $items = $request->input('items', []);
+                foreach ($items as $k => $item) {
+                    $itemId = (int) $item['item_id'];
+                    $received = (float) $item['actual_received_qty'];
+                    $poItem = DB::table('inventory_negotiate_po_details')->where('po_number', $poNumber)->where('item_id', $itemId)->where('sub_institute_id', $tenant)->where('syear', $syear)->first();
+                    if (!$poItem) throw new \RuntimeException("PO item not found for item_id=$itemId.");
+                    $qty = (float) $poItem->qty;
+                    $previous = (float) DB::table('inventory_item_receivable_details')->where('PURCHASE_ORDER_NO', $poNumber)->where('ITEM_ID', $itemId)->where('SUB_INSTITUTE_ID', $tenant)->where('SYEAR', $syear)->sum('ACTUAL_RECEIVED_QTY');
+                    if ($previous + $received > $qty) throw new \RuntimeException("Received quantity cannot exceed PO quantity for item_id=$itemId.");
+                    $values = [
+                        'PURCHASE_ORDER_NO' => $poNumber,
+                        'ITEM_ID' => $itemId,
+                        'ORDER_QTY' => $qty,
+                        'PREVIOUS_RECEIVED_QTY' => $previous,
+                        'ACTUAL_RECEIVED_QTY' => $received,
+                        'PENDING_QTY' => $qty - $previous - $received,
+                        'RECEIVED_BY' => $user,
+                        'RECEIVED_DATE' => now(),
+                    ];
+                    foreach (['remarks', 'warranty_start_date', 'warranty_end_date', 'bill_no', 'bill_date', 'challan_no', 'challan_date'] as $key) {
+                        if ($request->has("items.$k.$key")) $values[strtoupper($key)] = $item[$key] ?? null;
+                    }
+                    $existing = DB::table('inventory_item_receivable_details')->where('PURCHASE_ORDER_NO', $poNumber)->where('ITEM_ID', $itemId)->where('SUB_INSTITUTE_ID', $tenant)->where('SYEAR', $syear)->first();
+                    if ($existing) {
+                        DB::table('inventory_item_receivable_details')->where('ID', $existing->ID)->where('SUB_INSTITUTE_ID', $tenant)->where('SYEAR', $syear)->update($values);
+                    } else {
+                        $values = array_merge($values, ['SUB_INSTITUTE_ID' => $tenant, 'SYEAR' => $syear, 'CREATED_BY' => $user, 'CREATED_ON' => now(), 'CREATED_IP_ADDRESS' => $request->ip()]);
+                        DB::table('inventory_item_receivable_details')->insert($values);
+                    }
+                }
+            });
+        } catch (\RuntimeException $e) {
+            return $this->failure($e->getMessage());
+        }
+        return response()->json(['status_code' => 1, 'message' => 'Item Received successfully.', 'data' => []]);
     }
 
     private function saveMaster(Request $request, string $module, ?int $id)

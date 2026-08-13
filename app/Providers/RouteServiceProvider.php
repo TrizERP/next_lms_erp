@@ -67,6 +67,8 @@ class RouteServiceProvider extends ServiceProvider
 
         $this->mapResultApiRoutes();
 
+        $this->mapEasyComApiRoutes();
+
         $this->mapSettingsRoutes();
 
         $this->mapStudentRoutes();
@@ -185,6 +187,20 @@ class RouteServiceProvider extends ServiceProvider
             ->middleware('api')
             ->namespace($this->namespace)
             ->group(base_path('routes/resultapi.php'));
+    }
+
+    /**
+     * Stateless REST APIs for the Easy Communication module (Next.js frontend).
+     *
+     * Separate from the Blade easy_com routes in routes/result.php, which stay
+     * on the `web` group so the existing Laravel screens are unaffected.
+     */
+    protected function mapEasyComApiRoutes()
+    {
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/easycomapi.php'));
     }
 
     protected function mapStudentRoutes()
