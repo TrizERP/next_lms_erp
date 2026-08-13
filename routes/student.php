@@ -201,7 +201,7 @@ Route::post('firstpage_school', [studentReportController::class, 'firstpage_scho
 Route::post('firstpage_student', [studentReportController::class, 'firstpage_student'])->name("firstpage_student")->middleware(['session', 'menu', 'logRoute']);
 Route::post('firstpage_teacher', [studentReportController::class, 'firstpage_teacher'])->name("firstpage_teacher")->middleware(['session', 'menu', 'logRoute']);
 
-Route::group(['prefix' => 'front_desk', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'front_desk', 'middleware' => ['api.session', 'session', 'menu', 'logRoute']], function () {
     Route::resource('parent_communication', parentCommunicationController::class);
     Route::resource('leave_application', leaveApplicationController::class);
     // Route::resource('circular', circularController::class);
