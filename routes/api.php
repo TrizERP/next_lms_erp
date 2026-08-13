@@ -183,6 +183,12 @@ Route::controller(admissionRegistrationAPIController::class)->group(function () 
     Route::delete('admission_registration/{id}', 'destroy');
     Route::post('admission_student', 'saveStudent');
     Route::get('ajax_getDivision', 'ajax_getDivision');
+
+    // Corrected variants of index()/edit() used by the Admission Without Confirmation
+    // Report - see indexWithoutConfirmationReport()/editWithoutConfirmationReport()
+    // for why these are new methods/routes rather than edits to the ones above.
+    Route::get('admission_without_confirmation_report_v2', 'indexWithoutConfirmationReport');
+    Route::get('admission_without_confirmation_report_v2/{id}/edit', 'editWithoutConfirmationReport');
 });
 
 

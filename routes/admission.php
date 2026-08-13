@@ -36,6 +36,18 @@ Route::group(['prefix' => 'admission', 'middleware' => ['session', 'menu', 'logR
         Route::any('admission_without_con_report', 'regReport')->name('admission_without_con_report');
         Route::any('admission_confirmation_report', 'conReport')->name('admission_confirmation_report');
         Route::any('admission_enquiry_followup_report', 'followUpReport')->name('admission_enquiry_followup_report');
+
+        // Corrected variants used by the Next.js report pages - see conReportFixed()
+        // for why these are new methods/routes rather than edits to the ones above.
+        Route::any('admission_confirmation_report_v2', 'conReportFixed')->name('admission_confirmation_report_v2');
+    });
+
+    Route::controller(admissionFormController::class)->group(function () {
+        // Corrected variants of admission_registration's index()/edit() used by the
+        // Admission Registration Report - see indexAdmissionRegistrationReport() /
+        // editAdmissionRegistrationReport() for why these are new methods/routes.
+        Route::get('admission_registration_report_v2', 'indexAdmissionRegistrationReport')->name('admission_registration_report_v2');
+        Route::get('admission_registration_report_v2/{id}/edit', 'editAdmissionRegistrationReport')->name('admission_registration_report_v2.edit');
     });
 
     Route::controller(onlineAdmissionConfirmController::class)->group(function () {
