@@ -1091,4 +1091,106 @@ class InventoryApiController extends Controller
         if (! $query->delete()) return $this->failure('Record not found.', 404);
         return response()->json(['status_code' => 1, 'message' => 'Inventory record deleted successfully.', 'data' => []]);
     }
+
+    public function poItems(Request $request)
+    {
+        if ($response = $this->guard($request, 'receivables', 'view')) return $response;
+        $poNumber = $request->query('po_number');
+        if (! $poNumber) return $this->failure('PO number is required.', 422);
+        $tenant = $request->integer('sub_institute_id');
+        $syear = $request->integer('syear');
+        $items = DB::table('inventory_generate_po_details as gp')
+            ->join('inventory_item_master as i', 'i.id', '=', 'gp.item_id')
+            ->leftJoin('inventory_item_receivable_details as ir', function ($join) {
+                $join->on('ir.ITEM_ID', '=', 'gp.item_id')
+                     ->on('ir.PURCHASE_ORDER_NO', '=', 'gp.po_number');
+            })
+            ->leftJoin('tbluser as tu', function ($join) {
+                $join->on('tu.id', '=', 'ir.RECEIVED_BY')
+                     ->where('tu.status', '=', 1);
+            })
+            ->selectRaw("
+                gp.po_number,
+                gp.item_id,
+                i.title as item_name,
+                gp.qty,
+                IFNULL(ir.PREVIOUS_RECEIVED_QTY, 0) as previous_receive_qty,
+                IFNULL(ir.ACTUAL_RECEIVED_QTY, 0) as actual_received_qty,
+                (gp.qty - IFNULL(ir.PREVIOUS_RECEIVED_QTY,0)) as pending_qty,
+                ir.REMARKS as remarks,
+                ir.WARRANTY_START_DATE as warranty_start_date,
+                ir.WARRANTY_END_DATE as warranty_end_date,
+                ir.BILL_NO as bill_no,
+                ir.BILL_DATE as bill_date,
+                ir.CHALLAN_NO as challan_no,
+                ir.CHALLAN_DATE as challan_date,
+                CONCAT_WS(' ', tu.first_name, tu.middle_name, tu.last_name) as received_by
+            ")
+            ->where('gp.po_number', $poNumber)
+            ->where('gp.sub_institute_id', $tenant)
+            ->where('gp.syear', $syear)
+            ->get();
+        return response()->json(['status_code' => 1, 'message' => 'Success', 'data' => $items]);
+    }
+
+    public function saveReceivables(Request $request)
+    {
+        if ($response = $this->guard($request, 'receivables', 'add')) return $response;
+        $validator = Validator::make($request->all(), [
+            'po_number' => 'required|string|max:50',
+            'items' => 'required|array|min:1',
+            'items.*.item_id' => 'required|integer',
+            'items.*.actual_received_qty' => 'required|numeric|min:0',
+        ]);
+        if ($validator->fails()) return $this->failure($validator->messages()->first(), 422, $validator->errors());
+        $tenant = $request->integer('sub_institute_id');
+        $syear = $request->integer('syear');
+        $user = $request->integer('user_id');
+        $poNumber = $request->input('po_number');
+        try {
+            DB::transaction(function () use ($request, $tenant, $syear, $user, $poNumber) {
+                foreach ($request->input('items') as $item) {
+                    $po = DB::table('inventory_generate_po_details')
+                        ->where('po_number', $poNumber)
+                        ->where('item_id', (int) $item['item_id'])
+                        ->where('sub_institute_id', $tenant)
+                        ->where('syear', $syear)
+                        ->lockForUpdate()
+                        ->first();
+                    if (! $po) throw new \RuntimeException('Purchase-order item not found.');
+                    $previous = (float) DB::table('inventory_item_receivable_details')
+                        ->where('PURCHASE_ORDER_NO', $poNumber)
+                        ->where('ITEM_ID', (int) $item['item_id'])
+                        ->where('SUB_INSTITUTE_ID', $tenant)
+                        ->where('SYEAR', $syear)
+                        ->sum('ACTUAL_RECEIVED_QTY');
+                    $received = (float) ($item['actual_received_qty'] ?? 0);
+                    if ($previous + $received > (float) $po->qty) throw new \RuntimeException('Received quantity cannot exceed the pending PO quantity.');
+                    $values = [
+                        'PURCHASE_ORDER_NO' => $poNumber,
+                        'ITEM_ID' => (int) $item['item_id'],
+                        'ORDER_QTY' => $po->qty,
+                        'PREVIOUS_RECEIVED_QTY' => $previous,
+                        'ACTUAL_RECEIVED_QTY' => $received,
+                        'PENDING_QTY' => (float) $po->qty - $previous - $received,
+                        'RECEIVED_BY' => $user,
+                        'RECEIVED_DATE' => now(),
+                        'CREATED_BY' => $user,
+                        'CREATED_ON' => now(),
+                        'CREATED_IP_ADDRESS' => $request->ip(),
+                    ];
+                    foreach (['remarks' => 'REMARKS', 'warranty_start_date' => 'WARRANTY_START_DATE', 'warranty_end_date' => 'WARRANTY_END_DATE', 'bill_no' => 'BILL_NO', 'bill_date' => 'BILL_DATE', 'challan_no' => 'CHALLAN_NO', 'challan_date' => 'CHALLAN_DATE'] as $requestKey => $dbKey) {
+                        if (isset($item[$requestKey])) $values[$dbKey] = $item[$requestKey];
+                    }
+                    DB::table('inventory_item_receivable_details')->updateOrInsert(
+                        ['PURCHASE_ORDER_NO' => $poNumber, 'ITEM_ID' => (int) $item['item_id'], 'SUB_INSTITUTE_ID' => $tenant, 'SYEAR' => $syear],
+                        $values
+                    );
+                }
+            });
+        } catch (\RuntimeException $exception) {
+            return $this->failure($exception->getMessage());
+        }
+        return response()->json(['status_code' => 1, 'message' => 'Item Received successfully.', 'data' => []]);
+    }
 }
