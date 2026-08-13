@@ -77,14 +77,10 @@ class circularController extends Controller
             });
 
             if (isset($classTeacherStdArr)) {
-                if (count($classTeacherStdArr) > 0) {
-                    $query->whereIn('s.id', $classTeacherStdArr);
-                }
+                $query->whereIn('s.id', (array) $classTeacherStdArr);
             }
             if (isset($classTeacherDivArr)) {
-                if (count($classTeacherDivArr) > 0) {
-                    $query->whereIn('d.id', $classTeacherDivArr);
-                }
+                $query->whereIn('d.id', (array) $classTeacherDivArr);
             }
            $query = $query->selectRaw('c.*,s.name as std_name,t.type as circular_type,d.name as div_name')
             ->where("c.syear", "=", $syear)

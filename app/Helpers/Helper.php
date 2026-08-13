@@ -1777,14 +1777,23 @@ if (!function_exists('send_FCM_Notification2')) {
 function send_FCM_Notification($to, $message, $sub_institute_id)
 {
     if($sub_institute_id==254){
-        $serviceAccount = json_decode(file_get_contents(public_path('firebase/hills-high-ab947-7471f8ddfe23.json')), true);
+        $path = public_path('firebase/hills-high-ab947-7471f8ddfe23.json');
     }else if($sub_institute_id==76){
-        $serviceAccount = json_decode(file_get_contents(public_path('firebase/swaminarayanmission-56b2d27e74.json')), true);
+        $path = public_path('firebase/swaminarayanmission-56b2d27e74.json');
     }else if($sub_institute_id==48){
-        $serviceAccount = json_decode(file_get_contents(public_path('firebase/chanderbala-modi-academy-f4a3c8b00930.json')), true);
+        $path = public_path('firebase/chanderbala-modi-academy-f4a3c8b00930.json');
     }else{
-        $serviceAccount = json_decode(file_get_contents(public_path('firebase/scholar-clone-8c827fad6756.json')), true);
+        $path = public_path('firebase/scholar-clone-8c827fad6756.json');
     }
+
+    if (!file_exists($path)) {
+        return [
+            'status' => 'error',
+            'message' => 'Firebase service account file not found.',
+        ];
+    }
+
+    $serviceAccount = json_decode(file_get_contents($path), true);
     
     $accessToken = getAccessToken($serviceAccount);
 

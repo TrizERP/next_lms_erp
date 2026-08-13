@@ -10,19 +10,23 @@ class CircularReportController extends Controller
 {
     public function index(Request $request)
     {
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
-        $standard = $request->input('standard');
-        $division = $request->input('division');
+        $type = $request->input('type');
+        if (in_array($type, ['API', 'JSON'])) {
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');
+        } else {
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');
+        }
 
-        // Load dropdown for Type
+        $standard = $request->input('standard_id');
+        $division = $request->input('division_id');
+
         $circular_type = DB::table('circular_type')->get();
 
-        // Default empty result
         $result = [];
 
-        if($request->input('standard') || $request->input('division') || $request->from_date || $request->to_date)
-        {
+        if ($standard || $division || $request->from_date || $request->to_date) {
             $query = DB::table("circular as c")
                 ->join('standard as s', 's.id', '=', 'c.standard_id')
                 ->join('circular_type as t', 't.id', '=', 'c.type')
@@ -33,7 +37,6 @@ class CircularReportController extends Controller
                 ->where("c.syear", $syear)
                 ->where("c.sub_institute_id", $sub_institute_id);
 
-            // Apply Filters
             if ($standard) {
                 $query->where("c.standard_id", $standard);
             }
@@ -47,7 +50,14 @@ class CircularReportController extends Controller
 
             $result = $query->orderBy('c.id', 'DESC')->get();
         }
-        // Return ONE single view
+
+        if (in_array($type, ['API', 'JSON'])) {
+            return response()->json([
+                'data' => $result,
+                'circular_type' => $circular_type,
+            ]);
+        }
+
         return view('front_desk.circular.report', compact('circular_type', 'result'));
     }
 }
