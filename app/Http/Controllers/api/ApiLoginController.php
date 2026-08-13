@@ -468,6 +468,28 @@ if ($staffData) {
         ], 200);
     }
 
+    /**
+     * Academic terms for an arbitrary syear (new endpoint — `login()` above
+     * only ever returns terms for the syear active at login time, so the
+     * Next.js frontend's year switcher has nothing to call when the user
+     * picks a different year afterwards; this mirrors that same query,
+     * parameterised by `syear` from the request instead of the
+     * login-time-computed one).
+     */
+    public function academicTerms(Request $request): JsonResponse
+    {
+        $sub_institute_id = $request->sub_institute_id;
+        $syear = $request->syear;
+
+        $terms = DB::table('academic_year')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('syear', $syear)
+            ->orderBy('sort_order')
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $terms], 200);
+    }
+
     public function credentials(Request $request)
     {
         $user = $request->user();

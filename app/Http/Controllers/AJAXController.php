@@ -173,6 +173,28 @@ class AJAXController extends Controller
         return response()->json($queryResult);
     }
 
+    /**
+     * Section ("grade") dropdown for the Result module's Next.js frontend
+     * (`api/get-grade-list`). New endpoint — the route existed as a
+     * comment with no backing method. The Result module's proxy client
+     * (`lib/result/api.ts`) always calls with `type=API` and passes
+     * `sub_institute_id` as a request param (there is no shared session
+     * cookie across the Next.js/Laravel origins), so — like sibling
+     * methods `getStandardList`/`getDivisionList` do for their `webForm`
+     * callers — this trusts the request param over the session whenever
+     * it's present.
+     */
+    public function getGradeList(Request $request)
+    {
+        $sub_institute_id = $request->sub_institute_id ?: session()->get('sub_institute_id');
+
+        $sections = academic_sectionModel::where('sub_institute_id', $sub_institute_id)
+            ->orderBy('sort_order')
+            ->pluck('title', 'id');
+
+        return response()->json($sections);
+    }
+
     public function getStandardList(Request $request)
     {
         $path = $_SERVER['HTTP_REFERER'] ?? URL::current();
@@ -488,6 +510,7 @@ class AJAXController extends Controller
 
     public function getSubjectList(Request $request)
     {
+        $sub_institute_id = $request->sub_institute_id ?: session()->get('sub_institute_id');
         $standard_id = $request->standard_id;
         $explode = explode(',', $request->standard_id);
 
@@ -502,14 +525,14 @@ class AJAXController extends Controller
         $requestUri = $request->server->get('REQUEST_URI');
 
         // echo "<pre>";print_r($standard_id);exit;
-        if (strpos($requestUri, 'lms/pal') !== false || (isset($refer_arr[count($refer_arr) - 2]) || $refer_arr[count($refer_arr) - 2] == 'exam_creation') || in_array('marks_entry', $refer_arr)) {
+        if (strpos($requestUri, 'lms/pal') !== false || (isset($refer_arr[count($refer_arr) - 2]) && $refer_arr[count($refer_arr) - 2] == 'exam_creation') || in_array('marks_entry', $refer_arr)) {
             $where = array(
-                "sub_std_map.sub_institute_id" => session()->get('sub_institute_id'),
+                "sub_std_map.sub_institute_id" => $sub_institute_id,
                 "sub_std_map.allow_grades" => "Yes",
             );
         } else {
             $where = array(
-                "sub_std_map.sub_institute_id" => session()->get('sub_institute_id'),
+                "sub_std_map.sub_institute_id" => $sub_institute_id,
             );
         }
         if (count($explode) > 1) {
@@ -616,17 +639,19 @@ class AJAXController extends Controller
 
     public function getExamList(Request $request)
     {
+        $sub_institute_id = $request->sub_institute_id ?: session()->get('sub_institute_id');
+        $syear = $request->syear ?: session()->get('syear');
         $where = array(
-            "re.sub_institute_id" => session()->get('sub_institute_id'),
-            "re.syear" => session()->get('syear'),
+            "re.sub_institute_id" => $sub_institute_id,
+            "re.syear" => $syear,
             "re.term_id" => $request->term_id,
             "re.standard_id" => $request->standard_id,
             "re.subject_id" => $request->subject_id,
         );
         if(isset($request->exam_id) && $request->exam_id != ''){
             $where = [
-                "re.sub_institute_id" => session()->get('sub_institute_id'),
-                "re.syear" => session()->get('syear'),
+                "re.sub_institute_id" => $sub_institute_id,
+                "re.syear" => $syear,
                 "re.standard_id"=>$request->standard_id,
                 "re.exam_id"=>$request->exam_id,
             ];
@@ -634,8 +659,8 @@ class AJAXController extends Controller
         }
         if(isset($request->exam_id) && $request->exam_id != '' && isset($request->subject_id) && isset($request->term_id) != ''){
             $where = [
-                "re.sub_institute_id" => session()->get('sub_institute_id'),
-                "re.syear" => session()->get('syear'),
+                "re.sub_institute_id" => $sub_institute_id,
+                "re.syear" => $syear,
                 "re.standard_id"=>$request->standard_id,
                 "re.exam_id"=>$request->exam_id,
                 "re.subject_id" => $request->subject_id,
@@ -658,7 +683,7 @@ class AJAXController extends Controller
     public function getExamsMasterList(Request $request)
     {
         $where = array(
-            "re.SubInstituteId" => session()->get('sub_institute_id'),
+            "re.SubInstituteId" => $request->sub_institute_id ?: session()->get('sub_institute_id'),
             "re.term_id" => $request->term_id,
             "re.standard_id" => $request->standard_id,
         );
@@ -673,7 +698,7 @@ class AJAXController extends Controller
     public function getCoScholasticParentList(Request $request)
     {
         $where = array(
-            "re.sub_institute_id" => session()->get('sub_institute_id'),
+            "re.sub_institute_id" => $request->sub_institute_id ?: session()->get('sub_institute_id'),
         );
 
         $co_scholastic_parent = DB::table('result_co_scholastic_parent as re')
@@ -686,7 +711,7 @@ class AJAXController extends Controller
     public function getCoScholasticList(Request $request)
     {
         $where = array(
-            "re.sub_institute_id" => session()->get('sub_institute_id'),
+            "re.sub_institute_id" => $request->sub_institute_id ?: session()->get('sub_institute_id'),
             "re.parent_id" => $request->co_scholastic_parent_id,
             "re.term_id" => $request->term_id,
         );
@@ -2798,7 +2823,7 @@ foreach ($previous_standard as $item) {
     {
         // echo("hi");die;
         $where = array(
-            "ram.sub_institute_id" => session()->get('sub_institute_id'),
+            "ram.sub_institute_id" => $request->sub_institute_id ?: session()->get('sub_institute_id'),
             "ram.skill_id" => $request->skillset_id,
             'ram.standard' => $request->standard,
         );

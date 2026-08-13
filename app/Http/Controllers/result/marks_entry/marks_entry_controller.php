@@ -610,6 +610,8 @@ class marks_entry_controller extends Controller
         }
 
         foreach ($all_data as $student_id => $arr) {
+           $arr['comment'] = $arr['comment'] ?? '';
+           try {
            $check = marks_entry::where([
                 'sub_institute_id' => $sub_institute_id,
                 'student_id'       => $student_id,
@@ -722,8 +724,16 @@ class marks_entry_controller extends Controller
 
                     //Start Send Marks Notification
                     $sendRequest = new Request(['student_id'=>$student_id,'obtain_mark'=>$arr['points'],'exam_id'=>$arr['exam_id']]);
-                    if($client_id == 4 || $client_id == 11)
-                        $sendNotification = $this->sendNotificationMarks($sendRequest);
+                    if ($client_id == 4 || $client_id == 11) {
+                        try {
+                            $this->sendNotificationMarks($sendRequest);
+                        } catch (\Throwable $e) {
+                            \Illuminate\Support\Facades\Log::warning('Marks notification failed: ' . $e->getMessage(), [
+                                'student_id' => $student_id,
+                                'exam_id'    => $arr['exam_id'],
+                            ]);
+                        }
+                    }
                     //End Send Marks Notification
                 }
             }
@@ -733,8 +743,18 @@ class marks_entry_controller extends Controller
                 "class"       => "success",
             ];
         }
-    }
-     
+           } catch (\Throwable $e) {
+               \Illuminate\Support\Facades\Log::error('Marks entry save failed for student ' . $student_id . ': ' . $e->getMessage(), [
+                   'student_id' => $student_id,
+                   'exam_id'    => $arr['exam_id'] ?? null,
+               ]);
+               $res = [
+                   "status_code" => 0,
+                   "message"     => "Some marks could not be saved. Please check the entries and try again.",
+                   "class"       => "error",
+               ];
+           }
+        }
 
         $type = $request->input('type');
 
@@ -846,6 +866,10 @@ class marks_entry_controller extends Controller
         ->limit(1)
         ->first();
 
+        if (! $getStudent || ! $getExamname) {
+            return 0;
+        }
+
         $text = $getStudent->student_name.' has got '.$request->obtain_mark.' out of '.$getExamname->points.' Marks in '.$getExamname->subject_name.'-'.$getExamname->exam_name.' Exam ('.$getExamname->exam_date.').';
 
            $app_notification_content = [
@@ -880,10 +904,10 @@ class marks_entry_controller extends Controller
             $res = 0;
             $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
 
-            $schoolName = $schoolData[0]['SchoolName'];
-            $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+            $schoolName = $schoolData[0]['SchoolName'] ?? '';
+            $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.($schoolData[0]['Logo'] ?? '');
 
-            if (!empty($bunch_arr)) {
+            if (!empty($bunch_arr) && !empty($schoolData)) {
                 foreach ($bunch_arr as $val) {
                     if (isset($val, $pushMessage)) {
                         $type1 = 'Notification';
