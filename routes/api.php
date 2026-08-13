@@ -196,6 +196,9 @@ Route::get('academic-setup/{module}', [AcademicSetupApiController::class, 'index
 Route::post('academic-setup/{module}', [AcademicSetupApiController::class, 'store']);
 Route::match(['put', 'patch'], 'academic-setup/{module}/{id}', [AcademicSetupApiController::class, 'update']);
 Route::delete('academic-setup/{module}/{id}', [AcademicSetupApiController::class, 'destroy']);
+// Bulk routes are declared first so they are not shadowed by the {module} rules.
+Route::post('transportation-setup/student-mappings/bulk', [TransportationApiController::class, 'bulkStore']);
+Route::post('transportation-setup/student-mappings/bulk-delete', [TransportationApiController::class, 'bulkDestroy']);
 Route::get('transportation-setup/{module}', [TransportationApiController::class, 'index']);
 Route::post('transportation-setup/{module}', [TransportationApiController::class, 'store']);
 Route::match(['put', 'patch'], 'transportation-setup/{module}/{id}', [TransportationApiController::class, 'update']);
@@ -293,10 +296,20 @@ Route::post('consents', [\App\Http\Controllers\api\ConsentApiController::class, 
 
 // Front desk module - stateless JSON entry points for the Next.js frontend.
 // Kept separate from frontdesk\frontdeskController, which is unchanged and still
-// serves the Blade screens. `report` and `{id}/delete` are declared before the
-// `{id}` routes so they are not swallowed by them.
+// serves the Blade screens. Specific sub-routes are declared before the
+// catch-all `{id}` routes so they are not swallowed by them.
 Route::get('front-desk/report', [\App\Http\Controllers\api\FrontDeskApiController::class, 'report']);
 Route::get('front-desk', [\App\Http\Controllers\api\FrontDeskApiController::class, 'index']);
+
+// Photo/Video Gallery module - stateless JSON entry points for the Next.js frontend.
+// Kept separate from front_desk\photo_video_gallaryController, which is unchanged
+// and still serves the Blade screens. The delete route is declared before the
+// {id} update route so it is not swallowed by it.
+Route::get('front-desk/photo-video-gallery', [\App\Http\Controllers\api\PhotoVideoGallaryApiController::class, 'index']);
+Route::post('front-desk/photo-video-gallery', [\App\Http\Controllers\api\PhotoVideoGallaryApiController::class, 'store']);
+Route::post('front-desk/photo-video-gallery/{id}/delete', [\App\Http\Controllers\api\PhotoVideoGallaryApiController::class, 'destroy']);
+Route::post('front-desk/photo-video-gallery/{id}', [\App\Http\Controllers\api\PhotoVideoGallaryApiController::class, 'update']);
+
 Route::get('front-desk/{id}', [\App\Http\Controllers\api\FrontDeskApiController::class, 'show']);
 Route::post('front-desk', [\App\Http\Controllers\api\FrontDeskApiController::class, 'store']);
 Route::post('front-desk/{id}/delete', [\App\Http\Controllers\api\FrontDeskApiController::class, 'destroy']);

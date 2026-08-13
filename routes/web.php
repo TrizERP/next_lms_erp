@@ -220,23 +220,23 @@ if (isset($_REQUEST['sub_institute_id']) && $_REQUEST['sub_institute_id'] != '')
 	}
 
 } else {
-    Route::get('/', function (Request $request) {
-        $user_id = $request->session()->get('user_id');
-        $expire_date = $request->session()->get('expire_date');
-
-        if (!empty($user_id) ) {
-            if($expire_date == null){
-                return redirect()->route('dashboard');
-            }else{
-                return redirect()->route('setup-institute-details');
-            }
-           
-        } else {
-            return view('login');
-        }
-    })->name('home');
-    // echo 'aaaa';die;
 }
+
+Route::get('/', function (Request $request) {
+    $user_id = $request->session()->get('user_id');
+    $expire_date = $request->session()->get('expire_date');
+
+    if (!empty($user_id) ) {
+        if($expire_date == null){
+            return redirect()->route('dashboard');
+        }else{
+            return redirect()->route('setup-institute-details');
+        }
+        
+    } else {
+        return view('login');
+    }
+})->name('home');
 
 //PAYROLL SYSTEM
 Route::group([ 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
@@ -264,8 +264,8 @@ Route::get('/whatsapp-show-reply/{wid}', [WhatsappController::class, 'whatsappSh
     Route::resource('sqaa_score_report', sqaaScoreReportController::class);
     Route::resource('sqaa_report_master', sqaaReportController::class);
     Route::get('sqaa_document_report', [sqaaReportController::class,'sqaaDocReport'])->name('sqaa_document_report.index');
-    Route::get('sqaa_report_master/{id}/edit', 'sqaaReportController@edit')->name('sqaa_report_master.edit');
-    Route::put('sqaa_report_master/{id}', 'sqaaReportController@update')->name('sqaa_report_master.update');
+    Route::get('sqaa_report_master/{id}/edit', [sqaaReportController::class, 'edit'])->name('sqaa_report_master.edit');
+    Route::put('sqaa_report_master/{id}', [sqaaReportController::class, 'update'])->name('sqaa_report_master.update');
     Route::get('setup-institute-details', [dashboardController::class, 'setup_details'])->name('setup-institute-details');
 
     Route::get('get-level', [sqaa_controller::class,'get_level'])->name('get-level'); 
@@ -385,7 +385,9 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'l
     // Route::post('/school_setup/subject_master/insert_data','school_setup\subject1Controller@insert_data');
 
     Route::resource('classwisetimetable', classwisetimetableController::class);
-    Route::post('ajax_getClasswiseTimetable', [classwisetimetableController::class, 'getClasswiseTimetable'])->name('ajax_getClasswiseTimetable');
+    Route::post('ajax_getClasswiseTimetable', [classwisetimetableController::class, 'getClasswiseTimetable'])
+        ->middleware('api.session')
+        ->name('ajax_getClasswiseTimetable');
     Route::get('ajax_Batch_Timetable', [timetableController::class, 'getBatchTimetable'])->name('ajax_Batch_Timetable');
 
     Route::get('ajax_New_Standard_Div', [timetableController::class, 'getNewStandardDiv'])->name('ajax_New_Standard_Div');
@@ -398,7 +400,9 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'l
 
     Route::post('ajax_getproxyperiod', [proxyController::class, 'getproxyperiod'])->name('ajax_getproxyperiod');
     Route::resource('facultywisetimetable', facultywisetimetableController::class);
-    Route::post('ajax_getFacultywiseTimetable', [facultywisetimetableController::class, 'getFacultywiseTimetable'])->name('ajax_getFacultywiseTimetable');
+    Route::post('ajax_getFacultywiseTimetable', [facultywisetimetableController::class, 'getFacultywiseTimetable'])
+        ->middleware('api.session')
+        ->name('ajax_getFacultywiseTimetable');
 
     Route::resource('proxy_report', proxyReportController::class);
     Route::post('ajax_getproxyreport', [proxyReportController::class, 'getproxyreport'])->name('ajax_getproxyreport');

@@ -23,6 +23,40 @@ class StudentRegistrationApiController extends Controller
         ]]);
     }
 
+    /**
+     * Next auto-generated GR No, scoped to admission year: MAX(enrollment_no) + 1
+     * across tblstudent rows sharing the same tblstudent.admission_year as the
+     * current syear, matching GR No sequencing tied to the student's admission
+     * year (a static column on tblstudent, not the per-year enrollment table).
+     *
+     * Excludes enrollment_no values longer than 8 digits: some historical rows
+     * have a mobile number stored in enrollment_no by mistake (10-11 digits),
+     * which would otherwise dominate MAX() and produce a nonsensical next
+     * number. Real GR numbers in this data are 2-7 digits.
+     */
+   public function nextEnrollmentNo(Request $request): JsonResponse
+{
+    if ($error = $this->guard($request)) {
+        return $error;
+    }
+
+    $next = DB::table('tblstudent')
+        ->where('sub_institute_id', $request->sub_institute_id)
+        ->where('admission_year', $request->syear)
+        ->whereNotNull('enrollment_no')
+        ->where('enrollment_no', '!=', '')
+        ->selectRaw('MAX(CAST(enrollment_no AS UNSIGNED)) + 1 AS next_enrollment_no')
+        ->value('next_enrollment_no');
+
+    return response()->json([
+        'status' => 1,
+        'message' => 'Success',
+        'data' => [
+            'enrollment_no' => (string) ($next ?: 1001),
+        ],
+    ]);
+}
+
     public function store(Request $request): JsonResponse
     {
         if ($error = $this->guard($request)) return $error;
@@ -30,7 +64,9 @@ class StudentRegistrationApiController extends Controller
             'first_name' => 'required|string|max:100', 'last_name' => 'nullable|string|max:100',
             'enrollment_no' => 'required|string|max:100', 'gender' => 'required|string|max:20', 'dob' => 'nullable|date',
             'grade' => 'required|integer', 'standard' => 'required|integer', 'division' => 'required|integer',
-            'email' => 'nullable|email|max:255', 'mobile' => 'nullable|string|max:30',
+            'email' => 'nullable|email|max:255', 'mobile' => 'nullable|regex:/^[0-9]{10}$/',
+        ], [
+            'mobile.regex' => 'Enter a valid 10-digit mobile number.',
         ]);
         if ($validator->fails()) return response()->json(['status' => 0, 'message' => $validator->errors()->first(), 'data' => []], 422);
         $duplicate = DB::table('tblstudent')->where('sub_institute_id', $request->sub_institute_id)->where('enrollment_no', $request->enrollment_no)->exists();
@@ -45,6 +81,7 @@ class StudentRegistrationApiController extends Controller
                 'email' => $request->email, 'address' => $request->address, 'bloodgroup' => $request->bloodgroup,
                 'password' => md5('student'), 'user_profile_id' => $profile, 'status' => 1,
                 'sub_institute_id' => $request->sub_institute_id, 'marking_period_id' => $request->term_id,
+                'admission_year' => $request->syear,
             ]);
             DB::table('tblstudent_enrollment')->insert([
                 'student_id' => $studentId, 'grade_id' => $request->grade, 'standard_id' => $request->standard,

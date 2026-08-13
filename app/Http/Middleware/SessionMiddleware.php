@@ -18,11 +18,13 @@ class SessionMiddleware
     {
         $type = $request->input("type");
 
-        if($type !== "API"  &&  $type != "JSON"){
-         
+        if($type !== "API"  &&  $type != "JSON" && !$request->expectsJson()){
+          
             $user_id = $request->session()->get('user_id');
             if(empty($user_id)){
-                
+                if ($request->expectsJson() || $request->ajax()) {
+                    return response()->json(['message' => 'Unauthenticated.'], 401);
+                }
                 return redirect(route('home'));
             }
         }

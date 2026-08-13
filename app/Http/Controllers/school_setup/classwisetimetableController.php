@@ -56,7 +56,14 @@ class classwisetimetableController extends Controller
             ->where('ac.sub_institute_id', $sub_institute_id)
             ->where('ac.id', $academic_section_id)
             ->where('s.id', $standard_id)
-            ->where('d.id', $division_id)->get()->toArray();
+            ->where('d.id', $division_id)->first();
+
+        if (!$get_name_data) {
+            return [
+                'status_code' => 0,
+                'message' => 'The selected academic section, standard, and division could not be found.',
+            ];
+        }
 
         $html = "";
         $old_timetable_data = [];
@@ -77,20 +84,16 @@ class classwisetimetableController extends Controller
                 'timetable.syear'               => $syear,
             ])->get()->toArray(); //'concat(first_name," ",middle_name," ",last_name) as teacher_name'
 
-        $result = DB::table('fees_receipt_book_master')
+        $receipt_book_arr = DB::table('fees_receipt_book_master')
             ->selectRaw('*,GROUP_CONCAT(fees_head_id) heads')
-            ->where('syear', session()->get('syear'))
-            ->where('sub_institute_id', session()->get('sub_institute_id'))
+            ->where('syear', $syear)
+            ->where('sub_institute_id', $sub_institute_id)
             ->groupByRaw("receipt_line_1,receipt_line_2,receipt_line_3,
                 receipt_line_4,receipt_prefix,receipt_logo,last_receipt_number")
-            ->get()->toArray();
+            ->first();
 
-        $receipt_book_arr = [];
-        foreach ($result as $temp_id => $receipt_detail) {
-            $receipt_book_arr = $receipt_detail;
-        }
-
-        $image_path = "http://".$_SERVER['HTTP_HOST']."/storage/fees/".$receipt_book_arr->receipt_logo;
+        $receipt_logo = $receipt_book_arr?->receipt_logo ?? '';
+        $image_path = "http://".$_SERVER['HTTP_HOST']."/storage/fees/".$receipt_logo;
 
         foreach ($timetable_data as $k => $p) {
             $old_timetable_data[$p['week_day']][$p['period_id']]['SUBJECT'][] = $p['subject_name'];
@@ -132,16 +135,16 @@ class classwisetimetableController extends Controller
         // $html .= '    <img style="width: 100px;height: 90px;margin: 0;" src="' . $image_path . '" alt="SCHOOL LOGO">';
         $html .= '</td>';
         $html .= '<td colspan="3" style="text-align:center !important;" align="center"> ';
-        if ($receipt_book_arr->receipt_line_1 != '') {
+        if (($receipt_book_arr?->receipt_line_1 ?? '') != '') {
             $html .= '<span style=" font-size: 26px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important;">'.$receipt_book_arr->receipt_line_1.'</span><br>';
         }
-        if ($receipt_book_arr->receipt_line_2 != '') {
+        if (($receipt_book_arr?->receipt_line_2 ?? '') != '') {
             $html .= '<span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">'.$receipt_book_arr->receipt_line_2.'</span><br>';
         }
-        if ($receipt_book_arr->receipt_line_3 != '') {
+        if (($receipt_book_arr?->receipt_line_3 ?? '') != '') {
             $html .= '<span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important">'.$receipt_book_arr->receipt_line_3.'</span><br>';
         }
-        if ($receipt_book_arr->receipt_line_4 != '') {
+        if (($receipt_book_arr?->receipt_line_4 ?? '') != '') {
             $html .= '<span style=" font-size: 14px;font-weight: 600;font-family: Arial, Helvetica, sans-serif !important;">'.$receipt_book_arr->receipt_line_4.'</span><br>';
         }
         $html .= '</td>';
@@ -151,13 +154,13 @@ class classwisetimetableController extends Controller
                   </tr>';
         $html .= '<tr>
                     <td colspan="3" style="text-align:center !important;" align="center">
-                        <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important;margin-left: 15% !important;">Academic Section : '.$get_name_data[0]->academic_name.' | </span>
+                        <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important;margin-left: 15% !important;">Academic Section : '.$get_name_data->academic_name.' | </span>
                     
                     
-                        <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">Standard : '.$get_name_data[0]->std_name.' | </span>
+                        <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">Standard : '.$get_name_data->std_name.' | </span>
                     
                     
-                        <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">Division : '.$get_name_data[0]->div_name.'</span>
+                        <span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">Division : '.$get_name_data->div_name.'</span>
                     </td>
                 </tr>';
         $html .= '</tbody>';

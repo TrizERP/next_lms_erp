@@ -2318,6 +2318,7 @@ if (!function_exists('get_string')) {
         if($sub_institute_id==''){
         $sub_institute_id = session()->get('sub_institute_id');
         }
+        $sub_institute_id = $sub_institute_id !== '' && $sub_institute_id !== null ? (int) $sub_institute_id : 0;
         $strings = DB::table('app_language')->whereRaw('sub_institute_id = 0 and string = "' . $arg . '"')->value('value');
         $strings_id = DB::table('app_language')->whereRaw('sub_institute_id = 0 and string = "' . $arg . '"')->groupBy('menu_id')->value('menu_id');        
        

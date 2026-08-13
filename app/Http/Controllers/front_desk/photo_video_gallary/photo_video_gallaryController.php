@@ -34,9 +34,14 @@ class photo_video_gallaryController extends Controller
             }
         }
 
-        $school_data['data'] = $this->getData();
-
         $type = $request->input('type');
+
+        // The Blade view renders an album accordion and needs rows grouped
+        // by album title; the JSON/API path (consumed by the frontend data
+        // table) needs a flat array of rows instead.
+        $school_data['data'] = in_array($type, ['API', 'JSON'], true)
+            ? $this->getData()
+            : $this->getGroupedData();
 
         return is_mobile($type, "front_desk/photo_video_gallary/show", $school_data, "view");
     }
@@ -44,7 +49,8 @@ class photo_video_gallaryController extends Controller
     public function getData()
     {
         $marking_period_id = session()->get('term_id');
-        $results = DB::table("photo_video_gallary as c")
+
+        return DB::table("photo_video_gallary as c")
             ->join('standard as s', function ($join) use($marking_period_id) {
                 $join->whereRaw("s.id = c.standard_id AND s.sub_institute_id = c.sub_institute_id");
                 // ->when($marking_period_id, function ($query) use ($marking_period_id) {
@@ -60,9 +66,12 @@ class photo_video_gallaryController extends Controller
             ->orderBy('id', 'DESC')
             //->limit(1000)
             ->get()->toArray();
+    }
 
+    public function getGroupedData()
+    {
         $grouped = [];
-        foreach ($results as $r) {
+        foreach ($this->getData() as $r) {
             $album = $r->album_title ?: 'Default Album';
             $grouped[$album][] = $r;
         }

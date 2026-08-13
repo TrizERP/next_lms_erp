@@ -7,7 +7,6 @@ use App\Models\lms\lmsContentCategoryModel;
 use App\Models\lms\contentModel;
 use App\Models\lms\contentmappingtypeModel;
 use App\Models\lms\lmsQuestionMasterModel;
-use App\Models\lms\answermasterModel;
 use App\Models\lms\topicModel;
 use App\Models\student\tblstudentEnrollmentModel;
 use Illuminate\Http\JsonResponse;
@@ -80,7 +79,7 @@ class ApiLmsCourseController extends Controller
         $arr = DB::select("SELECT STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,s.sub_institute_id,
                 s.display_image,ifnull(s.subject_category,'My Course') AS content_category
                 FROM sub_std_map s
-                INNER JOIN standard STD ON STD.id = s.standard_id
+                INNER JOIN standard STD ON STD.id = s.standard_id AND STD.sub_institute_id = s.sub_institute_id
                 WHERE s.sub_institute_id in (" . $sub_institute_id . ",1) AND allow_content = 'Yes'
                  " . $extra . " AND s.subject_category!='SEL'
                 GROUP BY s.subject_id,s.standard_id,s.subject_category ORDER BY s.sort_order");
@@ -96,7 +95,7 @@ class ApiLmsCourseController extends Controller
         $getSEL = DB::select("SELECT STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,s.sub_institute_id,
                 s.display_image,ifnull(s.subject_category,'My Course') AS content_category
                 FROM sub_std_map s
-                INNER JOIN standard STD ON STD.id = s.standard_id
+                INNER JOIN standard STD ON STD.id = s.standard_id AND STD.sub_institute_id = s.sub_institute_id
                 WHERE s.sub_institute_id IN (1," . $sub_institute_id . ") AND allow_content = 'Yes'
                  AND s.subject_category='SEL'
                 GROUP BY s.subject_id,s.standard_id,s.subject_category ORDER BY s.sort_order");
@@ -154,14 +153,24 @@ class ApiLmsCourseController extends Controller
 
         $sub_institute_id_by_lms = ($getIsLms == 'Y') ? "(s.sub_institute_id = 1 or s.sub_institute_id = $sub_institute_id)" : "s.sub_institute_id = $sub_institute_id";
 
-        if (strtoupper($user_profile_name) == 'LMS TEACHER' || strtoupper($user_profile_name) == 'TEACHER') {
-            $whereExtra = trim(ltrim($extra, ' AND '));
+        if (in_array($user_profile_name, ['Teacher', 'Lms Teacher'])){
             $arr = DB::table('sub_std_map as s')
                 ->selectRaw("STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,
                     s.display_image,IFNULL(s.subject_category,'My Course') AS content_category,s.sub_institute_id")
-                ->join('standard AS STD', 'STD.id', '=', 's.standard_id')
-                ->whereRaw($sub_institute_id_by_lms)
-                ->whereRaw($whereExtra)
+                ->join('standard AS STD', function ($join) {
+                    $join->on('STD.id', '=', 's.standard_id')
+                         ->on('STD.sub_institute_id', '=', 's.sub_institute_id');
+                })
+                ->Join('timetable AS t', function ($join) use ($user_id, $syear, $sub_institute_id, $extra) {
+                    $join->on('t.standard_id', '=', 's.standard_id')
+                        ->on('t.subject_id', '=', 's.subject_id')
+                        ->on('t.sub_institute_id', '=', 's.sub_institute_id')
+                        ->where('t.teacher_id', '=', $user_id)
+                        ->where('t.syear', '=', $syear)
+                        ->whereRaw($extra);
+                })
+                ->where('s.sub_institute_id', '=', $sub_institute_id)
+                ->where('s.subject_category', '!=', 'SEL')
                 ->groupBy('s.subject_id', 's.standard_id', 's.subject_category')
                 ->orderBy('s.sort_order')
                 ->get();
@@ -169,8 +178,12 @@ class ApiLmsCourseController extends Controller
             $getSEL = DB::table('sub_std_map as s')
                 ->selectRaw("STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,
                     s.display_image,IFNULL(s.subject_category,'SEL') AS content_category,s.sub_institute_id")
-                ->join('standard AS STD', 'STD.id', '=', 's.standard_id')
+                ->join('standard AS STD', function ($join) {
+                    $join->on('STD.id', '=', 's.standard_id')
+                         ->on('STD.sub_institute_id', '=', 's.sub_institute_id');
+                })
                 ->whereRaw($sub_institute_id_by_lms)
+                ->where('s.allow_content', '=', 'Yes')
                 ->where('s.subject_category', '=', 'SEL')
                 ->groupBy('s.subject_id', 's.standard_id', 's.subject_category')
                 ->orderBy('s.sort_order')
@@ -188,7 +201,10 @@ class ApiLmsCourseController extends Controller
             $arr = DB::table('sub_std_map as s')
                 ->selectRaw("STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,
                     s.display_image,IFNULL(s.subject_category,'My Course') AS content_category,s.sub_institute_id")
-                ->join('standard AS STD', 'STD.id', '=', 's.standard_id')
+                ->join('standard AS STD', function ($join) {
+                    $join->on('STD.id', '=', 's.standard_id')
+                         ->on('STD.sub_institute_id', '=', 's.sub_institute_id');
+                })
                 ->whereRaw($sub_institute_id_by_lms)
                 ->where('s.allow_content', '=', 'Yes')
                 ->whereRaw($whereExtra)
@@ -257,10 +273,8 @@ class ApiLmsCourseController extends Controller
             ->where('Id', $sub_institute_id)
             ->value('is_Lms');
 
-        $chapterIds = array_column($chapters, 'id');
-
-        if (!empty($chapterIds)) {
-            $contentQuery = DB::table('content_master')
+        foreach ($chapters as &$chapter) {
+            $content_data = DB::table('content_master')
                 ->where(function ($query) use ($getIsLms, $sub_institute_id) {
                     if ($getIsLms == 'Y') {
                         $query->where('content_master.sub_institute_id', '1')
@@ -271,60 +285,45 @@ class ApiLmsCourseController extends Controller
                 })
                 ->where('content_master.subject_id', $subject_id)
                 ->where('content_master.standard_id', $standard_id)
-                ->whereIn('content_master.chapter_id', $chapterIds)
+                ->where('content_master.chapter_id', $chapter['id'])
                 ->where(function ($query) {
                     $query->whereNull('content_master.topic_id')
                         ->orWhere('content_master.topic_id', '0');
-                });
-
-            $allContent = $contentQuery->get()->toArray();
-
-            $contentByChapter = [];
-            foreach ($allContent as $content) {
-                $contentArray = (array)$content;
-                $chapterId = $contentArray['chapter_id'];
-                $cat = $contentArray['content_category'] ?? 'General';
-                $contentByChapter[$chapterId][$cat][] = $contentArray;
-            }
-
-            $flashCards = DB::table('lms_flashcard')
-                ->whereIn('chapter_id', $chapterIds)
-                ->where('sub_institute_id', $sub_institute_id)
-                ->where('status', 1)
+                })
                 ->get()
                 ->toArray();
 
-            $flashByChapter = [];
-            foreach ($flashCards as $flash) {
-                $flashArray = (array)$flash;
-                $flashByChapter[$flashArray['chapter_id']][] = $flashArray;
+            $content_by_category = [];
+            foreach ($content_data as $content) {
+                $contentArray = (array)$content;
+                $cat = $contentArray['content_category'] ?? 'General';
+                $content_by_category[$cat][] = $contentArray;
             }
 
-            foreach ($chapters as &$chapter) {
-                $chapter['content_categories'] = $contentByChapter[$chapter['id']] ?? [];
-                $chapter['content_categories']['Flash Cards'] = $flashByChapter[$chapter['id']] ?? [];
-                $chapter['content_categories']['Mindmap'] = [];
-                $chapter['content_categories']['Virtual Lab'] = [];
-            }
-        } else {
-            foreach ($chapters as &$chapter) {
-                $chapter['content_categories'] = [];
-                $chapter['content_categories']['Flash Cards'] = [];
-                $chapter['content_categories']['Mindmap'] = [];
-                $chapter['content_categories']['Virtual Lab'] = [];
-            }
+            $chapter['content_categories'] = $content_by_category;
+
+            $flash = DB::table('lms_flashcard')
+                ->where(['chapter_id' => $chapter['id'], 'sub_institute_id' => $sub_institute_id, 'status' => 1])
+                ->get()
+                ->toArray();
+            $chapter['content_categories']['Flash Cards'] = array_map(function ($f) {
+                return (array)$f;
+            }, $flash);
+
+            $chapter['content_categories']['Mindmap'] = [];
+            $chapter['content_categories']['Virtual Lab'] = [];
         }
 
         return $chapters;
     }
 
-    private function getChapterContentCategories($chapter_id, $subject_id, $standard_id, $sub_institute_id, ?bool $conceptWise = null, ?string $source = null, ?string $contentCategory = null): array
+    private function getChapterContentCategories($chapter_id, $subject_id, $standard_id, $sub_institute_id): array
     {
         $getIsLms = DB::table('school_setup')
             ->where('Id', $sub_institute_id)
             ->value('is_Lms');
 
-        $contentQuery = DB::table('content_master')
+        $content_data = DB::table('content_master')
             ->where(function ($query) use ($getIsLms, $sub_institute_id) {
                 if ($getIsLms == 'Y') {
                     $query->where('content_master.sub_institute_id', '1')
@@ -339,29 +338,9 @@ class ApiLmsCourseController extends Controller
             ->where(function ($query) {
                 $query->whereNull('content_master.topic_id')
                     ->orWhere('content_master.topic_id', '0');
-            });
-
-        if ($conceptWise !== null) {
-            if ($conceptWise) {
-                $contentQuery->whereNotNull('content_master.concept_id')
-                    ->where('content_master.concept_id', '!=', 0);
-            } else {
-                $contentQuery->where(function ($query) {
-                    $query->whereNull('content_master.concept_id')
-                        ->orWhere('content_master.concept_id', 0);
-                });
-            }
-        }
-
-        if ($source !== null && $source !== '') {
-            $contentQuery->where('content_master.source', $source);
-        }
-
-        if ($contentCategory !== null && $contentCategory !== '') {
-            $contentQuery->where('content_master.content_category', $contentCategory);
-        }
-
-        $content_data = $contentQuery->get()->toArray();
+            })
+            ->get()
+            ->toArray();
 
         $content_by_category = [];
         foreach ($content_data as $content) {
@@ -423,19 +402,12 @@ class ApiLmsCourseController extends Controller
         }
 
         $sub_institute_id = $sub_institute_id ?: $chapter->sub_institute_id;
-        $conceptWise = $request->has('concept_wise') ? filter_var($request->input('concept_wise'), FILTER_VALIDATE_BOOLEAN) : null;
-        $source = $request->input('source');
-        $contentCategory = $request->input('content_category');
-
         $chapterArray = (array)$chapter;
         $chapterArray['content_categories'] = $this->getChapterContentCategories(
             $chapter->id,
             $chapter->subject_id,
             $chapter->standard_id,
-            $sub_institute_id,
-            $conceptWise,
-            $source,
-            $contentCategory
+            $sub_institute_id
         );
 
         return response()->json([
@@ -628,123 +600,7 @@ class ApiLmsCourseController extends Controller
         ], 200);
     }
 
-    private function normalizeConceptId($conceptId): ?int
-    {
-        if ($conceptId === null) {
-            return null;
-        }
-
-        if (is_string($conceptId)) {
-            $conceptId = trim($conceptId);
-        }
-
-        if ($conceptId === '' || strtolower((string) $conceptId) === 'all') {
-            return null;
-        }
-
-        $conceptId = (int) $conceptId;
-
-        return $conceptId > 0 ? $conceptId : null;
-    }
-
-    private function resolveContentMedia(Request $request, bool $applyPresentationRules = false): array
-    {
-        $file_folder = '/lms_content_file';
-        $contentType = strtolower(trim((string) $request->input('content_type', $request->input('contentType', ''))));
-        $presentationType = strtolower(trim((string) $request->input('presentation_type', $request->input('presentationType', ''))));
-        $restrictToPresentationFiles = $applyPresentationRules
-            || $contentType === 'presentation'
-            || str_contains($presentationType, 'presentation');
-
-        $gamma_presentation_url = trim((string) $request->input('gamma_presentation_url', ''));
-        if ($gamma_presentation_url !== '') {
-            return [
-                'file_folder' => $file_folder,
-                'filename' => $gamma_presentation_url,
-                'url' => $gamma_presentation_url,
-                'file_type' => 'link',
-                'file_size' => 0,
-            ];
-        }
-
-        $ibl_generated_url = trim((string) $request->input('ibl_generated_url', ''));
-        if ($ibl_generated_url !== '') {
-            $ibl_content_type = strtolower(trim((string) $request->input('ibl_content_type', 'link')));
-
-            return [
-                'file_folder' => $file_folder,
-                'filename' => $ibl_generated_url,
-                'url' => $ibl_generated_url,
-                'file_type' => $ibl_content_type ?: 'link',
-                'file_size' => 0,
-            ];
-        }
-
-        $aiGeneratedFilename = trim((string) $request->input('ai_generated_filename', ''));
-        if ($aiGeneratedFilename !== '') {
-            $sourcePath = storage_path('app/public/pdfs/' . $aiGeneratedFilename);
-            if (file_exists($sourcePath)) {
-                $filename = 'lms_' . date('Y-m-d_h-i-s') . '.pdf';
-                $fileContent = file_get_contents($sourcePath);
-                Storage::disk('digitalocean')->put('public/lms_content_file/' . $filename, $fileContent, 'public');
-            } else {
-                $filename = $aiGeneratedFilename;
-            }
-
-            return [
-                'file_folder' => $file_folder,
-                'filename' => $filename,
-                'url' => null,
-                'file_type' => 'pdf',
-                'file_size' => 0,
-            ];
-        }
-
-        if ($request->hasFile('filename')) {
-            $img = $request->file('filename');
-            $ext = strtolower((string) $img->getClientOriginalExtension());
-
-            if ($restrictToPresentationFiles && !in_array($ext, ['pdf', 'ppt', 'pptx'], true)) {
-                return [
-                    'error' => 'Invalid file type. Allowed files: PDF, PPT, and PPTX.',
-                ];
-            }
-
-            if ($restrictToPresentationFiles && $img->getSize() > (100 * 1024 * 1024)) {
-                return [
-                    'error' => 'File size must be 100 MB or less.',
-                ];
-            }
-
-            $filename = 'lms_' . date('Y-m-d_h-i-s') . '.' . $ext;
-            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $filename, 'public');
-
-            return [
-                'file_folder' => $file_folder,
-                'filename' => $filename,
-                'url' => null,
-                'file_type' => $ext,
-                'file_size' => $img->getSize(),
-            ];
-        }
-
-        $link = trim((string) $request->input('link', ''));
-        if ($link !== '') {
-            return [
-                'file_folder' => $file_folder,
-                'filename' => $link,
-                'url' => $link,
-                'file_type' => 'link',
-                'file_size' => 0,
-            ];
-        }
-
-        return [
-            'error' => 'Please upload a file or provide a link.',
-        ];
-    }
-
-    private function persistContent(Request $request, bool $applyPresentationRules = false): JsonResponse
+    public function storeContent(Request $request): JsonResponse
     {
         $sub_institute_id = $request->input('sub_institute_id') ? $request->input('sub_institute_id') : ($request->session()->get('sub_institute_id') ?: null);
         $syear = $request->input('syear') ? $request->input('syear') : ($request->session()->get('syear') ?: date('Y'));
@@ -758,52 +614,60 @@ class ApiLmsCourseController extends Controller
             ], 403);
         }
 
-        $validator = Validator::make($request->all(), [
-            'standard_id' => 'required|integer',
-            'subject_id' => 'required|integer',
-            'chapter_id' => 'required|integer',
-            'title' => 'required|string|max:250',
-            'concept_id' => 'nullable',
-            'presentation_type' => 'nullable|string|max:150',
-            'content_type' => 'nullable|string|max:100',
-            'content_category' => 'nullable|string|max:250',
-            'link' => 'nullable|string|max:2048',
-            'filename' => $applyPresentationRules ? 'nullable|file|mimes:pdf,ppt,pptx|max:102400' : 'nullable|file|max:102400',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json([
-                'status_code' => 0,
-                'message' => 'Validation failed.',
-                'errors' => $validator->errors()->messages(),
-            ], 422);
-        }
-
         $standard_id = $request->input('standard_id');
         $subject_id = $request->input('subject_id');
         $chapter_id = $request->input('chapter_id');
         $topic_id = $request->input('topic_id', 0);
         $grade_id = $request->input('grade_id') ?: DB::table('standard')->where('id', $standard_id)->value('grade_id');
-        $show_hide_val = $request->input('show_hide') ?? '1';
-        $concept_id = $this->normalizeConceptId($request->input('concept_id'));
-        $content_type = trim((string) $request->input('content_type', $request->input('contentType', '')));
-        $presentation_type = trim((string) $request->input('presentation_type', $request->input('presentationType', '')));
-        $content_category = trim((string) $request->input('content_category', ''));
 
-        if ($content_category === '' && $presentation_type !== '') {
-            $content_category = $presentation_type;
-        }
+        $show_hide = $request->input('show_hide');
+        $show_hide_val = $show_hide ?? '1';
 
-        if ($content_category === '') {
-            $content_category = $content_type !== '' ? $content_type : 'Content';
-        }
+        $basic_advanced = $request->input('toggle_basic_advanced');
+        $basic_advanced_val = isset($basic_advanced) ? '1' : '0';
 
-        $media = $this->resolveContentMedia($request, $applyPresentationRules);
-        if (isset($media['error'])) {
-            return response()->json([
-                'status_code' => 0,
-                'message' => $media['error'],
-            ], 422);
+        $file_folder = $ext = $size = $newfilename = $file_url = '';
+
+        $gamma_presentation_url = $request->input('gamma_presentation_url');
+        $ibl_generated_url = $request->input('ibl_generated_url');
+        $ibl_content_type = $request->input('ibl_content_type');
+
+        if (!empty($gamma_presentation_url)) {
+            $newfilename = $gamma_presentation_url;
+            $ext = 'link';
+            $file_folder = '/lms_content_file';
+            $file_url = $gamma_presentation_url;
+        } elseif (!empty($ibl_generated_url)) {
+            $newfilename = $ibl_generated_url;
+            $ext = $ibl_content_type === 'link' ? 'link' : ($ibl_content_type ?? 'pdf');
+            $file_folder = '/lms_content_file';
+            $file_url = $ibl_generated_url;
+        } elseif (!empty($request->input('ai_generated_filename'))) {
+            $ai_filename = $request->input('ai_generated_filename');
+            $sourcePath = storage_path('app/public/pdfs/' . $ai_filename);
+            if (file_exists($sourcePath)) {
+                $newfilename = 'lms_' . date('Y-m-d_h-i-s') . '.pdf';
+                $fileContent = file_get_contents($sourcePath);
+                Storage::disk('digitalocean')->put('public/lms_content_file/' . $newfilename, $fileContent, 'public');
+            } else {
+                $newfilename = $ai_filename;
+            }
+            $file_folder = '/lms_content_file';
+            $ext = 'pdf';
+        } elseif ($request->hasFile('filename')) {
+            $img = $request->file('filename');
+            $ext = $img->getClientOriginalExtension();
+            $size = $img->getSize();
+            $newfilename = 'lms_' . date('Y-m-d_h-i-s') . '.' . $ext;
+            $file_folder = '/lms_content_file';
+            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $newfilename, 'public');
+        } elseif ($request->input('link') || $request->has('contentType')) {
+            $newfilename = $request->input('link');
+            $ext = 'link';
+            $file_url = $request->input('link');
+            $file_folder = '/lms_content_file';
+        } else {
+            $file_folder = '/lms_content_file';
         }
 
         $pre_topic = $post_topic = $cross_curriculum_topic = '';
@@ -817,43 +681,35 @@ class ApiLmsCourseController extends Controller
             $cross_curriculum_topic = $request->input('cross_curriculumchapter') . '####' . $request->input('cross_curriculumtopic');
         }
 
+$restrict_date = $request->input('restrict_date');
         $content = [
             'grade_id' => $grade_id,
             'standard_id' => $standard_id,
             'subject_id' => $subject_id,
             'chapter_id' => $chapter_id,
-            'concept_id' => $concept_id,
             'topic_id' => $topic_id,
             'sub_topic_id' => $request->input('sub_topic_id'),
             'title' => $request->input('title'),
             'description' => $request->input('description'),
-            'file_folder' => $media['file_folder'],
-            'filename' => $media['filename'],
-            'url' => $media['url'],
-            'file_type' => $media['file_type'],
-            'file_size' => $media['file_size'],
-            'show_hide' => $show_hide_val,
+            'file_folder' => $file_folder,
+            'filename' => $newfilename,
+            'url' => $file_url,
+            'file_type' => $ext,
+            'file_size' => $size ?: 0,
+            'show_hide' => $show_hide_val ?: '1',
             'sort_order' => $request->input('sort_order'),
             'meta_tags' => $request->input('meta_tags'),
-            'content_category' => $content_category,
+            'content_category' => $request->input('content_category'),
             'created_by' => $user_id,
             'sub_institute_id' => $sub_institute_id,
-            'restrict_date' => $request->input('restrict_date') ? date('Y-m-d', strtotime($request->input('restrict_date'))) : null,
+            'restrict_date' => $restrict_date ? date('Y-m-d', strtotime($restrict_date)) : null,
             'pre_grade_topic' => $pre_topic ?: null,
             'post_grade_topic' => $post_topic ?: null,
             'cross_curriculum_grade_topic' => $cross_curriculum_topic ?: null,
-            'basic_advance' => $request->input('toggle_basic_advanced') ? '1' : '0',
+            'basic_advance' => $basic_advanced_val ?: '0',
             'user_profile_name' => $user_profile_name,
             'syear' => $syear,
         ];
-
-        if (Schema::hasColumn('content_master', 'content_type')) {
-            $content['content_type'] = $content_type !== '' ? $content_type : null;
-        }
-
-        if (Schema::hasColumn('content_master', 'presentation_type')) {
-            $content['presentation_type'] = $presentation_type !== '' ? $presentation_type : null;
-        }
 
         try {
             $last_id = DB::table('content_master')->insertGetId($content);
@@ -893,21 +749,7 @@ class ApiLmsCourseController extends Controller
             'chapter_id' => $chapter_id,
             'subject_id' => $subject_id,
             'standard_id' => $standard_id,
-            'concept_id' => $concept_id,
-            'content_type' => $content_type,
-            'presentation_type' => $presentation_type,
-            'content_category' => $content_category,
         ], 200);
-    }
-
-    public function storeContent(Request $request): JsonResponse
-    {
-        return $this->persistContent($request, false);
-    }
-
-    public function uploadContent(Request $request): JsonResponse
-    {
-        return $this->persistContent($request, true);
     }
 
     public function storeSubject(Request $request): JsonResponse
@@ -1013,31 +855,24 @@ class ApiLmsCourseController extends Controller
 
     public function getChapterConcepts(Request $request): JsonResponse
     {
-        $chapter_ids = $request->input('chapter_id', []);
-        if (is_string($chapter_ids)) {
-            $chapter_ids = $chapter_ids ? explode(',', $chapter_ids) : [];
-        }
-
-        $chapter_ids = array_filter(array_map('intval', (array) $chapter_ids));
-
-        $validator = Validator::make(['chapter_id' => $chapter_ids], [
-            'chapter_id' => 'required|array|min:1',
-            'chapter_id.*' => 'integer',
+        $validator = Validator::make($request->all(), [
+            'chapter_id' => 'required|integer',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'status_code' => 0,
-                'message' => 'Validation failed. At least one chapter_id is required.',
+                'message' => 'Validation failed.',
                 'errors' => $validator->errors()->messages(),
             ], 422);
         }
 
+        $chapter_id = (int) $request->input('chapter_id');
         $sub_institute_id = $request->input('sub_institute_id') ?? $this->sessionValue($request, 'sub_institute_id');
 
         $query = DB::table('lms_concept')
             ->select('*')
-            ->whereIn('chapter_id', $chapter_ids);
+            ->where('chapter_id', $chapter_id);
 
         if ($sub_institute_id) {
             $query->where('sub_institute_id', $sub_institute_id);
@@ -1049,7 +884,7 @@ class ApiLmsCourseController extends Controller
             'status_code' => 1,
             'message' => 'SUCCESS',
             'data' => $concepts,
-            'chapter_id' => $chapter_ids,
+            'chapter_id' => $chapter_id,
             'sub_institute_id' => $sub_institute_id,
             'total' => count($concepts),
         ], 200);
@@ -1070,8 +905,6 @@ class ApiLmsCourseController extends Controller
 
         $chapter_ids = $request->input('chapter_id', []);
         $concept_ids = $request->input('concept_id', []);
-        $dok_ids     = $request->input('dok_id', []);
-        $bloom_ids   = $request->input('bloom_id', []);
 
         if (is_string($chapter_ids)) {
             $chapter_ids = $chapter_ids ? explode(',', $chapter_ids) : [];
@@ -1079,17 +912,9 @@ class ApiLmsCourseController extends Controller
         if (is_string($concept_ids)) {
             $concept_ids = $concept_ids ? explode(',', $concept_ids) : [];
         }
-        if (is_string($dok_ids)) {
-            $dok_ids = $dok_ids ? explode(',', $dok_ids) : [];
-        }
-        if (is_string($bloom_ids)) {
-            $bloom_ids = $bloom_ids ? explode(',', $bloom_ids) : [];
-        }
 
         $chapter_ids = array_filter(array_map('intval', (array) $chapter_ids));
         $concept_ids = array_filter(array_map('intval', (array) $concept_ids));
-        $dok_ids     = array_filter(array_map('intval', (array) $dok_ids));
-        $bloom_ids   = array_filter(array_map('intval', (array) $bloom_ids));
 
         if (!$subject_id) {
             return response()->json([
@@ -1112,29 +937,6 @@ class ApiLmsCourseController extends Controller
             $query->whereIn('concept_id', $concept_ids);
         }
 
-        // DOK / Bloom filters: mapping_value_ids from lms_mapping_type
-        // (children of parents 9 = Depth of Knowledge, 82 = Blooms Taxonomy),
-        // matched through lms_question_mapping.
-        if (!empty($dok_ids)) {
-            $query->whereExists(function ($q) use ($dok_ids) {
-                $q->select(DB::raw(1))
-                    ->from('lms_question_mapping as qm_dok')
-                    ->whereColumn('qm_dok.questionmaster_id', 'lms_question_master.id')
-                    ->where('qm_dok.mapping_type_id', 9)
-                    ->whereIn('qm_dok.mapping_value_id', $dok_ids);
-            });
-        }
-
-        if (!empty($bloom_ids)) {
-            $query->whereExists(function ($q) use ($bloom_ids) {
-                $q->select(DB::raw(1))
-                    ->from('lms_question_mapping as qm_bloom')
-                    ->whereColumn('qm_bloom.questionmaster_id', 'lms_question_master.id')
-                    ->where('qm_bloom.mapping_type_id', 82)
-                    ->whereIn('qm_bloom.mapping_value_id', $bloom_ids);
-            });
-        }
-
         $questions = $query->get([
             'id', 'question_type_id', 'grade_id', 'standard_id',
             'subject_id', 'chapter_id', 'concept_id', 'topic_id',
@@ -1151,138 +953,6 @@ class ApiLmsCourseController extends Controller
             'subject_id' => $subject_id,
             'chapter_ids' => $chapter_ids,
             'concept_ids' => $concept_ids,
-            'dok_ids' => $dok_ids,
-            'bloom_ids' => $bloom_ids,
-        ], 200);
-    }
-
-    public function getQuestionBank(Request $request): JsonResponse
-    {
-        $chapterId = $request->input('chapter_id');
-        $topicId = $request->input('topic_id');
-        $questionType = $request->input('question_type');
-
-        if (!$chapterId) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Missing required field: chapter_id is required.',
-                'data' => [],
-            ], 422);
-        }
-
-        $query = lmsQuestionMasterModel::query()
-            ->where('chapter_id', $chapterId)
-            ->join('question_type_master', 'question_type_master.id', '=', 'lms_question_master.question_type_id')
-            ->select(
-                'lms_question_master.id',
-                'lms_question_master.chapter_id',
-                'lms_question_master.topic_id',
-                'lms_question_master.question_title',
-                'question_type_master.question_type',
-                'lms_question_master.points as marks',
-                'lms_question_master.answer as model_answer'
-            );
-
-        if ($topicId) {
-            $query->where('lms_question_master.topic_id', $topicId);
-        }
-
-        if ($questionType) {
-            if (is_numeric($questionType)) {
-                $query->where('lms_question_master.question_type_id', (int) $questionType);
-            } else {
-                $query->where('question_type_master.question_type', trim($questionType));
-            }
-        }
-
-        $questions = $query->orderByDesc('lms_question_master.id')->get()->toArray();
-
-        $questionIds = array_column($questions, 'id');
-        $optionsByQuestion = [];
-
-        if (!empty($questionIds)) {
-            $options = answermasterModel::whereIn('question_id', $questionIds)
-                ->orderBy('id')
-                ->get(['question_id', 'answer', 'correct_answer'])
-                ->toArray();
-
-            $labels = ['A', 'B', 'C', 'D', 'E', 'F'];
-            foreach ($options as $option) {
-                $qid = (int) $option['question_id'];
-                $idx = count($optionsByQuestion[$qid] ?? []);
-                $label = $labels[$idx] ?? chr(65 + $idx);
-
-                $optionsByQuestion[$qid][] = [
-                    'label' => $label,
-                    'text' => (string) $option['answer'],
-                    'is_correct' => (bool) $option['correct_answer'],
-                ];
-            }
-        }
-
-        $data = [];
-        foreach ($questions as $question) {
-            $qid = (int) $question['id'];
-            $questionTypeLabel = strtoupper((string) ($question['question_type'] ?? ''));
-            if ($questionTypeLabel === 'MCQ' || $questionTypeLabel === 'MULTIPLE_CHOICE') {
-                $questionTypeLabel = 'MCQ';
-            } elseif ($questionTypeLabel === 'NARRATIVE' || $questionTypeLabel === 'SUBJECTIVE') {
-                $questionTypeLabel = 'Narrative';
-            }
-
-            $data[] = [
-                'id' => (int) $question['id'],
-                'chapter_id' => (int) $question['chapter_id'],
-                'topic_id' => $question['topic_id'] !== null ? (int) $question['topic_id'] : null,
-                'question' => (string) ($question['question_title'] ?? ''),
-                'question_type' => $questionTypeLabel,
-                'options' => $optionsByQuestion[$qid] ?? [],
-                'model_answer' => $question['model_answer'] !== null ? (string) $question['model_answer'] : null,
-                'marks' => (int) ($question['marks'] ?? 1),
-            ];
-        }
-
-        return response()->json([
-            'status' => true,
-            'message' => 'Questions fetched successfully.',
-            'data' => $data,
-        ], 200);
-    }
-
-    /**
-     * GET /api/question-mapping-levels
-     *
-     * DOK and Bloom level options for question filtering, straight from
-     * lms_mapping_type (children of parent 9 = Depth of Knowledge and
-     * parent 82 = Blooms Taxonomy). Nothing is hardcoded client-side, so
-     * adding a new level row (e.g. a DOK level 4 label) shows up automatically.
-     */
-    public function getQuestionMappingLevels(): JsonResponse
-    {
-        $children = DB::table('lms_mapping_type')
-            ->whereIn('parent_id', [9, 82])
-            ->where('status', 1)
-            ->orderBy('id')
-            ->get(['id', 'name', 'parent_id']);
-
-        $dok = [];
-        $bloom = [];
-        foreach ($children as $child) {
-            $option = ['id' => (int) $child->id, 'name' => trim($child->name)];
-            if ((int) $child->parent_id === 9) {
-                $dok[] = $option;
-            } else {
-                $bloom[] = $option;
-            }
-        }
-
-        return response()->json([
-            'status_code' => 1,
-            'message' => 'SUCCESS',
-            'data' => [
-                'dok' => $dok,
-                'bloom' => $bloom,
-            ],
         ], 200);
     }
 }

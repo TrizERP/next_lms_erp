@@ -284,8 +284,35 @@ class studentInfirmaryController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
+        if (in_array($type, ["API", "JSON"])) {
+            $sub_institute_id = $request->sub_institute_id;
+            $syear = $request->syear;
+        }
         $req = $request->except('_token', '_method', 'submit');
         $marking_period_id = session()->get('term_id');
+
+        $allowedHealthTypes = ['student_infirmary', 'student_vaccination', 'student_height_weight', 'student_health'];
+        $req['health_type'] = $req['health_type'] ?? '';
+        $req['grade'] = $req['grade'] ?? '';
+        $req['standard'] = $req['standard'] ?? '';
+        $req['division'] = $req['division'] ?? '';
+        $req['from_date'] = $req['from_date'] ?? '';
+        $req['to_date'] = $req['to_date'] ?? '';
+
+        if (!in_array($req['health_type'], $allowedHealthTypes, true)) {
+            $res['status_code'] = 0;
+            $res['message'] = "Invalid health type";
+            $res['health_data'] = [];
+            $res['headers'] = [];
+            $res['grade_id'] = $req['grade'];
+            $res['standard_id'] = $req['standard'];
+            $res['division_id'] = $req['division'];
+            $res['health_type'] = $req['health_type'];
+            $res['from_date'] = $req['from_date'];
+            $res['to_date'] = $req['to_date'];
+
+            return is_mobile($type, "student/show_student_health_report", $res, "view");
+        }
 
         $result = DB::table($req['health_type']." as si")
             ->join('tblstudent as s', function ($join) use($marking_period_id){
@@ -320,8 +347,8 @@ class studentInfirmaryController extends Controller
         }
         if ($req['health_type'] == 'student_height_weight') {
             $headers['student_name'] = "Student Name";
-            $headers['doctor_name'] = get_string('doctorname_hw');
-            $headers['doctor_contact'] = get_string('doctorcontact_hw');
+            $headers['doctor_name'] = get_string('doctorname_hw', '', $sub_institute_id);
+            $headers['doctor_contact'] = get_string('doctorcontact_hw', '', $sub_institute_id);
             $headers['height'] = "Height";
             $headers['weight'] = "Weight";
         }

@@ -66,9 +66,16 @@ class ptmtimeslotmasterController extends Controller
 
     public function store(Request $request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id');
-        $syear = $request->session()->get('syear');
-        $created_by = $request->session()->get('user_id');
+        $type = $request->input('type');
+        if($type=="API"){
+            $sub_institute_id = $request->input('sub_institute_id');
+            $syear = $request->input('syear');
+            $created_by = $request->input('user_id');
+        }else{
+            $sub_institute_id = $request->session()->get('sub_institute_id');
+            $syear = $request->session()->get('syear');
+            $created_by = $request->session()->get('user_id');
+        }
         $created_on = date('Y-m-d');
         $created_ip = $_SERVER['REMOTE_ADDR'];
         $ptm_date = date('Y-m-d', strtotime($request->get('ptm_date')));

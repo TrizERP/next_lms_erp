@@ -52,7 +52,14 @@ class facultywisetimetableController extends Controller
         $get_teacher_name = DB::table('tbluser')
             ->selectRaw("id,CONCAT_WS(' ',first_name,middle_name,last_name) as teacher_name")
             ->where('id', $teacher_id)
-            ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
+            ->where('sub_institute_id', $sub_institute_id)->first();
+
+        if (!$get_teacher_name) {
+            return [
+                'status_code' => 0,
+                'message' => 'The selected teacher could not be found.',
+            ];
+        }
 
         $timetable_data_arr = timetableModel::select('timetable.*',
             'subject.subject_name', 'subject.subject_code', 'batch.title as batch_name', 'period.title as period_name',
@@ -134,7 +141,7 @@ else{
         $html .= '</td>';
         $html .= '</tr>';
         $html .= '<tr><td>&nbsp;</td></tr>';
-        $html .= '<tr><td>&nbsp;</td><td style="text-align:center !important;" align="center"><span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">Teacher Name : ' . $get_teacher_name[0]->teacher_name . '</span><br></td><td>&nbsp;</td></tr>';
+        $html .= '<tr><td>&nbsp;</td><td style="text-align:center !important;" align="center"><span style=" font-size: 18px;font-weight: 700;font-family: Arial, Helvetica, sans-serif !important">Teacher Name : ' . $get_teacher_name->teacher_name . '</span><br></td><td>&nbsp;</td></tr>';
         $html .= '</tbody>';
         $html .= '</table>';
         $html .= '<br>';

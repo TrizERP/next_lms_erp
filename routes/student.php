@@ -79,8 +79,11 @@ Route::group(['prefix' => 'student', 'middleware' => ['session', 'menu', 'logRou
     Route::resource('student_certificate', studentCertificateController::class);
     Route::resource('student_certificate_report', student_certificate_reportController::class);
     Route::resource('student_request', studentRequestController::class);
+    Route::post('student_request/{id}/status', [studentRequestController::class, 'updateStatus'])->name('student_request.status');
+    Route::get('student_request_fixed', [studentRequestController::class, 'indexFixed'])->name('student_request.index_fixed');
     Route::resource('student_strength_report', studentStrengthReportController::class);
     Route::resource('student_request_report', studentRequestReportController::class);
+    Route::get('student_request_report_fixed/create', [studentRequestReportController::class, 'createFixed'])->name('student_request_report.create_fixed');
     Route::resource('student_attendance', studentAttendanceController::class);
     Route::resource('student_graph_attendance', student_graph_attendanceController::class);
     Route::resource('student_fees_graph', student_fees_graphController::class);
@@ -198,7 +201,7 @@ Route::post('firstpage_school', [studentReportController::class, 'firstpage_scho
 Route::post('firstpage_student', [studentReportController::class, 'firstpage_student'])->name("firstpage_student")->middleware(['session', 'menu', 'logRoute']);
 Route::post('firstpage_teacher', [studentReportController::class, 'firstpage_teacher'])->name("firstpage_teacher")->middleware(['session', 'menu', 'logRoute']);
 
-Route::group(['prefix' => 'front_desk', 'middleware' => ['session', 'menu', 'logRoute']], function () {
+Route::group(['prefix' => 'front_desk', 'middleware' => ['api.session', 'session', 'menu', 'logRoute']], function () {
     Route::resource('parent_communication', parentCommunicationController::class);
     Route::resource('leave_application', leaveApplicationController::class);
     // Route::resource('circular', circularController::class);
