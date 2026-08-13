@@ -237,7 +237,7 @@ class resultActivityMasterController extends Controller
     }
 
     public function getActivityLists(Request $request){
-        $sub_institute_id = session()->get('sub_institute_id');
+        $sub_institute_id = $request->sub_institute_id ?: session()->get('sub_institute_id');
         $skill_id = $request->skill_id;
         $standard = $request->standard;
         $level=$request->level;
