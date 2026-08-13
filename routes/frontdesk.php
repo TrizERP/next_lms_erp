@@ -44,7 +44,7 @@ Route::group(['prefix' => 'frontdesk', 'middleware' => ['session', 'menu', 'logR
 	Route::get('generateSyllabus', [syllabusController::class, 'GenrateAISyllabus'])->name("generateSyllabus");
 });
 
-Route::group(['prefix' => 'front_desk', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
+Route::group(['prefix' => 'front_desk', 'middleware' => ['api.session', 'session', 'menu', 'logRoute','check_permissions']], function () {
 	Route::resource('timetableAI', timetableController::class);	
 	Route::resource('timetableAIV1', timetableAiController::class);	
 	Route::resource('create-timetable', oldtimetableController::class);
