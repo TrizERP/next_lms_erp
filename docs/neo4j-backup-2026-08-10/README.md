@@ -6,6 +6,57 @@ database `neo4j`, on 2026-08-10. Read-only export: nothing was written to Neo4j 
 This directory is the **only** record of the graph data that MariaDB cannot regenerate. Phase 3
 destroys the graph. Do not delete these files until the rebuild has been verified green.
 
+---
+
+## ⚠ AMENDMENT — 2026-08-10 (during Phase 1): the "re-derivable" rule was wrong for two labels
+
+The scope rule below skipped five high-volume sets as *"re-derivable from `vivek_erp`"*. Phase 1
+measured the source tables and found that assumption false for **`Chapter`** and **`Question`**:
+
+| Label | Nodes in the graph | Rows in the named source table | Verdict |
+|---|---:|---:|---|
+| `Chapter` | 5,536 | **99** (`chapter_master`) | **NOT re-derivable** |
+| `Question` | 94,052 | **62,209** (`lms_question_master`) | **NOT re-derivable** |
+| `Student` | 12,801 | 83,715 (`tblstudent`) | re-derivable, still skipped |
+| `Result` | 143,360 | 147,875 (`lms_online_exam`) | re-derivable, still skipped |
+| `StuDetail` | 4,609 | — | legacy D5, deliberately not rebuilt |
+
+`chapter_master` holds 99 rows. The graph holds **5,534 distinct `chId` values spanning 22–8574** —
+and only **13** of them still exist in MariaDB. The other **5,521 chapters exist nowhere else.**
+
+That matters because 95–99% of `lms_question_master`, `topic_master`, `content_master` and
+`lms_lesson_plan` carry `chapter_id` values that no longer resolve (classification finding F1). The
+graph's chapter set repairs most of that break:
+
+| Table | Dangling `chapter_id` rows | Recoverable from this backup | % |
+|---|---:|---:|---:|
+| `content_master` | 31,032 | 29,152 | **93.9%** |
+| `lms_lesson_plan` | 1,791 | 1,628 | **90.9%** |
+| `topic_master` | 13,479 | 9,893 | **73.4%** |
+| `lms_question_master` | 59,314 | 34,188 | **57.6%** |
+| **Total** | **105,616** | **74,861** | **70.9%** |
+
+Four files were therefore added on 2026-08-10, exported read-only from the same live graph:
+
+| Item | Kind | Graph count | File | Rows written | Size |
+|---|---|---:|---|---:|---:|
+| Chapter | node | 5,536 | `nodes_Chapter.csv` | 5,536 | 0.5 MB |
+| Question | node | 94,052 | `nodes_Question.csv` | 94,052 | 18.0 MB |
+| BELONGS_TO | rel | 86,265 | `rels_BELONGS_TO.csv` | 86,265 | 26.6 MB |
+| HAS_CHAPTER | rel | 2,016 | `rels_HAS_CHAPTER.csv` | 2,016 | 0.6 MB |
+
+`BELONGS_TO` is `(:Question)-[:BELONGS_TO]->(:Chapter)` across 2,319 distinct chapters — it is the
+question-to-chapter mapping MariaDB has lost, and it is the reason this amendment exists.
+`HAS_CHAPTER` is `(:Subject)-[:HAS_CHAPTER]->(:Chapter)` (2,001) and `(:Unit)-[…]->(:Chapter)` (15).
+
+All four were row-count verified against the graph and re-read off disk with no ragged rows.
+**Nothing was written to Neo4j or MariaDB.**
+
+> The original manifest rows for `Chapter`, `Question` and `BELONGS_TO` further down this file are
+> left unedited on purpose — they record what was believed at the time. This section supersedes them.
+
+---
+
 ## Scope rule
 
 Every label with **< 1,000 nodes** and every relationship type with **< 1,000 edges** was exported in

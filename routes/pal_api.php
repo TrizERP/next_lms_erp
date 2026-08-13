@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\api\PAL\PALAPIController;
+use App\Http\Controllers\api\PAL\PalContentIntelligenceController;
 use App\Http\Controllers\api\PAL\PalWorkspaceController;
 
 /*
@@ -88,8 +89,65 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
     Route::post('/ai/teacher-insights', [PALAPIController::class, 'getTeacherInsights']);
     
     // ==================== METACOGNITION ====================
-    
+
     // Metacognition APIs
     Route::get('/metacognition/prompts/{learnerId}', [PALAPIController::class, 'getMetacognitivePrompts']);
     Route::post('/metacognition/reflect', [PALAPIController::class, 'recordReflection']);
+
+    // ==================== CONTENT INTELLIGENCE LAYER (PAL V4 spec) ====================
+    //
+    // The 4-type content model, 30+ field metadata schema, 5-level Bloom ladder,
+    // misconception library and the authoring/review workflow.
+    //
+    // Route ordering note: every literal segment is declared BEFORE the wildcard
+    // that could swallow it, and each numeric wildcard is constrained to digits —
+    // the same collision guard the /workspace routes above use.
+    //
+    // The pre-existing GET /content/variants/{conceptId} (PALAPIController) is
+    // left untouched; the variant-coverage view below is a different endpoint on
+    // a different path so nothing that already calls the old one breaks.
+
+    // Vocabulary — every dropdown in the authoring UI reads this (spec §9.1)
+    Route::get('/content/vocabulary', [PalContentIntelligenceController::class, 'vocabulary']);
+
+    // Coverage / monitoring (spec §7.3)
+    Route::get('/content/coverage', [PalContentIntelligenceController::class, 'coverage']);
+
+    // Bloom ladder (spec §3) — literals first, {conceptId} constrained to digits
+    Route::post('/content/ladder/evaluate', [PalContentIntelligenceController::class, 'evaluateLadder']);
+    Route::post('/content/ladder/regression', [PalContentIntelligenceController::class, 'checkRegression']);
+    Route::get('/content/ladder/{conceptId}', [PalContentIntelligenceController::class, 'ladder'])
+        ->where('conceptId', '[0-9]+');
+    Route::get('/content/practice/{learnerId}/{conceptId}', [PalContentIntelligenceController::class, 'practiceItems'])
+        ->where(['learnerId' => '[0-9]+', 'conceptId' => '[0-9]+']);
+
+    // Variant routing (spec §2, CONTENT LAW C7)
+    Route::post('/content/next-variant', [PalContentIntelligenceController::class, 'nextVariant']);
+    Route::get('/content/variant-coverage/{conceptId}', [PalContentIntelligenceController::class, 'variants'])
+        ->where('conceptId', '[0-9]+');
+
+    // Misconception library (spec §4) — singular /misconception/* are the
+    // pipeline verbs, plural /misconceptions/* are the library CRUD.
+    Route::post('/content/misconception/detect', [PalContentIntelligenceController::class, 'detect']);
+    Route::post('/content/misconception/outcome', [PalContentIntelligenceController::class, 'recordOutcome']);
+    Route::post('/content/misconception/class-prevalence', [PalContentIntelligenceController::class, 'classPrevalence']);
+    Route::get('/content/misconception/health', [PalContentIntelligenceController::class, 'libraryHealth']);
+
+    Route::get('/content/misconceptions', [PalContentIntelligenceController::class, 'listMisconceptions']);
+    Route::post('/content/misconceptions', [PalContentIntelligenceController::class, 'storeMisconception']);
+    Route::get('/content/misconceptions/{id}', [PalContentIntelligenceController::class, 'showMisconception'])
+        ->where('id', '[0-9]+');
+    Route::post('/content/misconceptions/{id}/correctives', [PalContentIntelligenceController::class, 'storeCorrective'])
+        ->where('id', '[0-9]+');
+
+    // Authoring + QA review console (spec §7.1, §9.1)
+    Route::get('/content/review-queue/{entityType}', [PalContentIntelligenceController::class, 'reviewQueue']);
+    Route::post('/content/review/{entityType}/bulk', [PalContentIntelligenceController::class, 'bulkTransition']);
+    Route::post('/content/review/{entityType}/{metadataId}', [PalContentIntelligenceController::class, 'transition'])
+        ->where('metadataId', '[0-9]+');
+
+    Route::get('/content/metadata/{entityType}/{entityId}', [PalContentIntelligenceController::class, 'show'])
+        ->where('entityId', '[0-9]+');
+    Route::post('/content/metadata/{entityType}/{entityId}', [PalContentIntelligenceController::class, 'upsert'])
+        ->where('entityId', '[0-9]+');
 });

@@ -1,0 +1,4822 @@
+{
+    "10_05_question_master": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "academic_section": {
+        "quoted": 142,
+        "bare": 395,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/AcademicSetupApiController.php",
+            "app/Http/Controllers/api/apiController.php",
+            "app/Http/Controllers/api/ApiLmsCourseController.php",
+            "app/Http/Controllers/api/ApiQuestionPaperController.php"
+        ]
+    },
+    "academic_year": {
+        "quoted": 227,
+        "bare": 321,
+        "files": [
+            "app/Console/Commands/cnsports/academicYearCommand.php",
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/admission/admissionEnquiryController.php",
+            "app/Http/Controllers/api/AcademicSetupApiController.php",
+            "app/Http/Controllers/api/adminapiController.php",
+            "app/Http/Controllers/api/apiController.php"
+        ]
+    },
+    "access_log": {
+        "quoted": 4,
+        "bare": 6,
+        "files": [
+            "database/migrations/2023_03_05_115658_create_access_log_table.php",
+            "database/migrations/2023_05_10_233617_add_foreign_key_into_access_log_route_table.php"
+        ]
+    },
+    "access_log_route": {
+        "quoted": 6,
+        "bare": 10,
+        "files": [
+            "app/Http/Controllers/front_desk/user_log/user_logController.php",
+            "app/Models/Accesslog.php",
+            "database/migrations/2023_03_05_115658_create_access_log_route_table.php",
+            "database/migrations/2023_05_10_233617_add_foreign_key_into_access_log_route_table.php"
+        ]
+    },
+    "activity_log": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "database/migrations/2023_03_05_115658_create_activity_log_table.php",
+            "database/migrations/2023_05_10_233617_add_foreign_key_into_access_log_route_table.php"
+        ]
+    },
+    "admission_age_validation": {
+        "quoted": 6,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/admission/admissionMasterController.php",
+            "database/migrations/2025_08_12_161202_create_admission_age_validation_table.php"
+        ]
+    },
+    "admission_category_master": {
+        "quoted": 12,
+        "bare": 12,
+        "files": [
+            "app/Http/Controllers/api/HostelSetupApiController.php",
+            "app/Http/Controllers/hostel_management/admission_category_masterController.php",
+            "app/Models/hostel_management/admission_category_masterModel.php",
+            "database/migrations/2023_03_05_115658_create_admission_category_master_table.php",
+            "database/migrations/2023_06_10_233617_add_foreign_key_into_fees_refund_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "admission_enquiry": {
+        "quoted": 82,
+        "bare": 164,
+        "files": [
+            "app/Http/Controllers/admission/admissionEnquiryController.php",
+            "app/Http/Controllers/admission/admissionMasterController.php",
+            "app/Http/Controllers/admission/admissionReportController.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/student/InactiveStudentReportController.php"
+        ]
+    },
+    "admission_form": {
+        "quoted": 14,
+        "bare": 32,
+        "files": [
+            "app/Http/Controllers/admission/admissionFormController.php",
+            "app/Http/Controllers/admission/admissionMasterController.php",
+            "app/Http/Controllers/admission/admissionReportController.php",
+            "app/Models/admission/admissionFormModel.php",
+            "resources/views/admission/master/add.blade.php",
+            "database/migrations/2023_03_05_115658_create_admission_form_table.php"
+        ]
+    },
+    "admission_registration": {
+        "quoted": 25,
+        "bare": 49,
+        "files": [
+            "app/Http/Controllers/admission/admissionMasterController.php",
+            "app/Http/Controllers/admission/admissionRegistrationController.php",
+            "app/Http/Controllers/admission/admissionReportController.php",
+            "app/Http/Controllers/api/admissionRegistrationAPIController.php",
+            "app/Http/Controllers/settings/conversationalAIController.php",
+            "app/Http/Livewire/ConversationalAIV2.php"
+        ]
+    },
+    "admission_registration_v1": {
+        "quoted": 8,
+        "bare": 15,
+        "files": [
+            "app/Http/Controllers/admission/admissionRegistrationHillController.php",
+            "routes/admission.php",
+            "database/migrations/2024_10_08_151046_create_admission_registration_v1.php",
+            "database/migrations/2024_10_15_171850_add_column_registration_hills.php"
+        ]
+    },
+    "ai_api_keys": {
+        "quoted": 7,
+        "bare": 10,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Services/OpenAIService.php",
+            "app/Services/QuestionGenerationService.php",
+            "database/migrations/2026_04_28_145954_create_ai_api_keys_table.php",
+            "config/deepseek.php"
+        ]
+    },
+    "ai_daily_used_api": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2026_02_21_145636_create_ai_daily_used_api_table.php"
+        ]
+    },
+    "ai_interaction_logs": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Http/Controllers/api/lms/StudentHomeworkApiController.php",
+            "app/Http/Controllers/student/studentHomeworkSubmissionController.php",
+            "database/migrations/2026_02_18_122332_create_ai_interaction_logs_table.php"
+        ]
+    },
+    "ai_sops": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/AiSop.php",
+            "database/migrations/2026_07_17_000001_create_ai_sops_table.php"
+        ]
+    },
+    "announcement": {
+        "quoted": 16,
+        "bare": 36,
+        "files": [
+            "app/Http/Controllers/settings/announcementController.php",
+            "app/Http/Controllers/settings/conversationalAIController.php",
+            "app/Http/Livewire/ConversationalAIV2.php",
+            "routes/result.php",
+            "resources/views/livewire/conversational-a-i-v2.blade.php",
+            "database/migrations/2024_05_09_135148_create_announcement_table.php"
+        ]
+    },
+    "answer_master": {
+        "quoted": 29,
+        "bare": 36,
+        "files": [
+            "app/Http/Controllers/api/ApiQuestionPaperController.php",
+            "app/Http/Controllers/api/teacherapiController.php",
+            "app/Http/Controllers/lms/assessmentQuestionController.php",
+            "app/Http/Controllers/lms/counselling/counselling_questionmasterController.php",
+            "app/Http/Controllers/lms/lms_apiController.php",
+            "app/Http/Controllers/lms/onlineExamController.php"
+        ]
+    },
+    "api_details": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2026_02_21_145542_create_api_details_table.php"
+        ]
+    },
+    "application_forms": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_03_05_115658_create_application_forms_table.php"
+        ]
+    },
+    "app_language": {
+        "quoted": 12,
+        "bare": 12,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Models/normClature.php",
+            "resources/views/norm_cluter/show.blade.php",
+            "resources/views/student/inactive_student_report.blade.php",
+            "resources/views/student/show_student_report.blade.php",
+            "resources/views/user/show_user_report.blade.php"
+        ]
+    },
+    "app_notification": {
+        "quoted": 9,
+        "bare": 11,
+        "files": [
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/easy_com/send_sms_staff/send_sms_staff_controller.php",
+            "app/Http/Controllers/student/tblstudentController.php",
+            "app/Models/student/appNotificationModel.php",
+            "database/migrations/2023_03_05_115658_create_app_notification_table.php",
+            "database/migrations/2023_05_10_233617_add_foreign_key_into_access_log_route_table.php"
+        ]
+    },
+    "app_notification_teacher": {
+        "quoted": 4,
+        "bare": 5,
+        "files": [
+            "database/migrations/2023_03_05_115658_create_app_notification_teacher_table.php",
+            "database/migrations/2023_05_10_233617_add_foreign_key_into_access_log_route_table.php"
+        ]
+    },
+    "attendance_json_result": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/attendanceJsonResultModel.php",
+            "database/migrations/2023_03_05_115658_create_attendance_json_result_table.php"
+        ]
+    },
+    "attendance_student": {
+        "quoted": 26,
+        "bare": 45,
+        "files": [
+            "app/Http/Controllers/api/TeacherDailyReportApiController.php",
+            "app/Http/Controllers/front_desk/classFaceAttendanceController.php",
+            "app/Http/Controllers/result/classwiseGradeReportController.php",
+            "app/Http/Controllers/school_setup/erpstatusController.php",
+            "app/Http/Controllers/school_setup/teacherdailyReportController.php",
+            "app/Http/Controllers/student/studentAttendanceController.php"
+        ]
+    },
+    "bank_master": {
+        "quoted": 4,
+        "bare": 29,
+        "files": [
+            "app/Models/fees/bank_master/bankmasterModel.php",
+            "routes/fees.php",
+            "database/migrations/2023_03_05_115658_create_bank_master_table.php"
+        ]
+    },
+    "batch": {
+        "quoted": 79,
+        "bare": 275,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/api/AcademicSetupApiController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/fees/fees_reconciliation/fees_reconciliation_upload_sheet_controller.php",
+            "app/Http/Controllers/fees/fees_report/feesPayoutController.php",
+            "app/Http/Controllers/fees/online_fees/online_fees_collect_controller.php"
+        ]
+    },
+    "biomatrix": {
+        "quoted": 15,
+        "bare": 34,
+        "files": [
+            "app/Http/Controllers/api/MigrationModulesApiController.php",
+            "app/Http/Controllers/settings/biomatrixController.php",
+            "routes/settings.php",
+            "database/migrations/2023_03_05_115658_create_biomatrix_table.php"
+        ]
+    },
+    "blogs": {
+        "quoted": 4,
+        "bare": 30,
+        "files": [
+            "app/Http/Controllers/BlogController.php",
+            "routes/web.php",
+            "database/migrations/2025_06_06_070606_create_blogs_table.php"
+        ]
+    },
+    "blood_group": {
+        "quoted": 45,
+        "bare": 53,
+        "files": [
+            "app/Http/Controllers/admission/admissionMasterController.php",
+            "app/Http/Controllers/admission/admissionRegistrationController.php",
+            "app/Http/Controllers/api/admissionRegistrationAPIController.php",
+            "app/Http/Controllers/api/BulkStudentApiController.php",
+            "app/Http/Controllers/api/DocumentTemplateApiController.php",
+            "app/Http/Controllers/api/StudentSearchApiController.php"
+        ]
+    },
+    "book_list": {
+        "quoted": 11,
+        "bare": 32,
+        "files": [
+            "app/Http/Controllers/front_desk/book_list/book_listController.php",
+            "routes/frontdesk.php",
+            "resources/views/lms/show_chapter.blade.php",
+            "resources/views/lms/show_course.blade.php",
+            "resources/views/lms/show_topic.blade.php",
+            "database/migrations/2023_03_05_115658_create_book_list_table.php"
+        ]
+    },
+    "calendar_events": {
+        "quoted": 18,
+        "bare": 30,
+        "files": [
+            "app/Http/Controllers/admission/admissionEnquiryController.php",
+            "app/Http/Controllers/calendar/calendar/calendar_controller.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/school_setup/erpstatusController.php",
+            "app/Http/Controllers/student/studentAttendanceController.php",
+            "app/Models/calendar/calendar/calendar.php"
+        ]
+    },
+    "cast": {
+        "quoted": 73,
+        "bare": 196,
+        "files": [
+            "app/Http/Controllers/admission/admissionMasterController.php",
+            "app/Http/Controllers/admission/admissionRegistrationController.php",
+            "app/Http/Controllers/admission/onlineAdmissionConfirmController.php",
+            "app/Http/Controllers/api/admissionRegistrationAPIController.php",
+            "app/Http/Controllers/front_desk/castController.php",
+            "app/Http/Controllers/student/bulkStudentController.php"
+        ]
+    },
+    "caste": {
+        "quoted": 15,
+        "bare": 42,
+        "files": [
+            "app/Http/Controllers/api/DocumentTemplateApiController.php",
+            "app/Http/Controllers/student/InactiveStudentReportController.php",
+            "app/Http/Controllers/student/studentReportController.php",
+            "app/Http/Controllers/student/studentStrengthReportController.php",
+            "app/Models/castModel.php",
+            "app/Models/school_setup/casteModel.php"
+        ]
+    },
+    "certificate_history": {
+        "quoted": 10,
+        "bare": 17,
+        "files": [
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/school_setup/erpstatusController.php",
+            "app/Http/Controllers/student/studentCertificateController.php",
+            "app/Http/Controllers/student/student_certificate_reportController.php",
+            "database/migrations/2023_03_05_115658_create_certificate_history_table.php",
+            "database/migrations/2023_05_10_233617_add_foreign_key_into_batch_table.php"
+        ]
+    },
+    "chapter_master": {
+        "quoted": 94,
+        "bare": 329,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/ApiLmsCourseController.php",
+            "app/Http/Controllers/api/ApiQuestionPaperController.php",
+            "app/Http/Controllers/api/GeneralSetupApiController.php",
+            "app/Http/Controllers/api/lms/StudentHomeworkApiController.php"
+        ]
+    },
+    "chapter_topic_master": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "circular": {
+        "quoted": 34,
+        "bare": 200,
+        "files": [
+            "app/Http/Controllers/api/DocumentTemplateApiController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/front_desk/circular/circularController.php",
+            "app/Http/Controllers/MIS/MisSummaryController.php",
+            "app/Http/Controllers/report/dynamic_report/dynamic_report_controller.php",
+            "app/Http/Controllers/school_setup/erpstatusController.php"
+        ]
+    },
+    "circular_type": {
+        "quoted": 10,
+        "bare": 19,
+        "files": [
+            "app/Http/Controllers/front_desk/circular/circularController.php",
+            "app/Http/Controllers/front_desk/circular/CircularReportController.php",
+            "resources/views/front_desk/circular/show.blade.php",
+            "database/migrations/2023_03_05_115658_create_circular_type_table.php"
+        ]
+    },
+    "classwork_attachment": {
+        "quoted": 3,
+        "bare": 7,
+        "files": [
+            "app/Models/front_desk/classWorkModel.php",
+            "database/migrations/2025_07_14_111129_create_classwork_attachment_table.php"
+        ]
+    },
+    "class_teacher": {
+        "quoted": 35,
+        "bare": 69,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/ApiLoginController.php",
+            "app/Http/Controllers/front_desk/leave_application/leaveApplicationController.php",
+            "app/Http/Controllers/lms/lmsActivityStreamController.php",
+            "app/Http/Controllers/loginController.php"
+        ]
+    },
+    "college_timetable": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "database/migrations/2023_03_05_115658_create_college_timetable_table.php",
+            "database/migrations/2023_05_10_233617_add_foreign_key_into_batch_table.php"
+        ]
+    },
+    "complaint": {
+        "quoted": 35,
+        "bare": 97,
+        "files": [
+            "app/Http/Controllers/api/ComplaintApiController.php",
+            "app/Http/Controllers/api/StudentInfirmaryApiController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/student/studentInfirmaryController.php",
+            "app/Http/Controllers/used_storage_graphController.php",
+            "app/Models/frontdesk/complaintModel.php"
+        ]
+    },
+    "complaint_status": {
+        "quoted": 10,
+        "bare": 11,
+        "files": [
+            "app/Http/Controllers/api/ComplaintApiController.php",
+            "app/Http/Controllers/frontdesk/complaintController.php",
+            "app/Http/Controllers/frontdesk/taskController.php",
+            "app/Http/Controllers/implementation/frontdesk/complaintController.php",
+            "app/Http/Controllers/implementation/frontdesk/taskController.php",
+            "database/migrations/2023_03_05_115658_create_complaint_status_table.php"
+        ]
+    },
+    "consent_master": {
+        "quoted": 8,
+        "bare": 12,
+        "files": [
+            "app/Http/Controllers/api/ConsentApiController.php",
+            "app/Http/Controllers/consent/consent_masterController.php",
+            "app/Models/consent/consent_masterModel.php",
+            "database/migrations/2023_03_05_115658_create_consent_master_table.php",
+            "database/migrations/2023_05_10_233617_add_foreign_key_into_batch_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "contents": {
+        "quoted": 31,
+        "bare": 389,
+        "files": [
+            "app/Http/Controllers/api/AiSopGenerationController.php",
+            "app/Http/Controllers/api/apiController.php",
+            "app/Http/Controllers/api/lms/StudentHomeworkApiController.php",
+            "app/Http/Controllers/api/teacherapiController.php",
+            "app/Http/Controllers/front_desk/classFaceAttendanceController.php",
+            "app/Http/Controllers/lms/contentController.php"
+        ]
+    },
+    "content_mapping_type": {
+        "quoted": 11,
+        "bare": 22,
+        "files": [
+            "app/Http/Controllers/lms/chapterController.php",
+            "app/Http/Controllers/lms/contentController.php",
+            "app/Http/Controllers/lms/pal/palController.php",
+            "app/Http/Controllers/lms/virtualclassroomController.php",
+            "app/Models/lms/contentmappingtypeModel.php",
+            "app/Services/PAL/Integration/PedagogySuggestedContentService.php"
+        ]
+    },
+    "content_master": {
+        "quoted": 104,
+        "bare": 257,
+        "files": [
+            "app/Http/Controllers/api/ApiLmsCourseController.php",
+            "app/Http/Controllers/api/teacherapiController.php",
+            "app/Http/Controllers/lms/chapterController.php",
+            "app/Http/Controllers/lms/contentController.php",
+            "app/Http/Controllers/lms/content_library/contentLibraryController.php",
+            "app/Http/Controllers/lms/content_library/contentLibraryControllerOld.php"
+        ]
+    },
+    "counselling_answer_master": {
+        "quoted": 7,
+        "bare": 7,
+        "files": [
+            "app/Http/Controllers/lms/counselling/counsellingExamController.php",
+            "app/Models/lms/counselling/counsellingAnswerModel.php",
+            "database/migrations/2023_03_05_115658_create_counselling_answer_master_table.php",
+            "database/migrations/2023_05_10_233617_add_foreign_key_into_batch_table.php"
+        ]
+    },
+    "counselling_course": {
+        "quoted": 7,
+        "bare": 18,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php",
+            "app/Models/lms/counselling/counsellingCourseModel.php",
+            "resources/views/lms/counselling/show_lmsCounselling.blade.php",
+            "database/migrations/2023_03_05_115658_create_counselling_course_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "counselling_online_exam": {
+        "quoted": 6,
+        "bare": 11,
+        "files": [
+            "app/Models/lms/counselling/counsellingOnlineExamModel.php",
+            "database/migrations/2023_03_05_115658_create_counselling_online_exam_table.php",
+            "database/migrations/2023_05_10_233617_add_foreign_key_into_batch_table.php"
+        ]
+    },
+    "counselling_online_exam_answer": {
+        "quoted": 6,
+        "bare": 6,
+        "files": [
+            "app/Http/Controllers/lms/counselling/counsellingExamController.php",
+            "app/Models/lms/counselling/counsellingOnlineExamAnswerModel.php",
+            "database/migrations/2023_03_05_115658_create_counselling_online_exam_answer_table.php",
+            "database/migrations/2023_05_10_233617_add_foreign_key_into_batch_table.php"
+        ]
+    },
+    "counselling_question_mapping": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/lms/counselling/counsellingQuestionMappingModel.php",
+            "database/migrations/2023_03_05_115658_create_counselling_question_mapping_table.php"
+        ]
+    },
+    "counselling_question_master": {
+        "quoted": 6,
+        "bare": 18,
+        "files": [
+            "app/Http/Controllers/lms/counselling/counsellingExamController.php",
+            "app/Models/lms/counselling/counsellingQuestionModel.php",
+            "database/migrations/2023_03_05_115658_create_counselling_question_master_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "create_timetable": {
+        "quoted": 4,
+        "bare": 21,
+        "files": [
+            "app/Http/Controllers/front_desk/timetableController.php",
+            "app/Models/front_desk/create_timetable.php",
+            "database/migrations/2024_03_21_102237_create_create_timetable.php"
+        ]
+    },
+    "csv_data": {
+        "quoted": 12,
+        "bare": 24,
+        "files": [
+            "app/Http/Controllers/Import/ImportController.php",
+            "app/Models/CsvData.php",
+            "database/migrations/2023_05_04_075127_create_csv_data_table.php"
+        ]
+    },
+    "custom_module_tables": {
+        "quoted": 8,
+        "bare": 9,
+        "files": [
+            "routes/custom_module.php",
+            "database/migrations/2024_07_22_140001_create_custom_module_tables_table.php",
+            "database/migrations/2024_07_22_140116_create_custom_module_table_columns_table.php",
+            "database/migrations/2024_08_28_171253_add_column_to_custom_module_tables.php",
+            "database/migrations/2025_04_22_141034_add_columns_custom_module_tables.php"
+        ]
+    },
+    "custom_module_table_columns": {
+        "quoted": 15,
+        "bare": 15,
+        "files": [
+            "app/Http/Controllers/custom_module/CustomModuleController.php",
+            "database/migrations/2024_07_22_140116_create_custom_module_table_columns_table.php",
+            "database/migrations/2024_11_14_195000_add_column_to_custom_module_table_columns.php"
+        ]
+    },
+    "dashboard_master": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_03_05_115658_create_dashboard_master_table.php"
+        ]
+    },
+    "dicipline": {
+        "quoted": 25,
+        "bare": 71,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/result/DropdownApiController.php",
+            "app/Http/Controllers/api/StudentCareApiController.php",
+            "app/Http/Controllers/api/teacherapiController.php",
+            "app/Http/Controllers/dashboardController.php"
+        ]
+    },
+    "dicipline_dd": {
+        "quoted": 7,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/front_desk/dicipline/diciplineController.php",
+            "app/Models/front_desk/dicipline/diciplineDD.php",
+            "database/migrations/2023_03_05_115658_create_dicipline_dd_table.php",
+            "database/migrations/2025_04_21_113738_add_columns_dicipline_dd.php"
+        ]
+    },
+    "dicipline_master": {
+        "quoted": 3,
+        "bare": 11,
+        "files": [
+            "app/Models/front_desk/dicipline/diciplineMaster.php",
+            "database/migrations/2025_04_21_113126_create_dicipline_master_table.php"
+        ]
+    },
+    "division": {
+        "quoted": 583,
+        "bare": 1837,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/admission/admissionRegistrationController.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/AcademicSetupApiController.php",
+            "app/Http/Controllers/api/adminapiController.php",
+            "app/Http/Controllers/api/admissionRegistrationAPIController.php"
+        ]
+    },
+    "division_capacity_master": {
+        "quoted": 19,
+        "bare": 33,
+        "files": [
+            "app/Http/Controllers/api/AcademicSetupApiController.php",
+            "app/Http/Controllers/student/rollOverController.php",
+            "app/Models/school_setup/divisionCapacityMasterModel.php",
+            "routes/web.php",
+            "database/migrations/2023_03_05_115658_create_division_capacity_master_table.php"
+        ]
+    },
+    "document_extractions": {
+        "quoted": 4,
+        "bare": 6,
+        "files": [
+            "database/migrations/2026_05_30_114503_create_document_extractions_table.php",
+            "database/migrations/2026_06_08_000001_add_standard_subject_chapter_and_sub_institute_id_to_document_extractions_table.php"
+        ]
+    },
+    "document_templates": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/DocumentTemplate.php",
+            "database/migrations/2026_07_29_000001_create_document_templates_table.php",
+            "database/migrations/2026_07_29_000002_create_document_template_versions_table.php"
+        ]
+    },
+    "document_template_versions": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/DocumentTemplateVersion.php",
+            "database/migrations/2026_07_29_000002_create_document_template_versions_table.php"
+        ]
+    },
+    "donation_collection": {
+        "quoted": 9,
+        "bare": 18,
+        "files": [
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/custom_module/customMapModule/donationController.php",
+            "app/Models/custom_module/customMapModule/donationModel.php",
+            "routes/custom_module.php",
+            "database/migrations/2025_04_10_111831_create_donation_collection_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "dynamic_dashboard": {
+        "quoted": 8,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/school_setup/dashboardSettingController.php",
+            "database/migrations/2023_03_05_115658_create_dynamic_dashboard_table.php"
+        ]
+    },
+    "email_sent_parents": {
+        "quoted": 10,
+        "bare": 11,
+        "files": [
+            "app/Http/Controllers/admission/admissionRegistrationHillController.php",
+            "app/Http/Controllers/api/adminapiController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/easy_com/send_email_other/send_email_other_controller.php",
+            "app/Http/Controllers/easy_com/send_email_parents/send_email_parents_controller.php",
+            "app/Http/Controllers/easy_com/send_email_report/send_email_report_controller.php"
+        ]
+    },
+    "employee_monthly_salary_data": {
+        "quoted": 6,
+        "bare": 18,
+        "files": [
+            "app/Http/Controllers/Payroll/PayrollController.php",
+            "database/migrations/2023_05_13_172418_create_employee_monthly_salary_data_table.php"
+        ]
+    },
+    "employee_salary_structures": {
+        "quoted": 6,
+        "bare": 16,
+        "files": [
+            "app/Http/Controllers/Payroll/PayrollController.php",
+            "app/Http/Controllers/user/tbluserController.php",
+            "database/migrations/2023_05_08_165717_create_employee_salary_structures_table.php",
+            "database/migrations/2023_05_12_075237_add_column_to_employee_salary_structures_table.php"
+        ]
+    },
+    "enrollment_prefix_master": {
+        "quoted": 16,
+        "bare": 22,
+        "files": [
+            "app/Http/Controllers/admission/admissionRegistrationController.php",
+            "app/Http/Controllers/api/admissionRegistrationAPIController.php",
+            "database/migrations/2023_03_05_115658_create_enrollment_prefix_master_table.php"
+        ]
+    },
+    "erptour": {
+        "quoted": 31,
+        "bare": 33,
+        "files": [
+            "app/Http/Controllers/api/OnboardingApiController.php",
+            "app/Http/Controllers/loginController.php",
+            "app/Http/Controllers/tourController.php",
+            "app/Http/Middleware/checkPermission.php",
+            "app/Models/tourModel.php",
+            "resources/views/chart_home.blade.php"
+        ]
+    },
+    "erp_status": {
+        "quoted": 11,
+        "bare": 29,
+        "files": [
+            "app/Http/Controllers/school_setup/erpstatusController.php",
+            "routes/web.php",
+            "resources/views/erpstatus.blade.php",
+            "database/migrations/2023_03_05_115658_create_erp_status_table.php"
+        ]
+    },
+    "ERR_LOG": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/errLog.php",
+            "database/migrations/2023_03_05_115658_create_err_log_table.php"
+        ]
+    },
+    "exam_schedule": {
+        "quoted": 16,
+        "bare": 34,
+        "files": [
+            "app/Http/Controllers/api/teacherapiController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/front_desk/exam_schedule/exam_scheduleController.php",
+            "app/Http/Controllers/used_storage_graphController.php",
+            "routes/student.php",
+            "database/migrations/2023_03_05_115658_create_exam_schedule_table.php"
+        ]
+    },
+    "fees_aggre_pay": {
+        "quoted": 6,
+        "bare": 6,
+        "files": [
+            "app/Http/Controllers/fees/online_fees/online_fees_collect_controller.php",
+            "app/Http/Controllers/fees/online_fees/online_fees_settigs_controller.php",
+            "database/migrations/2023_03_05_115658_create_fees_aggre_pay_table.php"
+        ]
+    },
+    "fees_axis": {
+        "quoted": 6,
+        "bare": 6,
+        "files": [
+            "app/Http/Controllers/fees/online_fees/online_fees_collect_controller.php",
+            "app/Http/Controllers/fees/online_fees/online_fees_settigs_controller.php",
+            "database/migrations/2023_03_05_115658_create_fees_axis_table.php"
+        ]
+    },
+    "fees_breackoff": {
+        "quoted": 53,
+        "bare": 114,
+        "files": [
+            "app/Console/Commands/cnsports/FeesBreakOff.php",
+            "app/Http/Controllers/fees/fees_breackoff/fees_breackoff_controller.php",
+            "app/Http/Controllers/fees/fees_breackoff/monthlyBreakoffController.php",
+            "app/Http/Controllers/fees/fees_report/feesOverallHeadwisePendingReportController.php",
+            "app/Http/Controllers/fees/fees_report/feesStructureReportController.php",
+            "app/Http/Controllers/fees/NACH/s3excel_exportController.php"
+        ]
+    },
+    "fees_breackoff_logs": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Http/Controllers/student/studentBulkUpdateController.php",
+            "database/migrations/2023_07_27_154103_create_fees_breackoff_logs_table.php"
+        ]
+    },
+    "fees_breakoff_other": {
+        "quoted": 18,
+        "bare": 24,
+        "files": [
+            "app/Console/Commands/cnsports/FeesBreakoffOther.php",
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/fees/fees_collect/fees_collect_controller.php",
+            "app/Http/Controllers/fees/fees_report/feesOverallHeadwisePendingReportController.php",
+            "app/Http/Controllers/fees/other_fee_map/other_fee_map_controller.php",
+            "database/migrations/2023_03_05_115658_create_fees_breakoff_other_table.php"
+        ]
+    },
+    "fees_cancel": {
+        "quoted": 13,
+        "bare": 44,
+        "files": [
+            "app/Console/Commands/cnsports/FeesCancel.php",
+            "app/Http/Controllers/fees/fees_cancel/feesCancelController.php",
+            "app/Http/Controllers/fees/fees_circular/feesCircularController.php",
+            "app/Http/Controllers/fees/fees_collect/fees_collect_controller.php",
+            "app/Models/fees/fees_cancel/feesCancelModel.php",
+            "routes/fees.php"
+        ]
+    },
+    "fees_cancel_type": {
+        "quoted": 13,
+        "bare": 13,
+        "files": [
+            "app/Http/Controllers/fees/fees_cancel/feesCancelController.php",
+            "app/Http/Controllers/fees/fees_report/feesCancelReportController.php",
+            "app/Http/Controllers/fees/imprest_fees_cancel/imprestFeesCancelController.php",
+            "resources/views/fees/fees_cancel/index.blade.php",
+            "resources/views/fees/fees_report/show_fees_cancel_report.blade.php",
+            "resources/views/fees/imprest_fees_cancel/index.blade.php"
+        ]
+    },
+    "fees_circular_log": {
+        "quoted": 6,
+        "bare": 6,
+        "files": [
+            "app/Http/Controllers/AJAXController.php",
+            "app/Models/fees/fees_circular/feesCircularModel.php",
+            "resources/views/fees/fees_circular/show_circular.blade.php",
+            "resources/views/fees/fees_circular/show_circular_hills.blade.php",
+            "database/migrations/2023_03_05_115658_create_fees_circular_log_table.php"
+        ]
+    },
+    "fees_circular_master": {
+        "quoted": 6,
+        "bare": 19,
+        "files": [
+            "app/Models/fees/fees_circular/feesCircularMasterModel.php",
+            "routes/fees.php",
+            "database/migrations/2023_03_05_115658_create_fees_circular_master_table.php",
+            "database/migrations/2023_06_10_233617_add_foreign_key_into_exam_schedule_table.php"
+        ]
+    },
+    "fees_collect": {
+        "quoted": 112,
+        "bare": 331,
+        "files": [
+            "app/Console/Commands/cnsports/FeesCollect.php",
+            "app/Console/Commands/cnsports/feesPayment.php",
+            "app/Console/Commands/cnsports/feesReceipt.php",
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/api/adminapiController.php",
+            "app/Http/Controllers/api/FeesDashboardApiController.php"
+        ]
+    },
+    "fees_config_master": {
+        "quoted": 21,
+        "bare": 44,
+        "files": [
+            "app/Console/Commands/cnsports/FeesConfigMaster.php",
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/fees/fees_collect/fees_collect_controller.php",
+            "app/Http/Controllers/fees/fees_report/monthwiseReceiptPdfController.php",
+            "app/Http/Controllers/fees/NACH/s4excel_importController.php"
+        ]
+    },
+    "fees_hdfcrazorpay": {
+        "quoted": 3,
+        "bare": 5,
+        "files": [
+            "app/Http/Controllers/fees/online_fees/online_fees_collect_controller.php"
+        ]
+    },
+    "fees_hdffc": {
+        "quoted": 9,
+        "bare": 10,
+        "files": [
+            "app/Http/Controllers/fees/online_fees/online_fees_collect_controller.php",
+            "app/Http/Controllers/fees/online_fees/online_fees_settigs_controller.php",
+            "database/migrations/2023_03_05_115658_create_fees_hdffc_table.php"
+        ]
+    },
+    "fees_head_master": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/fees/tblfeesHeadTypeMasterModel.php",
+            "database/migrations/2023_03_05_115658_create_fees_head_master_table.php",
+            "database/migrations/2023_06_10_233617_add_foreign_key_into_exam_schedule_table.php"
+        ]
+    },
+    "fees_icici": {
+        "quoted": 10,
+        "bare": 15,
+        "files": [
+            "app/Console/Commands/cnsports/FeesIcici.php",
+            "app/Http/Controllers/fees/online_fees/online_fees_collect_controller.php",
+            "app/Http/Controllers/fees/online_fees/online_fees_settigs_controller.php",
+            "database/migrations/2023_03_05_115658_create_fees_icici_table.php"
+        ]
+    },
+    "fees_late_master": {
+        "quoted": 12,
+        "bare": 25,
+        "files": [
+            "app/Http/Controllers/fees/fees_collect/fees_collect_controller.php",
+            "app/Models/fees/tblfeesLateModel.php",
+            "routes/fees.php",
+            "database/migrations/2023_03_05_115658_create_fees_late_master_table.php",
+            "database/migrations/2023_06_10_233617_add_foreign_key_into_exam_schedule_table.php",
+            "database/migrations/2025_02_03_153106_add_columns_fees_late_master.php"
+        ]
+    },
+    "fees_map_years": {
+        "quoted": 24,
+        "bare": 26,
+        "files": [
+            "app/Console/Commands/cnsports/academicYearCommand.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/Payroll/PayrollController.php",
+            "app/Http/Controllers/settings/manageInstituteController.php",
+            "app/Http/Controllers/student/rollOverController.php",
+            "app/Models/fees/map_year/map_year.php"
+        ]
+    },
+    "fees_month_header": {
+        "quoted": 12,
+        "bare": 21,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/fees/fees_collect/fees_collect_controller.php",
+            "app/Http/Controllers/fees/fees_month_header/feesMonthHeadercontroller.php",
+            "app/Http/Controllers/fees/tblfeesLateController.php",
+            "app/Http/Controllers/fees/update_fees_breackoff/update_fees_breackoff_controller.php",
+            "routes/fees.php"
+        ]
+    },
+    "fees_online_maping": {
+        "quoted": 28,
+        "bare": 31,
+        "files": [
+            "app/Console/Commands/cnsports/FeesOnlineMapping.php",
+            "app/Http/Controllers/fees/fees_collect/fees_collect_controller.php",
+            "app/Http/Controllers/fees/online_fees/online_fees_collect_controller.php",
+            "app/Http/Controllers/fees/online_fees/online_fees_settigs_controller.php",
+            "database/migrations/2023_03_05_115658_create_fees_online_maping_table.php"
+        ]
+    },
+    "fees_online_split": {
+        "quoted": 6,
+        "bare": 7,
+        "files": [
+            "app/Http/Controllers/fees/online_fees/online_fees_split_controller.php",
+            "database/migrations/2023_03_05_115658_create_fees_online_split_table.php"
+        ]
+    },
+    "fees_other_cancel": {
+        "quoted": 5,
+        "bare": 6,
+        "files": [
+            "app/Models/fees/other_fees_cancel/other_fees_cancel.php",
+            "database/migrations/2023_03_05_115658_create_fees_other_cancel_table.php",
+            "database/migrations/2023_06_10_233617_add_foreign_key_into_exam_schedule_table.php"
+        ]
+    },
+    "fees_other_collection": {
+        "quoted": 13,
+        "bare": 41,
+        "files": [
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/fees/fees_report/monthwiseReceiptPdfController.php",
+            "app/Http/Controllers/fees/fees_report/otherNewfeesReportController.php",
+            "app/Http/Controllers/fees/imprest_fees_cancel/imprestFeesCancelController.php",
+            "app/Http/Controllers/fees/other_fees_cancel/other_fees_cancel_controller.php",
+            "app/Http/Controllers/fees/other_fees_collect/other_fees_collect_controller.php"
+        ]
+    },
+    "fees_other_head": {
+        "quoted": 11,
+        "bare": 27,
+        "files": [
+            "app/Http/Controllers/fees/fees_report/otherNewfeesReportController.php",
+            "app/Http/Controllers/fees/imprest_fees_cancel/imprestFeesCancelController.php",
+            "app/Http/Controllers/fees/other_fees_cancel/other_fees_cancel_controller.php",
+            "app/Http/Controllers/fees/other_fees_collect/other_fees_collect_controller.php",
+            "app/Http/Controllers/fees/other_fees_title/other_fees_title_controller.php",
+            "app/Models/fees/other_fees_title/other_fees_title.php"
+        ]
+    },
+    "fees_paid_other": {
+        "quoted": 50,
+        "bare": 161,
+        "files": [
+            "app/Console/Commands/cnsports/feesPaidOther.php",
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/api/FeesDashboardApiController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/fees/college_fees_collect/college_fees_collect_controller.php",
+            "app/Http/Controllers/fees/fees_cancel/feesCancelController.php"
+        ]
+    },
+    "fees_payment": {
+        "quoted": 60,
+        "bare": 75,
+        "files": [
+            "app/Console/Commands/cnsports/feesPayment.php",
+            "app/Http/Controllers/fees/online_fees/confirmOnlineFeesController.php",
+            "app/Http/Controllers/fees/online_fees/online_fees_collect_controller.php",
+            "database/migrations/2023_03_05_115658_create_fees_payment_table.php",
+            "database/migrations/2023_06_10_233617_add_foreign_key_into_exam_schedule_table.php",
+            "database/migrations/2023_08_10_102730_add_fine_to_fees_payment.php"
+        ]
+    },
+    "fees_payphi": {
+        "quoted": 6,
+        "bare": 7,
+        "files": [
+            "app/Http/Controllers/fees/online_fees/online_fees_collect_controller.php",
+            "app/Http/Controllers/fees/online_fees/online_fees_settigs_controller.php",
+            "database/migrations/2023_09_22_115343_create_fees_payphi_table.php"
+        ]
+    },
+    "fees_razorpay": {
+        "quoted": 5,
+        "bare": 6,
+        "files": [
+            "app/Http/Controllers/fees/online_fees/online_fees_collect_controller.php",
+            "app/Http/Controllers/fees/online_fees/online_fees_settigs_controller.php",
+            "database/migrations/2023_03_05_115658_create_fees_razorpay_table.php"
+        ]
+    },
+    "fees_receipt": {
+        "quoted": 20,
+        "bare": 41,
+        "files": [
+            "app/Console/Commands/cnsports/feesReceipt.php",
+            "app/Http/Controllers/fees/college_fees_collect/college_fees_collect_controller.php",
+            "app/Http/Controllers/fees/fees_collect/fees_collect_controller.php",
+            "app/Http/Controllers/fees/fees_report/monthwiseReceiptPdfController.php",
+            "app/Http/Controllers/Import/ImportController.php",
+            "app/Models/tourModel.php"
+        ]
+    },
+    "fees_receipt_book_master": {
+        "quoted": 41,
+        "bare": 79,
+        "files": [
+            "app/Console/Commands/cnsports/FeesReceiptBookMaster.php",
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/admission/admissionEnquiryController.php",
+            "app/Http/Controllers/admission/admissionFormController.php",
+            "app/Http/Controllers/custom_module/customMapModule/donationController.php",
+            "app/Http/Controllers/fees/college_fees_collect/college_fees_collect_controller.php"
+        ]
+    },
+    "fees_receipt_css": {
+        "quoted": 15,
+        "bare": 38,
+        "files": [
+            "app/Http/Controllers/admission/admissionEnquiryController.php",
+            "app/Http/Controllers/admission/admissionFormController.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/fees/college_fees_collect/college_fees_collect_controller.php",
+            "app/Http/Controllers/fees/fees_cancel/feesCancelController.php",
+            "app/Http/Controllers/fees/fees_cancel/feesRefundController.php"
+        ]
+    },
+    "fees_reconciliation": {
+        "quoted": 8,
+        "bare": 14,
+        "files": [
+            "app/Http/Controllers/fees/fees_reconciliation/fees_reconciliation_upload_sheet_controller.php",
+            "routes/fees.php",
+            "database/migrations/2023_12_15_121805_create_fees_reconciliation_table.php"
+        ]
+    },
+    "fees_refund": {
+        "quoted": 11,
+        "bare": 23,
+        "files": [
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/FeesRefundApiController.php",
+            "app/Http/Controllers/fees/fees_cancel/feesRefundController.php",
+            "app/Models/fees/fees_cancel/feesRefundModel.php",
+            "routes/fees.php",
+            "database/migrations/2023_03_05_115658_create_fees_refund_table.php"
+        ]
+    },
+    "fees_title": {
+        "quoted": 210,
+        "bare": 477,
+        "files": [
+            "app/Console/Commands/cnsports/FeesBreakOff.php",
+            "app/Console/Commands/cnsports/FeesBreakoffOther.php",
+            "app/Console/Commands/cnsports/FeesReceiptBookMaster.php",
+            "app/Console/Commands/cnsports/FeesTitle.php",
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/AJAXController.php"
+        ]
+    },
+    "fees_title_master": {
+        "quoted": 8,
+        "bare": 12,
+        "files": [
+            "app/Http/Controllers/fees/fees_title/fees_title_controller.php",
+            "app/Http/Controllers/fees/online_fees/online_fees_split_controller.php",
+            "database/migrations/2023_03_05_115658_create_fees_title_master_table.php",
+            "database/migrations/2023_06_10_233617_add_foreign_key_into_fees_refund_table.php"
+        ]
+    },
+    "follow_up": {
+        "quoted": 7,
+        "bare": 11,
+        "files": [
+            "app/Http/Controllers/admission/admissionEnquiryController.php",
+            "app/Models/admission/admissionFollowUpModel.php",
+            "resources/views/admission/report/show_enquiry_followup_report.blade.php",
+            "database/migrations/2023_03_05_115658_create_follow_up_table.php",
+            "database/migrations/2023_06_10_233617_add_foreign_key_into_fees_refund_table.php"
+        ]
+    },
+    "form_builder": {
+        "quoted": 8,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/api/GeneralSetupApiController.php",
+            "app/Models/FormTable.php",
+            "database/migrations/2023_03_05_115658_create_form_builder_table.php"
+        ]
+    },
+    "form_submit_data": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/FormSubmitData.php",
+            "database/migrations/2023_03_05_115658_create_form_submit_data_table.php"
+        ]
+    },
+    "front_desk": {
+        "quoted": 16,
+        "bare": 130,
+        "files": [
+            "app/Http/Controllers/api/FrontDeskApiController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/used_storage_graphController.php",
+            "app/Models/frontdesk/frontdeskModel.php",
+            "routes/frontdesk.php",
+            "routes/student.php"
+        ]
+    },
+    "gamma_ppt": {
+        "quoted": 7,
+        "bare": 17,
+        "files": [
+            "app/Http/Controllers/lms/gammaController.php",
+            "app/Models/lms/gammaModel.php",
+            "database/migrations/2026_07_11_130651_create_gamma_ppt_table.php"
+        ]
+    },
+    "gcm_users": {
+        "quoted": 23,
+        "bare": 32,
+        "files": [
+            "app/Http/Controllers/api/adminapiController.php",
+            "app/Http/Controllers/api/apiController.php",
+            "app/Http/Controllers/easy_com/send_birthday_notification/send_birthday_notification_controller.php",
+            "app/Http/Controllers/easy_com/send_notification_parents/send_notification_parents_controller.php",
+            "app/Http/Controllers/fees/fees_report/feesStatusController.php",
+            "app/Http/Controllers/fees/NACH/s4excel_importController.php"
+        ]
+    },
+    "general_data": {
+        "quoted": 40,
+        "bare": 138,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/admission/admissionEnquiryController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/fees/online_fees/online_fees_collect_controller.php",
+            "app/Http/Controllers/front_desk/parentCommunication/parentCommunicationController.php",
+            "app/Http/Controllers/front_desk/timetableAiController.php"
+        ]
+    },
+    "grade_master": {
+        "quoted": 31,
+        "bare": 45,
+        "files": [
+            "app/Http/Controllers/result/new_result/studentResultController.php",
+            "app/Http/Controllers/result/new_result/studentResultController2.php",
+            "app/Http/Controllers/result/result_master/result_master_controller.php",
+            "app/Models/result/GradeMaster/GradeMaster.php",
+            "routes/result.php",
+            "resources/views/result/result_master/add_result_master.blade.php"
+        ]
+    },
+    "grade_master_data": {
+        "quoted": 20,
+        "bare": 30,
+        "files": [
+            "app/Http/Controllers/result/cbse_result/cbse_11_t2_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD2.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_t2_result_controller.php",
+            "app/Http/Controllers/result/new_result/studentResultController.php"
+        ]
+    },
+    "h5p_interactive_video": {
+        "quoted": 4,
+        "bare": 15,
+        "files": [
+            "app/Models/lms/h5p/H5pInteractiveVideo.php",
+            "routes/lms.php",
+            "database/migrations/2026_03_26_102143_create_h5p_interactive_video_table.php"
+        ]
+    },
+    "h5p_scenarios": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/h5p/H5pScenario.php",
+            "database/migrations/2026_03_07_170942_create_h5p_scenarios_table.php"
+        ]
+    },
+    "h5p_scenario_points": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/h5p/H5pScenarioPoint.php",
+            "database/migrations/2026_03_07_171024_create_h5p_scenario_points_table.php"
+        ]
+    },
+    "h5p_video_interactions": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/lms/h5p/H5pVideoInteraction.php",
+            "database/migrations/2026_03_26_102237_create_h5p_video_interactions_table.php"
+        ]
+    },
+    "homework": {
+        "quoted": 98,
+        "bare": 323,
+        "files": [
+            "app/Console/Commands/LmsSyncMenu.php",
+            "app/Http/Controllers/api/lms/StudentHomeworkApiController.php",
+            "app/Http/Controllers/api/TeacherDailyReportApiController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/lms/lmsActivityStreamController.php",
+            "app/Http/Controllers/lms/lms_apiController.php"
+        ]
+    },
+    "hostel_building_master": {
+        "quoted": 16,
+        "bare": 39,
+        "files": [
+            "app/Http/Controllers/api/HostelSetupApiController.php",
+            "app/Http/Controllers/hostel_management/hostel_building_masterController.php",
+            "app/Http/Controllers/hostel_management/hostel_floor_masterController.php",
+            "app/Http/Controllers/hostel_management/hostel_room_masterController.php",
+            "app/Models/hostel_management/hostel_building_masterModel.php",
+            "database/migrations/2023_03_05_115658_create_hostel_building_master_table.php"
+        ]
+    },
+    "hostel_floor_master": {
+        "quoted": 12,
+        "bare": 35,
+        "files": [
+            "app/Http/Controllers/api/HostelSetupApiController.php",
+            "app/Http/Controllers/hostel_management/hostel_floor_masterController.php",
+            "app/Http/Controllers/hostel_management/hostel_room_masterController.php",
+            "app/Models/hostel_management/hostel_floor_masterModel.php",
+            "database/migrations/2023_03_05_115658_create_hostel_floor_master_table.php",
+            "database/migrations/2023_06_10_233617_add_foreign_key_into_fees_refund_table.php"
+        ]
+    },
+    "hostel_master": {
+        "quoted": 22,
+        "bare": 50,
+        "files": [
+            "app/Http/Controllers/api/HostelSetupApiController.php",
+            "app/Http/Controllers/hostel_management/hostel_building_masterController.php",
+            "app/Http/Controllers/hostel_management/hostel_masterController.php",
+            "app/Http/Controllers/hostel_management/hostel_room_masterController.php",
+            "app/Models/hostel_management/hostel_masterModel.php",
+            "database/migrations/2023_03_05_115658_create_hostel_master_table.php"
+        ]
+    },
+    "hostel_room_allocation": {
+        "quoted": 23,
+        "bare": 89,
+        "files": [
+            "app/Http/Controllers/api/HostelSetupApiController.php",
+            "app/Http/Controllers/hostel_management/hostel_reportController.php",
+            "app/Http/Controllers/hostel_management/tblhostelRoomAllocationController.php",
+            "app/Http/Controllers/school_setup/erpstatusController.php",
+            "app/Models/hostel_management/tblhostelRoomAllocationModel.php",
+            "routes/hostel_management.php"
+        ]
+    },
+    "hostel_room_master": {
+        "quoted": 9,
+        "bare": 24,
+        "files": [
+            "app/Http/Controllers/api/HostelSetupApiController.php",
+            "app/Http/Controllers/hostel_management/hostel_room_masterController.php",
+            "app/Models/hostel_management/hostel_room_masterModel.php",
+            "database/migrations/2023_03_05_115658_create_hostel_room_master_table.php",
+            "database/migrations/2023_06_10_233617_add_foreign_key_into_fees_refund_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "hostel_type_master": {
+        "quoted": 15,
+        "bare": 23,
+        "files": [
+            "app/Http/Controllers/api/HostelSetupApiController.php",
+            "app/Http/Controllers/hostel_management/hosteltypemasterController.php",
+            "app/Http/Controllers/hostel_management/hostel_building_masterController.php",
+            "app/Http/Controllers/hostel_management/hostel_masterController.php",
+            "app/Http/Controllers/inventory/inventory_vendor_masterController.php",
+            "app/Models/hostel_management/hosteltypemasterModel.php"
+        ]
+    },
+    "hostel_visitor_master": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/hostel_management/hostel_visitor_masterModel.php",
+            "database/migrations/2023_03_05_115658_create_hostel_visitor_master_table.php"
+        ]
+    },
+    "house_master": {
+        "quoted": 22,
+        "bare": 30,
+        "files": [
+            "app/Console/Commands/cnsports/houseMaster.php",
+            "app/Console/Commands/cnsports/studentEnrollment.php",
+            "app/Http/Controllers/api/apiController.php",
+            "app/Http/Controllers/api/BulkStudentApiController.php",
+            "app/Http/Controllers/api/StudentRegistrationApiController.php",
+            "app/Http/Controllers/api/StudentSetupApiController.php"
+        ]
+    },
+    "hp_tblmenumaster": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "hrms_attendances": {
+        "quoted": 21,
+        "bare": 31,
+        "files": [
+            "app/Http/Controllers/api/HrmsMobileApiController.php",
+            "app/Http/Controllers/HRMS/HrmsController.php",
+            "app/Http/Controllers/Payroll/PayrollController.php",
+            "resources/views/leave/leave_report/index.blade.php",
+            "database/migrations/2023_05_25_120628_create_hrms_attendances_table.php",
+            "database/migrations/2025_06_20_120120_add_photos_to_hrms_attendances_table.php"
+        ]
+    },
+    "hrms_departments": {
+        "quoted": 41,
+        "bare": 66,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/api/UserManagementApiController.php",
+            "app/Http/Controllers/HRMS/departmentController.php",
+            "app/Http/Controllers/HRMS/HrmsController.php",
+            "app/Http/Controllers/HRMS/HrmsLeaveController.php"
+        ]
+    },
+    "hrms_departments_mapping": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2024_06_20_120045_create_hrms_departments_mapping_table.php"
+        ]
+    },
+    "hrms_emp_leaves": {
+        "quoted": 13,
+        "bare": 28,
+        "files": [
+            "app/Http/Controllers/api/HrmsMobileApiController.php",
+            "app/Http/Controllers/HRMS/HrmsController.php",
+            "app/Http/Controllers/leave/ApplyLeaveController.php",
+            "app/Http/Controllers/leave/LeaveAuthorisationController.php",
+            "app/Http/Controllers/leave/leaveEncashmentController.php",
+            "app/Http/Controllers/Payroll/PayrollController.php"
+        ]
+    },
+    "hrms_emp_payroll_deduction": {
+        "quoted": 9,
+        "bare": 9,
+        "files": [
+            "app/Http/Controllers/Payroll/PayrollController.php",
+            "app/Http/Controllers/user/tbluserController.php",
+            "database/migrations/2024_06_25_144125_create_hrms_emp_payroll_deduction_table.php"
+        ]
+    },
+    "hrms_holidays": {
+        "quoted": 10,
+        "bare": 11,
+        "files": [
+            "app/Http/Controllers/HRMS/HrmsController.php",
+            "app/Http/Controllers/leave/ApplyLeaveController.php",
+            "app/Http/Controllers/Payroll/PayrollController.php",
+            "database/migrations/2023_05_20_002322_create_hrms_holidays_table.php"
+        ]
+    },
+    "hrms_in_out_times": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_05_25_084729_create_hrms_in_out_times_table.php"
+        ]
+    },
+    "hrms_job_titles": {
+        "quoted": 3,
+        "bare": 4,
+        "files": [
+            "app/Http/Controllers/api/UserManagementApiController.php",
+            "database/migrations/2023_05_25_073830_create_hrms_job_titles_table.php"
+        ]
+    },
+    "hrms_leave_allocation": {
+        "quoted": 24,
+        "bare": 32,
+        "files": [
+            "app/Http/Controllers/HRMS/HrmsLeaveController.php",
+            "app/Http/Controllers/leave/leave_summary_report/LeaveSummaryReportController.php",
+            "app/Http/Controllers/student/studentBulkUpdateController.php",
+            "database/migrations/2024_01_10_173555_create_hrms_leave_allocation_table.php",
+            "database/migrations/2024_05_14_160824_add_column_to_hrms_leave_allocation.php"
+        ]
+    },
+    "hrms_leave_types": {
+        "quoted": 11,
+        "bare": 28,
+        "files": [
+            "app/Http/Controllers/HRMS/HrmsController.php",
+            "app/Http/Controllers/HRMS/HrmsLeaveController.php",
+            "app/Http/Controllers/leave/leave_summary_report/LeaveSummaryReportController.php",
+            "app/Http/Controllers/Payroll/PayrollController.php",
+            "database/migrations/2023_05_15_220543_create_hrms_leave_types_table.php",
+            "database/migrations/2023_05_21_151219_create_hrms_emp_leaves_table.php"
+        ]
+    },
+    "hrms_salary_certificate": {
+        "quoted": 6,
+        "bare": 9,
+        "files": [
+            "app/Http/Controllers/Payroll/PayrollController.php",
+            "database/migrations/2024_02_15_143441_create_hrms_salary_certificate_table.php"
+        ]
+    },
+    "hrms_weekdays": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_05_20_002145_create_hrms_weekdays_table.php"
+        ]
+    },
+    "implementation_master": {
+        "quoted": 7,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/api/GeneralSetupApiController.php",
+            "app/Models/implementation/implementation_MasterModel.php",
+            "database/migrations/2023_03_05_115658_create_implementation_master_table.php",
+            "database/migrations/2023_06_10_233617_add_foreign_key_into_fees_refund_table.php"
+        ]
+    },
+    "import_table_fields": {
+        "quoted": 17,
+        "bare": 17,
+        "files": [
+            "app/Http/Controllers/api/OnboardingApiController.php",
+            "app/Http/Controllers/Import/ImportController.php",
+            "app/Http/Controllers/tourController.php",
+            "database/migrations/2023_03_05_115658_create_import_table_fields_table.php",
+            "database/migrations/2023_05_04_074959_add_column_to_import_table_fields_table.php",
+            "public/excel_upload/export_xlsx.php"
+        ]
+    },
+    "imprest_fees_cancel": {
+        "quoted": 9,
+        "bare": 19,
+        "files": [
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/fees/imprest_fees_cancel/imprestFeesCancelController.php",
+            "routes/fees.php",
+            "database/migrations/2023_03_05_115658_create_imprest_fees_cancel_table.php",
+            "database/migrations/2023_06_10_233617_add_foreign_key_into_fees_refund_table.php"
+        ]
+    },
+    "incoming_messages": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2024_09_05_113709_create_incoming_messages_table.php"
+        ]
+    },
+    "institute_detail": {
+        "quoted": 6,
+        "bare": 22,
+        "files": [
+            "app/Http/Controllers/api/DocumentTemplateApiController.php",
+            "app/Models/settings/instituteDetailModel.php",
+            "routes/settings.php",
+            "database/migrations/2023_03_05_115658_create_institute_detail_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "inventory_allocation_details": {
+        "quoted": 6,
+        "bare": 16,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/inventory/inventory_item_allocationController.php",
+            "app/Models/inventory/inventory_item_allocationModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_allocation_details_table.php"
+        ]
+    },
+    "inventory_generate_po_details": {
+        "quoted": 23,
+        "bare": 43,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/inventory/inventory_generate_poController.php",
+            "app/Http/Controllers/inventory/inventory_negotiate_poController.php",
+            "app/Models/inventory/inventory_generate_poModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_generate_po_details_table.php"
+        ]
+    },
+    "inventory_item_category_master": {
+        "quoted": 12,
+        "bare": 22,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/inventory/inventory_item_masterController.php",
+            "app/Http/Controllers/inventory/inventory_item_sub_category_masterController.php",
+            "app/Models/inventory/inventory_item_category_masterModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_item_category_master_table.php",
+            "database/migrations/2023_06_10_233617_add_foreign_key_into_fees_refund_table.php"
+        ]
+    },
+    "inventory_item_defective_details": {
+        "quoted": 6,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/inventory/inventory_item_defectiveController.php",
+            "app/Models/inventory/inventory_item_defectiveModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_item_defective_details_table.php"
+        ]
+    },
+    "inventory_item_direct_purchase": {
+        "quoted": 8,
+        "bare": 12,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Models/inventory/inventory_item_direct_purchaseModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_item_direct_purchase_table.php"
+        ]
+    },
+    "inventory_item_lost_details": {
+        "quoted": 3,
+        "bare": 9,
+        "files": [
+            "app/Models/inventory/inventory_item_lostModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_item_lost_details_table.php"
+        ]
+    },
+    "inventory_item_master": {
+        "quoted": 38,
+        "bare": 97,
+        "files": [
+            "app/Http/Controllers/api/adminapiController.php",
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/inventory/inventory_generate_poController.php",
+            "app/Http/Controllers/inventory/inventory_item_defectiveController.php",
+            "app/Http/Controllers/inventory/inventory_item_direct_purchaseController.php",
+            "app/Http/Controllers/inventory/inventory_item_masterController.php"
+        ]
+    },
+    "inventory_item_quotation_details": {
+        "quoted": 21,
+        "bare": 45,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/inventory/inventory_generate_poController.php",
+            "app/Http/Controllers/inventory/inventory_item_quotationController.php",
+            "app/Http/Controllers/inventory/inventory_negotiate_poController.php",
+            "app/Models/inventory/inventory_item_quotationModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_item_quotation_details_table.php"
+        ]
+    },
+    "inventory_item_receivable_details": {
+        "quoted": 6,
+        "bare": 13,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/inventory/inventory_item_receivableController.php",
+            "app/Models/inventory/inventory_item_receivableModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_item_receivable_details_table.php"
+        ]
+    },
+    "inventory_item_return_details": {
+        "quoted": 6,
+        "bare": 9,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/inventory/inventory_item_returnController.php",
+            "app/Models/inventory/inventory_item_returnModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_item_return_details_table.php"
+        ]
+    },
+    "inventory_item_sub_category_master": {
+        "quoted": 12,
+        "bare": 21,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/inventory/inventory_item_masterController.php",
+            "app/Http/Controllers/inventory/inventory_item_sub_category_masterController.php",
+            "app/Models/inventory/inventory_item_sub_category_masterModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_item_sub_category_master_table.php",
+            "database/migrations/2023_06_10_233617_add_foreign_key_into_fees_refund_table.php"
+        ]
+    },
+    "inventory_item_type": {
+        "quoted": 5,
+        "bare": 10,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/inventory/inventory_item_masterController.php",
+            "app/Models/inventory/inventory_item_typeModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_item_type_table.php"
+        ]
+    },
+    "inventory_master_setup": {
+        "quoted": 8,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Models/inventory/inventory_master_setupModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_master_setup_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "inventory_negotiate_po_details": {
+        "quoted": 9,
+        "bare": 10,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/inventory/inventory_negotiate_poController.php",
+            "app/Models/inventory/inventory_negotiate_poModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_negotiate_po_details_table.php"
+        ]
+    },
+    "inventory_requisition_details": {
+        "quoted": 14,
+        "bare": 43,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/inventory/inventory_requisition_reportController.php",
+            "app/Models/inventory/requisitionApprovedModel.php",
+            "app/Models/inventory/requisitionModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_requisition_details_table.php"
+        ]
+    },
+    "inventory_requisition_status_master": {
+        "quoted": 10,
+        "bare": 32,
+        "files": [
+            "app/Http/Controllers/api/adminapiController.php",
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/inventory/inventory_item_quotationController.php",
+            "app/Http/Controllers/inventory/inventory_negotiate_poController.php",
+            "app/Http/Controllers/inventory/inventory_requisition_reportController.php",
+            "app/Http/Controllers/inventory/requisitionApprovedController.php"
+        ]
+    },
+    "inventory_tax_master": {
+        "quoted": 5,
+        "bare": 5,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Models/inventory/inventory_tax_masterModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_tax_master_table.php"
+        ]
+    },
+    "inventory_vendor_master": {
+        "quoted": 12,
+        "bare": 25,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/inventory/inventory_generate_poController.php",
+            "app/Http/Controllers/inventory/inventory_item_quotationController.php",
+            "app/Http/Controllers/inventory/inventory_negotiate_poController.php",
+            "app/Models/inventory/inventory_vendor_masterModel.php",
+            "database/migrations/2023_03_05_115658_create_inventory_vendor_master_table.php"
+        ]
+    },
+    "inward": {
+        "quoted": 21,
+        "bare": 81,
+        "files": [
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/inward_outward/inwardController.php",
+            "app/Http/Controllers/inward_outward/inward_reportController.php",
+            "app/Http/Controllers/MIS/MisSummaryController.php",
+            "app/Http/Controllers/used_storage_graphController.php",
+            "app/Models/inward_outward/inwardModel.php"
+        ]
+    },
+    "item_scan_details": {
+        "quoted": 17,
+        "bare": 44,
+        "files": [
+            "app/Models/library/itemScanDetail.php",
+            "database/migrations/2025_01_16_122609_create_item_scan_details_table.php",
+            "public/library/admin/modules/bibliography/not_scan_item.php",
+            "public/library/admin/modules/bibliography/scan_item.php",
+            "public/library/admin/modules/circulation/scan_item.php",
+            "public/library/admin/modules/reporting/customs/book_verification_lost_report.php"
+        ]
+    },
+    "knowledge_base": {
+        "quoted": 10,
+        "bare": 13,
+        "files": [
+            "app/Http/Controllers/dashboardController.php",
+            "routes/web.php",
+            "resources/views/agenticAI/agentLibrary/detail.blade.php",
+            "resources/views/agenticAI/createAgent/index.blade.php",
+            "resources/views/agenticAI/multiAgent/index.blade.php",
+            "database/migrations/2023_03_05_115658_create_knowledge_base_table.php"
+        ]
+    },
+    "knowledge_base_detail": {
+        "quoted": 5,
+        "bare": 7,
+        "files": [
+            "routes/web.php",
+            "resources/views/kb.blade.php",
+            "database/migrations/2023_03_05_115658_create_knowledge_base_detail_table.php"
+        ]
+    },
+    "lb_master": {
+        "quoted": 7,
+        "bare": 21,
+        "files": [
+            "app/Http/Controllers/lms/leaderboard/lbMasterController.php",
+            "app/Models/lms/leaderboard/lb_masterModel.php",
+            "routes/lms.php",
+            "database/migrations/2023_03_05_115658_create_lb_master_table.php",
+            "database/migrations/2023_06_11_233617_add_foreign_key_into_inventory_item_quotation_details_table.php"
+        ]
+    },
+    "lb_points": {
+        "quoted": 3,
+        "bare": 7,
+        "files": [
+            "app/Models/lms/leaderboard/lb_pointsModel.php",
+            "database/migrations/2023_03_05_115658_create_lb_points_table.php"
+        ]
+    },
+    "learning_outcome_exam_type_master": {
+        "quoted": 7,
+        "bare": 7,
+        "files": [
+            "app/Http/Controllers/learning_outcome/indicator_mapping/indicator_mappingController.php",
+            "app/Http/Controllers/learning_outcome/lo_class_greport/lo_class_greportController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_greport/lo_marks_greportController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_greport2/lo_marks_greport2Controller.php",
+            "app/Http/Controllers/learning_outcome/lo_school_greport/lo_school_greportController.php",
+            "database/migrations/2023_03_05_115658_create_learning_outcome_exam_type_master_table.php"
+        ]
+    },
+    "learning_outcome_indicator": {
+        "quoted": 46,
+        "bare": 67,
+        "files": [
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/MigrationModulesApiController.php",
+            "app/Http/Controllers/learning_outcome/indicator_mapping/indicator_mappingController.php",
+            "app/Http/Controllers/learning_outcome/lo_class_greport/lo_class_greportController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_arNar/lo_marks_arNarController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_entry/lo_marks_entryController.php"
+        ]
+    },
+    "learning_outcome_pdf": {
+        "quoted": 37,
+        "bare": 105,
+        "files": [
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/learning_outcome/indicator_mapping/indicator_mappingController.php",
+            "app/Http/Controllers/learning_outcome/lo_class_greport/lo_class_greportController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_arNar/lo_marks_arNarController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_entry/lo_marks_entryController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_greport/lo_marks_greportController.php"
+        ]
+    },
+    "learning_outcome_question_master": {
+        "quoted": 12,
+        "bare": 42,
+        "files": [
+            "app/Http/Controllers/api/MigrationModulesApiController.php",
+            "app/Http/Controllers/learning_outcome/indicator_mapping/indicator_mappingController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_arNar/lo_marks_arNarController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_entry/lo_marks_entryController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_report/lo_marks_reportController.php",
+            "database/migrations/2023_03_05_115658_create_learning_outcome_question_master_table.php"
+        ]
+    },
+    "learning_outcome_student_marks": {
+        "quoted": 25,
+        "bare": 40,
+        "files": [
+            "app/Http/Controllers/learning_outcome/lo_class_greport/lo_class_greportController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_arNar/lo_marks_arNarController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_entry/lo_marks_entryController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_greport/lo_marks_greportController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_greport2/lo_marks_greport2Controller.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_report/lo_marks_reportController.php"
+        ]
+    },
+    "leave_applications": {
+        "quoted": 20,
+        "bare": 32,
+        "files": [
+            "app/Http/Controllers/api/adminapiController.php",
+            "app/Http/Controllers/api/TeacherDailyReportApiController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/front_desk/leave_application/leaveApplicationController.php",
+            "app/Http/Controllers/school_setup/teacherdailyReportController.php",
+            "app/Http/Controllers/used_storage_graphController.php"
+        ]
+    },
+    "lessonplan": {
+        "quoted": 41,
+        "bare": 63,
+        "files": [
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/lms/curriculum/curriculumLessonplanController.php",
+            "app/Http/Controllers/lms/lmsActivityStreamController.php",
+            "app/Http/Controllers/lms/lmsCurriculumController.php",
+            "app/Http/Controllers/school_setup/erpstatusController.php",
+            "app/Models/school_setup/lessonplanningModel.php"
+        ]
+    },
+    "lessonplan_execution": {
+        "quoted": 5,
+        "bare": 9,
+        "files": [
+            "app/Models/school_setup/lessonplanning_executionModel.php",
+            "database/migrations/2023_03_05_115658_create_lessonplan_execution_table.php",
+            "database/migrations/2023_06_11_233617_add_foreign_key_into_inventory_item_quotation_details_table.php"
+        ]
+    },
+    "library_books": {
+        "quoted": 13,
+        "bare": 38,
+        "files": [
+            "app/Http/Controllers/library/BookController.php",
+            "app/Http/Controllers/library/LibraryReportController.php",
+            "database/migrations/2023_06_01_234714_create_library_books_table.php",
+            "database/migrations/2023_06_01_235854_create_library_items_table.php",
+            "database/migrations/2023_06_18_165836_create_library_book_circulations_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "library_book_circulations": {
+        "quoted": 12,
+        "bare": 42,
+        "files": [
+            "app/Http/Controllers/library/BookController.php",
+            "database/migrations/2023_06_18_165836_create_library_book_circulations_table.php",
+            "database/migrations/2023_07_26_234851_add_return_date_to_library_book_circulations.php",
+            "database/migrations/2024_02_27_151323_add_column_item_code_library_book_circulation.php",
+            "database/seeders/OnboardingJourneySeeder.php",
+            "public/excel_upload/Import_xlsx_data.php"
+        ]
+    },
+    "library_items": {
+        "quoted": 12,
+        "bare": 28,
+        "files": [
+            "app/Http/Controllers/library/BookController.php",
+            "app/Http/Controllers/library/itemScanController.php",
+            "app/Models/student/tblstudentModel.php",
+            "database/migrations/2023_06_01_235854_create_library_items_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "lms_assignment": {
+        "quoted": 6,
+        "bare": 12,
+        "files": [
+            "app/Http/Controllers/lms/assignment/annotateAssignmentController.php",
+            "app/Models/lms/assignment/lms_assignmentModel.php",
+            "database/migrations/2023_03_05_115658_create_lms_assignment_table.php",
+            "database/migrations/2023_06_11_233617_add_foreign_key_into_inventory_item_quotation_details_table.php"
+        ]
+    },
+    "lms_concept": {
+        "quoted": 45,
+        "bare": 60,
+        "files": [
+            "app/Http/Controllers/api/ApiLmsCourseController.php",
+            "app/Http/Controllers/lms/assessmentQuestionController.php",
+            "app/Http/Controllers/lms/contentController.php",
+            "app/Http/Controllers/lms/nextAPI/chapterMasterController.php",
+            "app/Http/Controllers/lms/PedagogyEngineController.php",
+            "app/Http/Controllers/lms/questionmasterController.php"
+        ]
+    },
+    "lms_content_category": {
+        "quoted": 7,
+        "bare": 15,
+        "files": [
+            "app/Http/Controllers/api/AcademicSetupApiController.php",
+            "app/Http/Controllers/api/ApiLmsCourseController.php",
+            "app/Http/Controllers/lms/lms_contentCategoryController.php",
+            "app/Models/lms/lmsContentCategoryModel.php",
+            "routes/lms.php",
+            "database/migrations/2023_03_05_115658_create_lms_content_category_table.php"
+        ]
+    },
+    "lms_curriculum": {
+        "quoted": 25,
+        "bare": 45,
+        "files": [
+            "app/Http/Controllers/lms/lmsCurriculumController.php",
+            "app/Http/Controllers/lms/lmsSyllabusController.php",
+            "routes/lms.php",
+            "database/migrations/2024_10_11_155842_create_lms_curriculum_table.php",
+            "database/migrations/2024_10_18_120053_add_column_lms_curriculum.php",
+            "database/migrations/2026_05_15_123538_add_syear_and_status_to_lms_curriculum_table.php"
+        ]
+    },
+    "lms_data_content_neo4j": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "app/Http/Controllers/DataMigrationController.php",
+            "app/Models/LmsDataContentNeo4j.php"
+        ]
+    },
+    "lms_data_neo4j": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "lms_data_question_neo4j": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "lms_doubt": {
+        "quoted": 6,
+        "bare": 30,
+        "files": [
+            "app/Models/lms/doubtModel.php",
+            "database/migrations/2023_03_05_115658_create_lms_doubt_table.php",
+            "database/migrations/2023_06_11_233617_add_foreign_key_into_inventory_item_quotation_details_table.php"
+        ]
+    },
+    "lms_doubt_conversation": {
+        "quoted": 8,
+        "bare": 20,
+        "files": [
+            "app/Http/Controllers/api/teacherapiController.php",
+            "app/Http/Controllers/lms/lmsSocialCollabrotiveController.php",
+            "app/Models/lms/doubtConversationModel.php",
+            "database/migrations/2023_03_05_115658_create_lms_doubt_conversation_table.php"
+        ]
+    },
+    "lms_flashcard": {
+        "quoted": 10,
+        "bare": 31,
+        "files": [
+            "app/Http/Controllers/api/ApiLmsCourseController.php",
+            "app/Http/Controllers/lms/chapterController.php",
+            "app/Http/Controllers/lms/pal/palController.php",
+            "app/Models/lms/flashcardModel.php",
+            "routes/lms.php",
+            "database/migrations/2023_03_05_115658_create_lms_flashcard_table.php"
+        ]
+    },
+    "lms_intelligence_lesson_plans": {
+        "quoted": 5,
+        "bare": 8,
+        "files": [
+            "database/migrations/2026_06_17_114424_create_lms_intelligence_lesson_plans_table.php",
+            "database/migrations/2026_06_17_114650_create_lms_lesson_plan_periods_table.php",
+            "database/migrations/2026_06_17_120407_rename_foreign_keys_in_lesson_plan_tables.php"
+        ]
+    },
+    "lms_learning_outcomes": {
+        "quoted": 7,
+        "bare": 8,
+        "files": [
+            "database/migrations/2026_05_21_100453_create_lms_learning_outcomes_table.php",
+            "database/migrations/2026_05_28_165851_create_lms_competency_standards_table.php",
+            "database/migrations/2026_06_15_000002_add_extraction_id_to_lms_learning_outcomes_table.php"
+        ]
+    },
+    "lms_lessonplan_dayswise": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/lms/LmsLessonPlanDayWise.php",
+            "database/migrations/2023_03_05_115658_create_lms_lessonplan_dayswise_table.php"
+        ]
+    },
+    "lms_lesson_plan": {
+        "quoted": 10,
+        "bare": 12,
+        "files": [
+            "app/Models/lms/LmsLessonPlan.php",
+            "database/migrations/2023_03_05_115658_create_lms_lesson_plan_table.php",
+            "database/migrations/2023_06_11_233617_add_foreign_key_into_inventory_item_quotation_details_table.php",
+            "database/migrations/2025_02_27_174720_add_columns_lms_teacher_resource.php",
+            "database/migrations/2026_05_16_162854_add_fields_to_lms_lesson_plan_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "lms_lesson_plan_concepts": {
+        "quoted": 6,
+        "bare": 9,
+        "files": [
+            "database/migrations/2026_06_17_114853_create_lms_lesson_plan_concepts_table.php",
+            "database/migrations/2026_06_17_120407_rename_foreign_keys_in_lesson_plan_tables.php"
+        ]
+    },
+    "lms_lesson_plan_periods": {
+        "quoted": 9,
+        "bare": 13,
+        "files": [
+            "database/migrations/2026_06_17_114650_create_lms_lesson_plan_periods_table.php",
+            "database/migrations/2026_06_17_114853_create_lms_lesson_plan_concepts_table.php",
+            "database/migrations/2026_06_17_120407_rename_foreign_keys_in_lesson_plan_tables.php"
+        ]
+    },
+    "lms_mapping_type": {
+        "quoted": 154,
+        "bare": 264,
+        "files": [
+            "app/Console/Commands/MapQuestion.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/ApiLmsCourseController.php",
+            "app/Http/Controllers/api/ApiQuestionPaperController.php",
+            "app/Http/Controllers/lms/assessmentQuestionController.php",
+            "app/Http/Controllers/lms/assignment/assignmentSubmissionController.php"
+        ]
+    },
+    "lms_offline_exam": {
+        "quoted": 6,
+        "bare": 11,
+        "files": [
+            "app/Http/Controllers/lms/assignment/annotateAssignmentController.php",
+            "app/Models/lms/lmsOfflineExamModel.php",
+            "database/migrations/2023_03_05_115658_create_lms_offline_exam_table.php",
+            "database/migrations/2023_06_12_233617_add_foreign_key_into_inventory_item_lms_mapping_type_table.php"
+        ]
+    },
+    "lms_offline_exam_answer": {
+        "quoted": 7,
+        "bare": 7,
+        "files": [
+            "app/Http/Controllers/lms/assignment/assignmentSubmissionController.php",
+            "app/Models/lms/lmsOfflineExamAnswerModel.php",
+            "database/migrations/2023_03_05_115658_create_lms_offline_exam_answer_table.php",
+            "database/migrations/2023_06_12_233617_add_foreign_key_into_inventory_item_lms_mapping_type_table.php"
+        ]
+    },
+    "lms_online_exam": {
+        "quoted": 28,
+        "bare": 49,
+        "files": [
+            "app/Http/Controllers/api/ApiQuestionPaperController.php",
+            "app/Http/Controllers/lms/counselling/counsellingExamController.php",
+            "app/Http/Controllers/lms/counselling/MBTIController.php",
+            "app/Http/Controllers/lms/lms_apiController.php",
+            "app/Http/Controllers/lms/onlineExamController.php",
+            "app/Http/Controllers/lms/pal/palController.php"
+        ]
+    },
+    "lms_online_exam_answer": {
+        "quoted": 28,
+        "bare": 52,
+        "files": [
+            "app/Http/Controllers/lms/assessmentQuestionController.php",
+            "app/Http/Controllers/lms/counselling/counsellingExamController.php",
+            "app/Http/Controllers/lms/lms_apiController.php",
+            "app/Http/Controllers/lms/onlineExamController.php",
+            "app/Http/Controllers/lms/pal/palController.php",
+            "app/Http/Controllers/lms/questionmasterController.php"
+        ]
+    },
+    "lms_online_exam_answer_student": {
+        "quoted": 5,
+        "bare": 5,
+        "files": [
+            "app/Http/Controllers/lms/pal/palController.php",
+            "app/Models/lms/lmsOnlineExamAnswerStudent.php",
+            "database/migrations/2024_03_30_123353_create_lms_online_exam_answer_student_table.php"
+        ]
+    },
+    "lms_online_exam_student": {
+        "quoted": 4,
+        "bare": 9,
+        "files": [
+            "app/Http/Controllers/api/result/ResultLookupApiController.php",
+            "app/Models/lms/lmsOnlineExamStudent.php",
+            "database/migrations/2024_03_30_130801_create_lms_online_exam_student_table.php"
+        ]
+    },
+    "lms_portfolio": {
+        "quoted": 3,
+        "bare": 27,
+        "files": [
+            "app/Models/lms/portfolioModel.php",
+            "database/migrations/2023_03_05_115658_create_lms_portfolio_table.php"
+        ]
+    },
+    "lms_question_mapping": {
+        "quoted": 15,
+        "bare": 58,
+        "files": [
+            "app/Http/Controllers/api/ApiQuestionPaperController.php",
+            "app/Http/Controllers/lms/assignment/assignmentSubmissionController.php",
+            "app/Http/Controllers/lms/lms_apiController.php",
+            "app/Http/Controllers/lms/onlineExamController.php",
+            "app/Http/Controllers/lms/questionpaperController.php",
+            "app/Http/Controllers/lms/reports/studentReportController.php"
+        ]
+    },
+    "lms_question_master": {
+        "quoted": 76,
+        "bare": 154,
+        "files": [
+            "app/Console/Commands/MapQuestion.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/ApiQuestionPaperController.php",
+            "app/Http/Controllers/api/lms/IntelligenceQuestionGenerationApiController.php",
+            "app/Http/Controllers/api/lms/LmsAssignmentApiController.php",
+            "app/Http/Controllers/api/result/DropdownApiController.php"
+        ]
+    },
+    "lms_syllabus": {
+        "quoted": 6,
+        "bare": 19,
+        "files": [
+            "app/Http/Controllers/lms/lmsSyllabusController.php",
+            "routes/lms.php",
+            "database/migrations/2024_10_14_155609_create_lms_syllabus_table.php"
+        ]
+    },
+    "lms_teacher_resource": {
+        "quoted": 19,
+        "bare": 44,
+        "files": [
+            "app/Http/Controllers/api/teacherapiController.php",
+            "app/Http/Controllers/lms/teacher_resource/lms_teacherResourceController.php",
+            "app/Http/Controllers/lms/teacher_resource/TeacherResourceApiController.php",
+            "app/Models/lms/teacherResourceModel.php",
+            "database/migrations/2023_03_05_115658_create_lms_teacher_resource_table.php",
+            "database/migrations/2023_06_12_233617_add_foreign_key_into_inventory_item_lms_mapping_type_table.php"
+        ]
+    },
+    "lms_units": {
+        "quoted": 9,
+        "bare": 10,
+        "files": [
+            "database/migrations/2026_05_21_095949_create_lms_units_table.php",
+            "database/migrations/2026_05_21_100134_add_fields_to_chapter_master_table.php",
+            "database/migrations/2026_05_22_000001_add_planned_periods_to_lms_units_table.php",
+            "database/migrations/2026_06_08_000003_add_extraction_id_to_lms_units_table.php",
+            "database/migrations/2026_06_08_000005_add_unit_chapters_to_lms_units_table.php"
+        ]
+    },
+    "lms_virtual_classroom": {
+        "quoted": 10,
+        "bare": 36,
+        "files": [
+            "app/Http/Controllers/lms/lmsActivityStreamController.php",
+            "app/Http/Controllers/lms/lms_apiController.php",
+            "app/Models/lms/virtualclassroomModel.php",
+            "database/migrations/2023_03_05_115658_create_lms_virtual_classroom_table.php",
+            "database/migrations/2023_06_12_233617_add_foreign_key_into_inventory_item_lms_mapping_type_table.php"
+        ]
+    },
+    "lo_category": {
+        "quoted": 6,
+        "bare": 19,
+        "files": [
+            "app/Models/lms/locategoryModel.php",
+            "routes/lms.php",
+            "database/migrations/2023_03_05_115658_create_lo_category_table.php",
+            "database/migrations/2023_06_12_233617_add_foreign_key_into_inventory_item_lms_mapping_type_table.php"
+        ]
+    },
+    "lo_indicator": {
+        "quoted": 4,
+        "bare": 20,
+        "files": [
+            "app/Models/lms/loindicatorModel.php",
+            "routes/lms.php",
+            "database/migrations/2023_03_05_115658_create_lo_indicator_table.php"
+        ]
+    },
+    "lo_master": {
+        "quoted": 6,
+        "bare": 44,
+        "files": [
+            "app/Models/lms/lomasterModel.php",
+            "routes/lms.php",
+            "routes/result.php",
+            "resources/views/lms/show_lomaster.blade.php",
+            "database/migrations/2023_03_05_115658_create_lo_master_table.php"
+        ]
+    },
+    "mapped_teachers": {
+        "quoted": 7,
+        "bare": 9,
+        "files": [
+            "app/Http/Controllers/front_desk/timetableAiController.php",
+            "app/Http/Controllers/school_setup/mapTeacherController.php",
+            "database/migrations/2024_04_18_121851_create_mapped_teachers_table.php"
+        ]
+    },
+    "master_compliance": {
+        "quoted": 5,
+        "bare": 6,
+        "files": [
+            "app/Http/Controllers/settings/instituteDetailController.php",
+            "database/migrations/2025_01_25_121952_create_master_compliance_table.php"
+        ]
+    },
+    "master_fields": {
+        "quoted": 10,
+        "bare": 10,
+        "files": [
+            "app/Models/settings/masterFieldModel.php",
+            "resources/views/admission/enquiry/admission_enquiry.blade.php",
+            "resources/views/student/add_student.blade.php",
+            "database/migrations/2025_02_14_113042_create_master_fields_table.php",
+            "database/migrations/2026_06_08_100001_add_use_table_data_to_master_fields.php",
+            "database/migrations/2026_06_08_110000_seed_master_fields_admission_enquiry.php"
+        ]
+    },
+    "master_fields_institute": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Http/Controllers/settings/configurationController.php",
+            "app/Models/settings/masterFieldInstituteModel.php",
+            "database/migrations/2025_02_15_114457_create_master_fields_institute_table.php"
+        ]
+    },
+    "master_fields_table": {
+        "quoted": 5,
+        "bare": 5,
+        "files": [
+            "app/Models/settings/mastreFieldsTable.php",
+            "database/migrations/2025_02_24_142657_create_master_fields_table_table.php",
+            "database/migrations/2026_06_08_110100_seed_master_fields_table_admission_enquiry.php"
+        ]
+    },
+    "master_setup_select": {
+        "quoted": 18,
+        "bare": 21,
+        "files": [
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/inventory/inventory_item_quotationController.php",
+            "app/Http/Controllers/inventory/requisitionController.php",
+            "app/Http/Controllers/settings/masterSetupSelectController.php",
+            "app/Http/Controllers/user/tbluserController.php",
+            "database/migrations/2024_07_16_140316_create_master_setup_select_table.php"
+        ]
+    },
+    "master_skills": {
+        "quoted": 5,
+        "bare": 5,
+        "files": [
+            "app/Models/lms/masterSkill.php",
+            "app/Models/skill/skill.php",
+            "database/migrations/2025_01_16_164957_create_master_skills_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "MBTI_answer": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Http/Controllers/lms/counselling/MBTIController.php",
+            "database/migrations/2023_03_05_115658_create_mbti_answer_table.php"
+        ]
+    },
+    "MBTI_paper": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Http/Controllers/lms/counselling/MBTIController.php",
+            "database/migrations/2023_03_05_115658_create_mbti_paper_table.php"
+        ]
+    },
+    "migrations": {
+        "quoted": 2,
+        "bare": 1690,
+        "files": [
+            "config/database.php"
+        ]
+    },
+    "mobile_homescreen": {
+        "quoted": 13,
+        "bare": 15,
+        "files": [
+            "app/Http/Controllers/api/apiController.php",
+            "app/Http/Controllers/api/MobileAppMenuRightsApiController.php",
+            "app/Http/Controllers/user/tblmobileAppMenuRightsController.php",
+            "app/Models/mobile_homescreenModel.php",
+            "resources/views/user/add_mobileapp_menu_rights.blade.php",
+            "database/migrations/2023_03_05_115658_create_mobile_homescreen_table.php"
+        ]
+    },
+    "mst_item_status": {
+        "quoted": 60,
+        "bare": 63,
+        "files": [
+            "app/Http/Controllers/library/BookController.php",
+            "app/Http/Controllers/library/itemScanController.php",
+            "app/Http/Controllers/library/LostandDamage.php",
+            "app/Models/library/itemStatus.php",
+            "database/migrations/2025_01_15_164229_create_mst_item_status_table.php",
+            "public/library/admin/modules/bibliography/iframe_item_list.php"
+        ]
+    },
+    "NACH_ac_type": {
+        "quoted": 3,
+        "bare": 4,
+        "files": [
+            "app/Models/fees/NACH/ac_typeModel.php",
+            "database/migrations/2023_03_05_115658_create_nach_ac_type_table.php"
+        ]
+    },
+    "NACH_MASTER": {
+        "quoted": 5,
+        "bare": 12,
+        "files": [
+            "app/Http/Controllers/fees/NACH/s1excel_exportController.php",
+            "app/Http/Controllers/fees/NACH/s3excel_exportController.php",
+            "database/migrations/2023_03_05_115658_create_nach_master_table.php"
+        ]
+    },
+    "neo4j_sync_queue": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "new_admission_inquiry_registration": {
+        "quoted": 21,
+        "bare": 29,
+        "files": [
+            "app/Http/Controllers/admission/onlineAdmissionConfirmController.php",
+            "app/Http/Controllers/api/onlineAdmissionConfirmAPIController.php",
+            "database/migrations/2023_03_05_115658_create_new_admission_inquiry_registration_table.php",
+            "public/excel_upload/map_student_document_data.php"
+        ]
+    },
+    "new_client_rights": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_03_05_115658_create_new_client_rights_table.php"
+        ]
+    },
+    "old_question_category_master": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_03_05_115658_create_old_question_category_master_table.php"
+        ]
+    },
+    "old_question_level_master": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_03_05_115658_create_old_question_level_master_table.php"
+        ]
+    },
+    "onboarding_module": {
+        "quoted": 6,
+        "bare": 6,
+        "files": [
+            "app/Console/Commands/InstallOnboardingJourney.php",
+            "app/Models/onboarding/OnboardingModuleModel.php",
+            "app/Services/Onboarding/OnboardingProgressService.php",
+            "database/migrations/2026_08_03_100100_create_onboarding_module_table.php"
+        ]
+    },
+    "onboarding_progress": {
+        "quoted": 5,
+        "bare": 5,
+        "files": [
+            "app/Console/Commands/InstallOnboardingJourney.php",
+            "app/Models/onboarding/OnboardingProgressModel.php",
+            "database/migrations/2026_08_03_100300_create_onboarding_progress_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "onboarding_step": {
+        "quoted": 6,
+        "bare": 6,
+        "files": [
+            "app/Console/Commands/InstallOnboardingJourney.php",
+            "app/Models/onboarding/OnboardingStepModel.php",
+            "database/migrations/2026_08_03_100200_create_onboarding_step_table.php"
+        ]
+    },
+    "onet_abilities": {
+        "quoted": 1,
+        "bare": 2,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php"
+        ]
+    },
+    "onet_career_cluster": {
+        "quoted": 1,
+        "bare": 1,
+        "files": [
+            "app/Models/lms/counselling/OnetCareerCluster.php"
+        ]
+    },
+    "onet_content_model_reference": {
+        "quoted": 9,
+        "bare": 9,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php",
+            "app/Models/lms/counselling/OnetContentModelReference.php"
+        ]
+    },
+    "onet_employer": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/lms/counselling/OnetEmployer.php",
+            "database/migrations/2024_08_14_152406_onet_employer.php"
+        ]
+    },
+    "onet_expert_advice": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php",
+            "database/migrations/2024_08_20_121045_create_onet_expert_advice.php"
+        ]
+    },
+    "onet_explore_sector": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php",
+            "database/migrations/2024_08_20_120337_create_onet_explore_sector.php"
+        ]
+    },
+    "onet_institute_courses": {
+        "quoted": 2,
+        "bare": 4,
+        "files": [
+            "database/migrations/2024_08_12_151325_onet_institute_courses.php"
+        ]
+    },
+    "onet_institute_data": {
+        "quoted": 5,
+        "bare": 7,
+        "files": [
+            "app/Models/lms/counselling/OnetInstitutes.php",
+            "database/migrations/2024_08_12_144828_onet_institute_data.php",
+            "database/migrations/2024_08_12_151325_onet_institute_courses.php"
+        ]
+    },
+    "onet_interests": {
+        "quoted": 1,
+        "bare": 2,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php"
+        ]
+    },
+    "onet_job_zones": {
+        "quoted": 0,
+        "bare": 1,
+        "files": []
+    },
+    "onet_job_zone_reference": {
+        "quoted": 1,
+        "bare": 2,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php"
+        ]
+    },
+    "onet_knowledge": {
+        "quoted": 1,
+        "bare": 2,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php"
+        ]
+    },
+    "onet_occupation_data": {
+        "quoted": 1,
+        "bare": 2,
+        "files": [
+            "app/Models/lms/counselling/OnetOccupationData.php"
+        ]
+    },
+    "onet_scales_reference": {
+        "quoted": 9,
+        "bare": 9,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php"
+        ]
+    },
+    "onet_skills": {
+        "quoted": 1,
+        "bare": 3,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php"
+        ]
+    },
+    "onet_task_ratings": {
+        "quoted": 1,
+        "bare": 1,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php"
+        ]
+    },
+    "onet_task_statements": {
+        "quoted": 1,
+        "bare": 1,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php"
+        ]
+    },
+    "onet_technology_skills": {
+        "quoted": 1,
+        "bare": 1,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php"
+        ]
+    },
+    "onet_tools_used": {
+        "quoted": 1,
+        "bare": 1,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php"
+        ]
+    },
+    "onet_unspsc_reference": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php"
+        ]
+    },
+    "onet_work_activities": {
+        "quoted": 1,
+        "bare": 1,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php"
+        ]
+    },
+    "onet_work_context": {
+        "quoted": 1,
+        "bare": 1,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php"
+        ]
+    },
+    "onet_work_context_categories": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "onet_work_styles": {
+        "quoted": 1,
+        "bare": 2,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php"
+        ]
+    },
+    "onet_work_values": {
+        "quoted": 1,
+        "bare": 2,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php"
+        ]
+    },
+    "outward": {
+        "quoted": 15,
+        "bare": 61,
+        "files": [
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/inward_outward/outwardController.php",
+            "app/Http/Controllers/inward_outward/outward_reportController.php",
+            "app/Http/Controllers/used_storage_graphController.php",
+            "app/Models/inward_outward/outwardModel.php",
+            "database/migrations/2023_03_05_115658_create_outward_table.php"
+        ]
+    },
+    "o_net_data_categories": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_11_07_101252_create_o_net_data_categories_table.php"
+        ]
+    },
+    "o_net_data_occupations": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_11_07_102327_create_o_net_data_occupations_table.php"
+        ]
+    },
+    "o_net_data_sub_categories": {
+        "quoted": 4,
+        "bare": 5,
+        "files": [
+            "database/migrations/2023_11_27_162445_create_o_net_data_sub_categories_table.php",
+            "database/migrations/2023_12_02_164827_add_column_to_o_net_data_sub_categories.php"
+        ]
+    },
+    "o_net_data_tables": {
+        "quoted": 9,
+        "bare": 10,
+        "files": [
+            "app/Http/Controllers/lms/counselling/lmsCounsellingController.php",
+            "database/migrations/2023_11_27_184747_create_o_net_data_tables_table.php",
+            "database/migrations/2023_12_03_174328_add_column_to_o_net_data_tables.php",
+            "database/migrations/2023_12_09_092446_add_column_to_o_net_data_tables.php",
+            "database/migrations/2023_12_09_145915_add_column_to_o_net_data_tables.php"
+        ]
+    },
+    "o_net_data_table_lists": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_11_27_223219_create_o_net_data_table_lists_table.php"
+        ]
+    },
+    "o_net_occupation_details": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "database/migrations/2023_11_07_104535_create_o_net_occupation_details_table.php",
+            "database/migrations/2023_11_09_153655_add_column_to_o_net_occupation_details_table.php"
+        ]
+    },
+    "o_net_occupation_detail_abilities_summeries": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_11_07_125538_create_o_net_occupation_detail_abilities_summeries_table.php"
+        ]
+    },
+    "o_net_occupation_detail_education_summeries": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "database/migrations/2023_11_07_131339_create_o_net_occupation_detail_education_summeries_table.php",
+            "database/migrations/2023_11_28_132005_add_column_to_o_net_occupation_detail_education_summeries.php"
+        ]
+    },
+    "o_net_occupation_detail_interest_summeries": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_11_07_132210_create_o_net_occupation_detail_interest_summeries_table.php"
+        ]
+    },
+    "o_net_occupation_detail_job_zone_summeries": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "database/migrations/2023_11_07_130428_create_o_net_occupation_detail_job_zone_summeries_table.php",
+            "database/migrations/2023_11_28_131007_add_column_to_o_net_occupation_detail_job_zone_summeries.php"
+        ]
+    },
+    "o_net_occupation_detail_knowledge_summeries": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_11_07_123949_create_o_net_occupation_detail_knowledge_summeries_table.php"
+        ]
+    },
+    "o_net_occupation_detail_lists": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "database/migrations/2023_11_07_110833_create_o_net_occupation_detail_lists_table.php",
+            "database/migrations/2023_11_09_155218_add_column_to_o_net_occupation_detail_lists_table.php"
+        ]
+    },
+    "o_net_occupation_detail_list_summaries": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_11_07_115925_create_o_net_occupation_detail_list_summaries_table.php"
+        ]
+    },
+    "o_net_occupation_detail_skill_summeries": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Http/Controllers/settings/instituteDetailController.php",
+            "database/migrations/2023_11_07_124627_create_o_net_occupation_detail_skill_summeries_table.php"
+        ]
+    },
+    "o_net_occupation_detail_tech_skill_summeries": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_11_07_121919_create_o_net_occupation_detail_tech_skill_summeries_table.php"
+        ]
+    },
+    "o_net_occupation_detail_work_activity_summeries": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_11_07_125949_create_o_net_occupation_detail_work_activity_summeries_table.php"
+        ]
+    },
+    "o_net_occupation_detail_work_style_summeries": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_11_07_132518_create_o_net_occupation_detail_work_style_summeries_table.php"
+        ]
+    },
+    "o_net_occupation_detail_work_value_summeries": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_11_07_132816_create_o_net_occupation_detail_work_value_summeries_table.php"
+        ]
+    },
+    "pal_assessment_results": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_classroom_activities": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_collaboration_activities": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_competencies": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Competency.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_concepts": {
+        "quoted": 12,
+        "bare": 12,
+        "files": [
+            "app/Models/PAL/Concept.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_contents": {
+        "quoted": 6,
+        "bare": 6,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_content_recommendations": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_discussions": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_group_activities": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_learner_misconceptions": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_learner_preferences": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_learner_states": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/LearnerState.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_learning_events": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_learning_journals": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_learning_patterns": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_learning_plans": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_learning_sessions": {
+        "quoted": 9,
+        "bare": 10,
+        "files": [
+            "app/Http/Middleware/PalApiAuth.php",
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_misconceptions": {
+        "quoted": 10,
+        "bare": 10,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_pedagogy_effectiveness": {
+        "quoted": 11,
+        "bare": 11,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/migrations/2026_07_24_120000_add_pal_tracking_columns.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_reflections": {
+        "quoted": 10,
+        "bare": 10,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/migrations/2026_07_24_120000_add_pal_tracking_columns.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_remediations": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_remediation_sessions": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_self_corrections": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_session_events": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_strategy_selections": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_subjects": {
+        "quoted": 10,
+        "bare": 10,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "pal_telemetry_events": {
+        "quoted": 11,
+        "bare": 11,
+        "files": [
+            "app/Models/PAL/Models.php",
+            "database/migrations/2026_06_11_131905_create_pal_tables.php",
+            "database/migrations/2026_06_11_132105_fix_telemetry_event_columns.php",
+            "database/migrations/2026_07_24_130000_add_pal_telemetry_session_id.php",
+            "database/pal_schema_full.sql"
+        ]
+    },
+    "parent_communication": {
+        "quoted": 34,
+        "bare": 60,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/adminapiController.php",
+            "app/Http/Controllers/api/result/DropdownApiController.php",
+            "app/Http/Controllers/api/TeacherDailyReportApiController.php",
+            "app/Http/Controllers/dashboardController.php"
+        ]
+    },
+    "password_resets": {
+        "quoted": 6,
+        "bare": 6,
+        "files": [
+            "app/Http/Controllers/Auth/ForgotPasswordController.php",
+            "database/migrations/2014_10_12_100000_create_password_resets_table.php",
+            "config/auth.php"
+        ]
+    },
+    "payroll_types": {
+        "quoted": 24,
+        "bare": 26,
+        "files": [
+            "app/Http/Controllers/leave/leaveEncashmentController.php",
+            "app/Http/Controllers/Payroll/PayrollController.php",
+            "app/Http/Controllers/settings/conversationalAIController.php",
+            "app/Http/Controllers/user/tbluserController.php",
+            "app/Http/Livewire/ConversationalAIV2.php",
+            "resources/views/payroll/form16/index.blade.php"
+        ]
+    },
+    "period": {
+        "quoted": 66,
+        "bare": 409,
+        "files": [
+            "app/Http/Controllers/api/AcademicSetupApiController.php",
+            "app/Http/Controllers/api/PAL/PALAPIController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/front_desk/timetableAiController.php",
+            "app/Http/Controllers/front_desk/timetableController.php",
+            "app/Http/Controllers/school_setup/classwisetimetableController.php"
+        ]
+    },
+    "period_details": {
+        "quoted": 16,
+        "bare": 27,
+        "files": [
+            "app/Http/Controllers/api/AcademicSetupApiController.php",
+            "app/Http/Controllers/school_setup/classwisetimetableController.php",
+            "app/Http/Controllers/school_setup/periodController.php",
+            "resources/views/school_setup/add_period.blade.php",
+            "database/migrations/2025_03_26_105324_create_period_details_table.php"
+        ]
+    },
+    "personal_access_tokens": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2019_12_14_000001_create_personal_access_tokens_table.php"
+        ]
+    },
+    "petty_cash": {
+        "quoted": 16,
+        "bare": 25,
+        "files": [
+            "app/Http/Controllers/api/PettyCashApiController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/used_storage_graphController.php",
+            "app/Models/frontdesk/PettyCashModel.php",
+            "database/migrations/2023_03_05_115658_create_petty_cash_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "petty_cash_master": {
+        "quoted": 11,
+        "bare": 16,
+        "files": [
+            "app/Http/Controllers/api/PettyCashApiController.php",
+            "app/Models/frontdesk/PettyCashMasterModel.php",
+            "database/migrations/2023_03_05_115658_create_petty_cash_master_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "photo_video_gallary": {
+        "quoted": 14,
+        "bare": 40,
+        "files": [
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/front_desk/photo_video_gallary/photo_video_gallaryController.php",
+            "app/Http/Controllers/used_storage_graphController.php",
+            "routes/student.php",
+            "database/migrations/2023_03_05_115658_create_photo_video_gallary_table.php"
+        ]
+    },
+    "physical_file_location": {
+        "quoted": 14,
+        "bare": 26,
+        "files": [
+            "app/Http/Controllers/inward_outward/inwardController.php",
+            "app/Http/Controllers/inward_outward/inward_reportController.php",
+            "app/Http/Controllers/inward_outward/outwardController.php",
+            "app/Http/Controllers/inward_outward/outward_reportController.php",
+            "app/Http/Controllers/inward_outward/physical_file_locationController.php",
+            "app/Models/inward_outward/physical_file_locationModel.php"
+        ]
+    },
+    "place_master": {
+        "quoted": 14,
+        "bare": 22,
+        "files": [
+            "app/Http/Controllers/inward_outward/inwardController.php",
+            "app/Http/Controllers/inward_outward/inward_reportController.php",
+            "app/Http/Controllers/inward_outward/outwardController.php",
+            "app/Http/Controllers/inward_outward/outward_reportController.php",
+            "app/Http/Controllers/inward_outward/place_masterController.php",
+            "app/Models/inward_outward/place_masterModel.php"
+        ]
+    },
+    "proxy_master": {
+        "quoted": 7,
+        "bare": 69,
+        "files": [
+            "app/Http/Controllers/school_setup/proxyController.php",
+            "app/Models/school_setup/proxyModel.php",
+            "routes/web.php",
+            "database/migrations/2023_03_05_115658_create_proxy_master_table.php",
+            "database/migrations/2023_06_12_233617_add_foreign_key_into_inventory_item_lms_mapping_type_table.php"
+        ]
+    },
+    "ptm_booking_master": {
+        "quoted": 5,
+        "bare": 10,
+        "files": [
+            "app/Http/Controllers/ptm/ptmattenedstatusController.php",
+            "app/Models/ptm/ptmattenedstatusModel.php",
+            "database/migrations/2023_03_05_115658_create_ptm_booking_master_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "ptm_time_slots_master": {
+        "quoted": 4,
+        "bare": 20,
+        "files": [
+            "app/Models/ptm/ptmtimeslotmasterModel.php",
+            "database/migrations/2023_03_05_115658_create_ptm_time_slots_master_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "question_paper": {
+        "quoted": 56,
+        "bare": 171,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/lms/LmsAssignmentApiController.php",
+            "app/Http/Controllers/api/result/DropdownApiController.php",
+            "app/Http/Controllers/lms/assignment/assignmentSubmissionController.php",
+            "app/Http/Controllers/lms/lms_apiController.php"
+        ]
+    },
+    "question_type_master": {
+        "quoted": 13,
+        "bare": 26,
+        "files": [
+            "app/Http/Controllers/api/ApiLmsCourseController.php",
+            "app/Http/Controllers/api/ApiQuestionPaperController.php",
+            "app/Http/Controllers/GraphControllerNew.php",
+            "app/Http/Controllers/lms/assessmentQuestionController.php",
+            "app/Http/Controllers/lms/questionpaperController.php",
+            "app/Models/lms/questiontypeModel.php"
+        ]
+    },
+    "recommendations": {
+        "quoted": 11,
+        "bare": 103,
+        "files": [
+            "app/Http/Controllers/GraphControllerNew.php",
+            "app/Http/Controllers/lms/PedagogyEngineController.php",
+            "resources/views/newD3recommendnew.blade.php",
+            "resources/views/welcomenew.blade.php",
+            "database/migrations/2025_01_02_160147_create_recommendations_table.php",
+            "database/migrations/2026_06_18_153544_create_lms_student_profile_table.php"
+        ]
+    },
+    "relation_table_fields": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "database/migrations/2023_03_05_115658_create_relation_table_fields_table.php",
+            "public/excel_upload/Import_xlsx_data.php"
+        ]
+    },
+    "religion": {
+        "quoted": 72,
+        "bare": 120,
+        "files": [
+            "app/Http/Controllers/admission/admissionMasterController.php",
+            "app/Http/Controllers/admission/admissionRegistrationController.php",
+            "app/Http/Controllers/admission/onlineAdmissionConfirmController.php",
+            "app/Http/Controllers/api/admissionRegistrationAPIController.php",
+            "app/Http/Controllers/api/DocumentTemplateApiController.php",
+            "app/Http/Controllers/student/bulkStudentController.php"
+        ]
+    },
+    "report_dynamic": {
+        "quoted": 1,
+        "bare": 1,
+        "files": [
+            "app/Models/ReportDynamic.php"
+        ]
+    },
+    "report_module": {
+        "quoted": 9,
+        "bare": 10,
+        "files": [
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/MigrationModulesApiController.php",
+            "app/Http/Controllers/report/dynamic_report/dynamic_report_controller.php",
+            "routes/fees.php",
+            "database/migrations/2023_03_05_115658_create_report_module_table.php"
+        ]
+    },
+    "report_module_data": {
+        "quoted": 9,
+        "bare": 9,
+        "files": [
+            "app/Http/Controllers/api/MigrationModulesApiController.php",
+            "app/Http/Controllers/report/dynamic_report/dynamic_report_controller.php",
+            "database/migrations/2023_03_05_115658_create_report_module_data_table.php"
+        ]
+    },
+    "report_module_fields": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Http/Controllers/report/dynamic_report/dynamic_report_controller.php",
+            "database/migrations/2023_03_05_115658_create_report_module_fields_table.php"
+        ]
+    },
+    "requirement_gathering": {
+        "quoted": 7,
+        "bare": 10,
+        "files": [
+            "app/Http/Controllers/api/OnboardingApiController.php",
+            "app/Http/Controllers/tourController.php",
+            "app/Models/onboarding/OnboardingModuleModel.php",
+            "app/Models/requirementGathering.php",
+            "database/migrations/2024_06_03_113101_create_requirement_gathering_table.php",
+            "database/migrations/2026_08_03_100100_create_onboarding_module_table.php"
+        ]
+    },
+    "result_activity_group": {
+        "quoted": 6,
+        "bare": 17,
+        "files": [
+            "app/Http/Controllers/result/result_activity_marks/resultActivityMarksController.php",
+            "app/Http/Controllers/result/result_activity_marks/resultActivityMarksV1Controller.php",
+            "app/Http/Controllers/result/result_skillset/resultSkillsetController.php",
+            "database/migrations/2023_12_23_103502_create_result_activity_group_table.php"
+        ]
+    },
+    "result_activity_marks": {
+        "quoted": 21,
+        "bare": 40,
+        "files": [
+            "app/Http/Controllers/result/new_result/studentResultController.php",
+            "app/Http/Controllers/result/new_result/studentResultController2.php",
+            "app/Http/Controllers/result/result_activity_marks/resultActivityMarksController.php",
+            "app/Http/Controllers/result/result_activity_marks/resultActivityMarksV1Controller.php",
+            "routes/result.php",
+            "database/migrations/2023_12_23_112014_create_result_activity_marks_table.php"
+        ]
+    },
+    "result_activity_master": {
+        "quoted": 19,
+        "bare": 55,
+        "files": [
+            "app/Http/Controllers/result/new_result/studentResultController.php",
+            "app/Http/Controllers/result/new_result/studentResultController2.php",
+            "app/Http/Controllers/result/result_activity_marks/resultActivityMarksV1Controller.php",
+            "app/Http/Controllers/result/result_activity_master/resultActivityMasterController.php",
+            "app/Http/Controllers/result/result_skillset/resultSkillsetController.php",
+            "routes/result.php"
+        ]
+    },
+    "result_book_master": {
+        "quoted": 11,
+        "bare": 46,
+        "files": [
+            "app/Http/Controllers/result/cbse_result/cbse_11_t2_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD2.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_t2_result_controller.php",
+            "app/Http/Controllers/result/result_book_master/result_book_master_controller.php"
+        ]
+    },
+    "result_co_scholastic": {
+        "quoted": 31,
+        "bare": 54,
+        "files": [
+            "app/Http/Controllers/api/result/CoScholasticApiController.php",
+            "app/Http/Controllers/api/teacherapiController.php",
+            "app/Http/Controllers/result/cbse_result/cbse_11_t2_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD2.php"
+        ]
+    },
+    "result_co_scholastic_grades": {
+        "quoted": 14,
+        "bare": 33,
+        "files": [
+            "app/Http/Controllers/result/cbse_result/cbse_11_t2_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD2.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_t2_result_controller.php",
+            "app/Http/Controllers/result/marks_entry/marks_entry_controller.php"
+        ]
+    },
+    "result_co_scholastic_marks_entries": {
+        "quoted": 11,
+        "bare": 30,
+        "files": [
+            "app/Http/Controllers/result/cbse_result/cbse_11_t2_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD2.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_t2_result_controller.php",
+            "app/Http/Controllers/result/co_scholastic_marks_entry/co_scholastic_marks_entry_controller.php"
+        ]
+    },
+    "result_co_scholastic_parent": {
+        "quoted": 12,
+        "bare": 35,
+        "files": [
+            "app/Http/Controllers/api/result/CoScholasticMasterApiController.php",
+            "app/Http/Controllers/api/teacherapiController.php",
+            "app/Http/Controllers/result/cbse_result/cbse_11_t2_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD2.php"
+        ]
+    },
+    "result_co_scholatic_range": {
+        "quoted": 14,
+        "bare": 14,
+        "files": [
+            "app/Http/Controllers/result/new_result/studentResultController.php",
+            "app/Http/Controllers/result/new_result/studentResultController2.php",
+            "database/migrations/2023_09_26_121212_create_result_co_scholatic_range_table.php"
+        ]
+    },
+    "result_create_exam": {
+        "quoted": 28,
+        "bare": 145,
+        "files": [
+            "app/Http/Controllers/api/result/ExamCreationApiController.php",
+            "app/Http/Controllers/api/teacherapiController.php",
+            "app/Http/Controllers/Import/ExcelDownloadController.php",
+            "app/Http/Controllers/Import/ImportController.php",
+            "app/Http/Controllers/result/cbse_result/cbse_11_t2_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php"
+        ]
+    },
+    "result_exam_approve": {
+        "quoted": 12,
+        "bare": 12,
+        "files": [
+            "app/Http/Controllers/result/co_scholastic_marks_entry/co_scholastic_marks_entry_controller.php",
+            "app/Http/Controllers/result/marks_entry/marks_entry_controller.php",
+            "resources/views/result/result_report/marks_approval_report.blade.php",
+            "database/migrations/2023_08_03_115659_create_result_exam_approve_table.php"
+        ]
+    },
+    "result_exam_master": {
+        "quoted": 26,
+        "bare": 77,
+        "files": [
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/result/cbse_result/cbse_11_t2_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD2.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_t2_result_controller.php"
+        ]
+    },
+    "result_exam_type_master": {
+        "quoted": 4,
+        "bare": 9,
+        "files": [
+            "app/Http/Controllers/result/marks_entry/marks_entry_controller.php",
+            "app/Models/result/ExamTypeMaster/ExamTypeMater.php",
+            "database/migrations/2023_03_05_115658_create_result_exam_type_master_table.php"
+        ]
+    },
+    "result_html": {
+        "quoted": 39,
+        "bare": 79,
+        "files": [
+            "app/Http/Controllers/api/result/AllResultsApiController.php",
+            "app/Http/Controllers/result/approve_mobile_result/approve_mobile_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD2.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_t2_result_controller.php"
+        ]
+    },
+    "result_marks": {
+        "quoted": 16,
+        "bare": 77,
+        "files": [
+            "app/Http/Controllers/Import/ImportController.php",
+            "app/Http/Controllers/result/cbse_result/cbse_11_t2_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD2.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_t2_result_controller.php"
+        ]
+    },
+    "result_master_confrigration": {
+        "quoted": 13,
+        "bare": 85,
+        "files": [
+            "app/Http/Controllers/api/result/ResultMasterApiController.php",
+            "app/Http/Controllers/result/cbse_result/cbse_11_t2_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD2.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_t2_result_controller.php"
+        ]
+    },
+    "result_oldyear_marks": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "result_personalize_marks": {
+        "quoted": 14,
+        "bare": 20,
+        "files": [
+            "app/Http/Controllers/api/lms/StudentHomeworkApiController.php",
+            "app/Http/Controllers/Import/ImportController.php",
+            "app/Http/Controllers/lms/pal/resultPersonalizeMarksController.php",
+            "app/Http/Controllers/result/result_api/resultAPIController.php",
+            "app/Http/Controllers/student/studentHomeworkController.php",
+            "routes/result.php"
+        ]
+    },
+    "result_remarks": {
+        "quoted": 44,
+        "bare": 96,
+        "files": [
+            "app/Http/Controllers/api/result/StudentResultRemarksApiController.php",
+            "app/Http/Controllers/result/new_result/studentResultController.php",
+            "app/Http/Controllers/result/new_result/studentResultController2.php",
+            "app/Http/Controllers/result/new_result/studentResultRemarksController.php",
+            "app/Http/Controllers/student/studentCertificateController.php",
+            "resources/views/result/new_result/student_result_remarks/show.blade.php"
+        ]
+    },
+    "result_remark_masters": {
+        "quoted": 4,
+        "bare": 10,
+        "files": [
+            "app/Http/Controllers/result/result_remark_master/result_remark_master_controller.php",
+            "app/Models/result/result_remark_mater/result_remark_master.php",
+            "database/migrations/2023_03_05_115658_create_result_remark_masters_table.php"
+        ]
+    },
+    "result_reportcard_marks": {
+        "quoted": 9,
+        "bare": 13,
+        "files": [
+            "app/Http/Controllers/result/new_result/studentResultController.php",
+            "app/Http/Controllers/student/studentReportController.php",
+            "database/migrations/2025_11_14_add_missing_columns_to_result_reportcard_marks_table.php"
+        ]
+    },
+    "result_skillset": {
+        "quoted": 41,
+        "bare": 76,
+        "files": [
+            "app/Http/Controllers/api/result/ResultSkillsetApiController.php",
+            "app/Http/Controllers/result/new_result/studentResultController.php",
+            "app/Http/Controllers/result/new_result/studentResultController2.php",
+            "app/Http/Controllers/result/result_activity_marks/resultActivityMarksController.php",
+            "app/Http/Controllers/result/result_activity_marks/resultActivityMarksV1Controller.php",
+            "app/Http/Controllers/result/result_activity_master/resultActivityMasterController.php"
+        ]
+    },
+    "result_std_grd_maping": {
+        "quoted": 9,
+        "bare": 22,
+        "files": [
+            "app/Http/Controllers/result/cbse_result/cbse_11_t2_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD2.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_t2_result_controller.php",
+            "app/Models/result/std_grd_mapping/std_grd_maping.php"
+        ]
+    },
+    "result_student_attendance_master": {
+        "quoted": 11,
+        "bare": 32,
+        "files": [
+            "app/Http/Controllers/result/cbse_result/cbse_11_t2_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD2.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_t2_result_controller.php",
+            "app/Http/Controllers/settings/templateMasterController.php"
+        ]
+    },
+    "result_sub_activity": {
+        "quoted": 16,
+        "bare": 22,
+        "files": [
+            "app/Http/Controllers/result/new_result/studentResultController.php",
+            "app/Http/Controllers/result/new_result/studentResultController2.php",
+            "app/Http/Controllers/result/result_activity_marks/resultActivityMarksController.php",
+            "app/Http/Controllers/result/result_activity_marks/resultActivityMarksV1Controller.php",
+            "app/Http/Controllers/result/result_activity_master/resultActivityMasterController.php",
+            "database/migrations/2024_09_03_114740_create_result_sub_activity_table.php"
+        ]
+    },
+    "result_template_master": {
+        "quoted": 5,
+        "bare": 15,
+        "files": [
+            "app/Http/Controllers/result/new_result/studentResultController.php",
+            "app/Http/Controllers/result/new_result/studentResultController2.php",
+            "app/Models/result/result_template.php",
+            "database/migrations/2023_09_08_145910_create_result_template_master_table.php"
+        ]
+    },
+    "result_trust_master": {
+        "quoted": 8,
+        "bare": 21,
+        "files": [
+            "app/Http/Controllers/result/cbse_result/cbse_11_t2_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD2.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_t2_result_controller.php",
+            "app/Models/result/result_book_master/result_trust_master.php"
+        ]
+    },
+    "result_working_day_master": {
+        "quoted": 8,
+        "bare": 36,
+        "files": [
+            "app/Http/Controllers/result/cbse_result/cbse_11_t2_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD2.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_t2_result_controller.php",
+            "app/Models/result/working_day_master/working_day_master.php"
+        ]
+    },
+    "rightside_menumaster": {
+        "quoted": 3,
+        "bare": 11,
+        "files": [
+            "app/Http/Controllers/api/NewLMS_ApiController.php",
+            "database/migrations/2023_03_05_115658_create_rightside_menumaster_table.php"
+        ]
+    },
+    "role_responsibility": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Http/Controllers/api/OnboardingApiController.php",
+            "app/Http/Controllers/tourController.php",
+            "database/migrations/2023_12_13_151321_create_role_responsibility_table.php"
+        ]
+    },
+    "room_type_master": {
+        "quoted": 9,
+        "bare": 9,
+        "files": [
+            "app/Http/Controllers/api/HostelSetupApiController.php",
+            "app/Http/Controllers/hostel_management/room_type_masterController.php",
+            "app/Models/hostel_management/room_type_masterModel.php",
+            "database/migrations/2023_03_05_115658_create_room_type_master_table.php"
+        ]
+    },
+    "S2_LOG": {
+        "quoted": 6,
+        "bare": 7,
+        "files": [
+            "app/Http/Controllers/fees/NACH/s1excel_exportController.php",
+            "app/Http/Controllers/fees/NACH/s2excel_importController.php",
+            "app/Http/Controllers/report/dynamic_report/dynamic_report_controller.php",
+            "database/migrations/2023_03_05_115658_create_s2_log_table.php"
+        ]
+    },
+    "school_detail": {
+        "quoted": 9,
+        "bare": 13,
+        "files": [
+            "app/Http/Controllers/front_desk/school_detail/schooldetailController.php",
+            "database/migrations/2023_03_05_115658_create_school_detail_table.php",
+            "database/migrations/2023_06_12_233618_add_foreign_key_into_inventory_item_lms_mapping_type_table.php"
+        ]
+    },
+    "school_sections": {
+        "quoted": 14,
+        "bare": 14,
+        "files": [
+            "app/Http/Controllers/learning_outcome/lo_class_greport/lo_class_greportController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_arNar/lo_marks_arNarController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_entry/lo_marks_entryController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_greport/lo_marks_greportController.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_greport2/lo_marks_greport2Controller.php",
+            "app/Http/Controllers/learning_outcome/lo_marks_report/lo_marks_reportController.php"
+        ]
+    },
+    "school_setup": {
+        "quoted": 78,
+        "bare": 504,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/api/apiController.php",
+            "app/Http/Controllers/api/ApiLmsCourseController.php",
+            "app/Http/Controllers/api/ApiLoginController.php",
+            "app/Http/Controllers/api/ApiQuestionPaperController.php",
+            "app/Http/Controllers/api/DocumentTemplateApiController.php"
+        ]
+    },
+    "semantic_intelligence": {
+        "quoted": 16,
+        "bare": 17,
+        "files": [
+            "app/Http/Controllers/api/lms/SemanticIntelligenceApiController.php",
+            "app/Http/Controllers/lms/nextAPI/chapterMasterController.php",
+            "app/Services/QuestionGenerationService.php",
+            "database/migrations/2026_06_10_000000_create_semantic_intelligence_table.php",
+            "database/migrations/2026_06_15_000001_add_semantic_fields_to_semantic_intelligence_table.php",
+            "database/migrations/2026_06_16_000000_add_sub_institute_id_to_semantic_intelligence_table.php"
+        ]
+    },
+    "sharebazar_margin": {
+        "quoted": 8,
+        "bare": 9,
+        "files": [
+            "app/Http/Controllers/api/MigrationModulesApiController.php",
+            "app/Http/Controllers/bazar/bulkUploadedReportController.php",
+            "app/Http/Controllers/bazar/bulkUploadSheetController.php",
+            "database/migrations/2023_10_06_112251_create_sharebazar_margin_table.php",
+            "database/migrations/2023_10_10_144532_add_columns_update_date_to_sharebazar_margin.php"
+        ]
+    },
+    "sharebazar_pnl": {
+        "quoted": 8,
+        "bare": 9,
+        "files": [
+            "app/Http/Controllers/api/MigrationModulesApiController.php",
+            "app/Http/Controllers/bazar/bulkUploadedReportController.php",
+            "app/Http/Controllers/bazar/bulkUploadSheetController.php",
+            "database/migrations/2023_10_06_112413_create_sharebazar_pnl_table.php",
+            "database/migrations/2023_10_10_144932_add_columns_update_date_to_sharebazar_pnl.php"
+        ]
+    },
+    "sharebazar_position": {
+        "quoted": 13,
+        "bare": 14,
+        "files": [
+            "app/Http/Controllers/api/MigrationModulesApiController.php",
+            "app/Http/Controllers/bazar/bulkUploadedReportController.php",
+            "app/Http/Controllers/bazar/bulkUploadSheetController.php",
+            "app/Http/Controllers/fees/fees_reconciliation/fees_reconciliation_upload_sheet_controller.php",
+            "database/migrations/2023_10_06_112100_create_sharebazar_position_table.php",
+            "database/migrations/2023_10_10_141549_add_columns_update_date_to_sharebazar_position.php"
+        ]
+    },
+    "sms_api_details": {
+        "quoted": 7,
+        "bare": 12,
+        "files": [
+            "app/Http/Controllers/api/apiController.php",
+            "app/Models/easy_com/manage_sms_api/manage_sms_api.php",
+            "database/migrations/2023_03_05_115658_create_sms_api_details_table.php",
+            "database/seeders/OnboardingJourneySeeder.php",
+            "public/getworkflow.php"
+        ]
+    },
+    "sms_sent_parents": {
+        "quoted": 15,
+        "bare": 18,
+        "files": [
+            "app/Http/Controllers/admission/admissionEnquiryController.php",
+            "app/Http/Controllers/api/adminapiController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/easy_com/send_sms_parents/send_sms_parents_controller.php",
+            "app/Http/Controllers/easy_com/send_sms_staff/send_sms_staff_controller.php",
+            "app/Http/Controllers/fees/NACH/s4excel_importController.php"
+        ]
+    },
+    "sms_sent_staff": {
+        "quoted": 4,
+        "bare": 7,
+        "files": [
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/easy_com/send_sms_staff/send_sms_staff_controller.php",
+            "database/migrations/2023_03_05_115658_create_sms_sent_staff_table.php"
+        ]
+    },
+    "smtp_details": {
+        "quoted": 15,
+        "bare": 66,
+        "files": [
+            "app/Http/Controllers/admission/admissionRegistrationHillController.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/adminapiController.php",
+            "app/Http/Controllers/easy_com/send_email_other/send_email_other_controller.php",
+            "app/Http/Controllers/easy_com/send_email_parents/send_email_parents_controller.php",
+            "app/Http/Controllers/front_desk/dicipline/diciplineController.php"
+        ]
+    },
+    "sqaa_documant_master": {
+        "quoted": 4,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/api/sqaa/SqaaApiController.php",
+            "database/migrations/2023_10_06_130947_create_sqaa_documant_master_table.php"
+        ]
+    },
+    "sqaa_documents": {
+        "quoted": 5,
+        "bare": 11,
+        "files": [
+            "app/Http/Controllers/sqaa/sqaa_controller.php",
+            "app/Models/sqaa/sqaa_document.php",
+            "database/migrations/2023_09_06_162421_create_sqaa_documents_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "sqaa_marks": {
+        "quoted": 5,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/sqaa/sqaa_controller.php",
+            "app/Models/sqaa/sqaa_mark.php",
+            "database/migrations/2023_09_02_120344_create_sqaa_marks_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "sqaa_master": {
+        "quoted": 8,
+        "bare": 54,
+        "files": [
+            "app/Http/Controllers/api/sqaa/SqaaApiController.php",
+            "app/Http/Controllers/sqaa/sqaaScoreReportController.php",
+            "app/Models/sqaa/sqaa_master.php",
+            "routes/web.php",
+            "database/migrations/2023_09_02_120300_create_sqaa_master_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "staff_document": {
+        "quoted": 12,
+        "bare": 21,
+        "files": [
+            "app/Http/Controllers/FileController.php",
+            "app/Http/Controllers/oldDocumentTransfer.php",
+            "app/Http/Controllers/Payroll/PayrollController.php",
+            "app/Http/Controllers/user/tbluserController.php",
+            "database/migrations/2024_05_13_122517_create_staff_document_table.php"
+        ]
+    },
+    "standard": {
+        "quoted": 1454,
+        "bare": 4394,
+        "files": [
+            "app/Console/Commands/MapQuestion.php",
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/admission/admissionEnquiryController.php",
+            "app/Http/Controllers/admission/admissionFormController.php",
+            "app/Http/Controllers/admission/admissionMasterController.php",
+            "app/Http/Controllers/admission/admissionRegistrationController.php"
+        ]
+    },
+    "std_div_map": {
+        "quoted": 28,
+        "bare": 117,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/AcademicSetupApiController.php",
+            "app/Http/Controllers/api/result/DropdownApiController.php",
+            "app/Http/Controllers/school_setup/std_divController.php",
+            "app/Http/Controllers/settings/manageInstituteController.php"
+        ]
+    },
+    "student_anacdotal": {
+        "quoted": 2,
+        "bare": 3,
+        "files": [
+            "app/Models/student/Anacdotal.php",
+            "database/migrations/2023_10_28_105158_create_anacdotal_table.php"
+        ]
+    },
+    "student_capture_attendance": {
+        "quoted": 8,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/front_desk/classFaceAttendanceController.php",
+            "app/Models/studentCaptureAttendanceModel.php",
+            "database/migrations/2023_03_05_115658_create_student_capture_attendance_table.php",
+            "database/migrations/2023_06_12_233618_add_foreign_key_into_inventory_item_lms_mapping_type_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "student_capture_photos": {
+        "quoted": 13,
+        "bare": 15,
+        "files": [
+            "app/Http/Controllers/api/adminapiController.php",
+            "app/Http/Controllers/front_desk/studentFaceAttendanceController.php",
+            "app/Models/studentCapturePhotosModel.php",
+            "database/migrations/2023_03_05_115658_create_student_capture_photos_table.php",
+            "database/migrations/2024_05_22_150650_add_columns_type_id_to_student_capture_photos.php"
+        ]
+    },
+    "student_change_request": {
+        "quoted": 4,
+        "bare": 5,
+        "files": [
+            "app/Models/student/studentRequestModel.php",
+            "database/migrations/2023_03_05_115658_create_student_change_request_table.php",
+            "database/migrations/2023_06_12_233618_add_foreign_key_into_inventory_item_lms_mapping_type_table.php"
+        ]
+    },
+    "student_change_req_type": {
+        "quoted": 3,
+        "bare": 4,
+        "files": [
+            "app/Models/student/studentChangeRequestTypeModel.php",
+            "database/migrations/2023_03_05_115658_create_student_change_req_type_table.php"
+        ]
+    },
+    "STUDENT_CHANGE_REQ_TYPE": {
+        "quoted": 3,
+        "bare": 4,
+        "files": [
+            "app/Models/student/studentChangeRequestTypeModel.php",
+            "database/migrations/2023_03_05_115658_create_student_change_req_type_table.php"
+        ]
+    },
+    "student_document_type": {
+        "quoted": 6,
+        "bare": 17,
+        "files": [
+            "app/Http/Controllers/user/tbluserController.php",
+            "app/Models/student/documentTypeModel.php",
+            "database/migrations/2023_03_05_115658_create_student_document_type_table.php",
+            "database/migrations/2024_05_13_104220_add_column_user_type.php"
+        ]
+    },
+    "student_health": {
+        "quoted": 19,
+        "bare": 37,
+        "files": [
+            "app/Http/Controllers/api/StudentCareApiController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/student/studentHealthController.php",
+            "app/Http/Controllers/student/studentInfirmaryController.php",
+            "app/Http/Controllers/student/tblstudentController.php",
+            "app/Http/Controllers/used_storage_graphController.php"
+        ]
+    },
+    "student_height_weight": {
+        "quoted": 21,
+        "bare": 40,
+        "files": [
+            "app/Http/Controllers/api/StudentCareApiController.php",
+            "app/Http/Controllers/result/new_result/studentResultController.php",
+            "app/Http/Controllers/result/new_result/studentResultController2.php",
+            "app/Http/Controllers/student/bulkStudentController.php",
+            "app/Http/Controllers/student/InactiveStudentReportController.php",
+            "app/Http/Controllers/student/studentInfirmaryController.php"
+        ]
+    },
+    "student_infirmary": {
+        "quoted": 13,
+        "bare": 33,
+        "files": [
+            "app/Http/Controllers/api/StudentInfirmaryApiController.php",
+            "app/Http/Controllers/student/studentInfirmaryController.php",
+            "app/Http/Controllers/student/tblstudentController.php",
+            "app/Models/student/studentInfirmaryModel.php",
+            "routes/student.php",
+            "resources/views/student/edit_student.blade.php"
+        ]
+    },
+    "student_optional_subject": {
+        "quoted": 48,
+        "bare": 77,
+        "files": [
+            "app/Http/Controllers/api/ApiLmsCourseController.php",
+            "app/Http/Controllers/api/ApiLoginController.php",
+            "app/Http/Controllers/api/StudentOptionalSubjectApiController.php",
+            "app/Http/Controllers/lms/courseController.php",
+            "app/Http/Controllers/result/cbse_result/cbse_11_t2_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php"
+        ]
+    },
+    "student_quota": {
+        "quoted": 125,
+        "bare": 301,
+        "files": [
+            "app/Console/Commands/cnsports/studentEnrollment.php",
+            "app/Http/Controllers/admission/admissionMasterController.php",
+            "app/Http/Controllers/admission/admissionRegistrationController.php",
+            "app/Http/Controllers/admission/onlineAdmissionConfirmController.php",
+            "app/Http/Controllers/api/admissionRegistrationAPIController.php",
+            "app/Http/Controllers/api/BulkStudentApiController.php"
+        ]
+    },
+    "student_vaccination": {
+        "quoted": 13,
+        "bare": 31,
+        "files": [
+            "app/Http/Controllers/api/StudentCareApiController.php",
+            "app/Http/Controllers/student/studentInfirmaryController.php",
+            "app/Http/Controllers/student/tblstudentController.php",
+            "app/Models/student/studentVaccinationModel.php",
+            "routes/student.php",
+            "resources/views/student/edit_student.blade.php"
+        ]
+    },
+    "subject": {
+        "quoted": 807,
+        "bare": 3686,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/admission/admissionEnquiryController.php",
+            "app/Http/Controllers/admission/admissionRegistrationHillController.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/AcademicSetupApiController.php",
+            "app/Http/Controllers/api/adminapiController.php"
+        ]
+    },
+    "subject_elective": {
+        "quoted": 16,
+        "bare": 46,
+        "files": [
+            "app/Http/Controllers/api/MigrationModulesApiController.php",
+            "app/Http/Controllers/school_setup/subjectElectiveController.php",
+            "routes/web.php",
+            "resources/views/school_setup/subject_elective/edit.blade.php",
+            "resources/views/school_setup/subject_elective/show.blade.php",
+            "database/migrations/2024_02_21_102837_create_subject_elective_table.php"
+        ]
+    },
+    "subject_optional_type": {
+        "quoted": 9,
+        "bare": 9,
+        "files": [
+            "app/Http/Controllers/school_setup/sub_std_mapController.php",
+            "app/Http/Controllers/student/tblstudentController.php",
+            "database/migrations/2025_03_15_111429_create_subject_optional_type_table.php"
+        ]
+    },
+    "sub_std_map": {
+        "quoted": 109,
+        "bare": 352,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/AcademicSetupApiController.php",
+            "app/Http/Controllers/api/adminapiController.php",
+            "app/Http/Controllers/api/ApiLmsCourseController.php",
+            "app/Http/Controllers/api/ApiQuestionPaperController.php"
+        ]
+    },
+    "suggested_content": {
+        "quoted": 59,
+        "bare": 72,
+        "files": [
+            "app/Http/Controllers/lms/pal/palController.php",
+            "app/Services/PAL/Integration/PedagogySuggestedContentService.php",
+            "database/migrations/2026_04_18_113937_create_suggested_content_table.php",
+            "database/migrations/2026_05_12_000001_add_user_profile_to_content_master_and_update_suggested_content.php",
+            "database/migrations/2026_05_15_124211_add_learning_fields_to_suggested_content_table.php",
+            "database/migrations/2026_05_20_000001_add_concept_id_to_suggested_content_table.php"
+        ]
+    },
+    "syllabus": {
+        "quoted": 14,
+        "bare": 67,
+        "files": [
+            "app/Http/Controllers/api/NewLMS_ApiController.php",
+            "app/Http/Controllers/front_desk/syllabus/syllabusController.php",
+            "routes/frontdesk.php",
+            "database/migrations/2023_03_05_115658_create_syllabus_table.php",
+            "database/migrations/2024_08_29_124044_add_column_syllabus.php",
+            "database/migrations/2024_10_25_172032_add_columns_syllabus.php"
+        ]
+    },
+    "sync_log": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "s_assessment_library": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/skill/AssessmentLibrary.php",
+            "database/migrations/2025_02_10_145241_create_s_assessment_library_table.php"
+        ]
+    },
+    "s_industries": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "s_jobrole": {
+        "quoted": 7,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/api/AiSopGenerationController.php",
+            "app/Http/Controllers/lms/library/skillLibraryController.php",
+            "app/Http/Controllers/skill/SkillMatrixController.php",
+            "app/Models/lms/library/jobOccupation.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "s_jobrole_skills": {
+        "quoted": 1,
+        "bare": 1,
+        "files": [
+            "app/Models/lms/library/jobroleSkillModel.php"
+        ]
+    },
+    "s_jobrole_task": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "app/Models/lms/library/jobroleTaskModel.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "s_skill_map_k_a": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "s_skill_matrix": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/skill/matrix.php",
+            "database/migrations/2025_02_06_174323_create_s_skill_matrix_table.php"
+        ]
+    },
+    "s_user_jobrole": {
+        "quoted": 2,
+        "bare": 4,
+        "files": [
+            "app/Http/Controllers/api/AiSopGenerationController.php"
+        ]
+    },
+    "table_relation": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_03_05_115658_create_table_relation_table.php"
+        ]
+    },
+    "task": {
+        "quoted": 51,
+        "bare": 206,
+        "files": [
+            "app/Console/Commands/SyncONetOccupationDetailListSummary.php",
+            "app/Console/Commands/TestFunction1.php",
+            "app/Http/Controllers/api/ComplaintApiController.php",
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/frontdesk/taskController.php",
+            "app/Http/Controllers/implementation/frontdesk/taskController.php"
+        ]
+    },
+    "task_management_comments": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "task_management_dependencies": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "task_management_milestones": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "tblapplications": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/tblapplicationModel.php",
+            "database/migrations/2023_03_05_115658_create_tblapplications_table.php"
+        ]
+    },
+    "tblcity": {
+        "quoted": 3,
+        "bare": 4,
+        "files": [
+            "app/Models/student/tblcityModel.php",
+            "database/migrations/2023_03_05_115658_create_tblcity_table.php"
+        ]
+    },
+    "tblclient": {
+        "quoted": 34,
+        "bare": 39,
+        "files": [
+            "app/Http/Controllers/api/ApiLoginController.php",
+            "app/Http/Controllers/api/NewLMS_ApiController.php",
+            "app/Http/Controllers/loginController.php",
+            "app/Http/Controllers/school_setup/hrmsController.php",
+            "app/Http/Controllers/superAdminController.php",
+            "app/Models/tblclientModel.php"
+        ]
+    },
+    "tblcustom_fields": {
+        "quoted": 16,
+        "bare": 107,
+        "files": [
+            "app/Http/Controllers/api/HostelSetupApiController.php",
+            "app/Http/Controllers/api/UserManagementApiController.php",
+            "app/Http/Controllers/student/bulkStudentController.php",
+            "app/Http/Controllers/student/InactiveStudentReportController.php",
+            "app/Http/Controllers/student/studentReportController.php",
+            "app/Http/Controllers/user/userReportController.php"
+        ]
+    },
+    "tblemp_skills": {
+        "quoted": 6,
+        "bare": 6,
+        "files": [
+            "app/Http/Controllers/frontdesk/taskController.php",
+            "database/migrations/2024_07_02_170109_create_tblemp_skills_table.php"
+        ]
+    },
+    "tblfields_data": {
+        "quoted": 7,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/api/CustomFieldApiController.php",
+            "app/Http/Controllers/api/HostelSetupApiController.php",
+            "app/Http/Controllers/api/UserManagementApiController.php",
+            "app/Models/settings/tblfields_dataModel.php",
+            "database/migrations/2023_03_05_115658_create_tblfields_data_table.php"
+        ]
+    },
+    "tblgroupwise_rights": {
+        "quoted": 50,
+        "bare": 95,
+        "files": [
+            "app/Console/Commands/DocumentTemplatesSyncMenu.php",
+            "app/Console/Commands/LmsSyncMenu.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/AcademicSetupApiController.php",
+            "app/Http/Controllers/api/CustomFieldApiController.php",
+            "app/Http/Controllers/api/FeesRefundApiController.php"
+        ]
+    },
+    "tblindividual_rights": {
+        "quoted": 25,
+        "bare": 54,
+        "files": [
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/AcademicSetupApiController.php",
+            "app/Http/Controllers/api/CustomFieldApiController.php",
+            "app/Http/Controllers/api/FeesRefundApiController.php",
+            "app/Http/Controllers/api/GeneralSetupApiController.php",
+            "app/Http/Controllers/api/GroupwiseRightsApiController.php"
+        ]
+    },
+    "tblmenumaster": {
+        "quoted": 102,
+        "bare": 212,
+        "files": [
+            "app/Console/Commands/DocumentTemplatesSyncMenu.php",
+            "app/Console/Commands/InstallOnboardingJourney.php",
+            "app/Console/Commands/LmsSyncMenu.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/AcademicSetupApiController.php",
+            "app/Http/Controllers/api/CustomFieldApiController.php"
+        ]
+    },
+    "tblmenumaster_new": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_03_05_115658_create_tblmenumaster_new_table.php"
+        ]
+    },
+    "tblmenumaster_old": {
+        "quoted": 2,
+        "bare": 2,
+        "files": [
+            "database/migrations/2023_03_05_115658_create_tblmenumaster_old_table.php"
+        ]
+    },
+    "tblprofilewise_menu": {
+        "quoted": 29,
+        "bare": 73,
+        "files": [
+            "app/Http/Controllers/api/GroupwiseRightsApiController.php",
+            "app/Http/Controllers/api/IndividualRightsApiController.php",
+            "app/Http/Controllers/api/NewLMS_ApiController.php",
+            "app/Http/Controllers/custom_module/CustomModuleController.php",
+            "app/Http/Controllers/user/tblgroupwise_rightsController.php",
+            "app/Http/Controllers/user/tblindividual_rightsController.php"
+        ]
+    },
+    "tblstate": {
+        "quoted": 3,
+        "bare": 4,
+        "files": [
+            "app/Models/student/tblstateModel.php",
+            "database/migrations/2023_03_05_115658_create_tblstate_table.php"
+        ]
+    },
+    "tblstudent": {
+        "quoted": 228,
+        "bare": 1143,
+        "files": [
+            "app/Http/Controllers/admission/admissionEnquiryController.php",
+            "app/Http/Controllers/admission/admissionRegistrationController.php",
+            "app/Http/Controllers/admission/onlineAdmissionConfirmController.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/admissionRegistrationAPIController.php",
+            "app/Http/Controllers/api/apiController.php"
+        ]
+    },
+    "tblstudent_bank_detail": {
+        "quoted": 14,
+        "bare": 18,
+        "files": [
+            "app/Http/Controllers/fees/NACH/s1excel_exportController.php",
+            "app/Http/Controllers/fees/NACH/s2excel_importController.php",
+            "app/Http/Controllers/fees/NACH/s3excel_exportController.php",
+            "app/Http/Controllers/fees/NACH/s4excel_importController.php",
+            "app/Http/Controllers/student/studentReportController.php",
+            "app/Http/Controllers/student/tblstudentFeesDetailController.php"
+        ]
+    },
+    "tblstudent_bank_detail_log": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Http/Controllers/student/tblstudentFeesDetailController.php",
+            "database/migrations/2023_03_05_115658_create_tblstudent_bank_detail_log_table.php"
+        ]
+    },
+    "tblstudent_document": {
+        "quoted": 11,
+        "bare": 18,
+        "files": [
+            "app/Http/Controllers/admission/onlineAdmissionConfirmController.php",
+            "app/Http/Controllers/oldDocumentTransfer.php",
+            "app/Models/student/tblstudentDocumentModel.php",
+            "database/migrations/2023_03_05_115658_create_tblstudent_document_table.php",
+            "public/excel_upload/map_student_document_data.php",
+            "public/student_document_integration.php"
+        ]
+    },
+    "tblstudent_doc_std_mapping": {
+        "quoted": 10,
+        "bare": 17,
+        "files": [
+            "app/Http/Controllers/school_setup/docStdMappingController.php",
+            "app/Http/Controllers/student/missingDocumentReportController.php",
+            "app/Http/Controllers/student/tblstudentController.php",
+            "database/migrations/2024_06_19_111651_create_tblstudent_doc_std_mapping_table.php"
+        ]
+    },
+    "tblstudent_enrollment": {
+        "quoted": 178,
+        "bare": 892,
+        "files": [
+            "app/Console/Commands/cnsports/studentEnrollment.php",
+            "app/Http/Controllers/admission/onlineAdmissionConfirmController.php",
+            "app/Http/Controllers/api/adminapiController.php",
+            "app/Http/Controllers/api/apiController.php",
+            "app/Http/Controllers/api/BulkStudentApiController.php",
+            "app/Http/Controllers/api/DocumentTemplateApiController.php"
+        ]
+    },
+    "tblstudent_family_history": {
+        "quoted": 10,
+        "bare": 15,
+        "files": [
+            "app/Http/Controllers/student/studentReportController.php",
+            "app/Models/student/tblstudentFamilyHistoryModel.php",
+            "database/migrations/2023_03_05_115658_create_tblstudent_family_history_table.php",
+            "database/migrations/2024_06_17_182325_add_column_annual_income.php",
+            "database/migrations/2025_03_19_130411_add_columns_student_family_past.php"
+        ]
+    },
+    "tblstudent_fees_failure": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Http/Controllers/fees/NACH/s4excel_importController.php",
+            "database/migrations/2023_03_05_115658_create_tblstudent_fees_failure_table.php"
+        ]
+    },
+    "tblstudent_parent_feedback": {
+        "quoted": 3,
+        "bare": 4,
+        "files": [
+            "app/Models/student/tblstudentParentFeedbackModel.php",
+            "database/migrations/2023_03_05_115658_create_tblstudent_parent_feedback_table.php"
+        ]
+    },
+    "tblstudent_past_education": {
+        "quoted": 10,
+        "bare": 15,
+        "files": [
+            "app/Http/Controllers/student/studentReportController.php",
+            "app/Models/student/tblstudentPastEducationModel.php",
+            "database/migrations/2023_03_05_115658_create_tblstudent_past_education_table.php",
+            "database/migrations/2025_03_19_130411_add_columns_student_family_past.php"
+        ]
+    },
+    "tblstudent_payment_method_mapping": {
+        "quoted": 5,
+        "bare": 6,
+        "files": [
+            "app/Http/Controllers/fees/NACH/s1excel_exportController.php",
+            "app/Http/Controllers/fees/NACH/s3excel_exportController.php",
+            "app/Models/student/tblstudentPaymentMethodMappingModel.php",
+            "database/migrations/2023_03_05_115658_create_tblstudent_payment_method_mapping_table.php"
+        ]
+    },
+    "tblstudent_siblings": {
+        "quoted": 13,
+        "bare": 14,
+        "files": [
+            "app/Http/Controllers/student/studentOptionalSubjectController.php",
+            "app/Http/Controllers/student/studentSearchController.php",
+            "app/Http/Controllers/student/tblstudentController.php",
+            "database/migrations/2023_03_05_115658_create_tblstudent_siblings_table.php"
+        ]
+    },
+    "tblstudent_tc_details": {
+        "quoted": 6,
+        "bare": 10,
+        "files": [
+            "app/Http/Controllers/result/new_result/studentResultController.php",
+            "app/Http/Controllers/student/studentCertificateController.php",
+            "app/Http/Controllers/student/studentReportController.php",
+            "app/Models/student/tblstudentTcModel.php",
+            "database/migrations/2023_03_05_115658_create_tblstudent_tc_details_table.php"
+        ]
+    },
+    "tbluser": {
+        "quoted": 184,
+        "bare": 808,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/adminapiController.php",
+            "app/Http/Controllers/api/ComplaintApiController.php",
+            "app/Http/Controllers/api/FrontDeskApiController.php",
+            "app/Http/Controllers/api/GeneralSetupApiController.php"
+        ]
+    },
+    "tbluserprofilemaster": {
+        "quoted": 109,
+        "bare": 247,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/admission/admissionRegistrationController.php",
+            "app/Http/Controllers/api/admissionRegistrationAPIController.php",
+            "app/Http/Controllers/api/apiController.php",
+            "app/Http/Controllers/api/ApiLoginController.php",
+            "app/Http/Controllers/api/GeneralSetupApiController.php"
+        ]
+    },
+    "tbluser_contact_details": {
+        "quoted": 6,
+        "bare": 6,
+        "files": [
+            "app/Http/Controllers/user/tbluserContactDetails.php",
+            "app/Http/Controllers/user/tbluserController.php",
+            "database/migrations/2025_04_18_171932_create_tbluser_contact_details_table.php"
+        ]
+    },
+    "tbluser_past_education": {
+        "quoted": 6,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/api/UserManagementApiController.php",
+            "app/Http/Controllers/user/userReportController.php",
+            "app/Models/user/tbluserPastEducationModel.php",
+            "database/migrations/2023_03_05_115658_create_tbluser_past_education_table.php"
+        ]
+    },
+    "tbluser_shift_master": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/HRMS/userShiftMaster.php",
+            "database/migrations/2025_07_04_163547_create_tbluser_shift_master.php"
+        ]
+    },
+    "tbluser_shift_records": {
+        "quoted": 3,
+        "bare": 3,
+        "files": [
+            "app/Models/HRMS/userShiftRecord.php",
+            "database/migrations/2025_07_04_164122_create_tbluser_shift_records.php"
+        ]
+    },
+    "teacher_mobile_homescreen": {
+        "quoted": 13,
+        "bare": 15,
+        "files": [
+            "app/Http/Controllers/api/MobileAppMenuRightsApiController.php",
+            "app/Http/Controllers/api/teacherapiController.php",
+            "app/Http/Controllers/user/tblmobileAppMenuRightsController.php",
+            "app/Models/teacher_mobile_homescreenModel.php",
+            "resources/views/user/add_mobileapp_menu_rights.blade.php",
+            "database/migrations/2023_03_05_115658_create_teacher_mobile_homescreen_table.php"
+        ]
+    },
+    "template_master": {
+        "quoted": 18,
+        "bare": 23,
+        "files": [
+            "app/Http/Controllers/api/GeneralSetupApiController.php",
+            "app/Http/Controllers/fees/fees_collect/fees_collect_controller.php",
+            "app/Http/Controllers/student/StudentCertificateApiController.php",
+            "app/Http/Controllers/student/studentCertificateController.php",
+            "app/Http/Controllers/student/student_certificate_reportController.php",
+            "app/Models/settings/templateMasterModel.php"
+        ]
+    },
+    "temp_signup": {
+        "quoted": 5,
+        "bare": 5,
+        "files": [
+            "app/Http/Controllers/api/NewLMS_ApiController.php",
+            "app/Http/Controllers/api/NewLMS_StudentApiController.php",
+            "app/Models/temp_signupModel.php",
+            "database/migrations/2023_03_05_115658_create_temp_signup_table.php"
+        ]
+    },
+    "timetable": {
+        "quoted": 56,
+        "bare": 239,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/lms/StudentHomeworkApiController.php",
+            "app/Http/Controllers/api/result/DropdownApiController.php",
+            "app/Http/Controllers/api/TeacherDailyReportApiController.php",
+            "app/Http/Controllers/api/TeacherTransferApiController.php"
+        ]
+    },
+    "topic_master": {
+        "quoted": 31,
+        "bare": 142,
+        "files": [
+            "app/Helpers/Helper.php",
+            "app/Http/Controllers/AJAXController.php",
+            "app/Http/Controllers/api/ApiQuestionPaperController.php",
+            "app/Http/Controllers/api/teacherapiController.php",
+            "app/Http/Controllers/lms/assessmentQuestionController.php",
+            "app/Http/Controllers/lms/lmsVirtualClassroomController.php"
+        ]
+    },
+    "transport_driver_detail": {
+        "quoted": 24,
+        "bare": 36,
+        "files": [
+            "app/Http/Controllers/api/TransportationApiController.php",
+            "app/Http/Controllers/settings/conversationalAIController.php",
+            "app/Http/Controllers/transportation/add_vehicle/add_vehicle_controller.php",
+            "app/Http/Controllers/transportation/map_student/map_student_controller.php",
+            "app/Http/Livewire/ConversationalAIV2.php",
+            "app/Models/transportation/add_driver/add_driver.php"
+        ]
+    },
+    "transport_kilometer_rate": {
+        "quoted": 14,
+        "bare": 15,
+        "files": [
+            "app/Http/Controllers/api/TransportationApiController.php",
+            "app/Http/Controllers/settings/conversationalAIController.php",
+            "app/Http/Livewire/ConversationalAIV2.php",
+            "app/Models/transportation/add_vehicle/add_transport_kilometer_rate.php",
+            "app/Models/transportation/transport_rate/transport_rate.php",
+            "database/migrations/2023_03_05_115658_create_transport_kilometer_rate_table.php"
+        ]
+    },
+    "transport_map_student": {
+        "quoted": 27,
+        "bare": 51,
+        "files": [
+            "app/Http/Controllers/api/TransportationApiController.php",
+            "app/Http/Controllers/school_setup/erpstatusController.php",
+            "app/Http/Controllers/student/InactiveStudentReportController.php",
+            "app/Http/Controllers/student/rollOverController.php",
+            "app/Http/Controllers/student/studentReportController.php",
+            "app/Http/Controllers/student/tblstudentController.php"
+        ]
+    },
+    "transport_route": {
+        "quoted": 22,
+        "bare": 42,
+        "files": [
+            "app/Http/Controllers/api/TransportationApiController.php",
+            "app/Http/Controllers/settings/conversationalAIController.php",
+            "app/Http/Controllers/transportation/map_route_bus/map_route_bus_controller.php",
+            "app/Http/Controllers/transportation/map_route_stop/map_route_stop_controller.php",
+            "app/Http/Controllers/transportation/van_wise_report/van_wise_report_controller.php",
+            "app/Http/Controllers/transportation/van_wise_students_detail/van_wise_students_detail_report_controller.php"
+        ]
+    },
+    "transport_route_bus": {
+        "quoted": 5,
+        "bare": 16,
+        "files": [
+            "app/Http/Controllers/api/TransportationApiController.php",
+            "app/Models/transportation/map_route_bus/map_route_bus.php",
+            "database/migrations/2023_03_05_115658_create_transport_route_bus_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "transport_route_stop": {
+        "quoted": 5,
+        "bare": 15,
+        "files": [
+            "app/Http/Controllers/api/TransportationApiController.php",
+            "app/Models/transportation/map_route_stop/map_route_stop.php",
+            "database/migrations/2023_03_05_115658_create_transport_route_stop_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "transport_school_shift": {
+        "quoted": 31,
+        "bare": 65,
+        "files": [
+            "app/Http/Controllers/api/TransportationApiController.php",
+            "app/Http/Controllers/student/InactiveStudentReportController.php",
+            "app/Http/Controllers/student/studentReportController.php",
+            "app/Http/Controllers/transportation/add_shift/shiftController.php",
+            "app/Http/Controllers/transportation/add_vehicle/add_vehicle_controller.php",
+            "app/Http/Controllers/transportation/map_route_bus/map_route_bus_controller.php"
+        ]
+    },
+    "transport_stop": {
+        "quoted": 17,
+        "bare": 46,
+        "files": [
+            "app/Http/Controllers/api/TransportationApiController.php",
+            "app/Http/Controllers/transportation/map_route_stop/map_route_stop_controller.php",
+            "app/Http/Controllers/transportation/map_student/map_student_controller.php",
+            "app/Http/Controllers/transportation/van_wise_report/van_wise_report_controller.php",
+            "app/Http/Controllers/transportation/van_wise_students_detail/van_wise_students_detail_report_controller.php",
+            "app/Models/transportation/add_stop/add_stop.php"
+        ]
+    },
+    "transport_vehicle": {
+        "quoted": 27,
+        "bare": 78,
+        "files": [
+            "app/Http/Controllers/api/TransportationApiController.php",
+            "app/Http/Controllers/settings/conversationalAIController.php",
+            "app/Http/Controllers/student/InactiveStudentReportController.php",
+            "app/Http/Controllers/student/studentReportController.php",
+            "app/Http/Controllers/transportation/map_route_bus/map_route_bus_controller.php",
+            "app/Http/Controllers/transportation/map_student/map_student_controller.php"
+        ]
+    },
+    "transport_vehicle_type": {
+        "quoted": 5,
+        "bare": 5,
+        "files": [
+            "app/Http/Controllers/api/TransportationApiController.php",
+            "app/Http/Controllers/transportation/add_vehicle/add_vehicle_controller.php",
+            "app/Models/transportation/add_vehicle/add_vehicle_type.php",
+            "database/migrations/2023_03_05_115658_create_transport_vehicle_type_table.php"
+        ]
+    },
+    "upload_result": {
+        "quoted": 11,
+        "bare": 40,
+        "files": [
+            "app/Http/Controllers/api/result/UploadResultApiController.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_result_controller_OLD2.php",
+            "app/Http/Controllers/result/cbse_result/cbse_1t5_t2_result_controller.php",
+            "app/Http/Controllers/result/upload_result/upload_result_controller.php"
+        ]
+    },
+    "users": {
+        "quoted": 50,
+        "bare": 239,
+        "files": [
+            "app/Http/Controllers/admission/admissionReportController.php",
+            "app/Http/Controllers/api/ComplaintApiController.php",
+            "app/Http/Controllers/api/IndividualRightsApiController.php",
+            "app/Http/Controllers/api/InventoryApiController.php",
+            "app/Http/Controllers/api/NewLMS_ApiController.php",
+            "app/Http/Controllers/api/OnboardingApiController.php"
+        ]
+    },
+    "user_activities": {
+        "quoted": 5,
+        "bare": 46,
+        "files": [
+            "app/Http/Controllers/lms/content_library/contentLibraryController.php",
+            "app/Http/Controllers/lms/content_library/contentLibraryControllerOld.php",
+            "app/Models/lms/userActivityModel.php",
+            "database/migrations/2025_01_02_155507_create_user_activities_table.php"
+        ]
+    },
+    "user_experience_details": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "app/Http/Controllers/user/tbluserController.php",
+            "app/Models/UserExperienceDetail.php",
+            "database/migrations/2025_06_30_122954_create_user_experience_details_table.php"
+        ]
+    },
+    "visitor_master": {
+        "quoted": 11,
+        "bare": 27,
+        "files": [
+            "app/Http/Controllers/dashboardController.php",
+            "app/Http/Controllers/used_storage_graphController.php",
+            "app/Models/visitor_management/visitor_masterModel.php",
+            "resources/views/settings/add_fields.blade.php",
+            "database/migrations/2023_03_05_115658_create_visitor_master_table.php",
+            "database/migrations/2024_06_14_174829_add_column_created_by.php"
+        ]
+    },
+    "visitor_master_settings": {
+        "quoted": 3,
+        "bare": 4,
+        "files": [
+            "database/migrations/2023_03_05_115658_create_visitor_master_settings_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "visitor_type": {
+        "quoted": 28,
+        "bare": 44,
+        "files": [
+            "app/Http/Controllers/api/FrontDeskApiController.php",
+            "app/Http/Controllers/visitor_management/visitor_masterController.php",
+            "app/Models/frontdesk/frontdeskModel.php",
+            "app/Models/visitor_management/visitor_masterModel.php",
+            "app/Models/visitor_management/visitor_typeModel.php",
+            "resources/views/frontdesk/add_frontdesk.blade.php"
+        ]
+    },
+    "whatapp_user_details": {
+        "quoted": 5,
+        "bare": 5,
+        "files": [
+            "database/migrations/2024_04_02_122447_create_whatapp_user_details_table.php",
+            "database/migrations/2026_06_11_145554_add_cloud_api_columns_to_whatapp_user_details_table.php",
+            "database/seeders/OnboardingJourneySeeder.php"
+        ]
+    },
+    "whatsapp_sent_messages": {
+        "quoted": 6,
+        "bare": 6,
+        "files": [
+            "database/migrations/2024_04_08_150853_create_whatsapp_sent_messages_table.php",
+            "database/migrations/2024_08_22_130906_add_column_whatsapp_sent_messages.php",
+            "database/migrations/2024_09_05_115107_add_column_to_whatsapp_sent_messages_table.php"
+        ]
+    },
+    "wk_condition": {
+        "quoted": 10,
+        "bare": 15,
+        "files": [
+            "app/Http/Controllers/school_setup/workflowController.php",
+            "resources/views/edit_workflow.blade.php",
+            "database/migrations/2023_03_05_115658_create_wk_condition_table.php",
+            "public/getworkflow.php"
+        ]
+    },
+    "wk_execute_schedule": {
+        "quoted": 7,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/school_setup/workflowController.php",
+            "database/migrations/2023_03_05_115658_create_wk_execute_schedule_table.php",
+            "public/getworkflow.php"
+        ]
+    },
+    "wk_log": {
+        "quoted": 4,
+        "bare": 4,
+        "files": [
+            "database/migrations/2023_03_05_115658_create_wk_log_table.php",
+            "public/getworkflow.php"
+        ]
+    },
+    "wk_mail": {
+        "quoted": 6,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/school_setup/workflowController.php",
+            "database/migrations/2023_03_05_115658_create_wk_mail_table.php",
+            "public/getworkflow.php"
+        ]
+    },
+    "wk_main": {
+        "quoted": 76,
+        "bare": 77,
+        "files": [
+            "app/Http/Controllers/school_setup/workflowController.php",
+            "resources/views/edit_workflow.blade.php",
+            "database/migrations/2023_03_05_115658_create_wk_main_table.php",
+            "public/getworkflow.php"
+        ]
+    },
+    "wk_module": {
+        "quoted": 8,
+        "bare": 9,
+        "files": [
+            "app/Http/Controllers/school_setup/workflowController.php",
+            "database/migrations/2023_03_05_115658_create_wk_module_table.php",
+            "public/getworkflow.php"
+        ]
+    },
+    "wk_sms": {
+        "quoted": 6,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/school_setup/workflowController.php",
+            "database/migrations/2023_03_05_115658_create_wk_sms_table.php",
+            "public/getworkflow.php"
+        ]
+    },
+    "wk_updatequery": {
+        "quoted": 6,
+        "bare": 8,
+        "files": [
+            "app/Http/Controllers/school_setup/workflowController.php",
+            "database/migrations/2023_03_05_115658_create_wk_updatequery_table.php",
+            "public/getworkflow.php"
+        ]
+    },
+    "Z_customer_registrations": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "Z_donarDetails": {
+        "quoted": 4,
+        "bare": 5,
+        "files": [
+            "app/Http/Controllers/custom_module/customMapModule/donationController.php"
+        ]
+    },
+    "Z_employee_details": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "Z_Seminar": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    },
+    "Z_Student_Details": {
+        "quoted": 0,
+        "bare": 0,
+        "files": []
+    }
+}

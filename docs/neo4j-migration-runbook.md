@@ -12,8 +12,12 @@
 
 If you try to hold the migration in your head — or in one long Claude Code session — then a session
 limit, a crash or a closed laptop loses everything. So instead: **every phase ends by writing a file
-to disk and committing it.** The next session reads those files and picks up exactly where you left
-off. It does not need to remember anything.
+to disk.** The next session reads those files and picks up exactly where you left off. It does not
+need to remember anything.
+
+> Originally this read *"…writing a file to disk **and committing it**"*. Commits are off by owner
+> instruction (see §5), so the files carry the state but git does not. That is weaker — an
+> uncommitted working tree has no recovery point.
 
 This means a lost session costs you *at most one unfinished phase*, never the whole migration.
 
@@ -22,7 +26,7 @@ Three files carry all the state:
 | File | Role |
 |---|---|
 | `docs/neo4j-migration-status.md` | **The resume point.** What's done, what's next, what's blocked |
-| `config/neo4j_graph.php` | The registry — how all 487 tables map to nodes and relationships |
+| `config/neo4j_graph.php` | The registry — how all 488 tables map to nodes and relationships |
 | `docs/neo4j-table-classification.md` | The reviewed decision for every table |
 
 Plus generated artifacts: `storage/app/neo4j/<module>/*.csv` and the four artisan commands.
@@ -32,23 +36,22 @@ Plus generated artifacts: `storage/app/neo4j/<module>/*.csv` and the four artisa
 ## 2. Why phases, and why this order
 
 A module can only load **after everything it points at already exists**. Load questions before
-chapters and you recreate defect D9 — 7,674 questions pointing at chapters that were never created.
-So the order is a dependency order, not a preference.
+chapters and you recreate defect D9. So the order is a dependency order, not a preference.
 
 ```
 0  Freeze & backup          ← protect the irreplaceable
-1  Classify 487 tables      ← HUMAN REVIEW GATE
+1  Classify 488 tables      ← HUMAN REVIEW GATE
 2  Registry + tooling       ← build the machine
 3  Wipe & schema reset      ← one destructive step, once
 ─────────────────────────────
 4  Foundation      Institute, AcademicYear, Standard, Subject, Division
-5  Curriculum      Chapter, Topic, Concept, Content        ← needs 4
+5  Curriculum      Chapter, Topic, Concept, Content        ← needs 4 + the Phase 0 rescue CSVs
 6  Questions       Question + mappings                     ← needs 5
 7  People          Student (person), Enrollment            ← needs 4
 8  Assessment      Assessment, attempts, mastery           ← needs 6 + 7
 9  Result                                                  ← needs 8
 10 Staff / HR                                              ← needs 4
-11 Finance         (blocked on the security decision)      ← needs 7
+11 Finance         (blocked on FEES-MODEL)                 ← needs 7
 12 Operations      library, transport, hostel, inventory…  ← needs 7 + 10
 13 Skill / Career  + O*NET                                 ← needs 5
 14 Platform / misc + PAL stubs
@@ -56,6 +59,20 @@ So the order is a dependency order, not a preference.
 15 Live sync
 16 Cleanup — delete the legacy writers
 ```
+
+> **Correction, 2026-08-10 (Phase 1).** This section used to say D9 was *"7,674 questions pointing at
+> chapters that were never created"*, implying correct load order prevents it. Both halves were
+> wrong. Measured against the source: **59,314 of 62,206** questions carry a `chapter_id` that has no
+> row in `chapter_master` — and `chapter_master` holds only **99 rows**. The chapters are missing
+> from **MariaDB**, not merely unloaded. No load order fixes that.
+>
+> Phase 5 therefore has a dependency this diagram did not have: it must seed `:Chapter` from
+> `docs/neo4j-backup-2026-08-10/nodes_Chapter.csv`, which holds **5,521 chapters that exist nowhere
+> in MariaDB** and repairs 70.9% of the break. Load Phase 5 from `chapter_master` alone and ~105,000
+> child rows orphan. See classification F1 and decision **CHAPTER-SOURCE**.
+>
+> Also updated above: 487 → **488** tables, and Phase 11's blocker — SECURITY-RBAC was decided, so
+> Finance now waits on **FEES-MODEL** instead.
 
 **One phase per session.** Do not try to do two. Phases 4–14 are each roughly one module group and
 comfortably fit in a single session's budget. If a phase feels too big (Finance is 34 tables), split
@@ -75,8 +92,9 @@ is next — trust it over anything you infer.
 Then read, in this order:
   docs/neo4j-full-erp-graph-master-prompt.md      (conventions, platform limits, the rules)
   docs/neo4j-graph-audit-and-rebuild-prompt.md    (defects D1-D10 that must not reappear)
-  docs/neo4j-table-classification.md              (if it exists yet)
-  config/neo4j_graph.php                          (if it exists yet)
+  docs/neo4j-table-classification.md              (the reviewed decision for every table)
+  config/neo4j_graph.php                          (the registry - GENERATED, never hand-edit)
+  database/neo4j/README.md                        (how to regenerate the two files above)
 
 Execute ONLY the next unchecked phase in the STATUS checklist. Do not skip ahead. Do not start
 a second phase even if the first finishes early — stop and report instead.
@@ -90,18 +108,24 @@ When the phase is done:
   1. Run its verification gate and paste the ACTUAL output. Never summarise it as "passing".
   2. If the gate fails, STOP. Do not proceed to the next phase. Report the failure.
   3. If it passes: update docs/neo4j-migration-status.md — tick the phase, set "Current phase",
-     set "Graph state", and append one row to the §2 session log.
-  4. git add -A && git commit with message: "neo4j: phase <N> <name> — <one-line result>"
-     Commit on the CURRENT branch. Do NOT create a branch, worktree, or new repository, and do
-     not push unless I ask. All migration work lives in this repo alongside the app.
+     set "Graph state", and append one row to the §2 session log. Record the DROPPED-ROW
+     count per table from neo4j:export — a phase that drops rows without logging the number
+     is not done (§5.5).
+  4. Do NOT commit. Leave every change in the working tree and show me `git status --short`
+     instead. Do NOT create a branch, worktree, or new repository, and do NOT pull or push.
+     All migration work lives in this repo alongside the app.
   5. Tell me exactly what to paste next session.
 
 Rules that never bend:
   - NEVER write to MariaDB. It is the system of record and the only irreplaceable data.
-  - Every Neo4j write is MERGE keyed on the MariaDB PK, so re-running is always safe.
+  - Every Neo4j write is MERGE keyed on `uid` — "<Label>:<sub_institute_id>:<syear>:<pk>",
+    NOT the bare MariaDB pk. A bare pk is not unique across 48 tenants; merging on one is
+    how the original graph collapsed tenants together. Re-running is therefore always safe.
   - Neo4j is 4.4.40 COMMUNITY: no APOC, no GDS, no RBAC, no existence constraints,
     single database. Verify your Cypher against 4.4 syntax before running it.
   - Report only counts you have actually queried.
+  - A load over ~100k rows can exceed a single command timeout. Run those in a separate
+    terminal logging to a file (see §4) rather than babysitting them in the session.
 ````
 
 That's it. Same prompt, every session, start to finish.
@@ -114,16 +138,25 @@ Short answer: **nothing breaks, and you lose at most the current phase.** Here i
 
 | Dies during… | What's on disk | How to recover |
 |---|---|---|
-| **Classification (Phase 1)** | A partly-written markdown doc | Re-run Phase 1. It regenerates the doc from scratch. Nothing was written to Neo4j |
-| **Registry (Phase 2)** | A partly-written PHP config | Re-run Phase 2, or finish the file by hand. `neo4j:registry-check` tells you what's missing |
-| **Export (any load phase)** | Some CSVs written, some not | Re-run `neo4j:export --module=X`. It overwrites the folder. Harmless |
-| **Load (any load phase)** ⚠️ | **Some batches committed to Neo4j, some not** | **Just re-run `neo4j:load --module=X`.** See below — this is the important one |
+| **Classification (Phase 1)** | A partly-written markdown doc | `cd database/neo4j && php classify.php && php render.php`. Nothing was written to Neo4j |
+| **Registry (Phase 2)** | A partly-written PHP config | `cd database/neo4j && php gen_registry.php`, then `php artisan neo4j:registry-check` to see what's missing. Never finish it by hand — it is generated |
+| **Wipe (Phase 3)** ☠️ | **A partially deleted graph** | Re-run `neo4j:reset-graph --confirm --backup=<dir>`; the delete loop runs until the graph is empty, so it finishes the job. **The deleted nodes are gone either way** — this is the one step with no undo |
+| **Export (any load phase)** | Some CSVs written, some not | Re-run `neo4j:export --module=X`. It overwrites each table's CSV. Note it does *not* clear the folder first, so a CSV for a table you have since removed from the module will linger |
+| **Load (any load phase)** ⚠️ | **Some batches committed to Neo4j, some not** | **Just re-run `neo4j:load --module=X --confirm`.** See below — this is the important one |
 | **Verify** | Nothing changed | Re-run the verify command |
+
+> **Phase 1 and 2 became re-runnable on 2026-08-10.** Until then this table was wrong: the generators
+> existed only in a session temp directory, so "re-run Phase 1" was impossible and
+> `config/neo4j_graph.php` could not be regenerated at all. They now live in
+> [`database/neo4j/`](../database/neo4j/) with a README. Regeneration is deterministic — verified
+> byte-identical with `diff`.
 
 ### Why an interrupted load is safe
 
-Every write is `MERGE` on a stable key (the MariaDB primary key). `MERGE` means *"match it if it
-exists, create it if it doesn't."* So:
+Every write is `MERGE` on a stable key — specifically `uid`, the composite
+`<Label>:<sub_institute_id>:<syear>:<pk>` required by PROJECTION LAW L1, *not* the bare MariaDB
+primary key. (A bare pk is not unique across 48 tenants; merging on it is how the original graph
+collapsed tenants together.) `MERGE` means *"match it if it exists, create it if it doesn't."* So:
 
 - Rows already loaded → matched, nothing duplicated.
 - Rows not yet loaded → created.
@@ -133,11 +166,15 @@ This property is called **idempotency**, and it is the single reason this migrat
 interrupt. It is also why the master prompt bans `CREATE` in the loader — `CREATE` would duplicate
 everything on a re-run.
 
-One caveat to know: `CALL {} IN TRANSACTIONS OF 10000 ROWS` commits in batches of 10,000. If you kill
-it halfway, the completed batches **stay committed** — the load does not roll back. That's fine
+One caveat to know: the loader commits in batches (`--batch`, default 1,000 rows per `UNWIND`). If you
+kill it halfway, the completed batches **stay committed** — the load does not roll back. That's fine
 (re-running finishes the job), but it does mean **a partially-loaded module will fail its verify
 gate**, which is correct behaviour: it's telling you the phase isn't done. Re-run the load, then
 re-verify.
+
+> **Corrected 2026-08-10.** This paragraph used to describe `CALL {} IN TRANSACTIONS OF 10000 ROWS`.
+> The loader does not use that syntax — it batches in PHP and issues one `UNWIND … MERGE` per batch
+> through the Bolt driver. The idempotency guarantee is unchanged; only the mechanism differs.
 
 ### Practical tip — don't run long jobs inside the agent session
 
@@ -152,80 +189,20 @@ Then the agent session only has to *read the log*, not babysit the process. Same
 
 ---
 
-## 5. Checkpoints — what "done" means for a phase
-
-A phase is done when **all four** are true. Three out of four is not done.
-
-1. **The verify gate passes**, with real output pasted — not a summary.
-2. **STATUS.md is updated** — phase ticked, current phase advanced, session log appended.
-3. **The work is committed to git** with the phase number in the message.
-4. **Nothing was skipped silently.** If something was left out, it's written down in the session log.
-
-Rule: **a failing gate stops the migration.** Do not load the next module on top of a broken one —
-that is exactly how the current graph accumulated ten defects. Fix, re-verify, then continue.
-
-### What `neo4j:verify --module=X` must check
-
-Per module, hard-failing on any of:
-
-- nodes missing `sub_institute_id`, or holding the invalid values `NULL` or `0`
-- null or non-integer key properties
-- `COUNT(n) <> COUNT(DISTINCT n.<key>)` — duplicate nodes
-- **dangling FK properties** — any `*_id` with no matching target node (this is D9)
-- relationships whose two endpoints have different `sub_institute_id` — tenant leak
-- orphaned nodes
-- Neo4j count vs MariaDB `COUNT(*)`, per tenant, for every ENTITY table in the module
-- Finance only: `SUM` of every projected amount vs the same `SUM` in MariaDB, per tenant
-
----
-
-## 6. "Will this break my existing data?"
-
-Worth being precise, because there are two different things called "data" here.
-
-**MariaDB — your real data — is never touched.** Not one write, in any phase. Every command reads
-only. This is the guarantee that matters: if the entire migration goes wrong, your ERP is unaffected
-and you have lost nothing but time.
-
-**The current Neo4j graph — will be deleted, once, in Phase 3.** This is deliberate. That graph is
-measurably broken: only 2.9% of Result nodes attach to exactly one student, 49,105 nodes are
-orphaned, 7,674 questions point at chapters that don't exist, and 55% of nodes have no tenant.
-Keeping it isn't preserving data, it's preserving corruption. And it *can't* be fixed in place —
-the new model keys `:Student` on `studentId` where the old one keys on `stuId`, so loading on top
-would create a second set of nodes rather than correcting the first.
-
-Everything in that graph is re-derivable from MariaDB — **except** the handful of items in STATUS §5,
-most importantly the **28 hand-authored `PREREQUISITE_OF` edges**. No table can regenerate those.
-Phase 0 exists to back them up. Do not skip it.
-
-⚠️ **You have no APOC**, so `apoc.export.cypher.all` is unavailable — there is no one-command full
-backup. Phase 0 must either dump per-label CSVs through the HTTP API, or run `neo4j-admin dump` on
-the server (which requires filesystem access and a brief stop). Decide which before starting.
-
-### Downtime
-
-Between Phase 3 (wipe) and Phase 14 (last load) the graph is **incomplete but never wrong** — each
-module is either fully loaded and verified, or absent. Nothing user-facing depends on it today: the
-Next.js frontend has no Neo4j connection at all, and the only consumers are Blade dev views
-(`/graph-view`, `/student-result-graph`, `/dashboardNeo4j`). Confirm nobody is demoing those before
-Phase 3.
-
----
-
 ## 7. Order of operations for the very first sessions
 
 | Session | Do this | Ends with |
 |---|---|---|
 | 1 | **Answer DB-AUTH.** Which MariaDB is authoritative? Nothing can start until this is settled | STATUS §3 updated |
 | 2 | Phase 0 — back up the 28 `PREREQUISITE_OF` edges and the items in STATUS §5; disable `/sync-neo4j` and `/migrate-data` | Backups on disk, committed |
-| 3–4 | Phase 1 — classify all 487 tables. **Review this yourself before approving.** It is the foundation; a wrong shape here propagates everywhere | `neo4j-table-classification.md` approved |
+| 3–4 | Phase 1 — classify all 488 tables. **Review this yourself before approving.** It is the foundation; a wrong shape here propagates everywhere | `neo4j-table-classification.md` approved |
 | 5–6 | Phase 2 — registry + the four artisan commands | `neo4j:registry-check` green |
 | 7 | Phase 3 — wipe and schema reset | Graph empty, constraints created |
 | 8+ | One module per session, Phases 4–14 | A verified module each time |
 
 **Phase 1 is the one to slow down on.** Everything downstream is generated from it. An hour of your
 review there saves re-running load phases later.
-
+ 
 ---
 
 ## 8. Common ways this goes wrong
