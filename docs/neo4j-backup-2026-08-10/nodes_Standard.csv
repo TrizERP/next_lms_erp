@@ -1,0 +1,111 @@
+_neo4jInternalId,created_at,database_type,displayLabel,id,name,short_name,stId,standard_id,sub_institute_id
+29627,,,Standard:CBSE-NR,,CBSE-NR,NR,2223,2223,195
+29628,,,Standard:CBSE-SR,,CBSE-SR,SR,2224,2224,195
+29629,,,Standard:CBSE-JR,,CBSE-JR,JR,2225,2225,195
+29630,,,Standard:CBSE-1,,CBSE-1,1,2226,2226,195
+29631,,,Standard:2227,,"Standard 2227",2,2227,2227,195
+29632,,,Standard:2228,,"Standard 2228",3,2228,2228,195
+29633,,,Standard:2229,,"Standard 2229",4,2229,2229,195
+29634,,,Standard:CBSE-5,,CBSE-5,5,2230,2230,195
+29635,,,Standard:CBSE-6,,CBSE-6,6,2231,2231,195
+29636,,,Standard:CBSE-7,,CBSE-7,7,2232,2232,195
+29637,,,Standard:CBSE-8,,CBSE-8,8,2233,2233,195
+29638,,,Standard:CBSE-9,,CBSE-9,9,2234,2234,195
+29639,,,Standard:2235,,"Standard 2235",10,2235,2235,195
+29640,,,"Standard:CBSE-11 Com",,"CBSE-11 Com","11 Com.",2236,2236,195
+29641,,,"Standard:CBSE-11 Sci",,"CBSE-11 Sci","11 Sci.",2237,2237,195
+29642,,,"Standard:CBSE-12 Com",,"CBSE-12 Com","12 Com.",2267,2267,195
+29643,,,"Standard:CBSE-12 Sci",,"CBSE-12 Sci","12 Sci.",2268,2268,195
+152337,,,,4121,GSEB-11,,,,334
+152338,,,,4108,GSEB-NUR,,,,334
+152339,,,,4118,GSEB-8,,,,334
+152340,,,,4120,GSEB-10,,,,334
+152341,,,,4111,GSEB-1,,,,334
+152342,,,,4116,GSEB-6,,,,334
+152343,,,,4109,GSEB-JR,,,,334
+152344,,,,4112,GSEB-2,,,,334
+152345,,,,4110,GSEB-SR,,,,334
+152346,,,,4114,GSEB-4,,,,334
+152347,,,,4117,GSEB-7,,,,334
+152348,,,,4113,GSEB-3,,,,334
+152349,,,,4115,GSEB-5,,,,334
+152350,,,,4124,GSEB-JR,,,,335
+152351,,,,4131,GSEB-6,,,,335
+152352,,,,4130,GSEB-5,,,,335
+152355,,,,4132,GSEB-7,,,,335
+152356,,,,4125,GSEB-SR,,,,335
+152357,,,,4136,GSEB-11,,,,335
+152358,,,,4137,GSEB-12,,,,335
+152360,,,,4119,GSEB-9,,,,334
+152361,,,,4127,GSEB-2,,,,335
+152362,,,,4126,GSEB-1,,,,335
+152364,,,,4129,GSEB-4,,,,335
+152368,,,,4134,GSEB-9,,,,335
+152369,,,,4122,GSEB-12,,,,334
+152371,,,,4123,GSEB-NUR,,,,335
+152372,,,,4135,GSEB-10,,,,335
+152373,,,,4133,GSEB-8,,,,335
+152377,,,,4128,GSEB-3,,,,335
+152440,,,,4272,CBSC-9,,,,1
+163713,"{""seconds"":1775299374,""nanoseconds"":414000000,""tzOffsetSeconds"":0}",,"Standard: 31",,NR,C-NR,31,31,1
+163714,"{""seconds"":1775301362,""nanoseconds"":338000000,""tzOffsetSeconds"":0}",,Standard:32,,"Standard 32",C-JR,32,32,1
+163715,"{""seconds"":1775468770,""nanoseconds"":336000000,""tzOffsetSeconds"":0}",,"Standard: 33",,"Standard 33",C-SR,33,33,1
+163716,"{""seconds"":1775301739,""nanoseconds"":763000000,""tzOffsetSeconds"":0}",,"Standard: 34",,1,C-1,34,34,1
+163717,,,Standard:2,,2,C-2,35,35,1
+163718,,,Standard:3,,3,C-3,36,36,1
+163719,"{""seconds"":1775303252,""nanoseconds"":704000000,""tzOffsetSeconds"":0}",,"Standard: 37",,4,C-4,37,37,1
+163720,"{""seconds"":1775303909,""nanoseconds"":703000000,""tzOffsetSeconds"":0}",,"Standard: 38",,5,C-5,38,38,1
+163721,"{""seconds"":1775450247,""nanoseconds"":184000000,""tzOffsetSeconds"":0}",local,Standard:39,,"Standard 39",C-6,39,39,1
+163722,"{""seconds"":1775538599,""nanoseconds"":111000000,""tzOffsetSeconds"":0}",local,Standard:40,,"Standard 40",C-7,40,40,1
+163723,"{""seconds"":1775536887,""nanoseconds"":905000000,""tzOffsetSeconds"":0}",,Standard:41,,"Standard 41",C-8,41,41,1
+163724,"{""seconds"":1775473372,""nanoseconds"":920000000,""tzOffsetSeconds"":0}",,Standard:9,,"Standard 42",C-9,42,42,1
+163725,,,Standard:10,,10,C-10,43,43,1
+163726,,,Standard:11,,11,C-11,44,44,1
+163727,,,Standard:12,,12,C-12,45,45,1
+163728,"{""seconds"":1775467619,""nanoseconds"":813000000,""tzOffsetSeconds"":0}",,Standard:Alumini,,"Standard 93",C-Alumini,93,93,1
+163729,,,"Standard:Soft Skill",,"Soft Skill","Soft Skill",2269,2269,1
+163730,,,Standard:Sports,,Sports,Sports,2270,2270,1
+163731,,,"Standard:Vocational Skill",,"Vocational Skill","Vocational Skill",2271,2271,1
+163732,,,"Standard:Hobbies and Activities",,"Hobbies and Activities","Hobbies and Activities",2272,2272,1
+163733,,,Standard:Library,,Library,Library,2273,2273,1
+163734,,,"Standard:Foundational Skills",,"Foundational Skills","Foundational Skills",2292,2292,1
+163735,,,"Standard:STEM Resources",,"STEM Resources","STEM Resources",2305,2305,1
+163736,,,Standard:SQAA,,SQAA,SQAA,3476,3476,1
+163737,,,Standard:UP,,UP,UP,4012,4012,1
+163738,,,"Standard:Andhra Pradesh",,"Andhra Pradesh",AP,4013,4013,1
+163739,,,Standard:GUJARAT,,GUJARAT,GJ,4014,4014,1
+163740,,,Standard:Rajasthan,,Rajasthan,RJ,4015,4015,1
+163741,,,Standard:Maharashtra,,Maharashtra,MH,4016,4016,1
+163742,,,"Standard:Madhya Pradesh",,"Madhya Pradesh",MP,4017,4017,1
+163743,,,Standard:CBSC-9,,CBSC-9,C-9,4272,4272,1
+368111,,,,4282,CBSC-9,C-9,4282,,1
+371258,,,,4301,LKG,LKG,,,76
+371266,,,,4302,PKG,PKG,4302,,76
+371633,"{""seconds"":1775469702,""nanoseconds"":331000000,""tzOffsetSeconds"":0}",,,33,"Standard 33",,,,1
+371663,,,Standard:4138,,"Standard 4138",u1,4138,4138,203
+371664,,,Standard:4139,,"test for no4j",u1,4139,4139,1
+371677,,,Standard:4140,,"Standard 4140",U1,4140,4140,1
+371727,,,"Standard:test for no4j",,"test for no4j",neo4j,4303,4303,1
+371807,,,Standard:2892,,"Standard 2892",,2892,2892,61
+371811,,,Standard:103,,"Standard 103",,103,103,47
+371816,,,Standard:3296,,"Standard 3296",,3296,3296,254
+371821,,,Standard:3295,,"Standard 3295",,3295,3295,254
+371824,,,Standard:,,"Standard ",,0,0,254
+371830,,,Standard:2890,,"Standard 2890",,2890,2890,61
+371834,,,Standard:95,,"Standard 95",,95,95,47
+371837,,,Standard:949,,"Standard 949",,949,949,76
+371843,,,Standard:2899,,"Standard 2899",,2899,2899,61
+371858,,,Standard:106,,"Standard 106",,106,106,47
+371865,,,Standard:938,,"Standard 938",,938,938,76
+371869,,,Standard:4030,,"Standard 4030",,4030,4030,76
+371872,,,Standard:4029,,"Standard 4029",,4029,4029,76
+371886,,,Standard:3303,,"Standard 3303",,3303,3303,254
+371893,,,Standard:3300,,"Standard 3300",,3300,3300,254
+371925,,,Standard:2894,,"Standard 2894",,2894,2894,61
+371939,,,Standard:4137,,"Standard 4137",,4137,4137,203
+371952,,,Standard:4135,,"Standard 4135",,4135,4135,203
+371985,,,Standard:98,,"Standard 98",,98,98,47
+371989,,,Standard:3129,,"Standard 3129",,3129,3129,246
+371992,,,Standard:3305,,"Standard 3305",,3305,3305,254
+372016,,local,Standard:A3-26,,"Standard A3",,4311,4311,1
+372017,,local,Standard:A23,,"A2 2026",,4312,4312,1

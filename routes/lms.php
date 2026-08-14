@@ -44,6 +44,7 @@ use App\Http\Controllers\lms\questionWiseReportController;
 use App\Http\Controllers\bazar\bulkUploadSheetController;
 use App\Http\Controllers\bazar\bulkUploadedReportController;
 use App\Http\Controllers\lms\pal\palController;
+use App\Http\Controllers\lms\pal\PalContentController;
 use App\Http\Controllers\lms\virtualclassroomController;
 use App\Http\Controllers\school_setup\sub_std_mapController;
 use App\Http\Controllers\lms\lmsDashboardController;
@@ -154,6 +155,19 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::post('store-mastery-suggested-content', [palController::class, 'storeMasterySuggestedContent'])->name('pal.storeMasterySuggestedContent');
     Route::get('pedagogy-suggested-content', [palController::class, 'getPedagogySuggestedContent'])->name('pal.pedagogySuggestedContent');
     Route::post('misconception/generate-content', [palController::class, 'generateMisconceptionContent'])->name('pal.misconception.generateContent');
+
+    // PAL V4 Content Intelligence Layer — authoring / review screens.
+    // Session-based twin of the JWT API in routes/pal_api.php; both write through
+    // ContentMetadataService, so the CONTENT LAW checks are identical either way.
+    // Route names are what checkPermission matches against tblmenumaster.link,
+    // so they must stay in sync with pal:sync-content-menu.
+    Route::get('pal-content', [PalContentController::class, 'index'])->name('pal_content.index');
+    Route::get('pal-content/review', [PalContentController::class, 'review'])->name('pal_content.review');
+    Route::post('pal-content/review/update', [PalContentController::class, 'updateMetadata'])->name('pal_content.updateMetadata');
+    Route::post('pal-content/review/transition', [PalContentController::class, 'transition'])->name('pal_content.transition');
+    Route::get('pal-content/misconceptions', [PalContentController::class, 'misconceptions'])->name('pal_content.misconceptions');
+    Route::post('pal-content/misconceptions/approve', [PalContentController::class, 'approveMisconception'])->name('pal_content.approveMisconception');
+    Route::post('pal-content/correctives/approve', [PalContentController::class, 'approveCorrective'])->name('pal_content.approveCorrective');
 
     Route::get('ajax_LMS_MappingValue', [contentController::class, 'ajax_LMS_MappingValue'])->name('ajax_LMS_MappingValue');
 

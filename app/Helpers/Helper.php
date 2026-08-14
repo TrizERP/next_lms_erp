@@ -3062,6 +3062,13 @@ if (!function_exists('get_string')) {
     if (!function_exists('neo4jCreateNode')) {
         function neo4jCreateNode($label, array $matchProperties, array $nodeProperties = [])
         {
+            // RESIDUAL-WRITERS (2026-08-10): application writes to the graph are gated
+            // behind NEO4J_WRITES_ENABLED, off by default, so live traffic cannot seed
+            // nodes during the migration rebuild. Re-enable at Phase 15.
+            if (!config('neo4j.writes_enabled')) {
+                \Log::info('neo4jCreateNode skipped — NEO4J_WRITES_ENABLED is off', ['label' => $label]);
+                return null;
+            }
             try {
                 $neo4jService = app(Neo4jService::class);
 
@@ -3098,6 +3105,12 @@ if (!function_exists('get_string')) {
     if (!function_exists('neo4jCreateRelationship')) {
         function neo4jCreateRelationship($startLabel, array $startProperties, $relationshipType, $endLabel, array $endProperties, array $relationshipProperties = [])
         {
+            // RESIDUAL-WRITERS (2026-08-10): see neo4jCreateNode above.
+            if (!config('neo4j.writes_enabled')) {
+                \Log::info('neo4jCreateRelationship skipped — NEO4J_WRITES_ENABLED is off',
+                    ['type' => $relationshipType]);
+                return null;
+            }
             try {
                 $neo4jService = app(Neo4jService::class);
 

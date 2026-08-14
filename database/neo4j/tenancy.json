@@ -1,0 +1,4035 @@
+{
+    "10_05_question_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "question_type_id",
+            "grade_id",
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "sub_institute_id",
+            "lo_category_id",
+            "question_level_id",
+            "question_category_id"
+        ]
+    },
+    "academic_section": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "academic_year": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "term_id",
+            "sub_institute_id"
+        ]
+    },
+    "access_log": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "USER_ID",
+            "SUB_INSTITUTE_ID"
+        ]
+    },
+    "access_log_route": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "user_id",
+            "profile_id"
+        ]
+    },
+    "activity_log": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "subject_id",
+            "causer_id"
+        ]
+    },
+    "admission_age_validation": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "standard_id",
+            "sub_institute_id"
+        ]
+    },
+    "admission_category_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "admission_enquiry": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "receipt_id"
+        ]
+    },
+    "admission_form": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "enquiry_id",
+            "sub_institute_id",
+            "receipt_id"
+        ]
+    },
+    "admission_registration": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "enquiry_id",
+            "sub_institute_id"
+        ]
+    },
+    "admission_registration_v1": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "enquiry_id",
+            "sub_institute_id"
+        ]
+    },
+    "ai_api_keys": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "ai_daily_used_api": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "parent_id",
+            "sub_institute_id"
+        ]
+    },
+    "ai_interaction_logs": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "sub_institute_id"
+        ]
+    },
+    "ai_sops": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "department_id",
+            "sub_institute_id"
+        ]
+    },
+    "announcement": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "user_profile_id"
+        ]
+    },
+    "answer_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "question_id",
+            "sub_institute_id"
+        ]
+    },
+    "api_details": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "application_forms": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "app_language": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "menu_id",
+            "sub_institute_id"
+        ]
+    },
+    "app_notification": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "STUDENT_ID",
+            "SUB_INSTITUTE_ID"
+        ]
+    },
+    "app_notification_teacher": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "USER_ID",
+            "SUB_INSTITUTE_ID"
+        ]
+    },
+    "attendance_json_result": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "attendance_student": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "term_id",
+            "teacher_id",
+            "user_group_id",
+            "standard_id",
+            "section_id",
+            "sub_institute_id"
+        ]
+    },
+    "bank_master": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "batch": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "standard_id",
+            "division_id",
+            "sub_institute_id",
+            "rollover_id",
+            "marking_period_id"
+        ]
+    },
+    "biomatrix": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "biomatrix_id",
+            "sub_institute_id"
+        ]
+    },
+    "blogs": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "blood_group": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "book_list": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "topic_id",
+            "sub_institute_id"
+        ]
+    },
+    "calendar_events": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "cast": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "caste": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "certificate_history": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "sub_institute_id"
+        ]
+    },
+    "chapter_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "extraction_id",
+            "unit_id",
+            "sub_institute_id",
+            "grade_id",
+            "standard_id",
+            "subject_id"
+        ]
+    },
+    "chapter_topic_master": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "chapter_id",
+            "topic_id"
+        ]
+    },
+    "circular": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "standard_id",
+            "division_id",
+            "sub_institute_id"
+        ]
+    },
+    "circular_type": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "classwork_attachment": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "sub_institute_id"
+        ]
+    },
+    "class_teacher": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "grade_id",
+            "standard_id",
+            "division_id",
+            "teacher_id"
+        ]
+    },
+    "college_timetable": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "academic_section_id",
+            "standard_id",
+            "division_id",
+            "batch_id",
+            "period_id",
+            "subject_id",
+            "teacher_id"
+        ]
+    },
+    "complaint": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "SUB_INSTITUTE_ID",
+            "COMPLAINT_SOLUTION_USER_GROUP_ID",
+            "MARKING_PERIOD_ID"
+        ]
+    },
+    "complaint_status": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "consent_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "standard_id",
+            "sub_institute_id",
+            "division_id",
+            "imprest_head_id"
+        ]
+    },
+    "contents": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "parent_id"
+        ]
+    },
+    "content_mapping_type": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "content_id",
+            "mapping_type_id",
+            "mapping_value_id"
+        ]
+    },
+    "content_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "grade_id",
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "concept_id",
+            "topic_id",
+            "sub_topic_id",
+            "lo_category_id",
+            "sub_institute_id",
+            "content_library_id"
+        ]
+    },
+    "counselling_answer_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "question_id",
+            "sub_institute_id"
+        ]
+    },
+    "counselling_course": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "counselling_online_exam": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "user_id",
+            "sub_institute_id",
+            "course_id"
+        ]
+    },
+    "counselling_online_exam_answer": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "online_exam_id",
+            "user_id",
+            "question_id",
+            "answer_id"
+        ]
+    },
+    "counselling_question_mapping": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "questionmaster_id",
+            "mapping_type_id",
+            "mapping_value_id"
+        ]
+    },
+    "counselling_question_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "counselling_course_id",
+            "question_type_id",
+            "sub_institute_id"
+        ]
+    },
+    "create_timetable": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "academic_section_id",
+            "standard_id",
+            "division_id",
+            "batch_id",
+            "period_id",
+            "subject_id",
+            "teacher_id",
+            "marking_period_id"
+        ]
+    },
+    "csv_data": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "custom_module_tables": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "custom_module_table_columns": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "table_id"
+        ]
+    },
+    "dashboard_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "dicipline": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "sub_institute_id"
+        ]
+    },
+    "dicipline_dd": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "dicipline_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "dicipline_id",
+            "sub_institute_id"
+        ]
+    },
+    "division": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "division_capacity_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "grade_id",
+            "standard_id",
+            "division_id"
+        ]
+    },
+    "document_extractions": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "sub_institute_id"
+        ]
+    },
+    "document_templates": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "document_template_versions": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "document_template_id",
+            "sub_institute_id"
+        ]
+    },
+    "donation_collection": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "donar_id",
+            "sub_institute_id"
+        ]
+    },
+    "dynamic_dashboard": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "user_id",
+            "user_profile_id",
+            "sub_institute_id",
+            "menu_id"
+        ]
+    },
+    "email_sent_parents": {
+        "sii": "sub_institute_id",
+        "syear": "SYEAR",
+        "fks": [
+            "USER_ID",
+            "sub_institute_id"
+        ]
+    },
+    "employee_monthly_salary_data": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "employee_id",
+            "sub_institute_id"
+        ]
+    },
+    "employee_salary_structures": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "employee_id",
+            "sub_institute_id"
+        ]
+    },
+    "enrollment_prefix_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "erptour": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "user_id",
+            "sub_institute_id"
+        ]
+    },
+    "erp_status": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "ERR_LOG": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "user_id"
+        ]
+    },
+    "exam_schedule": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "standard_id",
+            "division_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_aggre_pay": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "fees_axis": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "merchant_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_breackoff": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "fee_type_id",
+            "grade_id",
+            "standard_id",
+            "section_id",
+            "month_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_breackoff_logs": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "fee_type_id",
+            "grade_id",
+            "standard_id",
+            "section_id",
+            "month_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_breakoff_other": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "fee_type_id",
+            "month_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_cancel": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "reciept_id",
+            "sub_institute_id",
+            "student_id",
+            "standard_id",
+            "term_id"
+        ]
+    },
+    "fees_cancel_type": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "fees_circular_log": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "STUDENT_ID",
+            "RECEIPT_BOOK_ID",
+            "SUB_INSTITUTE_ID"
+        ]
+    },
+    "fees_circular_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "grade_id",
+            "standard_id"
+        ]
+    },
+    "fees_collect": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "standard_id",
+            "term_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_config_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "fees_hdfcrazorpay": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "key_id"
+        ]
+    },
+    "fees_hdffc": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "merchant_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_head_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "fees_icici": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "merchant_id",
+            "sub_merchant_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_late_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "standard_id",
+            "term_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_map_years": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "fees_month_header": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "month_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_online_maping": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "fees_online_split": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "fees_title_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_other_cancel": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "receipt_id",
+            "sub_institute_id",
+            "fees_other_collection_id",
+            "deduction_head_id",
+            "student_id"
+        ]
+    },
+    "fees_other_collection": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "receipt_id",
+            "sub_institute_id",
+            "student_id",
+            "deduction_head_id"
+        ]
+    },
+    "fees_other_head": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "fees_paid_other": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "reciept_id",
+            "standard_id",
+            "sub_institute_id",
+            "student_id",
+            "month_id"
+        ]
+    },
+    "fees_payment": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "hdfc_order_id",
+            "hdfc_transaction_id",
+            "axis_order_id",
+            "aggre_pay_order_id",
+            "icici_order_id",
+            "razorpay_order_id",
+            "payphi_order_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_payphi": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "merchant_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_razorpay": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "key_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_receipt": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "FEES_ID",
+            "OTHER_FEES_ID",
+            "SUB_INSTITUTE_ID"
+        ]
+    },
+    "fees_receipt_book_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "receipt_id",
+            "grade_id",
+            "standard_id",
+            "fees_head_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_receipt_css": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "receipt_id"
+        ]
+    },
+    "fees_reconciliation": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "subMerchant_id",
+            "email_iD",
+            "student_id",
+            "term_id",
+            "standard_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_refund": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "sub_institute_id"
+        ]
+    },
+    "fees_title": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "fees_title_id",
+            "sub_institute_id",
+            "other_fee_id",
+            "rollover_id"
+        ]
+    },
+    "fees_title_master": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "follow_up": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "enquiry_id"
+        ]
+    },
+    "form_builder": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "form_submit_data": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "form_id",
+            "user_id",
+            "sub_institute_id"
+        ]
+    },
+    "front_desk": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "SUB_INSTITUTE_ID",
+            "STUDENT_ID",
+            "MARKING_PERIOD_ID"
+        ]
+    },
+    "gamma_ppt": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "topic_id",
+            "generation_id",
+            "sub_institute_id"
+        ]
+    },
+    "gcm_users": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "general_data": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "client_id"
+        ]
+    },
+    "grade_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "grade_master_data": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "grade_id",
+            "sub_institute_id"
+        ]
+    },
+    "h5p_interactive_video": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "sub_institute_id"
+        ]
+    },
+    "h5p_scenarios": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "sub_institute_id"
+        ]
+    },
+    "h5p_scenario_points": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "scenario_id",
+            "sub_institute_id"
+        ]
+    },
+    "h5p_video_interactions": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "video_id"
+        ]
+    },
+    "homework": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "student_id",
+            "standard_id",
+            "division_id",
+            "subject_id"
+        ]
+    },
+    "hostel_building_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "hostel_type_id",
+            "hostel_id"
+        ]
+    },
+    "hostel_floor_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "building_id"
+        ]
+    },
+    "hostel_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "hostel_type_id"
+        ]
+    },
+    "hostel_room_allocation": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "user_id",
+            "user_group_id",
+            "admission_category_id",
+            "hostel_id",
+            "room_id",
+            "term_id",
+            "sub_institute_id"
+        ]
+    },
+    "hostel_room_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "floor_id"
+        ]
+    },
+    "hostel_type_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "hostel_visitor_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "house_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "hp_tblmenumaster": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "parent_id",
+            "sub_institute_id"
+        ]
+    },
+    "hrms_attendances": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "user_id",
+            "attendance_log_id",
+            "client_id",
+            "sub_institute_id"
+        ]
+    },
+    "hrms_departments": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "parent_id"
+        ]
+    },
+    "hrms_departments_mapping": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "parent_id",
+            "sub_institute_id"
+        ]
+    },
+    "hrms_emp_leaves": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "department_id",
+            "user_id",
+            "leave_type_id"
+        ]
+    },
+    "hrms_emp_payroll_deduction": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "employee_id",
+            "sub_institute_id"
+        ]
+    },
+    "hrms_holidays": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "hrms_in_out_times": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "user_id",
+            "client_id",
+            "sub_institute_id"
+        ]
+    },
+    "hrms_job_titles": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "client_id",
+            "sub_institute_id"
+        ]
+    },
+    "hrms_leave_allocation": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "employee_id",
+            "department_id",
+            "leave_type_id",
+            "sub_institute_id"
+        ]
+    },
+    "hrms_leave_types": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "leave_type_id",
+            "sub_institute_id"
+        ]
+    },
+    "hrms_salary_certificate": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "departement_id",
+            "employee_id",
+            "payroll_type_id",
+            "sub_institute_id"
+        ]
+    },
+    "hrms_weekdays": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "implementation_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "standard_id"
+        ]
+    },
+    "import_table_fields": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "imprest_fees_cancel": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "reciept_id",
+            "fees_paid_other_id",
+            "sub_institute_id",
+            "student_id",
+            "standard_id",
+            "term_id",
+            "cancel_fees_receipt_id"
+        ]
+    },
+    "incoming_messages": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "institute_detail": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "inventory_allocation_details": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "SUB_INSTITUTE_ID",
+            "REQUISITION_DETAILS_ID",
+            "REQUISITION_ID",
+            "ITEM_ID"
+        ]
+    },
+    "inventory_generate_po_details": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "item_id",
+            "vendor_id"
+        ]
+    },
+    "inventory_item_category_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "inventory_item_defective_details": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "SUB_INSTITUTE_ID",
+            "CATEGORY_ID",
+            "SUB_CATEGORY_ID",
+            "ITEM_ID"
+        ]
+    },
+    "inventory_item_direct_purchase": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "vendor_id",
+            "category_id",
+            "sub_category_id",
+            "item_id"
+        ]
+    },
+    "inventory_item_lost_details": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "SUB_INSTITUTE_ID",
+            "ITEM_ID"
+        ]
+    },
+    "inventory_item_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "category_id",
+            "sub_category_id",
+            "item_type_id"
+        ]
+    },
+    "inventory_item_quotation_details": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "item_id",
+            "vendor_id"
+        ]
+    },
+    "inventory_item_receivable_details": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "SUB_INSTITUTE_ID",
+            "ITEM_ID"
+        ]
+    },
+    "inventory_item_return_details": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "SUB_INSTITUTE_ID",
+            "REQUISITION_ID",
+            "ITEM_ID"
+        ]
+    },
+    "inventory_item_sub_category_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "category_id"
+        ]
+    },
+    "inventory_item_type": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "inventory_master_setup": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "SUB_INSTITUTE_ID"
+        ]
+    },
+    "inventory_negotiate_po_details": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "item_id",
+            "vendor_id"
+        ]
+    },
+    "inventory_requisition_details": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "marking_period_id",
+            "item_id",
+            "department_id",
+            "user_group_id"
+        ]
+    },
+    "inventory_requisition_status_master": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "inventory_tax_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "inventory_vendor_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "inward": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "place_id",
+            "file_location_id"
+        ]
+    },
+    "item_scan_details": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "item_status_id",
+            "sub_institute_id"
+        ]
+    },
+    "knowledge_base": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "knowledge_base_detail": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "kb_id"
+        ]
+    },
+    "lb_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "grade_id",
+            "standard_id",
+            "sub_institute_id"
+        ]
+    },
+    "lb_points": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "user_id",
+            "user_profile_id",
+            "sub_institute_id"
+        ]
+    },
+    "learning_outcome_exam_type_master": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "learning_outcome_indicator": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "learning_outcome_pdf": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "learning_outcome_question_master": {
+        "sii": null,
+        "syear": "SYEAR",
+        "fks": [
+            "INDICATORE_ID"
+        ]
+    },
+    "learning_outcome_student_marks": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "SUB_INSTITUTE_ID",
+            "STUDENT_ID",
+            "QUESTION_ID",
+            "CREATED_BY_USER_GROUP_ID"
+        ]
+    },
+    "leave_applications": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "sub_institute_id"
+        ]
+    },
+    "lessonplan": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "user_group_id",
+            "grade_id",
+            "standard_id",
+            "division_id",
+            "subject_id",
+            "teacher_id"
+        ]
+    },
+    "lessonplan_execution": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "user_group_id",
+            "standard_id",
+            "division_id",
+            "subject_id",
+            "teacher_id",
+            "lessonplan_id"
+        ]
+    },
+    "library_books": {
+        "sii": "sub_institute_id",
+        "syear": "academic_year",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "library_book_circulations": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "book_id",
+            "student_id",
+            "sub_institute_id"
+        ]
+    },
+    "library_items": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "book_id",
+            "sub_institute_id"
+        ]
+    },
+    "lms_assignment": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "student_id",
+            "standard_id",
+            "division_id",
+            "subject_id",
+            "exam_id",
+            "teacher_id"
+        ]
+    },
+    "lms_concept": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "extraction_id",
+            "subject_id",
+            "standard_id",
+            "chapter_id",
+            "sub_institute_id"
+        ]
+    },
+    "lms_content_category": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "lms_curriculum": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "extraction_id",
+            "sub_institute_id",
+            "grade_id",
+            "standard_id",
+            "subject_id",
+            "board_id"
+        ]
+    },
+    "lms_data_content_neo4j": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "section_id",
+            "standard_id",
+            "subject_id",
+            "chapter_id"
+        ]
+    },
+    "lms_data_neo4j": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "section_id",
+            "standard_id",
+            "subject_id",
+            "chapter_id"
+        ]
+    },
+    "lms_data_question_neo4j": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "section_id",
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "topic_id"
+        ]
+    },
+    "lms_doubt": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "subject_id",
+            "chapter_id",
+            "topic_id",
+            "sub_institute_id",
+            "user_id",
+            "user_profile_id"
+        ]
+    },
+    "lms_doubt_conversation": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "doubt_id",
+            "user_id",
+            "user_profile_id",
+            "sub_institute_id"
+        ]
+    },
+    "lms_flashcard": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "topic_id",
+            "content_id",
+            "sub_institute_id"
+        ]
+    },
+    "lms_intelligence_lesson_plans": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "term_id",
+            "standard_id",
+            "subject_id",
+            "division_id"
+        ]
+    },
+    "lms_learning_outcomes": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "extraction_id",
+            "curriculum_id",
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "parent_id"
+        ]
+    },
+    "lms_lessonplan_dayswise": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "period_id",
+            "teacher_id"
+        ]
+    },
+    "lms_lesson_plan": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "topic_id"
+        ]
+    },
+    "lms_lesson_plan_concepts": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "lms_lesson_plan_periods_id",
+            "concept_id"
+        ]
+    },
+    "lms_lesson_plan_periods": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "lms_intelligence_lesson_plans_id",
+            "period_id",
+            "teacher_id",
+            "chapter_id",
+            "primary_concept_id"
+        ]
+    },
+    "lms_mapping_type": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "parent_id",
+            "chapter_id",
+            "topic_id",
+            "element_id"
+        ]
+    },
+    "lms_offline_exam": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "question_paper_id",
+            "assignment_id",
+            "sub_institute_id"
+        ]
+    },
+    "lms_offline_exam_answer": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "question_paper_id",
+            "offline_exam_id",
+            "student_id",
+            "question_id"
+        ]
+    },
+    "lms_online_exam": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "student_id",
+            "question_paper_id"
+        ]
+    },
+    "lms_online_exam_answer": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "question_paper_id",
+            "online_exam_id",
+            "student_id",
+            "question_id",
+            "answer_id"
+        ]
+    },
+    "lms_online_exam_answer_student": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "question_paper_id",
+            "online_exam_id",
+            "student_id",
+            "question_id",
+            "answer_id"
+        ]
+    },
+    "lms_online_exam_student": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "student_id",
+            "question_paper_id"
+        ]
+    },
+    "lms_portfolio": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "user_id",
+            "sub_institute_id",
+            "user_profile_id"
+        ]
+    },
+    "lms_question_mapping": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "questionmaster_id",
+            "mapping_type_id",
+            "mapping_value_id"
+        ]
+    },
+    "lms_question_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "question_type_id",
+            "grade_id",
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "concept_id",
+            "topic_id",
+            "sub_institute_id"
+        ]
+    },
+    "lms_syllabus": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "grade_id",
+            "standard_id",
+            "subject_id",
+            "curriculum_id"
+        ]
+    },
+    "lms_teacher_resource": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "standard_id",
+            "grade_id",
+            "subject_id",
+            "chapter_id",
+            "topic_id",
+            "sub_institute_id"
+        ]
+    },
+    "lms_units": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "extraction_id",
+            "curriculum_id"
+        ]
+    },
+    "lms_virtual_classroom": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "grade_id",
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "topic_id",
+            "sub_institute_id"
+        ]
+    },
+    "lo_category": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "grade_id",
+            "standard_id",
+            "subject_id",
+            "sub_institute_id"
+        ]
+    },
+    "lo_indicator": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "grade_id",
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "lomaster_id",
+            "sub_institute_id"
+        ]
+    },
+    "lo_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "grade_id",
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "sub_institute_id"
+        ]
+    },
+    "mapped_teachers": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "teacher_id",
+            "standard_id",
+            "subject_id",
+            "sub_institute_id"
+        ]
+    },
+    "master_compliance": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "master_fields": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "master_fields_institute": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "master_fields_table": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "master_setup_select": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "master_skills": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "MBTI_answer": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "MBTI_paper": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "migrations": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "mobile_homescreen": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "user_profile_id"
+        ]
+    },
+    "mst_item_status": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "NACH_ac_type": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "type_id",
+            "sub_institute_id"
+        ]
+    },
+    "NACH_MASTER": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "instructing_agent_member_id",
+            "sub_institute_id"
+        ]
+    },
+    "neo4j_sync_queue": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "source_id",
+            "old_target_id",
+            "new_target_id"
+        ]
+    },
+    "new_admission_inquiry_registration": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "new_client_rights": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "old_question_category_master": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "old_question_level_master": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "onboarding_module": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "onboarding_progress": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "module_id",
+            "step_id",
+            "user_id",
+            "assigned_to_id",
+            "updated_by_id"
+        ]
+    },
+    "onboarding_step": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "module_id",
+            "action_menu_id"
+        ]
+    },
+    "onet_abilities": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "element_id",
+            "scale_id"
+        ]
+    },
+    "onet_career_cluster": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "career_id"
+        ]
+    },
+    "onet_content_model_reference": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "element_id"
+        ]
+    },
+    "onet_employer": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "onet_expert_advice": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "onet_explore_sector": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "onet_institute_courses": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "institute_id",
+            "aicte_id"
+        ]
+    },
+    "onet_institute_data": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "aicte_id"
+        ]
+    },
+    "onet_interests": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "element_id",
+            "scale_id"
+        ]
+    },
+    "onet_job_zones": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "onet_job_zone_reference": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "onet_knowledge": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "element_id",
+            "scale_id"
+        ]
+    },
+    "onet_occupation_data": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "onet_scales_reference": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "scale_id"
+        ]
+    },
+    "onet_skills": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "element_id",
+            "scale_id"
+        ]
+    },
+    "onet_task_ratings": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "task_id",
+            "scale_id"
+        ]
+    },
+    "onet_task_statements": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "task_id"
+        ]
+    },
+    "onet_technology_skills": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "onet_tools_used": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "onet_unspsc_reference": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "onet_work_activities": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "element_id",
+            "scale_id"
+        ]
+    },
+    "onet_work_context": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "element_id",
+            "scale_id"
+        ]
+    },
+    "onet_work_context_categories": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "element_id",
+            "scale_id"
+        ]
+    },
+    "onet_work_styles": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "element_id",
+            "scale_id"
+        ]
+    },
+    "onet_work_values": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "element_id",
+            "scale_id"
+        ]
+    },
+    "outward": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "place_id",
+            "file_location_id"
+        ]
+    },
+    "o_net_data_categories": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "o_net_data_occupations": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_data_category_id",
+            "element_id"
+        ]
+    },
+    "o_net_data_sub_categories": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_data_category_id",
+            "parent_id",
+            "sub_parent_id",
+            "child_id"
+        ]
+    },
+    "o_net_data_tables": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_sub_category_id"
+        ]
+    },
+    "o_net_data_table_lists": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "o_net_occupation_details": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_data_occupation_id",
+            "element_id",
+            "o_net_data_category_id"
+        ]
+    },
+    "o_net_occupation_detail_abilities_summeries": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_occupation_detail_list_id",
+            "element_id"
+        ]
+    },
+    "o_net_occupation_detail_education_summeries": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_occupation_detail_list_id"
+        ]
+    },
+    "o_net_occupation_detail_interest_summeries": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_occupation_detail_list_id",
+            "element_id"
+        ]
+    },
+    "o_net_occupation_detail_job_zone_summeries": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_occupation_detail_list_id"
+        ]
+    },
+    "o_net_occupation_detail_knowledge_summeries": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_occupation_detail_list_id",
+            "element_id"
+        ]
+    },
+    "o_net_occupation_detail_lists": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_occupation_detail_id",
+            "o_net_data_category_id"
+        ]
+    },
+    "o_net_occupation_detail_list_summaries": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_occupation_detail_list_id"
+        ]
+    },
+    "o_net_occupation_detail_skill_summeries": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_occupation_detail_list_id",
+            "element_id"
+        ]
+    },
+    "o_net_occupation_detail_tech_skill_summeries": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_occupation_detail_list_id",
+            "title_id"
+        ]
+    },
+    "o_net_occupation_detail_work_activity_summeries": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_occupation_detail_list_id",
+            "element_id"
+        ]
+    },
+    "o_net_occupation_detail_work_style_summeries": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_occupation_detail_list_id",
+            "element_id"
+        ]
+    },
+    "o_net_occupation_detail_work_value_summeries": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "o_net_occupation_detail_list_id",
+            "element_id"
+        ]
+    },
+    "pal_assessment_results": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id",
+            "question_id"
+        ]
+    },
+    "pal_classroom_activities": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id"
+        ]
+    },
+    "pal_collaboration_activities": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id"
+        ]
+    },
+    "pal_competencies": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id",
+            "subject_id",
+            "concept_id"
+        ]
+    },
+    "pal_concepts": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "subject_id"
+        ]
+    },
+    "pal_contents": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "concept_id"
+        ]
+    },
+    "pal_content_recommendations": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id",
+            "content_id"
+        ]
+    },
+    "pal_discussions": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id"
+        ]
+    },
+    "pal_group_activities": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id"
+        ]
+    },
+    "pal_learner_misconceptions": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id",
+            "concept_id",
+            "misconception_id"
+        ]
+    },
+    "pal_learner_preferences": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id"
+        ]
+    },
+    "pal_learner_states": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id",
+            "session_id"
+        ]
+    },
+    "pal_learning_events": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id"
+        ]
+    },
+    "pal_learning_journals": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id"
+        ]
+    },
+    "pal_learning_patterns": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id"
+        ]
+    },
+    "pal_learning_plans": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id"
+        ]
+    },
+    "pal_learning_sessions": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id",
+            "subject_id"
+        ]
+    },
+    "pal_misconceptions": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "concept_id"
+        ]
+    },
+    "pal_pedagogy_effectiveness": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id",
+            "session_id",
+            "concept_id",
+            "content_id"
+        ]
+    },
+    "pal_reflections": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id",
+            "session_id",
+            "concept_id",
+            "content_id"
+        ]
+    },
+    "pal_remediations": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "misconception_id"
+        ]
+    },
+    "pal_remediation_sessions": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id",
+            "misconception_id"
+        ]
+    },
+    "pal_self_corrections": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id"
+        ]
+    },
+    "pal_session_events": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id",
+            "session_id"
+        ]
+    },
+    "pal_strategy_selections": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "learner_id"
+        ]
+    },
+    "pal_subjects": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "pal_telemetry_events": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "actor_id",
+            "session_id",
+            "object_id",
+            "context_id"
+        ]
+    },
+    "parent_communication": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "sub_institute_id"
+        ]
+    },
+    "password_resets": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "payroll_types": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "period": {
+        "sii": "sub_institute_id",
+        "syear": "academic_year_id",
+        "fks": [
+            "academic_section_id",
+            "academic_year_id",
+            "sub_institute_id",
+            "marking_period_id"
+        ]
+    },
+    "period_details": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "period_id",
+            "standard_id",
+            "sub_institute_id"
+        ]
+    },
+    "personal_access_tokens": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "tokenable_id"
+        ]
+    },
+    "petty_cash": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "title_id",
+            "user_id",
+            "sub_institute_id"
+        ]
+    },
+    "petty_cash_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "photo_video_gallary": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "standard_id",
+            "division_id",
+            "sub_institute_id"
+        ]
+    },
+    "physical_file_location": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "place_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "proxy_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "timetable_id",
+            "grade_id",
+            "standard_id",
+            "division_id",
+            "batch_id",
+            "subject_id",
+            "teacher_id",
+            "proxy_teacher_id",
+            "period_id"
+        ]
+    },
+    "ptm_booking_master": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": null,
+        "fks": [
+            "TEACHER_ID",
+            "TIME_SLOT_ID",
+            "STUDENT_ID",
+            "SUB_INSTITUTE_ID"
+        ]
+    },
+    "ptm_time_slots_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "standard_id",
+            "division_id"
+        ]
+    },
+    "question_paper": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "grade_id",
+            "standard_id",
+            "subject_id",
+            "sub_institute_id"
+        ]
+    },
+    "question_type_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "recommendations": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "user_id"
+        ]
+    },
+    "relation_table_fields": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "relation_table_id"
+        ]
+    },
+    "religion": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "report_dynamic": {
+        "sii": null,
+        "syear": "syear",
+        "fks": []
+    },
+    "report_module": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "report_module_data": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "report_module_fields": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "menu_id"
+        ]
+    },
+    "requirement_gathering": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "menu_id",
+            "created_by_id",
+            "sub_institute_id"
+        ]
+    },
+    "result_activity_group": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "result_activity_marks": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "activity_id",
+            "sub_activity_id",
+            "group_id",
+            "sub_institute_id"
+        ]
+    },
+    "result_activity_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "skill_id",
+            "term_id",
+            "sub_institute_id"
+        ]
+    },
+    "result_book_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "trust_id",
+            "sub_institute_id"
+        ]
+    },
+    "result_co_scholastic": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "term_id",
+            "parent_id",
+            "sub_institute_id",
+            "standard_id"
+        ]
+    },
+    "result_co_scholastic_grades": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "map_id",
+            "sub_institute_id"
+        ]
+    },
+    "result_co_scholastic_marks_entries": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "grade_id",
+            "standard_id",
+            "division_id",
+            "term_id",
+            "student_id",
+            "co_scholastic_id",
+            "sub_institute_id"
+        ]
+    },
+    "result_co_scholastic_parent": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "result_co_scholatic_range": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "result_create_exam": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "term_id",
+            "exam_id",
+            "standard_id",
+            "subject_id"
+        ]
+    },
+    "result_exam_approve": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "subject_id",
+            "standard_id",
+            "division_id",
+            "exam_id",
+            "term_id",
+            "sub_institute_id"
+        ]
+    },
+    "result_exam_master": {
+        "sii": "SubInstituteId",
+        "syear": null,
+        "fks": [
+            "standard_id",
+            "term_id"
+        ]
+    },
+    "result_exam_type_master": {
+        "sii": "SubInstituteId",
+        "syear": null,
+        "fks": []
+    },
+    "result_html": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "grade_id",
+            "standard_id",
+            "division_id",
+            "term_id",
+            "sub_institute_id"
+        ]
+    },
+    "result_marks": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "student_id",
+            "exam_id",
+            "sub_institute_id"
+        ]
+    },
+    "result_master_confrigration": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "term_id",
+            "sub_institute_id",
+            "standard_id"
+        ]
+    },
+    "result_oldyear_marks": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "student_id",
+            "exam_id",
+            "sub_institute_id"
+        ]
+    },
+    "result_personalize_marks": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "student_id",
+            "standard_id",
+            "subject_id",
+            "exam_id"
+        ]
+    },
+    "result_remarks": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "term_id",
+            "sub_institute_id"
+        ]
+    },
+    "result_remark_masters": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "marking_period_id"
+        ]
+    },
+    "result_reportcard_marks": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "student_id",
+            "standard_id",
+            "term_id",
+            "template_id"
+        ]
+    },
+    "result_skillset": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "result_std_grd_maping": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "result_student_attendance_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "term_id",
+            "sub_institute_id",
+            "student_id",
+            "remark_id"
+        ]
+    },
+    "result_sub_activity": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "skill_id",
+            "sub_skill_id",
+            "sub_institute_id"
+        ]
+    },
+    "result_template_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "result_trust_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "result_working_day_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "term_id",
+            "sub_institute_id"
+        ]
+    },
+    "rightside_menumaster": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "main_menu_id",
+            "parent_menu_id",
+            "tblmenu_master_id",
+            "sub_institute_id"
+        ]
+    },
+    "role_responsibility": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "room_type_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "S2_LOG": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "MESSAGE_ID",
+            "INITIATING_PARTY_ID",
+            "INSTRUCTING_AGENT_MEMBER_ID",
+            "INSTRUCTED_AGENT_MEMBER_ID",
+            "MANDATE_REQUEST_ID",
+            "TRUST_ID"
+        ]
+    },
+    "school_detail": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "school_sections": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "section_id",
+            "school_id",
+            "sub_institute_id"
+        ]
+    },
+    "school_setup": {
+        "sii": null,
+        "syear": "syear",
+        "fks": [
+            "client_id"
+        ]
+    },
+    "semantic_intelligence": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "extraction_id",
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "sub_institute_id"
+        ]
+    },
+    "sharebazar_margin": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "sharebazar_pnl": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "sharebazar_position": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "client_id"
+        ]
+    },
+    "sms_api_details": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "sms_sent_parents": {
+        "sii": "sub_institute_id",
+        "syear": "SYEAR",
+        "fks": [
+            "STUDENT_ID",
+            "sub_institute_id"
+        ]
+    },
+    "sms_sent_staff": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "staff_id",
+            "sub_institute_id"
+        ]
+    },
+    "smtp_details": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "sqaa_documant_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "menu_id",
+            "sub_institute_id"
+        ]
+    },
+    "sqaa_documents": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "menu_id",
+            "document_id",
+            "sub_institute_id"
+        ]
+    },
+    "sqaa_marks": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "menu_id",
+            "sub_institute_id"
+        ]
+    },
+    "sqaa_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "parent_id",
+            "sub_institute_id"
+        ]
+    },
+    "staff_document": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "user_id",
+            "document_type_id",
+            "sub_institute_id"
+        ]
+    },
+    "standard": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "grade_id",
+            "sub_institute_id",
+            "next_grade_id",
+            "next_standard_id",
+            "marking_period_id"
+        ]
+    },
+    "std_div_map": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "standard_id",
+            "division_id",
+            "sub_institute_id"
+        ]
+    },
+    "student_anacdotal": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "student_id"
+        ]
+    },
+    "student_capture_attendance": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "standard_id",
+            "division_id"
+        ]
+    },
+    "student_capture_photos": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "student_id",
+            "type_id"
+        ]
+    },
+    "student_change_request": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "SUB_INSTITUTE_ID",
+            "CHANGE_REQUEST_ID",
+            "STUDENT_ID",
+            "STANDARD_ID",
+            "SECTION_ID"
+        ]
+    },
+    "student_change_req_type": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "SUB_INSTITUTE_ID"
+        ]
+    },
+    "STUDENT_CHANGE_REQ_TYPE": {
+        "sii": "SUB_INSTITUTE_ID",
+        "syear": "SYEAR",
+        "fks": [
+            "SUB_INSTITUTE_ID"
+        ]
+    },
+    "student_document_type": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "student_health": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "marking_period_id",
+            "sub_institute_id"
+        ]
+    },
+    "student_height_weight": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "marking_period_id",
+            "sub_institute_id"
+        ]
+    },
+    "student_infirmary": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "student_id",
+            "marking_period_id"
+        ]
+    },
+    "student_optional_subject": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "subject_id",
+            "student_id"
+        ]
+    },
+    "student_quota": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "student_vaccination": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "marking_period_id",
+            "sub_institute_id"
+        ]
+    },
+    "subject": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "marking_period_id"
+        ]
+    },
+    "subject_elective": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "subject_id",
+            "division_id",
+            "standard_id"
+        ]
+    },
+    "subject_optional_type": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "subject_id",
+            "standard_id",
+            "sub_institute_id"
+        ]
+    },
+    "sub_std_map": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "subject_id",
+            "standard_id",
+            "sub_institute_id"
+        ]
+    },
+    "suggested_content": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "type_id",
+            "standard_id",
+            "subject_id",
+            "chapter_id",
+            "sub_institute_id",
+            "student_id"
+        ]
+    },
+    "syllabus": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "standard_id",
+            "curriculum_id",
+            "sub_institute_id",
+            "subject_id"
+        ]
+    },
+    "sync_log": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "record_id"
+        ]
+    },
+    "s_assessment_library": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "s_industries": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "s_jobrole": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "s_jobrole_skills": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "s_jobrole_task": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "s_skill_map_k_a": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "s_skill_matrix": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "user_id",
+            "skill_id"
+        ]
+    },
+    "s_user_jobrole": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "department_id",
+            "sub_institute_id"
+        ]
+    },
+    "table_relation": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "parent_id"
+        ]
+    },
+    "task": {
+        "sii": "sub_institute_id",
+        "syear": "SYEAR",
+        "fks": [
+            "MARKING_PERIOD_ID",
+            "sub_institute_id"
+        ]
+    },
+    "task_management_comments": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "task_id",
+            "user_id"
+        ]
+    },
+    "task_management_dependencies": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "predecessor_task_id",
+            "successor_task_id",
+            "project_id",
+            "workstream_id",
+            "sub_institute_id"
+        ]
+    },
+    "task_management_milestones": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "project_id",
+            "workstream_id",
+            "sub_institute_id"
+        ]
+    },
+    "tblapplications": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "client_id"
+        ]
+    },
+    "tblcity": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "state_id"
+        ]
+    },
+    "tblclient": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "tblcustom_fields": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "tblemp_skills": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "tblfields_data": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "field_id"
+        ]
+    },
+    "tblgroupwise_rights": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "menu_id",
+            "profile_id",
+            "sub_institute_id"
+        ]
+    },
+    "tblindividual_rights": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "user_id",
+            "menu_id",
+            "profile_id",
+            "sub_institute_id",
+            "client_id"
+        ]
+    },
+    "tblmenumaster": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "parent_menu_id",
+            "sub_institute_id",
+            "client_id"
+        ]
+    },
+    "tblmenumaster_new": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "parent_menu_id",
+            "sub_institute_id"
+        ]
+    },
+    "tblmenumaster_old": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "parent_menu_id",
+            "sub_institute_id"
+        ]
+    },
+    "tblprofilewise_menu": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "menu_id",
+            "user_profile_id",
+            "sub_institute_id"
+        ]
+    },
+    "tblstate": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "tblstudent": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "user_profile_id",
+            "admission_id",
+            "sub_institute_id",
+            "marking_period_id",
+            "udise_id",
+            "aapar_id"
+        ]
+    },
+    "tblstudent_bank_detail": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "student_id",
+            "sub_institute_id"
+        ]
+    },
+    "tblstudent_bank_detail_log": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "student_id",
+            "sub_institute_id"
+        ]
+    },
+    "tblstudent_document": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "student_id",
+            "document_type_id",
+            "sub_institute_id"
+        ]
+    },
+    "tblstudent_doc_std_mapping": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "document_type_id",
+            "standard_id"
+        ]
+    },
+    "tblstudent_enrollment": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "grade_id",
+            "standard_id",
+            "section_id",
+            "term_id",
+            "house_id",
+            "sub_institute_id"
+        ]
+    },
+    "tblstudent_family_history": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "student_id",
+            "sub_institute_id"
+        ]
+    },
+    "tblstudent_fees_failure": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "month_id",
+            "sub_institute_id"
+        ]
+    },
+    "tblstudent_parent_feedback": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "student_id",
+            "sub_institute_id"
+        ]
+    },
+    "tblstudent_past_education": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "student_id",
+            "sub_institute_id"
+        ]
+    },
+    "tblstudent_payment_method_mapping": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "sub_institute_id",
+            "month_id"
+        ]
+    },
+    "tblstudent_siblings": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "siblings_id",
+            "sub_institute_id"
+        ]
+    },
+    "tblstudent_tc_details": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "student_id"
+        ]
+    },
+    "tbluser": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "user_profile_id",
+            "sub_institute_id",
+            "client_id",
+            "jobtitle_id",
+            "department_id",
+            "employee_id",
+            "oasis_id"
+        ]
+    },
+    "tbluserprofilemaster": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "parent_id",
+            "sub_institute_id",
+            "client_id"
+        ]
+    },
+    "tbluser_contact_details": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "user_id",
+            "sub_institute_id"
+        ]
+    },
+    "tbluser_past_education": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "user_id",
+            "sub_institute_id"
+        ]
+    },
+    "tbluser_shift_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "tbluser_shift_records": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "department_id",
+            "employee_id",
+            "sub_institute_id"
+        ]
+    },
+    "teacher_mobile_homescreen": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "user_profile_id"
+        ]
+    },
+    "template_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "temp_signup": {
+        "sii": null,
+        "syear": "syear",
+        "fks": [
+            "standard_id"
+        ]
+    },
+    "timetable": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "academic_section_id",
+            "standard_id",
+            "division_id",
+            "batch_id",
+            "period_id",
+            "subject_id",
+            "teacher_id",
+            "marking_period_id"
+        ]
+    },
+    "topic_master": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "chapter_id",
+            "main_topic_id"
+        ]
+    },
+    "transport_driver_detail": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "transport_kilometer_rate": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "transport_map_student": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "student_id",
+            "from_shift_id",
+            "from_bus_id",
+            "to_shift_id",
+            "to_bus_id",
+            "sub_institute_id"
+        ]
+    },
+    "transport_route": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "transport_route_bus": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "route_id",
+            "bus_id",
+            "sub_institute_id"
+        ]
+    },
+    "transport_route_stop": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "route_id",
+            "stop_id",
+            "sub_institute_id"
+        ]
+    },
+    "transport_school_shift": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "transport_stop": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "transport_vehicle": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "transport_vehicle_type": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "upload_result": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "term_id",
+            "grade_id",
+            "standard_id",
+            "student_id"
+        ]
+    },
+    "users": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "user_activities": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "user_id",
+            "content_id",
+            "sub_institute_id"
+        ]
+    },
+    "user_experience_details": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "user_id",
+            "sub_institute_id"
+        ]
+    },
+    "visitor_master": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "visitor_master_settings": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "visitor_type": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "whatapp_user_details": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id",
+            "cloud_api_phone_number_id"
+        ]
+    },
+    "whatsapp_sent_messages": {
+        "sii": "sub_institute_id",
+        "syear": "syear",
+        "fks": [
+            "sub_institute_id",
+            "standard_id",
+            "division_id",
+            "student_id"
+        ]
+    },
+    "wk_condition": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "main_id",
+            "module_id"
+        ]
+    },
+    "wk_execute_schedule": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "main_id",
+            "sub_institute_id"
+        ]
+    },
+    "wk_log": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "main_id"
+        ]
+    },
+    "wk_mail": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "main_id"
+        ]
+    },
+    "wk_main": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "execute_id",
+            "sub_institute_id"
+        ]
+    },
+    "wk_module": {
+        "sii": null,
+        "syear": null,
+        "fks": []
+    },
+    "wk_sms": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "main_id"
+        ]
+    },
+    "wk_updatequery": {
+        "sii": null,
+        "syear": null,
+        "fks": [
+            "main_id",
+            "module_id"
+        ]
+    },
+    "Z_customer_registrations": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "Z_donarDetails": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "Z_employee_details": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "Z_Seminar": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    },
+    "Z_Student_Details": {
+        "sii": "sub_institute_id",
+        "syear": null,
+        "fks": [
+            "sub_institute_id"
+        ]
+    }
+}
