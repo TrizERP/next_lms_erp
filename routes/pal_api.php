@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\api\PAL\NewPalContentModelController;
 use App\Http\Controllers\api\PAL\PALAPIController;
 use App\Http\Controllers\api\PAL\PedagogyEngineController;
+use App\Http\Controllers\api\PAL\PalArchitectureController;
 use App\Http\Controllers\api\PAL\PalContentIntelligenceController;
 use App\Http\Controllers\api\PAL\PalWorkspaceController;
 
@@ -228,5 +229,32 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
         Route::post('/nodes/{nodeKey}/transition', [NewPalContentModelController::class, 'transitionNode'])->where('nodeKey', $nodeKey);
         Route::post('/nodes/{nodeKey}/enrich', [NewPalContentModelController::class, 'enrich'])->where('nodeKey', $nodeKey);
         Route::post('/nodes/{nodeKey}/translate', [NewPalContentModelController::class, 'translate'])->where('nodeKey', $nodeKey);
+    });
+
+    // ==================== NEW PAL → ADMINISTRATION ====================
+    //
+    // The control plane for the nine architecture subsystems in the Master
+    // Blueprint: the 9 intelligence layers, the 12-step adaptive loop, the BKT
+    // mastery model, the four NEP 2020 HPC stages, the Stream/Mountain/Sky
+    // rubric, the Neo4j graph schema, the five agent personas, the 9-dimension
+    // student model and career intelligence.
+    //
+    // Reads pair configuration with a live health probe, so a parameter is
+    // never tuned without showing whether its subsystem receives data at all.
+    // Writes are admin-only (ArchitectureRegistry::mayWrite) and are sanitised
+    // against the panel descriptors before anything is stored.
+    //
+    // {subsystem} is constrained to the slug grammar so it can never collide
+    // with a literal sibling route or reach the registry as a path fragment.
+    Route::prefix('/new/administration')->group(function () {
+        $subsystem = '[a-z][a-z0-9-]*';
+
+        Route::get('/', [PalArchitectureController::class, 'index']);
+        Route::get('/{subsystem}', [PalArchitectureController::class, 'show'])
+            ->where('subsystem', $subsystem);
+        Route::post('/{subsystem}', [PalArchitectureController::class, 'update'])
+            ->where('subsystem', $subsystem);
+        Route::post('/{subsystem}/reset', [PalArchitectureController::class, 'reset'])
+            ->where('subsystem', $subsystem);
     });
 });
