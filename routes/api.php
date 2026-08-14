@@ -216,7 +216,9 @@ Route::match(['put', 'patch'], 'general-setup/{module}/{id}', [GeneralSetupApiCo
 Route::delete('general-setup/{module}/{id}', [GeneralSetupApiController::class, 'destroy']);
 Route::get('inventory/{module}', [InventoryApiController::class, 'index'])->where('module', '^(?!reports$).+');
 Route::get('inventory/reports/{module}', [InventoryApiController::class, 'reportIndex']);
+Route::get('inventory/receivables/items', [InventoryApiController::class, 'poItems']);
 Route::post('inventory/{module}', [InventoryApiController::class, 'store'])->where('module', '^(?!reports$).+');
+Route::post('inventory/receivables/multiple', [InventoryApiController::class, 'saveReceivables']);
 Route::match(['put', 'patch'], 'inventory/{module}/{id}', [InventoryApiController::class, 'update'])->where('module', '^(?!reports$).+');
 Route::delete('inventory/{module}/{id}', [InventoryApiController::class, 'destroy'])->where('module', '^(?!reports$).+');
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
