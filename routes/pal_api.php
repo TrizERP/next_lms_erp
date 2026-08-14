@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\api\PAL\NewPalContentModelController;
 use App\Http\Controllers\api\PAL\PALAPIController;
 use App\Http\Controllers\api\PAL\PalContentIntelligenceController;
 use App\Http\Controllers\api\PAL\PalWorkspaceController;
@@ -165,4 +166,48 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
         ->where('entityId', '[0-9]+');
     Route::post('/content/metadata/{entityType}/{entityId}', [PalContentIntelligenceController::class, 'upsert'])
         ->where('entityId', '[0-9]+');
+
+    // ==================== NEW PAL → CONTENT MODEL ====================
+    //
+    // The PAL V4 Content Intelligence Layer projected live out of
+    // `semantic_intelligence`: the 4-type content model, the 5-level Bloom
+    // ladder, the 30+ field metadata schema, the misconception library, the
+    // 6 Indian cultural contexts, the 9 language variants, and the authoring
+    // + QA workflow.
+    //
+    // Prefixed /new/ so it can never collide with the /content/* routes above,
+    // which read a different estate (lms_question_master / content_master).
+    //
+    // Route ordering: literals before wildcards, numeric ids constrained to
+    // digits, and {nodeKey} constrained to the derived key grammar
+    // (PREFIX.id.concept-slug[.discriminator]) so a key containing dots does
+    // not need encoding and cannot swallow a sibling literal route.
+    Route::prefix('/new/content-model')->group(function () {
+        $nodeKey = '[A-Z]{2}\.[0-9]+\.[a-z0-9-]+(\.[A-Za-z0-9_.-]+)?';
+
+        Route::get('/vocabulary', [NewPalContentModelController::class, 'vocabulary']);
+        Route::get('/coverage', [NewPalContentModelController::class, 'coverage']);
+        Route::get('/review-queue', [NewPalContentModelController::class, 'reviewQueue']);
+
+        Route::get('/chapters', [NewPalContentModelController::class, 'chapters']);
+        Route::get('/chapters/{semanticId}', [NewPalContentModelController::class, 'chapter'])
+            ->where('semanticId', '[0-9]+');
+        Route::get('/chapters/{semanticId}/misconceptions', [NewPalContentModelController::class, 'chapterMisconceptions'])
+            ->where('semanticId', '[0-9]+');
+        Route::get('/chapters/{semanticId}/concepts/{conceptSlug}', [NewPalContentModelController::class, 'concept'])
+            ->where(['semanticId' => '[0-9]+', 'conceptSlug' => '[a-z0-9-]+']);
+        Route::get('/chapters/{semanticId}/concepts/{conceptSlug}/ladder', [NewPalContentModelController::class, 'ladder'])
+            ->where(['semanticId' => '[0-9]+', 'conceptSlug' => '[a-z0-9-]+']);
+
+        // The literal /nodes/bulk-transition is declared before {nodeKey}.
+        Route::post('/nodes/bulk-transition', [NewPalContentModelController::class, 'bulkTransition']);
+
+        Route::get('/nodes/{nodeKey}', [NewPalContentModelController::class, 'node'])->where('nodeKey', $nodeKey);
+        Route::post('/nodes/{nodeKey}', [NewPalContentModelController::class, 'saveNode'])->where('nodeKey', $nodeKey);
+        Route::get('/nodes/{nodeKey}/revisions', [NewPalContentModelController::class, 'revisions'])->where('nodeKey', $nodeKey);
+        Route::post('/nodes/{nodeKey}/restore', [NewPalContentModelController::class, 'restore'])->where('nodeKey', $nodeKey);
+        Route::post('/nodes/{nodeKey}/transition', [NewPalContentModelController::class, 'transitionNode'])->where('nodeKey', $nodeKey);
+        Route::post('/nodes/{nodeKey}/enrich', [NewPalContentModelController::class, 'enrich'])->where('nodeKey', $nodeKey);
+        Route::post('/nodes/{nodeKey}/translate', [NewPalContentModelController::class, 'translate'])->where('nodeKey', $nodeKey);
+    });
 });
