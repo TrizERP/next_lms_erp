@@ -127,7 +127,7 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
 Route::POST('/uploadResultAPI', [upload_result_controller::class, 'uploadResultAPI']);
 
 //Route::get('api/dependent-dropdown', 'AJAXController@index');
-// Route::get('api/get-grade-list', 'AJAXController@getGradeList');
+Route::get('api/get-grade-list', [AJAXController::class, 'getGradeList']);
 Route::get('api/get-standard-list', [AJAXController::class, 'getStandardList']);
 Route::get('api/get-division-list', [AJAXController::class, 'getDivisionList']);
 Route::get('api/get-subject-list', [AJAXController::class, 'getSubjectList']);

@@ -3,6 +3,7 @@
 use App\Http\Controllers\easy_com\send_email_parents\send_email_parents_controller;
 use App\Http\Controllers\easy_com\send_sms_parents\send_sms_parents_controller;
 use App\Http\Controllers\front_desk\circular\circularController;
+use App\Http\Controllers\front_desk\circular\circularTypeApiController;
 use App\Http\Controllers\front_desk\dicipline\diciplineController;
 use App\Http\Controllers\front_desk\dicipline_report\dicipline_reportController;
 use App\Http\Controllers\front_desk\exam_schedule\exam_scheduleController;
@@ -223,6 +224,7 @@ Route::get('circular/report', [CircularReportController::class, 'index'])
 Route::post('front_desk/leave_application/add_leave_application', [leaveApplicationController::class, 'add_leave']);
 Route::post('circular/fetchData', [circularController::class, 'fetchData']);
 Route::post('circular/TeacherFetchData', [circularController::class, 'TeacherFetchData']);
+Route::get('circular/circular-types', [circularTypeApiController::class, 'index']);
 Route::post('homework/fetchData', [studentHomeworkController::class, 'fetchData']);
 Route::post('photo_video_gallary/fetchData', [photo_video_gallaryController::class, 'fetchData']);
 Route::post('photo_video_gallary/TeacherFetchData', [photo_video_gallaryController::class, 'TeacherFetchData']);

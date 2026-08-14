@@ -72,6 +72,7 @@ Route::controller(apiController::class)->group(function () {
 });
 
 Route::post('api-login', [ApiLoginController::class, 'login'])->name('api.api-login');
+Route::get('academic-terms', [ApiLoginController::class, 'academicTerms'])->name('api.academic-terms');
 // Isolated mobile Own Profile API; legacy profile controllers are unchanged.
 Route::middleware('api.session')->get('own-profile', [\App\Http\Controllers\api\OwnProfileApiController::class, 'show']);
 Route::middleware('api.session')->prefix('hrms')->group(function () {
@@ -183,6 +184,12 @@ Route::controller(admissionRegistrationAPIController::class)->group(function () 
     Route::delete('admission_registration/{id}', 'destroy');
     Route::post('admission_student', 'saveStudent');
     Route::get('ajax_getDivision', 'ajax_getDivision');
+
+    // Corrected variants of index()/edit() used by the Admission Without Confirmation
+    // Report - see indexWithoutConfirmationReport()/editWithoutConfirmationReport()
+    // for why these are new methods/routes rather than edits to the ones above.
+    Route::get('admission_without_confirmation_report_v2', 'indexWithoutConfirmationReport');
+    Route::get('admission_without_confirmation_report_v2/{id}/edit', 'editWithoutConfirmationReport');
 });
 
 
