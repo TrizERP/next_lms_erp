@@ -10,6 +10,9 @@ use App\Services\PAL\Intelligence\MisconceptionIntelligenceEngine;
 use App\Services\PAL\Intelligence\PredictiveInterventionEngine;
 use App\Services\PAL\Intelligence\BehavioralAnalyticsService;
 use App\Services\PAL\Pedagogy\PedagogyOrchestrationService;
+use App\Services\PAL\Content\SemanticIntelligenceSource;
+use App\Services\PAL\Pedagogy\PedagogyEngineResolver;
+use App\Services\PAL\Pedagogy\PedagogyEngineService;
 use App\Services\PAL\Pedagogy\PedagogySelectorEngine;
 use App\Services\PAL\Pedagogy\CognitiveLoadEngine;
 use App\Services\PAL\Pedagogy\EmotionalSafetyEngine;
@@ -89,7 +92,28 @@ class PALServiceProvider extends ServiceProvider
                 $app->make(FrameworkCatalogService::class)
             );
         });
-        
+
+        // Reads extracted chapter intelligence out of `semantic_intelligence`.
+        $this->app->singleton(SemanticIntelligenceSource::class, function () {
+            return new SemanticIntelligenceSource();
+        });
+
+        // Executes the Pedagogy Engine rules against a real concept.
+        $this->app->singleton(PedagogyEngineResolver::class, function ($app) {
+            return new PedagogyEngineResolver(
+                $app->make(FrameworkCatalogService::class)
+            );
+        });
+
+        // Read model for the Pedagogy Engine served to the PAL UI.
+        $this->app->singleton(PedagogyEngineService::class, function ($app) {
+            return new PedagogyEngineService(
+                $app->make(FrameworkCatalogService::class),
+                $app->make(SemanticIntelligenceSource::class),
+                $app->make(PedagogyEngineResolver::class)
+            );
+        });
+
         $this->app->singleton(CognitiveLoadEngine::class, function () {
             return new CognitiveLoadEngine();
         });

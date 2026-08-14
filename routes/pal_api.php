@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\api\PAL\PALAPIController;
+use App\Http\Controllers\api\PAL\PedagogyEngineController;
 use App\Http\Controllers\api\PAL\PalWorkspaceController;
 
 /*
@@ -18,6 +19,24 @@ use App\Http\Controllers\api\PAL\PalWorkspaceController;
 | staff/admins are scoped to their own institute/client).
 |
 */
+
+/*
+| Pedagogy Engine (read-only rule set)
+|
+| The codified PAL V4 decision rules -- mastery tiers, engagement state, error
+| and misconception handling, learning style / context, the engagement score
+| composition and the pedagogy x trigger map. This is reference data: it carries
+| no learner or tenant scope, so it sits outside `pal.auth` alongside the other
+| read-only PAL content endpoints the Next.js server renderer reads. Anything
+| learner-specific stays inside the authenticated group below.
+*/
+Route::prefix('api/pal/pedagogy-engine')->group(function () {
+    Route::get('/', [PedagogyEngineController::class, 'index']);
+    Route::get('/sections', [PedagogyEngineController::class, 'sections']);
+    Route::get('/chapters', [PedagogyEngineController::class, 'chapters']);
+    Route::get('/{section}', [PedagogyEngineController::class, 'show'])
+        ->where('section', '[A-Za-z0-9\-]+');
+});
 
 Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
 

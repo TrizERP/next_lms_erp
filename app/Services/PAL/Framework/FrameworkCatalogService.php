@@ -31,6 +31,23 @@ class FrameworkCatalogService
         return $aliases[$clean] ?? ($this->isAllowed('pedagogies', $clean) ? $clean : 'inquiry_based');
     }
 
+    /**
+     * True when the tag is a canonical pedagogy or a known alias -- i.e. when
+     * normalizePedagogy() will resolve it rather than fall back to the default.
+     * Callers matching free-text labels use this to tell a real hit from the
+     * inquiry_based fallback.
+     */
+    public function isKnownPedagogy(?string $tag): bool
+    {
+        $clean = strtolower(str_replace([' ', '-'], '_', trim((string) $tag)));
+        if ($clean === '') {
+            return false;
+        }
+
+        return array_key_exists($clean, config('pal_v4.aliases', []))
+            || $this->isAllowed('pedagogies', $clean);
+    }
+
     public function pedagogyCoverage(string $tag): array
     {
         return config('pal_v4.coverage.' . $this->normalizePedagogy($tag), []);
