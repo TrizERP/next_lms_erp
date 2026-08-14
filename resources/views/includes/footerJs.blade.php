@@ -343,55 +343,14 @@ $('.guide-title').on('click', function(event) {
 
 <script language="javascript">
   function printdiv(printpage) {
-    var printElement = document.getElementById(printpage);
-    if (!printElement) {
+    var headstr = "<html><head><title></title></head><body>";
+      var footstr = "</body>";
+      var newstr = document.getElementById(printpage).innerHTML;
+      var oldstr = document.body.innerHTML;
+      document.body.innerHTML = headstr + newstr + footstr;
+      window.print();
+      document.body.innerHTML = oldstr;
       return false;
-    }
-
-    // Printing the entire ERP page makes browsers lay out every sidebar,
-    // script and hidden panel before opening preview. Give the printer a
-    // small document containing only the requested card instead.
-    var printWindow = window.open('', '_blank', 'width=900,height=700');
-    if (!printWindow) {
-      return false;
-    }
-
-    // Card templates include their own <style> block for every selected
-    // student. Keep one copy of each rule and discard the dashboard's large
-    // global stylesheets; parsing all of them was delaying print preview.
-    var styles = [];
-    var addStyle = function (css) {
-      if (css && styles.indexOf(css) === -1) {
-        styles.push(css);
-      }
-    };
-    var cardClone = printElement.cloneNode(true);
-    Array.prototype.forEach.call(cardClone.querySelectorAll('style'), function (style) {
-      addStyle(style.textContent);
-      style.parentNode.removeChild(style);
-    });
-    Array.prototype.forEach.call(document.querySelectorAll('style'), function (style) {
-      var css = style.textContent;
-      if (/\.row-|\.icard-item|\.page-break|#printPage/.test(css)) {
-        addStyle(css);
-      }
-    });
-
-    printWindow.document.open();
-    printWindow.document.write(
-      '<!doctype html><html><head><base href="' + document.baseURI + '">' +
-      '<meta charset="utf-8"><style>body{margin:0;padding:0}</style>' +
-      '<style>' + styles.join('\n') + '</style>' +
-      '</head><body>' + cardClone.innerHTML + '</body></html>'
-    );
-    printWindow.document.close();
-    printWindow.focus();
-
-    window.setTimeout(function () {
-      printWindow.print();
-    }, 100);
-
-    return false;
   }
 
   function sessionMenu(x) {

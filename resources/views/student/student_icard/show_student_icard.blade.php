@@ -119,31 +119,6 @@
         position: relative;
         z-index: 9;
         margin: 0px 25px;
-        break-inside: avoid;
-        page-break-inside: avoid;
-    }
-
-    @media print {
-        @page {
-            margin: 10mm 6mm 8mm;
-        }
-
-        .row-{{$data['row']}}-column-{{$data['column']}} > .item {
-            break-inside: avoid;
-            page-break-inside: avoid;
-        }
-        .row-{{$data['row']}}-column-{{$data['column']}} {
-            break-inside: avoid;
-            page-break-inside: avoid;
-        }
-        .row-{{$data['row']}}-column-{{$data['column']}} > .page-break {
-            grid-column: 1 / -1;
-            break-after: page;
-            page-break-after: always;
-            height: 0;
-            line-height: 0;
-            overflow: hidden;
-        }
     }
 
 </style>
@@ -172,19 +147,6 @@
             $fin = fopen($file_name, 'r') or die("Selected Icard Template is not in proper format .");
             $string = fread($fin, filesize($file_name));
             fclose($fin);
-
-            // Templates are complete HTML files. Repeating those files inside
-            // each card produces invalid nested html/head/body elements; the
-            // browser then moves portions of a card outside its container and
-            // takes a long time to prepare the print preview. Render only the
-            // template body for each student, and add its CSS once below.
-            $templateStyles = '';
-            if (preg_match_all('/<style[^>]*>(.*?)<\/style>/is', $string, $styleMatches)) {
-                $templateStyles = implode("\n", $styleMatches[1]);
-            }
-            if (preg_match('/<body[^>]*>(.*?)<\/body>/is', $string, $bodyMatch)) {
-                $string = $bodyMatch[1];
-            }
         ?>
         @if(isset($data['data']))
         @php
@@ -194,16 +156,10 @@
             $bootstrapColumn = 12 / $data['column'];
             $pageBreakCount = $data['column'] * $data['row'];
             $j=1;
-            $printedCards = 0;
-            $studentCount = count($student_data);
         @endphp
-        <style type="text/css">
-            {!! $templateStyles !!}
-        </style>
         <div class="row-{{$data['row']}}-column-{{$data['column']}}">
             @foreach($student_data as $key => $value)
                 <?php
-                    $printedCards++;
                     $icard_icon = '';
                     if(isset($value['icard_icon']) && $value['icard_icon'] != '')
                     {
@@ -278,13 +234,11 @@
                     <?php echo $str; ?>
                 </div>
                 <?php
-                if ($j == $pageBreakCount && $printedCards < $studentCount)
+                if ($j == $pageBreakCount)
                 {
                 ?>
-                    </div>
                     <div class="page-break-clear"></div>
                     <div class="page-break">&nbsp;</div>
-                    <div class="row-{{$data['row']}}-column-{{$data['column']}}">
                 <?php
                     $j = 0;
                 }
@@ -293,6 +247,7 @@
             @endforeach
             </div>
         </div>
+        <div class="page-break"> </div>
         <div class="row">
             <div class="col-md-12 form-group">
                 <center>
