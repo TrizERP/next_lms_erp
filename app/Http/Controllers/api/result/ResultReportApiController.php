@@ -67,8 +67,100 @@ class ResultReportApiController extends BaseResultApiController
 
             $data = $this->delegate(result_report_controller::class, 'show_result_report', $request);
 
+            if ($request->input('report_of') === 'classwise_grade_report' && is_array($data)) {
+                $data = $this->flattenClasswiseGradeReport($data);
+            }
+
             return $this->success($data);
         });
+    }
+
+    /**
+     * The `classwise_grade_report` branch of the legacy show_result_report()
+     * returns data shaped for its Blade view (all_student keyed by student
+     * id, WRT_data keyed by student id -> subject name, date_arr as column
+     * headers) rather than a flat row list. Next.js needs one row per
+     * student, so this reproduces the Blade's per-subject/per-student
+     * total, percentage and grade computation
+     * (resources/views/result/result_report/classwise_grade_report.blade.php)
+     * without touching the legacy controller or its calculations.
+     */
+    private function flattenClasswiseGradeReport(array $data): array
+    {
+        $allStudent = $data['all_student'] ?? [];
+        $dateArr    = $data['date_arr'] ?? [];
+        $wrtData    = $data['WRT_data'] ?? [];
+        $standard   = $data['standard_id'] ?? '';
+        $gradeScale = \App\Helpers\getGradeScale($standard);
+        $gradeModeStandards = [788, 789, 790, 791];
+
+        $rows = [];
+        foreach ($allStudent as $studentData) {
+            $studentId = $studentData['id'];
+            $total = 0;
+            $obtainedTotal = 0;
+            $percentage = 0;
+
+            $row = [
+                'id'           => $studentId,
+                'standard'     => ($studentData['standard_name'] ?? '') . ' - ' . ($studentData['division_name'] ?? ''),
+                'roll_no'      => $studentData['roll_no'] ?? '',
+                'student_name' => \App\Helpers\sortStudentName(
+                    '',
+                    $studentData['first_name'] ?? '',
+                    $studentData['middle_name'] ?? '',
+                    $studentData['last_name'] ?? ''
+                ),
+            ];
+
+            foreach ($dateArr as $subjectKey => $datePoint) {
+                $cell = $wrtData[$studentId][$subjectKey] ?? null;
+                $isGradeMode = isset($datePoint[1]) && $datePoint[1] === 'Yes';
+
+                if (empty($cell)) {
+                    $row[$subjectKey] = '-';
+                    continue;
+                }
+
+                if ($cell['is_absent'] === 'AB') {
+                    $row[$subjectKey] = $cell['is_absent'];
+                    if (! $isGradeMode) {
+                        $total += $cell['total_points'];
+                        $obtainedTotal += $cell['obtained_points'];
+                    }
+                } elseif ($cell['is_absent'] === 'EX' || $cell['is_absent'] === 'N.A.') {
+                    $row[$subjectKey] = $cell['is_absent'];
+                    $obtainedTotal += $cell['obtained_points'];
+                } else {
+                    $subMark = $cell['obtained_points'];
+                    if ($standard !== '' && in_array($standard, $gradeModeStandards) && ! $isGradeMode) {
+                        if ($cell['total_points'] >= $cell['obtained_points']) {
+                            $subMark = $cell['obtained_points'] . ' ' . \App\Helpers\getGrade($gradeScale, $cell['total_points'], $cell['obtained_points']);
+                        }
+                    } elseif ($isGradeMode) {
+                        if ($cell['total_points'] >= $cell['obtained_points']) {
+                            $subMark = \App\Helpers\getGrade($gradeScale, $cell['total_points'], $cell['obtained_points']);
+                        }
+                    }
+                    $row[$subjectKey] = $subMark;
+
+                    if (! $isGradeMode) {
+                        $total += $cell['total_points'];
+                        $obtainedTotal += $cell['obtained_points'];
+                    }
+                }
+
+                $percentage = $total != 0 ? number_format(($obtainedTotal * 100) / $total, 2) : 0;
+            }
+
+            $row['total']      = $obtainedTotal . '/' . $total;
+            $row['percentage'] = $percentage;
+            $row['grade']      = \App\Helpers\getGrade($gradeScale, $total, $obtainedTotal);
+
+            $rows[] = $row;
+        }
+
+        return $rows;
     }
 
     /**

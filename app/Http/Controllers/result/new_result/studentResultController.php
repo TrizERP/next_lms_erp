@@ -1891,6 +1891,13 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
         $table_per = $rep_val =  $table_all = '';
         $ov_ob_mark = $ov_sub_mark = $ov_ob_mark2 = $ov_sub_mark2 = 0;
         $result = "Pass";
+        // Defaults for when $term_name has no matching terms for this
+        // student/format, so the loop below never runs and these stay
+        // defined (same values they'd have from a zero-mark term).
+        $all_per = '';
+        $all_grade = '';
+        $overall_per = 0;
+        $grade_arr = $this->getGradeScale($standard_id, '');
 
         // Calculate the total marks for each term
 
@@ -8060,6 +8067,11 @@ if ($format === 'yearly') {
             ->groupBy('syear')
             ->first();
         // echo "<pre>";print_r($student_id);exit;
+        // No academic_year row matches this sub_institute/syear/term
+        // (format) combination — nothing to compute attendance against.
+        if (! $get_term) {
+            return '-/0';
+        }
         $post_start_date_ex = explode(',', $get_term->post_start_date);
         $post_end_date_ex = explode(',', $get_term->post_end_date);
         $post_start_date_final_ex = explode(',', $get_term->post_start_date);
