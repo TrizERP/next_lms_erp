@@ -660,7 +660,11 @@ Route::get('/new', function () {
 Route::get('/dashboard_new', function () {
     return view('newD3recommend');
 });
-Route::get('/sync-neo4j', [Neo4jSyncController::class, 'sync']);
+// DISABLED 2026-08-10 — Neo4j migration Phase 0 (freeze). See docs/neo4j-migration-status.md.
+// Neo4jSyncController MERGEs on NAMES (MERGE (subject:Subject {subject: $subject})), which would
+// collapse all 56 tenants into shared nodes. Verified never run against the live instance: the
+// graph has no :AcademicSection label and no OFFERS relationship. Phase 16 deletes it properly.
+// Route::get('/sync-neo4j', [Neo4jSyncController::class, 'sync']);
 
 
 Route::get('/ChartDashboard', function () {
@@ -742,7 +746,11 @@ Route::get('/get-fields', function (Request $request) {
 });
 
 Route::resource('blogs', BlogController::class);
-Route::get('/migrate-data', [DataMigrationController::class, 'migrateDataToNeo4j']);
+// DISABLED 2026-08-10 — Neo4j migration Phase 0 (freeze). See docs/neo4j-migration-status.md.
+// DataMigrationController::migrateDataToNeo4j creates AcademicSection/Standard/Subject/Chapter
+// nodes keyed on NAME via Neo4jService::createOrGetNode, and OFFERS edges via the unparameterised
+// createRelationship() (defect D7). Running it mid-rebuild reintroduces D2/D3. Phase 16 deletes it.
+// Route::get('/migrate-data', [DataMigrationController::class, 'migrateDataToNeo4j']);
 // added hills nursey hc
 Route::post('getHillsHPCPDF', [AJAXController::class, 'getHillsHPCPDF'])->name('getHillsHPCPDF');
 

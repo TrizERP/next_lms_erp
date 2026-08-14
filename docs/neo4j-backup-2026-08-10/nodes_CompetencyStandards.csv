@@ -1,0 +1,41 @@
+_neo4jInternalId,code,competencystandardsId,curriculum_id,description,displayLabel,domain_tag,parent_id
+374247,CG-1,1,66,"Understands numbers, ways of representing them, relationships, and number sets.",CompetencyStandards:CG-1,"Number System",
+374248,CG-2,2,66,"Builds deductive and inductive logic to prove theorems related to numbers.",CompetencyStandards:CG-2,"Number System",
+374249,CG-3,3,66,"Discovers and proves algebraic identities; models real-life situations as equations.",CompetencyStandards:CG-3,Algebra,
+374250,CG-5,4,66,"Derives and uses formulae for areas, surface areas, and volumes.",CompetencyStandards:CG-5,Mensuration,
+374251,CG-4,5,66,"Analyses properties of 2-D geometric shapes; develops mathematical arguments.",CompetencyStandards:CG-4,Geometry,
+374252,CG-6,6,66,"Analyses and interprets data using statistics and probability.",CompetencyStandards:CG-6,Statistics,
+374253,CG-7,7,66,"Perceives the axiomatic and deductive structure of Mathematics.",CompetencyStandards:CG-7,Geometry,
+374254,CG-8,8,66,"Builds visualisation, optimisation, representation, and modelling skills",CompetencyStandards:CG-8,Modelling,
+374255,CG-9,9,66,"Develops computational thinking; breaks complex problems into solvable sub-problems.",CompetencyStandards:CG-9,"Computational Thinking",
+374256,CG-10,10,66,"Appreciates contributions of Indian and global mathematicians.",CompetencyStandards:CG-10,"History of Math",
+374257,CG-11,11,66,"Explores connections of Mathematics with other subjects.",CompetencyStandards:CG-11,Interdisciplinary,
+374258,C-1.1,12,66,"Develops understanding of real numbers and their properties.",CompetencyStandards:C-1.1,,1
+374259,C-2.1,13,66,"Understanding of powers (radical powers) and exponents.",CompetencyStandards:C-2.1,,2
+374260,C-3.1,14,66,"States and proves remainder theorem, factor theorem, and division algorithm.",CompetencyStandards:C-3.1,,3
+374261,C-3.2,15,66,"Models and solves contextualised problems using equations; draws conclusions.",CompetencyStandards:C-3.2,,3
+374262,C-3.3,16,66,"Learns Brahmagupta's quadratic formula and uses it to solve problems.",CompetencyStandards:C-3.3,,3
+374263,C-4.1,17,66,"Describes congruence of 2-D shapes to make and test conjectures.",CompetencyStandards:C-4.1,,4
+374264,C-4.2,18,66,"Proves theorems using Euclid's axioms for triangles and quadrilaterals.",CompetencyStandards:C-4.2,,4
+374265,C-4.3,19,66,"Proves theorems about circle GEOMETRY.",CompetencyStandards:C-4.3,,4
+374266,C-4.4,20,66,"Understands the irrationality of pi and Madhava's infinite series.",CompetencyStandards:C-4.4,,4
+374267,C-4.5,21,66,"Uses coordinate geometry to specify locations and solve problems.",CompetencyStandards:C-4.5,,4
+374268,C-4.6,22,66,"Understands basic trigonometric functions, their history, and utility",CompetencyStandards:C-4.6,,4
+374269,C-5.1,23,66,"Visualises and calculates areas using Heron's and Brahmagupta's formulae.",CompetencyStandards:C-5.1,,5
+374270,C-5.2,24,66,"Calculates surface areas and volumes of cubes, cuboids, spheres, cylinders, and cones.",CompetencyStandards:C-5.2,,5
+374271,C-6.1,25,66,"Applies measures of central tendency: mean, median, mode.",CompetencyStandards:C-6.1,,6
+374272,C-6.2,26,66,"Applies probability concepts to solve problems on likelihood of everyday events..",CompetencyStandards:C-6.2,,6
+374273,C-7.1,27,66,"Proves statements using stated assumptions, axioms, and definitions.",CompetencyStandards:C-7.1,,7
+374274,C-7.2,28,66,"Visualises geometric proofs for algebraic identities.",CompetencyStandards:C-7.2,,7
+374275,C-7.3,29,66,"Proves theorems using Euclid's axioms for angles, triangles, quadrilaterals, circles.",CompetencyStandards:C-7.3,,7
+374276,C-7.4,30,66,"Constructs geometrical shapes satisfying given constraints.",CompetencyStandards:C-7.4,,7
+374277,C-8.1,31,66,"Models daily-life phenomena using graphs, tables, and equations.",CompetencyStandards:C-8.1,,8
+374278,C-8.2,32,66,"Uses 2-D representations of 3-D objects to solve surface area and volume problems.",CompetencyStandards:C-8.2,,8
+374279,C-8.3,33,66,"Employs optimisation strategies to maximise quantities under given constraints.",CompetencyStandards:C-8.3,,8
+374280,C-9.1,34,66,"Decomposes a problem into sub-problems",CompetencyStandards:C-9.1,,9
+374281,C-9.2,35,66,"Describes and analyses a sequence of instructions.",CompetencyStandards:C-9.2,,9
+374282,C-9.3,36,66,"Analyses similarities among problems to generalise one solution across multiple problems.",CompetencyStandards:C-9.3,,9
+374283,C-9.4,37,66,"Engages in algorithmic problem-solving.",CompetencyStandards:C-9.4,,9
+374284,C-10.1,38,66,"Recognises contributions of Indian and global mathematicians",CompetencyStandards:C-10.1,,10
+374285,C-10.2,39,66,"Recognises modern contributions to Mathematics and next frontiers in the field.",CompetencyStandards:C-10.2,,10
+374286,C-11.1,40,66,"Applies mathematical knowledge to problems in Science, Social Science, Arts, and Sports.",CompetencyStandards:C-11.1,,11

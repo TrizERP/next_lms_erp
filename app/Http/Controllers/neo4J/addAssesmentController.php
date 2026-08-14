@@ -45,6 +45,17 @@ class addAssesmentController extends Controller
                 'created_on' => 'nullable|date'
             ]);
 
+            // RESIDUAL-WRITERS (2026-08-10): gated behind NEO4J_WRITES_ENABLED, off by
+            // default, so this route cannot seed Assessment nodes during the migration
+            // rebuild. This writer uses raw Cypher, so it needs its own guard — the
+            // helper guards in Helper.php do not cover it. Re-enable at Phase 15.
+            if (!config('neo4j.writes_enabled')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Neo4j writes are disabled during the graph migration (NEO4J_WRITES_ENABLED).',
+                ], 503);
+            }
+
             $client = $this->neo4jService->getClient();
 
             // Prepare display label if not provided

@@ -806,7 +806,7 @@ if (!empty($date_arr)) {
             $sub_institute_id = $_REQUEST['sub_institute_id'];
             $term_id = 149;
             $standard_id = $all_student[0]['standard_id'];
-            $division_id = $all_student[0]['division_id'];
+            $division_id = $all_student[0]['section_id'];
         } else {
             $syear = session()->get('syear');
             $sub_institute_id = session()->get('sub_institute_id');
@@ -893,7 +893,7 @@ if (!empty($date_arr)) {
             $syear = $_REQUEST['syear'];
             $sub_institute_id = $_REQUEST['sub_institute_id'];
             $standard_id = $all_student[0]['standard_id'];
-            $division_id = $all_student[0]['division_id'];
+            $division_id = $all_student[0]['section_id'];
         } else {
             $syear = session()->get('syear');
             $sub_institute_id = session()->get('sub_institute_id');
@@ -994,7 +994,7 @@ if (!empty($date_arr)) {
             $syear = $_REQUEST['syear'];
             $sub_institute_id = $_REQUEST['sub_institute_id'];
             $standard_id = $all_student[0]['standard_id'];
-            $division_id = $all_student[0]['division_id'];
+            $division_id = $all_student[0]['section_id'];
         } else {
             $syear = session()->get('syear');
             $sub_institute_id = session()->get('sub_institute_id');

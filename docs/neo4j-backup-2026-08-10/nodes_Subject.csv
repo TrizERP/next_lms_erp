@@ -1,0 +1,151 @@
+_neo4jInternalId,displayLabel,display_name,sort_order,standard_id,subId,sub_institute_id
+374449,"Subject:ENGLISH (184)","ENGLISH (184)",1,2226,3967,195
+374450,Subject:HINDI,HINDI,2,2226,3969,195
+374451,Subject:MATHEMATICS,MATHEMATICS,4,2226,3970,195
+374452,Subject:SCIENCE,SCIENCE,5,2226,3971,195
+374453,"Subject:SOCIAL SCIENCE","SOCIAL SCIENCE",6,2226,3972,195
+374454,Subject:abc,abc,,2226,3973,195
+374455,Subject:Science,Science,1,39,3975,1
+374456,Subject:Mathematics,Mathematics,2,39,3976,1
+374457,Subject:English,"English ",3,39,3978,1
+374458,"Subject:Hindi-A Vasant-1","Hindi-A Vasant-1",10,39,3977,1
+374459,"Subject:English Grammar","English Grammar",5,41,3979,1
+374460,"Subject:Hindi Grammar","Hindi Grammar",12,39,3980,1
+374461,"Subject:PHYSICS (042)","PHYSICS (042)",,2237,4020,195
+374462,"Subject:SCIENCE (086)","SCIENCE (086)",1,2234,4018,195
+374463,"Subject:BUSINESS STUDIES (054)","BUSINESS STUDIES (054)",2,2267,4080,195
+374464,"Subject:CHEMISTRY (043)","CHEMISTRY (043)",3,2237,4021,195
+374465,"Subject:BIOLOGY (044)","BIOLOGY (044)",9,2237,4022,195
+374466,"Subject:Art & Craft Activities","Art & Craft Activities",6,2272,4027,1
+374467,Subject:Collection,Collection,3,2272,4031,1
+374468,Subject:Educational,Educational,2,2272,4035,1
+374469,"Subject:Educational Activities","Educational Activities",5,2272,4036,1
+374470,Subject:General,General,1,2272,4040,1
+374471,"Subject:Mind Body and Soul","Mind Body and Soul",7,2272,4050,1
+374472,Subject:Observation,Observation,4,2272,4051,1
+374473,"Subject:Social & Civic Activities","Social & Civic Activities",8,2272,4058,1
+374474,"Subject:Age wise","Age wise",3,2273,4025,1
+374475,Subject:Audiobooks,Audiobooks,5,2273,4028,1
+374476,"Subject:Database & Journal","Database & Journal",8,2273,4033,1
+374477,Subject:E-books,E-books,4,2273,4034,1
+374478,"Subject:Other Resource","Other Resource",6,2273,4053,1
+374479,"Subject:Quick links","Quick links",1,2273,4056,1
+374480,"Subject:Reference Resource","Reference Resource",7,2273,4057,1
+374481,"Subject:Subject wise","Subject wise",2,2273,4059,1
+374482,"Subject:21st Century skill","21st Century skill",3,2269,4023,1
+374483,"Subject:Academic skill","Academic skill",2,2269,4024,1
+374484,"Subject:Behavior & Attitudes","Behavior & Attitudes",5,2269,4029,1
+374485,"Subject:IT & Computer","IT & Computer",7,2269,4046,1
+374486,"Subject:Learning to Learn","Learning to Learn",8,2269,4047,1
+374487,"Subject:Life Skill","Life Skill",1,2269,4048,1
+374488,"Subject:Values and Morals","Values and Morals",6,2269,4062,1
+374489,"Subject:Brain game","Brain game",7,2270,4030,1
+374490,"Subject:Extreme Sports","Extreme Sports",3,2270,4039,1
+374491,"Subject:Individual Sports","Individual Sports",1,2270,4042,1
+374492,"Subject:Indoor game","Indoor game",5,2270,4043,1
+374493,"Subject:Olympic game","Olympic game",8,2270,4052,1
+374494,"Subject:Outdoor game","Outdoor game",6,2270,4054,1
+374495,"Subject:Partner Sports","Partner Sports",2,2270,4055,1
+374496,"Subject:Team Sports","Team Sports",4,2270,4060,1
+374497,Subject:Agriculture,Agriculture,5,2271,4026,1
+374498,Subject:Commerce,Commerce,2,2271,4032,1
+374499,Subject:Electrical,Electrical,6,2271,4037,1
+374500,"Subject:Engineering technology","Engineering technology",4,2271,4038,1
+374501,Subject:Hospitality,Hospitality,3,2271,4041,1
+374502,"Subject:Information technology","Information technology",7,2271,4044,1
+374503,Subject:Medical,Medical,1,2271,4049,1
+374504,Subject:Textile,Textile,8,2271,4061,1
+374505,"Subject:Environmental Studies","Environmental Studies",3,36,4063,1
+374506,"Subject:Social Science","Social Science",6,39,4064,1
+374507,Subject:EVS,EVS,5,2228,4068,195
+374508,"Subject:Social & Emotional Learning (SEL)","Social & Emotional Learning (SEL)",8,34,4045,1
+374509,"Subject:Interpersonal Skill","Interpersonal Skill",4,2269,4070,1
+374510,"Subject:Cognitive Regulation","Cognitive Regulation",1,2292,4071,1
+374511,"Subject:Emotional Processes","Emotional Processes",2,2292,4072,1
+374512,"Subject:Interpersonal Processes","Interpersonal Processes",3,2292,4073,1
+374513,Subject:Values,Values,4,2292,4074,1
+374514,Subject:Perspectives,Perspectives,5,2292,4075,1
+374515,Subject:Identity/Self-Image,Identity/Self-Image,6,2292,4076,1
+374516,"Subject:Other Competencies","Other Competencies",7,2292,4077,1
+374517,"Subject:ACCOUNTANCY (055)","ACCOUNTANCY (055)",1,2267,4086,195
+374518,"Subject:ECONOMICS (030)","ECONOMICS (030)",2,2236,4087,195
+374519,Subject:Accounts,Accounts,,2236,4067,195
+374520,Subject:GUJARATI,GUJARATI,,2228,4065,195
+374521,Subject:W/S,W/S,,2230,4097,195
+374522,Subject:LAB,LAB,,2226,4093,195
+374523,"Subject:lab (Phy)","lab (Phy)",,2234,4098,195
+374524,"Subject:Lab (Chem)","Lab (Chem)",,2234,4099,195
+374525,"Subject:Lab (Bio)","Lab (Bio)",,2234,4100,195
+374526,"Subject:Eco (test)","Eco (test)",,2267,4105,195
+374527,Subject:P.E.,P.E.,,2236,4092,195
+374528,"Subject:Statistics for Economics (030)","Statistics for Economics (030)",6,2236,4107,195
+374529,Subject:ICT,ICT,6,2231,4066,195
+374530,"Subject:PHYSICAL EDUCATION (048)","PHYSICAL EDUCATION (048)",7,2236,4108,195
+374531,Subject:M.D,M.D,8,2237,4111,195
+374532,"Subject:Eng (Test)","Eng (Test)",,2236,4102,195
+374533,"Subject:C.S. (Test)","C.S. (Test)",,2267,4112,195
+374534,"Subject:Phy (test)","Phy (test)",,2237,4113,195
+374535,"Subject:Chem (test)","Chem (test)",,2237,4114,195
+374536,"Subject:Bio (test)","Bio (test)",,2237,4115,195
+374537,"Subject:Math (Test)","Math (Test)",,2237,4116,195
+374538,"Subject:Earth & Space Science","Earth & Space Science",3,2305,4120,1
+374539,"Subject:Engineering Design","Engineering Design",4,2305,4121,1
+374540,"Subject:Life Science","Life Science",2,2305,4122,1
+374541,"Subject:Physical Science","Physical Science",1,2305,4123,1
+374542,Subject:Lab(Math),Lab(Math),,2234,4117,195
+374543,Subject:Art,Art,,2226,4096,195
+374544,Subject:Chemistry,Chemistry,6,2305,4119,1
+374545,"Subject:Acc (test)","Acc (test)",,2267,4101,195
+374546,Subject:P.E.,P.E.,11,2268,4118,195
+374547,Subject:L.S.,L.S.,12,2226,4161,195
+374548,Subject:Lang.Prof.,Lang.Prof.,11,2226,4162,195
+374549,Subject:EST,EST,99,2226,4163,195
+374550,Subject:HST,HST,98,2226,4164,195
+374551,Subject:Drawing,Drawing,12,2226,4177,195
+374552,Subject:Yoga,Yoga,14,2226,4179,195
+374553,Subject:Dance/Music,Dance/Music,60,2226,4180,195
+374554,Subject:Library,Library,15,2226,4181,195
+374555,Subject:Games,Games,16,2234,4182,195
+374556,"Subject:English Gram.","English Gram.",16,2234,4095,195
+374557,"Subject:English Liter.","English Liter.",18,2234,4094,195
+374558,Subject:Sci.Descr.Test,Sci.Descr.Test,19,2234,4183,195
+374559,Subject:Math.Descr.Test,Math.Descr.Test,20,2234,4184,195
+374560,"Subject:S.S. Descr.Test","S.S. Descr.Test",21,2234,4185,195
+374561,"Subject:Language Test","Language Test",23,2234,4186,195
+374562,Subject:karate,karate,,2226,4208,195
+374563,Subject:SKT,SKT,,2226,4209,195
+374564,"Subject:Rhymes And Story","Rhymes And Story",7,2223,4222,195
+374565,"Subject:COMPUTER SCIENCE (083)","COMPUTER SCIENCE (083)",,2236,3966,195
+374566,"Subject:IT (402)","IT (402)",25,2234,4390,195
+374567,Subject:C.T,C.T,,2223,4394,195
+374568,Subject:History,History,7,40,4469,1
+374569,Subject:Civics,Civics,8,40,4470,1
+374570,Subject:English-2,English-2,4,42,4435,1
+374571,Subject:Economics,Economics,9,42,4472,1
+374572,Subject:Biology,Biology,4,45,4106,1
+374573,Subject:History,History,8,45,4480,1
+374574,Subject:Geography,Geography,9,45,4481,1
+374575,Subject:Accountancy,Accountancy,13,45,4482,1
+374576,"Subject:Business Studies","Business Studies",15,45,4483,1
+374577,Subject:Hindi-B,Hindi-B,11,42,4512,1
+374578,"Subject:Hindi-A Bal Ram Katha","Hindi-A Bal Ram Katha",9,39,4598,1
+374579,Subject:Music,Music,60,2226,4754,195
+374580,Subject:Phonics,Phonics,58,2224,4762,195
+374581,Subject:Reading,Reading,,2236,4763,195
+374582,"Subject:Self Awareness","Self Awareness",2,34,4780,1
+374583,"Subject:Self Management","Self Management",1,34,5108,1
+374584,"Subject:Social Awareness","Social Awareness",3,34,5072,1
+374585,"Subject:Responsible Decision Making","Responsible Decision Making",4,34,5109,1
+374586,"Subject:Relationship Skills","Relationship Skills",5,34,5153,1
+374587,"Subject:English Practice Book","English Practice Book",55,2223,5172,195
+374588,"Subject:Mathematics Practice Book","Mathematics Practice Book",56,2223,5173,195
+374589,"Subject:General Awarness Primer","General Awarness Primer",57,2223,5174,195
+374590,"Subject:General Awarness Practice book","General Awarness Practice book",58,2223,5175,195
+374591,"Subject:Hindi Aksharmala","Hindi Aksharmala",70,2225,5184,195
+374592,"Subject:Personal Social","Personal Social",1,40,5264,1
+374593,"Subject:Career Development Education","Career Development Education",2,40,5265,1
+374594,"Subject:Academic College and Career Planning","Academic College and Career Planning",3,40,5266,1
+374595,"Subject:Health and Physical Education","Health and Physical Education",1,42,5333,1
+374596,Subject:ICT,ICT,2,42,5334,1
+374597,"Subject:PSYCHOLOGY (037)","PSYCHOLOGY (037)",60,2237,5359,195
+374598,Subject:FOOD,FOOD,8,2231,5408,195

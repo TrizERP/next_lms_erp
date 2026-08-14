@@ -340,4 +340,143 @@ class GeneralSetupApiController extends Controller
         if (! $query->delete()) return $this->failure('Record not found.', 404);
         return response()->json(['status_code' => 1, 'message' => 'Record deleted successfully.', 'data' => []]);
     }
+
+    /**
+     * Template placeholder tags (the `<<tag>>` values you embed inside a
+     * template_master html_content that the ERP replaces at render time).
+     *
+     * Mirrors the data served by the legacy settings/view_all_tag web screen so
+     * the Next.js editor can offer the same insertable-tag picker. The set is
+     * static, so this is intentionally a read-only, permission-guarded endpoint
+     * with no write side-effects.
+     */
+    public function tags(Request $request, string $module)
+    {
+        if ($response = $this->context($request)) {
+            return $response;
+        }
+
+        if (! isset(self::MENU_LINKS[$module])) {
+            return $this->failure('Unknown General module.', 404);
+        }
+
+        if ($module !== 'templates') {
+            return $this->failure('Tags are only available for the templates module.', 404);
+        }
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'Success',
+            'data' => ['tags' => $this->templateTags()],
+        ]);
+    }
+
+    private function templateTags(): array
+    {
+        return [
+            'receipt_logo' => 'Institute/School Logo from fees receipt book master',
+            'receipt_line_1' => 'Institute/School Name from fees receipt book master',
+            'receipt_line_2' => 'Institute/School Address Line 1 from fees receipt book master',
+            'receipt_line_3' => 'Institute/School Address Line 2 from fees receipt book master',
+            'receipt_line_4' => 'Institute/School Address Line 3 from fees receipt book master',
+            'admission_number_value' => 'Student Admission Number from student profile',
+            'previous_syear' => 'Previous academic year number (e.g., 2023)',
+            'current_syear' => 'Current academic year number (e.g., 2024)',
+            'next_syear' => 'Next academic year number (e.g., 2025)',
+            'student_enrollment_value' => 'Student Enrollment Number / GR No.',
+            'student_roll_no_value' => 'Student Roll No.',
+            'student_name_value' => 'Student Name first and last name',
+            'student_full_name' => 'Student Name first, middle and last name',
+            'student_first_name_value' => 'Student Name first name',
+            'student_middle_name_value' => 'Student Name middle name',
+            'student_last_name_value' => 'Student Name last name',
+            'student_image_value' => 'Student Image from student Profile',
+            'student_division_value' => 'Student division',
+            'student_year_value' => 'Student year like 2025-2026',
+            'student_dob_value' => 'Student dob from student profile',
+            'father_name_value' => 'Father name',
+            'mother_name_value' => 'Mother name',
+            'aadhar_number' => 'Student Aadhar Number from student profile',
+            'student_gender' => 'Student Gender from student profile',
+            'admission_date_value' => 'Admission Date',
+            'short_standard_name_value' => 'Current Standard Name in Short Form',
+            'student_standard_value' => 'Student Current Standard',
+            'student_pen_no' => 'Student Pen No',
+            'aapar_id' => 'Student Appar ID',
+            'short_standard_name_in_word_value' => 'School stream value from standard',
+            'next_std_name' => 'Next Standard as per selected year from standard',
+            'next_std_stream' => 'Next Standard stream as per selected year from standard',
+            'next_std_short_name' => 'Next Standard short name as per selected year from standard',
+            'current_medium' => 'current medium as per selected year from standard',
+            'next_medium' => 'Next medium as per selected year from standard',
+            'student_mobile_value' => 'Student Mobile Number',
+            'fees_head_content' => 'Fees Head-wise Content with amount and head type',
+            'total_amount_in_words' => 'Total Amount in words',
+            'payment_mode' => 'Payment Mode with cash or cheque details',
+            'admin_user' => 'Current Logged User',
+            'current_date' => 'Current date in 26-Apr-2025 format',
+            'current_date_dmy' => 'Current date in 26-04-2025 format',
+            'student_dob_word_value' => 'Student dob word from student profile',
+            'student_dise_uid_value' => 'Student dise uid from student profile',
+            'student_uniqueid_value' => 'Student unique ID',
+            'certificate_no' => 'Certificate no',
+            'affiliation_no_value' => 'Affiliation no',
+            'school_code_value' => 'School code',
+            'nationality_value' => 'Nationality',
+            'place_of_birth_value' => 'Place of birth',
+            'religion_name_value' => 'Religion name',
+            'caste_name_value' => 'Caste name',
+            'subcast_value' => 'Subcast',
+            'candidate_belongs_to_value' => 'Candidate belongs to, from TC information student profile',
+            'date_of_first_admission_value' => 'Date of first admission, from TC information student profile',
+            'class_in_which_pupil_last_studied_value' => 'Class in which pupil last studied, from TC information student profile',
+            'last_school_board_value' => 'Last school board, from TC information student profile',
+            'whether_failed_value' => 'Whether failed, from TC information student profile',
+            'subjects_studied_value' => 'Subjects studied, from TC information student profile',
+            'whether_qualified_value' => 'Whether qualified, from TC information student profile',
+            'if_to_which_class_value' => 'If to which class, from TC information student profile',
+            'month_up_paid_school_dues_value' => 'Month up paid school dues, from TC information student profile',
+            'admission_under_value' => 'Admission under, from TC information student profile',
+            'total_working_days_value' => 'Total working days, from TC information student profile',
+            'total_working_days_present_value' => 'Total working days present, from TC information student profile',
+            'games_played_value' => 'Games played, from TC information student profile',
+            'general_conduct_value' => 'General conduct, from TC information student profile',
+            'date_of_application_for_certificate_value' => 'Date of application for certificate, from TC information student profile',
+            'date_of_issue_of_certificate_value' => 'Date of issue of certificate, from TC information student profile',
+            'reason_leaving_school_value' => 'Reason leaving school, from TC information student profile',
+            'proof_for_dob_value' => 'Proof for dob, from TC information student profile',
+            'whether_school_is_under_goverment_value' => 'Whether school is under government, from TC information student profile',
+            'date_on_which_pupil_name_was_struck_value' => 'Date on which pupil name was struck, from TC information student profile',
+            'any_fees_concession_value' => 'Any fees concession, from TC information student profile',
+            'whether_ncc_cadet_value' => 'Whether ncc cadet, from TC information student profile',
+            'any_other_remarks_value' => 'Any other remarks, from TC information student profile',
+            'date_on_which_pupil_name_value' => 'Date of application for certificate, from TC information student profile',
+            'date_of_issue_of_certificate_new_value' => 'Date of issue of certificate, from TC information student profile',
+            'date_application_for_certificate_value' => 'Date of application of certificate, from TC information student profile',
+            'HE_SHE' => 'he/she in Upper case',
+            'he_she' => 'he/she in lower case',
+            'his_her' => 'His/Her in lower case',
+            'HIS_HER' => 'His/Her in Upper case',
+            'mr_miss' => 'Mr./Miss.',
+            'daughter_or_son' => 'daughter/son',
+            'certificate_reason' => 'certificate reason',
+            'fees_details' => 'Fees Details',
+            'teacher_remark_value' => 'Teacher Remark from result_student_attendance_master',
+            'month_name' => 'Fees Paid Month Name',
+            'activity_tag_marks' => 'Student Activity Report Marks',
+            'bank_name' => 'Bank Name in fees receipt',
+            'cheque_no' => 'Cheque Number in fees receipt',
+            'cheque_date' => 'Cheque Date in fees receipt',
+            'bank_branch' => 'Bank Branch in fees receipt',
+            'payment_mode_type' => 'Payment Mode in fees receipt',
+            'parent_pan_card' => 'Parent Pan Card No in fees receipt',
+            'subjects_studied_system' => 'Main and Optional subject as per student selected',
+            'subjects_studied_2_line' => 'Main and Optional subject as per student selected break between 2 lines',
+            'annual_value_result' => 'Remarks from remarks master',
+            'total_working_days_system' => 'Count days from start date and end date academic year',
+            'total_working_days_present_system' => 'Count days as per attendance taken',
+            'student_dise_uid_plus' => 'udise + number of student',
+            'admission_standard' => 'Student Admission standard from student profile',
+        ];
+    }
 }
