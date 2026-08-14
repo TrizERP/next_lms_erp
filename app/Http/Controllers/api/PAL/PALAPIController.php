@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use App\Services\PAL\Intelligence\IntelligenceService;
 use App\Services\PAL\Pedagogy\PedagogyOrchestrationService;
 use App\Services\PAL\Content\ContentIntelligenceService;
+use App\Services\PAL\Framework\FrameworkProgressService;
 use App\Services\PAL\Telemetry\TelemetryService;
+use App\Services\PAL\ULU\ULUService;
 use App\Services\PAL\AI\AIOrchestrationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -21,20 +23,26 @@ class PALAPIController extends Controller
     protected IntelligenceService $intelligence;
     protected PedagogyOrchestrationService $pedagogy;
     protected ContentIntelligenceService $content;
+    protected FrameworkProgressService $frameworks;
     protected TelemetryService $telemetry;
+    protected ULUService $ulu;
     protected AIOrchestrationService $ai;
 
     public function __construct(
         IntelligenceService $intelligence,
         PedagogyOrchestrationService $pedagogy,
         ContentIntelligenceService $content,
+        FrameworkProgressService $frameworks,
         TelemetryService $telemetry,
+        ULUService $ulu,
         AIOrchestrationService $ai
     ) {
         $this->intelligence = $intelligence;
         $this->pedagogy = $pedagogy;
         $this->content = $content;
+        $this->frameworks = $frameworks;
         $this->telemetry = $telemetry;
+        $this->ulu = $ulu;
         $this->ai = $ai;
     }
 
@@ -408,6 +416,201 @@ class PALAPIController extends Controller
         return response()->json([
             'success' => true,
             'data' => $variants,
+        ]);
+    }
+
+    /**
+     * GET /api/pal/frameworks/catalog
+     * Canonical PAL V4 pedagogy/framework/H5P catalog for authoring and UI.
+     */
+    public function getFrameworkCatalog(): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->frameworks->getCatalog(),
+        ]);
+    }
+
+    /**
+     * GET /api/pal/content/{contentId}/framework-metadata
+     */
+    public function getContentFrameworkMetadata(int $contentId): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->frameworks->getContentMetadata($contentId),
+        ]);
+    }
+
+    /**
+     * POST /api/pal/content/{contentId}/framework-metadata
+     */
+    public function updateContentFrameworkMetadata(Request $request, int $contentId): JsonResponse
+    {
+        $data = $this->frameworks->upsertContentMetadata($contentId, $request->all());
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ]);
+    }
+
+    /**
+     * GET /api/pal/dashboard/learner/{learnerId}
+     */
+    public function getLearnerDashboard(int $learnerId): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->frameworks->getLearnerDashboard($learnerId),
+        ]);
+    }
+
+    /**
+     * GET /api/pal/dashboard/teacher
+     */
+    public function getTeacherDashboard(Request $request): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => $this->frameworks->getTeacherDashboard($request->all()),
+        ]);
+    }
+
+    /**
+     * GET /api/pal/ulu
+     */
+    public function listULU(Request $request): JsonResponse
+    {
+        $result = $this->ulu->list($request->all());
+
+        return response()->json([
+            'success' => true,
+            'data' => $result->items(),
+            'pagination' => [
+                'current_page' => $result->currentPage(),
+                'last_page' => $result->lastPage(),
+                'per_page' => $result->perPage(),
+                'total' => $result->total(),
+            ],
+            'stats' => $this->ulu->stats(),
+        ]);
+    }
+
+    /**
+     * GET /api/pal/ulu/{id}
+     */
+    public function getULU(int $id): JsonResponse
+    {
+        return response()->json([
+            'success' => true,
+            'data' => \App\Models\PAL\UnifiedLearningUnit::findOrFail($id),
+        ]);
+    }
+
+    /**
+     * POST /api/pal/ulu
+     */
+    public function createULU(Request $request): JsonResponse
+    {
+        $ulu = $this->ulu->create($request->all());
+
+        return response()->json([
+            'success' => true,
+            'data' => $ulu,
+        ]);
+    }
+
+    /**
+     * PUT /api/pal/ulu/{id}
+     */
+    public function updateULU(Request $request, int $id): JsonResponse
+    {
+        $ulu = \App\Models\PAL\UnifiedLearningUnit::findOrFail($id);
+        $updated = $this->ulu->update($ulu, $request->all());
+
+        return response()->json([
+            'success' => true,
+            'data' => $updated,
+        ]);
+    }
+
+    /**
+     * DELETE /api/pal/ulu/{id}
+     */
+    public function deleteULU(int $id): JsonResponse
+    {
+        $ulu = \App\Models\PAL\UnifiedLearningUnit::findOrFail($id);
+        $this->ulu->delete($ulu);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ULU deleted successfully.',
+        ]);
+    }
+
+    /**
+     * POST /api/pal/ulu/{id}/duplicate
+     */
+    public function duplicateULU(int $id): JsonResponse
+    {
+        $ulu = \App\Models\PAL\UnifiedLearningUnit::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->ulu->duplicate($ulu),
+        ]);
+    }
+
+    /**
+     * POST /api/pal/ulu/{id}/archive
+     */
+    public function archiveULU(int $id): JsonResponse
+    {
+        $ulu = \App\Models\PAL\UnifiedLearningUnit::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->ulu->archive($ulu),
+        ]);
+    }
+
+    /**
+     * POST /api/pal/ulu/{id}/approve
+     */
+    public function approveULU(int $id): JsonResponse
+    {
+        $ulu = \App\Models\PAL\UnifiedLearningUnit::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->ulu->approve($ulu),
+        ]);
+    }
+
+    /**
+     * GET /api/pal/ulu/{id}/analytics
+     */
+    public function getULUAnalytics(int $id): JsonResponse
+    {
+        $ulu = \App\Models\PAL\UnifiedLearningUnit::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->ulu->analytics($ulu),
+        ]);
+    }
+
+    /**
+     * GET /api/pal/ulu/{id}/preview
+     */
+    public function getULUPreview(int $id): JsonResponse
+    {
+        $ulu = \App\Models\PAL\UnifiedLearningUnit::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $this->ulu->preview($ulu),
         ]);
     }
 

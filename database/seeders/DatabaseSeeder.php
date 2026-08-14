@@ -20,5 +20,6 @@ class DatabaseSeeder extends Seeder
         // blocks `db:seed` outright, so on an existing installation this is run
         // via `php artisan onboarding:install` instead.
         $this->call(OnboardingJourneySeeder::class);
+        $this->call(PALULUSeeder::class);
     }
 }

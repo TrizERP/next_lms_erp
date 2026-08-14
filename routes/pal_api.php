@@ -68,6 +68,21 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
     // Content Recommendation APIs
     Route::get('/content/recommend/{learnerId}/{conceptId}', [PALAPIController::class, 'getContentRecommendation']);
     Route::get('/h5p/variants/{conceptId}', [PALAPIController::class, 'getH5PVariants']);
+    Route::get('/frameworks/catalog', [PALAPIController::class, 'getFrameworkCatalog']);
+    Route::get('/content/{contentId}/framework-metadata', [PALAPIController::class, 'getContentFrameworkMetadata']);
+    Route::post('/content/{contentId}/framework-metadata', [PALAPIController::class, 'updateContentFrameworkMetadata']);
+    Route::get('/dashboard/learner/{learnerId}', [PALAPIController::class, 'getLearnerDashboard']);
+    Route::get('/dashboard/teacher', [PALAPIController::class, 'getTeacherDashboard']);
+    Route::get('/ulu', [PALAPIController::class, 'listULU']);
+    Route::get('/ulu/{id}', [PALAPIController::class, 'getULU'])->where('id', '[0-9]+');
+    Route::post('/ulu', [PALAPIController::class, 'createULU']);
+    Route::put('/ulu/{id}', [PALAPIController::class, 'updateULU'])->where('id', '[0-9]+');
+    Route::delete('/ulu/{id}', [PALAPIController::class, 'deleteULU'])->where('id', '[0-9]+');
+    Route::post('/ulu/{id}/duplicate', [PALAPIController::class, 'duplicateULU'])->where('id', '[0-9]+');
+    Route::post('/ulu/{id}/archive', [PALAPIController::class, 'archiveULU'])->where('id', '[0-9]+');
+    Route::post('/ulu/{id}/approve', [PALAPIController::class, 'approveULU'])->where('id', '[0-9]+');
+    Route::get('/ulu/{id}/analytics', [PALAPIController::class, 'getULUAnalytics'])->where('id', '[0-9]+');
+    Route::get('/ulu/{id}/preview', [PALAPIController::class, 'getULUPreview'])->where('id', '[0-9]+');
     
     // ==================== TELEMETRY LAYER ====================
     
