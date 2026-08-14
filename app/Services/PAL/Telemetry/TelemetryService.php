@@ -3,6 +3,8 @@
 namespace App\Services\PAL\Telemetry;
 
 use App\Models\PAL\TelemetryEvent;
+use App\Services\PAL\Framework\FrameworkCatalogService;
+use App\Services\PAL\Framework\FrameworkProgressService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -11,6 +13,12 @@ use Illuminate\Support\Facades\Log;
  */
 class TelemetryService
 {
+    public function __construct(
+        private readonly FrameworkCatalogService $catalog,
+        private readonly FrameworkProgressService $frameworks
+    ) {
+    }
+
     /**
      * Process an xAPI statement for an authenticated learner.
      *
@@ -27,18 +35,26 @@ class TelemetryService
     public function processStatement(array $statement, int $learnerId, ?int $sessionId = null): TelemetryEvent
     {
         $normalized = $this->normalizeStatement($statement);
-
-        return TelemetryEvent::create([
+        $event = TelemetryEvent::create([
             'actor_id' => $learnerId,
             'session_id' => $sessionId,
             'verb' => $normalized['verb'],
             'object_id' => $normalized['object'],
+            'content_id' => $normalized['content_id'],
+            'concept_id' => $normalized['concept_id'],
+            'pedagogy_tag' => $normalized['pedagogy_tag'],
+            'h5p_type' => $normalized['h5p_type'],
+            'framework_tags' => $normalized['framework_tags'],
             'context_id' => $normalized['context'],
             'result' => $normalized['result'],
             'duration_seconds' => $normalized['duration_seconds'],
             'raw_statement' => $statement,
             'timestamp' => $normalized['timestamp'],
         ]);
+
+        $this->frameworks->recordTelemetryEvidence($event, $statement);
+
+        return $event;
     }
 
     /**
@@ -158,6 +174,9 @@ class TelemetryService
 
     protected function normalizeStatement(array $statement): array
     {
+        $extensions = (array) ($statement['context']['extensions'] ?? []);
+        $pedagogyTag = $this->catalog->normalizePedagogy((string) ($extensions['pedagogy_tag'] ?? ''));
+
         return [
             'verb' => $this->normalizeVerb($statement['verb']['id'] ?? ''),
             'object' => $statement['object']['id'] ?? null,
@@ -165,6 +184,18 @@ class TelemetryService
             'result' => $statement['result'] ?? null,
             'duration_seconds' => $this->extractDurationSeconds($statement['result'] ?? null),
             'timestamp' => $statement['timestamp'] ?? now(),
+            'content_id' => $this->extractNumericId($extensions['content_id'] ?? ($statement['object']['id'] ?? null)),
+            'concept_id' => $this->extractNumericId($extensions['concept_id'] ?? null),
+            'pedagogy_tag' => $pedagogyTag,
+            'h5p_type' => $this->normalizeH5pType($extensions['h5p_type'] ?? null),
+            'framework_tags' => array_filter([
+                'casel' => $extensions['casel_domain'] ?? null,
+                'ngss' => $extensions['ngss_practice'] ?? null,
+                'ncdg' => $extensions['ncdg_goal'] ?? null,
+                'music' => $extensions['music_domain'] ?? null,
+                'sports' => $extensions['sports_domain'] ?? null,
+                'finance' => $extensions['finance_domain'] ?? null,
+            ]),
         ];
     }
 
@@ -218,6 +249,25 @@ class TelemetryService
         ];
 
         return $verbMap[$verb] ?? $verb;
+    }
+
+    protected function extractNumericId(mixed $value): ?int
+    {
+        if (is_numeric($value)) {
+            return (int) $value;
+        }
+        if (is_string($value) && preg_match('/(\d+)/', $value, $matches)) {
+            return (int) $matches[1];
+        }
+
+        return null;
+    }
+
+    protected function normalizeH5pType(mixed $value): ?string
+    {
+        $normalized = $this->catalog->normalizeValue('h5p', $value);
+
+        return $normalized ?: null;
     }
 
     protected function calculateDuration($events): int

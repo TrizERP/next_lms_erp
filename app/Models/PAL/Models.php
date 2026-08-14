@@ -130,8 +130,22 @@ class Content extends Model
         'format',
         'difficulty_level',
         'bloom_level',
+        'pedagogy_tag',
         'pedagogy_tags',
         'h5p_type',
+        'casel_domain',
+        'ngss_practice',
+        'ncdg_goal',
+        'music_domain',
+        'sports_domain',
+        'finance_domain',
+        'riasec_signal',
+        'assessment_method',
+        'gardner_intelligence',
+        'cross_curricular_links',
+        'framework_metadata',
+        'evidence_requirements',
+        'pedagogy_profile',
         'status',
     ];
     
@@ -139,6 +153,11 @@ class Content extends Model
         'difficulty_level' => 'integer',
         'bloom_level' => 'integer',
         'pedagogy_tags' => 'array',
+        'gardner_intelligence' => 'array',
+        'cross_curricular_links' => 'array',
+        'framework_metadata' => 'array',
+        'evidence_requirements' => 'array',
+        'pedagogy_profile' => 'array',
     ];
 }
 
@@ -159,6 +178,11 @@ class TelemetryEvent extends Model
         'session_id',
         'verb',
         'object_id',
+        'content_id',
+        'concept_id',
+        'pedagogy_tag',
+        'h5p_type',
+        'framework_tags',
         'context_id',
         'result',
         'raw_statement',
@@ -166,7 +190,7 @@ class TelemetryEvent extends Model
         'duration_seconds',
     ];
 
-    protected $casts = ['session_id' => 'integer', 'result' => 'array', 'raw_statement' => 'array', 'duration_seconds' => 'integer'];
+    protected $casts = ['session_id' => 'integer', 'content_id' => 'integer', 'concept_id' => 'integer', 'framework_tags' => 'array', 'result' => 'array', 'raw_statement' => 'array', 'duration_seconds' => 'integer'];
 }
 
 class Reflection extends Model
@@ -311,10 +335,36 @@ class LearningEvent extends Model
     protected $fillable = [
         'learner_id',
         'event_type',
+        'content_id',
+        'concept_id',
+        'session_id',
+        'pedagogy_tag',
+        'h5p_type',
+        'framework_tags',
+        'score',
+        'duration_seconds',
+        'completion',
+        'source',
+        'language',
+        'platform',
+        'riasec_signal',
+        'gardner_intelligence',
+        'misconception_data',
         'event_data',
     ];
 
-    protected $casts = ['event_data' => 'array'];
+    protected $casts = [
+        'content_id' => 'integer',
+        'concept_id' => 'integer',
+        'session_id' => 'integer',
+        'framework_tags' => 'array',
+        'gardner_intelligence' => 'array',
+        'misconception_data' => 'array',
+        'score' => 'float',
+        'duration_seconds' => 'integer',
+        'completion' => 'boolean',
+        'event_data' => 'array',
+    ];
 }
 
 class RemediationSession extends Model
