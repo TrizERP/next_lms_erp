@@ -343,14 +343,55 @@ $('.guide-title').on('click', function(event) {
 
 <script language="javascript">
   function printdiv(printpage) {
-    var headstr = "<html><head><title></title></head><body>";
-      var footstr = "</body>";
-      var newstr = document.getElementById(printpage).innerHTML;
-      var oldstr = document.body.innerHTML;
-      document.body.innerHTML = headstr + newstr + footstr;
-      window.print();
-      document.body.innerHTML = oldstr;
+    var printElement = document.getElementById(printpage);
+    if (!printElement) {
       return false;
+    }
+
+    // Printing the entire ERP page makes browsers lay out every sidebar,
+    // script and hidden panel before opening preview. Give the printer a
+    // small document containing only the requested card instead.
+    var printWindow = window.open('', '_blank', 'width=900,height=700');
+    if (!printWindow) {
+      return false;
+    }
+
+    // Card templates include their own <style> block for every selected
+    // student. Keep one copy of each rule and discard the dashboard's large
+    // global stylesheets; parsing all of them was delaying print preview.
+    var styles = [];
+    var addStyle = function (css) {
+      if (css && styles.indexOf(css) === -1) {
+        styles.push(css);
+      }
+    };
+    var cardClone = printElement.cloneNode(true);
+    Array.prototype.forEach.call(cardClone.querySelectorAll('style'), function (style) {
+      addStyle(style.textContent);
+      style.parentNode.removeChild(style);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('style'), function (style) {
+      var css = style.textContent;
+      if (/\.row-|\.icard-item|\.page-break|#printPage/.test(css)) {
+        addStyle(css);
+      }
+    });
+
+    printWindow.document.open();
+    printWindow.document.write(
+      '<!doctype html><html><head><base href="' + document.baseURI + '">' +
+      '<meta charset="utf-8"><style>body{margin:0;padding:0}</style>' +
+      '<style>' + styles.join('\n') + '</style>' +
+      '</head><body>' + cardClone.innerHTML + '</body></html>'
+    );
+    printWindow.document.close();
+    printWindow.focus();
+
+    window.setTimeout(function () {
+      printWindow.print();
+    }, 100);
+
+    return false;
   }
 
   function sessionMenu(x) {
@@ -668,7 +709,7 @@ document.getElementById('user_input').addEventListener('keypress', function(even
                         <div style="display: flex; flex-direction: column; gap: 10px;"> <!-- Reduced gap -->
                             <button class="fees-button" data-message="Pending Fees" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Pending Fees</button>
                         <button class="fees-button" data-message="Student not showing while collecting the fees." style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Student Not Visible</button>
-    
+   
     <button class="fees-button" data-message="The fee amount is displayed as more than the specified break-off limit." style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Excess Fee Amount</button>
     
     <button class="fees-button" data-message="How do I access the fees module?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Access Fees Module</button>
@@ -701,8 +742,8 @@ document.getElementById('user_input').addEventListener('keypress', function(even
     
     <button class="fees-button" data-message="What reports should I generate at the end of each term or year?" style="width: 100%; padding: 0px; border-radius: 5px; background-color:rgb(108, 194, 111); color: white; border: 2px solid #4CAF50; cursor: pointer; font-size: 12px;">Term Reports</button>
 
-                        </div>
-                    </div>`;
+      </div>
+    </div>`;
             });
             document.getElementById('messages').addEventListener('click', function(event) {
                 var message=''; 
