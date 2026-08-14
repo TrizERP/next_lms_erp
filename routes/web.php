@@ -388,6 +388,9 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'l
     Route::post('ajax_getClasswiseTimetable', [classwisetimetableController::class, 'getClasswiseTimetable'])
         ->middleware('api.session')
         ->name('ajax_getClasswiseTimetable');
+    Route::post('ajax_getClasswiseTimetableApi', [classwisetimetableController::class, 'getClasswiseTimetableApi'])
+        ->middleware('api.session')
+        ->name('ajax_getClasswiseTimetableApi');
     Route::get('ajax_Batch_Timetable', [timetableController::class, 'getBatchTimetable'])->name('ajax_Batch_Timetable');
 
     Route::get('ajax_New_Standard_Div', [timetableController::class, 'getNewStandardDiv'])->name('ajax_New_Standard_Div');
@@ -396,6 +399,20 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'l
 
     Route::get('ajax_Mapping_Teachers', [timetableController::class, 'getMappingTeachers'])->name('ajax_Mapping_Teachers');
 
+    // New JSON API endpoints backing the Next.js Create Timetable page.
+    Route::post('ajax_getTimetableSections', [timetableController::class, 'getSectionsApi'])
+        ->middleware('api.session')->name('ajax_getTimetableSections');
+    Route::post('ajax_getTimetableStandards', [timetableController::class, 'getStandardsApi'])
+        ->middleware('api.session')->name('ajax_getTimetableStandards');
+    Route::post('ajax_getTimetableDivisions', [timetableController::class, 'getDivisionsApi'])
+        ->middleware('api.session')->name('ajax_getTimetableDivisions');
+    Route::post('ajax_getTimetableGrid', [timetableController::class, 'getTimetableGridApi'])
+        ->middleware('api.session')->name('ajax_getTimetableGrid');
+    Route::post('ajax_saveTimetableEntry', [timetableController::class, 'saveTimetableEntryApi'])
+        ->middleware('api.session')->name('ajax_saveTimetableEntry');
+    Route::post('ajax_deleteTimetableEntry', [timetableController::class, 'deleteTimetableEntryApi'])
+        ->middleware('api.session')->name('ajax_deleteTimetableEntry');
+
     Route::resource('proxy_master', proxyController::class);
 
     Route::post('ajax_getproxyperiod', [proxyController::class, 'getproxyperiod'])->name('ajax_getproxyperiod');
@@ -403,6 +420,9 @@ Route::group(['prefix' => 'school_setup', 'middleware' => ['session', 'menu', 'l
     Route::post('ajax_getFacultywiseTimetable', [facultywisetimetableController::class, 'getFacultywiseTimetable'])
         ->middleware('api.session')
         ->name('ajax_getFacultywiseTimetable');
+    Route::post('ajax_getFacultywiseTimetableApi', [facultywisetimetableController::class, 'getFacultywiseTimetableApi'])
+        ->middleware('api.session')
+        ->name('ajax_getFacultywiseTimetableApi');
 
     Route::resource('proxy_report', proxyReportController::class);
     Route::post('ajax_getproxyreport', [proxyReportController::class, 'getproxyreport'])->name('ajax_getproxyreport');

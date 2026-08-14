@@ -45,6 +45,46 @@ class facultywisetimetableController extends Controller
         return is_mobile($type, 'school_setup/show_facultywisetimetable', $res, "view");
     }
 
+    public function getFacultywiseTimetableApi(Request $request)
+    {
+        $teacher_id = $request->input('teacher_id');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+
+        if (! $teacher_id) {
+            return response()->json(['status' => 'ERROR', 'message' => 'teacher_id is required'], 422);
+        }
+
+        $entries = timetableModel::query()
+            ->join('subject', 'subject.id', '=', 'timetable.subject_id')
+            ->join('standard', 'standard.id', '=', 'timetable.standard_id')
+            ->leftJoin('division', 'division.id', '=', 'timetable.division_id')
+            ->join('period', 'period.id', '=', 'timetable.period_id')
+            ->leftJoin('batch', 'batch.id', '=', 'timetable.batch_id')
+            ->where([
+                'timetable.sub_institute_id' => $sub_institute_id,
+                'timetable.teacher_id' => $teacher_id,
+                'timetable.syear' => $syear,
+            ])
+            ->select(
+                'timetable.week_day',
+                'period.title as period',
+                'standard.name as standard_name',
+                'division.name as division_name',
+                'subject.subject_name',
+                'batch.title as batch_name'
+            )
+            ->orderByRaw("FIELD(timetable.week_day, 'M', 'T', 'W', 'H', 'F', 'S')")
+            ->orderBy('period.sort_order')
+            ->get();
+
+        return response()->json([
+            'status' => 'SUCCESS',
+            'message' => 'SUCCESS',
+            'data' => $entries,
+        ]);
+    }
+
     public function getTimetable_data(Request $request, $teacher_id, $sub_institute_id, $syear)
     {
         $html = "";
