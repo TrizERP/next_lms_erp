@@ -932,4 +932,251 @@ class timetableController extends Controller
         exit;
     }
 
+    // ===================================================================
+    // New JSON API endpoints for the Next.js "Create Timetable" page.
+    // Additive only - existing web/Blade methods above are untouched.
+    // ===================================================================
+
+    public function getSectionsApi(Request $request)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        $sections = academic_sectionModel::where(['sub_institute_id' => $sub_institute_id])
+            ->orderby('sort_order')->get(['id', 'title'])->toArray();
+
+        return response()->json(['status' => 'SUCCESS', 'message' => 'SUCCESS', 'data' => $sections]);
+    }
+
+    public function getStandardsApi(Request $request)
+    {
+        $academic_id = $request->input('academic_section_id');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        $standards = standardModel::where(['sub_institute_id' => $sub_institute_id, 'grade_id' => $academic_id])
+            ->get(['id', 'name'])->toArray();
+
+        return response()->json(['status' => 'SUCCESS', 'message' => 'SUCCESS', 'data' => $standards]);
+    }
+
+    public function getDivisionsApi(Request $request)
+    {
+        $standard_id = $request->input('standard_id');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        $divisions = std_div_mappingModel::select('division.id', 'division.name')
+            ->join('division', 'division.id', '=', 'std_div_map.division_id')
+            ->where(['std_div_map.sub_institute_id' => $sub_institute_id, 'standard_id' => $standard_id])
+            ->get()->toArray();
+
+        return response()->json(['status' => 'SUCCESS', 'message' => 'SUCCESS', 'data' => $divisions]);
+    }
+
+    public function getTimetableGridApi(Request $request)
+    {
+        $academic_section_id = $request->input('academic_section_id');
+        $standard_id = $request->input('standard_id');
+        $division_id = $request->input('division_id');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+
+        if (! $academic_section_id || ! $standard_id || ! $division_id) {
+            return response()->json([
+                'status' => 'ERROR',
+                'message' => 'academic_section_id, standard_id and division_id are required',
+            ], 422);
+        }
+
+        $period_data = periodModel::where(['sub_institute_id' => $sub_institute_id])
+            ->orderby('sort_order')->get(['id', 'title', 'sort_order'])->toArray();
+
+        $subject_data = sub_std_mapModel::where([
+            'sub_institute_id' => $sub_institute_id, 'standard_id' => $standard_id,
+        ])->get(['subject_id', 'display_name'])->toArray();
+
+        $batch_data = batchModel::where([
+            'sub_institute_id' => $sub_institute_id, 'standard_id' => $standard_id,
+            'division_id' => $division_id, 'syear' => $syear,
+        ])->get(['id', 'title'])->toArray();
+
+        $teacher_data = tbluserModel::select('tbluser.id',
+            DB::raw('CONCAT_WS(" ",tbluser.first_name,tbluser.middle_name,tbluser.last_name) AS name,
+                (CASE WHEN tbluser.total_lecture IS NULL THEN NULL ELSE tbluser.total_lecture - count(t.id) END) AS remaining_lecture'))
+            ->join('tbluserprofilemaster', 'tbluserprofilemaster.id', '=', 'tbluser.user_profile_id')
+            ->leftjoin('timetable AS t', function ($join) {
+                $join->on('t.teacher_id', '=', 'tbluser.id')
+                    ->on('t.sub_institute_id', '=', 'tbluser.sub_institute_id');
+            })
+            ->where([
+                'tbluser.sub_institute_id' => $sub_institute_id,
+                'tbluserprofilemaster.name' => 'Teacher',
+                'tbluser.status' => 1,
+            ])
+            ->groupby('tbluser.id')
+            ->orderby('tbluser.first_name')
+            ->get()->toArray();
+
+        $entries = DB::table('timetable')
+            ->where([
+                'timetable.sub_institute_id' => $sub_institute_id, 'timetable.syear' => $syear,
+                'timetable.academic_section_id' => $academic_section_id, 'timetable.standard_id' => $standard_id,
+                'timetable.division_id' => $division_id,
+            ])
+            ->leftjoin('period', 'period.id', '=', 'timetable.period_id')
+            ->leftjoin('sub_std_map', function ($join) use ($standard_id) {
+                $join->on('sub_std_map.subject_id', '=', 'timetable.subject_id')
+                    ->where('sub_std_map.standard_id', $standard_id);
+            })
+            ->leftjoin('tbluser', 'tbluser.id', '=', 'timetable.teacher_id')
+            ->leftjoin('batch', 'batch.id', '=', 'timetable.batch_id')
+            ->select('timetable.id', 'timetable.week_day', 'timetable.period_id', 'period.title as period_name',
+                'timetable.subject_id', 'sub_std_map.display_name as subject_name',
+                'timetable.teacher_id', DB::raw('CONCAT_WS(" ",tbluser.first_name,tbluser.middle_name,tbluser.last_name) as teacher_name'),
+                'timetable.batch_id', 'batch.title as batch_name')
+            ->orderbyraw("FIELD(timetable.week_day,'M','T','W','H','F','S')")
+            ->orderby('period.sort_order')
+            ->get();
+
+        return response()->json([
+            'status' => 'SUCCESS',
+            'message' => 'SUCCESS',
+            'weekdays' => $this->weekdaysListApi(),
+            'periods' => $period_data,
+            'subjects' => $subject_data,
+            'teachers' => $teacher_data,
+            'batches' => $batch_data,
+            'entries' => $entries,
+        ]);
+    }
+
+    private function weekdaysListApi()
+    {
+        $out = [];
+        foreach ($this->getweeks() as $label => $key) {
+            $out[] = ['key' => $key, 'label' => $label];
+        }
+
+        return $out;
+    }
+
+    public function saveTimetableEntryApi(Request $request)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        $marking_period_id = $request->session()->get('term_id');
+
+        $academic_section_id = $request->input('academic_section_id');
+        $standard_id = $request->input('standard_id');
+        $division_id = $request->input('division_id');
+        $period_id = $request->input('period_id');
+        $week_day = $request->input('week_day');
+        $subject_id = $request->input('subject_id');
+        $teacher_id = $request->input('teacher_id');
+        $batch_id = $request->input('batch_id') ?: null;
+
+        if (! $academic_section_id || ! $standard_id || ! $division_id || ! $period_id
+            || ! $week_day || ! $subject_id || ! $teacher_id) {
+            return response()->json([
+                'status' => 'ERROR',
+                'message' => 'academic_section_id, standard_id, division_id, period_id, week_day, subject_id and teacher_id are all required',
+            ], 422);
+        }
+
+        if (! in_array($week_day, array_values($this->getweeks()), true)) {
+            return response()->json(['status' => 'ERROR', 'message' => 'Invalid week_day'], 422);
+        }
+
+        // Same-teacher-double-booked conflict check. The legacy Blade UI only
+        // hides already-booked teachers from the dropdown (soft UX filter,
+        // driven by general_data.fieldname = 'timetable_teacher'); here we
+        // enforce it as a hard validation error at save time when that flag
+        // is not explicitly set to 'Yes'.
+        $check_general_data = DB::table('general_data')->where([
+            'sub_institute_id' => $sub_institute_id, 'fieldname' => 'timetable_teacher',
+        ])->first();
+        $allowDoubleBooking = $check_general_data && $check_general_data->fieldvalue === 'Yes';
+
+        if (! $allowDoubleBooking) {
+            $conflict = DB::table('timetable')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('syear', $syear)
+                ->where('period_id', $period_id)
+                ->where('week_day', $week_day)
+                ->where('teacher_id', $teacher_id)
+                ->where(function ($q) use ($standard_id, $division_id) {
+                    $q->where('standard_id', '!=', $standard_id)->orWhere('division_id', '!=', $division_id);
+                })
+                ->first();
+
+            if ($conflict) {
+                return response()->json([
+                    'status' => 'ERROR',
+                    'message' => 'This teacher is already assigned to another class in this period.',
+                ], 409);
+            }
+        }
+
+        $matchConditions = [
+            'sub_institute_id' => $sub_institute_id, 'syear' => $syear,
+            'academic_section_id' => $academic_section_id, 'standard_id' => $standard_id,
+            'division_id' => $division_id, 'period_id' => $period_id, 'week_day' => $week_day,
+        ];
+
+        $existingQuery = DB::table('timetable')->where($matchConditions);
+        $batch_id ? $existingQuery->where('batch_id', $batch_id) : $existingQuery->whereNull('batch_id');
+        $existing = $existingQuery->first();
+
+        $values = [
+            'subject_id' => $subject_id, 'teacher_id' => $teacher_id,
+            'updated_at' => now(), 'marking_period_id' => $marking_period_id,
+        ];
+
+        if ($existing) {
+            timetableModel::where('id', $existing->id)->update($values);
+            $id = $existing->id;
+        } else {
+            $id = timetableModel::insertGetId(array_merge(
+                $matchConditions,
+                ['batch_id' => $batch_id],
+                $values,
+                ['created_at' => now()]
+            ));
+        }
+
+        $saved = DB::table('timetable')
+            ->leftjoin('period', 'period.id', '=', 'timetable.period_id')
+            ->leftjoin('sub_std_map', function ($join) use ($standard_id) {
+                $join->on('sub_std_map.subject_id', '=', 'timetable.subject_id')
+                    ->where('sub_std_map.standard_id', $standard_id);
+            })
+            ->leftjoin('tbluser', 'tbluser.id', '=', 'timetable.teacher_id')
+            ->leftjoin('batch', 'batch.id', '=', 'timetable.batch_id')
+            ->where('timetable.id', $id)
+            ->select('timetable.id', 'timetable.week_day', 'timetable.period_id', 'period.title as period_name',
+                'timetable.subject_id', 'sub_std_map.display_name as subject_name',
+                'timetable.teacher_id', DB::raw('CONCAT_WS(" ",tbluser.first_name,tbluser.middle_name,tbluser.last_name) as teacher_name'),
+                'timetable.batch_id', 'batch.title as batch_name')
+            ->first();
+
+        return response()->json(['status' => 'SUCCESS', 'message' => 'Timetable entry saved successfully', 'data' => $saved]);
+    }
+
+    public function deleteTimetableEntryApi(Request $request)
+    {
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+        $id = $request->input('id');
+
+        if (! $id) {
+            return response()->json(['status' => 'ERROR', 'message' => 'id is required'], 422);
+        }
+
+        $deleted = timetableModel::where(['id' => $id, 'sub_institute_id' => $sub_institute_id, 'syear' => $syear])->delete();
+
+        if (! $deleted) {
+            return response()->json(['status' => 'ERROR', 'message' => 'Timetable entry not found'], 404);
+        }
+
+        return response()->json(['status' => 'SUCCESS', 'message' => 'Timetable entry deleted successfully']);
+    }
+
 }
