@@ -39,6 +39,51 @@ class classwisetimetableController extends Controller
         return is_mobile($type, 'school_setup/show_classwisetimetable', $res, "view");
     }
 
+    /** Read-only JSON data for the Next.js classwise timetable screen. */
+    public function getClasswiseTimetableApi(Request $request)
+    {
+        $academic_section_id = $request->input('academic_section_id');
+        $standard_id = $request->input('standard_id');
+        $division_id = $request->input('division_id');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+
+        if (! $academic_section_id || ! $standard_id || ! $division_id) {
+            return response()->json(['status' => 'ERROR', 'message' => 'academic_section_id, standard_id and division_id are required'], 422);
+        }
+
+        $class = DB::table('academic_section as ac')
+            ->join('standard as s', function ($join) { $join->whereRaw('s.grade_id = ac.id AND ac.sub_institute_id = s.sub_institute_id'); })
+            ->join('std_div_map as sd', function ($join) { $join->whereRaw('sd.standard_id = s.id AND sd.sub_institute_id = s.sub_institute_id'); })
+            ->join('division as d', 'd.id', '=', 'sd.division_id')
+            ->where('ac.sub_institute_id', $sub_institute_id)
+            ->where('ac.id', $academic_section_id)->where('s.id', $standard_id)->where('d.id', $division_id)
+            ->selectRaw('ac.title AS section, s.name AS standard, d.name AS division')->first();
+
+        if (! $class) {
+            return response()->json(['status' => 'ERROR', 'message' => 'The selected academic section, standard, and division could not be found.'], 422);
+        }
+
+        $entries = timetableModel::query()
+            ->join('subject', 'subject.id', '=', 'timetable.subject_id')
+            ->join('tbluser', function ($join) { $join->on('tbluser.id', '=', 'timetable.teacher_id')->where('tbluser.status', 1); })
+            ->leftJoin('batch', 'batch.id', '=', 'timetable.batch_id')
+            ->where(['timetable.sub_institute_id' => $sub_institute_id, 'timetable.academic_section_id' => $academic_section_id, 'timetable.standard_id' => $standard_id, 'timetable.division_id' => $division_id, 'timetable.syear' => $syear])
+            ->select('timetable.id', 'timetable.week_day', 'timetable.period_id', 'subject.subject_name', DB::raw('CONCAT_WS(" ", tbluser.first_name, tbluser.middle_name, tbluser.last_name) AS teacher_name'), 'batch.title AS batch_name')
+            ->orderByRaw("FIELD(timetable.week_day, 'M', 'T', 'W', 'H', 'F', 'S')")->orderBy('timetable.period_id')->get();
+
+        $usedPeriodIds = $entries->pluck('period_id')->unique()->values();
+        $periods = periodModel::select('period.id', 'period.title', 'period.sort_order', DB::raw('DATE_FORMAT(period_details.start_time, "%H:%i") AS start_time'), DB::raw('DATE_FORMAT(period_details.end_time, "%H:%i") AS end_time'))
+            ->leftJoin('period_details', function ($join) use ($standard_id) { $join->on('period_details.period_id', '=', 'period.id')->where('period_details.standard_id', $standard_id); })
+            ->where('period.sub_institute_id', $sub_institute_id)
+            ->when($usedPeriodIds->isNotEmpty(), function ($query) use ($usedPeriodIds) { $query->whereIn('period.id', $usedPeriodIds); }, function ($query) { $query->whereRaw('1 = 0'); })
+            ->orderBy('period.sort_order')->get();
+
+        $weekdays = [];
+        foreach ($this->getweeks() as $label => $key) { $weekdays[] = ['key' => $key, 'label' => $label]; }
+
+        return response()->json(['status' => 'SUCCESS', 'message' => 'SUCCESS', 'class' => $class, 'weekdays' => $weekdays, 'periods' => $periods, 'entries' => $entries]);
+    }
     public function getTimetable_data(Request $request,$academic_section_id,$standard_id,$division_id,$sub_institute_id) {
         $syear = $request->session()->get('syear');
         $marking_period_id = session()->get('term_id');
