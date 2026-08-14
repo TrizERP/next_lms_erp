@@ -173,8 +173,157 @@ class SemanticSourceRepository
         return $rows[0] ?? null;
     }
 
-    /** Distinct subject / standard pairs, for the workspace filters. */
+    /**
+     * Filter options for the workspace.
+     *
+     * Sourced from the INSTITUTE'S OWN MASTERS, not from what happens to have
+     * been extracted: a school that runs Grades 1-12 sees all twelve, so the
+     * grades with no extracted content yet are visible as gaps rather than
+     * silently missing from the filter. Extraction coverage is a property of
+     * the data, not of the school, and the two should not be conflated.
+     *
+     * Subjects are keyed by standard (from the curriculum estate in
+     * chapter_master) so the subject row can narrow to the selected grade —
+     * the institute-wide subject table holds 80+ rows, most of them library
+     * and skill categories that were never taught as a chaptered subject.
+     *
+     * Anything present in semantic_intelligence but absent from the masters is
+     * unioned in, so a filter can never hide a chapter that actually exists.
+     */
     public function facets(?int $tenant): array
+    {
+        $extracted = $this->extractedFacets($tenant);
+
+        $standards = $this->instituteStandards($tenant);
+        [$subjectsByStandard, $subjects] = $this->curriculumSubjects($tenant);
+
+        // Union in whatever the extraction holds, so nothing becomes unfilterable.
+        foreach ($extracted['pairs'] as $pair) {
+            $standard = (int) ($pair['standard'] ?? 0);
+            $subject = trim((string) ($pair['subject_name'] ?? ''));
+
+            if ($standard > 0 && ! in_array($standard, $standards, true)) {
+                $standards[] = $standard;
+            }
+            if ($subject === '') {
+                continue;
+            }
+            if (! in_array($subject, $subjects, true)) {
+                $subjects[] = $subject;
+            }
+            if ($standard > 0) {
+                $subjectsByStandard[$standard] = $subjectsByStandard[$standard] ?? [];
+                if (! in_array($subject, $subjectsByStandard[$standard], true)) {
+                    $subjectsByStandard[$standard][] = $subject;
+                }
+            }
+        }
+
+        sort($standards);
+        sort($subjects);
+        ksort($subjectsByStandard);
+        foreach ($subjectsByStandard as $key => $list) {
+            sort($list);
+            $subjectsByStandard[$key] = $list;
+        }
+
+        return [
+            'standards' => array_values($standards),
+            'subjects' => array_values($subjects),
+            'subjects_by_standard' => $subjectsByStandard,
+            // Which grades / subjects actually have extracted chapters behind
+            // them. The UI can offer every grade while still being honest that
+            // some have nothing to show.
+            'extracted_standards' => $extracted['standards'],
+            'extracted_subjects' => $extracted['subjects'],
+            'pairs' => $extracted['pairs'],
+        ];
+    }
+
+    /**
+     * Every grade the institute runs.
+     *
+     * Non-numeric standards (Nursery, LKG …) are excluded: semantic_intelligence
+     * stores `standard` as an integer, so a non-numeric grade could never match
+     * a chapter and offering it would be a filter that always returns nothing.
+     *
+     * @return array<int,int>
+     */
+    protected function instituteStandards(?int $tenant): array
+    {
+        $standards = [];
+
+        try {
+            $rows = DB::table('standard')
+                ->when($tenant !== null, fn ($q) => $q->where('sub_institute_id', $tenant))
+                ->orderBy('sort_order')
+                ->get(['name']);
+
+            foreach ($rows as $row) {
+                $name = trim((string) $row->name);
+                if ($name === '' || ! ctype_digit($name)) {
+                    continue;
+                }
+                $value = (int) $name;
+                if ($value > 0 && ! in_array($value, $standards, true)) {
+                    $standards[] = $value;
+                }
+            }
+        } catch (Throwable) {
+            // No standard master on this estate — the extracted values, unioned
+            // in by the caller, are then the only option list.
+        }
+
+        return $standards;
+    }
+
+    /**
+     * Subjects that actually carry chapters, grouped by standard.
+     *
+     * @return array{0: array<int,array<int,string>>, 1: array<int,string>}
+     */
+    protected function curriculumSubjects(?int $tenant): array
+    {
+        $byStandard = [];
+        $all = [];
+
+        try {
+            $rows = DB::table('chapter_master as c')
+                ->join('subject as s', 'c.subject_id', '=', 's.id')
+                ->leftJoin('standard as st', 'c.standard_id', '=', 'st.id')
+                ->when($tenant !== null, fn ($q) => $q->where('c.sub_institute_id', $tenant))
+                ->select('s.subject_name', 'st.name as standard_name')
+                ->distinct()
+                ->get();
+
+            foreach ($rows as $row) {
+                $subject = trim((string) $row->subject_name);
+                if ($subject === '') {
+                    continue;
+                }
+                if (! in_array($subject, $all, true)) {
+                    $all[] = $subject;
+                }
+
+                $standardName = trim((string) $row->standard_name);
+                if ($standardName === '' || ! ctype_digit($standardName)) {
+                    continue;
+                }
+                $standard = (int) $standardName;
+                $byStandard[$standard] = $byStandard[$standard] ?? [];
+                if (! in_array($subject, $byStandard[$standard], true)) {
+                    $byStandard[$standard][] = $subject;
+                }
+            }
+        } catch (Throwable) {
+            // No curriculum estate — fall back to the extracted subjects only.
+        }
+
+        return [$byStandard, $all];
+    }
+
+    /** Distinct subject / standard pairs actually present in the extraction. */
+    protected function extractedFacets(?int $tenant): array
     {
         $existing = $this->columns();
 
@@ -192,7 +341,7 @@ class SemanticSourceRepository
         $subjects = [];
         $standards = [];
         foreach ($rows as $row) {
-            $subject = (string) $row->subject_name;
+            $subject = trim((string) $row->subject_name);
             if ($subject !== '' && ! in_array($subject, $subjects, true)) {
                 $subjects[] = $subject;
             }

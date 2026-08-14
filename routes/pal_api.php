@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\api\PAL\NewPalContentModelController;
 use App\Http\Controllers\api\PAL\PALAPIController;
 use App\Http\Controllers\api\PAL\PalContentIntelligenceController;
+use App\Http\Controllers\api\PAL\PalH5PModelController;
 use App\Http\Controllers\api\PAL\PalWorkspaceController;
 
 /*
@@ -209,5 +210,59 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
         Route::post('/nodes/{nodeKey}/transition', [NewPalContentModelController::class, 'transitionNode'])->where('nodeKey', $nodeKey);
         Route::post('/nodes/{nodeKey}/enrich', [NewPalContentModelController::class, 'enrich'])->where('nodeKey', $nodeKey);
         Route::post('/nodes/{nodeKey}/translate', [NewPalContentModelController::class, 'translate'])->where('nodeKey', $nodeKey);
+    });
+
+    // ==================== H5P MODEL ====================
+    //
+    // The backend for LMS+PAL → Tech/Learn → Subject → Chapter → H5P Content:
+    // the 21-type registry, the 12 pedagogies, the CASEL/NGSS/NCDG/Music/
+    // Sports/Finance frameworks, the §9 coverage matrix, per-node PAL tagging,
+    // computed §8.3 engagement metadata and the §8.2 xAPI pipeline.
+    //
+    // Reads the H5P tables that already exist (h5p_scenarios,
+    // h5p_interactive_video, h5p_flashcard, the MCQ slice of
+    // lms_question_master) plus pal_vocabulary, pal_h5p_node_metadata and
+    // pal_telemetry_events. Nothing in a response is hard-coded here.
+    //
+    // Route ordering: every literal segment precedes the wildcard that could
+    // swallow it, {nodeId} is constrained to digits, and {h5pType} to the
+    // registry's snake_case code grammar — the same collision guard the
+    // /workspace and /new/content-model groups use.
+    Route::prefix('/h5p')->group(function () {
+        $h5pType = '[a-z][a-z0-9_]{1,47}';
+
+        // Registry + matrix — no chapter needed.
+        Route::get('/registry', [PalH5PModelController::class, 'registry']);
+        Route::get('/coverage-matrix', [PalH5PModelController::class, 'coverageMatrix']);
+
+        // Chapter-scoped model.
+        Route::get('/hub', [PalH5PModelController::class, 'hub']);
+        Route::get('/chapters', [PalH5PModelController::class, 'chapters']);
+        Route::get('/chapter-model', [PalH5PModelController::class, 'chapterModel']);
+        Route::get('/coverage', [PalH5PModelController::class, 'coverage']);
+        Route::get('/engagement', [PalH5PModelController::class, 'engagement']);
+        Route::get('/pedagogy/select', [PalH5PModelController::class, 'selectPedagogy']);
+
+        // DeepSeek insight layer sitting ON TOP of the xAPI stream: the
+        // evidence pack is pure SQL over the events, the narration is the
+        // model reading that pack. Read-only.
+        Route::get('/insights', [PalH5PModelController::class, 'insights']);
+
+        // AI tagging proposals (never written by the machine itself).
+        Route::post('/suggest-tags', [PalH5PModelController::class, 'suggestTags']);
+
+        // xAPI ingest (§8.2). Literals declared before /nodes/{h5pType}.
+        Route::post('/xapi/batch', [PalH5PModelController::class, 'ingestXapiBatch']);
+        Route::post('/xapi', [PalH5PModelController::class, 'ingestXapi']);
+
+        // Per-node reads and writes.
+        Route::get('/nodes/{h5pType}/{nodeId}/preview', [PalH5PModelController::class, 'previewTags'])
+            ->where(['h5pType' => $h5pType, 'nodeId' => '[0-9]+']);
+        Route::get('/nodes/{h5pType}/{nodeId}', [PalH5PModelController::class, 'node'])
+            ->where(['h5pType' => $h5pType, 'nodeId' => '[0-9]+']);
+        Route::post('/nodes/{h5pType}/{nodeId}/tags', [PalH5PModelController::class, 'saveTags'])
+            ->where(['h5pType' => $h5pType, 'nodeId' => '[0-9]+']);
+        Route::post('/nodes/{h5pType}/{nodeId}/transition', [PalH5PModelController::class, 'transitionTags'])
+            ->where(['h5pType' => $h5pType, 'nodeId' => '[0-9]+']);
     });
 });
