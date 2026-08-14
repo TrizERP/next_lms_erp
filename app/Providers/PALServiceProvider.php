@@ -16,7 +16,11 @@ use App\Services\PAL\Pedagogy\EmotionalSafetyEngine;
 use App\Services\PAL\Pedagogy\MetacognitionEngine;
 use App\Services\PAL\Pedagogy\PedagogyFatigueEngine;
 use App\Services\PAL\Content\ContentIntelligenceService;
+use App\Services\PAL\Framework\FrameworkCatalogService;
+use App\Services\PAL\Framework\FrameworkProgressService;
 use App\Services\PAL\Telemetry\TelemetryService;
+use App\Services\PAL\ULU\ULUGraphService;
+use App\Services\PAL\ULU\ULUService;
 use App\Services\PAL\AI\AIOrchestrationService;
 use App\Services\PAL\Integration\PedagogySuggestedContentService;
 
@@ -59,8 +63,31 @@ class PALServiceProvider extends ServiceProvider
         });
 
         // Pedagogy Engine Services
-        $this->app->singleton(PedagogySelectorEngine::class, function () {
-            return new PedagogySelectorEngine();
+        $this->app->singleton(FrameworkCatalogService::class, function () {
+            return new FrameworkCatalogService();
+        });
+
+        $this->app->singleton(FrameworkProgressService::class, function ($app) {
+            return new FrameworkProgressService(
+                $app->make(FrameworkCatalogService::class)
+            );
+        });
+
+        $this->app->singleton(ULUGraphService::class, function ($app) {
+            return new ULUGraphService($app->bound(\App\Services\Neo4jService::class) ? $app->make(\App\Services\Neo4jService::class) : null);
+        });
+
+        $this->app->singleton(ULUService::class, function ($app) {
+            return new ULUService(
+                $app->make(FrameworkCatalogService::class),
+                $app->make(ULUGraphService::class)
+            );
+        });
+
+        $this->app->singleton(PedagogySelectorEngine::class, function ($app) {
+            return new PedagogySelectorEngine(
+                $app->make(FrameworkCatalogService::class)
+            );
         });
         
         $this->app->singleton(CognitiveLoadEngine::class, function () {
@@ -95,8 +122,11 @@ class PALServiceProvider extends ServiceProvider
         });
 
         // Telemetry Service
-        $this->app->singleton(TelemetryService::class, function () {
-            return new TelemetryService();
+        $this->app->singleton(TelemetryService::class, function ($app) {
+            return new TelemetryService(
+                $app->make(FrameworkCatalogService::class),
+                $app->make(FrameworkProgressService::class)
+            );
         });
 
         // AI Orchestration Service
