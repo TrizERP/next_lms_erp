@@ -214,7 +214,7 @@ class PedagogyEngineService
                     ? null
                     : $this->resolver->resolveRule($section->section_key, $row, $concept, $ladder);
 
-                return $row;
+                return $this->withConceptContent($row);
             })
             ->values()
             ->all();
@@ -233,14 +233,154 @@ class PedagogyEngineService
                 'rules' => $built,
             ],
             'triggers' => $base + [
-                'triggers' => $this->resolver->resolveTriggers(
-                    $rules->map(fn ($rule) => $this->buildTrigger($rule))->values()->all(),
-                    $concept ?? []
+                'triggers' => array_map(
+                    fn (array $trigger) => $this->withTriggerConceptContent($trigger, $built),
+                    $this->resolver->resolveTriggers(
+                        $rules->map(fn ($rule) => $this->buildTrigger($rule))->values()->all(),
+                        $concept ?? []
+                    )
                 ),
                 'rules' => $built,
             ],
             default => $base + ['rules' => $built],
         };
+    }
+
+    /**
+     * What each extracted collection is called when the Action column counts it.
+     *
+     * @var array<string, array{0:string, 1:string}>
+     */
+    private const EVIDENCE_NOUNS = [
+        'concepts[].concept' => ['concept definition', 'concept definitions'],
+        'learning_objectives[]' => ['learning objective', 'learning objectives'],
+        'learning_outcomes[]' => ['learning outcome', 'learning outcomes'],
+        'prerequisites[]' => ['prerequisite gate', 'prerequisite gates'],
+        'evidence[]' => ['source-evidence extract', 'source-evidence extracts'],
+        'knowledge_items[]' => ['knowledge item', 'knowledge items'],
+        'abilities[]' => ['ability', 'abilities'],
+        'skills[]' => ['skill', 'skills'],
+        'competencies[]' => ['competency', 'competencies'],
+        'misconceptions[]' => ['misconception', 'misconceptions'],
+        'pedagogy_recommendations[]' => ['extracted pedagogy', 'extracted pedagogies'],
+        'real_world_applications[]' => ['real-world application', 'real-world applications'],
+        'concept_relationships[]' => ['cross-concept link', 'cross-concept links'],
+        'assessment_blueprint[]' => ['blueprint item', 'blueprint items'],
+        'assessment_rubrics.items[]' => ['scored rubric item', 'scored rubric items'],
+        'assessment_rubrics.items[].answer_key[]' => ['rubric distractor', 'rubric distractors'],
+        'assessment_rubrics.items[].common_errors[]' => ['recorded common error', 'recorded common errors'],
+    ];
+
+    /**
+     * Replace the row's content-bearing columns with what the rule resolved to
+     * for the selected concept.
+     *
+     * The condition and the guardrails (scaffolding, trigger, reason, do-not,
+     * avoid) are the rule itself and stay as stored; the Action, Pedagogy and
+     * H5P columns describe *content*, so they are printed from
+     * `semantic_intelligence` instead of the stored specification wording. With
+     * no concept resolved the row is left untouched and the UI already says the
+     * rules are unresolved.
+     *
+     * @param  array<string, mixed>  $row
+     * @return array<string, mixed>
+     */
+    private function withConceptContent(array $row): array
+    {
+        $resolved = $row['resolved'] ?? null;
+
+        if (! is_array($resolved) || ($resolved['matched'] ?? false) !== true) {
+            return $row;
+        }
+
+        $row['action'] = $this->describeServedContent($resolved) ?? $row['action'];
+
+        return $this->withSelectedPedagogy($row, $resolved['pedagogy'] ?? []);
+    }
+
+    /**
+     * Print the one pedagogy the engine actually selected, in the concept's own
+     * wording when the extraction named it, and that pedagogy's H5P types from
+     * the framework catalog.
+     *
+     * A rule whose pedagogy column is an instruction rather than a tag ("Teacher
+     * decides", "Unchanged") resolves to no selection, and is left alone - the
+     * instruction is the rule's meaning, not content to be replaced.
+     *
+     * @param  array<string, mixed>  $row
+     * @param  array<string, mixed>  $pedagogy
+     * @return array<string, mixed>
+     */
+    private function withSelectedPedagogy(array $row, array $pedagogy): array
+    {
+        $selected = $pedagogy['selected'] ?? null;
+
+        if ($selected === null) {
+            return $row;
+        }
+
+        $row['pedagogy'] = (string) ($pedagogy['selected_strategy'] ?: ucwords(str_replace('_', ' ', (string) $selected)));
+        $row['pedagogy_tags'] = [(string) $selected];
+
+        if (! empty($pedagogy['selected_h5p_labels'])) {
+            $row['h5p_type'] = implode(', ', $pedagogy['selected_h5p_labels']);
+        }
+
+        return $row;
+    }
+
+    /**
+     * The trigger table's Pedagogy and H5P columns get the same treatment, taken
+     * from the matching rule row so both halves of the section agree.
+     *
+     * @param  array<string, mixed>  $trigger
+     * @param  array<int, array<string, mixed>>  $rules
+     * @return array<string, mixed>
+     */
+    private function withTriggerConceptContent(array $trigger, array $rules): array
+    {
+        foreach ($rules as $rule) {
+            if (($rule['id'] ?? null) !== ($trigger['id'] ?? null)) {
+                continue;
+            }
+
+            return $this->withSelectedPedagogy($trigger, $rule['resolved']['pedagogy'] ?? []);
+        }
+
+        return $trigger;
+    }
+
+    /**
+     * "Serves 3 learning objectives, 2 prerequisite gates and 16 source-evidence
+     * extracts" - counted from the records the rule actually resolved to, so the
+     * Action column names this concept's content rather than the specification's
+     * generic instruction.
+     *
+     * @param  array<string, mixed>  $resolved
+     */
+    private function describeServedContent(array $resolved): ?string
+    {
+        $counts = [];
+        foreach ($resolved['items'] ?? [] as $item) {
+            $path = (string) ($item['from'] ?? '');
+            $counts[$path] = ($counts[$path] ?? 0) + 1;
+        }
+
+        $parts = [];
+        foreach ($counts as $path => $count) {
+            $nouns = self::EVIDENCE_NOUNS[$path] ?? null;
+            $parts[] = $count . ' ' . ($nouns === null
+                ? rtrim($path, '[]')
+                : ($count === 1 ? $nouns[0] : $nouns[1]));
+        }
+
+        if ($parts === []) {
+            return null;
+        }
+
+        $last = array_pop($parts);
+
+        return 'Serves ' . ($parts === [] ? $last : implode(', ', $parts) . ' and ' . $last) . '.';
     }
 
     private function buildRule(PedagogyEngineRule $rule): array

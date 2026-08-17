@@ -197,7 +197,52 @@ class SemanticIntelligenceSource
             'assessment_blueprint' => $this->listOf($entry, 'assessment_blueprint', $row, 'assessment_blueprint'),
             'concept_relationships' => $this->listOf($entry, 'concept_relationships', $row, null),
             'evidence' => $this->listOf($entry, 'evidence', $row, null),
+            'rubric_items' => $this->rubricItems($entry, $row),
+            'teaching_notes' => $this->rubricGroup($entry, $row)['teaching_notes'] ?? [],
+            'reasoning' => is_array($entry['agent_reasoning'] ?? null) ? $entry['agent_reasoning'] : [],
         ];
+    }
+
+    /**
+     * The rubric block is stored per concept as
+     * `{concept_name, items[], teaching_notes{}}` - an object, not a list - so it
+     * cannot go through listOf(). The `assessment_rubrics` column holds the same
+     * objects for every concept in the chapter, matched back by concept_name.
+     *
+     * @param  array<string, mixed>  $entry
+     * @return array<string, mixed>
+     */
+    private function rubricGroup(array $entry, object $row): array
+    {
+        $group = $entry['assessment_rubrics'] ?? null;
+        if (is_string($group)) {
+            $group = $this->decode($group);
+        }
+
+        if (is_array($group) && isset($group['items'])) {
+            return $group;
+        }
+
+        $conceptName = (string) ($entry['concept']['concept_name'] ?? '');
+        foreach ($this->asRecordList($this->decode($row->assessment_rubrics ?? null)) as $candidate) {
+            if ($conceptName !== '' && strcasecmp((string) ($candidate['concept_name'] ?? ''), $conceptName) === 0) {
+                return $candidate;
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * The scored assessment items (question, answer key, level descriptors,
+     * common errors) the rubric block carries for this concept.
+     *
+     * @param  array<string, mixed>  $entry
+     * @return array<int, array<string, mixed>>
+     */
+    private function rubricItems(array $entry, object $row): array
+    {
+        return $this->asRecordList($this->rubricGroup($entry, $row)['items'] ?? null);
     }
 
     /**
