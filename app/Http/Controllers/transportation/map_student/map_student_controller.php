@@ -30,6 +30,23 @@ class map_student_controller extends Controller
         return (int) session()->get('syear');
     }
 
+    private function normalizeDate(?string $value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            return $value;
+        }
+
+        if (preg_match('/^(\d{2})-(\d{2})-(\d{4})$/', $value, $matches)) {
+            return $matches[3] . '-' . $matches[2] . '-' . $matches[1];
+        }
+
+        return null;
+    }
+
     private function isApi(Request $request): bool
     {
         return in_array($request->input('type'), ['API', 'JSON'], true);
@@ -145,6 +162,8 @@ class map_student_controller extends Controller
                 $row['to_stop'] = $mapping->to_stop;
                 $row['total_amount'] = $mapping->amount;
                 $row['distance'] = $mapping->distance;
+                $row['start_date'] = $mapping->start_date;
+                $row['end_date'] = $mapping->end_date;
 
                 $shift = DB::table('transport_school_shift')
                     ->where(['id' => $mapping->from_shift_id, 'sub_institute_id' => $sub_institute_id])
@@ -282,7 +301,7 @@ class map_student_controller extends Controller
         $data_sql = "SELECT tms.syear,tms.student_id,tms.sub_institute_id,
             tssf.shift_title from_shift,tvf.title from_vehicle,fd.first_name from_driver,fd.mobile from_driver_mobile,fc.first_name from_cundoctor,fc.mobile from_conductor_mobile,tfs.stop_name from_stop,
             tsst.shift_title to_shift,tvt.title to_vehicle,td.first_name to_driver,td.mobile to_driver_mobile,tc.first_name to_cundoctor,tc.mobile to_conductor_mobile,tts.stop_name to_stop,
-            tms.distance,tms.amount
+            tms.distance,tms.amount,tms.start_date,tms.end_date
             FROM transport_map_student tms
             INNER JOIN transport_school_shift tssf ON tssf.id = tms.from_shift_id
             INNER JOIN transport_vehicle tvf ON tvf.id = tms.from_bus_id
@@ -316,7 +335,7 @@ class map_student_controller extends Controller
         $syear = $this->syear();
         $sub_institute_id = $this->tenant();
         $values = $request->input('values');
-
+//echo "<pre>";print_r($values);exit();
         if (! is_array($values) || empty($values)) {
             return is_mobile($type, "map_student.index", [
                 "status_code" => 0,
@@ -344,6 +363,8 @@ class map_student_controller extends Controller
                 'to_stop'    => $arr['to_stop'] ?? null,
                 'distance'   => $arr['distance'] ?? 0,
                 'amount'     => $arr['distance_amount'] ?? 0,
+                'start_date' => $this->normalizeDate($arr['start_date'] ?? null),
+                'end_date'   => $this->normalizeDate($arr['end_date'] ?? null),
             ];
 
             $validator = Validator::make($row, [
@@ -355,6 +376,8 @@ class map_student_controller extends Controller
                 'to_stop'    => 'required|integer|min:1',
                 'distance'   => 'nullable|numeric|min:0',
                 'amount'     => 'nullable|numeric|min:0',
+                'start_date' => 'required|date',
+                'end_date'   => 'nullable|date|after_or_equal:start_date',
             ]);
 
             if ($validator->fails()) {
@@ -390,6 +413,8 @@ class map_student_controller extends Controller
                     "to_stop"          => $row['to_stop'],
                     "distance"         => $row['distance'] ?: 0,
                     "amount"           => $row['amount'] ?: 0,
+                    "start_date"       => $row['start_date'],
+                    "end_date"         => $row['end_date'],
                     'sub_institute_id' => $sub_institute_id,
                 ]))->save();
             });
