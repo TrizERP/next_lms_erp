@@ -22,6 +22,8 @@ class map_student extends Model {
         'updated_at',
         'distance',
         'amount',
+        'start_date',
+        'end_date',
     ];
 
 }
