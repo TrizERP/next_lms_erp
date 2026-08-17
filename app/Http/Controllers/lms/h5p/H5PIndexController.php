@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\lms\h5p;
 
 use App\Http\Controllers\Controller;
+use App\Services\PAL\H5P\H5PIntelligenceService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use function App\Helpers\is_mobile;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
@@ -12,52 +14,101 @@ use GuzzleHttp\Exception\RequestException;
 class H5PIndexController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * H5P content hub.
      *
-     * @return \Illuminate\Http\Response
+     * The card list used to be a literal array of four modules in this method.
+     * It is now projected from the PAL V4 H5P Model registry
+     * (`pal_vocabulary.h5p_types`): every type whose `implementation.status` is
+     * `native` becomes a card, carrying its route, icon, copy and sort order,
+     * and — when a chapter is in scope — the real number of nodes and child
+     * parts that chapter holds, the pedagogies the type serves, and its
+     * measured engagement.
+     *
+     * Registering a fifth H5P type is therefore a registry row, not an edit
+     * here. `contentLists` keeps its original key and shape so the existing
+     * Blade view and the Next.js hub keep working unchanged.
      */
-    public function index(Request $request)
+    public function index(Request $request, H5PIntelligenceService $model)
     {
         $type = $request->input('type');
-        $sub_institutue_id = session()->get('sub_institutue_id');
-        if (in_array($type, ['API', 'JSON'])) {
-            $sub_institutue_id = $request->input('sub_institutue_id');
-        }
-        $res['contentLists'] = [
-            [
-                'id' => 1,
-                'title' => 'Scenario',
-                'description' => 'scenario based learning learn from image',
-                'icon' => 'fa fa-image',
-                'route' => 'scenario_based.index',
-            ],
-            [
-                'id' => 2,
-                'title' => 'Interactive Video',
-                'description' => 'Interactive Video',
-                'icon' => 'mdi mdi-help-circle-outline',
-                'route' => 'h5p_interactive_video.index',
-            ],
-            [
-                'id' => 3,
-                'title' => 'Multiple Choice Questions',
-                'description' => 'Multiple Choice Questions',
-                'icon' => 'mdi mdi-help-circle-outline',
-                'route' => 'h5p_mcq.index',
-            ],
-            [
-                'id'=>4,
-                'title' => 'Flash Cards',
-                'description' => 'Interactive Flashcard',
-                'icon' => 'mdi mdi-cards',
-                'route' => 'h5p_flashacard.index',
-            ]
+
+        // Historic quirk: the request field is misspelled `sub_institutue_id`
+        // in this module. Both spellings are accepted so existing callers keep
+        // working, with the session as the fallback for the Blade path.
+        $subInstituteId = in_array($type, ['API', 'JSON'], true)
+            ? ($request->input('sub_institute_id') ?? $request->input('sub_institutue_id'))
+            : (session()->get('sub_institute_id') ?? session()->get('sub_institutue_id'));
+
+        $context = [
+            'chapter_id' => $request->filled('chapter_id') ? (int) $request->input('chapter_id') : null,
+            'subject_id' => $request->filled('subject_id') ? (int) $request->input('subject_id') : null,
+            'standard_id' => $request->filled('standard_id') ? (int) $request->input('standard_id') : null,
+            'sub_institute_id' => $subInstituteId !== null && $subInstituteId !== '' ? (int) $subInstituteId : null,
         ];
+
+        try {
+            $modules = $model->hubModules($context);
+        } catch (\Throwable $e) {
+            // The hub is a navigation surface — it must open even if the model
+            // layer cannot answer. Fall back to the registry's card fields with
+            // no counts rather than showing the teacher an error page.
+            Log::warning('H5P hub model unavailable, serving registry defaults: ' . $e->getMessage());
+            $modules = $this->fallbackModules();
+        }
+
+        $res['contentLists'] = array_map(fn (array $module) => [
+            'id' => $module['id'],
+            'title' => $module['title'],
+            'description' => $module['description'],
+            'icon' => $module['icon'],
+            'route' => $module['route'],
+            // PAL V4 additions. The Blade view ignores unknown keys; the SPA
+            // hub uses them to render counts, pedagogy chips and engagement.
+            'h5p_type' => $module['h5p_type'],
+            'node_count' => $module['node_count'] ?? 0,
+            'child_count' => $module['child_count'] ?? 0,
+            'child_label' => $module['child_label'] ?? null,
+            'available' => $module['available'] ?? true,
+            'unavailable_reason' => $module['unavailable_reason'] ?? null,
+            'pedagogies' => $module['pedagogies'] ?? ['primary' => [], 'secondary' => []],
+            'bloom_range' => $module['bloom_range'] ?? [],
+            'fluency_trackable' => $module['fluency_trackable'] ?? 'no',
+            'xapi_events' => $module['xapi_events'] ?? [],
+            'engagement' => $module['engagement'] ?? null,
+        ], $modules);
+
         $res['chapter_id'] = $request->chapter_id;
         $res['standard_id'] = $request->standard_id;
         $res['subject_id'] = $request->subject_id;
-        // return $res;
+
         return is_mobile($type, 'lms/h5p/index', $res, "view");
+    }
+
+    /**
+     * Cards straight from the registry with no counts — used only when the
+     * model layer throws (e.g. the registry migration has not run on this
+     * database yet).
+     */
+    private function fallbackModules(): array
+    {
+        $registry = app(\App\Services\PAL\H5P\H5PModelRegistry::class);
+        $modules = [];
+        $position = 0;
+
+        foreach ($registry->nativeTypes() as $code => $type) {
+            $implementation = $type['metadata']['implementation'] ?? [];
+            $modules[] = [
+                'id' => ++$position,
+                'h5p_type' => $code,
+                'title' => $implementation['module_title'] ?? $type['label'],
+                'description' => $implementation['module_description'] ?? $type['description'],
+                'icon' => $implementation['icon'] ?? 'mdi mdi-shape',
+                'route' => $implementation['route'] ?? null,
+                'available' => true,
+            ];
+        }
+
+        return $modules;
     }
 
     /**

@@ -410,7 +410,7 @@ class PalPedagogyEngineSeeder extends Seeder
                     'rule_key' => 'class-wide-misconception',
                     'group_label' => 'Majority problem',
                     'condition' => 'misconception_majority (> 40% of the class shows the same error)',
-                    'action' => 'Raise a teacher alert, e.g. "43% of your class has denominator_add_error. Consider a whole-class re-teach using the pizza area model."',
+                    'action' => 'Raise a teacher alert naming the misconception, the measured share of the class holding it, and the corrective the concept carries for it.',
                     'pedagogy' => 'Teacher decides',
                     'h5p_type' => null,
                     'scaffolding' => null,
