@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\api\PAL\NewPalContentModelController;
+use App\Http\Controllers\api\PAL\NewPalGamificationController;
 use App\Http\Controllers\api\PAL\PALAPIController;
 use App\Http\Controllers\api\PAL\PedagogyEngineController;
 use App\Http\Controllers\api\PAL\PalContentIntelligenceController;
@@ -283,5 +284,75 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
             ->where(['h5pType' => $h5pType, 'nodeId' => '[0-9]+']);
         Route::post('/nodes/{h5pType}/{nodeId}/transition', [PalH5PModelController::class, 'transitionTags'])
             ->where(['h5pType' => $h5pType, 'nodeId' => '[0-9]+']);
+    });
+
+    // ==================== NEW PAL → GAMIFICATION ====================
+    //
+    // The PAL V4 Gamification & Motivation System: Personal Best, badges,
+    // streaks, team challenges, the Career Quest, opt-in Challenge Mode and the
+    // session summary.
+    //
+    // Sits under /new/ alongside /new/content-model, so it is unambiguously a
+    // New PAL sub-module and can never collide with the legacy /pal routes.
+    // Everything served here is computed from the estate's real learning record
+    // (question_paper + lms_online_exam PAL attempts, plus whichever pal_*
+    // tables this estate has populated) — nothing is seeded or sampled.
+    //
+    // Learner scope: a student resolves to themselves; staff must pass
+    // ?learner_id=, which `pal.auth` has already ownership-checked upstream.
+    //
+    // Route ordering follows the same guard as the groups above: every literal
+    // segment precedes the wildcard that could swallow it, numeric ids are
+    // constrained to digits, and {badgeId} to the catalogue's key grammar.
+    Route::prefix('/new/gamification')->group(function () {
+        $badgeId = 'BADGE_[A-Z0-9_]+';
+
+        Route::get('/overview', [NewPalGamificationController::class, 'overview']);
+        Route::get('/specification', [NewPalGamificationController::class, 'specification']);
+
+        // Personal Best (§2) — literal /history before the bare resource.
+        Route::get('/personal-best/history', [NewPalGamificationController::class, 'personalBestHistory']);
+        Route::get('/personal-best', [NewPalGamificationController::class, 'personalBest']);
+
+        // Badges (§3) — /earned is declared before {badgeId}.
+        Route::get('/badges/earned', [NewPalGamificationController::class, 'earnedBadges']);
+        Route::get('/badges', [NewPalGamificationController::class, 'badges']);
+        Route::post('/badges/{badgeId}/revoke', [NewPalGamificationController::class, 'revokeBadge'])
+            ->where('badgeId', $badgeId);
+        Route::get('/badges/{badgeId}', [NewPalGamificationController::class, 'badge'])
+            ->where('badgeId', $badgeId);
+
+        // Streaks (§7).
+        Route::get('/streak/history', [NewPalGamificationController::class, 'streakHistory']);
+        Route::get('/streak', [NewPalGamificationController::class, 'streak']);
+
+        // Team challenges (§4) — teacher-initiated only.
+        Route::get('/team-challenges', [NewPalGamificationController::class, 'teamChallenges']);
+        Route::post('/team-challenges', [NewPalGamificationController::class, 'createTeamChallenge']);
+        Route::post('/team-challenges/{challengeId}/end', [NewPalGamificationController::class, 'endTeamChallenge'])
+            ->where('challengeId', '[0-9]+');
+        Route::put('/team-challenges/{challengeId}', [NewPalGamificationController::class, 'updateTeamChallenge'])
+            ->where('challengeId', '[0-9]+');
+        Route::get('/team-challenges/{challengeId}', [NewPalGamificationController::class, 'teamChallenge'])
+            ->where('challengeId', '[0-9]+');
+
+        // Career Quest (§5).
+        Route::get('/career-quest/progress', [NewPalGamificationController::class, 'careerQuestProgress']);
+        Route::post('/career-quest/interest', [NewPalGamificationController::class, 'declareInterest']);
+        Route::post('/career-quest/pathway', [NewPalGamificationController::class, 'choosePathway']);
+        Route::post('/career-quest/report', [NewPalGamificationController::class, 'generateCareerReport']);
+        Route::get('/career-quest', [NewPalGamificationController::class, 'careerQuest']);
+
+        // Challenge Mode (§6) — the only leaderboard in PAL V4, strictly opt-in.
+        Route::get('/challenge-mode/leaderboard', [NewPalGamificationController::class, 'challengeModeLeaderboard']);
+        Route::post('/challenge-mode/opt-in', [NewPalGamificationController::class, 'challengeModeOptIn']);
+        Route::post('/challenge-mode/submit', [NewPalGamificationController::class, 'challengeModeSubmit']);
+        Route::post('/challenge-mode/class-availability', [NewPalGamificationController::class, 'challengeModeAvailability']);
+        Route::get('/challenge-mode', [NewPalGamificationController::class, 'challengeMode']);
+
+        // Session summary + celebration queue (§8).
+        Route::get('/session-summary', [NewPalGamificationController::class, 'sessionSummary']);
+        Route::post('/notifications/read', [NewPalGamificationController::class, 'readNotifications']);
+        Route::get('/notifications', [NewPalGamificationController::class, 'notifications']);
     });
 });
