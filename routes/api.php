@@ -222,6 +222,15 @@ Route::delete('inventory/{module}/{id}', [InventoryApiController::class, 'destro
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
 Route::post('fees-cancel/search', [feesCancelController::class, 'search']);
 
+// Import Data API - stateless JSON entry points for the Next.js frontend.
+// These mirror the legacy web import routes but return JSON instead of HTML.
+Route::middleware('api.session')->prefix('import')->group(function () {
+    Route::get('tables', [\App\Http\Controllers\api\ImportApiController::class, 'tables']);
+    Route::post('parse', [\App\Http\Controllers\api\ImportApiController::class, 'parse']);
+    Route::post('process', [\App\Http\Controllers\api\ImportApiController::class, 'process']);
+    Route::post('match-fields', [\App\Http\Controllers\api\ImportApiController::class, 'matchFields']);
+});
+
 // Fees Circular - stateless JSON entry points for the Next.js frontend.
 // Callers must send type=JSON (is_mobile then returns response()->json) plus
 // syear/sub_institute_id/user_id, which the controllers seed into session()
