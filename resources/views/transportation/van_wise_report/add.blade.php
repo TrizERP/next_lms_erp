@@ -40,7 +40,12 @@
                                     <th>From Stop</th>
                                     <th>To Stop</th>
                                     <th>Driver</th>
+@if(session()->get('sub_institute_id') != 61)
                                     <th>Amount</th>
+@else                                    
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+@endif                                    
                                 </tr>
                             </thead>
                             <tbody>
@@ -62,7 +67,12 @@
                                     <td>{{$data->from_stop_name}}</td>
                                     <td>{{$data->to_stop_name}}</td>
                                     <td>{{$data->driver}}</td>
+@if(session()->get('sub_institute_id') != 61)                                    
                                     <td>{{$data->van_vise_amount}}</td>
+@else
+                                    <td>{{$data->start_date}}</td>
+                                    <td>{{$data->end_date}}</td>
+@endif
                                 </tr>
                                 @endforeach
 
