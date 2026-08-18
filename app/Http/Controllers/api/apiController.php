@@ -842,8 +842,7 @@ if(in_array($sub_institute_id, $cn))
         $keys = [
             'sub_institute_id' => $request->input('sub_institute_id'),
             'mobile_no'        => $request->input('mobile_no'),
-            'imei_no'          => $request->input('imei_no'),
-        ];
+        ];//'imei_no'          => $request->input('imei_no'),
 
         try {
             $exists = DB::table('gcm_users')->where($keys)->exists();
