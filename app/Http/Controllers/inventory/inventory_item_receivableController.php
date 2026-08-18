@@ -57,6 +57,12 @@ class inventory_item_receivableController extends Controller
 
        $result = DB::table("inventory_generate_po_details as gp")
     ->join('inventory_item_master as i', 'i.id', '=', 'gp.item_id')
+    ->leftJoin('inventory_negotiate_po_details as np', function ($join) {
+        $join->on('np.item_id', '=', 'gp.item_id')
+             ->on('np.po_number', '=', 'gp.po_number')
+             ->on('np.sub_institute_id', '=', 'gp.sub_institute_id')
+             ->on('np.syear', '=', 'gp.syear');
+    })
     ->leftJoin('inventory_item_receivable_details as ir', function ($join) {
         $join->on('ir.ITEM_ID', '=', 'gp.item_id')
              ->on('ir.PURCHASE_ORDER_NO', '=', 'gp.po_number');
@@ -69,12 +75,12 @@ class inventory_item_receivableController extends Controller
         gp.po_number,
         gp.item_id,
         i.title AS item_name,
-        gp.qty,
+        COALESCE(np.qty, gp.qty) AS qty,
 
         IFNULL(ir.PREVIOUS_RECEIVED_QTY, 0) AS previous_receive_qty,
         IFNULL(ir.ACTUAL_RECEIVED_QTY, 0) AS ACTUAL_RECEIVED_QTY,
-        (gp.qty - IFNULL(ir.PREVIOUS_RECEIVED_QTY,0)) AS pending_qty,
-        
+        (COALESCE(np.qty, gp.qty) - IFNULL(ir.PREVIOUS_RECEIVED_QTY,0)) AS pending_qty,
+
         ir.REMARKS,
         ir.WARRANTY_START_DATE,
         ir.WARRANTY_END_DATE,
