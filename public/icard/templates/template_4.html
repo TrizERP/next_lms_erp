@@ -2,19 +2,24 @@
     br {
         display: block;
     }
-    @media print{
-        * {
-            -webkit-print-color-adjust: exact !important;   /* Chrome, Safari, Edge */
-            color-adjust: exact !important;                 /*Firefox*/
+    @media print {
+        *,
+        *::before,
+        *::after {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
-        .page-break-clear { 
-          clear: both;
+
+        /* Prevent content from breaking awkwardly */
+        .page-break-clear {
+            clear: both;
         }
+
         .page-break {
-          page-break-after: always; /* depreciating, use break-after */
-          break-after: page;
-          height: 0px;
-          display: block!important;
+            display: block !important;
+            height: 0;
+            break-after: page;
+            page-break-after: always; /* Legacy browser support */
         }
         .row-4-column-1{
             display: grid;
@@ -111,7 +116,7 @@
             <div style="width: 40%;"></div>
             <div style="width: 60%;">
                 <div style="margin-top: 14%;width:100%;margin-bottom: 15%;padding-right: 9%;position: relative;padding-left: 10px;">
-                    <div colspan="2" style="text-align: right;font-size: 3vh;font-weight: bold;/*padding-bottom: 1.6vh;*/padding-right: 2vh;padding-top: 4vh;-webkit-text-fill-color:#000000;-moz-text-fill-color:#000000;-ms-text-fill-color:#000000;-o-text-fill-color:#000000;">
+                    <div colspan="2" style="text-align: right;font-size: 3vh;font-weight: bold;/*padding-bottom: 1.6vh;*/padding-right: 2vh;padding-top: 2vh;-webkit-text-fill-color:#000000;-moz-text-fill-color:#000000;-ms-text-fill-color:#000000;-o-text-fill-color:#000000;">
                         &lt;&lt;division_name&gt;&gt;
                     </div>
                     <div colspan="2" style="text-align: right;font-size: 1.3vh;font-weight: bold;margin-top:-0.7vh;padding-right: 2vh;-webkit-text-fill-color:#000000;">
