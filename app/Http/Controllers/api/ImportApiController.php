@@ -157,34 +157,6 @@ class ImportApiController extends Controller
 
         $match_fields = json_decode($data->match_fields, true);
         $csv_data = json_decode($data->csv_data, true);
-        $tableFields = $request->fields;
-        $import_fields = DB::table('import_table_fields')->where([['table_name', $request->table_name], ['display_status', 1], ['is_required', 1]])->pluck('field');
-        $import_fields = $import_fields->toArray();
-
-        if (is_array($import_fields)) {
-            foreach ($import_fields as $re_field) {
-                if (!in_array($re_field, $tableFields)) {
-                    $failedFields[] = $re_field;
-                }
-            }
-            if (count($failedFields) > 0) {
-                return response()->json([
-                    'status' => '0',
-                    'message' => 'Required fields are not mapped.',
-                    'data' => [
-                        'totalRecordCount' => 0,
-                        'totalFailedRecordCount' => count($failedFields),
-                        'totalOverwiteRecordCount' => 0,
-                        'totalInsertRecordCount' => 0,
-                        'failedFields' => $failedFields,
-                        'totalSkipRecordCount' => 0,
-                        'totalFailedRecordArray' => [],
-                        'totalOverwiteRecordArray' => [],
-                        'totalSkipRecordArray' => [],
-                    ],
-                ]);
-            }
-        }
 
         if (is_array($csv_data)) {
             $totalRecordCount = count($csv_data);
