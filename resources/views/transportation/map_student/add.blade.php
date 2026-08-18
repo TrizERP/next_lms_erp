@@ -547,13 +547,13 @@
             var row = $(this).closest('tr');
             var startDate = row.find('.start_date').val();
             var endDate = row.find('.end_date').val();
-
+/*
             if(!startDate){
                 isValid = false;
                 errors.push('Start Date is required.');
                 return;
             }
-
+*/
             if(endDate && endDate < startDate){
                 isValid = false;
                 errors.push('End Date must be greater than or equal to Start Date.');
