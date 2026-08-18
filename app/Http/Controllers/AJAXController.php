@@ -338,7 +338,7 @@ class AJAXController extends Controller
         }
         // added on 07-03-2025 for standalone modules end 
 
-        $path = $_SERVER['HTTP_REFERER'];
+        $path = $_SERVER['HTTP_REFERER'] ?? '';
 
         if ($path) {
             $parsedUrl = parse_url($path);
@@ -436,7 +436,7 @@ class AJAXController extends Controller
             $std_div_map = $query->pluck('division.name', 'division.id');
 
         } else {
-            // DB::enableQueryLog();
+            //DB::enableQueryLog();
             $query = DB::table('std_div_map');
             $query->join('division', 'division.id', '=', 'std_div_map.division_id');
             $query->where("std_div_map.standard_id", $request->standard_id);
@@ -455,8 +455,25 @@ class AJAXController extends Controller
             $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
             $getUserData = \App\Models\user\tbluserModel::where('id', session()->get('user_id'))->first();
             if (!empty($getUserData) && isset($getUserData->allocated_standards) && $getUserData->allocated_standards != '') {
-                if(!empty($subjectTeacherDivArr)){
-                    $query->whereIn('division.id', $subjectTeacherDivArr);
+                $allocatedStds = explode(',', $getUserData->allocated_standards);
+                if (in_array($standard_id, $allocatedStds)) {
+                    // Selected standard is in allocated_standards — show all divisions
+                } else {
+                    // Selected standard is NOT in allocated_standards — timetable divisions only
+                    if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array))) {
+                        if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
+                            $query->where('division.id',$getClass->division_id);
+                        } elseif(!empty($subjectTeacherDivArr)){
+                            $query->whereIn('division.id', function ($sub_query) use ($subjectTeacherDivArr,$standard_id) {
+                                $sub_query->select('division_id')
+                                    ->from('timetable')
+                                    ->where('teacher_id', session()->get('user_id'))
+                                    ->where('standard_id',$standard_id)
+                                    ->whereIn('division_id', $subjectTeacherDivArr)
+                                    ->where('syear',session()->get('syear'));
+                            });
+                        }
+                    }
                 }
             } else if ($subjectTeacherDivArr != "" && ($classTeacherDivArr == "" || in_array($module_name, $module_array))) {
                 if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
@@ -474,6 +491,8 @@ class AJAXController extends Controller
                 });
                 }
             }
+            //END Check for subject teacher assigned
+
             // for student 01-01-2025 start
                     
             if(session()->get('user_profile_name')=="Student"){
@@ -481,6 +500,7 @@ class AJAXController extends Controller
             }
         // for student 01-01-2025 end
             $std_div_map = $query->pluck('division.name', 'division.id');
+            //dd(DB::getQueryLog());
         }
 
         return response()->json($std_div_map);
@@ -522,13 +542,29 @@ class AJAXController extends Controller
         } else {
             if (session()->get('user_profile_name') == 'Teacher') {
                 $getUserData = \App\Models\user\tbluserModel::where('id', session()->get('user_id'))->first();
-                if (!empty($getUserData) && isset($getUserData->allocated_standards) && $getUserData->allocated_standards != '') {
-                    $std_sub_map = DB::table('subject')
-                        ->join('sub_std_map', 'subject.id', '=', 'sub_std_map.subject_id')
-                        ->whereIn("sub_std_map.standard_id", explode(',', $getUserData->allocated_standards))
-                        ->where($where)
-                        ->orderBy('sub_std_map.sort_order')
-                        ->pluck('sub_std_map.display_name', 'subject.id');
+                $allocatedStandards = isset($getUserData->allocated_standards) ? trim($getUserData->allocated_standards) : '';
+                if (!empty($getUserData) && !empty($allocatedStandards) && $allocatedStandards != 'NA') {
+                    $allocatedArr = explode(',', $allocatedStandards);
+
+                    if (in_array($request->standard_id, $allocatedArr)) {
+                        $std_sub_map = DB::table('subject')
+                            ->join('sub_std_map', 'subject.id', '=', 'sub_std_map.subject_id')
+                            ->where("sub_std_map.standard_id", $request->standard_id)
+                            ->where($where)
+                            ->orderBy('sub_std_map.sort_order')
+                            ->pluck('sub_std_map.display_name', 'subject.id');
+                    } else {
+                        $std_sub_map = DB::table('subject as sub')
+                            ->whereIn('sub.id', function ($sub_query) use ($request) {
+                                $sub_query->select('subject_id')
+                                    ->from('timetable')
+                                    ->where('teacher_id', session()->get('user_id'))
+                                    ->where('syear', session()->get('syear'))
+                                    ->where('standard_id', $request->standard_id)
+                                    ->where('division_id', $request->division_id);
+                            })
+                            ->pluck('sub.subject_name as display_name', 'sub.id');
+                    }
                 } else {
                     $std_sub_map = DB::table('subject as sub')
                         ->whereIn('sub.id', function ($sub_query) use ($request) {

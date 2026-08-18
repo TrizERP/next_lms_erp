@@ -231,11 +231,37 @@ $sub_institute_id = session()->get('sub_institute_id');
             $syear = session()->get('syear');
 
             $getUserData = tbluserModel::where('id', session()->get('user_id'))->first();
+            
+            $subject_teacher = DB::table('subject as s')
+                ->join('timetable as t', function ($join) {
+                    $join->whereRaw('t.subject_id = s.id AND t.sub_institute_id = s.sub_institute_id');
+                })->selectRaw('s.id,s.subject_name,t.*')
+                ->where('t.teacher_id', $teacher_id)
+                ->where('t.syear', $syear)
+                ->where('t.sub_institute_id', $sub_institute_id)
+                ->groupByRaw('s.id,t.standard_id,t.academic_section_id,t.division_id')
+                ->orderBy('s.subject_name')->get()->toArray();
+
+            $subjectTeacherGrdArr = $subjectTeacherStdArr = $subjectTeacherDivArr = array();
+            if (count($subject_teacher) > 0) {
+                foreach ($subject_teacher as $k => $v) {
+                    if (!in_array($v->academic_section_id, $subjectTeacherGrdArr)) {
+                        $subjectTeacherGrdArr[] = $v->academic_section_id;
+                    }
+                    if (!in_array($v->standard_id, $subjectTeacherStdArr)) {
+                        $subjectTeacherStdArr[] = $v->standard_id;
+                    }
+                    if (!in_array($v->division_id, $subjectTeacherDivArr)) {
+                        $subjectTeacherDivArr[] = $v->division_id;
+                    }
+                }
+            }
+
             if (!empty($getUserData) && isset($getUserData->allocated_standards) && $getUserData->allocated_standards != '') {
                 $getAllocatedStandard = DB::table('standard')->whereRaw('id IN (' . $getUserData->allocated_standards . ')')
                     ->where('sub_institute_id', $sub_institute_id)->get()->toArray();
 
-                $subjectTeacherGrdArr = $subjectTeacherStdArr = $subjectTeacherDivArr = array();
+                $allocatedStdArr = array();
                 if (count($getAllocatedStandard) > 0) {
                     foreach ($getAllocatedStandard as $k => $v) {
                         if (!in_array($v->grade_id, $subjectTeacherGrdArr)) {
@@ -244,52 +270,68 @@ $sub_institute_id = session()->get('sub_institute_id');
                         if (!in_array($v->id, $subjectTeacherStdArr)) {
                             $subjectTeacherStdArr[] = $v->id;
                         }
+                        $allocatedStdArr[] = $v->id;
                     }
-                    $subjectTeacherDivArr = DB::table('std_div_map')
-                        ->whereIn('standard_id', $subjectTeacherStdArr)
+                }
+                if (count($allocatedStdArr) > 0) {
+                    $allocatedDivs = DB::table('std_div_map')
+                        ->whereIn('standard_id', $allocatedStdArr)
                         ->where('sub_institute_id', $sub_institute_id)
                         ->pluck('division_id')->toArray();
-                }
-                Session::put('subjectTeacherGrdArr', $subjectTeacherGrdArr);
-                Session::put('subjectTeacherStdArr', $subjectTeacherStdArr);
-                Session::put('subjectTeacherDivArr', $subjectTeacherDivArr);
-            } else {
-                $subject_teacher = DB::table('subject as s')
-                    ->join('timetable as t', function ($join) {
-                        $join->whereRaw('t.subject_id = s.id AND t.sub_institute_id = s.sub_institute_id');
-                    })->selectRaw('s.id,s.subject_name,t.*')
-                    ->where('t.teacher_id', $teacher_id)
-                    ->where('t.syear', $syear)
-                    ->where('t.sub_institute_id', $sub_institute_id)
-                    ->groupByRaw('s.id,t.standard_id,t.academic_section_id,t.division_id')
-                    ->orderBy('s.subject_name')->get()->toArray();
-
-                $subjectTeacherGrdArr = $subjectTeacherStdArr = $subjectTeacherDivArr = array();
-                if (count($subject_teacher) > 0) {
-                    foreach ($subject_teacher as $k => $v) {
-                        $subjectTeacherGrdArr[] = $v->academic_section_id;
-                        $subjectTeacherStdArr[] = $v->standard_id;
-                        $subjectTeacherDivArr[] = $v->division_id;
+                    foreach ($allocatedDivs as $div) {
+                        if (!in_array($div, $subjectTeacherDivArr)) {
+                            $subjectTeacherDivArr[] = $div;
+                        }
                     }
                 }
-                Session::put('subjectTeacherGrdArr', $subjectTeacherGrdArr);
-                Session::put('subjectTeacherStdArr', $subjectTeacherStdArr);
-                Session::put('subjectTeacherDivArr', $subjectTeacherDivArr);
             }
+
+            Session::put('subjectTeacherGrdArr', $subjectTeacherGrdArr);
+            Session::put('subjectTeacherStdArr', $subjectTeacherStdArr);
+            Session::put('subjectTeacherDivArr', $subjectTeacherDivArr);
         }
         // END 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
 
         // 10-01-2025 start supervisor rights
         else if (!in_array(session()->get('user_profile_name'),['Super Admin','Admin','Teacher','LMS Teacher','Student']))
         {
-            $getUserData =tbluserModel::where('id',session()->get('user_id'))->first();
+            $getUserData = tbluserModel::where('id', session()->get('user_id'))->first();
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');
+            $teacher_id = session()->get('user_id');
+            
+            $subject_teacher = DB::table('subject as s')
+                ->join('timetable as t', function ($join) {
+                    $join->whereRaw('t.subject_id = s.id AND t.sub_institute_id = s.sub_institute_id');
+                })->selectRaw('s.id,s.subject_name,t.*')
+                ->where('t.teacher_id', $teacher_id)
+                ->where('t.syear', $syear)
+                ->where('t.sub_institute_id', $sub_institute_id)
+                ->groupByRaw('s.id,t.standard_id,t.academic_section_id,t.division_id')
+                ->orderBy('s.subject_name')->get()->toArray();
+
+            $subjectTeacherGrdArr = $subjectTeacherStdArr = $subjectTeacherDivArr = array();
+            if (count($subject_teacher) > 0) {
+                foreach ($subject_teacher as $k => $v) {
+                    if (!in_array($v->academic_section_id, $subjectTeacherGrdArr)) {
+                        $subjectTeacherGrdArr[] = $v->academic_section_id;
+                    }
+                    if (!in_array($v->standard_id, $subjectTeacherStdArr)) {
+                        $subjectTeacherStdArr[] = $v->standard_id;
+                    }
+                    if (!in_array($v->division_id, $subjectTeacherDivArr)) {
+                        $subjectTeacherDivArr[] = $v->division_id;
+                    }
+                }
+            }
+
             if(!empty($getUserData) && isset($getUserData->allocated_standards) && $getUserData->allocated_standards!=''){
                 $getAllocatedStandard = DB::table('standard')->whereRaw('id IN ('.$getUserData->allocated_standards.')')
-                ->where('sub_institute_id', session()->get('sub_institute_id'))
+                ->where('sub_institute_id', $sub_institute_id)
                 ->get()->toArray();
             
-                $subjectTeacherGrdArr = $subjectTeacherStdArr = $subjectTeacherDivArr = array();
                 if (count($getAllocatedStandard) > 0) {
+                    $allocatedStdArr = array();
                     foreach ($getAllocatedStandard as $k => $v) {
                         if(!in_array($v->grade_id,$subjectTeacherGrdArr)){
                             $subjectTeacherGrdArr[] = $v->grade_id;
@@ -297,16 +339,25 @@ $sub_institute_id = session()->get('sub_institute_id');
                         if(!in_array($v->id,$subjectTeacherStdArr)){
                             $subjectTeacherStdArr[] = $v->id;
                         }
+                        $allocatedStdArr[] = $v->id;
                     }
-                    $subjectTeacherDivArr = DB::table('std_div_map')
-                        ->whereIn('standard_id', $subjectTeacherStdArr)
-                        ->where('sub_institute_id', session()->get('sub_institute_id'))
-                        ->pluck('division_id')->toArray();
+                    if (count($allocatedStdArr) > 0) {
+                        $allocatedDivs = DB::table('std_div_map')
+                            ->whereIn('standard_id', $allocatedStdArr)
+                            ->where('sub_institute_id', $sub_institute_id)
+                            ->pluck('division_id')->toArray();
+                        foreach ($allocatedDivs as $div) {
+                            if (!in_array($div, $subjectTeacherDivArr)) {
+                                $subjectTeacherDivArr[] = $div;
+                            }
+                        }
+                    }
                 }
-                Session::put('subjectTeacherGrdArr', $subjectTeacherGrdArr);
-                Session::put('subjectTeacherStdArr', $subjectTeacherStdArr);
-                Session::put('subjectTeacherDivArr', $subjectTeacherDivArr);
             }
+            
+            Session::put('subjectTeacherGrdArr', $subjectTeacherGrdArr);
+            Session::put('subjectTeacherStdArr', $subjectTeacherStdArr);
+            Session::put('subjectTeacherDivArr', $subjectTeacherDivArr);
         }
         // 10-01-2025 end supervisor rights
 
