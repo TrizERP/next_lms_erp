@@ -39,8 +39,13 @@
                                     <th>From Shift</th>
                                     <th>From Bus</th>
                                     <th>From</th>
+@if(session()->get('sub_institute_id') != 61)
                                     <th>Distance</th>
                                     <th>Amount</th>
+@else
+                                    <th>Start Date</th>
+                                    <th>End Date</th>
+@endif                                    
                                     <th>To Shift</th>
                                     <th>To Bus</th>
                                     <th>To</th>
@@ -95,6 +100,7 @@
                                             @endphp
                                         </select>
                                     </td>
+@if(session()->get('sub_institute_id') != 61)                                    
                                     <td>
                                         <input type="text" class="form-control distance"  disabled="true"  name="values[{{ $col_arr['student_id'] }}][distance]" id="distance_{{ $col_arr['student_id'] }}" value="{{ $col_arr['distance']?? 1 }}" onkeyup="updateAmount({{$col_arr['student_id']}})">
 
@@ -106,7 +112,15 @@
                                         <input type="text" class="form-control distance_amount" disabled="true" name="values[{{ $col_arr['student_id'] }}][distance_amount]" id="distance_amount_{{ $col_arr['student_id'] }}" value="{{ $col_arr['total_amount']?? 0}}" readonly>
                                         <!-- 20-02-2025 onload amount -->
                                         @if(isset($col_arr['total_amount']) && $col_arr['total_amount']!=0) <span style="font-size:0.8rem;color:green">Old :{{ $col_arr['total_amount']?? 0}}</span> @endif
-                                    </td>                                    
+                                    </td>
+@else                                  
+                                    <td>
+                                        <input type="text" class="form-control mydatepicker start_date" disabled="true" name="values[{{ $col_arr['student_id'] }}][start_date]" id="start_date_{{ $col_arr['student_id'] }}" value="{{ $col_arr['start_date'] ?? '' }}" required>
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control mydatepicker end_date" disabled="true" name="values[{{ $col_arr['student_id'] }}][end_date]" id="end_date_{{ $col_arr['student_id'] }}" value="{{ $col_arr['end_date'] ?? '' }}">
+                                    </td>
+@endif                                    
                                     <td>
                                         <select name="values[{{$col_arr['student_id']}}][to_shift]" disabled="true" id="to_shift" class="form-control to_shift" required>
                                             <option value="">--Select--</option>
@@ -489,7 +503,9 @@
         var to_shift = row.find('.to_shift'); // get the other select in the same row
         var to_stop = row.find('.to_stop'); // get the other select in the same row
         var distance = row.find('.distance'); // get the other select in the same row
-        var distance_amount = row.find('.distance_amount'); // get the other select in the same row            
+        var distance_amount = row.find('.distance_amount'); // get the other select in the same row
+        var start_date = row.find('.start_date'); // get the other select in the same row
+        var end_date = row.find('.end_date'); // get the other select in the same row
 
         from_bus.prop('disabled', function (i, v) {
             return !v;
@@ -515,6 +531,39 @@
         distance_amount.prop('disabled', function (i, v) {
             return !v;
         });
+        start_date.prop('disabled', function (i, v) {
+            return !v;
+        });
+        end_date.prop('disabled', function (i, v) {
+            return !v;
+        });
     }
+
+    $('form').on('submit', function(e){
+        var isValid = true;
+        var errors = [];
+
+        $('.ckbox1:checked').each(function(){
+            var row = $(this).closest('tr');
+            var startDate = row.find('.start_date').val();
+            var endDate = row.find('.end_date').val();
+/*
+            if(!startDate){
+                isValid = false;
+                errors.push('Start Date is required.');
+                return;
+            }
+*/
+            if(endDate && endDate < startDate){
+                isValid = false;
+                errors.push('End Date must be greater than or equal to Start Date.');
+            }
+        });
+
+        if(!isValid){
+            e.preventDefault();
+            alert(errors.join('\n'));
+        }
+    });
 </script>
 @include('includes.footer')
