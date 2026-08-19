@@ -4,6 +4,8 @@ namespace App\Http\Controllers\lms\pal;
  
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use GenTux\Jwt\GetsJwtToken;
+use GenTux\Jwt\Exceptions\NoTokenException;
 use function App\Helpers\is_mobile;
 use function App\Helpers\getStudents;
 use App\Http\Controllers\AJAXController;
@@ -25,6 +27,8 @@ use App\Models\lms\topicModel;
 use App\Models\school_setup\sub_std_mapModel;
 use App\Services\OpenAIService;
 use App\Services\PAL\Integration\PedagogySuggestedContentService;
+use App\Services\PAL\Runtime\BktEngine;
+use App\Services\PAL\Intelligence\MisconceptionIntelligenceEngine;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
 use function App\Helpers\neo4jCreateNode;
@@ -32,7 +36,294 @@ use function App\Helpers\neo4jCreateRelationship;
 
 class palController extends Controller
 {
-    //
+    use GetsJwtToken;
+
+    /**
+     * Resolve the acting student/institute context for this request, without
+     * trusting a client-supplied user_id/sub_institute_id outright.
+     *
+     * - Web (session) callers: always use the session identity; any
+     *   client-supplied override is ignored.
+     * - Token (API/SPA) callers with no session: require a valid JWT (the
+     *   same GenTux token PalApiAuth validates on api/pal/*) and only allow
+     *   acting on behalf of another user_id when the token belongs to
+     *   staff/admin scoped to that student's own institute.
+     *
+     * Aborts with 401/403 on failure instead of silently trusting the request.
+     */
+    private function resolveAuthorizedContext(Request $request): array
+    {
+        $sessionUserId = session()->get('user_id');
+        if (!empty($sessionUserId)) {
+            return [
+                'student_id' => $sessionUserId,
+                'sub_institute_id' => session()->get('sub_institute_id'),
+                'syear' => $request->get('syear') ?: session()->get('syear'),
+            ];
+        }
+
+        try {
+            $jwt = $this->jwtToken($request);
+            if (!$jwt->validate()) {
+                abort(response()->json(['status' => 0, 'message' => 'Invalid or expired authentication token.'], 401));
+            }
+            $payload = $jwt->payload();
+        } catch (NoTokenException $e) {
+            abort(response()->json(['status' => 0, 'message' => 'Authentication token is required.'], 401));
+        } catch (\Throwable $e) {
+            abort(response()->json(['status' => 0, 'message' => 'Invalid authentication token.'], 401));
+        }
+
+        $callerId = (int) ($payload['id'] ?? 0);
+        if ($callerId <= 0) {
+            abort(response()->json(['status' => 0, 'message' => 'Authentication token is malformed.'], 401));
+        }
+
+        $isAdmin = (int) ($payload['is_admin'] ?? 0);
+        $isStudent = !empty($payload['is_student']);
+        $callerSubInstitute = $payload['sub_institute_id'] ?? '';
+
+        $requestedStudentId = $request->get('user_id');
+        $targetStudentId = $requestedStudentId ? (int) $requestedStudentId : $callerId;
+
+        if ($targetStudentId !== $callerId) {
+            if ($isStudent) {
+                abort(response()->json(['status' => 0, 'message' => 'You can only access your own PAL data.'], 403));
+            }
+
+            // `is_admin` is unreliable -- many genuine institute admins have
+            // it null in tbluser (same reason ApiSessionHydrator falls back
+            // to the profile name, and PalApiAuth falls back to profile
+            // parent_id, rather than trusting is_admin alone). Admin-tier
+            // profiles (Admin / School admin / Assistant admin / Principal,
+            // ...) all chain up to profile id 1 via parent_id.
+            $isAdminProfile = $isAdmin >= 1;
+            if (!$isAdminProfile && !empty($payload['user_profile_id'])) {
+                $profileParentId = DB::table('tbluserprofilemaster')
+                    ->where('id', $payload['user_profile_id'])
+                    ->value('parent_id');
+                $isAdminProfile = (int) $profileParentId === 1;
+            }
+            if (!$isAdminProfile) {
+                abort(response()->json(['status' => 0, 'message' => 'You are not authorized to access this student\'s PAL data.'], 403));
+            }
+
+            $targetSub = DB::table('tblstudent')->where('id', $targetStudentId)->value('sub_institute_id');
+            $callerInstitutes = array_filter(array_map('trim', explode(',', (string) $callerSubInstitute)), 'strlen');
+
+            if ($isAdmin !== 2 && !in_array((string) $targetSub, $callerInstitutes, true)) {
+                abort(response()->json(['status' => 0, 'message' => 'This student belongs to a different institute.'], 403));
+            }
+
+            $subInstituteId = $targetSub;
+        } else {
+            $subInstituteId = $callerSubInstitute ?: $request->get('sub_institute_id');
+        }
+
+        return [
+            'student_id' => $targetStudentId,
+            'sub_institute_id' => $subInstituteId,
+            'syear' => $request->get('syear'),
+        ];
+    }
+
+    /**
+     * PAL write-through: persist per-question evidence into pal_assessment_results
+     * and recompute the subject-level competency into pal_competencies via the
+     * real BKT engine (App\Services\PAL\Runtime\BktEngine), keeping the persisted
+     * mastery consistent with the same engine assessmentQuestionController uses
+     * on-demand for reporting.
+     *
+     * pal_assessment_results/pal_competencies were previously dead tables --
+     * nothing wrote to them; mastery was only ever computed live, on request,
+     * from lms_online_exam_answer. This is the first real write path into them.
+     *
+     * concept_id is intentionally left null: lms_question_master.concept_id is
+     * null for PAL questions today, so mastery is tracked at subject grain
+     * until question-to-concept mapping is backfilled (see PalEvidenceRepository
+     * doc comments, which record the same gap).
+     */
+    private function recordPalEvidenceAndMastery(int $studentId, int $subjectId, array $evidence): void
+    {
+        if ($studentId <= 0 || $subjectId <= 0 || empty($evidence)) {
+            return;
+        }
+
+        $now = now();
+
+        DB::table('pal_assessment_results')->insert(array_map(function ($item) use ($studentId, $now) {
+            return [
+                'learner_id' => $studentId,
+                'question_id' => $item['question_id'],
+                'is_correct' => $item['is_correct'],
+                'response_time_ms' => max(0, (int) $item['response_time_ms']),
+                'score' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
+        }, $evidence));
+
+        $this->ensurePalSubjectExists($subjectId);
+
+        // Recompute subject mastery from the full historical response sequence,
+        // the same way assessmentQuestionController::bktMasteryPercent() does for
+        // its on-demand reads, so the persisted value and the live report agree.
+        $sequence = DB::table('lms_online_exam_answer as lea')
+            ->join('lms_question_master as q', 'q.id', '=', 'lea.question_id')
+            ->where('lea.student_id', $studentId)
+            ->where('q.subject_id', $subjectId)
+            ->whereIn('lea.ans_status', ['right', 'wrong'])
+            ->orderBy('lea.created_at')
+            ->pluck('lea.ans_status')
+            ->map(fn ($status) => ['correct' => $status === 'right'])
+            ->all();
+
+        if (empty($sequence)) {
+            return;
+        }
+
+        $trace = BktEngine::fromSettings([])->trace($sequence);
+        // pal_competencies.mastery_score is a 0-100 scale everywhere it's
+        // consumed (LearnerStateEngine, RecommendationEngine, gamification,
+        // etc. all threshold at 50/70/80/90 and one even does /100 to get
+        // back to a 0-1 weight) -- BktEngine::trace() returns 0.0-1.0, so it
+        // must be rescaled here, not stored raw.
+        $masteryScore = round($trace['mastery'] * 100, 2);
+
+        $existing = DB::table('pal_competencies')
+            ->where('learner_id', $studentId)
+            ->where('subject_id', $subjectId)
+            ->whereNull('concept_id')
+            ->first();
+
+        $trend = 'stable';
+        if ($existing) {
+            if ($masteryScore > (float) $existing->mastery_score) {
+                $trend = 'improving';
+            } elseif ($masteryScore < (float) $existing->mastery_score) {
+                $trend = 'declining';
+            }
+        }
+
+        $values = [
+            'learner_id' => $studentId,
+            'subject_id' => $subjectId,
+            'concept_id' => null,
+            'mastery_score' => $masteryScore,
+            'proficiency_trend' => $trend,
+            'last_assessed' => $now,
+            'updated_at' => $now,
+        ];
+
+        if ($existing) {
+            DB::table('pal_competencies')->where('id', $existing->id)->update($values);
+        } else {
+            $values['created_at'] = $now;
+            DB::table('pal_competencies')->insert($values);
+        }
+    }
+
+    /**
+     * PAL's own grading-integrity guard. Single/multiple-choice submissions
+     * carry correctness as a client-declared "<answer_id>##0_or_1" flag
+     * (explode("##", ...)) that the legacy grading path (get_calculate_marks(),
+     * $ans_status throughout this method) trusts outright -- a student can
+     * submit "##1" for any answer_id and both the displayed score and, before
+     * this fix, PAL's own BKT mastery/misconception signal would accept it as
+     * genuinely correct with no server-side check.
+     *
+     * This method is deliberately scoped to PAL's own intelligence only: it
+     * feeds $palEvidence/recordMisconceptionOnWrongAnswer/
+     * resolveMisconceptionsOnCorrectAnswer, NOT $ans_status itself, so the
+     * legacy score/lms_online_exam behavior this controller shares with the
+     * rest of the LMS is left exactly as it already was -- fixing that is a
+     * separate, system-wide decision outside PAL's scope.
+     */
+    private function isAnswerCorrectServerSide(?int $answerId): bool
+    {
+        if (!$answerId) {
+            return false;
+        }
+
+        return (bool) DB::table('answer_master')
+            ->where('id', $answerId)
+            ->where('correct_answer', 1)
+            ->exists();
+    }
+
+    /**
+     * Feed a wrong MCQ answer into the misconception intelligence engine. Same
+     * logic onlineExamController::recordMisconceptionOnWrongAnswer() uses for
+     * the standard exam path -- palController::store() is a separate
+     * reimplementation of submission (it does not call onlineExamController's
+     * store()), so it never triggered misconception detection at all until now.
+     * Never allowed to break submission -- analysis failures are logged and
+     * swallowed.
+     */
+    /**
+     * Reassessment half of the misconception loop: nothing in the codebase
+     * ever wrote pal_learner_misconceptions.status = 'resolved' (confirmed by
+     * grep) -- a misconception stayed "active" forever regardless of whether
+     * the learner later answered correctly. A correct answer on the same
+     * concept is the reassessment signal; mark any active misconception for
+     * that learner+concept resolved rather than leaving it a stale flag.
+     */
+    private function resolveMisconceptionsOnCorrectAnswer($studentId, $conceptId): void
+    {
+        if (!$studentId || !$conceptId) {
+            return;
+        }
+
+        DB::table('pal_learner_misconceptions')
+            ->where('learner_id', $studentId)
+            ->where('concept_id', $conceptId)
+            ->where('status', 'active')
+            ->update(['status' => 'resolved', 'updated_at' => now()]);
+    }
+
+    private function recordMisconceptionOnWrongAnswer($studentId, $conceptId, $selectedAnswerId): void
+    {
+        if (!$studentId || !$conceptId) {
+            return;
+        }
+
+        try {
+            // This submit path doesn't track per-question timing in a form the
+            // engine expects, so a neutral mid-range value is passed rather
+            // than 0 -- 0 would misclassify every wrong answer as an
+            // "attention slip" in the engine's clustering.
+            app(MisconceptionIntelligenceEngine::class)->analyze((int) $studentId, (int) $conceptId, [
+                'selected_option' => $selectedAnswerId,
+                'time_seconds'    => 15,
+                'hint_used'       => false,
+            ]);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Misconception analysis failed on PAL submit: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * pal_competencies.subject_id is a real FK to pal_subjects, a taxonomy that
+     * is otherwise unpopulated -- nothing else writes to it. Bridge it to the
+     * legacy `subject` table by reusing the same id, so the FK is satisfiable
+     * without inventing a second id space or a mapping table.
+     */
+    private function ensurePalSubjectExists(int $subjectId): void
+    {
+        if (DB::table('pal_subjects')->where('id', $subjectId)->exists()) {
+            return;
+        }
+
+        $legacySubject = DB::table('subject')->where('id', $subjectId)->first();
+
+        DB::table('pal_subjects')->insertOrIgnore([
+            'id' => $subjectId,
+            'name' => $legacySubject->subject_name ?? ('Subject ' . $subjectId),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
     private function suggestedContentQuestionIdColumn()
     {
         return 'type_id';
@@ -238,19 +529,13 @@ class palController extends Controller
     }
 
     public function index(Request $request){
-        $type=$request->type;
+        $type = $request->type;
         $res['message'] = "no data";
-        if($type=='API'){
-            $student_id =$request->user_id;
-            $sub_institute_id = $request->sub_institute_id;
-            $syear = $request->syear;
-               
-        }else{
-            $student_id =session()->get('user_id');
-            $sub_institute_id = session()->get('sub_institute_id');
-            $syear=session()->get('syear');        
-        }
-        
+        $ctx = $this->resolveAuthorizedContext($request);
+        $student_id = $ctx['student_id'];
+        $sub_institute_id = $ctx['sub_institute_id'];
+        $syear = $ctx['syear'];
+
         $studentData = getStudents([$student_id],$sub_institute_id, $syear);
         $ajaxController = new AJAXController;
         $newData=$getSubjectList=$getchapterList=[];
@@ -342,10 +627,10 @@ class palController extends Controller
   public function misconception(Request $request)
 {
     $chapter_id = $request->chapter_id;
-    // API/SPA clients (no server session) pass these explicitly; fall back to session for web.
-    $student_id = $request->get('user_id') ?: session()->get('user_id');
-    $sub_institute_id = $request->get('sub_institute_id') ?: session()->get('sub_institute_id');
-    $syear = $request->get('syear') ?: session()->get('syear');
+    $ctx = $this->resolveAuthorizedContext($request);
+    $student_id = $ctx['student_id'];
+    $sub_institute_id = $ctx['sub_institute_id'];
+    $syear = $ctx['syear'];
 
     $data = $this->getMisconceptionQuestions($student_id, $chapter_id);
     $questionIds = array_map(function ($question) {
@@ -384,10 +669,10 @@ class palController extends Controller
 public function generateMisconceptionContent(Request $request)
 {
     $chapter_id = $request->input('chapter_id');
-    // API/SPA clients (no server session) pass these explicitly; fall back to session for web.
-    $student_id = $request->get('user_id') ?: session()->get('user_id');
-    $sub_institute_id = $request->get('sub_institute_id') ?: session()->get('sub_institute_id');
-    $syear = $request->get('syear') ?: session()->get('syear');
+    $ctx = $this->resolveAuthorizedContext($request);
+    $student_id = $ctx['student_id'];
+    $sub_institute_id = $ctx['sub_institute_id'];
+    $syear = $ctx['syear'];
 
     if (empty($chapter_id)) {
         return response()->json(['status' => 0, 'message' => 'Chapter is required']);
@@ -531,17 +816,10 @@ public function generateMisconceptionContent(Request $request)
 }
     public function getStudentResult(Request $request)
     {
-        $type = $request->input('type');
-        
-        if ($type == 'API') {
-            $student_id = $request->user_id;
-            $sub_institute_id = $request->sub_institute_id;
-            $syear = $request->syear;
-        } else {
-            $student_id = session()->get('user_id');
-            $sub_institute_id = session()->get('sub_institute_id');
-            $syear = session()->get('syear');
-        }
+        $ctx = $this->resolveAuthorizedContext($request);
+        $student_id = $ctx['student_id'];
+        $sub_institute_id = $ctx['sub_institute_id'];
+        $syear = $ctx['syear'];
 
         // Get the latest PAL exam result for the student
         $latestExam = DB::table('lms_online_exam_student as loes')
@@ -827,23 +1105,18 @@ public function generateMisconceptionContent(Request $request)
 
 
     public function create(Request $request){
-        $type=$request->type;
-        $grade_id = $res['grade_id'] = $request->grade_id;        
+        $type = $request->type;
+        $grade_id = $res['grade_id'] = $request->grade_id;
         $standard_id = $res['standard_id'] = $request->standard_id;
         $subject_id = $res['subject_id']= $request->subject_id;
         $chapter_id = $res['chapter_id']= $request->chapter_id;
         $enrollment_no = $res['enrollment_no'] = $request->enrollment_no;
         $res['message'] = "no data";
 
-        if($type=='API'){
-            $student_id =$request->user_id;   
-            $sub_institute_id = $request->sub_institute_id;
-            $syear = $request->syear;         
-        }else{
-            $student_id =session()->get('user_id');
-            $sub_institute_id =session()->get('sub_institute_id');
-            $syear = session()->get('syear');   
-        }
+        $ctx = $this->resolveAuthorizedContext($request);
+        $student_id = $ctx['student_id'];
+        $sub_institute_id = $ctx['sub_institute_id'];
+        $syear = $ctx['syear'];
 
         $attemptedChapterQuizCount = questionpaperModel::where('created_by', $student_id)
             ->where('sub_institute_id', $sub_institute_id)
@@ -951,17 +1224,10 @@ public function generateMisconceptionContent(Request $request)
  */
 public function incrementContentVisit(Request $request)
 {
-    $type = $request->input('type');
-
-    if ($type == 'API') {
-        $student_id = $request->user_id;
-        $sub_institute_id = $request->sub_institute_id;
-        $syear = $request->syear;
-    } else {
-        $student_id = session()->get('user_id');
-        $sub_institute_id = session()->get('sub_institute_id');
-        $syear = session()->get('syear');
-    }
+    $ctx = $this->resolveAuthorizedContext($request);
+    $student_id = $ctx['student_id'];
+    $sub_institute_id = $ctx['sub_institute_id'];
+    $syear = $ctx['syear'];
 
     $content_id = $request->input('content_id');
     $standard_id = $request->input('standard_id');
@@ -1014,16 +1280,10 @@ public function incrementContentVisit(Request $request)
     }
 }
     public function store(Request $request){
-        $type = $request->type;
-        if($type != 'API'){
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-            $syear = $request->session()->get('syear');            
-            $user_id = $request->session()->get('user_id');
-        }else{
-            $sub_institute_id = $request->sub_institute_id;
-            $syear = $request->syear;
-            $user_id = $request->user_id;
-        }
+        $ctx = $this->resolveAuthorizedContext($request);
+        $user_id = $ctx['student_id'];
+        $sub_institute_id = $ctx['sub_institute_id'];
+        $syear = $ctx['syear'];
         $grade_id = $request->grade_id;
         $standard_id = $request->standard_id;
         $subject_id= $request->subject_id;
@@ -1170,12 +1430,26 @@ public function incrementContentVisit(Request $request)
             lmsOnlineExamAnswerStudent::create($answerData);
         };
         $rightInterest=[];
+        // Evidence for the PAL write-through (pal_assessment_results / pal_competencies
+        // below) -- one entry per actually-answered question. Skipped questions are
+        // deliberately excluded: a question the student never attempted is not
+        // evidence of a misconception, and counting it would corrupt mastery.
+        $palEvidence = [];
+        // Concept lookup for misconception detection below -- one query instead
+        // of one per wrong answer (mirrors onlineExamController::store()).
+        $answeredForConceptLookup = array_merge(
+            is_array($answer_single) ? array_keys($answer_single) : [],
+            is_array($answer_multiple) ? array_keys($answer_multiple) : []
+        );
+        $conceptByQuestionId = empty($answeredForConceptLookup)
+            ? collect()
+            : lmsQuestionMasterModel::whereIn('id', $answeredForConceptLookup)->pluck('concept_id', 'id');
         // echo "<pre>";print_r($answer_single);exit;
         if (is_array($answer_single)) {
             foreach ($answer_single as $single_question_id => $single_answer_ids) {
                 $ans_status = "wrong";
                 $single_ans_arr = explode("##", $single_answer_ids);
-                $interset = $request->interestValue[$single_question_id];
+                $interset = $request->interestValue[$single_question_id] ?? '';
                 if(!isset($rightInterest[$interset])){
                     $rightInterest[$interset]=0;
                 }
@@ -1184,6 +1458,12 @@ public function incrementContentVisit(Request $request)
                     // interset mapped type
                     $rightInterest[$interset] += 1;
                 }
+                // PAL's own mastery/misconception signal is server-verified
+                // against answer_master, independent of $ans_status above
+                // (which stays client-declared, matching the legacy scoring
+                // behavior this fix deliberately leaves untouched -- see
+                // isAnswerCorrectServerSide()).
+                $serverVerifiedCorrect = $this->isAnswerCorrectServerSide((int) $single_ans_arr[0]);
                 $single = [
                     'question_paper_id' => $questionPaperId,
                     'online_exam_id'    => $online_exam_id,
@@ -1191,9 +1471,9 @@ public function incrementContentVisit(Request $request)
                     'question_id'       => $single_question_id,
                     'answer_id'         => $single_ans_arr[0],
                     'ans_status'        => $ans_status,
-                    'created_at'        => now(),                    
+                    'created_at'        => now(),
                 ];
-                lmsOnlineExamModel::insert($single);
+                lmsOnlineExamAnswerModel::insert($single);
                 $insertStudentAnswer([
                     'question_paper_id' => $questionPaperId,
                     'online_exam_id'    => $online_exam_id,
@@ -1204,6 +1484,20 @@ public function incrementContentVisit(Request $request)
                     'attempt_time'      => $getAttemptTime($single_question_id),
                 ]);
                 $answeredStudentQuestionIds[] = $single_question_id;
+                $palEvidence[] = [
+                    'question_id' => $single_question_id,
+                    'is_correct' => $serverVerifiedCorrect,
+                    'response_time_ms' => $getAttemptTime($single_question_id) * 1000,
+                ];
+                if (!$serverVerifiedCorrect) {
+                    $this->recordMisconceptionOnWrongAnswer(
+                        $user_id,
+                        $conceptByQuestionId->get($single_question_id),
+                        $single_ans_arr[0] ?? null
+                    );
+                } else {
+                    $this->resolveMisconceptionsOnCorrectAnswer($user_id, $conceptByQuestionId->get($single_question_id));
+                }
             }
         }
 
@@ -1214,7 +1508,7 @@ public function incrementContentVisit(Request $request)
                     foreach ($multiple_answer_ids as $key => $val) {
                         $ans_status = "wrong";
                         $multiple_ans_arr = explode("##", $val);
-                        $interset = $request->interestValue[$multiple_question_id];
+                        $interset = $request->interestValue[$multiple_question_id] ?? '';
                      
                         if(!isset($rightInterest[$interset])){
                             $rightInterest[$interset]=0;
@@ -1224,6 +1518,7 @@ public function incrementContentVisit(Request $request)
                             // interset mapped type
                             $rightInterest[$interset] += 1;
                         }
+                        $serverVerifiedCorrect = $this->isAnswerCorrectServerSide((int) $multiple_ans_arr[0]);
                         $multiple = [
                             'question_paper_id' => $questionPaperId,
                             'online_exam_id'    => $online_exam_id,
@@ -1244,6 +1539,20 @@ public function incrementContentVisit(Request $request)
                             'attempt_time'      => $getAttemptTime($multiple_question_id),
                         ]);
                         $answeredStudentQuestionIds[] = $multiple_question_id;
+                        $palEvidence[] = [
+                            'question_id' => $multiple_question_id,
+                            'is_correct' => $serverVerifiedCorrect,
+                            'response_time_ms' => $getAttemptTime($multiple_question_id) * 1000,
+                        ];
+                        if (!$serverVerifiedCorrect) {
+                            $this->recordMisconceptionOnWrongAnswer(
+                                $user_id,
+                                $conceptByQuestionId->get($multiple_question_id),
+                                $multiple_ans_arr[0] ?? null
+                            );
+                        } else {
+                            $this->resolveMisconceptionsOnCorrectAnswer($user_id, $conceptByQuestionId->get($multiple_question_id));
+                        }
                     }
                 }
             }
@@ -1263,9 +1572,9 @@ public function incrementContentVisit(Request $request)
                     'question_id'       => $narrative_question_id,
                     'narrative_answer'  => $narrative_answer_ids,
                     'ans_status'        => $ans_status,
-                    'created_at'        => now(),                                                                    
+                    'created_at'        => now(),
                 ];
-                lmsOnlineExamModel::insert($narrative);
+                lmsOnlineExamAnswerModel::insert($narrative);
                 $insertStudentAnswer([
                     'question_paper_id' => $questionPaperId,
                     'online_exam_id'    => $online_exam_id,
@@ -1276,6 +1585,11 @@ public function incrementContentVisit(Request $request)
                     'attempt_time'      => $getAttemptTime($narrative_question_id),
                 ]);
                 $answeredStudentQuestionIds[] = $narrative_question_id;
+                $palEvidence[] = [
+                    'question_id' => $narrative_question_id,
+                    'is_correct' => $ans_status === 'right',
+                    'response_time_ms' => $getAttemptTime($narrative_question_id) * 1000,
+                ];
             }
         }
 
@@ -1289,6 +1603,8 @@ public function incrementContentVisit(Request $request)
                 'attempt_time'      => $getAttemptTime($unansweredQuestionId),
             ]);
         }
+
+        $this->recordPalEvidenceAndMastery((int) $user_id, (int) $subject_id, $palEvidence);
 
         // Neo4j Assessment Node
          neo4jCreateNode(
@@ -1509,22 +1825,10 @@ public function incrementContentVisit(Request $request)
 
      // ================= GET SESSION DATA =================
      $type = $request->input('type');
-     $isAjax = $request->ajax() || $request->input('type') === 'AJAX';
- 
-     if ($type == 'API' || $isAjax) {
-         $student_id = $request->input('user_id', session()->get('user_id'));
-         $sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
-         $syear = $request->input('syear', session()->get('syear'));
-     } else {
-         $student_id = session()->get('user_id');
-         $sub_institute_id = session()->get('sub_institute_id');
-         $syear = session()->get('syear');
-     }
- 
-     // Fallback to session if values not found
-     if(empty($sub_institute_id)) $sub_institute_id = session()->get('sub_institute_id');
-     if(empty($student_id)) $student_id = session()->get('user_id');
-     if(empty($syear)) $syear = session()->get('syear');
+     $ctx = $this->resolveAuthorizedContext($request);
+     $student_id = $ctx['student_id'];
+     $sub_institute_id = $ctx['sub_institute_id'];
+     $syear = $ctx['syear'];
     if (!$requestedLevel) {
 
         $latestExam = DB::table('lms_online_exam as loes')
@@ -1639,16 +1943,10 @@ public function incrementContentVisit(Request $request)
     {
         $type = $request->input('type');
         $isAjax = $request->ajax() || $type === 'AJAX';
-
-        if ($type == 'API' || $isAjax) {
-            $student_id = $request->input('user_id', session()->get('user_id'));
-            $sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
-            $syear = $request->input('syear', session()->get('syear'));
-        } else {
-            $student_id = session()->get('user_id');
-            $sub_institute_id = session()->get('sub_institute_id');
-            $syear = session()->get('syear');
-        }
+        $ctx = $this->resolveAuthorizedContext($request);
+        $student_id = $ctx['student_id'];
+        $sub_institute_id = $ctx['sub_institute_id'];
+        $syear = $ctx['syear'];
 
         $result = $pedagogyContent->getSuggestions([
             'learner_id' => (int) $student_id,
@@ -1673,16 +1971,10 @@ public function incrementContentVisit(Request $request)
      {
          $type = $request->input('type');
          $isAjax = $request->ajax() || $request->input('type') === 'AJAX';
-
-         if ($type == 'API' || $isAjax) {
-             $student_id = $request->input('user_id', session()->get('user_id'));
-             $sub_institute_id = $request->input('sub_institute_id', session()->get('sub_institute_id'));
-             $syear = $request->input('syear', session()->get('syear'));
-         } else {
-             $student_id = session()->get('user_id');
-             $sub_institute_id = session()->get('sub_institute_id');
-             $syear = session()->get('syear');
-         }
+         $ctx = $this->resolveAuthorizedContext($request);
+         $student_id = $ctx['student_id'];
+         $sub_institute_id = $ctx['sub_institute_id'];
+         $syear = $ctx['syear'];
 
          // Fallback to session if values not found
          if(empty($sub_institute_id)) $sub_institute_id = session()->get('sub_institute_id');
@@ -2057,9 +2349,9 @@ public function getData($request)
         $questionpaper_id = $id;
 
         $type = $request->input('type');
-        // API/SPA clients (no server session) pass these explicitly; fall back to session for web.
-        $sub_institute_id = $request->get('sub_institute_id') ?: $request->session()->get('sub_institute_id');
-        $user_id = $request->get('user_id') ?: $request->session()->get('user_id');
+        $ctx = $this->resolveAuthorizedContext($request);
+        $user_id = $ctx['student_id'];
+        $sub_institute_id = $ctx['sub_institute_id'];
         $online_exam_id = $request->get('online_exam_id');
         $data['user_id'] = $online_exam_id;
 
@@ -2163,14 +2455,10 @@ public function getData($request)
         return is_mobile($type, 'lms/online_exam_result', $data, "view");
     }
     public function palreport(Request $request){
-        $type= $request->type;
-        if($type == 'API'){
-            $sub_institute_id = $request->sub_institute_id;
-            $syear = $request->syear;
-        }else{
-            $sub_institute_id = session()->get('sub_institute_id');
-            $syear = session()->get('syear');
-        }
+        $type = $request->type;
+        $ctx = $this->resolveAuthorizedContext($request);
+        $sub_institute_id = $ctx['sub_institute_id'];
+        $syear = $ctx['syear'];
 
             $data = DB::table('question_paper as q')
             // ->join('lms_online_exam_student as l', 'l.question_paper_id', '=', 'q.id')

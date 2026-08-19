@@ -288,6 +288,16 @@ class PALAPIController extends Controller
         $context = [
             'device_type' => $request->get('device_type', 'desktop'),
             'session_id' => $request->get('session_id'),
+            'chapter_id' => $request->get('chapter_id'),
+            'failed_format' => $request->get('failed_format'),
+            // Never trust the client-supplied sub_institute_id -- resolve it the
+            // same way the content endpoints do, from the already
+            // ownership-verified learner rather than the request body.
+            'sub_institute_id' => $this->resolveContentInstitute(
+                $request->attributes->get('pal_auth'),
+                $learnerId,
+                (int) $request->input('sub_institute_id')
+            ),
         ];
 
         $recommendation = $this->pedagogy->getRecommendation($learnerId, $conceptId, $context);
@@ -509,10 +519,33 @@ class PALAPIController extends Controller
     }
 
     /**
+     * ULU CRUD/moderation actions (create/update/delete/duplicate/archive/
+     * approve) had no role check at all -- any authenticated caller, including
+     * a plain student, could approve or delete published learning-unit
+     * content. None of these routes carry a {learnerId} for pal.auth's
+     * ownership scoping to apply to, so the middleware never restricted them
+     * either. Blocks students only, matching the same bar
+     * NewPalGamificationController already uses for its teacher-only actions
+     * (team challenge create/update/end, badge revoke).
+     */
+    private function denyStudentsForUlu(Request $request): ?JsonResponse
+    {
+        $auth = (array) $request->attributes->get('pal_auth', []);
+
+        return ! empty($auth['is_student'])
+            ? response()->json(['success' => false, 'message' => 'ULU authoring is not available to students.'], 403)
+            : null;
+    }
+
+    /**
      * POST /api/pal/ulu
      */
     public function createULU(Request $request): JsonResponse
     {
+        if ($denied = $this->denyStudentsForUlu($request)) {
+            return $denied;
+        }
+
         $ulu = $this->ulu->create($request->all());
 
         return response()->json([
@@ -526,6 +559,10 @@ class PALAPIController extends Controller
      */
     public function updateULU(Request $request, int $id): JsonResponse
     {
+        if ($denied = $this->denyStudentsForUlu($request)) {
+            return $denied;
+        }
+
         $ulu = \App\Models\PAL\UnifiedLearningUnit::findOrFail($id);
         $updated = $this->ulu->update($ulu, $request->all());
 
@@ -538,8 +575,12 @@ class PALAPIController extends Controller
     /**
      * DELETE /api/pal/ulu/{id}
      */
-    public function deleteULU(int $id): JsonResponse
+    public function deleteULU(Request $request, int $id): JsonResponse
     {
+        if ($denied = $this->denyStudentsForUlu($request)) {
+            return $denied;
+        }
+
         $ulu = \App\Models\PAL\UnifiedLearningUnit::findOrFail($id);
         $this->ulu->delete($ulu);
 
@@ -552,8 +593,12 @@ class PALAPIController extends Controller
     /**
      * POST /api/pal/ulu/{id}/duplicate
      */
-    public function duplicateULU(int $id): JsonResponse
+    public function duplicateULU(Request $request, int $id): JsonResponse
     {
+        if ($denied = $this->denyStudentsForUlu($request)) {
+            return $denied;
+        }
+
         $ulu = \App\Models\PAL\UnifiedLearningUnit::findOrFail($id);
 
         return response()->json([
@@ -565,8 +610,12 @@ class PALAPIController extends Controller
     /**
      * POST /api/pal/ulu/{id}/archive
      */
-    public function archiveULU(int $id): JsonResponse
+    public function archiveULU(Request $request, int $id): JsonResponse
     {
+        if ($denied = $this->denyStudentsForUlu($request)) {
+            return $denied;
+        }
+
         $ulu = \App\Models\PAL\UnifiedLearningUnit::findOrFail($id);
 
         return response()->json([
@@ -578,8 +627,12 @@ class PALAPIController extends Controller
     /**
      * POST /api/pal/ulu/{id}/approve
      */
-    public function approveULU(int $id): JsonResponse
+    public function approveULU(Request $request, int $id): JsonResponse
     {
+        if ($denied = $this->denyStudentsForUlu($request)) {
+            return $denied;
+        }
+
         $ulu = \App\Models\PAL\UnifiedLearningUnit::findOrFail($id);
 
         return response()->json([

@@ -76,6 +76,19 @@ class PalWorkspaceController extends Controller
 
         $institutes = $this->callerInstitutes($auth);
         $isSuperAdmin = (int) ($auth['is_admin'] ?? 0) === 2;
+        $isPlainStaff = ($auth['role'] ?? '') === 'staff';
+
+        // Client-level admin (institute id 0 + client id): same case
+        // PalApiAuth::authorizeLearner() already special-cases for {learnerId}
+        // routes -- scope by every institute under their client instead of the
+        // literal sub_institute_id "0", which no student ever has.
+        if ((int) ($auth['is_admin'] ?? 0) === 1 && (int) ($auth['sub_institute_id'] ?? 0) === 0 && ! empty($auth['client_id'])) {
+            $institutes = DB::table('school_setup')
+                ->where('client_id', $auth['client_id'])
+                ->pluck('id')
+                ->map(fn ($id) => (string) $id)
+                ->all();
+        }
 
         $query = DB::table('tblstudent as s')
             ->join('tblstudent_enrollment as se', function ($join) {
@@ -89,6 +102,34 @@ class PalWorkspaceController extends Controller
             ->where('se.syear', $syear)
             ->when(! $isSuperAdmin && ! empty($institutes), function ($q) use ($institutes) {
                 $q->whereIn('s.sub_institute_id', $institutes);
+            })
+            // Plain teachers (not institute admins) only ever see their own
+            // assigned classes here -- same class_teacher/timetable scoping
+            // PalApiAuth already applies per-learner; this list endpoint has
+            // no {learnerId} for that middleware check to catch, so without
+            // this any staff account could enumerate the whole institute's
+            // roster regardless of what they're actually assigned to teach.
+            ->when($isPlainStaff, function ($q) use ($auth) {
+                $teacherId = (int) ($auth['user_id'] ?? 0);
+                $q->where(function ($outer) use ($teacherId) {
+                    $outer->whereExists(function ($sub) use ($teacherId) {
+                        $sub->selectRaw('1')
+                            ->from('class_teacher as ct')
+                            ->whereColumn('ct.standard_id', 'se.standard_id')
+                            ->whereColumn('ct.division_id', 'se.section_id')
+                            ->whereColumn('ct.sub_institute_id', 's.sub_institute_id')
+                            ->whereColumn('ct.syear', 'se.syear')
+                            ->where('ct.teacher_id', $teacherId);
+                    })->orWhereExists(function ($sub) use ($teacherId) {
+                        $sub->selectRaw('1')
+                            ->from('timetable as t')
+                            ->whereColumn('t.standard_id', 'se.standard_id')
+                            ->whereColumn('t.division_id', 'se.section_id')
+                            ->whereColumn('t.sub_institute_id', 's.sub_institute_id')
+                            ->whereColumn('t.syear', 'se.syear')
+                            ->where('t.teacher_id', $teacherId);
+                    });
+                });
             })
             ->when($gradeId !== null && $gradeId !== '', fn ($q) => $q->where('se.grade_id', $gradeId))
             ->when($standardId !== null && $standardId !== '', fn ($q) => $q->where('se.standard_id', $standardId))

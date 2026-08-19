@@ -41,11 +41,23 @@ class LearnerStateEngine
      */
     public function inferCompetency(int $learnerId): array
     {
+        // 'misconceptions' is intentionally not eager-loaded here: active
+        // misconceptions come from getActiveMisconceptions() below (a
+        // separate, correct query), and Competency::misconceptions() has no
+        // real foreign key to eager-load against (pal_learner_misconceptions
+        // has no competency_id column -- see Competency::misconceptions()).
         $competencies = Competency::where('learner_id', $learnerId)
-            ->with(['concept', 'misconceptions'])
+            ->with('concept')
             ->get();
 
-        $masteryScore = $competencies->avg('mastery_score') ?? 0;
+        // No pal_competencies rows means this learner has not been assessed
+        // yet -- that is not the same as a measured 0% mastery, and must not
+        // be reported as one (a 0 here would read as "knows nothing" instead
+        // of "hasn't been tested"). mastery_score/bloom_level stay present
+        // (existing consumers already assume they're numbers) but callers
+        // that care about the distinction should check has_data first.
+        $hasData = $competencies->isNotEmpty();
+        $masteryScore = $hasData ? $competencies->avg('mastery_score') : 0;
         $bloomLevel = $this->calculateBloomLevel($competencies);
         $knowledgeGaps = $this->identifyKnowledgeGaps($competencies);
         $misconceptions = $this->getActiveMisconceptions($learnerId);
@@ -53,13 +65,14 @@ class LearnerStateEngine
         $velocity = $this->calculateCompetencyVelocity($learnerId);
 
         return [
+            'has_data' => $hasData,
             'mastery_score' => round($masteryScore, 2),
             'bloom_level' => $bloomLevel,
             'knowledge_gaps' => $knowledgeGaps,
             'active_misconceptions' => $misconceptions,
             'concept_dependencies' => $conceptDeps,
             'learning_velocity' => $velocity,
-            'proficiency_trend' => $this->getProficiencyTrend($learnerId),
+            'proficiency_trend' => $hasData ? $this->getProficiencyTrend($learnerId) : null,
         ];
     }
 
@@ -73,9 +86,12 @@ class LearnerStateEngine
     public function inferBehavior(int $learnerId, int $sessionId): array
     {
         $session = \App\Models\PAL\LearningSession::find($sessionId);
-        
+
         if (!$session || (int) $session->learner_id !== $learnerId) {
-            return ['error' => 'Session not found'];
+            // has_data alongside the error so callers can rely on the key
+            // being present uniformly across every branch, not just the
+            // happy path.
+            return ['has_data' => false, 'error' => 'Session not found'];
         }
 
         $events = \App\Models\PAL\SessionEvent::where('session_id', $sessionId)
@@ -90,6 +106,11 @@ class LearnerStateEngine
         $consistency = $this->calculateConsistency($learnerId);
 
         return [
+            // pal_session_events has no confirmed writer in production (see
+            // PredictiveInterventionEngine's same caveat) -- has_data lets a
+            // caller tell "this session had zero interaction events" apart
+            // from "this student has never been tracked at all".
+            'has_data' => $events->isNotEmpty(),
             'session_frequency' => $this->getSessionFrequency($learnerId),
             'time_on_task' => $timeOnTask,
             'rewatch_behavior' => $rewatchCount,
@@ -127,6 +148,7 @@ class LearnerStateEngine
         $engagementDecay = $this->calculateEngagementDecay($learnerId);
 
         return [
+            'has_data' => $events->isNotEmpty(),
             'confidence_level' => $confidence,
             'persistence_score' => $persistence,
             'self_efficacy' => $selfEfficacy,
@@ -149,8 +171,9 @@ class LearnerStateEngine
     public function inferSocial(int $learnerId): array
     {
         $collaboration = \App\Models\PAL\CollaborationActivity::where('learner_id', $learnerId)->get();
-        
+
         return [
+            'has_data' => $collaboration->isNotEmpty(),
             'peer_collaboration_count' => $collaboration->count(),
             'classroom_participation' => $this->getClassroomParticipation($learnerId),
             'discussion_interactions' => $this->getDiscussionInteractions($learnerId),
@@ -173,6 +196,7 @@ class LearnerStateEngine
             ->get();
 
         return [
+            'has_data' => $sessions->isNotEmpty(),
             'preferred_device' => $sessions->mode('device_type') ?? 'desktop',
             'bandwidth_quality' => $this->calculateBandwidthQuality($sessions),
             'time_of_day_pattern' => $this->getTimeOfDayPattern($sessions),
@@ -192,6 +216,7 @@ class LearnerStateEngine
         $reflections = \App\Models\PAL\Reflection::where('learner_id', $learnerId)->get();
 
         return [
+            'has_data' => $reflections->isNotEmpty(),
             'reflection_count' => $reflections->count(),
             'reflection_quality' => $reflections->avg('quality_score') ?? 0,
             'self_correction_ability' => $this->calculateSelfCorrection($learnerId),
@@ -293,8 +318,9 @@ class LearnerStateEngine
         return [
             'learner_id' => $learnerId,
             'subject_id' => $subjectId,
+            'has_data' => $competencies->isNotEmpty(),
             'concepts' => $competencies,
-            'overall_mastery' => $competencies->avg('mastery_score') ?? 0,
+            'overall_mastery' => $competencies->isNotEmpty() ? $competencies->avg('mastery_score') : 0,
             'mastered_concepts' => $competencies->where('status', 'mastered')->count(),
             'learning_concepts' => $competencies->where('status', 'learning')->count(),
             'new_concepts' => $competencies->where('status', 'new')->count(),
