@@ -102,6 +102,7 @@ class ApiSessionHydrator
         $store->put('profile_parent_id', $profile->parent_id ?? null);
         $store->put('client_id', $clientId);
         $store->put('is_admin', $isAdmin);
+        $store->put('is_student', $isStudent);
         $store->put('academicTerms', $academicTerms);
         $store->put('academicYears', $academicYears);
         $store->put('institute_type', $school->institute_type ?? '');

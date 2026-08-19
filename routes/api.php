@@ -25,6 +25,7 @@ use App\Http\Controllers\fees\fees_cancel\feesCancelController;
 use App\Http\Controllers\fees\fees_circular\feesCircularController;
 use App\Http\Controllers\fees\fees_circular\feesCircularMasterController;
 use App\Http\Controllers\api\FeesDashboardApiController;
+use App\Http\Controllers\api\RoleDashboardApiController;
 use App\Http\Controllers\api\FeesRefundApiController;
 use App\Http\Controllers\api\TeacherAssignmentMobileApiController;
 
@@ -82,6 +83,14 @@ Route::middleware('api.session')->prefix('hrms')->group(function () {
     Route::get('leaves', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'leaves']);
 });
 Route::post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
+// Role-based dashboards (Admin/Teacher/Student) — identity comes only from the
+// JWT via ApiSessionHydrator, never from the request body, so a token cannot
+// be used to fetch another role's or another user's data.
+Route::middleware('api.session')->group(function () {
+    Route::post('admin-dashboard/summary', [RoleDashboardApiController::class, 'adminSummary']);
+    Route::post('teacher-dashboard/summary', [RoleDashboardApiController::class, 'teacherSummary']);
+    Route::post('student-dashboard/summary', [RoleDashboardApiController::class, 'studentSummary']);
+});
 Route::middleware('api.session')->prefix('fees-refund')->group(function () {
     Route::post('search', [FeesRefundApiController::class, 'search']);
     Route::post('detail/{studentId}', [FeesRefundApiController::class, 'detail']);
