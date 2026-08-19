@@ -5,11 +5,17 @@ namespace App\Http\Controllers\lms;
 use App\Http\Controllers\AJAXController;
 use App\Http\Controllers\Controller;
 use App\Models\lms\answermasterModel;
+use App\Models\lms\LmsConceptMasteryLogModel;
+use App\Models\lms\LmsConceptMasteryModel;
+use App\Models\lms\LmsConceptModel;
+use App\Models\lms\LmsForgettingCurveModel;
+use App\Models\lms\LmsKnowledgeGraphModel;
 use App\Models\lms\lmsmappingtypeModel;
 use App\Models\lms\lmsQuestionMappingModel;
 use App\Models\lms\lmsQuestionMasterModel;
 use App\Models\lms\questiontypeModel;
 use App\Services\OpenAIService;
+use App\Services\PAL\Runtime\BktEngine;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -1610,6 +1616,459 @@ private function getReviewUrgency($curveData)
         }
     }
 
+    /**
+     * Generate a diagnostic (onboarding) assessment for a concept or chapter.
+     *
+     * Unlike generateAdaptivePractice() — which narrows toward a strategy
+     * derived from *existing* mastery data — a diagnostic has no prior signal
+     * to narrow on. It deliberately samples broadly: every target concept
+     * plus its direct prerequisites (so a gap in the new concept can be told
+     * apart from a gap in something it depends on), spread across the DOK
+     * range instead of picked to match a known level.
+     */
+    public function generateDiagnosticAssessment(Request $request)
+    {
+        try {
+            $student_id = $request->get('student_id');
+            $standard_id = $request->get('standard_id');
+            $subject_id = $request->get('subject_id');
+            $chapter_id = $request->get('chapter_id');
+            $concept_id = $request->get('concept_id');
+            $sub_institute_id = $request->get('sub_institute_id') ?: $request->session()->get('sub_institute_id');
+
+            if (!$student_id) {
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => 'Student ID is required'
+                ]);
+            }
+            if (!$concept_id && !$chapter_id) {
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => 'Either concept_id or chapter_id is required'
+                ]);
+            }
+
+            $targetConceptIds = $this->resolveDiagnosticConceptScope($concept_id, $chapter_id, $sub_institute_id);
+
+            if (empty($targetConceptIds)) {
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => 'No concepts found for the given scope'
+                ]);
+            }
+
+            $questions = $this->getDiagnosticQuestions($targetConceptIds, $sub_institute_id);
+
+            return response()->json([
+                'status_code' => 1,
+                'message' => 'Diagnostic assessment generated successfully',
+                'data' => [
+                    'type' => 'diagnostic',
+                    'questions' => $questions,
+                    'concept_ids' => $targetConceptIds,
+                    'total_questions' => count($questions)
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Generate Diagnostic Assessment Error: ' . $e->getMessage());
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Error generating diagnostic assessment: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Score a diagnostic assessment. Reuses the same answer-checking and
+     * mastery/forgetting-curve write path as submitPractice() — a diagnostic
+     * is still a practice attempt as far as those tables are concerned — then
+     * adds the classification submitPractice() doesn't produce: mastered /
+     * partial / gap / prerequisite_gap per concept, so a weak result on a new
+     * concept can be told apart from a weak result caused by an unmastered
+     * prerequisite.
+     */
+    public function submitDiagnosticAssessment(Request $request)
+    {
+        try {
+            $student_id = $request->get('student_id');
+            $answers = $request->get('answers', []);
+            $sub_institute_id = $request->get('sub_institute_id') ?: $request->session()->get('sub_institute_id');
+
+            if (!$student_id) {
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => 'Student ID is required'
+                ]);
+            }
+            if (empty($answers)) {
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => 'No answers provided'
+                ]);
+            }
+
+            $conceptResults = [];
+
+            foreach ($answers as $questionId => $answerData) {
+                $question = DB::table('lms_question_master')->where('id', $questionId)->first();
+                if (!$question) {
+                    continue;
+                }
+
+                $isCorrect = $this->checkAnswer($questionId, $answerData);
+                $answerValue = is_array($answerData) ? implode(',', $answerData) : $answerData;
+
+                DB::table('lms_online_exam_answer')->insert([
+                    'question_id'      => $questionId,
+                    'student_id'       => $student_id,
+                    'answer_id'        => $answerValue,
+                    'ans_status'       => $isCorrect ? 1 : 0,
+                    'created_at'       => now(),
+                    'sub_institute_id' => $sub_institute_id,
+                ]);
+
+                if ($question->concept_id) {
+                    $this->updateConceptMastery($student_id, $question->concept_id, $isCorrect);
+
+                    if (!isset($conceptResults[$question->concept_id])) {
+                        $conceptResults[$question->concept_id] = ['correct' => 0, 'total' => 0];
+                    }
+                    $conceptResults[$question->concept_id]['total']++;
+                    if ($isCorrect) {
+                        $conceptResults[$question->concept_id]['correct']++;
+                    }
+                }
+            }
+
+            foreach ($conceptResults as $conceptId => $data) {
+                $performance = $data['total'] > 0 ? ($data['correct'] / $data['total']) * 100 : 0;
+                $this->updateForgettingCurve($student_id, $conceptId, $performance);
+            }
+
+            $classification = $this->classifyDiagnosticResults($student_id, $conceptResults);
+
+            return response()->json([
+                'status_code' => 1,
+                'message' => 'Diagnostic assessment scored successfully',
+                'data' => [
+                    'concept_results' => $conceptResults,
+                    'classification' => $classification,
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Submit Diagnostic Assessment Error: ' . $e->getMessage());
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Error scoring diagnostic assessment: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Target concepts for a diagnostic = the requested concept (or every
+     * concept in the requested chapter) plus their direct prerequisites from
+     * lms_knowledge_graph, so the diagnostic can tell "gap in this concept"
+     * apart from "gap in what it depends on".
+     */
+    private function resolveDiagnosticConceptScope($concept_id, $chapter_id, $sub_institute_id)
+    {
+        $concepts = collect();
+
+        if ($concept_id) {
+            $concepts->push((int) $concept_id);
+        } elseif ($chapter_id) {
+            $chapterConcepts = LmsConceptModel::where('chapter_id', $chapter_id)
+                ->when($sub_institute_id, function ($q) use ($sub_institute_id) {
+                    return $q->where('sub_institute_id', $sub_institute_id);
+                })
+                ->pluck('id');
+            $concepts = $concepts->merge($chapterConcepts);
+        }
+
+        if ($concepts->isEmpty()) {
+            return [];
+        }
+
+        $prereqIds = LmsKnowledgeGraphModel::whereIn('concept_id', $concepts->all())
+            ->pluck('prerequisite_concept_id');
+
+        return $concepts->merge($prereqIds)->filter()->unique()->values()->toArray();
+    }
+
+    /**
+     * Sample up to $perConceptLimit questions per concept, spread across the
+     * DOK range (one low/mid/high) where g_dok tagging exists, falling back
+     * to a random draw for legacy/untagged concepts so every target concept
+     * still gets probed.
+     */
+    private function getDiagnosticQuestions(array $conceptIds, $sub_institute_id, $perConceptLimit = 3)
+    {
+        $questions = [];
+
+        foreach ($conceptIds as $conceptId) {
+            $baseQuery = function () use ($conceptId, $sub_institute_id) {
+                $q = DB::table('lms_question_master as q')
+                    ->select('q.*')
+                    ->where('q.concept_id', $conceptId)
+                    ->where('q.status', 1);
+                if ($sub_institute_id) {
+                    $q->where('q.sub_institute_id', $sub_institute_id);
+                }
+                return $q;
+            };
+
+            $tagged = $baseQuery()->whereNotNull('q.g_dok')->inRandomOrder()->get();
+
+            $picked = collect();
+            foreach ([[1, 1], [2, 3], [4, 4]] as [$lo, $hi]) {
+                $match = $tagged->first(function ($q) use ($lo, $hi, $picked) {
+                    return $q->g_dok >= $lo && $q->g_dok <= $hi && !$picked->contains('id', $q->id);
+                });
+                if ($match) {
+                    $picked->push($match);
+                }
+            }
+
+            if ($picked->count() < $perConceptLimit) {
+                $fallback = $baseQuery()
+                    ->whereNotIn('q.id', $picked->pluck('id')->all() ?: [0])
+                    ->inRandomOrder()
+                    ->limit($perConceptLimit - $picked->count())
+                    ->get();
+                $picked = $picked->merge($fallback);
+            }
+
+            $conceptName = LmsConceptModel::where('id', $conceptId)->value('name');
+
+            foreach ($picked as $q) {
+                $options = [];
+                if ($q->question_type_id == 1) {
+                    $options = DB::table('answer_master')
+                        ->where('question_id', $q->id)
+                        ->where('sub_institute_id', $sub_institute_id)
+                        ->get();
+                }
+
+                $questions[] = [
+                    'id' => $q->id,
+                    'question_title' => $q->question_title,
+                    'question_type_id' => $q->question_type_id,
+                    'points' => $q->points,
+                    'concept_id' => $q->concept_id,
+                    'concept_name' => $conceptName,
+                    'options' => $options,
+                    'multiple_answer' => $q->multiple_answer,
+                    'bloom_level' => $q->g_bloom,
+                    'dok_level' => $q->g_dok,
+                    'difficulty' => $q->g_difficulty ?? ($q->points <= 1 ? 'Easy' : ($q->points >= 3 ? 'Hard' : 'Medium'))
+                ];
+            }
+        }
+
+        return $questions;
+    }
+
+    /**
+     * Classify each concept probed by a diagnostic as mastered / partial /
+     * gap / prerequisite_gap. This is deliberately separate from the
+     * mastered/developing/needs_practice status used elsewhere (getStudentMastery,
+     * getPracticeStrategy) rather than replacing it — those read from
+     * lms_concept_mastery across all-time attempts with a plain accuracy
+     * ratio; this uses the BKT mastery estimate (bktMasteryPercent(), same
+     * engine the PAL Administration "Mastery model" subsystem runs) over the
+     * student's full response history for the concept, which is a more
+     * honest read of one diagnostic sitting than raw accuracy on 2-3
+     * questions — and distinguishes a gap in the concept itself from a gap
+     * inherited from an unmastered prerequisite.
+     */
+    private function classifyDiagnosticResults($student_id, array $conceptResults)
+    {
+        $classification = [];
+
+        foreach ($conceptResults as $conceptId => $data) {
+            $threshold = LmsConceptModel::where('id', $conceptId)->value('mastery_threshold');
+            $threshold = $threshold ?: 70;
+            $accuracy = $data['total'] > 0 ? ($data['correct'] / $data['total']) * 100 : 0;
+            $bktMastery = $this->bktMasteryPercent($this->getConceptResponseSequence($student_id, $conceptId));
+
+            $prereqIds = LmsKnowledgeGraphModel::where('concept_id', $conceptId)
+                ->pluck('prerequisite_concept_id');
+
+            $prereqGap = false;
+            foreach ($prereqIds as $prereqId) {
+                $prereqSequence = $this->getConceptResponseSequence($student_id, $prereqId);
+                if (empty($prereqSequence)) {
+                    // No evidence either way — don't penalise for a prerequisite
+                    // that was never attempted.
+                    continue;
+                }
+                if ($this->bktMasteryPercent($prereqSequence) < $threshold * 0.6) {
+                    $prereqGap = true;
+                    break;
+                }
+            }
+
+            if ($bktMastery >= $threshold) {
+                $status = 'mastered';
+            } elseif ($prereqGap) {
+                $status = 'prerequisite_gap';
+            } elseif ($bktMastery >= $threshold * 0.6) {
+                $status = 'partial';
+            } else {
+                $status = 'gap';
+            }
+
+            $classification[$conceptId] = [
+                'concept_id' => $conceptId,
+                'accuracy' => round($accuracy, 1),
+                'bkt_mastery' => $bktMastery,
+                'attempts' => $data['total'],
+                'status' => $status,
+                'prerequisite_gap_detected' => $prereqGap,
+            ];
+        }
+
+        return $classification;
+    }
+
+    /**
+     * A student's chronological response sequence for one concept, across
+     * every attempt on record — the shape BktEngine::trace() expects.
+     * Reuses the same ans_status normalisation as getStudentMastery(),
+     * since this table stores 'right'/'wrong' varchars, not 1/0.
+     */
+    private function getConceptResponseSequence($student_id, $concept_id): array
+    {
+        return DB::table('lms_online_exam_answer as a')
+            ->join('lms_question_master as q', 'q.id', '=', 'a.question_id')
+            ->where('a.student_id', $student_id)
+            ->where('q.concept_id', $concept_id)
+            ->orderBy('a.created_at')
+            ->pluck('a.ans_status')
+            ->map(function ($status) {
+                $normalized = strtolower(trim((string) $status));
+                return ['correct' => in_array($normalized, ['1', 'correct', 'right', 'true', 'y', 'yes'], true)];
+            })
+            ->all();
+    }
+
+    /**
+     * Bayesian Knowledge Tracing mastery estimate (0-100) for an ordered
+     * response sequence, using BktEngine — the same engine the PAL
+     * Administration "Mastery model" subsystem already computes with, here
+     * run directly against one learner's one-concept sequence instead of the
+     * batch tenant-wide evidence pipeline that engine is normally driven
+     * through. Falls back to a plain accuracy ratio when there isn't enough
+     * history to trust the trace (matches BktEngine's own credited/min-attempts
+     * guard), and to 0 when there's no history at all.
+     */
+    private function bktMasteryPercent(array $sequence): float
+    {
+        if (empty($sequence)) {
+            return 0.0;
+        }
+
+        $trace = BktEngine::fromSettings([])->trace($sequence);
+
+        if (!$trace['credited']) {
+            return round(($trace['correct'] / max(1, $trace['attempts'])) * 100, 1);
+        }
+
+        return round($trace['mastery'] * 100, 1);
+    }
+
+    /**
+     * Prerequisite gate status for one concept: locked when any direct
+     * prerequisite (from lms_knowledge_graph) is below its own mastery
+     * threshold, using a BKT mastery estimate over the student's full
+     * response history for that prerequisite rather than a plain accuracy
+     * ratio. This is the read side of Step 5 of the learning journey
+     * (mastery-based progression) — the write side (updateConceptMastery)
+     * already existed, this is what was missing: something that actually
+     * checks the graph before letting a student in.
+     */
+    private function getConceptGateStatus($student_id, $concept_id)
+    {
+        $prereqs = LmsKnowledgeGraphModel::where('concept_id', $concept_id)
+            ->with('prerequisiteConcept:id,name,mastery_threshold')
+            ->get()
+            ->pluck('prerequisiteConcept')
+            ->filter();
+
+        $unmastered = [];
+        foreach ($prereqs as $prereq) {
+            $threshold = $prereq->mastery_threshold ?: 70;
+            $mastery = $this->bktMasteryPercent($this->getConceptResponseSequence($student_id, $prereq->id));
+
+            if ($mastery < $threshold) {
+                $unmastered[] = [
+                    'concept_id' => $prereq->id,
+                    'concept_name' => $prereq->name,
+                    'mastery_level' => round($mastery, 1),
+                    'required' => $threshold,
+                ];
+            }
+        }
+
+        return [
+            'concept_id' => (int) $concept_id,
+            'locked' => count($unmastered) > 0,
+            'unmastered_prerequisites' => $unmastered,
+        ];
+    }
+
+    /**
+     * Prerequisite gate status for every concept in a chapter, so the
+     * frontend can show which concepts are ready to start and which are
+     * blocked on an earlier concept the student hasn't mastered yet.
+     */
+    public function getChapterGate(Request $request)
+    {
+        try {
+            $student_id = $request->get('student_id');
+            $chapter_id = $request->get('chapter_id');
+            $sub_institute_id = $request->get('sub_institute_id') ?: $request->session()->get('sub_institute_id');
+
+            if (!$student_id || !$chapter_id) {
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => 'student_id and chapter_id are required'
+                ]);
+            }
+
+            $conceptIds = LmsConceptModel::where('chapter_id', $chapter_id)
+                ->when($sub_institute_id, function ($q) use ($sub_institute_id) {
+                    return $q->where('sub_institute_id', $sub_institute_id);
+                })
+                ->pluck('id');
+
+            $concepts = $conceptIds
+                ->map(function ($conceptId) use ($student_id) {
+                    return $this->getConceptGateStatus($student_id, $conceptId);
+                })
+                ->values();
+
+            return response()->json([
+                'status_code' => 1,
+                'message' => 'Chapter gate status computed successfully',
+                'data' => [
+                    'chapter_id' => $chapter_id,
+                    'concepts' => $concepts,
+                    'any_locked' => $concepts->contains('locked', true),
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Get Chapter Gate Error: ' . $e->getMessage());
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Error computing chapter gate: ' . $e->getMessage()
+            ]);
+        }
+    }
 
     /**
      * Get student's mastery levels for all concepts
@@ -1627,7 +2086,10 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
                 'c.name as concept_name',
                 'c.mastery_threshold',
                 DB::raw('COUNT(DISTINCT a.id) as attempts'),
-                DB::raw('SUM(CASE WHEN a.ans_status = 1 THEN 1 ELSE 0 END) as correct'),
+                // ans_status is a varchar ('right'/'wrong' on most rows) — comparing
+                // it to the integer 1 is always false in MySQL, which silently
+                // zeroed out every mastery calculation here. Normalise instead.
+                DB::raw("SUM(CASE WHEN LOWER(TRIM(COALESCE(a.ans_status, ''))) IN ('1','correct','right','true','y','yes') THEN 1 ELSE 0 END) as correct"),
                 DB::raw('MAX(a.created_at) as last_practiced')
             )
             ->where('c.sub_institute_id', session('sub_institute_id'));
@@ -1687,16 +2149,33 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
     /**
      * Get practice strategy based on mastery data
      */
+    /**
+     * DOK/Bloom targets per practice-strategy tier, mirroring the ladder the
+     * question generator already tags questions against (see
+     * QuestionGenerationService::BLOOM_DOK_MAP). Kept alongside the legacy
+     * 'difficulty' string so existing API consumers reading that field are
+     * unaffected — 'bloom_levels'/'dok_levels'/'difficulty_levels' are additive.
+     */
+    private const STRATEGY_DOK_BLOOM = [
+        'remediation' => ['bloom' => ['Remember', 'Understand'], 'dok' => [1, 2], 'difficulty' => ['Easy']],
+        'practice'    => ['bloom' => ['Understand', 'Apply', 'Analyze'], 'dok' => [1, 2, 3], 'difficulty' => ['Easy', 'Medium']],
+        'challenge'   => ['bloom' => ['Analyze', 'Evaluate', 'Create'], 'dok' => [3, 4], 'difficulty' => ['Medium', 'Hard']],
+    ];
+
     private function getPracticeStrategy($masteryData, $specificConceptId = null)
     {
         if ($specificConceptId) {
             $concept = collect($masteryData)->firstWhere('concept_id', $specificConceptId);
             if ($concept) {
+                $tier = $concept['mastery_level'] < 40 ? 'remediation' : 'practice';
                 return [
                     'type' => 'focused',
                     'focus' => [$specificConceptId],
                     'question_count' => 5,
                     'difficulty' => $concept['mastery_level'] < 40 ? 'easy' : 'mixed',
+                    'bloom_levels' => self::STRATEGY_DOK_BLOOM[$tier]['bloom'],
+                    'dok_levels' => self::STRATEGY_DOK_BLOOM[$tier]['dok'],
+                    'difficulty_levels' => self::STRATEGY_DOK_BLOOM[$tier]['difficulty'],
                     'hints' => $concept['mastery_level'] < 40,
                     'explanation' => true,
                     'description' => 'Focused practice on ' . ($concept['concept_name'] ?? 'selected concept')
@@ -1714,6 +2193,9 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
                 'focus' => $needsPractice->pluck('concept_id')->toArray(),
                 'question_count' => min(8, $needsPractice->count() * 2 + 2),
                 'difficulty' => 'easy_to_medium',
+                'bloom_levels' => self::STRATEGY_DOK_BLOOM['remediation']['bloom'],
+                'dok_levels' => self::STRATEGY_DOK_BLOOM['remediation']['dok'],
+                'difficulty_levels' => self::STRATEGY_DOK_BLOOM['remediation']['difficulty'],
                 'hints' => true,
                 'explanation' => true,
                 'description' => 'Focusing on concepts that need practice'
@@ -1730,6 +2212,9 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
                 'focus' => $developing->pluck('concept_id')->toArray(),
                 'question_count' => min(6, $developing->count() * 2 + 1),
                 'difficulty' => 'mixed',
+                'bloom_levels' => self::STRATEGY_DOK_BLOOM['practice']['bloom'],
+                'dok_levels' => self::STRATEGY_DOK_BLOOM['practice']['dok'],
+                'difficulty_levels' => self::STRATEGY_DOK_BLOOM['practice']['difficulty'],
                 'hints' => false,
                 'explanation' => true,
                 'description' => 'Strengthening developing concepts'
@@ -1741,6 +2226,9 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
             'focus' => collect($masteryData)->pluck('concept_id')->toArray(),
             'question_count' => 5,
             'difficulty' => 'hard',
+            'bloom_levels' => self::STRATEGY_DOK_BLOOM['challenge']['bloom'],
+            'dok_levels' => self::STRATEGY_DOK_BLOOM['challenge']['dok'],
+            'difficulty_levels' => self::STRATEGY_DOK_BLOOM['challenge']['difficulty'],
             'hints' => false,
             'explanation' => true,
             'description' => 'Challenge yourself with advanced questions'
@@ -1820,14 +2308,7 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
             $query->where('q.concept_id', $concept_id);
         }
 
-        // Filter by difficulty
-        if ($difficulty === 'easy') {
-            $query->where('q.points', '<=', 1);
-        } elseif ($difficulty === 'hard') {
-            $query->where('q.points', '>=', 3);
-        } elseif ($difficulty === 'easy_to_medium') {
-            $query->where('q.points', '<=', 2);
-        }
+        $this->applyDokBloomDifficultyFilter($query, $strategy, $difficulty);
 
         // Get questions not recently attempted
         $attemptedQuestions = DB::table('lms_online_exam_answer')
@@ -1853,9 +2334,7 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
             }
 
             // Get concept name
-            $conceptName = DB::table('lms_concept')
-                ->where('id', $q->concept_id)
-                ->value('name');
+            $conceptName = LmsConceptModel::where('id', $q->concept_id)->value('name');
 
             $questions[] = [
                 'id' => $q->id,
@@ -1868,13 +2347,15 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
                 'hint_text' => $q->hint_text,
                 'learning_outcome' => $q->learning_outcome,
                 'multiple_answer' => $q->multiple_answer,
-                'difficulty' => $q->points <= 1 ? 'Easy' : ($q->points >= 3 ? 'Hard' : 'Medium')
+                'bloom_level' => $q->g_bloom,
+                'dok_level' => $q->g_dok,
+                'difficulty' => $q->g_difficulty ?? ($q->points <= 1 ? 'Easy' : ($q->points >= 3 ? 'Hard' : 'Medium'))
             ];
         }
 
         // If not enough questions, get more
         if (count($questions) < $limit) {
-            $additional = $this->getAdditionalQuestions($student_id, $standard_id, $subject_id, $chapter_id, $concept_id, $limit - count($questions));
+            $additional = $this->getAdditionalQuestions($student_id, $standard_id, $subject_id, $chapter_id, $concept_id, $limit - count($questions), $strategy);
             $questions = array_merge($questions, $additional);
         }
 
@@ -1882,9 +2363,53 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
     }
 
     /**
+     * Filter a question-bank query by the tagged g_bloom/g_dok/g_difficulty
+     * generated columns when the strategy specifies targets, falling back to the
+     * legacy points-based heuristic for questions that predate that tagging
+     * (their generated columns are NULL). Shared by getPracticeQuestions() and
+     * getAdditionalQuestions() so both selection passes honour the same targets.
+     */
+    private function applyDokBloomDifficultyFilter($query, array $strategy, string $legacyDifficulty): void
+    {
+        $targetDok = $strategy['dok_levels'] ?? [];
+        $targetBloom = $strategy['bloom_levels'] ?? [];
+        $targetDifficulty = $strategy['difficulty_levels'] ?? [];
+
+        if (empty($targetDok) && empty($targetBloom) && empty($targetDifficulty) && !in_array($legacyDifficulty, ['easy', 'hard', 'easy_to_medium'], true)) {
+            return;
+        }
+
+        $query->where(function ($outer) use ($targetDok, $targetBloom, $targetDifficulty, $legacyDifficulty) {
+            $outer->where(function ($tagged) use ($targetDok, $targetBloom, $targetDifficulty) {
+                $tagged->whereNotNull('q.g_dok');
+                if (!empty($targetDok)) {
+                    $tagged->whereIn('q.g_dok', $targetDok);
+                }
+                if (!empty($targetBloom)) {
+                    $tagged->whereIn('q.g_bloom', $targetBloom);
+                }
+                if (!empty($targetDifficulty)) {
+                    $tagged->whereIn('q.g_difficulty', $targetDifficulty);
+                }
+            })->orWhere(function ($legacy) use ($legacyDifficulty) {
+                // Untagged/legacy question bank rows have no g_dok — fall back to
+                // the points heuristic so they remain selectable.
+                $legacy->whereNull('q.g_dok');
+                if ($legacyDifficulty === 'easy') {
+                    $legacy->where('q.points', '<=', 1);
+                } elseif ($legacyDifficulty === 'hard') {
+                    $legacy->where('q.points', '>=', 3);
+                } elseif ($legacyDifficulty === 'easy_to_medium') {
+                    $legacy->where('q.points', '<=', 2);
+                }
+            });
+        });
+    }
+
+    /**
      * Get additional questions when not enough found
      */
-    private function getAdditionalQuestions($student_id, $standard_id, $subject_id, $chapter_id, $concept_id, $limit)
+    private function getAdditionalQuestions($student_id, $standard_id, $subject_id, $chapter_id, $concept_id, $limit, array $strategy = [])
     {
         $query = DB::table('lms_question_master as q')
             ->select('q.*')
@@ -1904,13 +2429,16 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
             $query->where('q.concept_id', $concept_id);
         }
 
+        // Widened fallback pass: still prefer on-target questions if any remain
+        // before falling back to anything in scope, rather than dropping the
+        // DOK/Bloom target entirely.
+        $this->applyDokBloomDifficultyFilter($query, $strategy, $strategy['difficulty'] ?? 'mixed');
+
         $results = $query->inRandomOrder()->limit($limit)->get();
-        
+
         $questions = [];
         foreach ($results as $q) {
-            $conceptName = DB::table('lms_concept')
-                ->where('id', $q->concept_id)
-                ->value('name');
+            $conceptName = LmsConceptModel::where('id', $q->concept_id)->value('name');
 
             $questions[] = [
                 'id' => $q->id,
@@ -1919,7 +2447,9 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
                 'points' => $q->points,
                 'concept_id' => $q->concept_id,
                 'concept_name' => $conceptName,
-                'difficulty' => $q->points <= 1 ? 'Easy' : ($q->points >= 3 ? 'Hard' : 'Medium')
+                'bloom_level' => $q->g_bloom,
+                'dok_level' => $q->g_dok,
+                'difficulty' => $q->g_difficulty ?? ($q->points <= 1 ? 'Easy' : ($q->points >= 3 ? 'Hard' : 'Medium'))
             ];
         }
 
@@ -2133,73 +2663,60 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
             ->get();
 
         $total = $attempts->count();
-        $correct = $attempts->where('ans_status', 1)->count();
-        
+        // ans_status is a varchar ('right'/'wrong' on most rows, but 1/0 on
+        // rows written by submitPractice/submitDiagnosticAssessment) — a loose
+        // PHP comparison to the integer 1 only matches the latter, so this
+        // undercounted correct attempts on any row written by the exam-paper
+        // path. Normalise both encodings.
+        $correct = $attempts->filter(function ($attempt) {
+            $normalized = strtolower(trim((string) $attempt->ans_status));
+            return in_array($normalized, ['1', 'correct', 'right', 'true', 'y', 'yes'], true);
+        })->count();
+
         // Calculate mastery
         $masteryLevel = $total > 0 ? round(($correct / $total) * 100, 1) : 0;
 
         // Log mastery
-        DB::table('lms_concept_mastery_log')->insert([
+        LmsConceptMasteryLogModel::create([
             'student_id' => $student_id,
             'concept_id' => $concept_id,
             'mastery_level' => $masteryLevel,
             'total_attempts' => $total,
             'correct_attempts' => $correct,
-            'created_at' => now()
         ]);
 
         // Update or insert concept mastery
-        $existing = DB::table('lms_concept_mastery')
-            ->where('student_id', $student_id)
-            ->where('concept_id', $concept_id)
-            ->first();
-
-        if ($existing) {
-            DB::table('lms_concept_mastery')
-                ->where('id', $existing->id)
-                ->update([
-                    'mastery_level' => $masteryLevel,
-                    'updated_at' => now()
-                ]);
-        } else {
-            DB::table('lms_concept_mastery')->insert([
-                'student_id' => $student_id,
-                'concept_id' => $concept_id,
-                'mastery_level' => $masteryLevel,
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-        }
+        LmsConceptMasteryModel::updateOrCreate(
+            ['student_id' => $student_id, 'concept_id' => $concept_id],
+            ['mastery_level' => $masteryLevel]
+        );
     }
     private function updateForgettingCurve($student_id, $concept_id, $performance)
     {
-        $existing = DB::table('lms_forgetting_curve')
-            ->where('student_id', $student_id)
+        $existing = LmsForgettingCurveModel::where('student_id', $student_id)
             ->where('concept_id', $concept_id)
             ->first();
+
+        // Spaced repetition intervals
+        $intervals = [1, 2, 4, 7, 14, 30];
 
         if ($existing) {
             // Update based on performance
             $newRetention = ($existing->retention_rate * 0.6) + ($performance * 0.4);
             $reviewCount = $existing->review_count + 1;
-            
-            // Spaced repetition intervals
-            $intervals = [1, 2, 4, 7, 14, 30];
+
             $intervalIndex = min($reviewCount - 1, count($intervals) - 1);
             $nextInterval = $intervals[$intervalIndex];
-            
-            DB::table('lms_forgetting_curve')
-                ->where('id', $existing->id)
-                ->update([
-                    'retention_rate' => $newRetention,
-                    'last_reviewed_at' => now(),
-                    'next_review_at' => now()->addDays($nextInterval),
-                    'review_interval_days' => $nextInterval,
-                    'review_count' => $reviewCount,
-                    'updated_at' => now()
-                ]);
+
+            $existing->update([
+                'retention_rate' => $newRetention,
+                'last_reviewed_at' => now(),
+                'next_review_at' => now()->addDays($nextInterval),
+                'review_interval_days' => $nextInterval,
+                'review_count' => $reviewCount,
+            ]);
         } else {
-            DB::table('lms_forgetting_curve')->insert([
+            LmsForgettingCurveModel::create([
                 'student_id' => $student_id,
                 'concept_id' => $concept_id,
                 'retention_rate' => $performance,
@@ -2207,8 +2724,6 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
                 'next_review_at' => now()->addDay(),
                 'review_interval_days' => 1,
                 'review_count' => 1,
-                'created_at' => now(),
-                'updated_at' => now()
             ]);
         }
     }
@@ -2321,8 +2836,6 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
     public function getSpacedRepetition(Request $request)
     {
         $student_id = $request->get('student_id');
-        // API/SPA clients (no server session) pass sub_institute_id explicitly.
-        $sub_institute_id = $request->get('sub_institute_id') ?: $request->session()->get('sub_institute_id');
 
         if (!$student_id) {
             return response()->json([
@@ -2332,6 +2845,8 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
         }
 
         // Get concepts that need review based on Ebbinghaus forgetting curve
+        // lms_concept_mastery_log has no sub_institute_id column -- it's scoped
+        // by student_id, which already belongs to a single institute.
         $reviewSchedule = DB::table('lms_concept_mastery_log as l')
             ->join('lms_concept as c', 'c.id', '=', 'l.concept_id')
             ->select(
@@ -2342,7 +2857,6 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
                 DB::raw('DATEDIFF(NOW(), l.created_at) as days_ago')
             )
             ->where('l.student_id', $student_id)
-            ->where('l.sub_institute_id', $sub_institute_id)
             ->where('l.mastery_level', '<', 80)
             ->orderBy('l.created_at', 'asc')
             ->get();
