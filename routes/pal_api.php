@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\api\PAL\CoherenceMapController;
 use App\Http\Controllers\api\PAL\NewPalContentModelController;
 use App\Http\Controllers\api\PAL\PALAPIController;
 use App\Http\Controllers\api\PAL\PedagogyEngineController;
@@ -131,6 +132,31 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
     Route::get('/metacognition/prompts/{learnerId}', [PALAPIController::class, 'getMetacognitivePrompts']);
     Route::post('/metacognition/reflect', [PALAPIController::class, 'recordReflection']);
 
+    // ==================== SET COHERENCE MAP (Neo4j) ====================
+    //
+    // The prerequisite graph and the recommendation that walks it. Reads go to
+    // Neo4j (the prerequisite CLOSURE is the one question a SQL join cannot
+    // answer); mastery writes land in MariaDB first and are projected after.
+    //
+    // Route order matters: the two literal prefixes (/map, /health) are declared
+    // before the {learnerId} routes, and every id segment is digit-constrained,
+    // so `/coherence/map` can never be parsed as a learner id.
+    Route::get('/coherence/map', [CoherenceMapController::class, 'map']);
+    Route::get('/coherence/health', [CoherenceMapController::class, 'health']);
+
+    // Learner-scoped. PalApiAuth resolves {learnerId} and enforces ownership
+    // before the controller runs, so a student can only ever read their own.
+    Route::get('/coherence/learner/{learnerId}', [CoherenceMapController::class, 'learner'])
+        ->where('learnerId', '[0-9]+');
+    Route::get('/coherence/next/{learnerId}', [CoherenceMapController::class, 'next'])
+        ->where('learnerId', '[0-9]+');
+    Route::get('/coherence/remediation/{learnerId}/{conceptId}', [CoherenceMapController::class, 'remediation'])
+        ->where(['learnerId' => '[0-9]+', 'conceptId' => '[0-9]+']);
+
+    // The real-time write path: one answer in, new mastery + next action out.
+    // learner_id travels in the body, which is what PalApiAuth ownership-checks.
+    Route::post('/coherence/evidence', [CoherenceMapController::class, 'evidence']);
+
     // ==================== CONTENT INTELLIGENCE LAYER (PAL V4 spec) ====================
     //
     // The 4-type content model, 30+ field metadata schema, 5-level Bloom ladder,
@@ -257,6 +283,8 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
             ->where('subsystem', $subsystem);
         Route::post('/{subsystem}/reset', [PalArchitectureController::class, 'reset'])
             ->where('subsystem', $subsystem);
+    });
+
     // ==================== H5P MODEL ====================
     //
     // The backend for LMS+PAL → Tech/Learn → Subject → Chapter → H5P Content:

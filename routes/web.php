@@ -774,6 +774,14 @@ Route::get('/suggested-content', [palController::class, 'suggestedContent'])->na
 Route::post('/lms/store-suggested-content', [palController::class, 'storeSuggestedContent'])->name('store.suggested.content');
 Route::get('/lms/pedagogy-suggested-content', [\App\Http\Controllers\lms\pal\palController::class, 'getPedagogySuggestedContent'])->name('pal.pedagogy.suggested.content');
 Route::get('/lms/misconception', [\App\Http\Controllers\lms\pal\palController::class, 'misconception'])->name('misconception');
+
+// Set Coherence Map — the LMS (Blade) view. Renders through the same services
+// the JSON API uses, so the two front-ends can never disagree about a learner's
+// readiness. Scope comes from the session's institute, not the query string.
+Route::get('/lms/coherence-map', [\App\Http\Controllers\lms\pal\CoherenceMapWebController::class, 'index'])
+    ->name('coherence.map');
+Route::post('/lms/coherence-map/answer', [\App\Http\Controllers\lms\pal\CoherenceMapWebController::class, 'answer'])
+    ->name('coherence.map.answer');
 Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
 Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
 Route::get('/download-folder', [FileController::class, 'downloadFolder']);

@@ -31,4 +31,34 @@ return [
     |
     */
     'writes_enabled' => filter_var(env('NEO4J_WRITES_ENABLED', false), FILTER_VALIDATE_BOOLEAN),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Live application -> graph sync  (Phase 15)
+    |--------------------------------------------------------------------------
+    |
+    | Deliberately a SEPARATE switch from `writes_enabled` above. That flag
+    | gates the three *legacy* writer routes (POST /lms/pal,
+    | POST /assessment_question/store, POST /neo4j/assessment), which still key
+    | nodes under the pre-migration convention — turning it on reintroduces
+    | defect D2. This flag gates only the App\Services\Graph projections, which
+    | write the keys the live graph actually uses.
+    |
+    | Leave `writes_enabled` false and this true: new application data reaches
+    | the graph, the legacy writers stay muted.
+    |
+    */
+    'sync_enabled' => filter_var(env('NEO4J_SYNC_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+
+    /*
+    | When a projection throws (Neo4j down, bolt timeout), record the entity in
+    | the `neo4j_sync_outbox` table so `php artisan neo4j:sync-drain` can retry.
+    | The originating HTTP request NEVER fails because of a graph error.
+    */
+    'outbox_enabled' => filter_var(env('NEO4J_OUTBOX_ENABLED', true), FILTER_VALIDATE_BOOLEAN),
+
+    /*
+    | Max retries the drain command will make before marking a row 'failed'.
+    */
+    'outbox_max_attempts' => (int) env('NEO4J_OUTBOX_MAX_ATTEMPTS', 5),
 ];
