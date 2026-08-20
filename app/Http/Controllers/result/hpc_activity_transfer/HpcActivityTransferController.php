@@ -5,6 +5,7 @@ namespace App\Http\Controllers\result\hpc_activity_transfer;
 use App\Http\Controllers\Controller;
 use App\Services\result\HpcActivityTransferService;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 use Throwable;
 use function App\Helpers\is_mobile;
@@ -28,6 +29,7 @@ class HpcActivityTransferController extends Controller
         $res['status_code'] = 1;
         $res['message'] = 'Success';
         $res['sub_institutes'] = $this->service->getSubInstitutes();
+        $res['source_sub_institutes'] = $this->service->getSourceSubInstitutes();
 
         return is_mobile($type, 'result/hpc_activity_transfer/index', $res, 'view');
     }
@@ -104,16 +106,18 @@ class HpcActivityTransferController extends Controller
 
     protected function validateTransferRequest(Request $request): array
     {
+        $sourceSubInstituteIds = array_map(fn ($si) => $si->id, $this->service->getSourceSubInstitutes());
+
         $rules = [
             'transfer_type' => 'required|in:standard,sub_institute',
-            'source_sub_institute_id' => 'required|integer',
+            'source_sub_institute_id' => ['required', 'integer', Rule::in($sourceSubInstituteIds)],
         ];
 
         if ($request->input('transfer_type') === 'standard') {
             $rules['source_standard_id'] = 'required|integer';
             $rules['target_standard_id'] = 'required|integer|different:source_standard_id';
         } else {
-            $rules['target_sub_institute_id'] = 'required|integer|different:source_sub_institute_id';
+            $rules['target_sub_institute_id'] = ['required', 'integer', 'different:source_sub_institute_id', Rule::in($sourceSubInstituteIds)];
         }
 
         return $request->validate($rules);

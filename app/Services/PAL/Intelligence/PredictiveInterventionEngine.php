@@ -23,6 +23,18 @@ class PredictiveInterventionEngine
      */
     public function predictDisengagement(int $learnerId): array
     {
+        // Every signal here comes from pal_learning_sessions/pal_session_events,
+        // which nothing currently writes (IntelligenceService::processEvent() --
+        // the only writer -- is never called from any route; confirmed by grep).
+        // A learner with zero session rows would otherwise compute a risk_score
+        // of 0 and read as "confirmed low risk" when it is really "never
+        // tracked" -- the same misleading-zero failure mode the mastery engine
+        // had. has_data lets a caller tell the difference instead of trusting
+        // a fabricated "safe" reading.
+        $hasData = LearningSession::where('learner_id', $learnerId)
+            ->where('created_at', '>=', now()->subDays(14))
+            ->exists();
+
         $signals = $this->collectDisengagementSignals($learnerId);
         $riskScore = $this->calculateRiskScore($signals, [
             'engagement_score' => 0.25,
@@ -34,12 +46,13 @@ class PredictiveInterventionEngine
 
         return [
             'learner_id' => $learnerId,
-            'risk_score' => round($riskScore, 2),
-            'risk_level' => $this->classifyRisk($riskScore),
+            'has_data' => $hasData,
+            'risk_score' => $hasData ? round($riskScore, 2) : null,
+            'risk_level' => $hasData ? $this->classifyRisk($riskScore) : 'insufficient_data',
             'signals' => $signals,
-            'trigger_intervention' => $riskScore > $this->disengagementThreshold,
-            'predicted_days_until_disengage' => $this->predictDaysUntilDisengage($riskScore),
-            'recommended_actions' => $this->getDisengagementActions($riskScore),
+            'trigger_intervention' => $hasData && $riskScore > $this->disengagementThreshold,
+            'predicted_days_until_disengage' => $hasData ? $this->predictDaysUntilDisengage($riskScore) : null,
+            'recommended_actions' => $hasData ? $this->getDisengagementActions($riskScore) : [],
         ];
     }
 
@@ -50,6 +63,15 @@ class PredictiveInterventionEngine
      */
     public function predictFailure(int $learnerId): array
     {
+        // success_rate_trend/recent_performance read pal_assessment_results
+        // (real since the PAL write-through) and mastery_gaps reads
+        // pal_competencies (also real) -- unlike disengagement/burnout, this
+        // one has a genuine data source. It still needs the same has_data
+        // guard: a learner with no assessment history at all would otherwise
+        // read as risk_score 0 / "low risk" rather than "not yet assessed".
+        $hasData = AssessmentResult::where('learner_id', $learnerId)->exists()
+            || \App\Models\PAL\Competency::where('learner_id', $learnerId)->exists();
+
         $signals = $this->collectFailureSignals($learnerId);
         $riskScore = $this->calculateRiskScore($signals, [
             'success_rate_trend' => 0.30,
@@ -61,11 +83,12 @@ class PredictiveInterventionEngine
 
         return [
             'learner_id' => $learnerId,
-            'risk_score' => round($riskScore, 2),
-            'risk_level' => $this->classifyRisk($riskScore),
+            'has_data' => $hasData,
+            'risk_score' => $hasData ? round($riskScore, 2) : null,
+            'risk_level' => $hasData ? $this->classifyRisk($riskScore) : 'insufficient_data',
             'signals' => $signals,
-            'trigger_intervention' => $riskScore > $this->failureThreshold,
-            'recommended_actions' => $this->getFailureActions($riskScore),
+            'trigger_intervention' => $hasData && $riskScore > $this->failureThreshold,
+            'recommended_actions' => $hasData ? $this->getFailureActions($riskScore) : [],
         ];
     }
 
@@ -76,6 +99,11 @@ class PredictiveInterventionEngine
      */
     public function predictBurnout(int $learnerId): array
     {
+        // See predictDisengagement() -- same dead-table caveat applies here.
+        $hasData = LearningSession::where('learner_id', $learnerId)
+            ->where('created_at', '>=', now()->subDays(21))
+            ->exists();
+
         $signals = $this->collectBurnoutSignals($learnerId);
         $riskScore = $this->calculateRiskScore($signals, [
             'session_duration_trend' => 0.25,
@@ -87,11 +115,12 @@ class PredictiveInterventionEngine
 
         return [
             'learner_id' => $learnerId,
-            'risk_score' => round($riskScore, 2),
-            'risk_level' => $this->classifyRisk($riskScore),
+            'has_data' => $hasData,
+            'risk_score' => $hasData ? round($riskScore, 2) : null,
+            'risk_level' => $hasData ? $this->classifyRisk($riskScore) : 'insufficient_data',
             'signals' => $signals,
-            'trigger_intervention' => $riskScore > $this->burnoutThreshold,
-            'recommended_actions' => $this->getBurnoutActions($riskScore),
+            'trigger_intervention' => $hasData && $riskScore > $this->burnoutThreshold,
+            'recommended_actions' => $hasData ? $this->getBurnoutActions($riskScore) : [],
         ];
     }
 
@@ -102,11 +131,17 @@ class PredictiveInterventionEngine
      */
     public function getRiskScore(int $learnerId): float
     {
-        $disengagement = $this->predictDisengagement($learnerId)['risk_score'];
-        $failure = $this->predictFailure($learnerId)['risk_score'];
-        $burnout = $this->predictBurnout($learnerId)['risk_score'];
+        // risk_score is null when the underlying predictor has no data (see
+        // predictDisengagement/predictFailure/predictBurnout) -- average only
+        // over the dimensions that actually have a measured score, rather
+        // than letting a null silently zero out or error the average.
+        $scores = array_filter([
+            $this->predictDisengagement($learnerId)['risk_score'],
+            $this->predictFailure($learnerId)['risk_score'],
+            $this->predictBurnout($learnerId)['risk_score'],
+        ], fn ($score) => $score !== null);
 
-        return ($disengagement + $failure + $burnout) / 3;
+        return $scores === [] ? 0.0 : array_sum($scores) / count($scores);
     }
 
     protected function collectDisengagementSignals(int $learnerId): array

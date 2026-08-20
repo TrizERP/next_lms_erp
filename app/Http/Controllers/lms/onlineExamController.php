@@ -9,8 +9,10 @@ use App\Models\lms\lmsOnlineExamModel;
 use App\Models\lms\lmsQuestionMappingModel;
 use App\Models\lms\lmsQuestionMasterModel;
 use App\Models\lms\questionpaperModel;
+use App\Services\PAL\Intelligence\MisconceptionIntelligenceEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 use function App\Helpers\is_mobile;
 
@@ -73,6 +75,32 @@ class onlineExamController extends Controller
     {
     }
 
+    /**
+     * Feed a wrong MCQ answer into the misconception intelligence engine so the
+     * standard exam path builds the same misconception signal that previously
+     * only fired for H5P interactive content. Never allowed to break exam
+     * submission — analysis failures are logged and swallowed.
+     */
+    private function recordMisconceptionOnWrongAnswer($studentId, $conceptId, $selectedAnswerId): void
+    {
+        if (!$studentId || !$conceptId) {
+            return;
+        }
+
+        try {
+            // This submit path doesn't track per-question timing, so we pass a
+            // neutral mid-range value rather than 0 — 0 would misclassify every
+            // wrong answer as an "attention slip" in the engine's clustering.
+            app(MisconceptionIntelligenceEngine::class)->analyze((int) $studentId, (int) $conceptId, [
+                'selected_option' => $selectedAnswerId,
+                'time_seconds'    => 15,
+                'hint_used'       => false,
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Misconception analysis failed on exam submit: ' . $e->getMessage());
+        }
+    }
+
     public function store(Request $request)
     {
         //Clear session for timer
@@ -105,6 +133,16 @@ class onlineExamController extends Controller
         $answer_multiple = $request->get('answer_multiple');
         $answer_narrative = $request->get('answer_narrative');
 
+        // Concept lookup for misconception detection below — one query instead of
+        // one per wrong answer.
+        $answeredQuestionIds = array_merge(
+            is_array($answer_single) ? array_keys($answer_single) : [],
+            is_array($answer_multiple) ? array_keys($answer_multiple) : []
+        );
+        $conceptByQuestionId = empty($answeredQuestionIds)
+            ? collect()
+            : lmsQuestionMasterModel::whereIn('id', $answeredQuestionIds)->pluck('concept_id', 'id');
+
         if (is_array($answer_single)) {
             foreach ($answer_single as $single_question_id => $single_answer_ids) {
                 $ans_status = "wrong";
@@ -121,6 +159,14 @@ class onlineExamController extends Controller
                     'ans_status'        => $ans_status,
                 ];
                 lmsOnlineExamAnswerModel::insert($single);
+
+                if ($ans_status === 'wrong') {
+                    $this->recordMisconceptionOnWrongAnswer(
+                        $user_id,
+                        $conceptByQuestionId->get($single_question_id),
+                        $single_ans_arr[0] ?? null
+                    );
+                }
             }
         }
 
@@ -143,6 +189,14 @@ class onlineExamController extends Controller
                             'ans_status'        => $ans_status,
                         ];
                         lmsOnlineExamAnswerModel::insert($multiple);
+
+                        if ($ans_status === 'wrong') {
+                            $this->recordMisconceptionOnWrongAnswer(
+                                $user_id,
+                                $conceptByQuestionId->get($multiple_question_id),
+                                $multiple_ans_arr[0] ?? null
+                            );
+                        }
                     }
                 }
             }
@@ -380,6 +434,7 @@ class onlineExamController extends Controller
         $data['question_arr'] = lmsQuestionMasterModel::whereIn("id", $question_ids)->get()->toArray();
 
         $lmsmapping = array();
+        $answer = array();
         foreach ($data['question_arr'] as $key => $val) {
             $answer_arr = answermasterModel::where([
                 "question_id"      => $val['id'],
@@ -465,6 +520,7 @@ class onlineExamController extends Controller
             'student_id'        => $student_id,
             'question_paper_id' => $questionpaper_id,
         ])->orderby('start_time')->get()->toArray();
+        $progressbar_data = array();
         foreach ($data['attempted_data'] as $key => $val) {
             $pdata = DB::select("SELECT *,'100' as total_percentage,
                 round(((a.right_answer*100)/total_question),2) as obtained_percentage from (
@@ -490,6 +546,7 @@ class onlineExamController extends Controller
         //dd($progressbar_data);
 
         $final_progressbar_data = array();
+        $parent_mapping_arr = array();
 
         foreach ($progressbar_data as $pkey => $pval) {
             $parent_mapping_arr[$pkey] = array();
