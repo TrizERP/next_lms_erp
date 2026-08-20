@@ -26,6 +26,11 @@ use App\Http\Controllers\fees\fees_circular\feesCircularController;
 use App\Http\Controllers\fees\fees_circular\feesCircularMasterController;
 use App\Http\Controllers\api\FeesDashboardApiController;
 use App\Http\Controllers\api\RoleDashboardApiController;
+use App\Http\Controllers\api\AdmissionsDashboardApiController;
+use App\Http\Controllers\api\StudentsDashboardApiController;
+use App\Http\Controllers\api\LibraryDashboardApiController;
+use App\Http\Controllers\api\HostelDashboardApiController;
+use App\Http\Controllers\api\TransportationDashboardApiController;
 use App\Http\Controllers\api\FeesRefundApiController;
 use App\Http\Controllers\api\TeacherAssignmentMobileApiController;
 
@@ -83,6 +88,14 @@ Route::middleware('api.session')->prefix('hrms')->group(function () {
     Route::get('leaves', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'leaves']);
 });
 Route::post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
+// Module dashboards (Admissions/Students) — same stateless pattern as
+// fees-dashboard/summary above: tenant/year travel in the request body, so
+// no session middleware is required.
+Route::post('admissions-dashboard/summary', [AdmissionsDashboardApiController::class, 'summary']);
+Route::post('students-dashboard/summary', [StudentsDashboardApiController::class, 'summary']);
+Route::post('library-dashboard/summary', [LibraryDashboardApiController::class, 'summary']);
+Route::post('hostel-dashboard/summary', [HostelDashboardApiController::class, 'summary']);
+Route::post('transportation-dashboard/summary', [TransportationDashboardApiController::class, 'summary']);
 // Role-based dashboards (Admin/Teacher/Student) — identity comes only from the
 // JWT via ApiSessionHydrator, never from the request body, so a token cannot
 // be used to fetch another role's or another user's data.
