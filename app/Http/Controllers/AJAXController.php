@@ -263,6 +263,12 @@ class AJAXController extends Controller
         
         $getClass=DB::table('class_teacher')->whereRaw('sub_institute_id='.$sub_institute_id.' and teacher_id ='.$user_id.' and syear="'.$syear.'"')->first();
 
+        // 19-08-2026 : admin level profiles must not be scoped by class / subject teacher
+        // arrays. A stale (or empty) array in session was producing "0 = 1" in the query.
+        // parent_id = 1 in tbluserprofilemaster marks an admin profile, so new admin
+        // profiles are picked up from the DB without touching this file.
+        $isAdminProfile = session()->get('profile_parent_id') == '1';
+
         $query = DB::table('standard');
         // $query->where("grade_id", $request->grade_id);
 
@@ -276,7 +282,7 @@ class AJAXController extends Controller
             } else {
                 $checkstd = '1=1';
             }
-            if ($checkstd && $classTeacherStdArr != "" && !in_array($module_name, $module_array)) {
+            if (!$isAdminProfile && $checkstd && $classTeacherStdArr != "" && !in_array($module_name, $module_array)) {
                 if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
                     $query->where('id', $getClass->standard_id);
                 }else{
@@ -287,7 +293,7 @@ class AJAXController extends Controller
 
             //START Check for subject teacher assigned
             $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
-            if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array))) {
+            if (!$isAdminProfile && $subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array))) {
                 if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
                     $query->where('id', $getClass->standard_id);
                 }else{
@@ -312,7 +318,7 @@ class AJAXController extends Controller
             } else {
                 $checkstd = '1=1';
             }
-            if ($checkstd && $classTeacherStdArr != "" && !in_array($module_name, $module_array)) {
+            if (!$isAdminProfile && $checkstd && $classTeacherStdArr != "" && !in_array($module_name, $module_array)) {
                 if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher"){
                     $query->where('id', $getClass->standard_id);
                 }else{
@@ -323,7 +329,7 @@ class AJAXController extends Controller
 
             //START Check for subject teacher assigned
             $subjectTeacherStdArr = session()->get('subjectTeacherStdArr');
-            if ($subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array))) {
+            if (!$isAdminProfile && $subjectTeacherStdArr != "" && ($classTeacherStdArr == "" || in_array($module_name, $module_array))) {
                 if(in_array(session()->get('right_menu_id'),$menu_ids) && session()->get('user_profile_name')=="Teacher" && isset($getClass->standard_id)){
                     $query->where('id', $getClass->standard_id);
                 }else{

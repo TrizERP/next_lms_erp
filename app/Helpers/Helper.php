@@ -293,7 +293,13 @@ $sub_institute_id = session()->get('sub_institute_id');
         // END 07/09/2021 code for getting standard , grade , division according to timetable wise for homework module
 
         // 10-01-2025 start supervisor rights
-        else if (!in_array(session()->get('user_profile_name'),['Super Admin','Admin','Teacher','LMS Teacher','Student']))
+        // 19-08-2026 : admin level profiles (School Admin / Assistant Admin ...) were falling
+        // in this supervisor branch, which stored an EMPTY subjectTeacherStdArr in session and
+        // made every standard dropdown query end up with "0 = 1".
+        // parent_id = 1 in tbluserprofilemaster marks an admin profile, so new admin profiles
+        // are picked up from the DB without listing their names here.
+        else if (session()->get('profile_parent_id') != '1'
+            && !in_array(strtolower(session()->get('user_profile_name')), ['lms teacher','student']))
         {
             $getUserData = tbluserModel::where('id', session()->get('user_id'))->first();
             $sub_institute_id = session()->get('sub_institute_id');
@@ -358,6 +364,11 @@ $sub_institute_id = session()->get('sub_institute_id');
             Session::put('subjectTeacherGrdArr', $subjectTeacherGrdArr);
             Session::put('subjectTeacherStdArr', $subjectTeacherStdArr);
             Session::put('subjectTeacherDivArr', $subjectTeacherDivArr);
+        }
+        // 19-08-2026 : admin / student profiles must never carry subject teacher scoping.
+        // Clears values left in an already active session by the old condition above.
+        else {
+            Session::forget(['subjectTeacherGrdArr', 'subjectTeacherStdArr', 'subjectTeacherDivArr']);
         }
         // 10-01-2025 end supervisor rights
 
