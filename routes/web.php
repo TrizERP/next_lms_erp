@@ -667,6 +667,12 @@ use App\Http\Controllers\MIS\MisSummaryController;
 Route::get('/mis-summary', [MisSummaryController::class, 'index'])->name('mis.summary')
     ->middleware(['session', 'menu', 'logRoute', 'check_permissions']);
 
+// Today's module wise summary (Fees, Admission, Attendance, Leave, ... ) for the logged in sub-institute
+use App\Http\Controllers\report\DailySummaryReportController;
+Route::get('daily-summary-report', [DailySummaryReportController::class, 'index'])
+    ->name('daily_summary_report')
+    ->middleware('session', 'menu', 'logRoute');
+
 use App\Models\ReportDynamic;
 Route::get('/get-fields', function (Request $request) {
     $reportType = $request->query('report_type');
