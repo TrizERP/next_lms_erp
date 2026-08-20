@@ -319,7 +319,7 @@ class PedagogySelectorEngine
             $candidates[] = ['type' => $this->catalog->normalizePedagogy($tag), 'base_score' => 30];
         }
 
-        if ($conceptReqs['bloom_level'] >= 2) {
+        if (($conceptReqs['bloom_level'] ?? 1) >= 2) {
             $candidates[] = ['type' => 'inquiry_based', 'base_score' => 25];
         }
 

@@ -140,7 +140,8 @@ class PALServiceProvider extends ServiceProvider
                 $app->make(CognitiveLoadEngine::class),
                 $app->make(EmotionalSafetyEngine::class),
                 $app->make(MetacognitionEngine::class),
-                $app->make(PedagogyFatigueEngine::class)
+                $app->make(PedagogyFatigueEngine::class),
+                $app->make(ContentIntelligenceService::class)
             );
         });
 

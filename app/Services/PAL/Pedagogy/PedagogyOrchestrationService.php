@@ -7,6 +7,9 @@ use App\Services\PAL\Pedagogy\CognitiveLoadEngine;
 use App\Services\PAL\Pedagogy\EmotionalSafetyEngine;
 use App\Services\PAL\Pedagogy\MetacognitionEngine;
 use App\Services\PAL\Pedagogy\PedagogyFatigueEngine;
+use App\Services\PAL\Content\ContentIntelligenceService;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Pedagogy Orchestration Service
@@ -19,19 +22,22 @@ class PedagogyOrchestrationService
     protected EmotionalSafetyEngine $emotional;
     protected MetacognitionEngine $metacognition;
     protected PedagogyFatigueEngine $fatigue;
+    protected ContentIntelligenceService $content;
 
     public function __construct(
         PedagogySelectorEngine $selector,
         CognitiveLoadEngine $cognitive,
         EmotionalSafetyEngine $emotional,
         MetacognitionEngine $metacognition,
-        PedagogyFatigueEngine $fatigue
+        PedagogyFatigueEngine $fatigue,
+        ContentIntelligenceService $content
     ) {
         $this->selector = $selector;
         $this->cognitive = $cognitive;
         $this->emotional = $emotional;
         $this->metacognition = $metacognition;
         $this->fatigue = $fatigue;
+        $this->content = $content;
     }
 
     /**
@@ -62,6 +68,28 @@ class PedagogyOrchestrationService
             $selected = $this->fatigue->rotate($selected);
         }
 
+        // Phase 8: a strategy name alone is not a recommendation the student can
+        // act on. Hand the chosen pedagogy to the real content pipeline
+        // (content_master via the sidecar, not the near-empty legacy pal_contents
+        // table) so the caller gets an actual content id/url in the same
+        // response, with the pipeline's own deterministic exhausted/fallback
+        // handling rather than a fake placeholder.
+        $contentRecommendation = $this->content->selectOptimalContent(
+            $learnerId,
+            $conceptId,
+            $context['sub_institute_id'] ?? null,
+            [
+                'content_type' => $context['content_type'] ?? 'concept',
+                'learning_style' => $selected['type'] ?? null,
+                'failed_format' => $context['failed_format'] ?? null,
+                'chapter_id' => $context['chapter_id'] ?? null,
+            ]
+        );
+
+        $selectionReason = $this->selector->getReason($learnerId, $selected['type']);
+
+        $this->logRecommendation($learnerId, $conceptId, $context, $selected, $selectionReason, $contentRecommendation);
+
         return [
             'learner_id' => $learnerId,
             'concept_id' => $conceptId,
@@ -71,9 +99,55 @@ class PedagogyOrchestrationService
             'cognitive_load_level' => $cognitiveLoad['load_level'] ?? 0,
             'cognitive_load_display' => $this->formatCognitiveLoadDisplay($cognitiveLoad),
             'fatigue_status' => $fatigueStatus,
-            'selection_reason' => $this->selector->getReason($learnerId, $selected['type']),
+            'selection_reason' => $selectionReason,
             'sequence' => $this->getPedagogySequence($selected),
+            'content_recommendation' => $contentRecommendation,
         ];
+    }
+
+    /**
+     * Spec Phase 18: log every recommendation with enough context to later
+     * evaluate whether it worked. Guarded by Schema::hasTable() because the
+     * pal_recommendation_log migration (2026_08_19_120000) has not been run
+     * against every environment yet -- degrades to a no-op rather than
+     * breaking recommendation calls until it is. mastery_after/outcome are
+     * deliberately left null here; they belong to a separate call once the
+     * student has actually acted on the recommendation, not to the moment of
+     * recommending.
+     */
+    protected function logRecommendation(
+        int $learnerId,
+        int $conceptId,
+        array $context,
+        array $selectedPedagogy,
+        string $selectionReason,
+        array $contentRecommendation
+    ): void {
+        if (! Schema::hasTable('pal_recommendation_log')) {
+            return;
+        }
+
+        $masteryBefore = \App\Models\PAL\Competency::where('learner_id', $learnerId)
+            ->when($context['subject_id'] ?? null, fn ($q, $subjectId) => $q->where('subject_id', $subjectId))
+            ->avg('mastery_score');
+
+        $content = $contentRecommendation['content'] ?? null;
+
+        DB::table('pal_recommendation_log')->insert([
+            'learner_id' => $learnerId,
+            'concept_id' => $conceptId,
+            'subject_id' => $context['subject_id'] ?? null,
+            'sub_institute_id' => $context['sub_institute_id'] ?? null,
+            'mastery_before' => $masteryBefore,
+            'had_data_before' => $masteryBefore !== null,
+            'pedagogy_type' => $selectedPedagogy['type'] ?? null,
+            'selection_reason' => $selectionReason,
+            'content_master_id' => $content['content_master_id'] ?? $content['id'] ?? null,
+            'content_format' => $content['format'] ?? null,
+            'content_exhausted' => (bool) ($contentRecommendation['exhausted'] ?? false),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     /**

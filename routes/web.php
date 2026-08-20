@@ -115,6 +115,18 @@ Route::get('/lms/adaptive-practice', [App\Http\Controllers\lms\assessmentQuestio
 Route::post('/lms/submit-practice', [App\Http\Controllers\lms\assessmentQuestionController::class, 'submitPractice'])
     ->name('submit.practice');
 
+// Generate Diagnostic (onboarding) Assessment
+Route::get('/lms/diagnostic-assessment', [App\Http\Controllers\lms\assessmentQuestionController::class, 'generateDiagnosticAssessment'])
+    ->name('diagnostic.assessment');
+
+// Submit Diagnostic Assessment (POST)
+Route::post('/lms/submit-diagnostic-assessment', [App\Http\Controllers\lms\assessmentQuestionController::class, 'submitDiagnosticAssessment'])
+    ->name('submit.diagnostic.assessment');
+
+// Prerequisite gate status for a chapter's concepts
+Route::get('/lms/chapter-gate', [App\Http\Controllers\lms\assessmentQuestionController::class, 'getChapterGate'])
+    ->name('chapter.gate');
+
 // Practice History
 Route::get('/lms/practice-history', [App\Http\Controllers\lms\assessmentQuestionController::class, 'getPracticeHistory'])
     ->name('practice.history');
@@ -784,4 +796,12 @@ Route::post('/lms/coherence-map/answer', [\App\Http\Controllers\lms\pal\Coherenc
     ->name('coherence.map.answer');
 Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
 Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
+Route::group(['middleware' => ['session', 'menu', 'logRoute', 'check_permissions']], function () {
+    Route::get('/suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggested.content');
+    Route::post('/lms/store-suggested-content', [palController::class, 'storeSuggestedContent'])->name('store.suggested.content');
+    Route::get('/lms/pedagogy-suggested-content', [\App\Http\Controllers\lms\pal\palController::class, 'getPedagogySuggestedContent'])->name('pal.pedagogy.suggested.content');
+    Route::get('/lms/misconception', [\App\Http\Controllers\lms\pal\palController::class, 'misconception'])->name('misconception');
+    Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
+    Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
+});
 Route::get('/download-folder', [FileController::class, 'downloadFolder']);

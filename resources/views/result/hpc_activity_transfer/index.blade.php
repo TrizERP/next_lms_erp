@@ -33,7 +33,7 @@
                     <label>Source Sub Institute</label>
                     <select id="std_source_sub_institute_id" class="form-control">
                         <option value="">Select Sub Institute</option>
-                        @foreach ($data['sub_institutes'] as $subInstitute)
+                        @foreach ($data['source_sub_institutes'] as $subInstitute)
                             <option value="{{ $subInstitute->id }}">{{ $subInstitute->name }}</option>
                         @endforeach
                     </select>
@@ -58,7 +58,7 @@
                     <label>Source Sub Institute</label>
                     <select id="si_source_sub_institute_id" class="form-control">
                         <option value="">Select Sub Institute</option>
-                        @foreach ($data['sub_institutes'] as $subInstitute)
+                        @foreach ($data['source_sub_institutes'] as $subInstitute)
                             <option value="{{ $subInstitute->id }}">{{ $subInstitute->name }}</option>
                         @endforeach
                     </select>
@@ -67,7 +67,7 @@
                     <label>Target Sub Institute</label>
                     <select id="si_target_sub_institute_id" class="form-control">
                         <option value="">Select Sub Institute</option>
-                        @foreach ($data['sub_institutes'] as $subInstitute)
+                        @foreach ($data['source_sub_institutes'] as $subInstitute)
                             <option value="{{ $subInstitute->id }}">{{ $subInstitute->name }}</option>
                         @endforeach
                     </select>

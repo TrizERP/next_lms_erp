@@ -19,6 +19,18 @@ class HpcActivityTransferService
     }
 
     /**
+     * Sub institutes allowed as a transfer source - restricted to Hills schools.
+     */
+    public function getSourceSubInstitutes(): array
+    {
+        return DB::table('school_setup')
+            ->where('SchoolName', 'like', 'Hills%')
+            ->orderBy('SchoolName')
+            ->get(['Id as id', 'SchoolName as name'])
+            ->toArray();
+    }
+
+    /**
      * Standards belonging to one sub institute.
      */
     public function getStandards(int $subInstituteId): array
