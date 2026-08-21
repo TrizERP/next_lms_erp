@@ -26,6 +26,23 @@ class ApiLmsCourseController extends Controller
         return null;
     }
 
+    private function resolveContentUrl(array $contentArray): string
+    {
+        $url = $contentArray['url'] ?? '';
+        if (!empty($url)) {
+            return $url;
+        }
+
+        $filename = $contentArray['filename'] ?? '';
+        if (empty($filename) || preg_match('/^https?:\/\//i', $filename)) {
+            return $filename;
+        }
+
+        $fileFolder = trim($contentArray['file_folder'] ?? '/lms_content_file', '/');
+
+        return 'https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/' . $fileFolder . '/' . $filename;
+    }
+
     public function index(Request $request): JsonResponse
     {
         $sub_institute_id = $request->input('sub_institute_id') ?? $this->sessionValue($request, 'sub_institute_id');
@@ -296,6 +313,7 @@ class ApiLmsCourseController extends Controller
             $content_by_category = [];
             foreach ($content_data as $content) {
                 $contentArray = (array)$content;
+                $contentArray['url'] = $this->resolveContentUrl($contentArray);
                 $cat = $contentArray['content_category'] ?? 'General';
                 $content_by_category[$cat][] = $contentArray;
             }
@@ -345,6 +363,7 @@ class ApiLmsCourseController extends Controller
         $content_by_category = [];
         foreach ($content_data as $content) {
             $contentArray = (array)$content;
+            $contentArray['url'] = $this->resolveContentUrl($contentArray);
             $cat = $contentArray['content_category'] ?? 'General';
             $content_by_category[$cat][] = $contentArray;
         }
