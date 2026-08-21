@@ -2819,6 +2819,86 @@ foreach ($previous_standard as $item) {
         return $text;
     }
 
+    /**
+     * Ported from hp_erp's `AJAXController::getSupervisor` (bare `/getSupervisor`,
+     * called by the Task Management "New Assignment" modal to auto-fill the
+     * Observer field once an employee is selected). Adapted for this target's
+     * `tbluser` schema: hp_erp's version filters both the employee and the
+     * supervisor lookup with `whereNull('deleted_at')`, but this target's
+     * `tbluser` table has no `deleted_at` column (the same mismatch already
+     * fixed in five other Task Management controllers) - dropped here rather
+     * than reintroducing that bug. `employee_id` and `status` both exist on
+     * this target's `tbluser` (see `2023_05_25_203554_add_column_details_to_tbluser_table.php`
+     * and the original `create_tbluser_table` migration).
+     */
+    public function getSupervisor(Request $request)
+    {
+        $user_id = $request->input('user_id');
+        $sub_institute_id = $request->input('sub_institute_id');
+
+        if (!$user_id || !ctype_digit((string) $user_id) || !$sub_institute_id || !ctype_digit((string) $sub_institute_id)) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'user_id and sub_institute_id are required integers',
+            ], 400);
+        }
+
+        $user = DB::table('tbluser')
+            ->where('id', $user_id)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('status', 1)
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'User not found',
+            ], 404);
+        }
+
+        // No supervisor recorded is a normal state (empty employee_id), not an
+        // error - see hp_erp's precedent comment this is ported from: 200 with
+        // `data: null`, so the caller can tell "absent" from "broken" apart.
+        if (empty($user->employee_id)) {
+            return response()->json([
+                'status_code' => 1,
+                'message' => 'No supervisor is recorded for this employee.',
+                'data' => null,
+            ]);
+        }
+
+        $supervisor = DB::table('tbluser')
+            ->where('id', $user->employee_id)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('status', 1)
+            ->first();
+
+        if (!$supervisor) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Supervisor not found',
+            ], 404);
+        }
+
+        $fullName = trim(
+            ($supervisor->name_suffix ?? '') . ' ' .
+            ($supervisor->first_name ?? '') . ' ' .
+            ($supervisor->middle_name ?? '') . ' ' .
+            ($supervisor->last_name ?? '')
+        );
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'Supervisor found',
+            'data' => [
+                'id' => $supervisor->id,
+                'name' => preg_replace('/\s+/', ' ', $fullName),
+                'email' => $supervisor->email ?? null,
+                'mobile' => $supervisor->mobile ?? null,
+            ],
+        ]);
+    }
+
     public function getActivityMasterList(Request $request)
     {
         // echo("hi");die;

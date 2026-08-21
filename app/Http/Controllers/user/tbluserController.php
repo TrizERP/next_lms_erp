@@ -387,6 +387,31 @@ class tbluserController extends Controller
         ->get()
         ->toArray();
 
+        // Ported from hp_erp's `tbluserController::edit`, whose API branch
+        // resolves the employee's assigned jobrole -> its catalogue of
+        // job-role tasks (`s_user_jobrole_task`, grouped by `task`), exposed
+        // as `jobroleTasks`. The Task Management "New Assignment" modal's
+        // "Bulk Tasks" flow (`chooseAssignees` -> `getJobRoleTaskSuggestions`)
+        // reads this key directly - it was previously always empty here
+        // because this branch was never ported.
+        $res['jobroleTasks'] = [];
+        if (\Illuminate\Support\Facades\Schema::hasTable('s_user_jobrole') && \Illuminate\Support\Facades\Schema::hasTable('s_user_jobrole_task')) {
+            $assignedJobroleName = DB::table('s_user_jobrole')
+                ->where('sub_institute_id', $sub_institute_id)
+                ->where('id', (int) ($editData['allocated_standards'] ?? 0))
+                ->whereNull('deleted_at')
+                ->value('jobrole');
+
+            if ($assignedJobroleName) {
+                $res['jobroleTasks'] = DB::table('s_user_jobrole_task')
+                    ->where('jobrole', $assignedJobroleName)
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->whereNull('deleted_at')
+                    ->groupBy('task')
+                    ->get(['id', 'jobrole', 'task', 'task_type']);
+            }
+        }
+
         // return $res;
 
         return is_mobile($type, "user/edit_user", $res, "view");

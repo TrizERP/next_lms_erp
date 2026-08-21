@@ -103,7 +103,10 @@ class tbluserModel extends Model
         'total_experience',
         'employee_deposite',
         'oasis_id',
-        'udise_-_pen'
+        'udise_-_pen',
+        'fcm_token',
+        'load',
+        'reporting_manager_id',
     ];
 
     public function getFullNameAttribute()

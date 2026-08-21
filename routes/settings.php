@@ -10,6 +10,7 @@ use App\Http\Controllers\settings\announcementController;
 use App\Http\Controllers\settings\masterSetupSelectController;
 use App\Http\Controllers\settings\TrizSkillsController;
 use App\Http\Controllers\settings\configurationController;
+use App\Http\Controllers\settings\organizationDetailsController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -34,6 +35,9 @@ Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRo
     Route::post('update-rights-order',[configurationController::class,'updateMenuSortOrder'])->name('updateMenuSortOrder');
     Route::get('getFeildLists',[configurationController::class,'getFeildLists'])->name('getFeildLists');
     Route::post('restoreData',[configurationController::class,'restoreData'])->name('restoreData');
+
+    // Institute / Organization Profile - ported from hp_erp as-is.
+    Route::resource('organization_data', organizationDetailsController::class);
 
 });
 // no permisson check
