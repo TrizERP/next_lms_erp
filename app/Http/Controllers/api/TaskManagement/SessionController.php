@@ -60,10 +60,11 @@ class SessionController extends Controller
     {
         $context = $this->taskManagementContext($request);
 
+        // No `deleted_at` on this target's `tbluserprofilemaster` - it tracks
+        // active profiles via `status` alone.
         $profiles = DB::table('tbluserprofilemaster')
             ->where('sub_institute_id', $context['sub_institute_id'])
             ->where('status', 1)
-            ->whereNull('deleted_at')
             ->orderBy('sort_order')
             ->pluck('name')
             ->unique()
