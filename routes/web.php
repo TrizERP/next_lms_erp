@@ -630,7 +630,20 @@ Route::get('/assessment_question/concepts', [\App\Http\Controllers\lms\assessmen
 Route::post('assessment_question/store', [\App\Http\Controllers\lms\assessmentQuestionController::class, 'store'])->name('assessment_question.store');
 Route::any('geminiAI',[AJAXController::class, 'geminiAI'])->name('geminiAI');
 Route::get('lms_data',[AJAXController::class, 'lmsDataApi'])->name('lms_data');
+Route::get('table_data',[AJAXController::class, 'lmsDataApi'])->name('table_data');
 Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name('python_timetable');
+
+// Task Management "New Assignment" modal: bare-host legacy endpoints the
+// ported frontend calls via its non-`/api` webClient (see
+// `app/task-management/_lib/my-tasks-api.ts`'s `legacyGet`/`legacyPostForm`
+// doc-comment). `getSupervisor` mirrors hp_erp's bare `/getSupervisor`
+// (AJAXController). `/task` mirrors hp_erp's bare `Route::resource('task', ...)`
+// (routes/lms.php) - this target's own `taskController` is already
+// registered, but only under `frontdesk/task` (routes/frontdesk.php), which
+// 404s for the legacy client. Named distinctly from the `frontdesk.*`
+// resource's `task.*` names so the two registrations don't collide.
+Route::get('getSupervisor', [AJAXController::class, 'getSupervisor'])->name('legacy.getSupervisor');
+Route::post('task', [\App\Http\Controllers\frontdesk\taskController::class, 'store'])->name('legacy.task.store');
 
 // to transfer files to digital ocean
 Route::post('transferDocs', [oldDocumentTransfer::class, 'storeImagesToDigitalOcean']);

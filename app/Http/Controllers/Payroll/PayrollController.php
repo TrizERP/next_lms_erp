@@ -32,6 +32,20 @@ class PayrollController extends Controller
     public function payrollType(Request $request)
     {
         $sub_institute_id = session()->get('sub_institute_id');
+        $type = $request->input('type');
+
+        if ($type == "API") {
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    return response()->json(['status' => '2', 'message' => 'Token Auth Failed', 'data' => []], 401);
+                }
+            } catch (\Exception $e) {
+                return response()->json(['status' => '2', 'message' => $e->getMessage(), 'data' => []], 401);
+            }
+
+            $sub_institute_id = $request->get('sub_institute_id');
+        }
+
         $data['data'] = PayrollType::where('sub_institute_id',$sub_institute_id)->get();
         // return view('payroll.payroll_type.index', ["data" => $data]);
         $type = $request->input('type');
@@ -61,30 +75,79 @@ class PayrollController extends Controller
     public function payrollStore(Request $request)
     {
         $sub_institute_id = session()->get('sub_institute_id');
+        $user_id = session()->get('user_id');
+        $type = $request->input('type');
+
+        if ($type == "API") {
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    return response()->json(['status' => '2', 'message' => 'Token Auth Failed', 'data' => []], 401);
+                }
+            } catch (\Exception $e) {
+                return response()->json(['status' => '2', 'message' => $e->getMessage(), 'data' => []], 401);
+            }
+
+            $sub_institute_id = $request->get('sub_institute_id');
+            $user_id = $request->get('user_id');
+        }
 
         if ($request->id > 0) {
             $payrollType = PayrollType::find($request->id);
         } else {
             $payrollType = new PayrollType();
         }
-        $payrollType->payroll_type = $request->type;
+        // NOTE: reads `payroll_type` (the DB column name), NOT `type` - `type`
+        // is the API-mode flag ("API"/"JSON") every ported request also sends,
+        // so reading $request->type here previously wrote the literal string
+        // "API" into this integer column on every save.
+        $payrollType->payroll_type = $request->payroll_type;
         $payrollType->payroll_name = $request->payroll_name;
         $payrollType->amount_type = $request->amount_type;
         $payrollType->status = $request->status;
         $payrollType->day_count = $request->day_count;
         $payrollType->sub_institute_id = $sub_institute_id;
         $payrollType->payroll_percentage = $request->payroll_percentage !='' ? $request->payroll_percentage : 0;
+        if ($request->filled('sort_order')) {
+            $payrollType->sort_order = $request->sort_order;
+        }
+        // created_by/updated_by intentionally NOT written: payroll_types has
+        // no such columns in this app yet (unlike hp_erp's schema). A
+        // migration to add them exists at
+        // database/migrations/2026_08_18_100000_add_audit_columns_to_payroll_types.php
+        // but can't run until the DB server's disk-space issue is resolved
+        // (confirmed: even a bare ALTER TABLE ADD COLUMN fails with
+        // "No space left on device" right now). Once that migration runs,
+        // restore these two assignments (see git history / this comment).
         $payrollType->save();
 
-        return redirect('payroll-type');
+        $res['status_code'] = 1;
+        $res['message'] = $request->id > 0 ? 'Payroll type updated successfully' : 'Payroll type added successfully';
+
+        return is_mobile($type, "payroll.payroll_type.index", $res, "redirect");
     }
 
     public function payrollDestroy(Request $request, $id)
     {
+        $type = $request->input('type');
+
+        if ($type == "API") {
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    return response()->json(['status' => '2', 'message' => 'Token Auth Failed', 'data' => []], 401);
+                }
+            } catch (\Exception $e) {
+                return response()->json(['status' => '2', 'message' => $e->getMessage(), 'data' => []], 401);
+            }
+        }
+
         if ($id > 0) {
             PayrollType::where('id', $id)->delete();
         }
-        return redirect('payroll-type');
+
+        $res['status_code'] = 1;
+        $res['message'] = 'Payroll type deleted successfully';
+
+        return is_mobile($type, "payroll.payroll_type.index", $res, "redirect");
     }
 
     public function employeeSalaryStructure(Request $request)
@@ -94,19 +157,24 @@ class PayrollController extends Controller
         $status=$request->input('emp_status') ?? 1;
         $sub_institute_id=session()->get('sub_institute_id');
         $syear = session()->get('syear');
-        $employee_id= ($request->emp_id!=0) ? implode(',',$request->emp_id) : '';
-        $department_id= ($request->department_id!=0) ? implode(',',$request->department_id) : '';
+        // Reads `employee_id`, NOT `emp_id`: the ported frontend
+        // (app/hrit/_lib/payroll-api.ts's getSalaryStructure) sends
+        // `employee_id`, matching the naming it uses consistently across
+        // every payroll screen - `emp_id` was never actually populated by
+        // any real caller, so the employee filter silently did nothing.
+        $employee_id= (!empty($request->employee_id)) ? implode(',',$request->employee_id) : '';
+        $department_id= (!empty($request->department_id)) ? implode(',',$request->department_id) : '';
 
         if($type=="API"){
             try {
                 if (!$this->jwtToken()->validate()) {
                     $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-    
+
                     return response()->json($response, 401);
                 }
             } catch (\Exception $e) {
                 $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-    
+
                 return response()->json($response, 401);
             }
             $sub_institute_id = $request->get('sub_institute_id');
@@ -521,6 +589,9 @@ class PayrollController extends Controller
     {
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
+        if ($type == 'API') {
+            $sub_institute_id = $request->input('sub_institute_id');
+        }
         $res['employee_id'] = $request->get('employee_id');
         $res['month_ids'] = [1=>"Jan",2=>"Feb",3=>"Mar",4=>"Apr",5=>"May",6=>"Jun",7=>"Jul",8=>"Aug",9=>"Sep",10=>"Oct",11=>"Nov",12=>"Dec"];
 
@@ -538,8 +609,10 @@ class PayrollController extends Controller
         $type = $request->input('type');
         if ($type == 'API') {
             $sub_institute_id = $request->input('sub_institute_id');
+            $created_by = $request->input('user_id');
         } else {
             $sub_institute_id = $request->session()->get('sub_institute_id');
+            $created_by = session()->get('user_id');
         }
 
         $department_id = $request->get('department_id');
@@ -548,11 +621,27 @@ class PayrollController extends Controller
 	    $month_ids = $request->get('month_id');
 	    $payroll_type_ids = $request->get('payroll_type_id');
 	    $reason = $request->get('reason');
-        
+
+        // get_salary_certificate_html reads employee_salary_structures[0] unguarded,
+        // so an employee with no saved structure for this year threw a raw
+        // "Undefined array key 0" instead of a usable error - check first.
+        $has_salary_structure = DB::table('employee_salary_structures')
+            ->where('year', $year)
+            ->where('employee_id', $employee_id)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->exists();
+
+        if (!$has_salary_structure) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'No salary structure found for this employee and year.',
+            ], 422);
+        }
+
         $get_salaray_certificate = DB::table('hrms_salary_certificate')->where(['departement_id' => $department_id, 'employee_id' => $employee_id, 'sub_institute_id' => $sub_institute_id, 'year' => $year])->first();
 
         $res['pdfName'] = $filename = 'SC' . '_' . $year . '_' . $employee_id.'.pdf';
-        
+
         $get_salary_certificate_html = $this->get_salary_certificate_html($employee_id,$year,$sub_institute_id,$month_ids,$department_id,$payroll_type_ids,$filename);
 
         // return $get_salary_certificate_html;exit;
@@ -583,7 +672,7 @@ class PayrollController extends Controller
                 'sub_institute_id' => $sub_institute_id,
                 'pdf_file_name' => $filename,
                 'pdf_html' => $get_salary_certificate_html,
-                'created_by' => session()->get('user_id')
+                'created_by' => $created_by
             ]);
 
             $request->session()->flash('success', 'Salary Certificate Generated Successfully.');
@@ -823,6 +912,9 @@ class PayrollController extends Controller
     {
         $type = $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
+        if ($type == "API") {
+            $sub_institute_id = $request->sub_institute_id;
+        }
         $payrollTypes = [];
         $res['selMonth'] = date('M');
         $res['selYear'] = date('Y');
@@ -875,6 +967,10 @@ class PayrollController extends Controller
         $type = $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         $created_by = session()->get('user_id');
+        if ($type == "API") {
+            $sub_institute_id = $request->sub_institute_id;
+            $created_by = $request->user_id;
+        }
         $payroll_type = $request->payroll_type;
         $month = $request->month;
         $year = $request->year;

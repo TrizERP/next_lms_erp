@@ -6,9 +6,13 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
 use DB;
+use GenTux\Jwt\GetsJwtToken;
+use Illuminate\Support\Facades\Validator;
 
 class departmentController extends Controller
 {
+    use GetsJwtToken;
+
     public function index(Request $request)
     {
         $type = $request->input('type');
@@ -302,5 +306,258 @@ class departmentController extends Controller
 
         $res['departments'] = $result;
         return is_mobile($type, "hierarchy", $res, "view");
+    }
+
+    /**
+     * GET /api/departments-management
+     * -> { main_departments: [...], sub_departments: { [parent_id]: [...] } }
+     *
+     * The payroll module's department filter/picker (app/hrit/_lib/
+     * payroll-api.ts's getDepartmentsManagement, used by Salary Structure,
+     * Payroll Deduction, Form 16, Salary Certificate) calls this exact
+     * path/shape, matching hp_erp's DepartmentManagementController@index.
+     * Only POST/PUT/DELETE were ported for this route previously - the GET
+     * was missed, so every payroll department dropdown 404'd and stayed
+     * empty. Reuses hrms_departments the same way hierarchy() above does,
+     * just reshaped to the flat main/sub contract this consumer expects
+     * instead of hierarchy()'s nested tree-with-employees shape.
+     */
+    public function indexManagement(Request $request)
+    {
+        $auth = $this->managementTokenContext($request);
+        if ($auth instanceof \Illuminate\Http\JsonResponse) {
+            return $auth;
+        }
+
+        $sub_institute_id = $request->input('sub_institute_id');
+        if (!$sub_institute_id) {
+            return response()->json(['status' => 0, 'message' => 'sub_institute_id is required'], 400);
+        }
+
+        $departments = DB::table('hrms_departments')
+            ->where('status', 1)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->orderBy('department')
+            ->get();
+
+        $mainDepartments = [];
+        $subDepartments = [];
+
+        foreach ($departments as $department) {
+            if (empty($department->parent_id)) {
+                $mainDepartments[] = $department;
+            } else {
+                $subDepartments[$department->parent_id][] = $department;
+            }
+        }
+
+        return response()->json([
+            'main_departments' => $mainDepartments,
+            'sub_departments'  => $subDepartments,
+        ]);
+    }
+
+    /**
+     * Shared auth/context resolution for the Department Management API
+     * (POST/PUT/DELETE /api/departments-management/*). Ported from hp_erp's
+     * DepartmentManagementController, which does a manual inline Sanctum
+     * PersonalAccessToken check - this codebase's real tokens are JWTs (see
+     * App\Http\Controllers\api\Attendance\Concerns\ResolvesAttendanceContext
+     * for the established precedent), so we validate with GetsJwtToken
+     * instead, mirroring hierarchy() above which also resolves
+     * sub_institute_id from the request/session rather than Sanctum.
+     *
+     * @return int|\Illuminate\Http\JsonResponse sub_institute_id on success
+     */
+    private function managementTokenContext(Request $request)
+    {
+        $token = $request->input('token');
+
+        if (!$token) {
+            return response()->json(['status' => 0, 'message' => 'Token not provided'], 401);
+        }
+
+        try {
+            if (!$this->jwtToken($request)->validate()) {
+                return response()->json(['status' => 0, 'message' => 'Invalid token'], 401);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['status' => 0, 'message' => 'Invalid token'], 401);
+        }
+
+        return true;
+    }
+
+    /**
+     * POST /api/departments-management
+     * Body: { sub_institute_id, user_id, department, parent_id }
+     * -> { status: 1|0, message, data: { id } }
+     *
+     * Ported from hp_erp's DepartmentManagementController@store. Distinct
+     * from the store() method above (already routed under
+     * hrms/add_department for the session-based web UI, different
+     * request/response contract) - this is the new API contract only.
+     */
+    public function storeManagement(Request $request)
+    {
+        $auth = $this->managementTokenContext($request);
+        if ($auth instanceof \Illuminate\Http\JsonResponse) {
+            return $auth;
+        }
+
+        $validator = Validator::make($request->all(), [
+            'sub_institute_id' => 'required|numeric',
+            'department' => 'required|string',
+            'parent_id' => 'nullable|numeric',
+            'user_id' => 'required|numeric'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 0,
+                'message' => $validator->messages()->first()
+            ], 400);
+        }
+
+        $sub_institute_id = $request->sub_institute_id;
+        $department = $request->department;
+        $parent_id = $request->parent_id ?? 0;
+        $user_id = $request->user_id;
+
+        $check = DB::table('hrms_departments')
+            ->where('department', $department)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('parent_id', $parent_id)
+            ->first();
+
+        if ($check) {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Department already exists'
+            ], 400);
+        }
+
+        // Note: unlike hp_erp's hrms_departments, this app's table has no
+        // created_by/updated_by columns (see SHOW CREATE TABLE) - user_id is
+        // still required/validated above to match hp_erp's contract, but is
+        // not persisted since there's no column for it here.
+        $departmentId = DB::table('hrms_departments')->insertGetId([
+            'department' => $department,
+            'parent_id' => $parent_id,
+            'tasks' => null,
+            'roles_responsibility' => $department,
+            'status' => 1,
+            'sub_institute_id' => $sub_institute_id,
+            'created_at' => now(),
+        ]);
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Department added successfully',
+            'data' => ['id' => $departmentId]
+        ]);
+    }
+
+    /**
+     * PUT/PATCH /api/departments-management/{id}
+     * Body: { sub_institute_id, user_id, department }
+     * -> { status: 1|0, message }
+     *
+     * Ported from hp_erp's DepartmentManagementController@update (rename
+     * only). Distinct from Update() above (session-based web UI contract).
+     */
+    public function updateManagement(Request $request, $id)
+    {
+        $auth = $this->managementTokenContext($request);
+        if ($auth instanceof \Illuminate\Http\JsonResponse) {
+            return $auth;
+        }
+
+        $validator = Validator::make($request->all(), [
+            'sub_institute_id' => 'required|numeric',
+            'department' => 'required|string',
+            'user_id' => 'required|numeric'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 0,
+                'message' => $validator->messages()->first()
+            ], 400);
+        }
+
+        $sub_institute_id = $request->sub_institute_id;
+        $department = $request->department;
+        $user_id = $request->user_id;
+
+        // See storeManagement() note above: no updated_by column on this table.
+        $update = DB::table('hrms_departments')
+            ->where('id', $id)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->update([
+                'department' => $department,
+                'updated_at' => now(),
+            ]);
+
+        if ($update) {
+            return response()->json([
+                'status' => 1,
+                'message' => 'Department updated successfully'
+            ]);
+        } else {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Department not found or update failed'
+            ], 404);
+        }
+    }
+
+    /**
+     * DELETE /api/departments-management/{id}
+     * -> { status: 1|0, message }
+     * Soft-deletes the target department and its direct children
+     * (parent_id = $id) within the same sub_institute_id.
+     *
+     * Ported from hp_erp's DepartmentManagementController@destroy. Distinct
+     * from destroy() above (session-based web UI contract, hard delete).
+     * Does not touch hrms_departments_mapping or any HRIT attendance code.
+     */
+    public function destroyManagement(Request $request, $id)
+    {
+        $auth = $this->managementTokenContext($request);
+        if ($auth instanceof \Illuminate\Http\JsonResponse) {
+            return $auth;
+        }
+
+        $sub_institute_id = $request->input('sub_institute_id');
+
+        if (!$sub_institute_id) {
+            return response()->json(['status' => 0, 'message' => 'sub_institute_id is required'], 400);
+        }
+
+        $update = DB::table('hrms_departments')
+            ->where('id', $id)
+            ->where('sub_institute_id', $sub_institute_id)
+            // This table's status column is enum('1','') - not a 0/1 tinyint -
+            // so "inactive" is the empty-string member of the enum.
+            ->update(['status' => '', 'deleted_at' => now()]);
+
+        // Soft delete direct subdepartments only.
+        DB::table('hrms_departments')
+            ->where('parent_id', $id)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->update(['status' => '', 'deleted_at' => now()]);
+
+        if ($update) {
+            return response()->json([
+                'status' => 1,
+                'message' => 'Department and its subdepartments deleted successfully'
+            ]);
+        } else {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Department not found or soft delete failed'
+            ], 404);
+        }
     }
 }
