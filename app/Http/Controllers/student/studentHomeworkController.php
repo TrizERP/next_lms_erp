@@ -19,6 +19,7 @@ use function App\Helpers\SearchStudent;
 use function App\Helpers\sendNotification;
 use function App\Helpers\send_FCM_Notification;
 use App\Models\school_setup\SchoolModel;
+use App\Models\user\tbluserModel;
 
 class studentHomeworkController extends Controller
 {
@@ -681,23 +682,71 @@ class studentHomeworkController extends Controller
                 ->groupByRaw('s.subject_id,s.standard_id')
                 ->orderBy('s.display_name')->get()->toArray();
         } else {
-            $subject_teacher_subjects_data = DB::table('sub_std_map as s')
-                ->join('timetable as t', function ($join) {
-                    $join->whereRaw('t.standard_id = s.standard_id AND t.sub_institute_id = s.sub_institute_id AND t.subject_id = s.subject_id');
-                })
-                ->selectRaw("s.subject_id,s.display_name,t.academic_section_id,t.standard_id,t.division_id,t.teacher_id")
-                ->where('s.sub_institute_id', $sub_institute_id)
-                ->where('t.syear', $syear)
-                ->where('s.standard_id', $standard_id)
-                ->when($request->division_id, function ($q) use ($request) {
-                    $q->where('t.division_id', $request->division_id);
-                })
-                ->when($user_profile_name == "Teacher", function ($q) use ($teacher_id) {
-                    $q->where('t.teacher_id', $teacher_id);
-                })
-                ->groupByRaw('s.subject_id,s.standard_id')
-                ->orderBy('s.display_name')->get()->toArray();
+            if ($user_profile_name == "Teacher") {
+                $getUserData = \App\Models\user\tbluserModel::where('id', $teacher_id)->first();
+                $allocatedStandards = isset($getUserData->allocated_standards) ? trim($getUserData->allocated_standards) : '';
+
+                if (!empty($getUserData) && !empty($allocatedStandards) && $allocatedStandards != 'NA') {
+                    $allocatedArr = explode(',', $allocatedStandards);
+
+                    if (in_array($standard_id, $allocatedArr)) {
+                        $subject_teacher_subjects_data = DB::table('sub_std_map as s')
+                            ->selectRaw("s.subject_id,s.display_name,s.standard_id, '' as academic_section_id,'' as division_id,'' as teacher_id")
+                            ->where('s.sub_institute_id', $sub_institute_id)
+                            ->where('s.standard_id', $standard_id)
+                            ->groupByRaw('s.subject_id,s.standard_id')
+                            ->orderBy('s.display_name')->get()->toArray();
+                    } else {
+                        $subject_teacher_subjects_data = DB::table('sub_std_map as s')
+                            ->join('timetable as t', function ($join) {
+                                $join->whereRaw('t.standard_id = s.standard_id AND t.sub_institute_id = s.sub_institute_id AND t.subject_id = s.subject_id');
+                            })
+                            ->selectRaw("s.subject_id,s.display_name,t.academic_section_id,t.standard_id,t.division_id,t.teacher_id")
+                            ->where('s.sub_institute_id', $sub_institute_id)
+                            ->where('t.syear', $syear)
+                            ->where('s.standard_id', $standard_id)
+                            ->when($request->division_id, function ($q) use ($request) {
+                                $q->where('t.division_id', $request->division_id);
+                            })
+                            ->where('t.teacher_id', $teacher_id)
+                            ->groupByRaw('s.subject_id,s.standard_id')
+                            ->orderBy('s.display_name')->get()->toArray();
+                    }
+                } else {
+                    $subject_teacher_subjects_data = DB::table('sub_std_map as s')
+                        ->join('timetable as t', function ($join) {
+                            $join->whereRaw('t.standard_id = s.standard_id AND t.sub_institute_id = s.sub_institute_id AND t.subject_id = s.subject_id');
+                        })
+                        ->selectRaw("s.subject_id,s.display_name,t.academic_section_id,t.standard_id,t.division_id,t.teacher_id")
+                        ->where('s.sub_institute_id', $sub_institute_id)
+                        ->where('t.syear', $syear)
+                        ->where('s.standard_id', $standard_id)
+                        ->when($request->division_id, function ($q) use ($request) {
+                            $q->where('t.division_id', $request->division_id);
+                        })
+                        ->where('t.teacher_id', $teacher_id)
+                        ->groupByRaw('s.subject_id,s.standard_id')
+                        ->orderBy('s.display_name')->get()->toArray();
+                }
+            } else {
+                $subject_teacher_subjects_data = DB::table('sub_std_map as s')
+                    ->join('timetable as t', function ($join) {
+                        $join->whereRaw('t.standard_id = s.standard_id AND t.sub_institute_id = s.sub_institute_id AND t.subject_id = s.subject_id');
+                    })
+                    ->selectRaw("s.subject_id,s.display_name,t.academic_section_id,t.standard_id,t.division_id,t.teacher_id")
+                    ->where('s.sub_institute_id', $sub_institute_id)
+                    ->where('t.syear', $syear)
+                    ->where('s.standard_id', $standard_id)
+                    ->when($request->division_id, function ($q) use ($request) {
+                        $q->where('t.division_id', $request->division_id);
+                    })
+                    ->groupByRaw('s.subject_id,s.standard_id')
+                    ->orderBy('s.display_name')->get()->toArray();
+            }
         }
+
+        return json_decode(json_encode($subject_teacher_subjects_data), true);
+    }
 
         // $class_teacher_sql = "SELECT s.subject_id,s.display_name,ct.grade_id,ct.standard_id,ct.division_id,ct.teacher_id
         // 					FROM sub_std_map s
@@ -709,9 +758,6 @@ class studentHomeworkController extends Controller
         // $class_teacher_subjects_data = json_decode(json_encode($class_teacher_subjects_data),true);
 
         // $all_subjects = array_merge($subject_teacher_subjects_data,$class_teacher_subjects_data);
-
-        return json_decode(json_encode($subject_teacher_subjects_data), true);
-    }
 
     public function multipleDelete(Request $request)
     {

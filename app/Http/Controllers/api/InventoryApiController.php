@@ -136,8 +136,11 @@ class InventoryApiController extends Controller
             'departments' => DB::table('hrms_departments')->select('id', 'department as name')->where('sub_institute_id', $tenant)->orderBy('department')->get(),
             'purchase_orders' => DB::table('inventory_generate_po_details')->select('po_number as id', 'po_number as name')->where('sub_institute_id', $tenant)->where('syear', $syear)->distinct()->orderByDesc('po_number')->get(),
             'approved_purchase_orders' => DB::table('inventory_generate_po_details as po')->join('inventory_requisition_status_master as status', 'status.id', '=', 'po.po_approval_status')->select('po.po_number as id', 'po.po_number as name')->where('po.sub_institute_id', $tenant)->where('po.syear', $syear)->where('status.title', 'APPROVED')->distinct()->orderByDesc('po.po_number')->get(),
+            'po_items' => DB::table('inventory_generate_po_details as po')->join('inventory_item_master as item', 'item.id', '=', 'po.item_id')->join('inventory_requisition_status_master as status', 'status.id', '=', 'po.po_approval_status')->select('item.id', 'item.title as name', 'po.po_number as group_key')->where('po.sub_institute_id', $tenant)->where('po.syear', $syear)->where('status.title', 'APPROVED')->orderBy('item.title')->get(),
+            'allocation_users' => DB::table('inventory_requisition_details as requisition')->join('inventory_requisition_status_master as status', 'status.id', '=', 'requisition.requisition_status')->join('tbluser as user', function ($join) { $join->on('user.id', '=', 'requisition.requisition_by')->where('user.status', '=', 1); })->select('user.id', DB::raw("concat_ws(' ', user.first_name, user.middle_name, user.last_name) as name"))->where('requisition.sub_institute_id', $tenant)->where('requisition.syear', $syear)->where('status.title', 'APPROVED')->whereNotExists(function ($query) { $query->select(DB::raw(1))->from('inventory_allocation_details as allocation')->whereColumn('allocation.REQUISITION_DETAILS_ID', 'requisition.id'); })->distinct()->orderBy('name')->get(),
+            'allocatable_items' => DB::table('inventory_requisition_details as requisition')->join('inventory_item_master as item', 'item.id', '=', 'requisition.item_id')->join('inventory_requisition_status_master as status', 'status.id', '=', 'requisition.requisition_status')->select('item.id', 'item.title as name', 'requisition.requisition_by as parent_id')->where('requisition.sub_institute_id', $tenant)->where('requisition.syear', $syear)->where('status.title', 'APPROVED')->whereNotExists(function ($query) { $query->select(DB::raw(1))->from('inventory_allocation_details as allocation')->whereColumn('allocation.REQUISITION_DETAILS_ID', 'requisition.id'); })->orderBy('item.title')->get(),
             'received_items' => DB::table('inventory_item_receivable_details as receipt')->join('inventory_item_master as item', 'item.id', '=', 'receipt.item_id')->select('item.id', 'item.title as name')->where('receipt.sub_institute_id', $tenant)->where('receipt.syear', $syear)->distinct()->orderBy('item.title')->get(),
-            'return_items' => DB::table('inventory_allocation_details as allocation')->join('inventory_item_master as item', 'item.id', '=', 'allocation.item_id')->select('item.id', 'item.title as name')->where('allocation.sub_institute_id', $tenant)->where('allocation.syear', $syear)->where('item.item_type_id', 2)->distinct()->orderBy('item.title')->get(),
+            'returnable_items' => DB::table('inventory_allocation_details as allocation')->join('inventory_requisition_details as requisition', 'requisition.id', '=', 'allocation.requisition_details_id')->join('inventory_item_master as item', 'item.id', '=', 'allocation.ITEM_ID')->select('item.id', 'item.title as name', 'requisition.requisition_by as parent_id')->where('allocation.SUB_INSTITUTE_ID', $tenant)->where('allocation.SYEAR', $syear)->where('item.item_type_id', 2)->orderBy('item.title')->get(),
             'quotations' => DB::table('inventory_item_quotation_details')->select('id', DB::raw("concat('Quotation #', id) as name"))->where('sub_institute_id', $tenant)->where('syear', $syear)->orderByDesc('id')->get(),
             'quotation_vendors' => DB::table('inventory_vendor_master')->select('id', 'vendor_name as name')->where('sub_institute_id', $tenant)->orderBy('vendor_name')->get(),
             'quotation_items' => DB::table('inventory_item_master')->select('id', 'title as name')->where('sub_institute_id', $tenant)->orderBy('title')->get(),
@@ -1101,6 +1104,12 @@ class InventoryApiController extends Controller
         $syear = $request->integer('syear');
         $items = DB::table('inventory_generate_po_details as gp')
             ->join('inventory_item_master as i', 'i.id', '=', 'gp.item_id')
+            ->leftJoin('inventory_negotiate_po_details as np', function ($join) {
+                $join->on('np.item_id', '=', 'gp.item_id')
+                     ->on('np.po_number', '=', 'gp.po_number')
+                     ->on('np.sub_institute_id', '=', 'gp.sub_institute_id')
+                     ->on('np.syear', '=', 'gp.syear');
+            })
             ->leftJoin('inventory_item_receivable_details as ir', function ($join) {
                 $join->on('ir.ITEM_ID', '=', 'gp.item_id')
                      ->on('ir.PURCHASE_ORDER_NO', '=', 'gp.po_number');
@@ -1113,10 +1122,10 @@ class InventoryApiController extends Controller
                 gp.po_number,
                 gp.item_id,
                 i.title as item_name,
-                gp.qty,
+                COALESCE(np.qty, gp.qty) as qty,
                 IFNULL(ir.PREVIOUS_RECEIVED_QTY, 0) as previous_receive_qty,
                 IFNULL(ir.ACTUAL_RECEIVED_QTY, 0) as actual_received_qty,
-                (gp.qty - IFNULL(ir.PREVIOUS_RECEIVED_QTY,0)) as pending_qty,
+                (COALESCE(np.qty, gp.qty) - IFNULL(ir.PREVIOUS_RECEIVED_QTY,0)) as pending_qty,
                 ir.REMARKS as remarks,
                 ir.WARRANTY_START_DATE as warranty_start_date,
                 ir.WARRANTY_END_DATE as warranty_end_date,

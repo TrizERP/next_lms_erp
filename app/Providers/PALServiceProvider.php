@@ -3,6 +3,10 @@
 namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
+use App\Services\PAL\Administration\ArchitectureHealthService;
+use App\Services\PAL\Administration\ArchitectureRegistry;
+use App\Services\PAL\Runtime\PalEvidenceRepository;
+use App\Services\PAL\Runtime\SubsystemRuntime;
 use App\Services\PAL\Intelligence\IntelligenceService;
 use App\Services\PAL\Intelligence\LearnerStateEngine;
 use App\Services\PAL\Intelligence\LearningVelocityEngine;
@@ -136,7 +140,8 @@ class PALServiceProvider extends ServiceProvider
                 $app->make(CognitiveLoadEngine::class),
                 $app->make(EmotionalSafetyEngine::class),
                 $app->make(MetacognitionEngine::class),
-                $app->make(PedagogyFatigueEngine::class)
+                $app->make(PedagogyFatigueEngine::class),
+                $app->make(ContentIntelligenceService::class)
             );
         });
 
@@ -162,6 +167,34 @@ class PALServiceProvider extends ServiceProvider
         $this->app->singleton(PedagogySuggestedContentService::class, function ($app) {
             return new PedagogySuggestedContentService(
                 $app->make(PedagogyOrchestrationService::class)
+            );
+        });
+
+        // Administration — the architecture control plane. The registry is
+        // stateless; the health service memoises its probes for the life of a
+        // request, so it is bound per request rather than as a singleton to
+        // avoid a stale report inside a queue worker.
+        $this->app->singleton(ArchitectureRegistry::class, function () {
+            return new ArchitectureRegistry();
+        });
+
+        $this->app->bind(ArchitectureHealthService::class, function ($app) {
+            return new ArchitectureHealthService(
+                $app->make(FrameworkCatalogService::class)
+            );
+        });
+
+        // Runtime — the live layer. Reads the real learner evidence out of the
+        // legacy PAL stack and runs the engines over it, so a subsystem page
+        // shows what its configuration actually produces.
+        $this->app->singleton(PalEvidenceRepository::class, function () {
+            return new PalEvidenceRepository();
+        });
+
+        $this->app->bind(SubsystemRuntime::class, function ($app) {
+            return new SubsystemRuntime(
+                $app->make(PalEvidenceRepository::class),
+                $app->make(ArchitectureRegistry::class)
             );
         });
     }

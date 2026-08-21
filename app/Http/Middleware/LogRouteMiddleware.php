@@ -26,7 +26,7 @@ class LogRouteMiddleware
             $sub_institute_id = $request->session()->get('sub_institute_id');
             $user_id = $request->session()->get('user_id');
             $user_profile_id = $request->session()->get('user_profile_id');
-            $uri = explode("/", $_SERVER['REQUEST_URI']);
+            $uri = explode("/", $request->getRequestUri());
 
             // added on 27/08/2024
             $tableName = null;
@@ -87,9 +87,9 @@ class LogRouteMiddleware
                 'sub_institute_id' => $sub_institute_id,
                 'user_id'          => $user_id,
                 'profile_id'       => $user_profile_id,
-                'ip_address'       => $_SERVER['REMOTE_ADDR'],
-                'module'           => $uri[1] ?? $_SERVER['REQUEST_URI'],
-                'action'           => $_SERVER['REQUEST_URI'],
+                'ip_address'       => $request->ip(),
+                'module'           => $uri[1] ?? $request->getRequestUri(),
+                'action'           => $request->getRequestUri(),
             ];
 
             $data = Accesslog::insert($log_data);

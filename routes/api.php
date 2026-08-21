@@ -25,6 +25,12 @@ use App\Http\Controllers\fees\fees_cancel\feesCancelController;
 use App\Http\Controllers\fees\fees_circular\feesCircularController;
 use App\Http\Controllers\fees\fees_circular\feesCircularMasterController;
 use App\Http\Controllers\api\FeesDashboardApiController;
+use App\Http\Controllers\api\RoleDashboardApiController;
+use App\Http\Controllers\api\AdmissionsDashboardApiController;
+use App\Http\Controllers\api\StudentsDashboardApiController;
+use App\Http\Controllers\api\LibraryDashboardApiController;
+use App\Http\Controllers\api\HostelDashboardApiController;
+use App\Http\Controllers\api\TransportationDashboardApiController;
 use App\Http\Controllers\api\FeesRefundApiController;
 use App\Http\Controllers\api\TeacherAssignmentMobileApiController;
 
@@ -82,6 +88,22 @@ Route::middleware('api.session')->prefix('hrms')->group(function () {
     Route::get('leaves', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'leaves']);
 });
 Route::post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
+// Module dashboards (Admissions/Students) — same stateless pattern as
+// fees-dashboard/summary above: tenant/year travel in the request body, so
+// no session middleware is required.
+Route::post('admissions-dashboard/summary', [AdmissionsDashboardApiController::class, 'summary']);
+Route::post('students-dashboard/summary', [StudentsDashboardApiController::class, 'summary']);
+Route::post('library-dashboard/summary', [LibraryDashboardApiController::class, 'summary']);
+Route::post('hostel-dashboard/summary', [HostelDashboardApiController::class, 'summary']);
+Route::post('transportation-dashboard/summary', [TransportationDashboardApiController::class, 'summary']);
+// Role-based dashboards (Admin/Teacher/Student) — identity comes only from the
+// JWT via ApiSessionHydrator, never from the request body, so a token cannot
+// be used to fetch another role's or another user's data.
+Route::middleware('api.session')->group(function () {
+    Route::post('admin-dashboard/summary', [RoleDashboardApiController::class, 'adminSummary']);
+    Route::post('teacher-dashboard/summary', [RoleDashboardApiController::class, 'teacherSummary']);
+    Route::post('student-dashboard/summary', [RoleDashboardApiController::class, 'studentSummary']);
+});
 Route::middleware('api.session')->prefix('fees-refund')->group(function () {
     Route::post('search', [FeesRefundApiController::class, 'search']);
     Route::post('detail/{studentId}', [FeesRefundApiController::class, 'detail']);
@@ -224,6 +246,15 @@ Route::match(['put', 'patch'], 'inventory/{module}/{id}', [InventoryApiControlle
 Route::delete('inventory/{module}/{id}', [InventoryApiController::class, 'destroy'])->where('module', '^(?!reports$).+');
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
 Route::post('fees-cancel/search', [feesCancelController::class, 'search']);
+
+// Import Data API - stateless JSON entry points for the Next.js frontend.
+// These mirror the legacy web import routes but return JSON instead of HTML.
+Route::middleware('api.session')->prefix('import')->group(function () {
+    Route::get('tables', [\App\Http\Controllers\api\ImportApiController::class, 'tables']);
+    Route::post('parse', [\App\Http\Controllers\api\ImportApiController::class, 'parse']);
+    Route::post('process', [\App\Http\Controllers\api\ImportApiController::class, 'process']);
+    Route::post('match-fields', [\App\Http\Controllers\api\ImportApiController::class, 'matchFields']);
+});
 
 // Fees Circular - stateless JSON entry points for the Next.js frontend.
 // Callers must send type=JSON (is_mobile then returns response()->json) plus
