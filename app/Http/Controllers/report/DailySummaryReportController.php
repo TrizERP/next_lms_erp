@@ -275,7 +275,6 @@ class DailySummaryReportController extends Controller
         $totalStaff = (int) DB::table('tbluser')
             ->where('sub_institute_id', $sub_institute_id)
             ->where('status', 1)
-            ->whereNull('deleted_at')
             ->count();
 
         $present = (int) DB::table('hrms_attendances')
@@ -309,7 +308,6 @@ class DailySummaryReportController extends Controller
     {
         return DB::table('hrms_emp_leaves')
             ->where('sub_institute_id', $sub_institute_id)
-            ->whereNull('deleted_at')
             ->whereDate('created_at', $today);
     }
 
@@ -428,13 +426,11 @@ class DailySummaryReportController extends Controller
     {
         $issued = (int) DB::table('library_book_circulations')
             ->where('sub_institute_id', $sub_institute_id)
-            ->whereNull('deleted_at')
             ->whereDate('issued_date', $today)
             ->count();
 
         $returned = (int) DB::table('library_book_circulations')
             ->where('sub_institute_id', $sub_institute_id)
-            ->whereNull('deleted_at')
             ->whereDate('return_date', $today)
             ->count();
 

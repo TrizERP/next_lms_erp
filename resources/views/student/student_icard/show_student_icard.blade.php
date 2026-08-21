@@ -167,7 +167,11 @@
                     }
 
                     $add_val = trim($value['address']);
-                    $add_val = substr(strtoupper($add_val), 0,38).'.';
+
+                    if(session()->get('sub_institute_id') == 341)
+                        $add_val = substr($add_val, 0,63).'.';
+                    else
+                        $add_val = substr($add_val, 0,38).'.';
 
                     $distance_rate = '';
                     if(isset($value['distance_rate']) && $value['distance_rate'] != '')
