@@ -54,6 +54,22 @@ class PalApiAuth
             return $this->deny('Authentication token is malformed.', 401);
         }
 
+        // `is_admin` is unreliable -- many genuine institute admins have it
+        // null in tbluser (same reason ApiSessionHydrator falls back to the
+        // profile name rather than trusting is_admin alone). The system-wide
+        // convention is that admin-tier profiles (Admin / School admin /
+        // Assistant admin / Principal, ...) all chain up to profile id 1 via
+        // parent_id, consistently across institutes. Without this fallback,
+        // such admins get misclassified as plain "staff" and wrongly scoped
+        // down to only their own assigned classes.
+        $isAdminProfile = $isAdmin >= 1;
+        if (! $isAdminProfile && ! $isStudent && ! empty($payload['user_profile_id'])) {
+            $profileParentId = DB::table('tbluserprofilemaster')
+                ->where('id', $payload['user_profile_id'])
+                ->value('parent_id');
+            $isAdminProfile = (int) $profileParentId === 1;
+        }
+
         $auth = [
             'user_id'          => $userId,
             'sub_institute_id' => $payload['sub_institute_id'] ?? '',
@@ -61,7 +77,7 @@ class PalApiAuth
             'is_student'       => $isStudent,
             'user_profile_id'  => $payload['user_profile_id'] ?? null,
             'client_id'        => $payload['client_id'] ?? null,
-            'role'             => $isStudent ? 'student' : ($isAdmin >= 1 ? 'admin' : 'staff'),
+            'role'             => $isStudent ? 'student' : ($isAdminProfile ? 'admin' : 'staff'),
         ];
         $request->attributes->set('pal_auth', $auth);
 
@@ -142,9 +158,64 @@ class PalApiAuth
             array_map('trim', explode(',', (string) $auth['sub_institute_id'])),
             'strlen'
         );
-        return in_array((string) $targetSub, $callerInstitutes, true)
-            ? true
-            : 'This learner belongs to a different institute.';
+        if (! in_array((string) $targetSub, $callerInstitutes, true)) {
+            return 'This learner belongs to a different institute.';
+        }
+
+        // Plain teachers (not institute admins) are further scoped to their
+        // assigned classes -- same restriction the rest of the LMS applies via
+        // class_teacher (homeroom) / timetable (subject teacher), enforced ad
+        // hoc per-controller rather than by a shared guard (see
+        // Helper::SearchStudent, studentAttendanceController). PAL had no such
+        // restriction at all: any staff member could reach any student in the
+        // institute. Institute-level admins keep full institute access.
+        if ($auth['role'] === 'staff' && ! $this->isStudentInTeacherScope((int) $auth['user_id'], $targetSub, $learnerId)) {
+            return 'This learner is not in one of your assigned classes.';
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether $studentId falls in $teacherId's assigned classes, as either the
+     * homeroom class_teacher or a subject teacher per the timetable -- the
+     * same two sources Helper::SearchStudent()/lmsActivityStreamController
+     * already treat as a teacher's scope elsewhere in the LMS. Matches on the
+     * SAME syear on both sides (assignment and enrollment) rather than
+     * resolving "the current year" independently, since there is no
+     * authoritative current-year flag on academic_year; this both avoids
+     * guessing and fails closed (a student with no matching-year enrollment
+     * simply won't match).
+     */
+    private function isStudentInTeacherScope(int $teacherId, int $subInstituteId, int $studentId): bool
+    {
+        $classTeacherMatch = DB::table('class_teacher as ct')
+            ->join('tblstudent_enrollment as se', function ($join) {
+                $join->on('se.standard_id', '=', 'ct.standard_id')
+                    ->on('se.section_id', '=', 'ct.division_id')
+                    ->on('se.sub_institute_id', '=', 'ct.sub_institute_id')
+                    ->on('se.syear', '=', 'ct.syear');
+            })
+            ->where('ct.teacher_id', $teacherId)
+            ->where('ct.sub_institute_id', $subInstituteId)
+            ->where('se.student_id', $studentId)
+            ->exists();
+
+        if ($classTeacherMatch) {
+            return true;
+        }
+
+        return DB::table('timetable as t')
+            ->join('tblstudent_enrollment as se', function ($join) {
+                $join->on('se.standard_id', '=', 't.standard_id')
+                    ->on('se.section_id', '=', 't.division_id')
+                    ->on('se.sub_institute_id', '=', 't.sub_institute_id')
+                    ->on('se.syear', '=', 't.syear');
+            })
+            ->where('t.teacher_id', $teacherId)
+            ->where('t.sub_institute_id', $subInstituteId)
+            ->where('se.student_id', $studentId)
+            ->exists();
     }
 
     /**

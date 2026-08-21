@@ -19,6 +19,9 @@ use Illuminate\Support\Facades\DB;
  */
 class PedagogyEngineResolver
 {
+    /** The Bloom levels the engine treats as "most intellectually demanding". */
+    private const TOP_BLOOMS = ['analyze', 'evaluate', 'create'];
+
     public function __construct(
         private readonly FrameworkCatalogService $catalog
     ) {
@@ -38,6 +41,8 @@ class PedagogyEngineResolver
             'tier-3' => $this->resolveTier3($rule, $concept),
             'tier-4' => $this->resolveTier4($rule, $concept),
             'tier-5' => $this->resolveTier5($rule, $concept),
+            'engagement-score' => $this->resolveEngagement($rule, $concept),
+            'trigger-map' => $this->resolveTriggerRule($rule, $concept),
             default => null,
         };
     }
@@ -96,6 +101,10 @@ class PedagogyEngineResolver
                 ];
                 $sources[] = 'prerequisites[]';
             }
+
+            // The schema is built on the source material the extraction quoted,
+            // so the grounding evidence is served with the definition.
+            $this->append($items, $sources, $this->evidenceRows($concept));
         } elseif ($contentType === 'expanded_task') {
             // At mastery the engine stops serving practice and moves to transfer:
             // real-world applications and cross-concept relationships.
@@ -127,6 +136,15 @@ class PedagogyEngineResolver
                 $sources[] = 'assessment_blueprint[]';
             }
         }
+
+        // Bands above the practice floor also serve what their own action names:
+        // assessment-ready outcomes while consolidating, and the competencies and
+        // abilities a peer-teaching learner has to demonstrate.
+        $this->append($items, $sources, match ((string) ($meta['state'] ?? '')) {
+            'consolidating' => $this->outcomeRows($concept, true),
+            'approaching mastery' => array_merge($this->competencyRows($concept), $this->abilityRows($concept)),
+            default => [],
+        });
 
         return $this->resolution(
             $items,
@@ -258,15 +276,8 @@ class PedagogyEngineResolver
                 // "Most intellectually demanding available content" is a real
                 // lookup: the top-Bloom blueprint rows this concept actually has.
                 $note = 'The most demanding content available for this concept, by Bloom level.';
-                foreach ($this->pick($concept['assessment_blueprint'], fn ($b) => in_array(strtolower((string) ($b['bloom_level'] ?? '')), ['analyze', 'evaluate', 'create'], true)) as $item) {
-                    $items[] = [
-                        'label' => (string) ($item['recommended_question'] ?? $item['assessment_type'] ?? ''),
-                        'detail' => $item['assessment_type'] ?? null,
-                        'tags' => array_values(array_filter([$item['bloom_level'] ?? null, $item['difficulty'] ?? null])),
-                        'from' => 'assessment_blueprint[]',
-                    ];
-                    $sources[] = 'assessment_blueprint[]';
-                }
+                $this->append($items, $sources, $this->topBloomBlueprint($concept));
+                $this->append($items, $sources, $this->rubricRows($concept, self::TOP_BLOOMS));
                 break;
         }
 
@@ -301,6 +312,15 @@ class PedagogyEngineResolver
                     ];
                     $sources[] = 'misconceptions[]';
                 }
+
+                if ($rule['id'] === 'class-wide-misconception') {
+                    // The majority signal is counted over the concept's own rubric
+                    // distractors and recorded common errors -- those are the items
+                    // a class answers, so they are what a class-wide rate is read
+                    // from. No worked example is substituted for them.
+                    $note = 'The misconceptions this concept carries, plus the rubric distractors and common errors the class-wide rate is measured over.';
+                    $this->append($items, $sources, $this->misconceptionProbes($concept));
+                }
                 break;
 
             case 'no-misconception-match':
@@ -318,24 +338,18 @@ class PedagogyEngineResolver
                 break;
 
             case 'correct-high-latency':
-                $note = 'Fluency drilling targets the concept\'s extracted knowledge items.';
+                $note = 'Fluency drilling targets the concept\'s extracted knowledge items and the abilities they support.';
                 foreach ($concept['knowledge_items'] as $item) {
                     $items[] = ['label' => (string) ($item['knowledge'] ?? $item['value'] ?? ''), 'detail' => null, 'tags' => ['fluency'], 'from' => 'knowledge_items[]'];
                     $sources[] = 'knowledge_items[]';
                 }
+                $this->append($items, $sources, $this->abilityRows($concept));
                 break;
 
             case 'fast-and-right':
-                $note = 'Escalates to the concept\'s highest-Bloom blueprint rows.';
-                foreach ($this->pick($concept['assessment_blueprint'], fn ($b) => in_array(strtolower((string) ($b['bloom_level'] ?? '')), ['analyze', 'evaluate', 'create'], true)) as $item) {
-                    $items[] = [
-                        'label' => (string) ($item['recommended_question'] ?? $item['assessment_type'] ?? ''),
-                        'detail' => $item['assessment_type'] ?? null,
-                        'tags' => array_values(array_filter([$item['bloom_level'] ?? null, $item['difficulty'] ?? null])),
-                        'from' => 'assessment_blueprint[]',
-                    ];
-                    $sources[] = 'assessment_blueprint[]';
-                }
+                $note = 'Escalates to the concept\'s highest-Bloom blueprint rows and scored rubric items.';
+                $this->append($items, $sources, $this->topBloomBlueprint($concept));
+                $this->append($items, $sources, $this->rubricRows($concept, self::TOP_BLOOMS));
                 break;
         }
 
@@ -413,21 +427,122 @@ class PedagogyEngineResolver
                 ];
                 $sources[] = 'assessment_blueprint[]';
             }
+
+            // The rubric items are the scored form of the same diagnostic, so
+            // they are what a first session can actually be marked against.
+            $this->append($items, $sources, array_slice($this->rubricRows($concept), 0, 5));
+        }
+
+        if ($rule['id'] === 'teacher-override') {
+            // A teacher overrides *towards* something: the options are this
+            // concept's own extracted pedagogy recommendations.
+            $this->append($items, $sources, $this->pedagogyRows($concept, 'teacher option'));
         }
 
         return $this->resolution($items, $sources, $this->pedagogyFromConcept($concept, $rule), '');
     }
 
+    // ─── Engagement score: the concept content behind each signal and band ───
+
+    /**
+     * The composition weights and the band thresholds are engine configuration,
+     * but what each row *measures over* is the selected concept's own extracted
+     * content: the items a session is spent on, the deck a return session opens
+     * with, the optional material a voluntary extension can reach into.
+     *
+     * @param  array<string, mixed>  $rule
+     * @param  array<string, mixed>  $concept
+     * @return array<string, mixed>
+     */
+    private function resolveEngagement(array $rule, array $concept): array
+    {
+        $items = [];
+        $sources = [];
+
+        [$rows, $note] = match ($rule['group'] === 'signal' ? (string) ($rule['meta']['key'] ?? '') : $rule['id']) {
+            'time_on_task_ratio' => [
+                $this->blueprintRows($concept),
+                'Measured against the expected duration of the blueprint items this concept actually carries.',
+            ],
+            'interaction_rate' => [
+                $this->rubricRows($concept),
+                'Counted over the scored rubric items the learner answers for this concept.',
+            ],
+            'session_return_rate' => [
+                $this->knowledgeRows($concept, 'return deck'),
+                'The familiar deck a returning session re-opens with for this concept.',
+            ],
+            'voluntary_extension_rate' => [
+                array_merge($this->applicationRows($concept), $this->relationshipRows($concept)),
+                'The optional material a learner can voluntarily continue into beyond the required content.',
+            ],
+            'band-critical' => [
+                $this->knowledgeRows($concept, 'game deck'),
+                'A game injection in this band is built from this concept\'s knowledge items.',
+            ],
+            'band-low' => [
+                $this->pedagogyRows($concept, 'alternative'),
+                'The pedagogies this concept can be switched to when engagement sits in this band.',
+            ],
+            'band-normal', 'band-good' => [
+                $this->blueprintRows($concept),
+                'No intervention: the concept keeps serving its own blueprint items.',
+            ],
+            'band-flow' => [
+                array_merge($this->topBloomBlueprint($concept), $this->rubricRows($concept, self::TOP_BLOOMS)),
+                'The hardest content this concept carries, which is what a flow state is allowed to escalate to.',
+            ],
+            default => [[], ''],
+        };
+
+        $this->append($items, $sources, $rows);
+
+        return $this->resolution($items, $sources, $this->pedagogyFromConcept($concept, $rule), $note);
+    }
+
     // ─── Pedagogy x Trigger map: which triggers this concept actually fires ──
 
     /**
-     * @param  array<int, array<string, mixed>>  $triggers
+     * The rule-row form of the trigger map, so every row in the section reports
+     * the same extracted evidence the trigger table shows.
+     *
+     * @param  array<string, mixed>  $rule
      * @param  array<string, mixed>  $concept
-     * @return array<int, array<string, mixed>>
+     * @return array<string, mixed>
      */
-    public function resolveTriggers(array $triggers, array $concept): array
+    private function resolveTriggerRule(array $rule, array $concept): array
     {
-        $evidence = [
+        [$key, $path] = $this->triggerEvidenceMap()[$rule['id']] ?? [null, null];
+
+        $items = [];
+        $sources = [];
+
+        foreach ($key === null ? [] : ($concept[$key] ?? []) as $row) {
+            $items[] = [
+                'label' => $this->rowLabel($row),
+                'detail' => null,
+                'tags' => [],
+                'from' => $path,
+            ];
+            $sources[] = $path;
+        }
+
+        return $this->resolution(
+            $items,
+            $sources,
+            $this->pedagogyFromConcept($concept, $rule),
+            $path === null ? '' : "Fires only when the concept carries {$path} records."
+        );
+    }
+
+    /**
+     * Which extracted collection decides whether each trigger fires.
+     *
+     * @return array<string, array{0:string, 1:string}>
+     */
+    private function triggerEvidenceMap(): array
+    {
+        return [
             'trigger-misconception-confirmed' => ['misconceptions', 'misconceptions[]'],
             'trigger-mastery-above-85' => ['real_world_applications', 'real_world_applications[]'],
             'trigger-spaced-review-due' => ['knowledge_items', 'knowledge_items[]'],
@@ -436,6 +551,16 @@ class PedagogyEngineResolver
             'trigger-art-integration' => ['skills', 'skills[]'],
             'trigger-engagement-below-40' => ['knowledge_items', 'knowledge_items[]'],
         ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $triggers
+     * @param  array<string, mixed>  $concept
+     * @return array<int, array<string, mixed>>
+     */
+    public function resolveTriggers(array $triggers, array $concept): array
+    {
+        $evidence = $this->triggerEvidenceMap();
 
         return array_map(function (array $trigger) use ($concept, $evidence) {
             [$key, $path] = $evidence[$trigger['id']] ?? [null, null];
@@ -445,16 +570,7 @@ class PedagogyEngineResolver
             $trigger['evidence_count'] = count($rows);
             $trigger['evidence_source'] = $path;
             $trigger['evidence'] = array_map(fn ($row) => [
-                'label' => (string) (
-                    $row['misconception']
-                    ?? $row['example']
-                    ?? $row['application']
-                    ?? $row['knowledge']
-                    ?? $row['skill']
-                    ?? $row['relation_type']
-                    ?? $row['value']
-                    ?? ''
-                ),
+                'label' => $this->rowLabel($row),
                 'from' => $path,
             ], array_slice($rows, 0, 6));
 
@@ -501,6 +617,272 @@ class PedagogyEngineResolver
         ];
     }
 
+    // ─── extracted-collection readers ───────────────────────────────────────
+    //
+    // One reader per `semantic_intelligence` collection. Each returns evidence
+    // rows carrying the JSON path they came from, so nothing a rule serves can
+    // be traced back to anywhere but the extraction.
+
+    /**
+     * @param  array<int, array<string, mixed>>  $rows
+     * @param  array<int, array<string, mixed>>  $items
+     * @param  array<int, string>  $sources
+     */
+    private function append(array &$items, array &$sources, array $rows): void
+    {
+        foreach ($rows as $row) {
+            $items[] = $row;
+            $sources[] = (string) $row['from'];
+        }
+    }
+
+    /**
+     * The label an evidence row prints, whichever collection it came from.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    private function rowLabel(array $row): string
+    {
+        foreach (['misconception', 'example', 'application', 'knowledge', 'skill', 'ability', 'competency', 'outcome', 'objective', 'question', 'source_text', 'relation_type', 'concept_name', 'value'] as $key) {
+            if (isset($row[$key]) && is_scalar($row[$key]) && trim((string) $row[$key]) !== '') {
+                return (string) $row[$key];
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * @param  array<string, mixed>  $concept
+     * @return array<int, array<string, mixed>>
+     */
+    private function evidenceRows(array $concept): array
+    {
+        return array_map(fn ($row) => [
+            'label' => (string) ($row['source_text'] ?? $row['value'] ?? ''),
+            'detail' => null,
+            'tags' => array_values(array_filter([$row['source_type'] ?? null, 'source evidence'])),
+            'from' => 'evidence[]',
+        ], $concept['evidence']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $concept
+     * @return array<int, array<string, mixed>>
+     */
+    private function outcomeRows(array $concept, bool $assessmentReadyOnly = false): array
+    {
+        $rows = $assessmentReadyOnly
+            ? $this->pick($concept['learning_outcomes'], fn ($outcome) => ! empty($outcome['assessment_ready']))
+            : $concept['learning_outcomes'];
+
+        return array_map(fn ($row) => [
+            'label' => (string) ($row['outcome'] ?? $row['value'] ?? ''),
+            'detail' => $row['outcome_type'] ?? null,
+            'tags' => array_values(array_filter([
+                ! empty($row['measurable']) ? 'measurable' : null,
+                ! empty($row['assessment_ready']) ? 'assessment ready' : null,
+            ])),
+            'from' => 'learning_outcomes[]',
+        ], $rows);
+    }
+
+    /**
+     * @param  array<string, mixed>  $concept
+     * @return array<int, array<string, mixed>>
+     */
+    private function competencyRows(array $concept): array
+    {
+        return array_map(fn ($row) => [
+            'label' => (string) ($row['competency'] ?? $row['value'] ?? ''),
+            'detail' => $row['statement'] ?? null,
+            'tags' => ['competency'],
+            'from' => 'competencies[]',
+        ], $concept['competencies']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $concept
+     * @return array<int, array<string, mixed>>
+     */
+    private function abilityRows(array $concept): array
+    {
+        return array_map(fn ($row) => [
+            'label' => (string) ($row['ability'] ?? $row['value'] ?? ''),
+            'detail' => $row['description'] ?? null,
+            'tags' => array_values(array_filter([$row['verb'] ?? null, 'ability'])),
+            'from' => 'abilities[]',
+        ], $concept['abilities']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $concept
+     * @return array<int, array<string, mixed>>
+     */
+    private function knowledgeRows(array $concept, string $tag): array
+    {
+        return array_map(fn ($row) => [
+            'label' => (string) ($row['knowledge'] ?? $row['value'] ?? ''),
+            'detail' => null,
+            'tags' => [$tag],
+            'from' => 'knowledge_items[]',
+        ], $concept['knowledge_items']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $concept
+     * @return array<int, array<string, mixed>>
+     */
+    private function pedagogyRows(array $concept, string $tag): array
+    {
+        return array_map(fn ($row) => [
+            'label' => (string) ($row['strategy'] ?? $row['value'] ?? ''),
+            'detail' => $row['why_effective'] ?? null,
+            'tags' => array_merge([$tag], array_values((array) ($row['concept_characteristics'] ?? []))),
+            'from' => 'pedagogy_recommendations[]',
+        ], $concept['pedagogy_recommendations']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $concept
+     * @return array<int, array<string, mixed>>
+     */
+    private function applicationRows(array $concept): array
+    {
+        return array_map(fn ($row) => [
+            'label' => (string) ($row['example'] ?? $row['application'] ?? ''),
+            'detail' => $row['application_type'] ?? null,
+            'tags' => array_values(array_filter([$row['relevance'] ?? null])),
+            'from' => 'real_world_applications[]',
+        ], $concept['real_world_applications']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $concept
+     * @return array<int, array<string, mixed>>
+     */
+    private function relationshipRows(array $concept): array
+    {
+        return array_map(fn ($row) => [
+            'label' => trim(($row['source_concept'] ?? '') . ' → ' . ($row['target_concept'] ?? '')),
+            'detail' => $row['relation_type'] ?? null,
+            'tags' => ['cross-concept'],
+            'from' => 'concept_relationships[]',
+        ], $concept['concept_relationships']);
+    }
+
+    /**
+     * @param  array<string, mixed>  $concept
+     * @return array<int, array<string, mixed>>
+     */
+    private function blueprintRows(array $concept, array $blooms = []): array
+    {
+        $rows = $blooms === []
+            ? $concept['assessment_blueprint']
+            : $this->pick($concept['assessment_blueprint'], fn ($item) => in_array(strtolower((string) ($item['bloom_level'] ?? '')), $blooms, true));
+
+        return array_map(fn ($row) => [
+            'label' => (string) ($row['recommended_question'] ?? $row['assessment_type'] ?? ''),
+            'detail' => $row['assessment_type'] ?? null,
+            'tags' => array_values(array_filter([
+                isset($row['bloom_level']) ? 'Bloom: ' . $row['bloom_level'] : null,
+                isset($row['dok_level']) ? 'DOK: ' . $row['dok_level'] : null,
+                $row['difficulty'] ?? null,
+                isset($row['marks']) ? $row['marks'] . ' marks' : null,
+            ])),
+            'from' => 'assessment_blueprint[]',
+        ], $rows);
+    }
+
+    /**
+     * @param  array<string, mixed>  $concept
+     * @return array<int, array<string, mixed>>
+     */
+    private function topBloomBlueprint(array $concept): array
+    {
+        return $this->blueprintRows($concept, self::TOP_BLOOMS);
+    }
+
+    /**
+     * The scored rubric items the extraction wrote for this concept, optionally
+     * narrowed to a set of Bloom levels.
+     *
+     * @param  array<string, mixed>  $concept
+     * @param  array<int, string>  $blooms
+     * @return array<int, array<string, mixed>>
+     */
+    private function rubricRows(array $concept, array $blooms = []): array
+    {
+        $rows = $concept['rubric_items'] ?? [];
+
+        if ($blooms !== []) {
+            $rows = $this->pick($rows, fn ($item) => in_array(strtolower((string) ($item['bloom_level'] ?? '')), $blooms, true));
+        }
+
+        return array_map(fn ($row) => [
+            'label' => (string) ($row['question'] ?? $row['item_id'] ?? ''),
+            'detail' => $row['skill_phrase'] ?? null,
+            'tags' => array_values(array_filter([
+                $row['assessment_type'] ?? null,
+                $row['rubric_type'] ?? null,
+                isset($row['bloom_level']) ? 'Bloom: ' . $row['bloom_level'] : null,
+                isset($row['dok_level']) ? 'DOK: ' . $row['dok_level'] : null,
+                $row['difficulty'] ?? null,
+                isset($row['marks']) ? $row['marks'] . ' marks' : null,
+            ])),
+            'from' => 'assessment_rubrics.items[]',
+        ], $rows);
+    }
+
+    /**
+     * The misconceptions this concept's own rubric distractors probe for, plus
+     * the common errors each item records. This is the measured class-wide error
+     * signal - it replaces nothing and invents nothing.
+     *
+     * @param  array<string, mixed>  $concept
+     * @return array<int, array<string, mixed>>
+     */
+    private function misconceptionProbes(array $concept): array
+    {
+        $rows = [];
+
+        foreach ($concept['rubric_items'] ?? [] as $item) {
+            // Several distractors of one item often probe the same misconception.
+            // Collapse them into a single row so the count reads as "distinct
+            // misconceptions probed", with every distractor listed as a tag.
+            $probes = [];
+            foreach ((array) ($item['answer_key'] ?? []) as $option) {
+                if (empty($option['misconception_tested'])) {
+                    continue;
+                }
+
+                $label = (string) $option['misconception_tested'];
+                $probes[$label] ??= [
+                    'label' => $label,
+                    'detail' => $option['rationale'] ?? null,
+                    'tags' => array_values(array_filter([$item['item_id'] ?? null])),
+                    'from' => 'assessment_rubrics.items[].answer_key[]',
+                ];
+
+                if (isset($option['option_label'])) {
+                    $probes[$label]['tags'][] = 'Distractor ' . $option['option_label'];
+                }
+            }
+            $rows = array_merge($rows, array_values($probes));
+
+            foreach ((array) ($item['common_errors'] ?? []) as $error) {
+                $rows[] = [
+                    'label' => (string) $error,
+                    'detail' => null,
+                    'tags' => array_values(array_filter([$item['item_id'] ?? null, 'common error'])),
+                    'from' => 'assessment_rubrics.items[].common_errors[]',
+                ];
+            }
+        }
+
+        return $rows;
+    }
+
     // ─── helpers ────────────────────────────────────────────────────────────
 
     /**
@@ -530,15 +912,28 @@ class PedagogyEngineResolver
         $ruleTags = array_map('strval', (array) ($rule['pedagogy_tags'] ?? []));
         $shared = array_values(array_intersect(array_keys($conceptTags), $ruleTags));
         $selected = $shared[0] ?? ($ruleTags[0] ?? null);
+        $h5p = $selected === null ? [] : array_values($this->catalog->allowedH5pForPedagogy($selected));
 
         return [
             'selected' => $selected,
-            'selected_h5p' => $selected === null ? [] : array_values($this->catalog->allowedH5pForPedagogy($selected)),
+            // The concept's own wording for the strategy the engine picked, so the
+            // UI can print what the extraction said rather than the canonical tag.
+            'selected_strategy' => $selected === null ? null : ($conceptTags[$selected] ?? null),
+            'selected_h5p' => $h5p,
+            'selected_h5p_labels' => array_map(fn ($type) => $this->h5pLabel($type), $h5p),
             'rule_routes_to' => $ruleTags,
             'concept_offers' => array_keys($conceptTags),
             'concept_strategies' => array_values($conceptTags),
             'agrees_with_concept' => $shared !== [],
         ];
+    }
+
+    /**
+     * The display name the H5P registry gives a content type.
+     */
+    private function h5pLabel(string $type): string
+    {
+        return (string) config("pal_h5p.registry.{$type}.label", ucwords(str_replace('_', ' ', $type)));
     }
 
     /**

@@ -42,8 +42,15 @@ class Competency extends Model
         return $this->belongsTo(\App\Models\User::class, 'learner_id');
     }
     
+    /**
+     * pal_learner_misconceptions has no competency_id column -- it's keyed by
+     * learner_id (+ concept_id), not by this competency row's own id. learner_id
+     * is the only column both tables actually share, so that's what this joins on;
+     * it will include the learner's misconceptions across all subjects/concepts,
+     * not just this one competency's.
+     */
     public function misconceptions()
     {
-        return $this->hasMany(LearnerMisconception::class);
+        return $this->hasMany(LearnerMisconception::class, 'learner_id', 'learner_id');
     }
 }

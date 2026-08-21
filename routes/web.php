@@ -115,6 +115,18 @@ Route::get('/lms/adaptive-practice', [App\Http\Controllers\lms\assessmentQuestio
 Route::post('/lms/submit-practice', [App\Http\Controllers\lms\assessmentQuestionController::class, 'submitPractice'])
     ->name('submit.practice');
 
+// Generate Diagnostic (onboarding) Assessment
+Route::get('/lms/diagnostic-assessment', [App\Http\Controllers\lms\assessmentQuestionController::class, 'generateDiagnosticAssessment'])
+    ->name('diagnostic.assessment');
+
+// Submit Diagnostic Assessment (POST)
+Route::post('/lms/submit-diagnostic-assessment', [App\Http\Controllers\lms\assessmentQuestionController::class, 'submitDiagnosticAssessment'])
+    ->name('submit.diagnostic.assessment');
+
+// Prerequisite gate status for a chapter's concepts
+Route::get('/lms/chapter-gate', [App\Http\Controllers\lms\assessmentQuestionController::class, 'getChapterGate'])
+    ->name('chapter.gate');
+
 // Practice History
 Route::get('/lms/practice-history', [App\Http\Controllers\lms\assessmentQuestionController::class, 'getPracticeHistory'])
     ->name('practice.history');
@@ -708,6 +720,12 @@ use App\Http\Controllers\MIS\MisSummaryController;
 Route::get('/mis-summary', [MisSummaryController::class, 'index'])->name('mis.summary')
     ->middleware(['session', 'menu', 'logRoute', 'check_permissions']);
 
+// Today's module wise summary (Fees, Admission, Attendance, Leave, ... ) for the logged in sub-institute
+use App\Http\Controllers\report\DailySummaryReportController;
+Route::get('daily-summary-report', [DailySummaryReportController::class, 'index'])
+    ->name('daily_summary_report')
+    ->middleware('session', 'menu', 'logRoute');
+
 use App\Models\ReportDynamic;
 Route::get('/get-fields', function (Request $request) {
     $reportType = $request->query('report_type');
@@ -783,10 +801,12 @@ Route::group(['prefix' => 'agent', 'middleware' => ['session', 'menu', 'logRoute
 route::get('geminiChat', [AJAXController::class, 'geminiChat']);
 Route::get('ajaxQuestionLists', [AJAXController::class, 'ajaxQuestionListsFunction'])->name('ajaxQuestionLists');
 
-Route::get('/suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggested.content');
-Route::post('/lms/store-suggested-content', [palController::class, 'storeSuggestedContent'])->name('store.suggested.content');
-Route::get('/lms/pedagogy-suggested-content', [\App\Http\Controllers\lms\pal\palController::class, 'getPedagogySuggestedContent'])->name('pal.pedagogy.suggested.content');
-Route::get('/lms/misconception', [\App\Http\Controllers\lms\pal\palController::class, 'misconception'])->name('misconception');
-Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
-Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
+Route::group(['middleware' => ['session', 'menu', 'logRoute', 'check_permissions']], function () {
+    Route::get('/suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggested.content');
+    Route::post('/lms/store-suggested-content', [palController::class, 'storeSuggestedContent'])->name('store.suggested.content');
+    Route::get('/lms/pedagogy-suggested-content', [\App\Http\Controllers\lms\pal\palController::class, 'getPedagogySuggestedContent'])->name('pal.pedagogy.suggested.content');
+    Route::get('/lms/misconception', [\App\Http\Controllers\lms\pal\palController::class, 'misconception'])->name('misconception');
+    Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
+    Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
+});
 Route::get('/download-folder', [FileController::class, 'downloadFolder']);
