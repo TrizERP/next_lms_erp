@@ -7,6 +7,7 @@ use App\Http\Controllers\api\TalentManagement\Performance\Concerns\ResolvesPerfo
 use App\Models\TalentManagement\PerformanceCycle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 /**
  * Ported from G2G's `App\Http\Controllers\Api\Performance\PerformanceCycleController`.
@@ -236,9 +237,10 @@ class PerformanceCycleController extends Controller
             'due_date'       => 'nullable|date',
         ]);
 
+        // No `deleted_at` on this target's `tbluser` (unlike the G2G source) -
+        // it tracks active employees via `status` instead.
         $participantQuery = DB::table('tbluser')
-            ->where('sub_institute_id', $tenant)
-            ->whereNull('deleted_at');
+            ->where('sub_institute_id', $tenant);
 
         if (!empty($validated['user_ids'])) {
             $participantQuery->whereIn('id', $validated['user_ids']);
@@ -442,14 +444,21 @@ class PerformanceCycleController extends Controller
      */
     private function resolvePlacement(int $tenant, int $userId): array
     {
-        $assessment = DB::table('s_competency_assessments')
-            ->where('sub_institute_id', $tenant)
-            ->where('user_id', $userId)
-            ->whereNull('deleted_at')
-            ->whereNotNull('jobrole')
-            ->orderByDesc('created_at')
-            ->orderByDesc('id')
-            ->first(['jobrole', 'department_id']);
+        // s_competency_assessments belongs to the out-of-scope Competency
+        // Assessment Cycle feature and does not exist on this target - guard
+        // it the same way CareerPathController/EmployeeCompetencyProfileController
+        // already guard their reads of it, and fall straight through to the
+        // tbluser-based placement below.
+        $assessment = Schema::hasTable('s_competency_assessments')
+            ? DB::table('s_competency_assessments')
+                ->where('sub_institute_id', $tenant)
+                ->where('user_id', $userId)
+                ->whereNull('deleted_at')
+                ->whereNotNull('jobrole')
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->first(['jobrole', 'department_id'])
+            : null;
 
         if ($assessment) {
             return [
@@ -458,12 +467,21 @@ class PerformanceCycleController extends Controller
             ];
         }
 
+        // No `org_designation` table on this target - falls back to
+        // `tbluser.jobtitle_id` -> `s_user_jobrole.jobrole`/`department_id`
+        // instead, matching every other ported Talent Management controller.
+        $user = DB::table('tbluser')
+            ->where('id', $userId)
+            ->where('sub_institute_id', $tenant)
+            ->first(['jobtitle_id', 'department_id']);
+
+        $jobrole = $user && $user->jobtitle_id
+            ? DB::table('s_user_jobrole')->where('id', $user->jobtitle_id)->whereNull('deleted_at')->value('jobrole')
+            : null;
+
         return [
-            'jobrole' => DB::table('org_designation')
-                ->where('sub_institute_id', $tenant)
-                ->where('user_id', $userId)
-                ->value('designation'),
-            'department_id' => null,
+            'jobrole'       => $jobrole,
+            'department_id' => $user && $user->department_id ? (int) $user->department_id : null,
         ];
     }
 

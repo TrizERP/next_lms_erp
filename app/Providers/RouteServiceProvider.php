@@ -116,6 +116,8 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapOrganizationManagementRoutes();
 
         $this->mapTaskManagementRoutes();
+
+        $this->mapCompetencyManagementRoutes();
     }
 
     /**
@@ -184,6 +186,20 @@ class RouteServiceProvider extends ServiceProvider
             ->middleware('api')
             ->namespace($this->namespace)
             ->group(base_path('routes/task_management.php'));
+    }
+
+    /**
+     * Stateless REST APIs for Competency Management (Talent Management >
+     * Employee Profiles, Certifications, Development & Career Paths), migrated
+     * as-is from G2G (hp_erp). See routes/competency_management.php. Mirrors
+     * mapTalentManagementRoutes().
+     */
+    protected function mapCompetencyManagementRoutes()
+    {
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/competency_management.php'));
     }
 
     /**

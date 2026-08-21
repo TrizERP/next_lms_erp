@@ -63,9 +63,10 @@ class PerformanceOverviewController extends Controller
         /* 2. Employees in Cycle ------------------------------------------ */
         $employeesInCycle = (clone $reviewScope())->distinct()->count('user_id');
 
+        // No `deleted_at` on this target's `tbluser` (unlike the G2G source) -
+        // it tracks active employees via `status` instead.
         $totalEmployees = DB::table('tbluser')
             ->where('sub_institute_id', $tenant)
-            ->whereNull('deleted_at')
             ->count();
 
         $coveragePct = $totalEmployees > 0 ? (int) round($employeesInCycle / $totalEmployees * 100) : 0;
@@ -257,9 +258,10 @@ class PerformanceOverviewController extends Controller
             ->all();
 
         // Employee picker for Create/Launch and the goal/appraisal dialogs.
+        // No `deleted_at` on this target's `tbluser` (unlike the G2G source) -
+        // it tracks active employees via `status` instead.
         $employees = DB::table('tbluser')
             ->where('sub_institute_id', $tenant)
-            ->whereNull('deleted_at')
             ->orderBy('first_name')
             ->limit(500)
             ->get(['id', 'first_name', 'last_name', 'user_name', 'employee_no', 'department_id'])

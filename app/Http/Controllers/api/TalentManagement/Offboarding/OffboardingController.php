@@ -155,9 +155,10 @@ class OffboardingController extends Controller
             ->all();
 
         // Get active users who are candidates for offboarding
+        // No `deleted_at` on this target's `tbluser` (unlike the G2G source) -
+        // it tracks active employees via `status` instead.
         $employees = DB::table('tbluser')
             ->where('sub_institute_id', $tenant)
-            ->whereNull('deleted_at')
             ->when(!empty($excludedUserIds), fn ($q) => $q->whereNotIn('id', $excludedUserIds))
             ->orderBy('first_name')
             ->limit(500)
