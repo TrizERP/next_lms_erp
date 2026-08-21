@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Route;
 use function App\Helpers\is_mobile;
 
 /**
@@ -46,11 +47,34 @@ class DailySummaryReportController extends Controller
             'sub_institute_id' => $sub_institute_id,
             'institute_name' => DB::table('school_setup')->where('Id', $sub_institute_id)->value('SchoolName'),
             'modules' => $modules,
+            'printed_by' => $this->loggedInUserName(),
+            'printed_on' => Carbon::now()->format('d-m-Y h:i A'),
         ];
 
         $type = "web";
 
         return is_mobile($type, "reports/daily_summary_report", $data, "view");
+    }
+
+    /**
+     * "First Last" of the logged in user, for the print footer.
+     *
+     * loginController stores it as session('name'), but not every login path
+     * goes through that branch, so fall back to tbluser when it is missing.
+     */
+    private function loggedInUserName(): string
+    {
+        $name = trim((string) session()->get('name'));
+
+        if ($name === '') {
+            $user = DB::table('tbluser')->where('id', session()->get('user_id'))->first();
+
+            if ($user) {
+                $name = trim($user->first_name . ' ' . $user->last_name);
+            }
+        }
+
+        return $name !== '' ? $name : (string) session()->get('user_name');
     }
 
     /**
@@ -69,9 +93,32 @@ class DailySummaryReportController extends Controller
         ];
     }
 
-    private function row(string $label, $count, ?float $amount = null, bool $child = false): array
+    /**
+     * @param string|null $reportRoute name of the drill-down report this count belongs to
+     */
+    private function row(string $label, $count, ?float $amount = null, bool $child = false, ?string $reportRoute = null): array
     {
-        return ['label' => $label, 'count' => $count, 'amount' => $amount, 'child' => $child];
+        return [
+            'label' => $label,
+            'count' => $count,
+            'amount' => $amount,
+            'child' => $child,
+            'url' => $this->reportUrl($reportRoute),
+        ];
+    }
+
+    /**
+     * Resolve a report route to a URL. Returns null when the route is not
+     * registered, so a renamed or removed report degrades to a plain number
+     * instead of blowing up the whole page.
+     */
+    private function reportUrl(?string $reportRoute): ?string
+    {
+        if (! $reportRoute || ! Route::has($reportRoute)) {
+            return null;
+        }
+
+        return route($reportRoute);
     }
 
     /* ------------------------------------------------------------------ 1 */
@@ -132,11 +179,11 @@ class DailySummaryReportController extends Controller
         $totalAmount = $collected['Cash']['amount'] + $collected['Cheque']['amount'] + $collected['Online']['amount'];
 
         return $this->module('Fees', 'fa-indian-rupee-sign', [
-            $this->row('Total Fees Collected', $totalCount, $totalAmount),
-            $this->row('Cash', $collected['Cash']['count'], $collected['Cash']['amount'], true),
-            $this->row('Cheque', $collected['Cheque']['count'], $collected['Cheque']['amount'], true),
-            $this->row('Online', $collected['Online']['count'], $collected['Online']['amount'], true),
-            $this->row('Cancelled Fees / Transactions', $cancelCount, $cancelAmount),
+            $this->row('Total Fees Collected', $totalCount, $totalAmount, false, 'fees_collection_report.index'),
+            $this->row('Cash', $collected['Cash']['count'], $collected['Cash']['amount'], true, 'fees_collection_report.index'),
+            $this->row('Cheque', $collected['Cheque']['count'], $collected['Cheque']['amount'], true, 'fees_collection_report.index'),
+            $this->row('Online', $collected['Online']['count'], $collected['Online']['amount'], true, 'fees_collection_report.index'),
+            $this->row('Cancelled Fees / Transactions', $cancelCount, $cancelAmount, false, 'fees_cancel_report_index'),
         ], $totalCount, $totalAmount);
     }
 
@@ -162,9 +209,9 @@ class DailySummaryReportController extends Controller
             ->count();
 
         return $this->module('Admission', 'fa-user-plus', [
-            $this->row('Total Inquiries', $inquiries),
-            $this->row('Total Registrations', $registrations),
-            $this->row('Total Confirmed Admissions', $confirmed),
+            $this->row('Total Inquiries', $inquiries, null, false, 'admission_enquiry_report'),
+            $this->row('Total Registrations', $registrations, null, false, 'admission_registration_report'),
+            $this->row('Total Confirmed Admissions', $confirmed, null, false, 'admission_confirmation_report'),
         ], $inquiries + $registrations + $confirmed);
     }
 
@@ -190,9 +237,9 @@ class DailySummaryReportController extends Controller
         $absent = (int) ($marked['A'] ?? 0);
 
         return $this->module('Student Attendance', 'fa-user-check', [
-            $this->row('Total Students', $totalStudents),
-            $this->row('Present Students', $present),
-            $this->row('Absent Students', $absent),
+            $this->row('Total Students', $totalStudents, null, false, 'daywise_student_attendance_report'),
+            $this->row('Present Students', $present, null, false, 'daywise_student_attendance_report'),
+            $this->row('Absent Students', $absent, null, false, 'daywise_student_attendance_report'),
         ], $totalStudents);
     }
 
@@ -209,8 +256,8 @@ class DailySummaryReportController extends Controller
             ->count();
 
         return $this->module('Student Leave', 'fa-calendar-minus', [
-            $this->row('Total Leave Applications', $total),
-            $this->row('Pending Leave Applications / Replies', $pending),
+            $this->row('Total Leave Applications', $total, null, false, 'leave_application.index'),
+            $this->row('Pending Leave Applications / Replies', $pending, null, false, 'leave_application.index'),
         ], $total);
     }
 
@@ -239,9 +286,9 @@ class DailySummaryReportController extends Controller
             ->count('user_id');
 
         return $this->module('Staff Attendance', 'fa-id-badge', [
-            $this->row('Total Staff', $totalStaff),
-            $this->row('Present Staff', $present),
-            $this->row('Absent Staff', max($totalStaff - $present, 0)),
+            $this->row('Total Staff', $totalStaff, null, false, 'hrms_attendance_report.index'),
+            $this->row('Present Staff', $present, null, false, 'hrms_attendance_report.index'),
+            $this->row('Absent Staff', max($totalStaff - $present, 0), null, false, 'hrms_attendance_report.index'),
         ], $totalStaff);
     }
 
@@ -253,8 +300,8 @@ class DailySummaryReportController extends Controller
         $pending = (int) $this->staffLeaveQuery($sub_institute_id, $today)->where('status', 'pending')->count();
 
         return $this->module('Staff Leave', 'fa-person-circle-minus', [
-            $this->row('Total Leave Applications', $total),
-            $this->row('Pending Leave Applications / Replies', $pending),
+            $this->row('Total Leave Applications', $total, null, false, 'leave.report'),
+            $this->row('Pending Leave Applications / Replies', $pending, null, false, 'leave.report'),
         ], $total);
     }
 
@@ -276,7 +323,7 @@ class DailySummaryReportController extends Controller
             ->count();
 
         return $this->module('Task Management', 'fa-list-check', [
-            $this->row('Total Tasks', $total),
+            $this->row('Total Tasks', $total, null, false, 'task_report_index'),
         ], $total);
     }
 
@@ -290,7 +337,7 @@ class DailySummaryReportController extends Controller
             ->count();
 
         return $this->module('Visitor Management', 'fa-user-clock', [
-            $this->row('Total Visitors', $total),
+            $this->row('Total Visitors', $total, null, false, 'show_visitor_report'),
         ], $total);
     }
 
@@ -304,7 +351,7 @@ class DailySummaryReportController extends Controller
             ->count();
 
         return $this->module('Complaint Management', 'fa-triangle-exclamation', [
-            $this->row('Total Complaints', $total),
+            $this->row('Total Complaints', $total, null, false, 'complaint_report_index'),
         ], $total);
     }
 
@@ -321,8 +368,8 @@ class DailySummaryReportController extends Controller
             ->count();
 
         return $this->module('Parent Communication', 'fa-comments', [
-            $this->row('Total Communications', $total),
-            $this->row('Pending Replies', $pending),
+            $this->row('Total Communications', $total, null, false, 'parent_communication.index'),
+            $this->row('Pending Replies', $pending, null, false, 'parent_communication.index'),
         ], $total);
     }
 
@@ -349,9 +396,9 @@ class DailySummaryReportController extends Controller
         $vacations = (int) ($byType['vacation'] ?? 0);
 
         return $this->module('Calendar', 'fa-calendar-days', [
-            $this->row('Events', $events),
-            $this->row('Holidays', $holidays),
-            $this->row('Vacations', $vacations),
+            $this->row('Events', $events, null, false, 'calendar.index'),
+            $this->row('Holidays', $holidays, null, false, 'calendar.index'),
+            $this->row('Vacations', $vacations, null, false, 'calendar.index'),
         ], $events + $holidays + $vacations);
     }
 
@@ -370,8 +417,8 @@ class DailySummaryReportController extends Controller
             ->count();
 
         return $this->module('Inventory', 'fa-boxes-stacked', [
-            $this->row('Requisitions', $requisitions),
-            $this->row('Allocations', $allocations),
+            $this->row('Requisitions', $requisitions, null, false, 'inventory_requisition_report.index'),
+            $this->row('Allocations', $allocations, null, false, 'show_inventory_item_allocation.index'),
         ], $requisitions + $allocations);
     }
 
@@ -392,8 +439,10 @@ class DailySummaryReportController extends Controller
             ->count();
 
         return $this->module('Library', 'fa-book-open-reader', [
-            $this->row('Books Issued', $issued),
-            $this->row('Books Returned', $returned),
+            $this->row('Books Issued', $issued, null, false, 'book_issue_report.index'),
+            // There is no dedicated book-return report; the loan report carries the
+            // return_date column, so both counts drill into the same screen.
+            $this->row('Books Returned', $returned, null, false, 'book_issue_report.index'),
         ], $issued + $returned);
     }
 }
