@@ -67,7 +67,12 @@ class OnboardingDocumentController extends Controller
             ->orderBy('id')
             ->get();
 
-        $typeNames = DB::table('document_type')
+        // No standalone `document_type` table on this target - reuses
+        // `student_document_type` (filtered to `user_type = 'staff'`), the
+        // same master EmployeeDirectoryController already reads for staff
+        // documents. See OnboardingOverviewController's matching note.
+        $typeNames = DB::table('student_document_type')
+            ->where('user_type', 'staff')
             ->whereIn('id', $documents->pluck('document_type_id')->filter()->unique()->all() ?: [0])
             ->pluck('document_type', 'id');
 

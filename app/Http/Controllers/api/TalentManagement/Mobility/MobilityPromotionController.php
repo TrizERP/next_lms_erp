@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Schema;
 use App\Models\TalentManagement\MobilityPromotion;
 use App\Http\Controllers\api\TalentManagement\Mobility\Concerns\ResolvesMobilityContext;
 
@@ -149,7 +150,17 @@ class MobilityPromotionController extends Controller
                 'updated_at' => now(),
             ]);
 
-        // 2. Update org_designation record
+        // 2. Update org_designation record - no such table exists on this
+        // target (see the read-side fix in ResolvesMobilityContext /
+        // Onboarding / Offboarding / Performance / Administration, which
+        // resolve designation via tbluser.jobtitle_id -> s_user_jobrole
+        // instead). `allocated_standards` above already carries this
+        // promotion's effective role, so this step is a guarded no-op rather
+        // than a hard requirement.
+        if (!Schema::hasTable('org_designation')) {
+            return;
+        }
+
         $existing = DB::table('org_designation')
             ->where('user_id', $promo->user_id)
             ->where('sub_institute_id', $promo->sub_institute_id)

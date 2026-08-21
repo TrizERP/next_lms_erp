@@ -92,7 +92,7 @@ trait ResolvesMobilityContext
             ->whereIn('id', $userIds)
             ->get([
                 'id', 'first_name', 'last_name', 'user_name', 'employee_no', 'email', 'mobile',
-                'department_id', 'image', 'city',
+                'department_id', 'image', 'city', 'jobtitle_id',
             ]);
 
         $departmentIds = $users->pluck('department_id')->filter()->unique()->values()->all();
@@ -101,10 +101,18 @@ trait ResolvesMobilityContext
             ? collect()
             : DB::table('hrms_departments')->whereIn('id', $departmentIds)->pluck('department', 'id');
 
-        $designations = DB::table('org_designation')
-            ->where('sub_institute_id', $subInstituteId)
-            ->whereIn('user_id', $userIds)
-            ->pluck('designation', 'user_id');
+        // No standalone `org_designation` table on this target - designation
+        // is resolved via `tbluser.jobtitle_id` -> `s_user_jobrole.jobrole`,
+        // matching every other ported Talent Management controller.
+        $jobroleIds = $users->pluck('jobtitle_id')->filter()->unique()->values()->all();
+
+        $designationsByJobrole = empty($jobroleIds)
+            ? collect()
+            : DB::table('s_user_jobrole')->whereIn('id', $jobroleIds)->whereNull('deleted_at')->pluck('jobrole', 'id');
+
+        $designations = $users->mapWithKeys(
+            fn ($user) => [(int) $user->id => $user->jobtitle_id ? ($designationsByJobrole[$user->jobtitle_id] ?? null) : null]
+        );
 
         $directory = [];
 

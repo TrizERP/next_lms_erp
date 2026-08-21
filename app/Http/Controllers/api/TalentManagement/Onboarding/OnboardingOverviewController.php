@@ -299,8 +299,15 @@ class OnboardingOverviewController extends Controller
             })
             ->all();
 
-        $documentTypes = DB::table('document_type')
-            ->whereNull('deleted_at')
+        // This target has no standalone `document_type` table. It reuses
+        // `student_document_type` as the shared document-type master for both
+        // students and staff (filtered by `user_type`) - see
+        // EmployeeDirectoryController's `documentTypeLists`/`documentLists` for
+        // the established convention this follows. No `deleted_at` column
+        // exists on this table (unlike G2G's `document_type`).
+        $documentTypes = DB::table('student_document_type')
+            ->where('user_type', 'staff')
+            ->where('status', 1)
             ->orderBy('document_type')
             ->get(['id', 'document_type'])
             ->map(fn ($row) => ['value' => (string) $row->id, 'label' => $row->document_type])
