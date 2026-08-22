@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
 use App\Models\student\tblstudentModel;
+use App\Services\Graph\GraphSync;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -183,13 +184,16 @@ class StudentSearchApiController extends Controller
         $lastName = count($nameParts) > 0 ? array_pop($nameParts) : '';
         $middleName = implode(' ', $nameParts);
 
+        $graphIds = ['log' => [], 'queue' => []];
+
         DB::transaction(function () use (
             $request,
             $student,
             $studentId,
             $firstName,
             $middleName,
-            $lastName
+            $lastName,
+            &$graphIds
         ) {
             $student->update([
                 'enrollment_no' => $request->input('admission_no'),
@@ -239,7 +243,16 @@ class StudentSearchApiController extends Controller
                 ->where('sub_institute_id', $request->input('sub_institute_id'))
                 ->where('syear', $request->input('syear'))
                 ->update($enrollmentUpdate);
+
         });
+
+        // The database triggers already queued this edit into `sync_log` inside
+        // the transaction above; this only delivers it now instead of at the
+        // next scheduled drain. The projection re-MERGEs the existing
+        // :StuDetail / :Student nodes in place rather than duplicating them,
+        // and a class change emits old_target_id, so the stale ENROLLED_IN edge
+        // is removed instead of the student appearing in both standards.
+        app(GraphSync::class)->flushRecord('tblstudent', $studentId);
 
         return response()->json([
             'status' => 1,
