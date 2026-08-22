@@ -72,8 +72,7 @@ class StudentRegistrationApiController extends Controller
         if ($validator->fails()) return response()->json(['status' => 0, 'message' => $validator->errors()->first(), 'data' => []], 422);
         $duplicate = DB::table('tblstudent')->where('sub_institute_id', $request->sub_institute_id)->where('enrollment_no', $request->enrollment_no)->exists();
         if ($duplicate) return response()->json(['status' => 0, 'message' => 'GR No. already exists.', 'data' => []], 422);
-        $graphIds = ['log' => [], 'queue' => []];
-        $studentId = DB::transaction(function () use ($request, &$graphIds) {
+        $studentId = DB::transaction(function () use ($request) {
             $profile = DB::table('tbluserprofilemaster')->where('sub_institute_id', $request->sub_institute_id)->where('name', 'Student')->value('id');
             $studentId = DB::table('tblstudent')->insertGetId([
                 'enrollment_no' => $request->enrollment_no, 'first_name' => trim($request->first_name),
@@ -91,19 +90,17 @@ class StudentRegistrationApiController extends Controller
                 'house_id' => $request->house, 'roll_no' => $request->roll_no, 'start_date' => date('Y-m-d'),
                 'term_id' => $request->term_id, 'enrollment_code' => 1, 'sub_institute_id' => $request->sub_institute_id,
             ]);
-            // Transactional outbox: the intent to update the graph commits
-            // atomically with the student, into the sync_log / neo4j_sync_queue
-            // tables that already exist for this. A crash after COMMIT cannot
-            // lose the event.
-            $graphIds = app(GraphSync::class)->enqueueStudent((int) $studentId, (int) $request->sub_institute_id);
-
             return $studentId;
         });
 
-        // Push those queued events to Neo4j now, so the student is in the
-        // Browser immediately rather than at the next scheduled drain. Never
-        // throws — anything undelivered stays PENDING for `neo4j:drain`.
-        app(GraphSync::class)->flush($graphIds);
+        // Transactional outbox: the AFTER INSERT triggers on tblstudent and
+        // tblstudent_enrollment queued the graph events into `sync_log` inside
+        // the transaction above, so they committed atomically with the student
+        // and a crash after COMMIT cannot lose them. This call only pushes them
+        // to Neo4j now, so the student is in the Browser by the time this
+        // responds rather than at the next scheduled drain. Never throws —
+        // anything undelivered stays PENDING for `neo4j:drain`.
+        app(GraphSync::class)->flushRecord('tblstudent', (int) $studentId);
 
         return response()->json(['status' => 1, 'message' => 'Student successfully created.', 'data' => ['id' => $studentId]], 201);
     }

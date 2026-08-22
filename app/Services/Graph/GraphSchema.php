@@ -72,6 +72,13 @@ class GraphSchema
     /**
      * Relationship types the sync may write. Everything the k12 ingest script
      * authors, plus the four already present in neo4j_sync_queue's history.
+     *
+     * HAS_CONCEPT is not in the ingest script but is the edge the data actually
+     * supports: `lms_concept` has `chapter_id` and no `lesson_id`, so the
+     * script's `(:Lesson)-[:COVERS]->(:Concept)` could never be built here. The
+     * live graph shows the result — 1,372 `(:Chapter)-[:HAS_CONCEPT]->(:Concept)`
+     * against 9 COVERS. Kept alongside COVERS rather than replacing it, so the
+     * handful of genuine COVERS edges stay writable.
      */
     private const RELATIONSHIPS = [
         'HAS_STUDENT', 'ENROLLED_IN', 'HAS_SUBJECT', 'HAS_ASSESSMENT',
@@ -80,6 +87,7 @@ class GraphSchema
         'ASSESSES_CHAPTER', 'OCCURS_IN', 'TEACHES', 'REMEDIATES',
         'ATTEMPTED', 'ATTENDED', 'MASTERS', 'HAS_MISCONCEPTION',
         'INCLUDES', 'BELONGS_TO_CURRICULUM', 'PREREQUISITE_OF',
+        'HAS_CONCEPT',
     ];
 
     public static function knowsLabel(string $label): bool

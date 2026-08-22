@@ -876,7 +876,10 @@ $restrict_date = $request->input('restrict_date');
             ->where('chapter_id', $chapter_id);
 
         if ($sub_institute_id) {
-            $query->where('sub_institute_id', $sub_institute_id);
+            $query->where(function ($q) use ($sub_institute_id) {
+                $q->where('sub_institute_id', $sub_institute_id)
+                    ->orWhere('sub_institute_id', 1);
+            });
         }
 
         $concepts = $query->orderBy('id')->get()->toArray();
@@ -1280,7 +1283,7 @@ $restrict_date = $request->input('restrict_date');
         $optionsByQuestion = [];
 
         if (!empty($questionIds)) {
-            $options = answermasterModel::whereIn('question_id', $questionIds)
+            $options = \App\Models\lms\answermasterModel::whereIn('question_id', $questionIds)
                 ->orderBy('id')
                 ->get(['question_id', 'answer', 'correct_answer'])
                 ->toArray();

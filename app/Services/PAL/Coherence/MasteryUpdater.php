@@ -247,7 +247,7 @@ class MasteryUpdater
             Log::warning('Coherence mastery not written: graph endpoint missing', [
                 'learner_id' => $learnerId,
                 'concept_id' => $conceptId,
-                'hint'       => 'run neo4j:backfill-students for this tenant, then pal:coherence-sync --mastery',
+                'hint'       => 'run neo4j:reconcile --entity=tblstudent --tenant=<id> --fix, then pal:coherence-sync --mastery',
             ]);
         } catch (Throwable $e) {
             Log::error('Coherence mastery graph push failed; row remains queued', [

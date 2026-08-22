@@ -16,6 +16,12 @@ use Illuminate\Console\Command;
  *
  *     $schedule->command('neo4j:drain')->everyMinute()->withoutOverlapping();
  *
+ * On a host with no cron — a Windows dev box, where the scheduler was simply
+ * never installed and so nothing ever retried a failed row — run it as a
+ * supervised worker instead:
+ *
+ *     php artisan neo4j:drain --watch=10
+ *
  * Nodes are drained before relationships, because an edge cannot attach to
  * endpoints that do not exist yet.
  */
@@ -26,6 +32,7 @@ class DrainCommand extends Command
                             {--retries=5 : Give up on a node row after this many attempts}
                             {--nodes-only : Drain sync_log only}
                             {--rels-only : Drain neo4j_sync_queue only}
+                            {--watch= : Keep draining, pausing this many seconds between passes}
                             {--status : Show queue depth and exit}';
 
     protected $description = 'Drain the sync_log (nodes) and neo4j_sync_queue (relationships) outbox into Neo4j';
@@ -47,30 +54,60 @@ class DrainCommand extends Command
             return self::SUCCESS;
         }
 
+        $interval = $this->option('watch');
+
+        if ($interval === null) {
+            return $this->pass($drain) > 0 ? self::FAILURE : self::SUCCESS;
+        }
+
+        // Supervised worker mode, for hosts with no cron. Runs until killed;
+        // one failing pass must not stop the loop, or a single bad row would
+        // take the whole sync down until someone noticed.
+        $seconds = max(1, (int) $interval);
+        $this->info("Watching the outbox every {$seconds}s. Ctrl-C to stop.");
+
+        while (true) {
+            try {
+                $this->pass($drain);
+            } catch (\Throwable $e) {
+                $this->error('Pass failed: ' . $e->getMessage());
+            }
+
+            sleep($seconds);
+        }
+    }
+
+    /** One drain pass. Returns how many rows failed. */
+    private function pass(GraphDrain $drain): int
+    {
         $limit = (int) $this->option('limit');
+        $retries = (int) $this->option('retries');
         $failed = 0;
 
         if (! $this->option('rels-only')) {
-            $r = $drain->drainNodes($limit, (int) $this->option('retries'));
-            $this->info("Nodes:         {$r['ok']} synced, {$r['failed']} failed");
-            foreach (array_slice($r['errors'], 0, 10) as $e) {
-                $this->error("  {$e}");
-            }
+            $r = $drain->drainNodes($limit, $retries);
+            $this->report('Nodes', $r);
             $failed += $r['failed'];
         }
 
         if (! $this->option('nodes-only')) {
-            $r = $drain->drainRelationships($limit);
-            $this->info("Relationships: {$r['ok']} synced, {$r['failed']} failed");
-            foreach (array_slice($r['errors'], 0, 10) as $e) {
-                $this->error("  {$e}");
-            }
+            $r = $drain->drainRelationships($limit, [], $retries);
+            $this->report('Relationships', $r);
             $failed += $r['failed'];
         }
 
         $after = GraphDrain::depth();
         $this->line("Backlog now: {$after['nodes']} node(s), {$after['rels']} relationship(s)");
 
-        return $failed > 0 ? self::FAILURE : self::SUCCESS;
+        return $failed;
+    }
+
+    private function report(string $what, array $r): void
+    {
+        $this->info(str_pad($what . ':', 15) . "{$r['ok']} synced, {$r['failed']} failed");
+
+        foreach (array_slice($r['errors'], 0, 10) as $e) {
+            $this->error("  {$e}");
+        }
     }
 }

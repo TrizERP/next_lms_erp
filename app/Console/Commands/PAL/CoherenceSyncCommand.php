@@ -129,7 +129,7 @@ class CoherenceSyncCommand extends Command
 
         if (($result['learners_missing'] ?? 0) > 0) {
             $this->warn(sprintf(
-                '     %d row(s) had no :StuDetail or :Concept endpoint. Run neo4j:backfill-students for '
+                '     %d row(s) had no :StuDetail or :Concept endpoint. Run neo4j:reconcile --entity=tblstudent --fix for '
                 . 'this tenant, then re-run with --mastery-only.',
                 $result['learners_missing']
             ));

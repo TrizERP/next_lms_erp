@@ -244,15 +244,15 @@ class StudentSearchApiController extends Controller
                 ->where('syear', $request->input('syear'))
                 ->update($enrollmentUpdate);
 
-            // Same projection as creation, so an edit re-MERGEs the existing
-            // :StuDetail / :Student nodes in place rather than duplicating
-            // them. A class change also emits old_target_id, so the stale
-            // ENROLLED_IN edge is removed instead of the student appearing in
-            // both standards.
-            $graphIds = app(GraphSync::class)->enqueueStudent($studentId, (int) $request->input('sub_institute_id'));
         });
 
-        app(GraphSync::class)->flush($graphIds);
+        // The database triggers already queued this edit into `sync_log` inside
+        // the transaction above; this only delivers it now instead of at the
+        // next scheduled drain. The projection re-MERGEs the existing
+        // :StuDetail / :Student nodes in place rather than duplicating them,
+        // and a class change emits old_target_id, so the stale ENROLLED_IN edge
+        // is removed instead of the student appearing in both standards.
+        app(GraphSync::class)->flushRecord('tblstudent', $studentId);
 
         return response()->json([
             'status' => 1,

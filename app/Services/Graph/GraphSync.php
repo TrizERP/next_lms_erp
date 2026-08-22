@@ -2,62 +2,72 @@
 
 namespace App\Services\Graph;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * What controllers call. Two steps, and the split matters:
+ * What controllers call.
  *
- *   INSIDE the transaction   ->  enqueueStudent()   writes the outbox rows
- *   AFTER  it commits        ->  flush()            pushes them to Neo4j
+ * ---------------------------------------------------------------------------
+ * THE PRODUCER IS THE DATABASE, NOT THE CONTROLLER
+ * ---------------------------------------------------------------------------
+ * A trigger on `tblstudent` / `tblstudent_enrollment` writes the outbox row, so
+ * the intent to update the graph commits atomically with the student no matter
+ * which of the fifteen code paths saved them. Controllers do not enqueue any
+ * more — they only ACCELERATE delivery:
  *
- * Why not one call after the commit? Because then a crash between COMMIT and
- * the graph write loses the event with nothing recording that it was owed. The
- * outbox row commits atomically with the student; flush() is only an
- * accelerator so the change is visible in the Neo4j Browser immediately instead
- * of at the next scheduled `neo4j:drain`.
+ *     $studentId = DB::transaction(fn () => ...);   // trigger queues the event
+ *     app(GraphSync::class)->flushRecord('tblstudent', $studentId);
  *
- * Why not one call inside the transaction? Because a bolt round-trip inside an
+ * Without that call the student still reaches Neo4j, just at the next
+ * `neo4j:drain` pass instead of within the request. With it, they are in the
+ * Browser by the time the API responds.
+ *
+ * Why not flush inside the transaction? Because a bolt round-trip inside an
  * open transaction holds row locks for the duration of a remote network call —
  * a Neo4j slowdown would become a MariaDB lock storm.
  *
  * flush() NEVER throws. Anything it cannot deliver stays PENDING in the outbox
  * and the scheduled drain retries it; a graph outage must not turn a saved
  * student into a 500.
- *
- * Usage:
- *
- *     $ids = DB::transaction(function () use ($request) {
- *         $studentId = DB::table('tblstudent')->insertGetId([...]);
- *         DB::table('tblstudent_enrollment')->insert([...]);
- *         return app(GraphSync::class)->enqueueStudent($studentId, $tenantId);
- *     });
- *     app(GraphSync::class)->flush($ids);
  */
 class GraphSync
 {
-    public function __construct(
-        private readonly StudentGraphProjection $students,
-        private readonly GraphDrain $drain,
-    ) {
+    public function __construct(private readonly GraphDrain $drain)
+    {
     }
 
     /**
-     * Queue graph events for a student. Call INSIDE the transaction.
+     * Deliver the queued graph events for one MariaDB row, now.
      *
-     * Deliberately allowed to throw: the outbox insert is a local INSERT in the
-     * caller's own transaction, so a failure here means the transaction is
-     * already doomed and rolling the student back with it is correct.
-     *
-     * @return array{log: int[], queue: int[]}
+     * Call AFTER the transaction commits. Safe to call when sync is off, when
+     * the triggers are not installed, or when nothing was queued — it simply
+     * finds no rows.
      */
-    public function enqueueStudent(int $studentId, int $tenantId): array
+    public function flushRecord(string $table, int $recordId): void
     {
         if (! config('neo4j.sync_enabled')) {
-            return ['log' => [], 'queue' => []];
+            return;
         }
 
-        return $this->students->enqueue($studentId, $tenantId);
+        try {
+            $ids = DB::table('sync_log')
+                ->where('status', 'PENDING')
+                ->where('table_name', $table)
+                ->where('record_id', $recordId)
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            $this->flush(['log' => $ids, 'queue' => []]);
+        } catch (Throwable $e) {
+            Log::error('Neo4j flushRecord failed; events remain queued', [
+                'table' => $table,
+                'id'    => $recordId,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     /**

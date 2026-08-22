@@ -20,15 +20,55 @@ class Kernel extends ConsoleKernel
 
         // MariaDB -> Neo4j outbox. Controllers flush inline so a change is
         // visible immediately; this is the safety net that catches anything the
-        // inline flush could not deliver (Neo4j restart, bolt timeout).
-        $schedule->command('neo4j:drain')->everyMinute()->withoutOverlapping();
+        // inline flush could not deliver (Neo4j restart, bolt timeout) and, more
+        // importantly, everything written by the dozen code paths that have no
+        // controller flush at all — imports, admissions, bulk edits, raw SQL.
+        // Their events reach `sync_log` through the database triggers and are
+        // delivered here.
+        //
+        // THIS ONLY RUNS IF `schedule:run` RUNS. There was no cron entry on the
+        // dev host until 2026-08-21, which is why no row was ever retried; see
+        // `neo4j:drain --watch` for hosts without one.
+        //
+        // The 5 is not decoration. `withoutOverlapping()` defaults to a 1440
+        // MINUTE (24 hour) mutex, and the lock is only released when the command
+        // finishes cleanly. A drain killed mid-run — the box sleeping, the
+        // console closing, a deploy — therefore disables the entire sync for a
+        // day, silently: schedule:run keeps succeeding, the command never
+        // executes, and rows sit PENDING with retry_count 0 so nothing even
+        // looks like it failed. That happened on 2026-08-21: a run killed at
+        // 10:48 held the mutex until 10:48 the next day. An expiry no longer
+        // than the interval bounds the damage to one skipped pass.
+        $schedule->command('neo4j:drain')->everyMinute()->withoutOverlapping(5);
+
+        // Drift detection. A pipeline reporting all-SUCCESS proves only that
+        // the events it was given were delivered — not that every row produced
+        // one. This is what catches a row that never emitted an event at all.
+        $schedule->command('neo4j:reconcile --limit=2000 --fix')
+            ->dailyAt('02:30')
+            ->withoutOverlapping(120)
+            ->onFailure(fn () => Log::channel('daily')->error('Neo4j reconcile found drift it could not repair'));
 
         // The April 2026 failure was not that the consumer broke — it was that
         // nothing noticed for four months. Depth alerting is the actual fix.
         $schedule->call(function () {
             $depth = \App\Services\Graph\GraphDrain::depth();
-            if ($depth['nodes'] + $depth['rels'] > 1000) {
-                Log::channel('daily')->error('Neo4j sync backlog is growing', $depth);
+
+            // Depth alone missed the 2026-08-21 stall: only ~20 rows were
+            // queued, far under any sane threshold, while the drain had been
+            // dead for 45 minutes. AGE is the signal that catches a stopped
+            // consumer; depth only catches one that is too slow.
+            $oldest = \Illuminate\Support\Facades\DB::table('sync_log')
+                ->where('status', 'PENDING')
+                ->min('created_at');
+
+            $stalledFor = $oldest === null ? 0 : now()->diffInMinutes($oldest);
+
+            if ($depth['nodes'] + $depth['rels'] > 1000 || $stalledFor > 15) {
+                Log::channel('daily')->error('Neo4j sync is not draining', $depth + [
+                    'oldest_pending'  => $oldest,
+                    'stalled_minutes' => $stalledFor,
+                ]);
             }
         })->everyFiveMinutes()->name('neo4j-outbox-depth')->withoutOverlapping();
 

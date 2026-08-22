@@ -278,6 +278,12 @@ Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\In
 Route::get('semantic-intelligence', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'index']);
 Route::get('semantic-intelligence/{extraction_id}/result', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'show']);
 
+// Concept Intelligence tab names - renamed per institute, defaults in
+// config/lms_concept_intelligence_tabs.php
+Route::match(['GET', 'POST'], 'lms/concept-intelligence/tab-labels', [\App\Http\Controllers\api\lms\ConceptIntelligenceTabLabelApiController::class, 'index']);
+Route::post('lms/concept-intelligence/tab-labels/update', [\App\Http\Controllers\api\lms\ConceptIntelligenceTabLabelApiController::class, 'update']);
+Route::post('lms/concept-intelligence/tab-labels/reset', [\App\Http\Controllers\api\lms\ConceptIntelligenceTabLabelApiController::class, 'reset']);
+
 Route::get('/departments', [\App\Http\Controllers\HRMS\departmentController::class, 'index']);
 Route::get('/departments/create', [\App\Http\Controllers\HRMS\departmentController::class, 'create']);
 Route::get('/department-employee-lists', [\App\Http\Controllers\HRMS\departmentController::class, 'departmentEmpLists']);
