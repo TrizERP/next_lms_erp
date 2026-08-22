@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
+use App\Services\Graph\GraphSync;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -91,6 +92,16 @@ class StudentRegistrationApiController extends Controller
             ]);
             return $studentId;
         });
+
+        // Transactional outbox: the AFTER INSERT triggers on tblstudent and
+        // tblstudent_enrollment queued the graph events into `sync_log` inside
+        // the transaction above, so they committed atomically with the student
+        // and a crash after COMMIT cannot lose them. This call only pushes them
+        // to Neo4j now, so the student is in the Browser by the time this
+        // responds rather than at the next scheduled drain. Never throws —
+        // anything undelivered stays PENDING for `neo4j:drain`.
+        app(GraphSync::class)->flushRecord('tblstudent', (int) $studentId);
+
         return response()->json(['status' => 1, 'message' => 'Student successfully created.', 'data' => ['id' => $studentId]], 201);
     }
 

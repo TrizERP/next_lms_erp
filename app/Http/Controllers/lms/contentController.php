@@ -1548,8 +1548,14 @@ public function generateGammaPDF(Request $request)
         $prompt = $request->prompt;
         $contentType = trim((string) $request->input('content_type'));
         $normalizedContentType = strtolower(str_replace(['-', ' '], '_', $contentType));
-        $isPresentation = $normalizedContentType === 'presentation';
-        if ($isPresentation) {
+        // Teacher-training decks are generated the same way as classroom ones, but
+        // keep their own content_category so the library files them under Teacher
+        // Resource instead of Classroom Resource.
+        $isTeacherTraining = $normalizedContentType === 'teacher_training_presentation';
+        $isPresentation = $isTeacherTraining || $normalizedContentType === 'presentation';
+        if ($isTeacherTraining) {
+            $contentType = 'Teacher training presentation';
+        } elseif ($isPresentation) {
             $contentType = 'Presentation';
         } elseif ($normalizedContentType === 'remedial_class') {
             $contentType = 'Remedial Class';
@@ -1575,6 +1581,18 @@ public function generateGammaPDF(Request $request)
                 'success' => false,
                 'message' => 'Chapter not found: ' . $chapterName
             ], 404);
+        }
+
+        // chapter_master.grade_id is nullable but content_master.grade_id is not,
+        // so fall back to the standard's grade the same way uploadContent does.
+        $gradeId = $chapterData->grade_id
+            ?: DB::table('standard')->where('id', $chapterData->standard_id)->value('grade_id');
+
+        if (!$gradeId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Grade could not be resolved for this chapter. Set a grade on the chapter or its standard and try again.',
+            ], 422);
         }
 
         $subjectName = DB::table('sub_std_map')
@@ -1725,7 +1743,7 @@ public function generateGammaPDF(Request $request)
                 }
 
                 $content = [
-                    'grade_id' => $chapterData->grade_id,
+                    'grade_id' => $gradeId,
                     'standard_id' => $chapterData->standard_id,
                     'subject_id' => $chapterData->subject_id,
                     'chapter_id' => $chapterData->id,
@@ -1922,7 +1940,7 @@ public function generateGammaPDF(Request $request)
             $fileUrl = $pdfUrl ?: $url;
 
             $content = [
-                'grade_id' => $chapterData->grade_id,
+                'grade_id' => $gradeId,
                 'standard_id' => $chapterData->standard_id,
                 'subject_id' => $chapterData->subject_id,
                 'chapter_id' => $chapterData->id,

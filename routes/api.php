@@ -11,6 +11,7 @@ use App\Http\Controllers\api\MenuRightsController;
 use App\Http\Controllers\api\ApiLmsCourseController;
 use App\Http\Controllers\api\ApiQuestionPaperController;
 use App\Http\Controllers\api\AiSopGenerationController;
+use App\Http\Controllers\api\AiPlatformController;
 use App\Http\Controllers\api\admissionEnquiryAPIController;
 use App\Http\Controllers\api\onlineAdmissionConfirmAPIController;
 use App\Http\Controllers\api\admissionRegistrationAPIController;
@@ -145,6 +146,7 @@ Route::post('lms-content-mapping-values', [ApiLmsCourseController::class, 'getCo
 Route::post('lms-store-subject', [ApiLmsCourseController::class, 'storeSubject']);
 Route::post('lms/gamma-content-master', [\App\Http\Controllers\lms\contentController::class, 'storeGammaContent']);
 Route::get('ai-sop', [AiSopGenerationController::class, 'index']);
+Route::get('ai-platforms', [AiPlatformController::class, 'index']);
 Route::get('ai-sop/department-job-roles', [AiSopGenerationController::class, 'departmentJobRoles']);
 Route::post('ai-sop/generate', [AiSopGenerationController::class, 'generate']);
 Route::post('ai-sop/store', [AiSopGenerationController::class, 'store']);
@@ -277,6 +279,12 @@ Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\In
 // Semantic Intelligence - read-only chapter intelligence for presentation generators
 Route::get('semantic-intelligence', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'index']);
 Route::get('semantic-intelligence/{extraction_id}/result', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'show']);
+
+// Concept Intelligence tab names - renamed per institute, defaults in
+// config/lms_concept_intelligence_tabs.php
+Route::match(['GET', 'POST'], 'lms/concept-intelligence/tab-labels', [\App\Http\Controllers\api\lms\ConceptIntelligenceTabLabelApiController::class, 'index']);
+Route::post('lms/concept-intelligence/tab-labels/update', [\App\Http\Controllers\api\lms\ConceptIntelligenceTabLabelApiController::class, 'update']);
+Route::post('lms/concept-intelligence/tab-labels/reset', [\App\Http\Controllers\api\lms\ConceptIntelligenceTabLabelApiController::class, 'reset']);
 
 Route::get('/departments', [\App\Http\Controllers\HRMS\departmentController::class, 'index']);
 Route::get('/departments/create', [\App\Http\Controllers\HRMS\departmentController::class, 'create']);

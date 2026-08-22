@@ -1133,13 +1133,10 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
         $hrmsList = HrmsAttendance::join('tbluser as u', 'u.id', '=', 'hrms_attendances.user_id')->where('hrms_attendances.sub_institute_id', $sub_institute_id);
 
         if ($employee_id != 0) {
-            echo $employee_id;
             $hrmsList = $hrmsList->when(isset($employee_id), function ($q) use ($employee_id) {
                 $q->whereRaw('user_id in (' . $employee_id . ')');
             });
         } else if ($department_id != 0) {
-            echo "else";
-
             $hrmsList = $hrmsList->when(isset($employeeDep->user_id), function ($q) use ($employeeDep) {
                 $q->whereRaw('user_id in (' . $employeeDep->user_id . ')');
             });
@@ -1191,7 +1188,13 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
                 }
             }
             return $e;
-        })->where('is_late', 1);
+        })->where('is_late', 1)->values();
+        // ->values() re-indexes the filtered collection to sequential keys
+        // (0, 1, 2, ...). Without it, PHP's json_encode() serialises a
+        // collection with gapped keys (e.g. only indices 3 and 7 survived
+        // the filter above) as a JSON OBJECT ({"3":..., "7":...}) instead of
+        // an array ([...]), which broke `hrmsList.map(...)` on the frontend
+        // as soon as real data made the filter actually drop some rows.
 
         $res['employees'] = $employeeDep;
         $res['date_formatted'] = $date_formatted;
@@ -1227,7 +1230,11 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
             $sub_institute_id = $request->sub_institute_id;
         }
         $res['selDepartments'] = $department_ids = $request->department_id;
-        $res['emp_id'] = $emp_id = $request->emp_id;
+        // Some API callers send `employee_id` (the modern param name used
+        // elsewhere in the Attendance API) instead of the legacy `emp_id`
+        // this Blade-era endpoint expects - accept either so the employee
+        // filter isn't silently dropped when a caller uses the newer name.
+        $res['emp_id'] = $emp_id = $request->emp_id ?? $request->employee_id;
         $res['selectedFromDate'] = $from_date = $request->from_date;
         $res['selectedToDate'] = $to_date = $request->to_date;
 
@@ -1259,25 +1266,52 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
             ->orderBy('tu.first_name')
             ->groupBy('tu.id')->get()->toArray();
 
+        // Batched up front instead of inside the per-employee loop below,
+        // which previously re-queried `tbluser` once per PUNCH RECORD (not
+        // even once per employee) just to read that employee's expected
+        // check-in time for that day of week, plus a separate
+        // `hrms_attendances` query per employee to re-fetch punches already
+        // summarised by the main query above. With little real attendance
+        // data this was slow but unnoticeable (near-zero rows to iterate);
+        // with real data for e.g. 115 employees x ~18 punch days each, that
+        // was ~2,000+ individual queries for one page load - this is what
+        // made "Loading attendance data..." take so long. Behaviour/output
+        // is unchanged, only how the same data gets fetched.
+        $userIds = collect($empData)->pluck('user_id')->all();
+        $userInTimesById = DB::table('tbluser')
+            ->whereIn('id', $userIds)
+            ->get(['id', 'monday_in_date', 'tuesday_in_date', 'wednesday_in_date', 'thursday_in_date', 'friday_in_date', 'saturday_in_date', 'sunday_in_date'])
+            ->keyBy('id');
+
+        $allWorkedDayIds = collect($empData)
+            ->flatMap(fn ($value) => $value->worked_days ? explode(',', $value->worked_days) : [])
+            ->filter()
+            ->unique()
+            ->values();
+        $punchRowsById = $allWorkedDayIds->isEmpty()
+            ? collect()
+            : DB::table('hrms_attendances')->whereIn('id', $allWorkedDayIds)->get()->keyBy('id');
+
         $newEmpData = [];
         foreach ($empData as $key => $value) {
             $newEmpData[] = $value;
-            // add half days 
+            // add half days
             $ab = $value->ab_days ?? 0;
             $totAb = $value->total_ab_day ?? 0;
             $getHlafDays = DB::table('hrms_emp_leaves')->whereRaw('id in (' . $ab . ')')->where('day_type', '0.5')->count();
             $newEmpData[$key]->half_day = $getHlafDays ?? 0;
-            // add late comes 
+            // add late comes
             $wkDay = $value->worked_days ?? 0;
-            $getPunchTime = DB::table('hrms_attendances')->whereRaw('id in (' . $wkDay . ')')->get()->toArray();
-            // get user working time 
+            $workedDayIds = $wkDay ? array_filter(explode(',', $wkDay)) : [];
+            $getPunchTime = $punchRowsById->only($workedDayIds)->values();
+            $userInTimeRow = $userInTimesById->get($value->user_id);
+            // get user working time
             $late = 0;
             $lateArr = $punchDates = [];
             foreach ($getPunchTime as $punchkey => $punchvalue) {
-                $dayOfWeek = Carbon::parse($punchvalue->day)->dayOfWeek;
                 $dayName = strtolower(Carbon::parse($punchvalue->day)->format('l'));
 
-                $getUserInTime = DB::table('tbluser')->where('id', $value->user_id)->value($dayName . '_in_date') ?? 0;
+                $getUserInTime = ($userInTimeRow->{$dayName . '_in_date'} ?? null) ?: 0;
                 $punchInTime = Carbon::parse($punchvalue->punchin_time)->toTimeString();
 
                 $punchDates[] = $punchvalue->day;
