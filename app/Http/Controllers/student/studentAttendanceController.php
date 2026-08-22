@@ -41,12 +41,12 @@ class studentAttendanceController extends Controller
             $result = DB::table('class_teacher as ct')
             ->join('standard as s', function ($join) use ($syear) {
                 $join->on('ct.standard_id', '=', 's.id')
-                    ->where('ct.sub_institute_id', '=', 's.sub_institute_id')
-                    ->where('syear', '=', $syear);
+                    ->whereColumn('ct.sub_institute_id', 's.sub_institute_id')
+                    ->where('ct.syear', '=', $syear);
             })
             ->join('division as d', function ($join) {
                 $join->on('d.id', '=', 'ct.division_id')
-                    ->where('d.sub_institute_id', '=', 'ct.sub_institute_id');
+                    ->whereColumn('d.sub_institute_id', 'ct.sub_institute_id');
             })
             ->select('ct.standard_id', 'ct.division_id', 's.name as standard_name', 'd.name as division_name')
             ->where('ct.sub_institute_id', $sub_institute_id)

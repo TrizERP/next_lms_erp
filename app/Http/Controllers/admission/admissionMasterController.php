@@ -15,6 +15,8 @@ use DB;
 
 class admissionMasterController extends Controller
 {
+    use GetsJwtToken;
+
     public function index(Request $request)
     {
         $type = $request->input('type');
