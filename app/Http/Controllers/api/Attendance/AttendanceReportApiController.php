@@ -4,7 +4,7 @@ namespace App\Http\Controllers\api\Attendance;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\api\Attendance\Concerns\ResolvesAttendanceContext;
-use App\Models\HRMS\hrmsDepartmentModel;
+use App\Models\HrmsDepartment;
 use App\Models\user\tbluserModel;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -40,7 +40,7 @@ class AttendanceReportApiController extends Controller
 
         // Scope the dropdown to the caller's institute, otherwise it offers
         // departments that have no employees in this sub_institute.
-        $departments = hrmsDepartmentModel::where('status', true)
+        $departments = HrmsDepartment::where('status', true)
             ->where('sub_institute_id', $subInstituteId)
             ->orderBy('department')
             ->pluck('department', 'id');
