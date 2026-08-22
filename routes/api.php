@@ -11,6 +11,7 @@ use App\Http\Controllers\api\MenuRightsController;
 use App\Http\Controllers\api\ApiLmsCourseController;
 use App\Http\Controllers\api\ApiQuestionPaperController;
 use App\Http\Controllers\api\AiSopGenerationController;
+use App\Http\Controllers\api\AiPlatformController;
 use App\Http\Controllers\api\admissionEnquiryAPIController;
 use App\Http\Controllers\api\onlineAdmissionConfirmAPIController;
 use App\Http\Controllers\api\admissionRegistrationAPIController;
@@ -145,6 +146,7 @@ Route::post('lms-content-mapping-values', [ApiLmsCourseController::class, 'getCo
 Route::post('lms-store-subject', [ApiLmsCourseController::class, 'storeSubject']);
 Route::post('lms/gamma-content-master', [\App\Http\Controllers\lms\contentController::class, 'storeGammaContent']);
 Route::get('ai-sop', [AiSopGenerationController::class, 'index']);
+Route::get('ai-platforms', [AiPlatformController::class, 'index']);
 Route::get('ai-sop/department-job-roles', [AiSopGenerationController::class, 'departmentJobRoles']);
 Route::post('ai-sop/generate', [AiSopGenerationController::class, 'generate']);
 Route::post('ai-sop/store', [AiSopGenerationController::class, 'store']);
