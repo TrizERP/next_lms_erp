@@ -26,9 +26,13 @@ class RoleDashboardApiController extends Controller
         return response()->json(['status' => '0', 'message' => $message], 403);
     }
 
-    private function isAdminProfile(?string $profileName, $isAdmin): bool
+    private function isAdminProfile(?string $profileName, $isAdmin, $profileParentId): bool
     {
         if ((int) $isAdmin === 1 || (int) $isAdmin === 2) {
+            return true;
+        }
+
+        if ((int) $profileParentId === 1) {
             return true;
         }
 
@@ -43,8 +47,9 @@ class RoleDashboardApiController extends Controller
         $syear = session()->get('syear');
         $isAdmin = session()->get('is_admin');
         $profileName = session()->get('user_profile_name');
+        $profileParentId = session()->get('profile_parent_id');
 
-        if (! $this->isAdminProfile($profileName, $isAdmin)) {
+        if (! $this->isAdminProfile($profileName, $isAdmin, $profileParentId)) {
             return $this->unauthorized('This dashboard is available to administrators only.');
         }
 
@@ -183,7 +188,7 @@ class RoleDashboardApiController extends Controller
         $profileName = strtolower(trim((string) session()->get('user_profile_name')));
         $isStudent = (bool) session()->get('is_student');
 
-        if ($isStudent || $profileName !== 'teacher') {
+        if ($isStudent || ! in_array($profileName, ['teacher', 'lms teacher'], true)) {
             return $this->unauthorized('This dashboard is available to teachers only.');
         }
 
