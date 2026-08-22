@@ -68,7 +68,18 @@ class AttendanceDashboardApiController extends Controller
             ->orderBy('hrms_attendances.day', 'ASC')
             ->get();
 
-        $labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        // One label per calendar day in the requested [start, end] range
+        // (inclusive), as an ISO date so callers can parse and reformat it
+        // however they need (e.g. weekday name for a week view, day-of-month
+        // for a month view). Previously this was a fixed 6-entry
+        // ['Mon',...,'Sat'] array with no Sunday, so any range longer than 6
+        // days silently lost days past the 6th, any shorter range (e.g. a
+        // single day) still walked 6 days, and the labels never reflected
+        // the real weekday of the dates being summarised.
+        $labels = [];
+        for ($cursor = $start->copy(); $cursor->lte($end); $cursor->addDay()) {
+            $labels[] = $cursor->format('Y-m-d');
+        }
 
         $present = [];
         $absent  = [];
@@ -92,8 +103,7 @@ class AttendanceDashboardApiController extends Controller
 
         $totalUsers = $userQuery->count();
 
-        foreach ($labels as $index => $dayName) {
-            $dayDate = $start->copy()->addDays($index)->format('Y-m-d');
+        foreach ($labels as $dayDate) {
             $dayRecords = $attendance->where('day', $dayDate);
 
             // Present is when both entries exist.
@@ -144,7 +154,7 @@ class AttendanceDashboardApiController extends Controller
             $absent[]  = $totalUsers ? round(($absentCount / $totalUsers) * 100, 2) : 0;
             $late[]    = $totalUsers ? round(($lateCount / $totalUsers) * 100, 2) : 0;
 
-            $dailyPunchData[$dayName] = $punchTimes;
+            $dailyPunchData[$dayDate] = $punchTimes;
         }
 
         return response()->json([
