@@ -403,8 +403,17 @@ Route::post('petty-cash/{id}', [\App\Http\Controllers\api\PettyCashApiController
 | Replaces the Blade screens at /Onboarding and /transport_Onboarding, which
 | stay in place for the legacy UI.
 |
+| Prefix is `onboarding-modules` (not `onboarding`) to avoid colliding with
+| the Talent Management /api/onboarding/* group registered in
+| routes/talent_management.php. Both groups use the `api.session` middleware
+| and are loaded via RouteServiceProvider, but Laravel overwrites the first
+| route that matches a given URI with the last one registered — so without a
+| unique prefix the Talent Management `GET overview` silently replaces this
+| module-wise `GET overview`, feeding the Next.js onboarding frontend a
+| KPI/totals payload instead of the modules array it expects.
+|
 */
-Route::group(['prefix' => 'onboarding', 'middleware' => ['api.session']], function () {
+Route::group(['prefix' => 'onboarding-modules', 'middleware' => ['api.session']], function () {
     Route::get('overview', [\App\Http\Controllers\api\OnboardingApiController::class, 'overview']);
     Route::get('modules/{moduleKey}', [\App\Http\Controllers\api\OnboardingApiController::class, 'show']);
     Route::post('steps/{stepId}', [\App\Http\Controllers\api\OnboardingApiController::class, 'updateStep']);
