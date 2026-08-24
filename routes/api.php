@@ -273,6 +273,24 @@ Route::post('fees-circular-master/{id}/delete', [feesCircularMasterController::c
 // Intelligence Lesson Plan - Lesson Plan -> Period -> Concepts hierarchy
 Route::match(['GET', 'POST'], 'intelligence/lesson-plans', [\App\Http\Controllers\api\lms\IntelligenceLessonPlanApiController::class, 'index']);
 
+// Curriculum Planning - yearly syllabus overview (stats, subject x month grid, upcoming lessons, subject progress)
+Route::match(['GET', 'POST'], 'intelligence/curriculum-planning', [\App\Http\Controllers\api\lms\CurriculumPlanningApiController::class, 'index']);
+
+// Monthly Plan - calendar view of scheduled periods for a given month
+Route::match(['GET', 'POST'], 'intelligence/monthly-plan', [\App\Http\Controllers\api\lms\MonthlyPlanApiController::class, 'index']);
+
+// Lesson Plan detail - periods (+ concepts) for a date range, for the single-lesson detail page
+Route::match(['GET', 'POST'], 'intelligence/lesson-plan-detail', [\App\Http\Controllers\api\lms\LessonPlanDetailApiController::class, 'index']);
+
+// Lesson Plan periods - create / edit / delete a scheduled lesson (monthly-plan "Add lesson")
+Route::post('intelligence/lesson-plan-periods', [\App\Http\Controllers\api\lms\LessonPlanPeriodApiController::class, 'store']);
+Route::post('intelligence/lesson-plan-periods/{id}/update', [\App\Http\Controllers\api\lms\LessonPlanPeriodApiController::class, 'update']);
+Route::post('intelligence/lesson-plan-periods/{id}/delete', [\App\Http\Controllers\api\lms\LessonPlanPeriodApiController::class, 'destroy']);
+
+// Lesson Plan lookups - chapter and period-slot options for the "Add lesson" form
+Route::match(['GET', 'POST'], 'intelligence/lesson-plan-lookup/chapters', [\App\Http\Controllers\api\lms\LessonPlanLookupApiController::class, 'chapters']);
+Route::match(['GET', 'POST'], 'intelligence/lesson-plan-lookup/periods', [\App\Http\Controllers\api\lms\LessonPlanLookupApiController::class, 'periods']);
+
 // Intelligence Question Generation - MCQ / narrative items via DeepSeek LLM -> lms_question_master
 Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);
 
