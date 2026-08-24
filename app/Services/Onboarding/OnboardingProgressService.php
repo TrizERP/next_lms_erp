@@ -38,22 +38,35 @@ class OnboardingProgressService
     private array $sidebarCache = [];
 
     /**
+     * Report steps are excluded from every module's journey — the onboarding
+     * flow walks a school through setting up each module's own data, and a
+     * report screen has nothing to configure, so it never belongs in that
+     * flow. Matches any step whose title contains "report" (case-insensitive)
+     * — the generic "Reports" catch-all as well as specific ones like "Fees
+     * Collection Report" or "Attendance Report".
+     */
+    private const HIDDEN_STEP_TITLE_KEYWORD = 'report';
+
+    /**
      * Full journey for one module, with every step resolved to a status.
      *
      * @return array{module: array, steps: array, summary: array}
      */
     public function moduleJourney(OnboardingModuleModel $module, int $subInstituteId, int $syear): array
     {
-        $steps = OnboardingStepModel::where('module_id', $module->id)
-            ->where('status', 1)
+        $steps = $this->excludeHiddenSteps(
+            OnboardingStepModel::where('module_id', $module->id)
+                ->where('status', 1)
+        )
             ->orderBy('sort_order')
             ->get();
 
         $progress = $this->progressIndex($subInstituteId, $syear, $module->id);
+        $menuLinks = $this->menuHelpLinks($steps->pluck('action_menu_id'));
 
         $resolved = [];
         foreach ($steps as $step) {
-            $resolved[] = $this->resolveStep($step, $subInstituteId, $syear, $progress[$step->id] ?? null);
+            $resolved[] = $this->resolveStep($step, $subInstituteId, $syear, $progress[$step->id] ?? null, $menuLinks);
         }
 
         return [
@@ -78,20 +91,23 @@ class OnboardingProgressService
 
         $moduleIds = $modules->pluck('id')->all();
 
-        $stepsByModule = OnboardingStepModel::whereIn('module_id', $moduleIds)
-            ->where('status', 1)
+        $stepsByModule = $this->excludeHiddenSteps(
+            OnboardingStepModel::whereIn('module_id', $moduleIds)
+                ->where('status', 1)
+        )
             ->orderBy('sort_order')
             ->get()
             ->groupBy('module_id');
 
         $progress = $this->progressIndex($subInstituteId, $syear, $moduleIds);
+        $menuLinks = $this->menuHelpLinks($stepsByModule->flatten()->pluck('action_menu_id'));
 
         $out = [];
         $all = [];
         foreach ($modules as $module) {
             $resolved = [];
             foreach ($stepsByModule->get($module->id, collect()) as $step) {
-                $resolved[] = $this->resolveStep($step, $subInstituteId, $syear, $progress[$step->id] ?? null);
+                $resolved[] = $this->resolveStep($step, $subInstituteId, $syear, $progress[$step->id] ?? null, $menuLinks);
             }
             $all = array_merge($all, $resolved);
 
@@ -151,10 +167,12 @@ class OnboardingProgressService
         OnboardingStepModel $step,
         int $subInstituteId,
         int $syear,
-        ?OnboardingProgressModel $record
+        ?OnboardingProgressModel $record,
+        array $menuLinks = []
     ): array {
         $derived = $this->deriveProof($step, $subInstituteId, $syear);
         $status = $this->applyManualOverride($step, $derived, $record);
+        $menu = $step->action_menu_id ? ($menuLinks[(int) $step->action_menu_id] ?? null) : null;
 
         return [
             'id' => (int) $step->id,
@@ -182,8 +200,20 @@ class OnboardingProgressService
             'action' => [
                 'route' => $step->action_route,
                 'menu_id' => $step->action_menu_id ? (int) $step->action_menu_id : null,
-                'youtube_link' => $step->help_youtube_link,
-                'pdf_link' => $step->help_pdf_link,
+                // Live from tblmenumaster for the step's linked menu when one is
+                // set, so the drawer always reflects the menu's current help
+                // content rather than a copy frozen on the onboarding step.
+                // Falls back to the step's own columns for steps with no linked menu.
+                //
+                // Uses blankToNull() rather than `??` because these columns are
+                // free-text inputs that sometimes get saved as '' instead of
+                // NULL when left blank — plain `??` only falls back on a real
+                // NULL, so a blank string on the menu row would silently win
+                // over a populated value on the step and make the link vanish
+                // even though "the value is in the database" on the other row.
+                'youtube_link' => $this->blankToNull($menu->youtube_link ?? null) ?? $this->blankToNull($step->help_youtube_link),
+                'pdf_link' => $this->resolveHelpGuideUrl($this->blankToNull($menu->pdf_link ?? null) ?? $this->blankToNull($step->help_pdf_link)),
+                'quick_menu' => $this->blankToNull($menu->quick_menu ?? null),
             ],
             'state' => [
                 'manual_status' => $record->status ?? null,
@@ -199,6 +229,85 @@ class OnboardingProgressService
                     : null,
             ],
         ];
+    }
+
+    /**
+     * Excludes every report step from a step query — anything whose title
+     * contains "report", case-insensitively, is left out entirely: it never
+     * enters the resolved list, so it counts toward neither the journey nor
+     * the progress summary.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @return \Illuminate\Database\Eloquent\Builder
+     */
+    private function excludeHiddenSteps($query)
+    {
+        return $query->whereRaw(
+            'LOWER(title) NOT LIKE ?',
+            ['%' . self::HIDDEN_STEP_TITLE_KEYWORD . '%']
+        );
+    }
+
+    /**
+     * Live help content — youtube link, pdf link, quick menu — for the menus a
+     * batch of steps point at, read straight from tblmenumaster keyed by menu
+     * id. Batched once per journey/overview call rather than per step, so a
+     * module with dozens of steps costs one query instead of dozens.
+     *
+     * @param  \Illuminate\Support\Collection  $menuIds
+     * @return array<int, object{youtube_link: ?string, pdf_link: ?string, quick_menu: ?string}>
+     */
+    private function menuHelpLinks($menuIds): array
+    {
+        $ids = collect($menuIds)->filter()->map(static fn ($id) => (int) $id)->unique()->values();
+
+        if ($ids->isEmpty()) {
+            return [];
+        }
+
+        return DB::table('tblmenumaster')
+            ->select('id', 'youtube_link', 'pdf_link', 'quick_menu')
+            ->whereIn('id', $ids)
+            ->get()
+            ->keyBy(static fn ($row) => (int) $row->id)
+            ->all();
+    }
+
+    /**
+     * `tblmenumaster.pdf_link` (and the legacy `onboarding_steps.help_pdf_link`
+     * copy of it) stores a bare filename, not a URL — the existing help-guide
+     * viewer (footerJs.blade.php) resolves it the same way, against
+     * `storage/help_guide/`. Turned into an absolute URL here so the API never
+     * hands the client a bare filename for it to mis-resolve against its own
+     * origin.
+     */
+    private function resolveHelpGuideUrl(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('#^(https?:)?//#i', $value)) {
+            return $value;
+        }
+
+        return rtrim(config('app.url'), '/') . '/storage/help_guide/' . ltrim($value, '/');
+    }
+
+    /**
+     * A handful of tblmenumaster help-link rows have a saved '' (or stray
+     * whitespace/CRLF from how the value was originally entered) instead of a
+     * real NULL. Trimmed and normalised to a true null so `??` fallbacks
+     * downstream behave correctly and no button renders with a blank/CRLF
+     * href.
+     */
+    private function blankToNull(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return $value === '' ? null : $value;
     }
 
     /**

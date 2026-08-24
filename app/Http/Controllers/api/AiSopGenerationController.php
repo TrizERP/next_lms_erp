@@ -137,46 +137,81 @@ class AiSopGenerationController extends Controller
         $prompt = $this->buildPrompt($data, $mode);
 
         try {
-            $response = Http::timeout(90)
-                ->retry(1, 500)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                    'x-goog-api-key' => $apiKey,
-                ])
-                ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
-                    'contents' => [
-                        [
-                            'role' => 'user',
-                            'parts' => [
-                                ['text' => $prompt],
+            $content = '';
+            $contents = [
+                [
+                    'role' => 'user',
+                    'parts' => [
+                        ['text' => $prompt],
+                    ],
+                ],
+            ];
+
+            $maxContinuations = 3;
+
+            for ($attempt = 0; $attempt <= $maxContinuations; $attempt++) {
+                $response = Http::timeout(90)
+                    ->retry(1, 500)
+                    ->withHeaders([
+                        'Content-Type' => 'application/json',
+                        'x-goog-api-key' => $apiKey,
+                    ])
+                    ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
+                        'contents' => $contents,
+                        'generationConfig' => [
+                            'temperature' => 0.35,
+                            'topP' => 0.9,
+                            'maxOutputTokens' => $this->maxTokensForDetailLevel($data['detail_level']),
+                            'thinkingConfig' => [
+                                'thinkingBudget' => 0,
                             ],
                         ],
-                    ],
-                    'generationConfig' => [
-                        'temperature' => 0.35,
-                        'topP' => 0.9,
-                        'maxOutputTokens' => $this->maxTokensForDetailLevel($data['detail_level']),
-                    ],
-                ]);
+                    ]);
 
-            if (!$response->successful()) {
-                Log::warning('Gemini SOP generation failed', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
+                if (!$response->successful()) {
+                    Log::warning('Gemini SOP generation failed', [
+                        'status' => $response->status(),
+                        'body' => $response->body(),
+                    ]);
 
-                return response()->json([
-                    'status_code' => 0,
-                    'message' => $this->geminiErrorMessage($response->json(), $response->status()),
-                ], 502);
+                    if ($content !== '') {
+                        break;
+                    }
+
+                    return response()->json([
+                        'status_code' => 0,
+                        'message' => $this->geminiErrorMessage($response->json(), $response->status()),
+                    ], 502);
+                }
+
+                $payload = $response->json();
+                $chunk = $this->extractGeneratedText($payload);
+                $content .= ($content !== '' && $chunk !== '' ? "\n" : '') . $chunk;
+                $finishReason = $payload['candidates'][0]['finishReason'] ?? null;
+
+                if ($finishReason !== 'MAX_TOKENS' || $chunk === '') {
+                    break;
+                }
+
+                // Truncated mid-document: ask the model to continue exactly where it left off.
+                $contents[] = [
+                    'role' => 'model',
+                    'parts' => [
+                        ['text' => $chunk],
+                    ],
+                ];
+                $contents[] = [
+                    'role' => 'user',
+                    'parts' => [
+                        ['text' => 'Continue the SOP exactly where you left off. Do not repeat any earlier content, do not restart the title or sections already written, and do not add any commentary.'],
+                    ],
+                ];
             }
 
-            $content = $this->extractGeneratedText($response->json());
+            $content = trim($content);
 
             if (!$content) {
-                Log::warning('Gemini SOP generation returned empty content', [
-                    'body' => $response->json(),
-                ]);
+                Log::warning('Gemini SOP generation returned empty content');
 
                 return response()->json([
                     'status_code' => 0,
@@ -490,14 +525,14 @@ class AiSopGenerationController extends Controller
     private function maxTokensForDetailLevel(string $detailLevel): int
     {
         if ($detailLevel === 'Brief') {
-            return 1200;
+            return 2500;
         }
 
         if ($detailLevel === 'Standard') {
-            return 2200;
+            return 5000;
         }
 
-        return 3600;
+        return 8000;
     }
 
     private function extractGeneratedText(?array $payload): string
