@@ -32,7 +32,7 @@ class OnboardingApiController extends Controller
     }
 
     /**
-     * GET api/onboarding/overview
+     * GET api/onboarding-modules/overview
      * Every module the tenant can onboard, each with a derived progress roll-up.
      */
     public function overview(Request $request)
@@ -54,7 +54,7 @@ class OnboardingApiController extends Controller
     }
 
     /**
-     * GET api/onboarding/modules/{moduleKey}
+     * GET api/onboarding-modules/modules/{moduleKey}
      * One module's full journey: ordered steps, derived status, help resources.
      */
     public function show(Request $request, string $moduleKey)
@@ -82,7 +82,7 @@ class OnboardingApiController extends Controller
     }
 
     /**
-     * POST api/onboarding/steps/{stepId}
+     * POST api/onboarding-modules/steps/{stepId}
      * Record the non-derivable part of a step: sign-off, skip, assignee, notes.
      *
      * A manual `completed` is rejected on a proof-backed step — that is the
