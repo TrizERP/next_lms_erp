@@ -168,8 +168,7 @@ class van_wise_report_controller extends Controller
                 $join->whereRaw("cd.id = tv.conductor")->where('cd.status', 'Active');
             })
             ->selectRaw("ts.id AS student_id,CONCAT_WS(' ',ts.first_name,ts.middle_name,ts.last_name) name,
-    concat(s.name,'/',d.name) as stddiv,ts.mobile,ts.enrollment_no,ts.address, tr.route_name, ss.shift_title,tv.title as bus_name, from_stop.stop_name as from_stop_name, to_stop.stop_name as to_stop_name,
-    dd.first_name driver, cd.first_name conductor, tm.amount as van_vise_amount")
+    concat(s.name,'/',d.name) as stddiv,ts.mobile,ts.enrollment_no,ts.address, tr.route_name, ss.shift_title,tv.title as bus_name, from_stop.stop_name as from_stop_name, to_stop.stop_name as to_stop_name,dd.first_name driver, cd.first_name conductor, tm.amount as van_vise_amount,DATE_FORMAT(tm.start_date, '%d-%m-%Y') AS start_date,DATE_FORMAT(tm.end_date, '%d-%m-%Y') AS end_date")
             ->whereRaw($where)
             ->groupBy('student_id')
             ->get()->toarray();

@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\inventory\inventory_item_masterModel;
 use App\Models\inventory\inventory_item_quotationModel;
 use App\Models\inventory\inventory_vendor_masterModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 class inventory_item_quotationController extends Controller
@@ -92,6 +94,14 @@ class inventory_item_quotationController extends Controller
             return back()->with('message', 'Please add at least one item.');
         }
 
+        $validator = Validator::make($request->all(), [
+            'vendor_id' => 'required|integer',
+            'item'      => 'required|array|min:1',
+        ]);
+        if ($validator->fails()) {
+            return back()->with('message', $validator->messages()->first());
+        }
+
         foreach ($items as $i => $item_id) {
 
             $qty   = $qtys[$i] ?? 0;
@@ -122,6 +132,14 @@ class inventory_item_quotationController extends Controller
                 'created_ip_address'    => $request->ip(),
             ]);
         }
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_quotation_store',
+            'entity_type' => 'inventory_item_quotation_details',
+            'entity_id'   => $request->vendor_id,
+            'new_values'  => $request->except(['_token']),
+        ]);
 
         return is_mobile(
             $request->input('type'),
@@ -155,6 +173,13 @@ class inventory_item_quotationController extends Controller
 
     public function update(Request $request, $id)
     {
+        $validator = Validator::make($request->all(), [
+            'vendor_id' => 'required|integer',
+        ]);
+        if ($validator->fails()) {
+            return back()->with('message', $validator->messages()->first());
+        }
+
         $qty   = $request->qty[0] ?? 0;
         $price = $request->price[0] ?? 0;
 
@@ -173,6 +198,14 @@ class inventory_item_quotationController extends Controller
 
         inventory_item_quotationModel::where("id", $id)->update($data);
 
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_quotation_update',
+            'entity_type' => 'inventory_item_quotation_details',
+            'entity_id'   => $id,
+            'new_values'  => $data,
+        ]);
+
         return is_mobile(
             $request->input('type'),
             "add_inventory_item_quotation.index",
@@ -185,6 +218,13 @@ class inventory_item_quotationController extends Controller
     public function destroy(Request $request, $id)
     {
         inventory_item_quotationModel::where("id", $id)->delete();
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_quotation_delete',
+            'entity_type' => 'inventory_item_quotation_details',
+            'entity_id'   => $id,
+        ]);
 
         return is_mobile(
             $request->input('type'),

@@ -159,7 +159,7 @@ class InventoryApiController extends Controller
         ];
     }
 
-    public function poItems(Request $request)
+    public function negotiatePoItems(Request $request)
     {
         $poNumber = $request->input('po_number');
         if (!$poNumber) return response()->json(['status_code' => 1, 'message' => 'Success', 'data' => []]);
@@ -470,7 +470,7 @@ class InventoryApiController extends Controller
         if ($module === 'requisition-approvals' && is_array($request->input('approvals'))) return $this->saveRequisitionApprovals($request);
         if ($module === 'requisitions' && $id) return $this->updateRequisition($request, $id);
         if ($module === 'requisitions' && is_array($request->input('items'))) return $this->saveRequisitions($request);
-        if ($module === 'receivables' && is_array($request->input('items'))) return $this->saveReceivables($request);
+        if ($module === 'receivables' && is_array($request->input('items'))) return $this->saveReceivablesForModule($request);
 
         $rules = $this->workflowRules($module);
         $validator = Validator::make($request->all(), $rules);
@@ -958,7 +958,7 @@ class InventoryApiController extends Controller
         throw new \RuntimeException('Unknown Inventory workflow.');
     }
 
-    private function saveReceivables(Request $request)
+    private function saveReceivablesForModule(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'po_number' => 'required|string|max:50',

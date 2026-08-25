@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\inventory\inventory_generate_poModel;
 use App\Models\inventory\inventory_vendor_masterModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 class inventory_generate_poController extends Controller
@@ -89,6 +91,19 @@ class inventory_generate_poController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $created_by = $request->session()->get('user_id');
 
+        $validator = Validator::make($request->all(), [
+            'po_number'             => 'required|string|max:50',
+            'vendor_id'             => 'required|integer',
+            'chkbx_item_id_arr'     => 'required|array|min:1',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_inventory_generate_po.index", $message, "redirect");
+        }
+
         foreach ($request->get('chkbx_item_id_arr') as $i => $iValue) {
             $item_po = new inventory_generate_poModel([
                 'syear'                 => $syear,
@@ -119,6 +134,14 @@ class inventory_generate_poController extends Controller
             ]);
             $item_po->save();
         }
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_generate_po_store',
+            'entity_type' => 'inventory_generate_po_details',
+            'entity_id'   => $request->get('po_number'),
+            'new_values'  => $request->except(['_token']),
+        ]);
 
         $message['status_code'] = "1";
 //        $message = array(
@@ -166,6 +189,19 @@ class inventory_generate_poController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $created_by = $request->session()->get('user_id');
+
+        $validator = Validator::make($request->all(), [
+            'vendor_id'          => 'required|integer',
+            'chkbx_item_id_arr'  => 'required|array|min:1',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_inventory_generate_po.index", $message, "redirect");
+        }
+
         foreach ($request->get('chkbx_item_id_arr') as $iValue) {
             $data = array(
                 'syear'                 => $syear,
@@ -194,6 +230,14 @@ class inventory_generate_poController extends Controller
             inventory_generate_poModel::where(["id" => $id])->update($data);
         }
 
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_generate_po_update',
+            'entity_type' => 'inventory_generate_po_details',
+            'entity_id'   => $id,
+            'new_values'  => $request->except(['_token']),
+        ]);
+
         $message['status_code'] = "1";
         $message = [
             "message" => "PO Updated Successfully",
@@ -208,6 +252,13 @@ class inventory_generate_poController extends Controller
     {
         $type = $request->input('type');
         inventory_generate_poModel::where(["id" => $id])->delete();
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_generate_po_delete',
+            'entity_type' => 'inventory_generate_po_details',
+            'entity_id'   => $id,
+        ]);
 
         $message['status_code'] = "1";
         $message = [

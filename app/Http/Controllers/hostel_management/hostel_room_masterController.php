@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\hostel_management;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\hostel_management\hostel_floor_masterModel;
 use App\Models\hostel_management\hostel_room_masterModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use function App\Helpers\ValidateInsertData;
 
 class hostel_room_masterController extends Controller
 {
@@ -50,6 +52,8 @@ class hostel_room_masterController extends Controller
 
     public function store(Request $request)
     {
+        ValidateInsertData('hostel_room_master', $request);
+
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $room = new hostel_room_masterModel([
@@ -58,6 +62,13 @@ class hostel_room_masterController extends Controller
             'sub_institute_id' => $sub_institute_id,
         ]);
         $room->save();
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_room_master_store',
+            'entity_type' => 'hostel_room_master',
+            'entity_id' => $room->id,
+            'new_values' => $room->toArray(),
+        ]);
         $message['status_code'] = "1";
 //        $message = [
 //            "message" => "Floor's Room Added Succesfully",
@@ -86,12 +97,21 @@ class hostel_room_masterController extends Controller
 
     public function update(Request $request, $id)
     {
+        ValidateInsertData('hostel_room_master', 'update');
+
         $data = [
             'room_name' => $request->get('room_name'),
             'floor_id'  => $request->get('floor_id'),
         ];
 
         hostel_room_masterModel::where(["id" => $id])->update($data);
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_room_master_update',
+            'entity_type' => 'hostel_room_master',
+            'entity_id' => $id,
+            'new_values' => $data,
+        ]);
 
         $message['status_code'] = "1";
         $message = [
@@ -108,6 +128,12 @@ class hostel_room_masterController extends Controller
         $type = $request->input('type');
 
         hostel_room_masterModel::where(["id" => $id])->delete();
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_room_master_delete',
+            'entity_type' => 'hostel_room_master',
+            'entity_id' => $id,
+        ]);
 
         $message['status_code'] = "1";
         $message = [

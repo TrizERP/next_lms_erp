@@ -330,6 +330,16 @@ class imprestFeesCancelController extends Controller
 
             $feesDetails = $feesDetails[0];
 
+            // The cancel amount is client-supplied; bound it against the amount actually
+            // paid (fees_paid_other.actual_amountpaid, already summed into total_amount
+            // above) so a cancellation can never refund more than was collected.
+            $cancel_amt_for_row = $cancel_amount[$fees_paid_other_id] ?? null;
+            if (!is_numeric($cancel_amt_for_row) || $cancel_amt_for_row < 0 || $cancel_amt_for_row > $feesDetails->total_amount) {
+                $res['status_code'] = 0;
+                $res['message'] = "Cancel amount for receipt " . $value . " cannot exceed the amount paid (" . $feesDetails->total_amount . ").";
+                return is_mobile($type, "imprest_fees_cancel.index", $res);
+            }
+
             $feesCancelLog = array();
 
             /*$sql = "SELECT *,GROUP_CONCAT(fees_head_id) heads
@@ -553,6 +563,15 @@ class imprestFeesCancelController extends Controller
             DB::table('fees_paid_other')
             ->where(['id' => $fees_paid_other_id,'reciept_id' => $value, 'syear' => $syear, 'sub_institute_id' => $sub_institute_id])
             ->update(['is_deleted' => 'Y','is_waved' => $cancel_type[$fees_paid_other_id]]);
+
+            \App\Models\AuditLog::record([
+                'module' => 'fees',
+                'action' => 'fee_cancel',
+                'entity_type' => 'imprest_fees_cancel',
+                'entity_id' => $last_inserted_id,
+                'old_values' => ['collected_amount' => $feesDetails->total_amount],
+                'new_values' => ['refund_amount' => $cancel_amount[$fees_paid_other_id]],
+            ]);
         }
         $inserted_ids = rtrim($all_inserted_id,',');
 

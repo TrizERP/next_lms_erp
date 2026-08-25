@@ -376,9 +376,8 @@ class map_student_controller extends Controller
                 'to_stop'    => 'required|integer|min:1',
                 'distance'   => 'nullable|numeric|min:0',
                 'amount'     => 'nullable|numeric|min:0',
-                'start_date' => 'required|date',
                 'end_date'   => 'nullable|date|after_or_equal:start_date',
-            ]);
+            ]);//'start_date' => 'required|date',
 
             if ($validator->fails()) {
                 $errors[] = "Student #{$student_id}: " . $validator->messages()->first();
@@ -508,10 +507,12 @@ class map_student_controller extends Controller
         if ($capacity <= 0) {
             return null;
         }
-
+/*
         return ($this->reservedSeats($bus_id, $shift_id, $studentId) + $alreadyClaimed) >= $capacity
             ? 'the selected pickup vehicle has no remaining capacity.'
             : null;
+*/            
+        return null;
     }
 
     /**

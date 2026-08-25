@@ -15,7 +15,7 @@ class masterSetupSelectController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
+            $sub_institute_id = session()->get('sub_institute_id');
         }
         $res['masterData'] = DB::table('master_setup_select')->select('*',DB::raw('GROUP_CONCAT(fieldvalue) as allvalues'))->where('sub_institute_id',$sub_institute_id)->groupBy('type')->get()->toArray();
         return is_mobile($type, "settings/master_setup_select/index", $res, "view");
@@ -26,7 +26,7 @@ class masterSetupSelectController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
+            $sub_institute_id = session()->get('sub_institute_id');
         }
         $res['seltypes'] = ['Qualification','Skills','Occupations'];
         return is_mobile($type, "settings/master_setup_select/add", $res, "view");
@@ -37,7 +37,7 @@ class masterSetupSelectController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
+            $sub_institute_id = session()->get('sub_institute_id');
         } 
         $seltype = $request->seltype;
         $fieldname = $request->fieldname;
@@ -93,7 +93,7 @@ class masterSetupSelectController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
+            $sub_institute_id = session()->get('sub_institute_id');
         }
         $res['editData'] = DB::table('master_setup_select')
         ->select('*', DB::raw('GROUP_CONCAT(fieldvalue SEPARATOR "||") as allvalues'))
@@ -111,7 +111,7 @@ class masterSetupSelectController extends Controller
         $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
+            $sub_institute_id = session()->get('sub_institute_id');
         } 
         $seltype = $request->seltype;
         $fieldname = $request->fieldname;

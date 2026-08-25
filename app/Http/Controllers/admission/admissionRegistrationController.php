@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use App\Models\school_setup\casteModel;
 use App\Models\school_setup\religionModel;
+use App\Models\AuditLog;
 use GenTux\Jwt\GetsJwtToken;
 
 class admissionRegistrationController extends Controller
@@ -502,8 +503,25 @@ class admissionRegistrationController extends Controller
             $studentEnrollmentArray['term_id'] = $term_id;
             $studentEnrollmentArray['admission_fees'] = $data['amount'];
             $studentEnrollmentArray['sub_institute_id'] = $sub_institute_id;
-    
-            tblstudentEnrollmentModel::insert($studentEnrollmentArray);   
+
+            tblstudentEnrollmentModel::insert($studentEnrollmentArray);
+
+            // Admission enquiry/registration confirmed into a student record - audit the new tblstudent row.
+            AuditLog::record([
+                'module' => 'admission',
+                'action' => 'admission_registration',
+                'entity_type' => 'tblstudent',
+                'entity_id' => $student_id,
+                'new_values' => [
+                    'name' => trim($studentArray['first_name'] . ' ' . $studentArray['middle_name'] . ' ' . $studentArray['last_name']),
+                    'admission_id' => $studentArray['admission_id'],
+                    'enrollment_no' => $enrollment_no_sql_new,
+                    'admission_standard' => $studentEnrollmentArray['standard_id'],
+                    'grade_id' => $studentEnrollmentArray['grade_id'],
+                    'section_id' => $studentEnrollmentArray['section_id'],
+                    'admission_date' => $studentArray['admission_date'],
+                ],
+            ]);
         }
 
         $res['status_code'] = 1;

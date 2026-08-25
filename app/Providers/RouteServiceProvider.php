@@ -110,6 +110,14 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapCustomModuleApiRoutes();
 
         $this->mapHostelApiRoutes();
+
+        $this->mapTalentManagementRoutes();
+
+        $this->mapOrganizationManagementRoutes();
+
+        $this->mapTaskManagementRoutes();
+
+        $this->mapCompetencyManagementRoutes();
     }
 
     /**
@@ -140,6 +148,58 @@ class RouteServiceProvider extends ServiceProvider
             ->middleware('api')
             ->namespace($this->namespace)
             ->group(base_path('routes/api_hostel.php'));
+    }
+
+    /**
+     * Stateless REST APIs for the Talent Management module (Next.js frontend),
+     * migrated as-is from G2G (hp_erp). See routes/talent_management.php.
+     */
+    protected function mapTalentManagementRoutes()
+    {
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/talent_management.php'));
+    }
+
+    /**
+     * Stateless REST APIs for the Organization Management module (Next.js
+     * frontend), migrated as-is from G2G (hp_erp). See
+     * routes/organization_management.php. Mirrors mapTalentManagementRoutes().
+     */
+    protected function mapOrganizationManagementRoutes()
+    {
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/organization_management.php'));
+    }
+
+    /**
+     * Stateless REST APIs for the Task Management module (Next.js frontend),
+     * migrated as-is from G2G (hp_erp). See routes/task_management.php.
+     * Mirrors mapTalentManagementRoutes().
+     */
+    protected function mapTaskManagementRoutes()
+    {
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/task_management.php'));
+    }
+
+    /**
+     * Stateless REST APIs for Competency Management (Talent Management >
+     * Employee Profiles, Certifications, Development & Career Paths), migrated
+     * as-is from G2G (hp_erp). See routes/competency_management.php. Mirrors
+     * mapTalentManagementRoutes().
+     */
+    protected function mapCompetencyManagementRoutes()
+    {
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/competency_management.php'));
     }
 
     /**

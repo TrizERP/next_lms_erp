@@ -174,7 +174,7 @@
                                                 <label>Subject</label>
                                                 <select name="subject_ids[]" id="subject_ids[]" class="form-control"
                                                     multiple style="height:200px;">
-                                                    <option value="0"> Select Subject </option>
+                                                    <option value="0">--Select Subject--</option>
                                                     @if (!empty($subject_data))
                                                         @foreach ($subject_data as $key => $val)
                                                             <option value="{{ $val['id'] }}"
@@ -189,6 +189,7 @@
                                                 <label for="allocate_standard">Allocate Standard</label>
                                                 <select name="allocated_standards[]" id="allocated_standards"
                                                     class="form-control resizableVertical" multiple>
+                                                    <option value="">--Select Standard--</option>
                                                     @php
                                                         $allocatedStd =
                                                             isset($data['allocated_standards']) &&

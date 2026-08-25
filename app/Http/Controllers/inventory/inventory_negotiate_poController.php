@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\inventory\inventory_generate_poModel;
 use App\Models\inventory\inventory_negotiate_poModel;
 use App\Models\inventory\inventory_status_masterModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 class inventory_negotiate_poController extends Controller
@@ -66,6 +68,18 @@ class inventory_negotiate_poController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $created_by = $request->session()->get('user_id');
+
+        $validator = Validator::make($request->all(), [
+            'po_number'          => 'required|string|max:50',
+            'chkbx_item_id_arr'  => 'required|array|min:1',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_inventory_negotiate_po.index", $message, "redirect");
+        }
 
         $data = array(
             'po_approval_status' => $request->get('po_approval_status'),
@@ -144,6 +158,14 @@ class inventory_negotiate_poController extends Controller
                 ])->update($negotiate_po);
             }
         }
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_negotiate_po_store',
+            'entity_type' => 'inventory_negotiate_po_details',
+            'entity_id'   => $request->get('po_number'),
+            'new_values'  => $request->except(['_token']),
+        ]);
 
         $message['status_code'] = "1";
         $message = [
@@ -238,6 +260,14 @@ $item_data = DB::table("inventory_generate_po_details as gp")
     $sub_institute_id = $request->session()->get('sub_institute_id');
     $updated_by = $request->session()->get('user_id');
 
+    $validator = Validator::make($request->all(), [
+        'po_number'          => 'required|string|max:50',
+        'chkbx_item_id_arr'  => 'required|array|min:1',
+    ]);
+    if ($validator->fails()) {
+        return back()->with('error', $validator->messages()->first());
+    }
+
     // Update main PO approval fields
     inventory_generate_poModel::where([
         "po_number"        => $request->po_number,
@@ -286,6 +316,14 @@ $item_data = DB::table("inventory_generate_po_details as gp")
         ->update($data);
     }
 
+    AuditLog::record([
+        'module'      => 'inventory',
+        'action'      => 'inventory_negotiate_po_update',
+        'entity_type' => 'inventory_negotiate_po_details',
+        'entity_id'   => $request->po_number,
+        'new_values'  => $request->except(['_token']),
+    ]);
+
     return redirect()
         ->route('add_inventory_negotiate_po.index')
         ->with('success', 'Negotiate PO updated successfully');
@@ -297,6 +335,13 @@ $item_data = DB::table("inventory_generate_po_details as gp")
         $type = $request->input('type');
 
         inventory_negotiate_poModel::where(["id" => $id])->delete();
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_negotiate_po_delete',
+            'entity_type' => 'inventory_negotiate_po_details',
+            'entity_id'   => $id,
+        ]);
 
         $message['status_code'] = "1";
         $message = [

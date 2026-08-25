@@ -115,6 +115,18 @@ Route::get('/lms/adaptive-practice', [App\Http\Controllers\lms\assessmentQuestio
 Route::post('/lms/submit-practice', [App\Http\Controllers\lms\assessmentQuestionController::class, 'submitPractice'])
     ->name('submit.practice');
 
+// Generate Diagnostic (onboarding) Assessment
+Route::get('/lms/diagnostic-assessment', [App\Http\Controllers\lms\assessmentQuestionController::class, 'generateDiagnosticAssessment'])
+    ->name('diagnostic.assessment');
+
+// Submit Diagnostic Assessment (POST)
+Route::post('/lms/submit-diagnostic-assessment', [App\Http\Controllers\lms\assessmentQuestionController::class, 'submitDiagnosticAssessment'])
+    ->name('submit.diagnostic.assessment');
+
+// Prerequisite gate status for a chapter's concepts
+Route::get('/lms/chapter-gate', [App\Http\Controllers\lms\assessmentQuestionController::class, 'getChapterGate'])
+    ->name('chapter.gate');
+
 // Practice History
 Route::get('/lms/practice-history', [App\Http\Controllers\lms\assessmentQuestionController::class, 'getPracticeHistory'])
     ->name('practice.history');
@@ -618,7 +630,20 @@ Route::get('/assessment_question/concepts', [\App\Http\Controllers\lms\assessmen
 Route::post('assessment_question/store', [\App\Http\Controllers\lms\assessmentQuestionController::class, 'store'])->name('assessment_question.store');
 Route::any('geminiAI',[AJAXController::class, 'geminiAI'])->name('geminiAI');
 Route::get('lms_data',[AJAXController::class, 'lmsDataApi'])->name('lms_data');
+Route::get('table_data',[AJAXController::class, 'lmsDataApi'])->name('table_data');
 Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name('python_timetable');
+
+// Task Management "New Assignment" modal: bare-host legacy endpoints the
+// ported frontend calls via its non-`/api` webClient (see
+// `app/task-management/_lib/my-tasks-api.ts`'s `legacyGet`/`legacyPostForm`
+// doc-comment). `getSupervisor` mirrors hp_erp's bare `/getSupervisor`
+// (AJAXController). `/task` mirrors hp_erp's bare `Route::resource('task', ...)`
+// (routes/lms.php) - this target's own `taskController` is already
+// registered, but only under `frontdesk/task` (routes/frontdesk.php), which
+// 404s for the legacy client. Named distinctly from the `frontdesk.*`
+// resource's `task.*` names so the two registrations don't collide.
+Route::get('getSupervisor', [AJAXController::class, 'getSupervisor'])->name('legacy.getSupervisor');
+Route::post('task', [\App\Http\Controllers\frontdesk\taskController::class, 'store'])->name('legacy.task.store');
 
 // to transfer files to digital ocean
 Route::post('transferDocs', [oldDocumentTransfer::class, 'storeImagesToDigitalOcean']);
@@ -694,6 +719,12 @@ Route::get('/polar-area-chart-data', [FeesReportController::class, 'getPolarArea
 use App\Http\Controllers\MIS\MisSummaryController;
 Route::get('/mis-summary', [MisSummaryController::class, 'index'])->name('mis.summary')
     ->middleware(['session', 'menu', 'logRoute', 'check_permissions']);
+
+// Today's module wise summary (Fees, Admission, Attendance, Leave, ... ) for the logged in sub-institute
+use App\Http\Controllers\report\DailySummaryReportController;
+Route::get('daily-summary-report', [DailySummaryReportController::class, 'index'])
+    ->name('daily_summary_report')
+    ->middleware('session', 'menu', 'logRoute');
 
 use App\Models\ReportDynamic;
 Route::get('/get-fields', function (Request $request) {
@@ -774,8 +805,24 @@ Route::get('/suggested-content', [palController::class, 'suggestedContent'])->na
 Route::post('/lms/store-suggested-content', [palController::class, 'storeSuggestedContent'])->name('store.suggested.content');
 Route::get('/lms/pedagogy-suggested-content', [\App\Http\Controllers\lms\pal\palController::class, 'getPedagogySuggestedContent'])->name('pal.pedagogy.suggested.content');
 Route::get('/lms/misconception', [\App\Http\Controllers\lms\pal\palController::class, 'misconception'])->name('misconception');
+
+// Set Coherence Map — the LMS (Blade) view. Renders through the same services
+// the JSON API uses, so the two front-ends can never disagree about a learner's
+// readiness. Scope comes from the session's institute, not the query string.
+Route::get('/lms/coherence-map', [\App\Http\Controllers\lms\pal\CoherenceMapWebController::class, 'index'])
+    ->name('coherence.map');
+Route::post('/lms/coherence-map/answer', [\App\Http\Controllers\lms\pal\CoherenceMapWebController::class, 'answer'])
+    ->name('coherence.map.answer');
 Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
 Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
+Route::group(['middleware' => ['session', 'menu', 'logRoute', 'check_permissions']], function () {
+    Route::get('/suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggested.content');
+    Route::post('/lms/store-suggested-content', [palController::class, 'storeSuggestedContent'])->name('store.suggested.content');
+    Route::get('/lms/pedagogy-suggested-content', [\App\Http\Controllers\lms\pal\palController::class, 'getPedagogySuggestedContent'])->name('pal.pedagogy.suggested.content');
+    Route::get('/lms/misconception', [\App\Http\Controllers\lms\pal\palController::class, 'misconception'])->name('misconception');
+    Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
+    Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
+});
 Route::get('/download-folder', [FileController::class, 'downloadFolder']);
 
 /*

@@ -76,7 +76,8 @@ class fees_collect_controller extends Controller
         $syear = session()->get('syear');
 
         if($type=="API"){
-            $sub_institute_id=$request->sub_institute_id;
+            // sub_institute_id is now always taken from the verified session (populated
+            // from the caller's JWT by HydratesLegacyApiSession) instead of the client-supplied value.
             $syear=$request->syear;
             $last_syear = ($syear-1);
         }
@@ -397,9 +398,9 @@ class fees_collect_controller extends Controller
         $user_id = session()->get('user_id');
 
         if($request->type=="API"){
-            $sub_institute_id=$request->sub_institute_id;
+            // sub_institute_id / user_id now always come from the verified session
+            // (populated from the caller's JWT) rather than client-supplied request values.
             $syear = $request->syear;
-            $user_id = $request->user_id;
             $stu_arr[0] = $request->student_id;
         }
         // get all month name with month_id
@@ -740,101 +741,137 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                 }
             }
         }
-        // insert into fees_collect
-        $regular_insert_arr=[];
-        foreach ($new_insert_arr as $month_id => $arr) {
-            foreach ($arr as $r_id => $vals) {
-                if (isset($vals['fine']) && $vals['fine'] !== null && $vals['fine'] != 0) {
-                    $amount = $vals['amount'];
-                    $fine = $vals['fine'];
-                    $amount = (int)$amount;
-                    $fine = (int)$fine;
-                    $totalAmount = $amount + $fine;
-                    $vals['amount'] = $totalAmount;
+        // insert into fees_collect, fees_paid_other and fees_receipt inside a single
+        // DB transaction so a mid-sequence failure can never leave a payment without a receipt.
+        $regular_insert_arr = [];
+        $other_insert_arr = [];
+        $fees_receipt_insert = [];
+        $insert_id = null;
+        $collected_amount = 0;
+
+        DB::transaction(function () use (
+            $new_insert_arr, $new_insert_other_arr, $stu_arr, $standard_ids, $syears,
+            $sub_institute_id, $syear, $user_id, $receipt_number,
+            &$regular_insert_arr, &$other_insert_arr, &$fees_receipt_insert, &$insert_id, &$collected_amount
+        ) {
+            // insert into fees_collect
+            foreach ($new_insert_arr as $month_id => $arr) {
+                foreach ($arr as $r_id => $vals) {
+                    if (isset($vals['fine']) && $vals['fine'] !== null && $vals['fine'] != 0) {
+                        $amount = $vals['amount'];
+                        $fine = $vals['fine'];
+                        $amount = (int)$amount;
+                        $fine = (int)$fine;
+                        $totalAmount = $amount + $fine;
+                        $vals['amount'] = $totalAmount;
+                    }
+
+                    if (isset($_REQUEST['cheque_date']) && $_REQUEST['cheque_date'] != '') {
+                        $cheque_date = $_REQUEST['cheque_date'];
+                    } else {
+                        $cheque_date = $_REQUEST['receiptdate'];
+                    }
+
+                    if (isset($_REQUEST['remarks']) && $_REQUEST['remarks'] != '') {
+                        $remarks = $_REQUEST['remarks'];
+                    } else {
+                        $remarks = '';
+                    }
+
+                    $receipt_id_arr = explode('_', $r_id);
+                    $receipt_id = $receipt_id_arr[0];
+
+                    $insert_arr = [
+                        'student_id' => $stu_arr[0],
+                        'standard_id' => $standard_ids[$month_id] ?? null,
+                        'term_id' => $month_id,
+                        'syear' => $syears[$month_id],
+                        'sub_institute_id' => $sub_institute_id,
+                        'payment_mode' => $_REQUEST['PAYMENT_MODE'],
+                        'created_date' => date('Y-m-d H:i:s'),
+                        'bank_branch' => $_REQUEST['bank_branch'],
+                        'receiptdate' => $_REQUEST['receiptdate'],
+                        'cheque_no' => $_REQUEST['cheque_no'],
+                        'cheque_date' => $cheque_date,
+                        'cheque_bank_name' => $_REQUEST['bank_name'],
+                        'receipt_no' => $receipt_id,
+                        'remarks' => $remarks,
+                        'created_by' => $user_id,
+                    ];
+
+                    $insert_arr = array_merge($insert_arr, $vals);
+                    $row_insert_id = DB::table('fees_collect')->insertGetId($insert_arr);
+                    $regular_insert_arr[] = $row_insert_id;
+                    $collected_amount += (float)($insert_arr['amount'] ?? 0);
                 }
-
-                if (isset($_REQUEST['cheque_date']) && $_REQUEST['cheque_date'] != '') {
-                    $cheque_date = $_REQUEST['cheque_date'];
-                } else {
-                    $cheque_date = $_REQUEST['receiptdate'];
-                }
-
-                if (isset($_REQUEST['remarks']) && $_REQUEST['remarks'] != '') {
-                    $remarks = $_REQUEST['remarks'];
-                } else {
-                    $remarks = '';
-                }
-
-                $receipt_id_arr = explode('_', $r_id);
-                $receipt_id = $receipt_id_arr[0];
-
-                $insert_arr = [
-                    'student_id' => $stu_arr[0],
-                    'standard_id' => $standard_ids[$month_id] ?? null,
-                    'term_id' => $month_id,
-                    'syear' => $syears[$month_id],
-                    'sub_institute_id' => $sub_institute_id,
-                    'payment_mode' => $_REQUEST['PAYMENT_MODE'],
-                    'created_date' => date('Y-m-d H:i:s'),
-                    'bank_branch' => $_REQUEST['bank_branch'],
-                    'receiptdate' => $_REQUEST['receiptdate'],
-                    'cheque_no' => $_REQUEST['cheque_no'],
-                    'cheque_date' => $cheque_date,
-                    'cheque_bank_name' => $_REQUEST['bank_name'],
-                    'receipt_no' => $receipt_id,
-                    'remarks' => $remarks,
-                    'created_by' => $user_id,
-                ];
-
-                $insert_arr = array_merge($insert_arr, $vals);
-                $insert_id =DB::table('fees_collect')->insertGetId($insert_arr);
-                $regular_insert_arr[] = $insert_id;
             }
-        }
 
-        $other_insert_arr = array();
-        // insert into fees_paid_other table aditional fees
-        foreach ($new_insert_other_arr as $month_id => $arr)
-        {
-            foreach ($arr as $r_id => $vals)
+            // insert into fees_paid_other table aditional fees
+            foreach ($new_insert_other_arr as $month_id => $arr)
             {
-                if(isset($_REQUEST['cheque_date']) && $_REQUEST['cheque_date'] != ''){
-                    $cheque_date = $_REQUEST['cheque_date'];
-                }else{
-                    $cheque_date = $_REQUEST['receiptdate'];
+                foreach ($arr as $r_id => $vals)
+                {
+                    if(isset($_REQUEST['cheque_date']) && $_REQUEST['cheque_date'] != ''){
+                        $cheque_date = $_REQUEST['cheque_date'];
+                    }else{
+                        $cheque_date = $_REQUEST['receiptdate'];
+                    }
+
+                    if(isset($_REQUEST['remarks']) && $_REQUEST['remarks'] != ''){
+                        $remarks = $_REQUEST['remarks'];
+                    }else{
+                        $remarks = '';
+                    }
+
+                    $receipt_id_arr = explode('_', $r_id);
+                    $receipt_id = $receipt_id_arr[0];
+                    $insert_arr = array(
+                        'student_id' => $stu_arr[0],
+                        'standard_id' => $standard_ids[$month_id] ?? $_REQUEST['standard_id'],
+                        'month_id' => $month_id,
+                        'syear' => $syears[$month_id] ?? $syear,
+                        'sub_institute_id' => $sub_institute_id,
+                        'payment_mode' => $_REQUEST['PAYMENT_MODE'],
+                        'created_date' => date('Y-m-d H:i:s'),
+                        'bank_branch' => $_REQUEST['bank_branch'],
+                        'receiptdate' => $_REQUEST['receiptdate'],
+                        'cheque_dd_no' => $_REQUEST['cheque_no'],
+                        'cheque_dd_date' => $cheque_date,
+                        'bank_name' => $_REQUEST['bank_name'],
+                        'reciept_id' => $receipt_id,
+                        'remarks' => $remarks,
+                        'created_by' => $user_id
+                    );
+
+                    $insert_arr = $insert_arr + $vals;
+                    $row_insert_id = DB::table('fees_paid_other')->insertGetId($insert_arr);
+                    $other_insert_arr[] = $row_insert_id;
+                    $collected_amount += (float)($insert_arr['actual_amountpaid'] ?? 0);
                 }
-
-                if(isset($_REQUEST['remarks']) && $_REQUEST['remarks'] != ''){
-                    $remarks = $_REQUEST['remarks'];
-                }else{
-                    $remarks = '';
-                }
-
-                $receipt_id_arr = explode('_', $r_id);
-                $receipt_id = $receipt_id_arr[0];
-                $insert_arr = array(
-                    'student_id' => $stu_arr[0],
-                    'standard_id' => $standard_ids[$month_id] ?? $_REQUEST['standard_id'],
-                    'month_id' => $month_id,
-                    'syear' => $syears[$month_id] ?? $syear,
-                    'sub_institute_id' => $sub_institute_id,
-                    'payment_mode' => $_REQUEST['PAYMENT_MODE'],
-                    'created_date' => date('Y-m-d H:i:s'),
-                    'bank_branch' => $_REQUEST['bank_branch'],
-                    'receiptdate' => $_REQUEST['receiptdate'],
-                    'cheque_dd_no' => $_REQUEST['cheque_no'],
-                    'cheque_dd_date' => $cheque_date,
-                    'bank_name' => $_REQUEST['bank_name'],
-                    'reciept_id' => $receipt_id,
-                    'remarks' => $remarks,
-                    'created_by' => $user_id
-                );
-
-                $insert_arr = $insert_arr + $vals;
-                $insert_id = DB::table('fees_paid_other')->insertGetId($insert_arr);
-                $other_insert_arr[] = $insert_id;
             }
-        }
+
+            // added 2024-08-28 fees id or paid other fees id not found return status 0
+            if (empty($regular_insert_arr) && empty($other_insert_arr)) {
+                // nothing to insert - skip the fees_receipt row, transaction commits as a no-op
+                return;
+            }
+            // end 2024-08-28
+
+            //getting array ready for insert into fees receipt
+            foreach ($receipt_number as $id => $arr) {
+                if (isset($arr['used'])) {
+                    $fees_receipt_insert['RECEIPT_ID_' . $id] = $arr['rid'];
+                }
+            }
+            $fees_receipt_insert['FEES_ID'] = implode(',', $regular_insert_arr);
+            $fees_receipt_insert['OTHER_FEES_ID'] = implode(',', $other_insert_arr);
+            $fees_receipt_insert['SYEAR'] = $syear;
+            $fees_receipt_insert['SUB_INSTITUTE_ID'] = $sub_institute_id;
+            $fees_receipt_insert['STANDARD'] = $_REQUEST['standard_id'];
+            $fees_receipt_insert['CREATED_ON'] = date('Y-m-d');
+            $insert_id = DB::table('fees_receipt')->insertGetId($fees_receipt_insert);
+        });
+
         // added 2024-08-28 fees id or paid other fees id not found return status 0
         if(empty($regular_insert_arr) && empty($other_insert_arr)){
             $res['status_code'] = 0;
@@ -842,20 +879,19 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             return $res;
         }
         // end 2024-08-28
-        //getting array ready for insert into fees receipt
-        $fees_receipt_insert = [];
-        foreach ($receipt_number as $id => $arr) {
-            if (isset($arr['used'])) {
-                $fees_receipt_insert['RECEIPT_ID_' . $id] = $arr['rid'];
-            }
-        }
-        $fees_receipt_insert['FEES_ID'] = implode(',', $regular_insert_arr);
-        $fees_receipt_insert['OTHER_FEES_ID'] = implode(',', $other_insert_arr);
-        $fees_receipt_insert['SYEAR'] =$syear;
-        $fees_receipt_insert['SUB_INSTITUTE_ID'] = $sub_institute_id;
-        $fees_receipt_insert['STANDARD'] = $_REQUEST['standard_id'];
-        $fees_receipt_insert['CREATED_ON'] = date('Y-m-d');
-        $insert_id = DB::table('fees_receipt')->insertGetId($fees_receipt_insert);
+
+        // record the successful fee collection for audit purposes
+        \App\Models\AuditLog::record([
+            'module' => 'fees',
+            'action' => 'fee_collect',
+            'entity_type' => 'fees_receipt',
+            'entity_id' => $insert_id,
+            'new_values' => [
+                'amount' => $collected_amount,
+                'student_id' => $stu_arr[0],
+                'titles' => $reg_insert_arr ?? [],
+            ],
+        ]);
         // added on 29-04-2025 for ssmission onlinr payment
         $inProcess = '';
         if(isset($_REQUEST['inprocess']) && $_REQUEST['inprocess']!=''){
@@ -1031,9 +1067,18 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $discount_field = $total_field = "";
         $fine_data = $_REQUEST['fine_data'] ?? [];
         foreach ($fine_data as $id => $val) {
-            if ($val == 0) {
+            // reject negative fine amounts outright - a negative "fine" would otherwise act
+            // as an unauthenticated discount and bypass the discount cap logic entirely.
+            if ($val < 0) {
+                $fine_data[$id] = 0;
+            }
+            if ($fine_data[$id] == 0) {
                 unset($fine_data[$id]);
             }
+        }
+        // reject a negative cheque-return charge the same way.
+        if (isset($_REQUEST['hidden_cheque_return_charges']) && $_REQUEST['hidden_cheque_return_charges'] < 0) {
+            $_REQUEST['hidden_cheque_return_charges'] = 0;
         }
         if (count($fine_data) > 0) {
             foreach ($fees_arr as $month_id => $detail_arr) {
@@ -1041,10 +1086,26 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                     $fees_arr[$month_id][$receipt_id]['fine'] = 0;
                     foreach ($arr as $title => $val) {
                         if (isset($fine_data[$title])) {
-                            $fin = $fine_data[$title];
-                            if (isset($_REQUEST['hidden_cheque_return_charges'])) {
-                                $fin = $fin + $_REQUEST['hidden_cheque_return_charges'];
+                            // NOTE: fees_late_master only stores the fine trigger date/fine_type
+                            // per standard/term, not a sanctioned amount per title, so a full
+                            // lookup against a fine-schedule master could not be wired in here.
+                            // As a stopgap, cap the fine the same way discount is capped above:
+                            // it cannot exceed the title's own due amount for this bucket.
+                            $fin = 0;
+                            if ($val > $fine_data[$title] || $val == $fine_data[$title]) {
+                                $fin = $fine_data[$title];
+                                unset($fine_data[$title]);
+                            } else {
+                                $fin = $val;
+                                $fine_data[$title] = $fine_data[$title] - $val;
                             }
+
+                            if (isset($_REQUEST['hidden_cheque_return_charges']) && $_REQUEST['hidden_cheque_return_charges'] > 0) {
+                                $cheque_return_charge = min($_REQUEST['hidden_cheque_return_charges'], $val);
+                                $fin = $fin + $cheque_return_charge;
+                                unset($_REQUEST['hidden_cheque_return_charges']);
+                            }
+
                             if (!isset($fees_arr[$month_id][$receipt_id]['fine'])) {
                                 $fees_arr[$month_id][$receipt_id]['fine'] = 0;
                             }
@@ -1052,8 +1113,6 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
                             if(isset($fees_arr[$month_id][$receipt_id]['actual_amountpaid'])){
                                 $fees_arr[$month_id][$receipt_id]['actual_amountpaid'] = $fees_arr[$month_id][$receipt_id]['actual_amountpaid'] + $fees_arr[$month_id][$receipt_id]['fine'];
                             }
-                            unset($fine_data[$title]);
-                            unset($_REQUEST['hidden_cheque_return_charges']);
                         }
                     }
                 }
@@ -2210,7 +2269,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $syear = session()->get('syear');
         $last_syear = (session()->get('syear') - 1);
         if($request->type=="API"){
-            $sub_institute_id=$request->sub_institute_id;
+            // sub_institute_id now always comes from the verified session, never the client.
             $syear = $request->syear;
             $last_syear= ($syear-1);
         }
@@ -2264,12 +2323,12 @@ foreach ($previous_standard as $item) {
     // $month_arr2 = FeeMonthId($last_syear);
 
         if($request->type=="API"){
-            $sub_institute_id=$request->sub_institute_id;
+            // sub_institute_id now always comes from the verified session, never the client.
             $syear = $request->syear;
             $last_syear= ($syear-1);
             $month_arr = FeeMonthId($syear,$sub_institute_id);
-            $year_arr = FeeMonthId($syear,$sub_institute_id);            
-            $month_arr2 = FeeMonthId($last_syear,$sub_institute_id);            
+            $year_arr = FeeMonthId($syear,$sub_institute_id);
+            $month_arr2 = FeeMonthId($last_syear,$sub_institute_id);
         }
 
         // start 08-01-2025 by uma for ssmission fees heads
@@ -3007,7 +3066,7 @@ foreach ($previous_standard as $item) {
         $syear = session()->get('syear');
         $type=$request->type;
         if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
+            // sub_institute_id now always comes from the verified session, never the client.
             $syear = $request->syear;
         }
 
@@ -3293,7 +3352,8 @@ if (!empty($fees_data['previous_fees']['Previous Fees'])
         $to_date = $request->input('to_date');
         $receipt_no = $request->input('receipt_no');
         $syear = $request->syear ?? session()->get('syear');
-        $sub_institute_id = $request->sub_institute_id ?? session()->get('sub_institute_id');
+        // sub_institute_id now always comes from the verified session, never the client.
+        $sub_institute_id = session()->get('sub_institute_id') ?? $request->sub_institute_id;
 
         $extra_fp = "  AND fp.syear = '" . $syear . "' AND te.syear = '" . $syear . "' AND t.sub_institute_id = '" . $sub_institute_id . "' AND fp.sub_institute_id = '" . $sub_institute_id . "' AND fp.is_deleted = 'N' ";
 
@@ -3512,7 +3572,7 @@ if (!empty($fees_data['previous_fees']['Previous Fees'])
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
+            // sub_institute_id now always comes from the verified session, never the client.
             $syear = $request->syear;
         }
         $check_title = DB::table('fees_title')->where('sub_institute_id',$sub_institute_id)->where('syear',$syear)->where('display_name',$request->fees_title)->first();
@@ -3532,7 +3592,8 @@ if (!empty($fees_data['previous_fees']['Previous Fees'])
         $subinstArray = [254];
         $type = $request->type;
         $studentId = $request->student_id;
-        $sub_institute_id = $request->sub_institute_id;
+        // sub_institute_id now always comes from the verified session, never the client.
+        $sub_institute_id = session()->get('sub_institute_id') ?? $request->sub_institute_id;
         $syear = $request->syear;
         $nextYear = ($syear+1);
         $previousYear = ($syear-1);

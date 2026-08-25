@@ -4,6 +4,7 @@ namespace App\Http\Controllers\hostel_management;
 
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\hostel_management\hostel_masterModel;
 use App\Models\hostel_management\hosteltypemasterModel;
 use App\Models\settings\tblcustomfieldsModel;
@@ -150,7 +151,7 @@ class hostel_masterController extends Controller
         // ]);
         // $hostel->save();
 
-        $hostel = hostel_masterModel::insert([
+        $hostelData = [
             'code'             => $request->get('code'),
             'name'             => $request->get('name'),
             'description'      => $request->get('description'),
@@ -159,9 +160,17 @@ class hostel_masterController extends Controller
             'hostel_type_id'   => $request->get('hostel_type_id'),
             'sub_institute_id' => $sub_institute_id,
             'created_at'        => now(),
-        ]);
+        ];
+
+        $hostel = hostel_masterModel::insert($hostelData);
 
         if($hostel){
+            AuditLog::record([
+                'module' => 'hostel',
+                'action' => 'hostel_master_store',
+                'entity_type' => 'hostel_master',
+                'new_values' => $hostelData,
+            ]);
             $res['status_code'] = 1;
             $res['message'] = "Hostel Details Added Succesfully.";}
         else{
@@ -206,6 +215,13 @@ class hostel_masterController extends Controller
 
         $update = hostel_masterModel::where(["id" => $id])->update($data);
         if($update){
+            AuditLog::record([
+                'module' => 'hostel',
+                'action' => 'hostel_master_update',
+                'entity_type' => 'hostel_master',
+                'entity_id' => $id,
+                'new_values' => $data,
+            ]);
             $message['status_code'] = "1";
             $message = [
                 "message" => "Data Updated Successfully",
@@ -226,6 +242,12 @@ class hostel_masterController extends Controller
         $type = $request->input('type');
 
         hostel_masterModel::where(["id" => $id])->delete();
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_master_delete',
+            'entity_type' => 'hostel_master',
+            'entity_id' => $id,
+        ]);
 
         $message['status_code'] = "1";
         $message = [

@@ -56,6 +56,7 @@ use App\Http\Controllers\result\result_skillset\resultSkillsetController;
 use App\Http\Controllers\result\result_activity_master\resultActivityMasterController;
 use App\Http\Controllers\result\result_activity_marks\resultActivityMarksController;
 use App\Http\Controllers\result\result_activity_marks\resultActivityMarksV1Controller;
+use App\Http\Controllers\result\hpc_activity_transfer\HpcActivityTransferController;
 use App\Http\Controllers\lms\pal\resultPersonalizeMarksController;
 use App\Http\Controllers\result\new_result\allResultController;
 use App\Http\Controllers\result\classwiseGradeReportController;
@@ -118,9 +119,14 @@ Route::group(['prefix' => 'result', 'middleware' => ['session', 'menu', 'logRout
     Route::get('getMapValue', [resultAPIController::class,'getMapValue'])->name('getMapValue');
 
     Route::get('current_result', [resultAPIController::class,'currentResult'])->name('current_result');   
-    Route::get('getActivityLists', [resultActivityMasterController::class,'getActivityLists'])->name('getActivityLists'); 
-    Route::get('result_sub_activity_destroy', [resultActivityMasterController::class,'result_sub_activity_destroy'])->name('result_sub_activity_destroy');    
-    
+    Route::get('getActivityLists', [resultActivityMasterController::class,'getActivityLists'])->name('getActivityLists');
+    Route::get('result_sub_activity_destroy', [resultActivityMasterController::class,'result_sub_activity_destroy'])->name('result_sub_activity_destroy');
+
+    Route::get('hpc_activity_transfer', [HpcActivityTransferController::class, 'index'])->name('hpc_activity_transfer.index');
+    Route::get('hpc_activity_transfer/standards', [HpcActivityTransferController::class, 'standards'])->name('hpc_activity_transfer.standards');
+    Route::post('hpc_activity_transfer/preview', [HpcActivityTransferController::class, 'preview'])->name('hpc_activity_transfer.preview');
+    Route::post('hpc_activity_transfer/transfer', [HpcActivityTransferController::class, 'transfer'])->name('hpc_activity_transfer.transfer');
+
 //    Route::post('cbse_1t5_result', 'result\cbse_result\cbse_1t5_result_controller');
 });
 
@@ -226,8 +232,14 @@ Route::post('studentResultPDFAPI', [cbse_1t5_result_controller::class, 'studentR
 //});
 
 Route::get('cbse_1t5_result/download_overall_report', [result_report_controller::class, 'downloadOverAllReportExcel']);
-Route::get('result_personal_marks_api', [resultPersonalizeMarksController::class, 'resultPersonalMarksApi']);
-Route::get('question_lists_api', [resultPersonalizeMarksController::class, 'questionListsAPI']);
-Route::resource('result_personalize_marks', resultPersonalizeMarksController::class);
+
+// These sat outside any session/check_permissions group, so type=API callers
+// never got JWT-verified (see HydratesLegacyApiSession); bringing them in
+// line with the rest of this file's routes.
+Route::middleware(['session', 'menu', 'logRoute', 'check_permissions'])->group(function () {
+    Route::get('result_personal_marks_api', [resultPersonalizeMarksController::class, 'resultPersonalMarksApi']);
+    Route::get('question_lists_api', [resultPersonalizeMarksController::class, 'questionListsAPI']);
+    Route::resource('result_personalize_marks', resultPersonalizeMarksController::class);
+});
 Route::get('get-exam-create-name',[classwiseGradeReportController::class,'getCreateExamName'])->name('getCreateExamName');
 //Route::resource('result-template', result_TemplateController::class);

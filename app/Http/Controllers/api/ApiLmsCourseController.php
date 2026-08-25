@@ -7,6 +7,7 @@ use App\Models\lms\lmsContentCategoryModel;
 use App\Models\lms\contentModel;
 use App\Models\lms\contentmappingtypeModel;
 use App\Models\lms\lmsQuestionMasterModel;
+use App\Models\lms\answermasterModel;
 use App\Models\lms\topicModel;
 use App\Models\student\tblstudentEnrollmentModel;
 use Illuminate\Http\JsonResponse;
@@ -35,6 +36,23 @@ class ApiLmsCourseController extends Controller
             return $request->session()->get($key);
         }
         return null;
+    }
+
+    private function resolveContentUrl(array $contentArray): string
+    {
+        $url = $contentArray['url'] ?? '';
+        if (!empty($url)) {
+            return $url;
+        }
+
+        $filename = $contentArray['filename'] ?? '';
+        if (empty($filename) || preg_match('/^https?:\/\//i', $filename)) {
+            return $filename;
+        }
+
+        $fileFolder = trim($contentArray['file_folder'] ?? '/lms_content_file', '/');
+
+        return 'https://s3-triz.fra1.cdn.digitaloceanspaces.com/public/' . $fileFolder . '/' . $filename;
     }
 
     public function index(Request $request): JsonResponse
@@ -423,6 +441,12 @@ class ApiLmsCourseController extends Controller
                 }
 
                 $byCategory[$content['content_category'] ?? 'General'][] = $content;
+            $content_by_category = [];
+            foreach ($content_data as $content) {
+                $contentArray = (array)$content;
+                $contentArray['url'] = $this->resolveContentUrl($contentArray);
+                $cat = $contentArray['content_category'] ?? 'General';
+                $content_by_category[$cat][] = $contentArray;
             }
 
             $byCategory['Flash Cards'] = $flashByChapter[$chapterId] ?? [];
@@ -482,6 +506,7 @@ class ApiLmsCourseController extends Controller
         $content_by_category = [];
         foreach ($content_data as $content) {
             $contentArray = (array)$content;
+            $contentArray['url'] = $this->resolveContentUrl($contentArray);
             $cat = $contentArray['content_category'] ?? 'General';
             $content_by_category[$cat][] = $contentArray;
         }
@@ -1012,7 +1037,10 @@ $restrict_date = $request->input('restrict_date');
             ->where('chapter_id', $chapter_id);
 
         if ($sub_institute_id) {
-            $query->where('sub_institute_id', $sub_institute_id);
+            $query->where(function ($q) use ($sub_institute_id) {
+                $q->where('sub_institute_id', $sub_institute_id)
+                    ->orWhere('sub_institute_id', 1);
+            });
         }
 
         $concepts = $query->orderBy('id')->get()->toArray();
@@ -1090,6 +1118,414 @@ $restrict_date = $request->input('restrict_date');
             'subject_id' => $subject_id,
             'chapter_ids' => $chapter_ids,
             'concept_ids' => $concept_ids,
+        ], 200);
+    }
+
+    private function normalizeConceptId($conceptId): ?int
+    {
+        if ($conceptId === null) {
+            return null;
+        }
+
+        if (is_string($conceptId)) {
+            $conceptId = trim($conceptId);
+        }
+
+        if ($conceptId === '' || strtolower((string) $conceptId) === 'all') {
+            return null;
+        }
+
+        $conceptId = (int) $conceptId;
+
+        return $conceptId > 0 ? $conceptId : null;
+    }
+
+    private function resolveContentMedia(Request $request, bool $applyPresentationRules = false): array
+    {
+        $file_folder = '/lms_content_file';
+        $contentType = strtolower(trim((string) $request->input('content_type', $request->input('contentType', ''))));
+        $presentationType = strtolower(trim((string) $request->input('presentation_type', $request->input('presentationType', ''))));
+        $restrictToPresentationFiles = $applyPresentationRules
+            || $contentType === 'presentation'
+            || str_contains($presentationType, 'presentation');
+
+        $gamma_presentation_url = trim((string) $request->input('gamma_presentation_url', ''));
+        if ($gamma_presentation_url !== '') {
+            return [
+                'file_folder' => $file_folder,
+                'filename' => $gamma_presentation_url,
+                'url' => $gamma_presentation_url,
+                'file_type' => 'link',
+                'file_size' => 0,
+            ];
+        }
+
+        $ibl_generated_url = trim((string) $request->input('ibl_generated_url', ''));
+        if ($ibl_generated_url !== '') {
+            $ibl_content_type = strtolower(trim((string) $request->input('ibl_content_type', 'link')));
+
+            return [
+                'file_folder' => $file_folder,
+                'filename' => $ibl_generated_url,
+                'url' => $ibl_generated_url,
+                'file_type' => $ibl_content_type ?: 'link',
+                'file_size' => 0,
+            ];
+        }
+
+        $aiGeneratedFilename = trim((string) $request->input('ai_generated_filename', ''));
+        if ($aiGeneratedFilename !== '') {
+            $sourcePath = storage_path('app/public/pdfs/' . $aiGeneratedFilename);
+            if (file_exists($sourcePath)) {
+                $filename = 'lms_' . date('Y-m-d_h-i-s') . '.pdf';
+                $fileContent = file_get_contents($sourcePath);
+                Storage::disk('digitalocean')->put('public/lms_content_file/' . $filename, $fileContent, 'public');
+            } else {
+                $filename = $aiGeneratedFilename;
+            }
+
+            return [
+                'file_folder' => $file_folder,
+                'filename' => $filename,
+                'url' => null,
+                'file_type' => 'pdf',
+                'file_size' => 0,
+            ];
+        }
+
+        if ($request->hasFile('filename')) {
+            $img = $request->file('filename');
+            $ext = strtolower((string) $img->getClientOriginalExtension());
+
+            if ($restrictToPresentationFiles && !in_array($ext, ['pdf', 'ppt', 'pptx'], true)) {
+                return [
+                    'error' => 'Invalid file type. Allowed files: PDF, PPT, and PPTX.',
+                ];
+            }
+
+            if ($restrictToPresentationFiles && $img->getSize() > (100 * 1024 * 1024)) {
+                return [
+                    'error' => 'File size must be 100 MB or less.',
+                ];
+            }
+
+            $filename = 'lms_' . date('Y-m-d_h-i-s') . '.' . $ext;
+            Storage::disk('digitalocean')->putFileAs('public/lms_content_file/', $img, $filename, 'public');
+
+            return [
+                'file_folder' => $file_folder,
+                'filename' => $filename,
+                'url' => null,
+                'file_type' => $ext,
+                'file_size' => $img->getSize(),
+            ];
+        }
+
+        $link = trim((string) $request->input('link', ''));
+        if ($link !== '') {
+            return [
+                'file_folder' => $file_folder,
+                'filename' => $link,
+                'url' => $link,
+                'file_type' => 'link',
+                'file_size' => 0,
+            ];
+        }
+
+        return [
+            'error' => 'Please upload a file or provide a link.',
+        ];
+    }
+
+    private function persistContent(Request $request, bool $applyPresentationRules = false): JsonResponse
+    {
+        $sub_institute_id = $request->input('sub_institute_id') ?: $this->sessionValue($request, 'sub_institute_id');
+        $syear = $request->input('syear') ?: ($this->sessionValue($request, 'syear') ?: date('Y'));
+        $user_id = $request->input('user_id') ?: $this->sessionValue($request, 'user_id');
+        $user_profile_name = trim((string) ($request->input('user_profile_name') ?: $this->sessionValue($request, 'user_profile_name')));
+
+        $contentRole = strtoupper($user_profile_name);
+        if (!in_array($contentRole, ['TEACHER', 'LMS TEACHER', 'ADMIN', 'SUPER ADMIN'], true)) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Unauthorized. Admin or Teacher access required.',
+            ], 403);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'standard_id' => 'required|integer',
+            'subject_id' => 'required|integer',
+            'chapter_id' => 'required|integer',
+            'title' => 'required|string|max:250',
+            'concept_id' => 'nullable',
+            'presentation_type' => 'nullable|string|max:150',
+            'content_type' => 'nullable|string|max:100',
+            'content_category' => 'nullable|string|max:250',
+            'link' => 'nullable|string|max:2048',
+            'filename' => $applyPresentationRules ? 'nullable|file|mimes:pdf,ppt,pptx|max:102400' : 'nullable|file|max:102400',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Validation failed.',
+                'errors' => $validator->errors()->messages(),
+            ], 422);
+        }
+
+        $standard_id = $request->input('standard_id');
+        $subject_id = $request->input('subject_id');
+        $chapter_id = $request->input('chapter_id');
+        $topic_id = $request->input('topic_id', 0);
+        $grade_id = $request->input('grade_id') ?: DB::table('standard')->where('id', $standard_id)->value('grade_id');
+        $show_hide_val = $request->input('show_hide') ?? '1';
+        $concept_id = $this->normalizeConceptId($request->input('concept_id'));
+        $content_type = trim((string) $request->input('content_type', $request->input('contentType', '')));
+        $presentation_type = trim((string) $request->input('presentation_type', $request->input('presentationType', '')));
+        $content_category = trim((string) $request->input('content_category', ''));
+
+        if ($content_category === '' && $presentation_type !== '') {
+            $content_category = $presentation_type;
+        }
+
+        if ($content_category === '') {
+            $content_category = $content_type !== '' ? $content_type : 'Content';
+        }
+
+        $media = $this->resolveContentMedia($request, $applyPresentationRules);
+        if (isset($media['error'])) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => $media['error'],
+            ], 422);
+        }
+
+        $pre_topic = $post_topic = $cross_curriculum_topic = '';
+        if ($request->input('prechapter')) {
+            $pre_topic = $request->input('prechapter') . '####' . $request->input('pretopic');
+        }
+        if ($request->input('postchapter')) {
+            $post_topic = $request->input('postchapter') . '####' . $request->input('posttopic');
+        }
+        if ($request->input('cross_curriculumchapter')) {
+            $cross_curriculum_topic = $request->input('cross_curriculumchapter') . '####' . $request->input('cross_curriculumtopic');
+        }
+
+        $content = [
+            'grade_id' => $grade_id,
+            'standard_id' => $standard_id,
+            'subject_id' => $subject_id,
+            'chapter_id' => $chapter_id,
+            'concept_id' => $concept_id,
+            'topic_id' => $topic_id,
+            'sub_topic_id' => $request->input('sub_topic_id'),
+            'title' => $request->input('title'),
+            'description' => $request->input('description'),
+            'file_folder' => $media['file_folder'],
+            'filename' => $media['filename'],
+            'url' => $media['url'],
+            'file_type' => $media['file_type'],
+            'file_size' => $media['file_size'],
+            'show_hide' => $show_hide_val,
+            'sort_order' => $request->input('sort_order'),
+            'meta_tags' => $request->input('meta_tags'),
+            'content_category' => $content_category,
+            'created_by' => $user_id,
+            'sub_institute_id' => $sub_institute_id,
+            'restrict_date' => $request->input('restrict_date') ? date('Y-m-d', strtotime($request->input('restrict_date'))) : null,
+            'pre_grade_topic' => $pre_topic ?: null,
+            'post_grade_topic' => $post_topic ?: null,
+            'cross_curriculum_grade_topic' => $cross_curriculum_topic ?: null,
+            'basic_advance' => $request->input('toggle_basic_advanced') ? '1' : '0',
+            'user_profile_name' => $user_profile_name,
+            'syear' => $syear,
+        ];
+
+        if (Schema::hasColumn('content_master', 'content_type')) {
+            $content['content_type'] = $content_type !== '' ? $content_type : null;
+        }
+
+        if (Schema::hasColumn('content_master', 'presentation_type')) {
+            $content['presentation_type'] = $presentation_type !== '' ? $presentation_type : null;
+        }
+
+        try {
+            $last_id = DB::table('content_master')->insertGetId($content);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Database error: ' . $e->getMessage(),
+                'debug_data' => $content,
+            ], 500);
+        }
+
+        $mapping_type = $request->input('mapping_type', []);
+        $mapping_value = $request->input('mapping_value', []);
+        if (is_string($mapping_type)) {
+            $mapping_type = array_map('intval', explode(',', $mapping_type));
+        }
+        if (is_string($mapping_value)) {
+            $mapping_value = array_map('intval', explode(',', $mapping_value));
+        }
+
+        if (!empty($mapping_type) && is_array($mapping_type)) {
+            foreach ($mapping_type as $key => $val) {
+                if (!empty($val) && isset($mapping_value[$key]) && !empty($mapping_value[$key])) {
+                    contentmappingtypeModel::insert([
+                        'content_id' => $last_id,
+                        'mapping_type_id' => $val,
+                        'mapping_value_id' => $mapping_value[$key],
+                    ]);
+                }
+            }
+        }
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'Content Added Successfully',
+            'content_id' => $last_id,
+            'chapter_id' => $chapter_id,
+            'subject_id' => $subject_id,
+            'standard_id' => $standard_id,
+            'concept_id' => $concept_id,
+            'content_type' => $content_type,
+            'presentation_type' => $presentation_type,
+            'content_category' => $content_category,
+        ], 200);
+    }
+
+    public function uploadContent(Request $request): JsonResponse
+    {
+        return $this->persistContent($request, true);
+    }
+
+    public function getQuestionBank(Request $request): JsonResponse
+    {
+        $chapterId = $request->input('chapter_id');
+        $topicId = $request->input('topic_id');
+        $questionType = $request->input('question_type');
+
+        if (!$chapterId) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Missing required field: chapter_id is required.',
+                'data' => [],
+            ], 422);
+        }
+
+        $query = lmsQuestionMasterModel::query()
+            ->where('chapter_id', $chapterId)
+            ->join('question_type_master', 'question_type_master.id', '=', 'lms_question_master.question_type_id')
+            ->select(
+                'lms_question_master.id',
+                'lms_question_master.chapter_id',
+                'lms_question_master.topic_id',
+                'lms_question_master.question_title',
+                'question_type_master.question_type',
+                'lms_question_master.points as marks',
+                'lms_question_master.answer as model_answer'
+            );
+
+        if ($topicId) {
+            $query->where('lms_question_master.topic_id', $topicId);
+        }
+
+        if ($questionType) {
+            if (is_numeric($questionType)) {
+                $query->where('lms_question_master.question_type_id', (int) $questionType);
+            } else {
+                $query->where('question_type_master.question_type', trim($questionType));
+            }
+        }
+
+        $questions = $query->orderByDesc('lms_question_master.id')->get()->toArray();
+
+        $questionIds = array_column($questions, 'id');
+        $optionsByQuestion = [];
+
+        if (!empty($questionIds)) {
+            $options = \App\Models\lms\answermasterModel::whereIn('question_id', $questionIds)
+                ->orderBy('id')
+                ->get(['question_id', 'answer', 'correct_answer'])
+                ->toArray();
+
+            $labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+            foreach ($options as $option) {
+                $qid = (int) $option['question_id'];
+                $idx = count($optionsByQuestion[$qid] ?? []);
+                $label = $labels[$idx] ?? chr(65 + $idx);
+
+                $optionsByQuestion[$qid][] = [
+                    'label' => $label,
+                    'text' => (string) $option['answer'],
+                    'is_correct' => (bool) $option['correct_answer'],
+                ];
+            }
+        }
+
+        $data = [];
+        foreach ($questions as $question) {
+            $qid = (int) $question['id'];
+            $questionTypeLabel = strtoupper((string) ($question['question_type'] ?? ''));
+            if ($questionTypeLabel === 'MCQ' || $questionTypeLabel === 'MULTIPLE_CHOICE') {
+                $questionTypeLabel = 'MCQ';
+            } elseif ($questionTypeLabel === 'NARRATIVE' || $questionTypeLabel === 'SUBJECTIVE') {
+                $questionTypeLabel = 'Narrative';
+            }
+
+            $data[] = [
+                'id' => (int) $question['id'],
+                'chapter_id' => (int) $question['chapter_id'],
+                'topic_id' => $question['topic_id'] !== null ? (int) $question['topic_id'] : null,
+                'question' => (string) ($question['question_title'] ?? ''),
+                'question_type' => $questionTypeLabel,
+                'options' => $optionsByQuestion[$qid] ?? [],
+                'model_answer' => $question['model_answer'] !== null ? (string) $question['model_answer'] : null,
+                'marks' => (int) ($question['marks'] ?? 1),
+            ];
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Questions fetched successfully.',
+            'data' => $data,
+        ], 200);
+    }
+
+    /**
+     * GET /api/question-mapping-levels
+     *
+     * DOK and Bloom level options for question filtering, straight from
+     * lms_mapping_type (children of parent 9 = Depth of Knowledge and
+     * parent 82 = Blooms Taxonomy). Nothing is hardcoded client-side, so
+     * adding a new level row (e.g. a DOK level 4 label) shows up automatically.
+     */
+    public function getQuestionMappingLevels(): JsonResponse
+    {
+        $children = DB::table('lms_mapping_type')
+            ->whereIn('parent_id', [9, 82])
+            ->where('status', 1)
+            ->orderBy('id')
+            ->get(['id', 'name', 'parent_id']);
+
+        $dok = [];
+        $bloom = [];
+        foreach ($children as $child) {
+            $option = ['id' => (int) $child->id, 'name' => trim($child->name)];
+            if ((int) $child->parent_id === 9) {
+                $dok[] = $option;
+            } else {
+                $bloom[] = $option;
+            }
+        }
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => [
+                'dok' => $dok,
+                'bloom' => $bloom,
+            ],
         ], 200);
     }
 }

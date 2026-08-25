@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -430,6 +431,14 @@ class IndividualRightsApiController extends Controller
                 ]);
             }
         });
+
+        AuditLog::record([
+            'module' => 'permissions',
+            'action' => 'individual_rights_update',
+            'entity_type' => 'tblindividual_rights',
+            'entity_id' => $userId,
+            'new_values' => ['profile_id' => $profileId, 'user_id' => $userId, 'selected' => $selected],
+        ]);
 
         return response()->json([
             'status_code' => 1,

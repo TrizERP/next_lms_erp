@@ -17,7 +17,7 @@ class admissionReportController extends Controller
 
     public function enquiryReport(Request $request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id') ?: $request->input('sub_institute_id');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear') ?: $request->input('syear');
         $type = $request->input('type');
         $report = $request->input('report');
@@ -552,7 +552,7 @@ class admissionReportController extends Controller
      */
     public function conReportFixed(Request $request)
     {
-        $sub_institute_id = $request->session()->get('sub_institute_id') ?: $request->input('sub_institute_id');
+        $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear') ?: $request->input('syear');
         $type = $request->input('type');
         if(in_array($type,["API","JSON"])){
@@ -700,12 +700,10 @@ class admissionReportController extends Controller
 
     public function followUpReport(Request $request)
     {
-        // SessionMiddleware only authenticates/hydrates the Laravel session when
-        // type is neither "API" nor "JSON" (see App\Http\Middleware\SessionMiddleware),
-        // so stateless calls from the Next.js frontend (which always send
-        // type=API) never populate session('sub_institute_id')/session('syear').
-        // Fall back to the request params the frontend already sends explicitly.
-        $sub_institute_id = $request->session()->get('sub_institute_id') ?: $request->input('sub_institute_id');
+        // SessionMiddleware validates the bearer JWT and hydrates the session for
+        // every request (including type=API/JSON), so session() is always the
+        // correct, tenant-scoped source here - never trust the client-supplied param.
+        $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear') ?: $request->input('syear');
         $type = $request->input('type');
         $report = $request->input('report');
