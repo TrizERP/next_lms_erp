@@ -777,3 +777,14 @@ Route::get('/lms/misconception', [\App\Http\Controllers\lms\pal\palController::c
 Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
 Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
 Route::get('/download-folder', [FileController::class, 'downloadFolder']);
+
+/*
+| AI Journey console.
+|
+| One page that asks a question and renders the fifteen-stage trace that comes back.
+| Behind `session` and `menu` like the rest of the authenticated UI; the page mints its
+| own scoped token for the /api/ai endpoints rather than reaching into them directly.
+*/
+Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
+    Route::get('ai/journey', [\App\Http\Controllers\AI\AiJourneyController::class, 'index'])->name('ai.journey');
+});

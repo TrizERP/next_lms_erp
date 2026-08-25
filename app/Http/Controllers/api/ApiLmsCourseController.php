@@ -18,6 +18,17 @@ use Illuminate\Support\Facades\Validator;
 
 class ApiLmsCourseController extends Controller
 {
+    /**
+     * Per-request cache of school_setup.is_Lms.
+     *
+     * It was previously read inside getChaptersWithContentCategories(), which runs once
+     * per subject, so a ten-subject response asked the database the same question ten
+     * times. It cannot change mid-request.
+     *
+     * @var array<string, string|null>
+     */
+    private array $isLmsCache = [];
+
     private function sessionValue(Request $request, string $key)
     {
         if ($request->hasSession() && $request->session()->has($key)) {
@@ -32,6 +43,16 @@ class ApiLmsCourseController extends Controller
         $syear = $request->input('syear') ?? $this->sessionValue($request, 'syear');
         $user_profile_name = $request->input('user_profile_name') ?? $this->sessionValue($request, 'user_profile_name');
         $user_id = $request->input('user_id') ?? $this->sessionValue($request, 'user_id');
+
+        // Without this the value reached the query as an empty string and MariaDB
+        // rejected the SQL, which surfaced as a 500 with a syntax error in the body.
+        // A missing parameter is the caller's mistake, so say so.
+        if ($sub_institute_id === null || $sub_institute_id === '') {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'sub_institute_id is required. Send it in the request body, the query string, or the session.',
+            ], 422);
+        }
 
         $data = $this->getCourseData($sub_institute_id, $syear, $user_profile_name, $user_id);
 
@@ -86,8 +107,10 @@ class ApiLmsCourseController extends Controller
 
         $arr = json_decode(json_encode($arr), true);
         if (count($arr) > 0) {
+            $chapterMap = $this->getChaptersForSubjects($arr, $sub_institute_id);
+
             foreach ($arr as $key => $val) {
-                $val['chapters'] = $this->getChaptersWithContentCategories($val['subject_id'], $val['standard_id'], $sub_institute_id);
+                $val['chapters'] = $chapterMap[$val['subject_id'] . ':' . $val['standard_id']] ?? [];
                 $mycourse_arr[$val['content_category']][] = $val;
             }
         }
@@ -102,8 +125,10 @@ class ApiLmsCourseController extends Controller
 
         $getSEL = json_decode(json_encode($getSEL), true);
         if (count($getSEL) > 0) {
+            $selChapterMap = $this->getChaptersForSubjects($getSEL, $sub_institute_id);
+
             foreach ($getSEL as $key => $val) {
-                $val['chapters'] = $this->getChaptersWithContentCategories($val['subject_id'], $val['standard_id'], $sub_institute_id);
+                $val['chapters'] = $selChapterMap[$val['subject_id'] . ':' . $val['standard_id']] ?? [];
                 $mycourse_arr[$val['content_category']][] = $val;
             }
         }
@@ -147,11 +172,13 @@ class ApiLmsCourseController extends Controller
                 WHERE sos.sub_institute_id = '" . $sub_institute_id . "' AND sos.syear = '" . $syear . "' AND sos.student_id = '" . $student_id . "'))";
         }
 
-        $getIsLms = DB::table('school_setup')
-            ->where('Id', $sub_institute_id)
-            ->value('is_Lms');
+        $getIsLms = $this->isLmsFlag($sub_institute_id);
 
-        $sub_institute_id_by_lms = ($getIsLms == 'Y') ? "(s.sub_institute_id = 1 or s.sub_institute_id = $sub_institute_id)" : "s.sub_institute_id = $sub_institute_id";
+        // Bound rather than interpolated: $sub_institute_id reaches here from request
+        // input, and it was being concatenated straight into the SQL string.
+        $sub_institute_id_by_lms = ($getIsLms == 'Y')
+            ? ['(s.sub_institute_id = 1 or s.sub_institute_id = ?)', [$sub_institute_id]]
+            : ['s.sub_institute_id = ?', [$sub_institute_id]];
 
         if (in_array($user_profile_name, ['Teacher', 'Lms Teacher'])){
             $arr = DB::table('sub_std_map as s')
@@ -182,7 +209,7 @@ class ApiLmsCourseController extends Controller
                     $join->on('STD.id', '=', 's.standard_id')
                          ->on('STD.sub_institute_id', '=', 's.sub_institute_id');
                 })
-                ->whereRaw($sub_institute_id_by_lms)
+                ->whereRaw($sub_institute_id_by_lms[0], $sub_institute_id_by_lms[1])
                 ->where('s.allow_content', '=', 'Yes')
                 ->where('s.subject_category', '=', 'SEL')
                 ->groupBy('s.subject_id', 's.standard_id', 's.subject_category')
@@ -190,9 +217,17 @@ class ApiLmsCourseController extends Controller
                 ->get()->toArray();
 
             if (count($getSEL) > 0) {
+                $selChapters = $this->getChaptersForSubjects(
+                    array_map(fn ($val) => [
+                        'subject_id' => $val->subject_id,
+                        'standard_id' => $val->standard_id,
+                    ], $getSEL),
+                    $sub_institute_id
+                );
+
                 foreach ($getSEL as $key => $val) {
                     $valArray = (array)$val;
-                    $valArray['chapters'] = $this->getChaptersWithContentCategories($val->subject_id, $val->standard_id, $sub_institute_id);
+                    $valArray['chapters'] = $selChapters[$val->subject_id . ':' . $val->standard_id] ?? [];
                     $mycourse_arr[$valArray['content_category']][] = $valArray;
                 }
             }
@@ -205,7 +240,7 @@ class ApiLmsCourseController extends Controller
                     $join->on('STD.id', '=', 's.standard_id')
                          ->on('STD.sub_institute_id', '=', 's.sub_institute_id');
                 })
-                ->whereRaw($sub_institute_id_by_lms)
+                ->whereRaw($sub_institute_id_by_lms[0], $sub_institute_id_by_lms[1])
                 ->where('s.allow_content', '=', 'Yes')
                 ->whereRaw($whereExtra)
                 ->groupBy('s.subject_id', 's.standard_id', 's.subject_category')
@@ -215,9 +250,17 @@ class ApiLmsCourseController extends Controller
 
         $arr = $arr->toArray();
         if (count($arr) > 0) {
+            $chapterMap = $this->getChaptersForSubjects(
+                array_map(fn ($val) => [
+                    'subject_id' => $val->subject_id,
+                    'standard_id' => $val->standard_id,
+                ], $arr),
+                $sub_institute_id
+            );
+
             foreach ($arr as $key => $val) {
                 $valArray = (array)$val;
-                $valArray['chapters'] = $this->getChaptersWithContentCategories($val->subject_id, $val->standard_id, $sub_institute_id);
+                $valArray['chapters'] = $chapterMap[$val->subject_id . ':' . $val->standard_id] ?? [];
                 $mycourse_arr[$valArray['content_category']][] = $valArray;
             }
         }
@@ -236,12 +279,61 @@ class ApiLmsCourseController extends Controller
         ];
     }
 
+    /**
+     * Chapters and their content for one subject.
+     *
+     * Kept as a thin wrapper over the batched loader so the existing callers
+     * (chapters(), and the single-subject paths) are unchanged.
+     */
     private function getChaptersWithContentCategories($subject_id, $standard_id, $sub_institute_id): array
     {
+        $batched = $this->getChaptersForSubjects(
+            [['subject_id' => $subject_id, 'standard_id' => $standard_id]],
+            $sub_institute_id
+        );
+
+        return $batched[$subject_id . ':' . $standard_id] ?? [];
+    }
+
+    /**
+     * The same thing for many subjects at once.
+     *
+     * This used to run per subject, and inside that, per chapter: two queries for the
+     * subject plus two for every chapter it owned. Ten subjects of six chapters each
+     * came to about 140 round trips, which is survivable against a local database and
+     * fatal against a remote one — the endpoint was exceeding PHP's 60-second limit
+     * before it returned anything.
+     *
+     * It is now four queries regardless of how many subjects are asked for: the
+     * chapters, their content, their flashcards, and the one is_Lms lookup. Grouping
+     * happens in PHP, where it costs nothing.
+     *
+     * @param  array<int, array{subject_id:mixed, standard_id:mixed}>  $pairs
+     * @return array<string, array<int, array>>  keyed "subject_id:standard_id"
+     */
+    private function getChaptersForSubjects(array $pairs, $sub_institute_id): array
+    {
+        // Callers legitimately repeat a pair (a subject appearing in both the main and
+        // the SEL list), and a duplicate would double the work for no extra rows.
+        $unique = [];
+        foreach ($pairs as $pair) {
+            if ($pair['subject_id'] === null || $pair['standard_id'] === null) {
+                continue;
+            }
+            $unique[$pair['subject_id'] . ':' . $pair['standard_id']] = $pair;
+        }
+
+        if ($unique === []) {
+            return [];
+        }
+
         $hasContentUserProfile = Schema::hasColumn('content_master', 'user_profile_name');
 
-        $chapters = DB::table('chapter_master')
-            ->select('chapter_master.id', 'chapter_master.chapter_name', 'chapter_master.chapter_desc', 'chapter_master.sort_order',
+        // 1. Every chapter for every requested subject, in one pass. The pair filter is
+        //    built from bindings rather than string concatenation.
+        $chapterRows = DB::table('chapter_master')
+            ->select('chapter_master.id', 'chapter_master.chapter_name', 'chapter_master.chapter_desc',
+                'chapter_master.sort_order', 'chapter_master.subject_id', 'chapter_master.standard_id',
                 DB::raw('COUNT(content_master.id) as total_content'),
                 DB::raw("sum(if(content_category = 'Triz', 1, 0)) AS total_triz_content"),
                 DB::raw("sum(if(content_category = 'OER', 1, 0)) AS total_OER_content"))
@@ -258,63 +350,108 @@ class ApiLmsCourseController extends Controller
                 $query->where('chapter_master.sub_institute_id', $sub_institute_id)
                     ->orWhere('chapter_master.sub_institute_id', 1);
             })
-            ->where('chapter_master.subject_id', $subject_id)
-            ->where('chapter_master.standard_id', $standard_id)
+            ->where(function ($query) use ($unique) {
+                foreach ($unique as $pair) {
+                    $query->orWhere(function ($inner) use ($pair) {
+                        $inner->where('chapter_master.subject_id', $pair['subject_id'])
+                            ->where('chapter_master.standard_id', $pair['standard_id']);
+                    });
+                }
+            })
             ->groupBy('chapter_master.id')
             ->orderBy('chapter_master.sort_order')
-            ->get()
-            ->toArray();
+            ->get();
 
-        $chapters = array_map(function ($chapter) {
-            return (array)$chapter;
-        }, $chapters);
-
-        $getIsLms = DB::table('school_setup')
-            ->where('Id', $sub_institute_id)
-            ->value('is_Lms');
-
-        foreach ($chapters as &$chapter) {
-            $content_data = DB::table('content_master')
-                ->where(function ($query) use ($getIsLms, $sub_institute_id) {
-                    if ($getIsLms == 'Y') {
-                        $query->where('content_master.sub_institute_id', '1')
-                            ->orWhere('content_master.sub_institute_id', $sub_institute_id);
-                    } else {
-                        $query->where('content_master.sub_institute_id', $sub_institute_id);
-                    }
-                })
-                ->where('content_master.subject_id', $subject_id)
-                ->where('content_master.standard_id', $standard_id)
-                ->where('content_master.chapter_id', $chapter['id'])
-                ->where(function ($query) {
-                    $query->whereNull('content_master.topic_id')
-                        ->orWhere('content_master.topic_id', '0');
-                })
-                ->get()
-                ->toArray();
-
-            $content_by_category = [];
-            foreach ($content_data as $content) {
-                $contentArray = (array)$content;
-                $cat = $contentArray['content_category'] ?? 'General';
-                $content_by_category[$cat][] = $contentArray;
-            }
-
-            $chapter['content_categories'] = $content_by_category;
-
-            $flash = DB::table('lms_flashcard')
-                ->where(['chapter_id' => $chapter['id'], 'sub_institute_id' => $sub_institute_id, 'status' => 1])
-                ->get()
-                ->toArray();
-            $chapter['content_categories']['Flash Cards'] = array_map(function ($f) {
-                return (array)$f;
-            }, $flash);
-
-            $chapter['content_categories']['Mindmap'] = [];
-            $chapter['content_categories']['Virtual Lab'] = [];
+        if ($chapterRows->isEmpty()) {
+            return [];
         }
 
-        return $chapters;
+        $chapterIds = $chapterRows->pluck('id')->all();
+        $getIsLms = $this->isLmsFlag($sub_institute_id);
+
+        // 2. All content for those chapters.
+        $contentRows = DB::table('content_master')
+            ->where(function ($query) use ($getIsLms, $sub_institute_id) {
+                if ($getIsLms == 'Y') {
+                    $query->where('content_master.sub_institute_id', '1')
+                        ->orWhere('content_master.sub_institute_id', $sub_institute_id);
+                } else {
+                    $query->where('content_master.sub_institute_id', $sub_institute_id);
+                }
+            })
+            ->whereIn('content_master.chapter_id', $chapterIds)
+            ->where(function ($query) {
+                $query->whereNull('content_master.topic_id')
+                    ->orWhere('content_master.topic_id', '0');
+            })
+            ->get();
+
+        $contentByChapter = [];
+        foreach ($contentRows as $content) {
+            $contentArray = (array) $content;
+            $contentByChapter[$contentArray['chapter_id']][] = $contentArray;
+        }
+
+        // 3. All flashcards for those chapters.
+        $flashRows = DB::table('lms_flashcard')
+            ->whereIn('chapter_id', $chapterIds)
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('status', 1)
+            ->get();
+
+        $flashByChapter = [];
+        foreach ($flashRows as $flash) {
+            $flashArray = (array) $flash;
+            $flashByChapter[$flashArray['chapter_id']][] = $flashArray;
+        }
+
+        // 4. Assemble, preserving the original per-subject shape exactly.
+        $result = [];
+
+        foreach ($chapterRows as $row) {
+            $chapter = (array) $row;
+            $chapterId = $chapter['id'];
+            $key = $chapter['subject_id'] . ':' . $chapter['standard_id'];
+
+            $byCategory = [];
+            foreach ($contentByChapter[$chapterId] ?? [] as $content) {
+                // The per-chapter query also constrained subject and standard. A chapter
+                // determines both, so this only re-checks that a content row genuinely
+                // belongs where its chapter_id says it does.
+                if ($content['subject_id'] != $chapter['subject_id'] || $content['standard_id'] != $chapter['standard_id']) {
+                    continue;
+                }
+
+                $byCategory[$content['content_category'] ?? 'General'][] = $content;
+            }
+
+            $byCategory['Flash Cards'] = $flashByChapter[$chapterId] ?? [];
+            $byCategory['Mindmap'] = [];
+            $byCategory['Virtual Lab'] = [];
+
+            // subject_id / standard_id were added to the select for grouping; the
+            // response shape did not carry them before, so they are dropped again.
+            unset($chapter['subject_id'], $chapter['standard_id']);
+            $chapter['content_categories'] = $byCategory;
+
+            $result[$key][] = $chapter;
+        }
+
+        return $result;
+    }
+
+    /** school_setup.is_Lms, read at most once per request per institute. */
+    private function isLmsFlag($sub_institute_id)
+    {
+        $key = (string) $sub_institute_id;
+
+        if (! array_key_exists($key, $this->isLmsCache)) {
+            $this->isLmsCache[$key] = DB::table('school_setup')
+                ->where('Id', $sub_institute_id)
+                ->value('is_Lms');
+        }
+
+        return $this->isLmsCache[$key];
     }
 
     private function getChapterContentCategories($chapter_id, $subject_id, $standard_id, $sub_institute_id): array

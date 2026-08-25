@@ -107,8 +107,11 @@ Route::post('/compliance/delete/{id}',[instituteDetailController::class,'destroy
 Route::post('/menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMenuRightsLevelWise']);
 Route::get('/master-menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMasterMenuApi']);
 
-Route::post('lms-courses', [ApiLmsCourseController::class, 'index']);
-Route::post('lms-courses/search', [ApiLmsCourseController::class, 'search']);
+// GET is accepted alongside POST so these can be opened in a browser or curled without
+// a body — the handlers read their parameters through $request->input(), which covers
+// the query string as well. POST is unchanged, so existing callers are unaffected.
+Route::match(['get', 'post'], 'lms-courses', [ApiLmsCourseController::class, 'index']);
+Route::match(['get', 'post'], 'lms-courses/search', [ApiLmsCourseController::class, 'search']);
 Route::post('lms-chapter-concepts', [ApiLmsCourseController::class, 'getChapterConcepts']);
 Route::post('lms-chapters', [ApiLmsCourseController::class, 'chapters']);
 Route::post('lms-chapter-content', [ApiLmsCourseController::class, 'chapterContent']);
