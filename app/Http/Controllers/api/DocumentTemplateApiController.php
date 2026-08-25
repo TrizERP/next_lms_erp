@@ -24,6 +24,16 @@ use Illuminate\Support\Facades\Validator;
 class DocumentTemplateApiController extends Controller
 {
     /** Categories a template can be filed under, and the entity each merges against. */
+    /**
+     * The categories a template may be filed under.
+     *
+     * `ai` is where templates designed for the assistant live. It is a category in
+     * this same library rather than a store of its own: the designer, the version
+     * history, the merge-field catalogue and the tenant scoping are the ones that
+     * already work for Fees, and an AI template is only a template that the
+     * assistant is allowed to pick up. Anything not listed here normalises to
+     * `general`, so adding a key is the whole of adding a category.
+     */
     public const CATEGORIES = [
         'certificate' => 'Certificates (TC, bonafide, character)',
         'id_card' => 'ID cards',
@@ -31,8 +41,12 @@ class DocumentTemplateApiController extends Controller
         'admission' => 'Admission letters and forms',
         'exam' => 'Exam and result documents',
         'circular' => 'Circulars and notices',
+        'ai' => 'AI templates (used by the assistant)',
         'general' => 'General documents',
     ];
+
+    /** The category the assistant draws its templates from. */
+    public const AI_CATEGORY = 'ai';
 
     // -----------------------------------------------------------------------
     // Context

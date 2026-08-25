@@ -8,6 +8,8 @@ use App\Mcp\Tools\AdmissionsGetEnquiryDetailsTool;
 use App\Mcp\Tools\AdmissionsListEnquiriesTool;
 use App\Mcp\Tools\AdmissionsValidateConfirmationTool;
 use App\Mcp\Tools\AdmissionsTodayTool;
+use App\Mcp\Tools\AiTemplatesListTool;
+use App\Mcp\Tools\AiTemplatesRenderTool;
 use App\Mcp\Tools\FeesCollectionReportTool;
 use App\Mcp\Tools\FeesGetPendingTool;
 use App\Mcp\Tools\StudentSearchTool;
@@ -22,6 +24,8 @@ class McpServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(config_path('mcp.php'), 'mcp');
 
+        $this->app->singleton(AiTemplatesListTool::class);
+        $this->app->singleton(AiTemplatesRenderTool::class);
         $this->app->singleton(StudentSearchTool::class);
         $this->app->singleton(FeesCollectionReportTool::class);
         $this->app->singleton(AdmissionsTodayTool::class);
@@ -32,6 +36,8 @@ class McpServiceProvider extends ServiceProvider
         $this->app->singleton(FeesGetPendingTool::class);
 
         $this->app->tag([
+            AiTemplatesListTool::class,
+            AiTemplatesRenderTool::class,
             StudentSearchTool::class,
             FeesCollectionReportTool::class,
             AdmissionsTodayTool::class,

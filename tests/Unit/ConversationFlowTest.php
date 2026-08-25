@@ -6,6 +6,7 @@ use App\Domain\AI\Conversation\ConversationStore;
 use App\Domain\AI\Conversation\FlowTrace;
 use App\Domain\AI\Conversation\Intent;
 use App\Domain\AI\Conversation\IntentClassifier;
+use App\Domain\AI\Conversation\LifecycleTraceProjector;
 use App\Domain\AI\Conversation\TraceStage;
 use PHPUnit\Framework\TestCase;
 
@@ -285,6 +286,271 @@ class ConversationFlowTest extends TestCase
         $this->assertSame(2, $counts[TraceStage::RAN]);
         $this->assertSame(1, $counts[TraceStage::SKIPPED]);
         $this->assertSame(12, $counts[TraceStage::NOT_REACHED]);
+    }
+
+    public function test_the_lifecycle_projection_covers_the_products_12_stages(): void
+    {
+        $trace = new FlowTrace();
+        $trace->ran('conversation', 'Accepted.');
+        $trace->ran('gen_ai', 'Understood as risk scan.');
+        $trace->ran('agent', 'Agent ran.');
+        $trace->ran('data', 'Real records were queried.');
+        $trace->ran('evidence', 'Evidence stored.');
+        $trace->ran('case', 'Case opened.');
+        $trace->ran('explanation', 'Governed explanation composed.');
+        $trace->pending('recommendation', 'Draft waiting for a teacher.');
+        $trace->pending('approval', 'Waiting for a teacher.');
+        $trace->notReached('workflow', 'Waiting on the human decision above.');
+        $trace->notReached('action', 'Waiting on the workflow above.');
+
+        $projector = new LifecycleTraceProjector();
+        $lifecycle = $projector->project($trace->toArray(), [
+            'plan' => [
+                'goal' => 'Run the academic-risk path.',
+                'steps' => [
+                    ['id' => 'classify', 'purpose' => 'Resolve the intent.'],
+                    ['id' => 'agent', 'purpose' => 'Run the agent.'],
+                ],
+                'selected_tools' => [],
+            ],
+        ]);
+
+        $this->assertCount(12, $lifecycle);
+        $this->assertSame([
+            'conversation',
+            'generative_ai',
+            'agent',
+            'planning',
+            'mcp_tool_selection',
+            'laravel_mcp',
+            'real_data',
+            'evidence',
+            'reasoning',
+            'recommendation',
+            'human_approval',
+            'action',
+        ], array_column($lifecycle, 'key'));
+
+        $byKey = $this->byKey($lifecycle);
+
+        $this->assertSame(TraceStage::RAN, $byKey['planning']['status']);
+        $this->assertSame(TraceStage::SKIPPED, $byKey['mcp_tool_selection']['status']);
+        $this->assertSame(TraceStage::SKIPPED, $byKey['laravel_mcp']['status']);
+        $this->assertSame(TraceStage::RAN, $byKey['reasoning']['status']);
+        $this->assertSame(TraceStage::PENDING, $byKey['human_approval']['status']);
+        $this->assertSame(TraceStage::NOT_REACHED, $byKey['action']['status']);
+    }
+
+    public function test_the_lifecycle_projection_reports_mcp_execution_when_present(): void
+    {
+        $trace = new FlowTrace();
+        $trace->ran('conversation', 'Accepted.');
+        $trace->ran('gen_ai', 'Understood as a data-backed lookup.');
+        $trace->skipped('agent', 'No agent needed.');
+        $trace->ran('data', 'Rows loaded.');
+
+        $projector = new LifecycleTraceProjector();
+        $lifecycle = $projector->project($trace->toArray(), [
+            'plan' => [
+                'goal' => 'Run one MCP-backed lookup.',
+                'steps' => [['id' => 'lookup', 'purpose' => 'Call a backend tool.']],
+                'selected_tools' => ['student.search'],
+            ],
+            'selected_tools' => ['student.search'],
+            'laravel_mcp_calls' => [
+                ['tool' => 'student.search', 'status' => 'completed', 'duration_ms' => 18],
+            ],
+        ]);
+
+        $byKey = $this->byKey($lifecycle);
+
+        $this->assertSame(TraceStage::RAN, $byKey['mcp_tool_selection']['status']);
+        $this->assertSame(TraceStage::RAN, $byKey['laravel_mcp']['status']);
+        $this->assertSame('student.search', $byKey['laravel_mcp']['data']['tools'][0]);
+    }
+
+    public function test_the_lifecycle_projection_can_reconstruct_mcp_usage_from_the_trace_alone(): void
+    {
+        $trace = new FlowTrace();
+        $trace->ran('conversation', 'Accepted.');
+        $trace->ran('gen_ai', 'Understood as a data-backed lookup.', [
+            'lifecycle_plan' => [
+                'goal' => 'Run one MCP-backed lookup.',
+                'selected_tools' => ['students.search'],
+                'tool_selection_strategy' => 'mcp_student_resolution',
+            ],
+            'lifecycle_mcp_calls' => [
+                ['tool' => 'students.search', 'status' => 'completed', 'duration_ms' => 12],
+            ],
+        ]);
+        $trace->skipped('agent', 'No agent needed.');
+        $trace->ran('data', 'Rows loaded.');
+
+        $projector = new LifecycleTraceProjector();
+        $lifecycle = $projector->project($trace->toArray());
+        $byKey = $this->byKey($lifecycle);
+
+        $this->assertSame(TraceStage::RAN, $byKey['planning']['status']);
+        $this->assertSame(TraceStage::RAN, $byKey['mcp_tool_selection']['status']);
+        $this->assertSame(TraceStage::RAN, $byKey['laravel_mcp']['status']);
+        $this->assertSame('students.search', $byKey['laravel_mcp']['data']['tools'][0]);
+    }
+
+    /**
+     * A plan naming a tool is not the same as a turn calling one. When the route
+     * resolves without the candidate, stage 5 has to say so rather than claim a
+     * selection that stage 6 then contradicts.
+     */
+    public function test_a_planned_tool_that_is_never_called_is_not_reported_as_selected(): void
+    {
+        $trace = new FlowTrace();
+        $trace->ran('conversation', 'Accepted.');
+        $trace->ran('gen_ai', 'Understood as an approval.');
+        $trace->ran('approval', 'Recorded.');
+
+        $projector = new LifecycleTraceProjector();
+        $lifecycle = $projector->project($trace->toArray(), [
+            'plan' => [
+                'goal' => 'Record a decision.',
+                'selected_tools' => ['students.search'],
+                'tool_selection_strategy' => 'mcp_student_resolution',
+            ],
+        ]);
+
+        $byKey = $this->byKey($lifecycle);
+
+        $this->assertSame(TraceStage::SKIPPED, $byKey['mcp_tool_selection']['status']);
+        $this->assertSame([], $byKey['mcp_tool_selection']['data']['selected_tools']);
+        $this->assertSame(['students.search'], $byKey['mcp_tool_selection']['data']['planned_tools']);
+        $this->assertSame(TraceStage::SKIPPED, $byKey['laravel_mcp']['status']);
+    }
+
+    /**
+     * The plan writes `candidate_tools`; turns stored before the rename wrote
+     * `selected_tools`. Both have to project the same way.
+     */
+    public function test_the_projection_reads_candidate_tools_from_a_stored_plan(): void
+    {
+        $trace = new FlowTrace();
+        $trace->ran('conversation', 'Accepted.');
+        $trace->ran('gen_ai', 'Understood as an approval.', [
+            'lifecycle_plan' => [
+                'goal' => 'Record a decision.',
+                'candidate_tools' => ['students.search'],
+                'tool_selection_strategy' => 'mcp_student_resolution',
+            ],
+        ]);
+
+        $byKey = $this->byKey((new LifecycleTraceProjector())->project($trace->toArray()));
+
+        $this->assertSame(TraceStage::SKIPPED, $byKey['mcp_tool_selection']['status']);
+        $this->assertSame(['students.search'], $byKey['mcp_tool_selection']['data']['planned_tools']);
+    }
+
+    /**
+     * The MCP tool carries its own role gate. A refusal is a governance decision and has
+     * to read as one, not as "no call was needed".
+     */
+    public function test_a_refused_mcp_call_is_reported_as_blocked(): void
+    {
+        $trace = new FlowTrace();
+        $trace->ran('conversation', 'Accepted.');
+        $trace->ran('gen_ai', 'Understood as a student lookup.');
+
+        $projector = new LifecycleTraceProjector();
+        $lifecycle = $projector->project($trace->toArray(), [
+            'plan' => ['selected_tools' => ['students.search']],
+            'laravel_mcp_calls' => [
+                [
+                    'tool' => 'students.search',
+                    'status' => 'blocked',
+                    'error' => 'You do not have permission to use this MCP tool.',
+                ],
+            ],
+        ]);
+
+        $byKey = $this->byKey($lifecycle);
+
+        $this->assertSame(TraceStage::RAN, $byKey['mcp_tool_selection']['status']);
+        $this->assertSame(TraceStage::BLOCKED, $byKey['laravel_mcp']['status']);
+        $this->assertSame(1, $byKey['laravel_mcp']['data']['blocked']);
+        $this->assertSame(0, $byKey['laravel_mcp']['data']['completed']);
+        $this->assertSame('You do not have permission to use this MCP tool.', $byKey['laravel_mcp']['note']);
+    }
+
+    /**
+     * One refusal alongside a call that went through still leaves the stage as ran, with
+     * the refusal counted rather than swallowed.
+     */
+    public function test_a_partly_refused_mcp_turn_still_reports_what_ran(): void
+    {
+        $trace = new FlowTrace();
+        $trace->ran('conversation', 'Accepted.');
+        $trace->ran('gen_ai', 'Understood as a student lookup.');
+
+        $lifecycle = (new LifecycleTraceProjector())->project($trace->toArray(), [
+            'laravel_mcp_calls' => [
+                ['tool' => 'students.search', 'status' => 'completed', 'count' => 1],
+                ['tool' => 'students.search', 'status' => 'blocked', 'error' => 'Refused.'],
+            ],
+        ]);
+
+        $byKey = $this->byKey($lifecycle);
+
+        $this->assertSame(TraceStage::RAN, $byKey['laravel_mcp']['status']);
+        $this->assertSame(1, $byKey['laravel_mcp']['data']['completed']);
+        $this->assertSame(1, $byKey['laravel_mcp']['data']['blocked']);
+    }
+
+    /**
+     * "Generative AI" is understanding plus generation. The template stage is where text
+     * is actually rendered, so it belongs in stage 2 rather than dropping out of the
+     * product view entirely.
+     */
+    public function test_the_generative_stage_covers_understanding_and_generation(): void
+    {
+        $trace = new FlowTrace();
+        $trace->ran('conversation', 'Accepted.');
+        $trace->ran('gen_ai', 'Understood as a workflow check.');
+        $trace->ran('template', 'Template "k12.intervention_activity" rendered at generate_activity (completed).', [
+            'template_key' => 'k12.intervention_activity',
+        ]);
+
+        $byKey = $this->byKey((new LifecycleTraceProjector())->project($trace->toArray()));
+
+        $this->assertSame(TraceStage::RAN, $byKey['generative_ai']['status']);
+        $this->assertStringContainsString('Understood as a workflow check.', $byKey['generative_ai']['summary']);
+        $this->assertStringContainsString('k12.intervention_activity', $byKey['generative_ai']['summary']);
+        $this->assertSame(
+            'k12.intervention_activity',
+            $byKey['generative_ai']['data']['generation']['payload']['template_key']
+        );
+        $this->assertNull($byKey['generative_ai']['note']);
+    }
+
+    /**
+     * When nothing has been generated yet, stage 2 carries the template stage's own
+     * reason — generation happens after approval, never before.
+     */
+    public function test_the_generative_stage_explains_why_nothing_was_generated(): void
+    {
+        $trace = new FlowTrace();
+        $trace->ran('conversation', 'Accepted.');
+        $trace->ran('gen_ai', 'Understood as a risk scan.');
+        $trace->notReached('template', 'Generation happens inside the workflow, after approval.');
+
+        $byKey = $this->byKey((new LifecycleTraceProjector())->project($trace->toArray()));
+
+        $this->assertSame(TraceStage::RAN, $byKey['generative_ai']['status']);
+        $this->assertSame('Understood as a risk scan.', $byKey['generative_ai']['summary']);
+        $this->assertSame(
+            'Generation happens inside the workflow, after approval.',
+            $byKey['generative_ai']['note']
+        );
+        $this->assertSame(
+            TraceStage::NOT_REACHED,
+            $byKey['generative_ai']['data']['generation']['status']
+        );
     }
 
     /**

@@ -2,6 +2,7 @@
 
 namespace App\Domain\AI\Conversation;
 
+use App\Mcp\ToolRegistry;
 use App\Domain\AI\Agents\AgentRunner;
 use App\Domain\AI\Cases\CaseBuilder;
 use App\Domain\AI\Decisions\DecisionGate;
@@ -63,6 +64,7 @@ class AskService
         private readonly GraphQueryService $graph,
         private readonly TemplateRegistry $templates,
         private readonly SignalStore $signals,
+        private readonly ToolRegistry $mcpTools,
     ) {
     }
 
@@ -71,7 +73,8 @@ class AskService
      *
      * @return array{
      *   conversation:array, question:string, intent:array, answer:array,
-     *   trace:array, ladder:array, links:array, duration_ms:int
+     *   trace:array, ladder:array, lifecycle_trace:array,
+     *   lifecycle_stage_counts:array, links:array, duration_ms:int
      * }
      */
     public function ask(
@@ -123,6 +126,7 @@ class AskService
         }
 
         [$intent, $inherited] = $this->conversations->resolveReferents($intent, $thread['memory']);
+        $plan = $this->buildLifecyclePlan($intent, $payload, $inherited);
 
         $trace->ran(
             'gen_ai',
@@ -133,6 +137,7 @@ class AskService
                 'inherited_from_earlier_turns' => $inherited,
                 'classifier' => 'deterministic lexicon + phrase patterns',
                 'confidence_floor' => 0.34,
+                'lifecycle_plan' => $plan,
             ],
             [],
             ['api' => 'POST ' . $this->prefix() . '/ask/interpret  {"question": "..."} — classification only, nothing is written'],
@@ -157,6 +162,13 @@ class AskService
         }
 
         $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+        $traceArray = $trace->toArray();
+        $lifecycleProjector = new LifecycleTraceProjector();
+        $lifecycleTrace = $lifecycleProjector->project($traceArray, [
+            'plan' => $plan,
+            'selected_tools' => $plan['candidate_tools'] ?? [],
+            'laravel_mcp_calls' => $this->lifecycleMcpCalls($trace),
+        ]);
 
         $turnId = $this->conversations->recordTurn(
             $thread['id'],
@@ -180,9 +192,11 @@ class AskService
             'question' => $question,
             'intent' => $intent->toArray(),
             'answer' => $answer,
-            'trace' => $trace->toArray(),
+            'trace' => $traceArray,
             'ladder' => $trace->toLadder(),
             'stage_counts' => $trace->summaryCounts(),
+            'lifecycle_trace' => $lifecycleTrace,
+            'lifecycle_stage_counts' => $lifecycleProjector->summaryCounts($lifecycleTrace),
             'links' => $links,
             'duration_ms' => $durationMs,
         ];
@@ -200,6 +214,150 @@ class AskService
     public function catalogue(): array
     {
         return $this->classifier->catalogue();
+    }
+
+    /**
+     * The product lifecycle's plan layer.
+     *
+     * This is deliberately deterministic, like the classifier: a backend question must
+     * route the same way every time, and the plan has to be inspectable in code rather
+     * than hidden in a prompt. The purpose is not to replace the detailed 15-stage
+     * trace; it is to expose, in the product's own 12-stage language, what this turn is
+     * about to do and whether MCP is part of that route.
+     *
+     * `candidate_tools` is named that way on purpose. A plan proposes; the turn selects
+     * by actually calling. Some routes name students.search and then resolve without it,
+     * and the trace has to be able to say that rather than report a selection the MCP
+     * stage then contradicts.
+     *
+     * @param  array<string, int>  $payload
+     * @param  array<string, mixed>  $inherited
+     * @return array<string, mixed>
+     */
+    private function buildLifecyclePlan(Intent $intent, array $payload, array $inherited): array
+    {
+        if ($intent->isUnknown()) {
+            return [];
+        }
+
+        $base = [
+            'intent' => $intent->key,
+            'goal' => $intent->label,
+            'route' => 'conversation',
+            'tool_selection_strategy' => 'domain_services_only',
+            'mcp_strategy' => 'not_required',
+            'candidate_tools' => [],
+            'payload' => $payload,
+            'inherited' => $inherited,
+        ];
+
+        $studentLookupTool = ['students.search'];
+        $needsStudentResolution = $intent->slot('student_id') !== null
+            || $intent->slot('student_name') !== null
+            || in_array($intent->key, [
+                'student_risk_explain',
+                'evidence_inspect',
+                'recommendation_advice',
+                'approve_recommendation',
+                'reject_recommendation',
+                'workflow_status',
+                'outcome_status',
+            ], true);
+
+        if ($needsStudentResolution) {
+            $base['tool_selection_strategy'] = 'mcp_student_resolution';
+            $base['mcp_strategy'] = 'students.search';
+            $base['candidate_tools'] = $studentLookupTool;
+        }
+
+        return match ($intent->key) {
+            'student_risk_scan' => $base + [
+                'route' => 'agent_runner',
+                'goal' => 'Run the academic-risk agent, persist the governed findings, and surface any drafted recommendation.',
+                'steps' => [
+                    ['id' => 'classify', 'purpose' => 'Resolve the question into the academic-risk scan intent.'],
+                    ['id' => 'agent', 'purpose' => 'Run the Academic Risk Agent across the in-scope students.'],
+                    ['id' => 'hydrate_student', 'purpose' => 'Hydrate the highest-priority student through Laravel MCP for a scoped identity snapshot.'],
+                    ['id' => 'reason', 'purpose' => 'Group signals into cases and compose governed explanations.'],
+                    ['id' => 'recommend', 'purpose' => 'Draft any recommendation that governance allows.'],
+                ],
+                'candidate_tools' => $studentLookupTool,
+                'tool_selection_strategy' => 'mcp_student_resolution',
+                'mcp_strategy' => 'students.search',
+            ],
+            'student_risk_explain' => $base + [
+                'route' => 'stored_case_read',
+                'goal' => 'Read the stored case, evidence and explanation for one student.',
+                'steps' => [
+                    ['id' => 'resolve_case', 'purpose' => 'Identify the student or case the follow-up refers to.'],
+                    ['id' => 'read_case', 'purpose' => 'Load the stored case, evidence and governed explanation.'],
+                    ['id' => 'report', 'purpose' => 'Return the explanation and the evidence behind each claim.'],
+                ],
+            ],
+            'evidence_inspect' => $base + [
+                'route' => 'stored_evidence_read',
+                'goal' => 'Read the verified evidence rows behind an existing case.',
+                'steps' => [
+                    ['id' => 'resolve_case', 'purpose' => 'Identify which case or student the user means.'],
+                    ['id' => 'read_evidence', 'purpose' => 'Load the verified evidence rows already linked to the case.'],
+                    ['id' => 'report', 'purpose' => 'Return evidence with provenance and any linked explanation.'],
+                ],
+            ],
+            'recommendation_advice' => $base + [
+                'route' => 'stored_recommendation_read',
+                'goal' => 'Read back the drafted recommendation for the case and explain what it would do.',
+                'steps' => [
+                    ['id' => 'resolve_case', 'purpose' => 'Identify which case is being discussed.'],
+                    ['id' => 'read_recommendation', 'purpose' => 'Load the drafted recommendation and its explanation.'],
+                    ['id' => 'report', 'purpose' => 'Show the proposed action without executing it.'],
+                ],
+            ],
+            'approve_recommendation', 'reject_recommendation' => $base + [
+                'route' => 'decision_gate',
+                'goal' => $intent->key === 'approve_recommendation'
+                    ? 'Record a human approval and, when allowed, start the workflow.'
+                    : 'Record a human rejection and stop the downstream workflow path.',
+                'steps' => [
+                    ['id' => 'resolve_target', 'purpose' => 'Identify the recommendation or workflow approval to decide on.'],
+                    ['id' => 'decision', 'purpose' => 'Record the human decision through the governed backend gate.'],
+                    ['id' => 'workflow', 'purpose' => 'Advance or halt the downstream workflow based on that decision.'],
+                ],
+            ],
+            'workflow_status' => $base + [
+                'route' => 'workflow_read',
+                'goal' => 'Read the current workflow run and show which step it is waiting on.',
+                'steps' => [
+                    ['id' => 'resolve_workflow', 'purpose' => 'Identify the workflow run tied to the case or recommendation.'],
+                    ['id' => 'read_workflow', 'purpose' => 'Load the workflow run and its current step states.'],
+                    ['id' => 'report', 'purpose' => 'Explain which downstream action has or has not happened yet.'],
+                ],
+            ],
+            'outcome_status' => $base + [
+                'route' => 'outcome_read',
+                'goal' => 'Compare the recorded baseline against the latest measured outcome.',
+                'steps' => [
+                    ['id' => 'resolve_case', 'purpose' => 'Identify which intervention outcome to inspect.'],
+                    ['id' => 'read_outcomes', 'purpose' => 'Load the recorded baseline and latest measurement.'],
+                    ['id' => 'report', 'purpose' => 'Show whether the intervention improved the tracked metrics.'],
+                ],
+            ],
+            'learning_effectiveness' => $base + [
+                'route' => 'effectiveness_read',
+                'goal' => 'Aggregate historical outcomes into effectiveness by action type.',
+                'steps' => [
+                    ['id' => 'read_outcomes', 'purpose' => 'Load measured outcomes across prior interventions.'],
+                    ['id' => 'aggregate', 'purpose' => 'Summarise effectiveness by action type and status.'],
+                    ['id' => 'report', 'purpose' => 'Return what the system has learned from measured outcomes.'],
+                ],
+            ],
+            default => $base + [
+                'goal' => 'Resolve the intent and route it to the right governed backend path.',
+                'steps' => [
+                    ['id' => 'classify', 'purpose' => 'Resolve the question into one governed intent.'],
+                    ['id' => 'route', 'purpose' => 'Send the turn to the backend path that owns that intent.'],
+                ],
+            ],
+        };
     }
 
     // ------------------------------------------------------------------ routing
@@ -304,9 +462,18 @@ class AskService
 
         $top = $cases[0];
         $topStudentId = (int) ($top['student_id'] ?? 0);
+        $topStudent = $topStudentId > 0
+            ? $this->firstStudentFromMcp(
+                $trace,
+                $scope,
+                ['student_id' => $topStudentId, 'limit' => 1, 'active_only' => false],
+                'Hydrate the highest-priority student on the risk scan.'
+            )
+            : null;
+        $topStudentName = $topStudent['student_name'] ?? ($top['student_name'] ?? null);
 
         // ---- Stage 4: Ontology / Knowledge Graph ---------------------------
-        $this->ontologyStage($scope, $trace, $topStudentId, $top['student_name'] ?? null);
+        $this->ontologyStage($scope, $trace, $topStudentId, $topStudentName);
 
         // ---- Stage 5: Real data --------------------------------------------
         $this->dataStage($scope, $trace, $cases, $counters);
@@ -500,10 +667,10 @@ class AskService
                 )),
                 $this->compose->records('Students', $items),
                 $this->compose->evidence(
-                    'Evidence behind the highest-priority case (' . ($top['student_name'] ?? '') . ')',
+                    'Evidence behind the highest-priority case (' . ($topStudentName ?? '') . ')',
                     array_slice($topEvidence, 0, 5)
                 ),
-                $this->compose->text('Why ' . ($top['student_name'] ?? 'this student') . ' is flagged', $top['explanation']['narrative'] ?? ''),
+                $this->compose->text('Why ' . ($topStudentName ?? 'this student') . ' is flagged', $top['explanation']['narrative'] ?? ''),
                 $drafted === [] ? null : $this->compose->text(
                     'Recommended action',
                     $drafted[0]['recommendation']['title'] . ' — waiting for your approval.'
@@ -526,7 +693,7 @@ class AskService
                 ),
             ],
             [
-                'Why is ' . ($top['student_name'] ?? 'this student') . ' at risk?',
+                'Why is ' . ($topStudentName ?? 'this student') . ' at risk?',
                 'What evidence supports this?',
                 'What should the teacher do?',
             ]
@@ -537,7 +704,7 @@ class AskService
             [
                 'subject_entity_key' => 'student',
                 'student_id' => $topStudentId,
-                'student_name' => $top['student_name'] ?? null,
+                'student_name' => $topStudentName,
                 'case_id' => $top['case_id'] ?? null,
                 'recommendation_id' => $top['recommendation']['id'] ?? null,
                 'agent_run_id' => $run['run_id'],
@@ -1114,16 +1281,45 @@ class AskService
         $caseId = $record['case_id'] ?? null;
         $case = $caseId ? $this->cases->find((int) $caseId, $scope) : null;
 
+        // The plan for an approve/reject turn names students.search as its tool, so the
+        // turn has to actually call it. Hydrating the subject of the case is the honest
+        // reason to: a decision is recorded against a named student, not against an id,
+        // and the name below comes from that call.
+        $decisionStudentId = (int) ($case['subject_id'] ?? 0);
+        $decisionStudent = $decisionStudentId > 0
+            ? $this->firstStudentFromMcp(
+                $trace,
+                $scope,
+                ['student_id' => $decisionStudentId, 'limit' => 1, 'active_only' => false],
+                'Hydrate the student this decision is recorded against.'
+            )
+            : null;
+        $decisionStudentName = $decisionStudent['student_name'] ?? null;
+
         $trace->skipped('agent', 'A decision is a human act; no agent runs to record one.');
         $trace->skipped('ontology', 'Not needed to record a decision.');
         $trace->skipped('data', 'Not needed to record a decision.');
         $trace->ran('evidence', 'The evidence bound to this recommendation is what the decision is recorded against.', [
             'evidence_ids' => $record['evidence_ids'] ?? [],
         ], ['table' => 'ai_evidence', 'ids' => $record['evidence_ids'] ?? []]);
-        $trace->ran('case', $caseId ? sprintf('Decision recorded against case #%d.', $caseId) : 'No case linked.', [], [
-            'table' => 'ai_cases',
-            'ids' => array_filter([$caseId]),
-        ]);
+        $trace->ran(
+            'case',
+            $caseId
+                ? sprintf(
+                    'Decision recorded against case #%d%s.',
+                    $caseId,
+                    $decisionStudentName !== null ? ' (' . $decisionStudentName . ')' : ''
+                )
+                : 'No case linked.',
+            array_filter([
+                'student_id' => $decisionStudentId > 0 ? $decisionStudentId : null,
+                'student_name' => $decisionStudentName,
+            ]),
+            [
+                'table' => 'ai_cases',
+                'ids' => array_filter([$caseId]),
+            ]
+        );
         $trace->ran('explanation', 'The explanation the teacher read is stored with the decision.', [
             'explanation_id' => $record['explanation_id'] ?? null,
         ]);
@@ -2153,7 +2349,19 @@ class AskService
 
         // A name given in this sentence beats anything remembered.
         if ($case === null && $intent->slot('student_name') !== null && $studentId === null) {
-            $matches = $this->entities->resolve('student', $scope, $intent->slot('student_name'), 5);
+            $matches = $this->searchStudentsViaMcp(
+                $trace,
+                $scope,
+                ['query' => $intent->slot('student_name'), 'limit' => 5, 'active_only' => false],
+                'Resolve the student named in the sentence.'
+            );
+
+            // MCP is the preferred route because it is the one the lifecycle trace can
+            // show. When it is refused or returns nothing, the scoped resolver still
+            // answers the question — a lookup gate must not become an answer gate.
+            if ($matches === []) {
+                $matches = $this->entities->resolve('student', $scope, $intent->slot('student_name'), 5);
+            }
 
             if (count($matches) === 1) {
                 $studentId = (int) $matches[0]['id'];
@@ -2187,10 +2395,122 @@ class AskService
         }
 
         $studentId = (int) ($case['subject_id'] ?? $studentId ?? 0);
+        $student = $studentId > 0
+            ? $this->firstStudentFromMcp(
+                $trace,
+                $scope,
+                ['student_id' => $studentId, 'limit' => 1, 'active_only' => false],
+                'Hydrate the student attached to the resolved case.'
+            )
+            : null;
         $entity = $studentId > 0 ? $this->entities->resolveOne('student', $studentId, $scope) : null;
-        $studentName = $entity['label'] ?? ($intent->slot('student_name') ?? ('Student #' . $studentId));
+        $studentName = $student['student_name'] ?? $entity['label'] ?? ($intent->slot('student_name') ?? ('Student #' . $studentId));
 
         return [$case, $studentId, $studentName];
+    }
+
+    /**
+     * A read-only MCP-backed student lookup inside the conversation path.
+     *
+     * Student Profiles now genuinely uses Laravel MCP on live turns whenever it needs
+     * to resolve or hydrate a student, and the trace carries the call log so replay can
+     * still show that the MCP stages ran after the turn has been stored.
+     *
+     * @param  array<string, mixed>  $arguments
+     * @return array<int, array<string, mixed>>
+     */
+    private function searchStudentsViaMcp(
+        FlowTrace $trace,
+        McpRequestContext $scope,
+        array $arguments,
+        string $note
+    ): array {
+        $startedAt = microtime(true);
+
+        // The MCP tool carries its own role gate (admin|staff). A caller outside that
+        // gate must not lose the whole answer over a lookup that the conversation path
+        // can do another way, so the refusal is recorded as a blocked MCP call and the
+        // caller falls back. The lifecycle trace then says "Laravel MCP was refused",
+        // which is the honest thing to show, rather than "no call was needed".
+        try {
+            $result = $this->mcpTools->execute('students.search', $arguments, $scope);
+        } catch (Throwable $exception) {
+            $this->rememberLifecycleMcpCall($trace, [
+                'tool' => 'students.search',
+                'status' => 'blocked',
+                'duration_ms' => (int) round((microtime(true) - $startedAt) * 1000),
+                'note' => $note,
+                'arguments' => $arguments,
+                'count' => 0,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return [];
+        }
+
+        $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
+
+        $payload = is_array($result['result'] ?? null) ? $result['result'] : [];
+        $students = is_array($payload['students'] ?? null) ? $payload['students'] : [];
+
+        $this->rememberLifecycleMcpCall($trace, [
+            'tool' => 'students.search',
+            'status' => ($result['mode'] ?? null) === 'execute' ? 'completed' : (string) ($result['mode'] ?? 'unknown'),
+            'duration_ms' => $durationMs,
+            'note' => $note,
+            'arguments' => $arguments,
+            'count' => count($students),
+        ]);
+
+        return array_values(array_filter($students, 'is_array'));
+    }
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     * @return array<string, mixed>|null
+     */
+    private function firstStudentFromMcp(
+        FlowTrace $trace,
+        McpRequestContext $scope,
+        array $arguments,
+        string $note
+    ): ?array {
+        $students = $this->searchStudentsViaMcp($trace, $scope, $arguments, $note);
+
+        return $students[0] ?? null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $call
+     */
+    private function rememberLifecycleMcpCall(FlowTrace $trace, array $call): void
+    {
+        $stage = $trace->get('gen_ai');
+
+        if (! $stage) {
+            return;
+        }
+
+        $calls = is_array($stage->data['lifecycle_mcp_calls'] ?? null)
+            ? $stage->data['lifecycle_mcp_calls']
+            : [];
+
+        $calls[] = $call;
+        $stage->data['lifecycle_mcp_calls'] = $calls;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function lifecycleMcpCalls(FlowTrace $trace): array
+    {
+        $stage = $trace->get('gen_ai');
+
+        if (! $stage || ! is_array($stage->data['lifecycle_mcp_calls'] ?? null)) {
+            return [];
+        }
+
+        return array_values(array_filter($stage->data['lifecycle_mcp_calls'], 'is_array'));
     }
 
     private function needSubject(FlowTrace $trace, string $message): array
