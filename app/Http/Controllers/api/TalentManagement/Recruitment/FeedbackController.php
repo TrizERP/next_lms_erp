@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\TalentManagement\Recruitment;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\TalentEvaluationForm;
 use App\Models\TalentManagement\TalentInterviewSchedule;
 use App\Models\TalentManagement\TalentJobApplication;
@@ -150,7 +151,7 @@ class FeedbackController extends Controller
             'status' => 'nullable|in:draft,submitted,approved,rejected',
         ]);
 
-        TalentEvaluationForm::create([
+        $evaluation = TalentEvaluationForm::create([
             'job_id' => $request->job_id,
             'candidate_id' => $request->candidate_id,
             'panel_id' => $request->panel_id,
@@ -169,6 +170,20 @@ class FeedbackController extends Controller
         TalentInterviewSchedule::where('applicant_id', $request->candidate_id)
             ->where('job_id', $request->job_id)
             ->update(['status' => 'Completed']);
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'feedback_submitted',
+            'entity_type' => 'evaluation_form',
+            'entity_id' => $evaluation->id,
+            'new_values' => [
+                'job_id' => $request->job_id,
+                'candidate_id' => $request->candidate_id,
+                'panel_id' => $request->panel_id,
+                'recommendation' => $request->recommendation,
+                'status' => $request->status ?? 'draft',
+            ],
+        ]);
 
         return response()->json([
             'status' => true,
@@ -227,6 +242,20 @@ class FeedbackController extends Controller
             'status' => $request->status,
         ]);
 
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'feedback_updated',
+            'entity_type' => 'evaluation_form',
+            'entity_id' => $evaluation->id,
+            'new_values' => [
+                'job_id' => $request->job_id,
+                'candidate_id' => $request->candidate_id,
+                'panel_id' => $request->panel_id,
+                'recommendation' => $request->recommendation,
+                'status' => $request->status,
+            ],
+        ]);
+
         return response()->json([
             'status' => true,
             'message' => 'Feedback updated successfully',
@@ -261,6 +290,17 @@ class FeedbackController extends Controller
         $evaluation->deleted_by = session()->get('user_id');
         $evaluation->save();
         $evaluation->delete();
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'feedback_deleted',
+            'entity_type' => 'evaluation_form',
+            'entity_id' => $evaluation->id,
+            'new_values' => [
+                'candidate_id' => $evaluation->candidate_id,
+                'job_id' => $evaluation->job_id,
+            ],
+        ]);
 
         return response()->json([
             'status' => true,

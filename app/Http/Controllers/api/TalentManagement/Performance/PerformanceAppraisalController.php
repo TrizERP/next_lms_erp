@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api\TalentManagement\Performance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TalentManagement\Performance\Concerns\ResolvesPerformanceContext;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\PerformanceAppraisal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 class PerformanceAppraisalController extends Controller
 {
     use ResolvesPerformanceContext;
+    use RequiresTalentAdmin;
 
     private const SORTABLE = ['final_rating', 'recommendation', 'effective_date', 'status', 'created_at'];
 
@@ -82,6 +85,8 @@ class PerformanceAppraisalController extends Controller
     /** POST /api/performance/appraisals */
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -162,12 +167,22 @@ class PerformanceAppraisalController extends Controller
             $appraisal->cycle_id ? (int) $appraisal->cycle_id : null
         );
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'appraisal_created',
+            'entity_type' => 'performance_appraisal',
+            'entity_id'   => $appraisal->id,
+            'new_values'  => array_merge($validated, ['user_id' => $appraiseeId]),
+        ]);
+
         return $this->performanceResponse($this->presentModel($appraisal), 'Appraisal created', 201);
     }
 
     /** PUT /api/performance/appraisals/{id} */
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -209,6 +224,14 @@ class PerformanceAppraisalController extends Controller
         $appraisal->updated_by = $context['user_id'];
         $appraisal->save();
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'appraisal_updated',
+            'entity_type' => 'performance_appraisal',
+            'entity_id'   => $appraisal->id,
+            'new_values'  => $validated,
+        ]);
+
         if (!empty($changes)) {
             $employeeName = $this->resolveActorName((int) $appraisal->user_id) ?? 'an employee';
 
@@ -235,6 +258,8 @@ class PerformanceAppraisalController extends Controller
      */
     public function decision(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -280,6 +305,14 @@ class PerformanceAppraisalController extends Controller
         $appraisal->updated_by = $context['user_id'];
         $appraisal->save();
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'appraisal_decision',
+            'entity_type' => 'performance_appraisal',
+            'entity_id'   => $appraisal->id,
+            'new_values'  => ['action' => $validated['action'], 'status' => $target, 'remarks' => $validated['remarks'] ?? null],
+        ]);
+
         $employeeName = $this->resolveActorName((int) $appraisal->user_id) ?? 'an employee';
 
         $this->logPerformanceActivity(
@@ -304,6 +337,8 @@ class PerformanceAppraisalController extends Controller
      */
     public function bulk(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -338,6 +373,14 @@ class PerformanceAppraisalController extends Controller
 
             $appraisal->updated_by = $context['user_id'];
             $appraisal->save();
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'appraisal_decision',
+                'entity_type' => 'performance_appraisal',
+                'entity_id'   => $appraisal->id,
+                'new_values'  => ['action' => $validated['action'], 'status' => $target, 'bulk' => true],
+            ]);
         }
 
         $this->logPerformanceActivity(
@@ -359,6 +402,8 @@ class PerformanceAppraisalController extends Controller
     /** DELETE /api/performance/appraisals/{id} */
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -382,6 +427,14 @@ class PerformanceAppraisalController extends Controller
         $appraisal->deleted_by = $context['user_id'];
         $appraisal->save();
         $appraisal->delete();
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'appraisal_deleted',
+            'entity_type' => 'performance_appraisal',
+            'entity_id'   => (int) $id,
+            'new_values'  => ['user_id' => (int) $appraisal->user_id],
+        ]);
 
         $this->logPerformanceActivity(
             $tenant,

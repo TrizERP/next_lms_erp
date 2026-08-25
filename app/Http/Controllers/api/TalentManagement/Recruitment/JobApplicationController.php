@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\api\TalentManagement\Recruitment;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\TalentJobApplication;
 use App\Models\TalentManagement\TalentJobPosting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 
 /**
  * Ported 1:1 from hp_erp's `App\Http\Controllers\talent\talent_jobapplicationcontroller`.
@@ -23,6 +25,8 @@ use Illuminate\Support\Facades\Validator;
  */
 class JobApplicationController extends Controller
 {
+    use RequiresTalentAdmin;
+
     private function subInstituteId(): int
     {
         return (int) session()->get('sub_institute_id');
@@ -129,6 +133,20 @@ class JobApplicationController extends Controller
             ]);
 
             if ($objtalent->save()) {
+                AuditLog::record([
+                    'module' => 'talent_management',
+                    'action' => 'job_application_created',
+                    'entity_type' => 'job_application',
+                    'entity_id' => $objtalent->id,
+                    'new_values' => [
+                        'job_id' => $objtalent->job_id,
+                        'first_name' => $objtalent->first_name,
+                        'last_name' => $objtalent->last_name,
+                        'email' => $objtalent->email,
+                        'status' => $objtalent->status,
+                    ],
+                ]);
+
                 return response()->json([
                     'status' => 1,
                     'message' => 'Job application added successfully!',
@@ -297,6 +315,18 @@ class JobApplicationController extends Controller
             $application->sub_institute_id = $subInstituteId;
 
             if ($application->save()) {
+                AuditLog::record([
+                    'module' => 'talent_management',
+                    'action' => 'job_application_updated',
+                    'entity_type' => 'job_application',
+                    'entity_id' => $application->id,
+                    'new_values' => [
+                        'status' => $application->status,
+                        'job_id' => $application->job_id,
+                        'resume_path' => $application->resume_path,
+                    ],
+                ]);
+
                 return response()->json([
                     'message' => 'Application updated successfully!',
                     'data' => $application,
@@ -315,6 +345,8 @@ class JobApplicationController extends Controller
      */
     public function updateStatus(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         try {
             $subInstituteId = $this->subInstituteId();
 
@@ -346,6 +378,16 @@ class JobApplicationController extends Controller
             $application->updated_by = $this->actorId();
 
             if ($application->save()) {
+                AuditLog::record([
+                    'module' => 'talent_management',
+                    'action' => 'job_application_status_updated',
+                    'entity_type' => 'job_application',
+                    'entity_id' => $application->id,
+                    'new_values' => [
+                        'status' => $application->status,
+                    ],
+                ]);
+
                 return response()->json([
                     'message' => 'Application status updated successfully!',
                     'data' => [

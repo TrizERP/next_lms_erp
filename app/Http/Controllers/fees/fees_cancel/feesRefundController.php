@@ -324,11 +324,45 @@ class feesRefundController extends Controller
 
         $fees_title = $getBk['final_fee_name'];
 
-        if (count($refund_amount) < 0) {
+        if (!is_array($refund_amount) || count($refund_amount) === 0) {
             $res['status_code'] = 0;
             $res['message'] = "Please enter amount for refund fees.";
 
             return is_mobile($type, "fees_refund.index", $res);
+        }
+
+        // Look up what was actually paid, per fees title, for this student so the
+        // refund can never exceed the real amount collected (previously the guard here
+        // was `count($refund_amount) < 0`, which is always false and validated nothing).
+        $paid_data_for_refund = DB::table('tblstudent as s')
+            ->join('tblstudent_enrollment as se', function ($join) use ($syear) {
+                $join->whereRaw("se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id AND se.syear = '".$syear."'");
+            })->join('fees_collect as fc', function ($join) use ($syear) {
+                $join->whereRaw("fc.student_id = s.id AND fc.sub_institute_id = s.sub_institute_id AND fc.syear = '".$syear."' and fc.is_deleted='N'");
+            })->selectRaw('fc.*')
+            ->where('s.id', $student_id)
+            ->where('s.sub_institute_id', $sub_institute_id)->get()->toArray();
+
+        $PAID_DATA_FOR_REFUND = json_decode(json_encode($paid_data_for_refund), true);
+        $paid_amount_title_wise = [];
+        foreach ($PAID_DATA_FOR_REFUND as $paid_row) {
+            foreach ($fees_title as $fees_title_name => $fees_title_id) {
+                if (isset($paid_row[$fees_title_id])) {
+                    $paid_amount_title_wise[$fees_title_id] = ($paid_amount_title_wise[$fees_title_id] ?? 0) + $paid_row[$fees_title_id];
+                }
+            }
+        }
+
+        foreach ($fees_title as $fees_title_name => $fees_title_id) {
+            if (isset($refund_amount[$fees_title_id])) {
+                $paid_for_title = $paid_amount_title_wise[$fees_title_id] ?? 0;
+                if (!is_numeric($refund_amount[$fees_title_id]) || $refund_amount[$fees_title_id] < 0 || $refund_amount[$fees_title_id] > $paid_for_title) {
+                    $res['status_code'] = 0;
+                    $res['message'] = "Refund amount for ".$fees_title_name." cannot exceed the amount paid (".$paid_for_title.").";
+
+                    return is_mobile($type, "fees_refund.index", $res);
+                }
+            }
         }
 
         $new_html = '';
@@ -606,6 +640,15 @@ class feesRefundController extends Controller
 
         DB::table('fees_refund')->insert($feesRefundLog);
         $last_inserted_id = DB::getPdo()->lastInsertId();
+
+        \App\Models\AuditLog::record([
+            'module' => 'fees',
+            'action' => 'fee_refund',
+            'entity_type' => 'fees_refund',
+            'entity_id' => $last_inserted_id,
+            'old_values' => ['collected_amount' => $paid_amount_title_wise],
+            'new_values' => ['refund_amount' => $total_refund_amt],
+        ]);
 
         $new_html .= '<div class="row">'.$style.$recHtml_for_insert.'</div>
         <div class="pagebreak"></div> <br><br>';

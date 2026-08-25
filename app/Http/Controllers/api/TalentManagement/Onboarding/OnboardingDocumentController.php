@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api\TalentManagement\Onboarding;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TalentManagement\Onboarding\Concerns\ResolvesOnboardingContext;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\TalentOnboardingDocument;
 use App\Models\TalentManagement\TalentOnboardingJourney;
 use Illuminate\Http\Request;
@@ -24,6 +26,7 @@ use Illuminate\Support\Facades\Storage;
 class OnboardingDocumentController extends Controller
 {
     use ResolvesOnboardingContext;
+    use RequiresTalentAdmin;
 
     private const AUDIT_LABELS = [
         'title'            => 'Document',
@@ -100,6 +103,8 @@ class OnboardingDocumentController extends Controller
      */
     public function store(Request $request, $journeyId)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->onboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -162,6 +167,14 @@ class OnboardingDocumentController extends Controller
             (int) $journey->id
         );
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'onboarding_document_created',
+            'entity_type' => 'onboarding_document',
+            'entity_id'   => $document->id,
+            'new_values'  => array_merge($validated, ['journey_id' => (int) $journey->id, 'status' => $status]),
+        ]);
+
         return $this->onboardingResponse($this->presentDocument($document, collect()), 'Document added', 201);
     }
 
@@ -174,6 +187,8 @@ class OnboardingDocumentController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->onboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -232,6 +247,14 @@ class OnboardingDocumentController extends Controller
                 $changes,
                 (int) $document->journey_id
             );
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'onboarding_document_updated',
+                'entity_type' => 'onboarding_document',
+                'entity_id'   => $document->id,
+                'new_values'  => $validated,
+            ]);
         }
 
         return $this->onboardingResponse($this->presentDocument($document, collect()), 'Document updated');
@@ -240,6 +263,8 @@ class OnboardingDocumentController extends Controller
     /** DELETE /api/onboarding/documents/{id} */
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->onboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -270,6 +295,14 @@ class OnboardingDocumentController extends Controller
             null,
             $journeyId
         );
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'onboarding_document_deleted',
+            'entity_type' => 'onboarding_document',
+            'entity_id'   => (int) $id,
+            'new_values'  => ['title' => $title, 'journey_id' => $journeyId],
+        ]);
 
         return $this->onboardingResponse(['id' => (int) $id], 'Document deleted');
     }

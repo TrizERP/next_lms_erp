@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\hostel_management;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\hostel_management\hosteltypemasterModel;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
@@ -54,6 +55,13 @@ class hosteltypemasterController extends Controller
             'sub_institute_id' => $sub_institute_id,
         ]);
         $hostel_type->save();
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_type_master_store',
+            'entity_type' => 'hostel_type_master',
+            'entity_id' => $hostel_type->id,
+            'new_values' => $hostel_type->toArray(),
+        ]);
 
         $message['status_code'] = "1";
 //        $message = [
@@ -85,6 +93,13 @@ class hosteltypemasterController extends Controller
         ];
 
         hosteltypemasterModel::where(["id" => $id])->update($data);
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_type_master_update',
+            'entity_type' => 'hostel_type_master',
+            'entity_id' => $id,
+            'new_values' => $data,
+        ]);
 
         $message['status_code'] = "1";
         $message = [
@@ -100,6 +115,12 @@ class hosteltypemasterController extends Controller
         $type = $request->input('type');
 
         hosteltypemasterModel::where(["id" => $id])->delete();
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_type_master_delete',
+            'entity_type' => 'hostel_type_master',
+            'entity_id' => $id,
+        ]);
 
         $message['status_code'] = "1";
         $message = [

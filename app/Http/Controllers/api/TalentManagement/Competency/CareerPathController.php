@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\api\TalentManagement\Competency;
 
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TalentManagement\Competency\Concerns\ResolvesCompetencyContext;
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -33,6 +35,7 @@ use Illuminate\Support\Facades\Validator;
 class CareerPathController extends Controller
 {
     use ResolvesCompetencyContext;
+    use RequiresTalentAdmin;
 
     private const PATHS = 's_competency_career_paths';
     private const STEPS = 's_competency_career_path_steps';
@@ -157,6 +160,8 @@ class CareerPathController extends Controller
     /** POST /api/competency/career-paths */
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -188,6 +193,19 @@ class CareerPathController extends Controller
 
         $this->replaceSteps($pathId, $sid, $request->input('steps', []), $context['user_id']);
 
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'career_path.created',
+            'entity_type' => 'career_path',
+            'entity_id'   => $pathId,
+            'new_values'  => [
+                'name'          => $request->input('name'),
+                'department_id' => $request->input('department_id'),
+                'status'        => $request->input('status', 'active'),
+                'steps'         => $request->input('steps', []),
+            ],
+        ]);
+
         $this->logCompetencyActivity(
             $sid,
             $context['user_id'],
@@ -208,6 +226,8 @@ class CareerPathController extends Controller
     /** PUT /api/competency/career-paths/{id} */
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -241,6 +261,14 @@ class CareerPathController extends Controller
             $this->replaceSteps((int) $path->id, $sid, $request->input('steps', []), $context['user_id']);
         }
 
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'career_path.updated',
+            'entity_type' => 'career_path',
+            'entity_id'   => $path->id,
+            'new_values'  => $update,
+        ]);
+
         $this->logCompetencyActivity(
             $sid,
             $context['user_id'],
@@ -261,6 +289,8 @@ class CareerPathController extends Controller
     /** DELETE /api/competency/career-paths/{id} */
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -282,6 +312,14 @@ class CareerPathController extends Controller
         DB::table('s_competency_development_plans')
             ->where('sub_institute_id', $sid)->where('career_path_id', $path->id)
             ->update(['career_path_id' => null, 'updated_at' => now()]);
+
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'career_path.deleted',
+            'entity_type' => 'career_path',
+            'entity_id'   => $path->id,
+            'new_values'  => ['name' => $path->name],
+        ]);
 
         $this->logCompetencyActivity(
             $sid,

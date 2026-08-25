@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api\TalentManagement\Performance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TalentManagement\Performance\Concerns\ResolvesPerformanceContext;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\PerformanceCycle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +22,7 @@ use Illuminate\Support\Facades\Schema;
 class PerformanceCycleController extends Controller
 {
     use ResolvesPerformanceContext;
+    use RequiresTalentAdmin;
 
     /** Columns whose edits are recorded in the audit trail. */
     private const AUDIT_LABELS = [
@@ -100,6 +103,8 @@ class PerformanceCycleController extends Controller
     /** POST /api/performance/cycles */
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -142,12 +147,22 @@ class PerformanceCycleController extends Controller
             $cycle->id
         );
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'cycle_created',
+            'entity_type' => 'performance_cycle',
+            'entity_id'   => $cycle->id,
+            'new_values'  => $validated,
+        ]);
+
         return $this->performanceResponse($this->presentCycle($cycle, 0, 0), 'Review cycle created', 201);
     }
 
     /** PUT /api/performance/cycles/{id} */
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -181,6 +196,14 @@ class PerformanceCycleController extends Controller
         $cycle->updated_by = $context['user_id'];
         $cycle->save();
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'cycle_updated',
+            'entity_type' => 'performance_cycle',
+            'entity_id'   => $cycle->id,
+            'new_values'  => $validated,
+        ]);
+
         if (!empty($changes)) {
             $this->logPerformanceActivity(
                 $context['sub_institute_id'],
@@ -213,6 +236,8 @@ class PerformanceCycleController extends Controller
      */
     public function launch(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -318,6 +343,18 @@ class PerformanceCycleController extends Controller
         $cycle->updated_by = $context['user_id'];
         $cycle->save();
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'cycle_launched',
+            'entity_type' => 'performance_cycle',
+            'entity_id'   => $cycle->id,
+            'new_values'  => [
+                'status'           => $cycle->status,
+                'created_reviews'  => count($rows),
+                'user_ids'         => array_column($rows, 'user_id'),
+            ],
+        ]);
+
         $this->logPerformanceActivity(
             $tenant,
             $context['user_id'],
@@ -343,6 +380,8 @@ class PerformanceCycleController extends Controller
     /** POST /api/performance/cycles/{id}/close */
     public function close(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -374,6 +413,14 @@ class PerformanceCycleController extends Controller
         $cycle->updated_by = $context['user_id'];
         $cycle->save();
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'cycle_closed',
+            'entity_type' => 'performance_cycle',
+            'entity_id'   => $cycle->id,
+            'new_values'  => ['status' => 'closed', 'forced' => $request->boolean('force')],
+        ]);
+
         $this->logPerformanceActivity(
             $context['sub_institute_id'],
             $context['user_id'],
@@ -393,6 +440,8 @@ class PerformanceCycleController extends Controller
     /** DELETE /api/performance/cycles/{id} */
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -418,6 +467,14 @@ class PerformanceCycleController extends Controller
         $cycle->deleted_by = $context['user_id'];
         $cycle->save();
         $cycle->delete();
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'cycle_deleted',
+            'entity_type' => 'performance_cycle',
+            'entity_id'   => (int) $id,
+            'new_values'  => ['name' => $name],
+        ]);
 
         $this->logPerformanceActivity(
             $context['sub_institute_id'],

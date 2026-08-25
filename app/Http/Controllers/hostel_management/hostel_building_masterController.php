@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\hostel_management;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\hostel_management\hostel_building_masterModel;
 use App\Models\hostel_management\hosteltypemasterModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use function App\Helpers\ValidateInsertData;
 
 class hostel_building_masterController extends Controller
 {
@@ -46,6 +48,8 @@ class hostel_building_masterController extends Controller
     public function store(Request $request)
     {
 
+        ValidateInsertData('hostel_building_master', $request);
+
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $building = new hostel_building_masterModel([
@@ -56,6 +60,13 @@ class hostel_building_masterController extends Controller
         ]);
 
         $building->save();
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_building_master_store',
+            'entity_type' => 'hostel_building_master',
+            'entity_id' => $building->id,
+            'new_values' => $building->toArray(),
+        ]);
         $message['status_code'] = "1";
         $message['message'] = "Building Added Succesfully";
 
@@ -78,6 +89,8 @@ class hostel_building_masterController extends Controller
 
     public function update(Request $request, $id)
     {
+        ValidateInsertData('hostel_building_master', 'update');
+
         $data = [
             'building_name'  => $request->get('building_name'),
             'hostel_type_id' => $request->get('hostel_type_id'),
@@ -85,6 +98,13 @@ class hostel_building_masterController extends Controller
         ];
 
         hostel_building_masterModel::where(["id" => $id])->update($data);
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_building_master_update',
+            'entity_type' => 'hostel_building_master',
+            'entity_id' => $id,
+            'new_values' => $data,
+        ]);
 
         $message['status_code'] = "1";
         $message['message'] = "Building Updated Succesfully";
@@ -98,6 +118,12 @@ class hostel_building_masterController extends Controller
         $type = $request->input('type');
 
         hostel_building_masterModel::where(["id" => $id])->delete();
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_building_master_delete',
+            'entity_type' => 'hostel_building_master',
+            'entity_id' => $id,
+        ]);
 
         $message['status_code'] = "1";
         $message['message'] = "Building Deleted Succesfully";

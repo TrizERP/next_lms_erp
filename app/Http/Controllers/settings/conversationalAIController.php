@@ -34,9 +34,7 @@ class conversationalAIController extends Controller
     public function genkitDetailsAPI(Request $request, JwtToken $jwt)
     {
         // resolve session
-        $sub = in_array($request->type, ['API', 'JSON'])
-            ? $request->sub_institute_id
-            : session('sub_institute_id');
+        $sub = session('sub_institute_id');
         $year = in_array($request->type, ['API', 'JSON'])
             ? $request->syear
             : session('syear');
@@ -844,7 +842,6 @@ class conversationalAIController extends Controller
         $syear = session()->get('syear');
 
         if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
         }
 

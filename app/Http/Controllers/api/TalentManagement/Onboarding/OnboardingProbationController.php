@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api\TalentManagement\Onboarding;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TalentManagement\Onboarding\Concerns\ResolvesOnboardingContext;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\TalentOnboardingJourney;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -25,6 +27,7 @@ use Illuminate\Support\Facades\DB;
 class OnboardingProbationController extends Controller
 {
     use ResolvesOnboardingContext;
+    use RequiresTalentAdmin;
 
     private const SORTABLE = ['probation_end', 'joining_date', 'confirmation_status', 'created_at'];
 
@@ -124,6 +127,8 @@ class OnboardingProbationController extends Controller
      */
     public function update(Request $request, $journeyId)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->onboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -163,6 +168,14 @@ class OnboardingProbationController extends Controller
                 $changes,
                 (int) $journey->id
             );
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'onboarding_probation_window_updated',
+                'entity_type' => 'onboarding_journey',
+                'entity_id'   => $journey->id,
+                'new_values'  => $validated,
+            ]);
         }
 
         $directory = $this->onboardingDirectory($tenant, [$journey->employee_id, $journey->manager_id]);
@@ -204,6 +217,8 @@ class OnboardingProbationController extends Controller
 
     private function decide(Request $request, $journeyId, string $decision)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->onboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -281,6 +296,16 @@ class OnboardingProbationController extends Controller
             [['field' => 'confirmation_status', 'label' => 'Confirmation', 'old' => $previous, 'new' => $journey->confirmation_status]],
             (int) $journey->id
         );
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'onboarding_probation_' . $decision,
+            'entity_type' => 'onboarding_journey',
+            'entity_id'   => $journey->id,
+            'new_values'  => array_merge($validated, [
+                'confirmation_status' => ['old' => $previous, 'new' => $journey->confirmation_status],
+            ]),
+        ]);
 
         $directory = $this->onboardingDirectory($tenant, [
             $journey->employee_id, $journey->manager_id, $journey->confirmed_by,

@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api\TalentManagement\Onboarding;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TalentManagement\Onboarding\Concerns\ResolvesOnboardingContext;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\TalentOnboardingJourney;
 use App\Models\TalentManagement\TalentOnboardingJourneyStage;
 use Illuminate\Http\Request;
@@ -24,6 +26,7 @@ use Illuminate\Support\Facades\DB;
 class OnboardingJourneyController extends Controller
 {
     use ResolvesOnboardingContext;
+    use RequiresTalentAdmin;
 
     /** Columns whose edits are recorded in the audit trail. */
     private const AUDIT_LABELS = [
@@ -122,6 +125,8 @@ class OnboardingJourneyController extends Controller
      */
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->onboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -172,6 +177,8 @@ class OnboardingJourneyController extends Controller
      */
     public function storeFromOffer(Request $request, $offerId)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->onboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -237,6 +244,8 @@ class OnboardingJourneyController extends Controller
     /** PUT /api/onboarding/journeys/{id} */
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->onboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -290,6 +299,14 @@ class OnboardingJourneyController extends Controller
                 $changes,
                 $journey->id
             );
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'onboarding_journey_updated',
+                'entity_type' => 'onboarding_journey',
+                'entity_id'   => $journey->id,
+                'new_values'  => $validated,
+            ]);
         }
 
         $directory = $this->onboardingDirectory($tenant, [
@@ -311,6 +328,8 @@ class OnboardingJourneyController extends Controller
      */
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->onboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -354,6 +373,14 @@ class OnboardingJourneyController extends Controller
             (int) $id
         );
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'onboarding_journey_deleted',
+            'entity_type' => 'onboarding_journey',
+            'entity_id'   => (int) $id,
+            'new_values'  => ['journey_code' => $code, 'candidate_name' => $name],
+        ]);
+
         return $this->onboardingResponse(['id' => (int) $id], 'Onboarding journey deleted');
     }
 
@@ -393,6 +420,8 @@ class OnboardingJourneyController extends Controller
     /** PUT /api/onboarding/stages/{id} */
     public function updateStage(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->onboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -447,6 +476,14 @@ class OnboardingJourneyController extends Controller
                 $changes,
                 (int) $stage->journey_id
             );
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'onboarding_stage_updated',
+                'entity_type' => 'onboarding_journey_stage',
+                'entity_id'   => $stage->id,
+                'new_values'  => $validated,
+            ]);
         }
 
         return $this->onboardingResponse($this->presentStage($stage), 'Journey stage updated');
@@ -455,6 +492,8 @@ class OnboardingJourneyController extends Controller
     /** POST /api/onboarding/stages/{id}/complete */
     public function completeStage(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->onboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -488,6 +527,14 @@ class OnboardingJourneyController extends Controller
             null,
             (int) $stage->journey_id
         );
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => $reopen ? 'onboarding_stage_reopened' : 'onboarding_stage_completed',
+            'entity_type' => 'onboarding_journey_stage',
+            'entity_id'   => $stage->id,
+            'new_values'  => ['status' => $stage->status],
+        ]);
 
         return $this->onboardingResponse(
             $this->presentStage($stage),
@@ -689,6 +736,21 @@ class OnboardingJourneyController extends Controller
                 null,
                 $journey->id
             );
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'onboarding_journey_created',
+                'entity_type' => 'onboarding_journey',
+                'entity_id'   => $journey->id,
+                'new_values'  => [
+                    'journey_code'    => $journey->journey_code,
+                    'candidate_name'  => $journey->candidate_name,
+                    'offer_id'        => $journey->offer_id,
+                    'employee_id'     => $journey->employee_id,
+                    'stage'           => $journey->stage,
+                    'status'          => $journey->status,
+                ],
+            ]);
 
             return $journey;
         });

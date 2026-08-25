@@ -48,7 +48,7 @@ use App\Http\Controllers\api\TalentManagement\Competency\CompetencyCommandCenter
 | Profiles action still calls - so the effective authorization boundary is
 | identical even though the extra route-level role gate was not replicated.
 */
-Route::middleware(['api.session'])->group(function () {
+Route::middleware(['api.session', 'staff.only'])->group(function () {
 
     // ---------------------------------------------------------------
     // Employee Profiles

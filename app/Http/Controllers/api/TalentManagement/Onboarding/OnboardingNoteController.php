@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api\TalentManagement\Onboarding;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TalentManagement\Onboarding\Concerns\ResolvesOnboardingContext;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\TalentOnboardingJourney;
 use App\Models\TalentManagement\TalentOnboardingNote;
 use Illuminate\Http\Request;
@@ -19,6 +21,7 @@ use Illuminate\Http\Request;
 class OnboardingNoteController extends Controller
 {
     use ResolvesOnboardingContext;
+    use RequiresTalentAdmin;
 
     /** GET /api/onboarding/journeys/{journeyId}/notes */
     public function index(Request $request, $journeyId)
@@ -49,6 +52,8 @@ class OnboardingNoteController extends Controller
     /** POST /api/onboarding/journeys/{journeyId}/notes */
     public function store(Request $request, $journeyId)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->onboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -88,12 +93,22 @@ class OnboardingNoteController extends Controller
             (int) $journey->id
         );
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'onboarding_note_created',
+            'entity_type' => 'onboarding_note',
+            'entity_id'   => $note->id,
+            'new_values'  => $validated + ['journey_id' => (int) $journey->id],
+        ]);
+
         return $this->onboardingResponse($this->presentNote($note), 'Note added', 201);
     }
 
     /** PUT /api/onboarding/notes/{id} */
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->onboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -132,6 +147,14 @@ class OnboardingNoteController extends Controller
                 $changes,
                 (int) $note->journey_id
             );
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'onboarding_note_updated',
+                'entity_type' => 'onboarding_note',
+                'entity_id'   => $note->id,
+                'new_values'  => $validated,
+            ]);
         }
 
         return $this->onboardingResponse($this->presentNote($note), 'Note updated');
@@ -140,6 +163,8 @@ class OnboardingNoteController extends Controller
     /** DELETE /api/onboarding/notes/{id} */
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->onboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -170,6 +195,14 @@ class OnboardingNoteController extends Controller
             null,
             $journeyId
         );
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'onboarding_note_deleted',
+            'entity_type' => 'onboarding_note',
+            'entity_id'   => (int) $id,
+            'new_values'  => ['journey_id' => $journeyId, 'excerpt' => $excerpt],
+        ]);
 
         return $this->onboardingResponse(['id' => (int) $id], 'Note deleted');
     }

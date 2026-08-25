@@ -3,8 +3,10 @@
 namespace App\Services\Mcp;
 
 use App\Http\Controllers\api\admissionRegistrationAPIController;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class AdmissionMcpService
 {
@@ -276,6 +278,38 @@ class AdmissionMcpService
             return ToolResult::failure('admissions.confirm', 'This admission is already confirmed.', 'ALREADY_CONFIRMED');
         }
 
+        // Re-validate required fields immediately before the write. previewConfirm()
+        // already checks this via validateConfirmation(), but executeConfirmed() calls
+        // confirm() directly with the confirmation payload and does not guarantee a fresh
+        // preview() just ran - the underlying enquiry/registration data could have changed
+        // (or been incomplete all along) since the confirmation was issued. saveStudent()
+        // itself only checks that the standard and quota exist, not that name/DOB/etc. are
+        // present, so this closes that gap without touching the shared controller method.
+        $record = DB::table('admission_enquiry as ae')
+            ->leftJoin('admission_registration as ar', function ($join) use ($context) {
+                $join->on('ar.enquiry_id', '=', 'ae.id')
+                    ->where('ar.sub_institute_id', '=', $context->selectedInstituteId);
+            })
+            ->where('ae.sub_institute_id', $context->selectedInstituteId)
+            ->where('ae.syear', $context->academicYear)
+            ->where('ae.id', $enquiryId)
+            ->selectRaw('ae.*, ar.*')
+            ->first();
+
+        if (!$record) {
+            return ToolResult::failure('admissions.confirm', 'Admission enquiry not found.', 'RECORD_NOT_FOUND');
+        }
+
+        $validator = Validator::make((array) $record, array_fill_keys(array_keys($this->requiredFields), 'required'));
+        if ($validator->fails()) {
+            return ToolResult::failure(
+                'admissions.confirm',
+                'Admission cannot be confirmed because required fields are missing.',
+                'MISSING_REQUIRED_FIELDS',
+                ['missing_fields' => array_keys($validator->errors()->messages())]
+            );
+        }
+
         $controller = app(admissionRegistrationAPIController::class);
         $request = Request::create('/api/admission_student', 'POST', [
             'type' => 'API',
@@ -308,6 +342,23 @@ class AdmissionMcpService
         if (!$student) {
             return ToolResult::failure('admissions.confirm', 'The backend did not confirm the admission.', 'BACKEND_CONFIRMATION_FAILED', ['backend' => $payload]);
         }
+
+        AuditLog::record([
+            'module' => 'mcp',
+            'action' => 'admission_confirm',
+            'entity_type' => 'tblstudent',
+            'entity_id' => $student->student_id,
+            'new_values' => [
+                'enquiry_id' => $enquiryId,
+                'student_id' => (int) $student->student_id,
+                'student_name' => trim((string) $student->student_name),
+                'enrollment_no' => $student->enrollment_no,
+                'standard_name' => $student->standard_name,
+                'division_name' => $student->division_name,
+                'sub_institute_id' => $context->selectedInstituteId,
+                'academic_year' => $context->academicYear,
+            ],
+        ]);
 
         return ToolResult::success(
             'admissions.confirm',

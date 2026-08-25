@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api\TalentManagement\Performance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TalentManagement\Performance\Concerns\ResolvesPerformanceContext;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\PerformanceReview;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -21,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 class PerformanceReviewController extends Controller
 {
     use ResolvesPerformanceContext;
+    use RequiresTalentAdmin;
 
     private const SORTABLE = [
         'employee', 'department', 'manager', 'stage', 'overall_rating',
@@ -308,6 +311,14 @@ class PerformanceReviewController extends Controller
         $review->updated_by = $context['user_id'];
         $review->save();
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'review_updated',
+            'entity_type' => 'performance_review',
+            'entity_id'   => $review->id,
+            'new_values'  => $validated,
+        ]);
+
         if (!empty($changes)) {
             $this->logPerformanceActivity(
                 $tenant,
@@ -422,6 +433,14 @@ class PerformanceReviewController extends Controller
         $review->updated_by = $context['user_id'];
         $review->save();
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'review_stage_advanced',
+            'entity_type' => 'performance_review',
+            'entity_id'   => $review->id,
+            'new_values'  => ['from_stage' => $fromStage, 'to_stage' => $target, 'rating' => $rating],
+        ]);
+
         $employeeName = $this->employeeName($tenant, (int) $review->user_id);
 
         $this->logPerformanceActivity(
@@ -473,6 +492,14 @@ class PerformanceReviewController extends Controller
         $review->updated_by = $context['user_id'];
         $review->save();
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'review_reminder_sent',
+            'entity_type' => 'performance_review',
+            'entity_id'   => $review->id,
+            'new_values'  => ['last_reminder_at' => optional($review->last_reminder_at)->toDateTimeString()],
+        ]);
+
         $employeeName = $this->employeeName($tenant, (int) $review->user_id);
 
         $this->logPerformanceActivity(
@@ -503,6 +530,8 @@ class PerformanceReviewController extends Controller
      */
     public function bulk(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -602,6 +631,14 @@ class PerformanceReviewController extends Controller
             $review->updated_by = $context['user_id'];
             $review->save();
             $affected++;
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'review_bulk_' . $action,
+                'entity_type' => 'performance_review',
+                'entity_id'   => $review->id,
+                'new_values'  => ['action' => $action, 'stage' => $review->stage, 'status' => $review->status],
+            ]);
         }
 
         $labels = [
@@ -637,6 +674,8 @@ class PerformanceReviewController extends Controller
      */
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -655,6 +694,14 @@ class PerformanceReviewController extends Controller
         $review->deleted_by = $context['user_id'];
         $review->save();
         $review->delete();
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'review_deleted',
+            'entity_type' => 'performance_review',
+            'entity_id'   => (int) $id,
+            'new_values'  => ['user_id' => (int) $review->user_id, 'cycle_id' => $cycleId],
+        ]);
 
         $this->logPerformanceActivity(
             $tenant,

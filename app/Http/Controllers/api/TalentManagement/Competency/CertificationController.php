@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\api\TalentManagement\Competency;
 
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TalentManagement\Competency\Concerns\ResolvesCompetencyContext;
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -24,6 +26,7 @@ use Illuminate\Support\Facades\Validator;
 class CertificationController extends Controller
 {
     use ResolvesCompetencyContext;
+    use RequiresTalentAdmin;
 
     private const TABLE = 's_competency_certifications';
     private const REQUIREMENTS = 's_competency_certification_requirements';
@@ -293,6 +296,8 @@ class CertificationController extends Controller
 
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -349,6 +354,18 @@ class CertificationController extends Controller
             'updated_at'          => now(),
         ]);
 
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'certification.created',
+            'entity_type' => 'certification',
+            'entity_id'   => $id,
+            'new_values'  => [
+                'name'    => $request->input('name'),
+                'user_id' => $request->input('user_id_target') ?: $request->input('user_id'),
+                'status'  => $request->input('status', 'valid'),
+            ],
+        ]);
+
         $this->logCompetencyActivity(
             $context['sub_institute_id'],
             $context['user_id'],
@@ -374,6 +391,8 @@ class CertificationController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -434,6 +453,14 @@ class CertificationController extends Controller
 
         DB::table(self::TABLE)->where('id', $id)->update($update);
 
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'certification.updated',
+            'entity_type' => 'certification',
+            'entity_id'   => $id,
+            'new_values'  => $update,
+        ]);
+
         $this->logCompetencyActivity(
             $sid,
             $context['user_id'],
@@ -454,6 +481,8 @@ class CertificationController extends Controller
 
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -467,6 +496,14 @@ class CertificationController extends Controller
         DB::table(self::TABLE)->where('id', $id)->update([
             'deleted_at' => now(),
             'deleted_by' => $context['user_id'],
+        ]);
+
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'certification.deleted',
+            'entity_type' => 'certification',
+            'entity_id'   => $id,
+            'new_values'  => ['name' => $existing->name],
         ]);
 
         $this->logCompetencyActivity(
@@ -488,6 +525,8 @@ class CertificationController extends Controller
      */
     public function bulk(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -548,6 +587,15 @@ class CertificationController extends Controller
         DB::table(self::TABLE)->whereIn('id', $ownedIds)->update($update);
 
         $count = count($ownedIds);
+
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'certification.bulk_' . $action,
+            'entity_type' => 'certification',
+            'entity_id'   => null,
+            'new_values'  => ['ids' => $ownedIds, 'action' => $action, 'update' => $update],
+        ]);
+
         $this->logCompetencyActivity(
             $sid,
             $context['user_id'],
@@ -603,6 +651,14 @@ class CertificationController extends Controller
             'notes'      => $notes,
             'updated_by' => $context['user_id'],
             'updated_at' => now(),
+        ]);
+
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'certification.note_added',
+            'entity_type' => 'certification',
+            'entity_id'   => $id,
+            'new_values'  => ['note' => trim($request->input('note'))],
         ]);
 
         $this->logCompetencyActivity(
@@ -871,6 +927,8 @@ class CertificationController extends Controller
      */
     public function storeDocument(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -942,6 +1000,19 @@ class CertificationController extends Controller
             'updated_at'       => now(),
         ]);
 
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'certification.document_added',
+            'entity_type' => 'certification',
+            'entity_id'   => $id,
+            'new_values'  => [
+                'evidence_id' => $evidenceId,
+                'title'       => $request->input('title'),
+                'file_name'   => $fileName,
+                'link'        => $this->activeFilter($request->input('link')),
+            ],
+        ]);
+
         $this->logCompetencyActivity(
             $sid,
             $context['user_id'],
@@ -962,6 +1033,8 @@ class CertificationController extends Controller
     /** DELETE /api/competency/certifications/{id}/documents/{documentId} */
     public function destroyDocument(Request $request, $id, $documentId)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -982,6 +1055,14 @@ class CertificationController extends Controller
         DB::table(self::EVIDENCE)->where('id', $documentId)->update([
             'deleted_at' => now(),
             'deleted_by' => $context['user_id'],
+        ]);
+
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'certification.document_deleted',
+            'entity_type' => 'certification',
+            'entity_id'   => $id,
+            'new_values'  => ['evidence_id' => (int) $documentId, 'title' => $document->title],
         ]);
 
         $this->logCompetencyActivity(

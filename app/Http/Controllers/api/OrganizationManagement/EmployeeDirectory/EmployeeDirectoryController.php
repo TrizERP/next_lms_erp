@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\OrganizationManagement\EmployeeDirectory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\user\tbluserModel;
 use App\Models\user\tbluserprofilemasterModel;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
 /**
@@ -444,6 +446,21 @@ class EmployeeDirectoryController extends Controller
     {
         $subInstituteId = $this->tenant();
 
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|string|max:191',
+            'user_profile_id' => [
+                'required',
+                'integer',
+                Rule::exists('tbluserprofilemaster', 'id')->where(
+                    fn ($query) => $query->where('sub_institute_id', $subInstituteId)
+                ),
+            ],
+            'email' => 'nullable|email|max:191',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['status_code' => 0, 'message' => $validator->errors()->first(), 'data' => null], 422);
+        }
+
         $email = $request->input('email');
         if ($email) {
             if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
@@ -476,6 +493,14 @@ class EmployeeDirectoryController extends Controller
 
         $employee = tbluserModel::find($id);
 
+        AuditLog::record([
+            'module' => 'organization_management',
+            'action' => 'employee_created',
+            'entity_type' => 'tbluser',
+            'entity_id' => $id,
+            'new_values' => collect($finalArray)->except(['password'])->all(),
+        ]);
+
         return response()->json([
             'status_code' => 1,
             'message' => 'User created successfully',
@@ -491,6 +516,22 @@ class EmployeeDirectoryController extends Controller
         $employee = tbluserModel::where('sub_institute_id', $subInstituteId)->find($id);
         if (!$employee) {
             return response()->json(['status_code' => 0, 'message' => 'Employee not found', 'data' => null], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'sometimes|required|string|max:191',
+            'user_profile_id' => [
+                'sometimes',
+                'required',
+                'integer',
+                Rule::exists('tbluserprofilemaster', 'id')->where(
+                    fn ($query) => $query->where('sub_institute_id', $subInstituteId)
+                ),
+            ],
+            'email' => 'nullable|email|max:191',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['status_code' => 0, 'message' => $validator->errors()->first(), 'data' => null], 422);
         }
 
         $email = $request->input('email');
@@ -524,6 +565,14 @@ class EmployeeDirectoryController extends Controller
 
         tbluserModel::where('id', $id)->update($finalArray);
 
+        AuditLog::record([
+            'module' => 'organization_management',
+            'action' => 'employee_updated',
+            'entity_type' => 'tbluser',
+            'entity_id' => (int) $id,
+            'new_values' => collect($finalArray)->except(['password'])->all(),
+        ]);
+
         return response()->json([
             'status_code' => 1,
             'message' => 'User updated successfully',
@@ -545,6 +594,14 @@ class EmployeeDirectoryController extends Controller
         // deleted_by/deleted_at columns, so only status is flipped (see
         // class docblock).
         tbluserModel::where('id', $id)->update(['status' => 0]);
+
+        AuditLog::record([
+            'module' => 'organization_management',
+            'action' => 'employee_deactivated',
+            'entity_type' => 'tbluser',
+            'entity_id' => (int) $id,
+            'new_values' => ['status' => 0],
+        ]);
 
         return response()->json([
             'status_code' => 1,
@@ -585,6 +642,18 @@ class EmployeeDirectoryController extends Controller
         ]);
 
         if ($inserted) {
+            AuditLog::record([
+                'module' => 'organization_management',
+                'action' => 'employee_document_uploaded',
+                'entity_type' => 'staff_document',
+                'entity_id' => (int) $id,
+                'new_values' => [
+                    'document_title' => $request->input('document_title'),
+                    'document_type_id' => $request->input('document_type_id'),
+                    'file_name' => $fileName,
+                ],
+            ]);
+
             return response()->json([
                 'status_code' => 1,
                 'success' => 1,
@@ -818,6 +887,14 @@ class EmployeeDirectoryController extends Controller
                 'created_at' => $existing->created_at ?? now(),
             ]
         );
+
+        AuditLog::record([
+            'module' => 'organization_management',
+            'action' => 'employee_skill_rating_updated',
+            'entity_type' => 's_skill_matrix',
+            'entity_id' => (int) $id,
+            'new_values' => ['skill_id' => (int) $matrixId, 'proficiency_level' => (int) $request->input('proficiency_level')],
+        ]);
 
         return response()->json(['status_code' => 1, 'message' => 'Skill rating updated']);
     }

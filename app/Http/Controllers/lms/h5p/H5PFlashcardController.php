@@ -5,6 +5,7 @@ namespace App\Http\Controllers\lms\h5p;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\lms\h5p\h5pFlashcard;
+use App\Models\AuditLog;
 use function App\Helpers\is_mobile;
 
 class H5PFlashcardController extends Controller
@@ -20,7 +21,9 @@ class H5PFlashcardController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
 
         if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->sub_institute_id;
+            // sub_institute_id must come from the authenticated session (hydrated
+            // from a verified JWT), not the client-supplied request value, which
+            // is spoofable. Still require it on the payload for validation.
             $request->validate([
                 'sub_institute_id' => 'required|integer',
                 'standard_id' => 'required|integer',
@@ -60,7 +63,9 @@ class H5PFlashcardController extends Controller
         $type = $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->sub_institute_id;
+            // sub_institute_id must come from the authenticated session (hydrated
+            // from a verified JWT), not the client-supplied request value, which
+            // is spoofable. Still require it on the payload for validation.
             $request->validate([
                 'sub_institute_id' => 'required|integer',
                 'standard_id' => 'required|integer',
@@ -89,7 +94,10 @@ class H5PFlashcardController extends Controller
         $user_id = session()->get('user_id');
 
         if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->sub_institute_id;
+            // sub_institute_id / user_id must come from the authenticated session
+            // (hydrated from a verified JWT), not the client-supplied request
+            // values, which are spoofable. Still require them on the payload for
+            // validation.
             $request->validate([
                 'sub_institute_id' => 'required|integer',
                 'user_id' => 'required|integer',
@@ -98,6 +106,14 @@ class H5PFlashcardController extends Controller
                 'chapter_id' => 'required|integer',
             ]);
         }
+
+        // Every field written into h5p_flashcard below (question, correct_answer)
+        // must be present on each card entry, regardless of request type.
+        $request->validate([
+            'cards' => 'required|array|min:1',
+            'cards.*.question' => 'required|string',
+            'cards.*.correct_answer' => 'required|string',
+        ]);
 
         $createdCards = [];
 
@@ -116,6 +132,14 @@ class H5PFlashcardController extends Controller
             ]);
 
             $createdCards[] = $flashcard;
+
+            AuditLog::record([
+                'module' => 'lms',
+                'action' => 'h5p_flashcard_created',
+                'entity_type' => 'h5p_flashcard',
+                'entity_id' => $flashcard->id,
+                'new_values' => $flashcard->toArray(),
+            ]);
         }
 
         if(in_array($type, ['API', 'JSON'])){
@@ -146,7 +170,9 @@ class H5PFlashcardController extends Controller
        $type = $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->sub_institute_id;
+            // sub_institute_id must come from the authenticated session (hydrated
+            // from a verified JWT), not the client-supplied request value, which
+            // is spoofable. Still require it on the payload for validation.
             $request->validate([
                 'sub_institute_id' => 'required|integer',
                 'standard_id' => 'required|integer',
@@ -180,11 +206,13 @@ class H5PFlashcardController extends Controller
         $type = $request->type;
         $sub_institute_id = session()->get('sub_institute_id');
         if(in_array($type, ['API', 'JSON'])){
+            // sub_institute_id must come from the authenticated session (hydrated
+            // from a verified JWT), not the client-supplied request value, which
+            // is spoofable. Still require it on the payload for validation.
             $request->validate([
                 'id' => 'required|integer',
                 'sub_institute_id' => 'required|integer',
             ]);
-            $sub_institute_id = $request->sub_institute_id;
         }
         $res['card'] = h5pFlashcard::findOrFail($id);
         $res['chapter_id'] = $request->chapter_id;
@@ -207,15 +235,25 @@ class H5PFlashcardController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $user_id = session()->get('user_id');
         if(in_array($type, ['API', 'JSON'])){
+            // sub_institute_id / user_id must come from the authenticated session
+            // (hydrated from a verified JWT), not the client-supplied request
+            // values, which are spoofable. Still require sub_institute_id on the
+            // payload for validation.
             $request->validate([
                 'id' => 'required|integer',
                 'sub_institute_id' => 'required|integer',
             ]);
-            $sub_institute_id = $request->sub_institute_id;
-            $user_id = $request->user_id;
         }
         $card = h5pFlashcard::findOrFail($id);
-        
+
+        // correct_answer is read via strtolower(trim(...)) below, so it must be
+        // present and a string regardless of request type.
+        $request->validate([
+            'cards' => 'required|array|min:1',
+            'cards.0.question' => 'required|string',
+            'cards.0.correct_answer' => 'required|string',
+        ]);
+
         $card->update([
             'content' => $request->cards[0]['content'] ?? '-',
             'question' => $request->cards[0]['question'] ?? '-',
@@ -224,6 +262,15 @@ class H5PFlashcardController extends Controller
             'updated_by' => $user_id,
             'updated_at' => now(),
         ]);
+
+        AuditLog::record([
+            'module' => 'lms',
+            'action' => 'h5p_flashcard_updated',
+            'entity_type' => 'h5p_flashcard',
+            'entity_id' => $card->id,
+            'new_values' => $card->toArray(),
+        ]);
+
         if(in_array($type, ['API', 'JSON'])){
             return response()->json([
                 'status' => true,
@@ -252,17 +299,28 @@ class H5PFlashcardController extends Controller
          $sub_institute_id = session()->get('sub_institute_id');
         $user_id = session()->get('user_id');
         if(in_array($type, ['API', 'JSON'])){
+            // sub_institute_id / user_id must come from the authenticated session
+            // (hydrated from a verified JWT), not the client-supplied request
+            // values, which are spoofable. Still require sub_institute_id on the
+            // payload for validation.
             $request->validate([
                 'id' => 'required|integer',
                 'sub_institute_id' => 'required|integer',
             ]);
-            $sub_institute_id = $request->sub_institute_id;
-            $user_id = $request->user_id;
         }
         $card = h5pFlashcard::findOrFail($id);
         $card->deleted_by = $user_id;
         $card->save();
         $card->delete();
+
+        AuditLog::record([
+            'module' => 'lms',
+            'action' => 'h5p_flashcard_deleted',
+            'entity_type' => 'h5p_flashcard',
+            'entity_id' => $card->id,
+            'new_values' => $card->toArray(),
+        ]);
+
          if(in_array($type, ['API', 'JSON'])){
             return response()->json([
                 'status' => true,

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\TalentManagement\Recruitment;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\TalentInterviewSchedule;
 use App\Models\TalentManagement\TalentJobApplication;
 use App\Models\TalentManagement\TalentJobPosting;
@@ -154,6 +155,21 @@ class InterviewScheduleController extends Controller
             $objtalent->panel_id = $request->panel_id;
 
             if ($objtalent->save()) {
+                AuditLog::record([
+                    'module' => 'talent_management',
+                    'action' => 'interview_scheduled',
+                    'entity_type' => 'interview_schedule',
+                    'entity_id' => $objtalent->id,
+                    'new_values' => [
+                        'job_id' => $objtalent->job_id,
+                        'applicant_id' => $objtalent->applicant_id,
+                        'round_no' => $objtalent->round_no,
+                        'interview_date' => $objtalent->interview_date,
+                        'status' => $objtalent->status,
+                        'panel_id' => $objtalent->panel_id,
+                    ],
+                ]);
+
                 return response()->json(['message' => 'added successfully !!', 'data' => $objtalent], 200);
             }
 
@@ -243,6 +259,18 @@ class InterviewScheduleController extends Controller
             $interviewSchedule->sub_institute_id = $subInstituteId;
 
             if ($interviewSchedule->save()) {
+                AuditLog::record([
+                    'module' => 'talent_management',
+                    'action' => 'interview_schedule_updated',
+                    'entity_type' => 'interview_schedule',
+                    'entity_id' => $interviewSchedule->id,
+                    'new_values' => [
+                        'status' => $interviewSchedule->status,
+                        'interview_date' => $interviewSchedule->interview_date,
+                        'panel_id' => $interviewSchedule->panel_id,
+                    ],
+                ]);
+
                 return response()->json([
                     'message' => 'interview schedules updated successfully!',
                     'data' => $interviewSchedule,
@@ -326,6 +354,18 @@ class InterviewScheduleController extends Controller
             $interviewSchedule->sub_institute_id = $subInstituteId;
 
             if ($interviewSchedule->save()) {
+                AuditLog::record([
+                    'module' => 'talent_management',
+                    'action' => 'interview_schedule_updated',
+                    'entity_type' => 'interview_schedule',
+                    'entity_id' => $interviewSchedule->id,
+                    'new_values' => [
+                        'status' => $interviewSchedule->status,
+                        'interview_date' => $interviewSchedule->interview_date,
+                        'panel_id' => $interviewSchedule->panel_id,
+                    ],
+                ]);
+
                 return response()->json([
                     'message' => 'Interview schedule updated successfully!',
                     'data' => $interviewSchedule,

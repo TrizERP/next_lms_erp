@@ -79,7 +79,7 @@ use App\Http\Controllers\api\TaskManagement\WorkspaceController;
 |     repository (`routes/api.php`) at all - nothing to port.
 |
 */
-Route::middleware(['api.session'])->group(function () {
+Route::middleware(['api.session', 'staff.only'])->group(function () {
 
     // ---------------------------------------------------------------
     // Legacy task routes (outside the task-management prefix, matching

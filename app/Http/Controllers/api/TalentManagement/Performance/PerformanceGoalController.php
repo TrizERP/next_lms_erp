@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\TalentManagement\Performance;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\api\TalentManagement\Performance\Concerns\ResolvesPerformanceContext;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\PerformanceGoal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -170,6 +171,14 @@ class PerformanceGoalController extends Controller
             $goal->cycle_id ? (int) $goal->cycle_id : null
         );
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'goal_created',
+            'entity_type' => 'performance_goal',
+            'entity_id'   => $goal->id,
+            'new_values'  => array_merge($validated, ['user_id' => $ownerId]),
+        ]);
+
         return $this->performanceResponse($this->presentModel($tenant, $goal), 'Goal created', 201);
     }
 
@@ -213,6 +222,14 @@ class PerformanceGoalController extends Controller
         $goal->fill($validated);
         $goal->updated_by = $context['user_id'];
         $goal->save();
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'goal_updated',
+            'entity_type' => 'performance_goal',
+            'entity_id'   => $goal->id,
+            'new_values'  => $validated,
+        ]);
 
         if (!empty($changes)) {
             $this->logPerformanceActivity(
@@ -267,6 +284,14 @@ class PerformanceGoalController extends Controller
             $reviewId ? (int) $reviewId : null,
             $cycleId ? (int) $cycleId : null
         );
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'goal_deleted',
+            'entity_type' => 'performance_goal',
+            'entity_id'   => (int) $id,
+            'new_values'  => ['title' => $title],
+        ]);
 
         return $this->performanceResponse(['id' => (int) $id], 'Goal deleted');
     }

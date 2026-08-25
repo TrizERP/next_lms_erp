@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\MobilityJob;
 use App\Http\Controllers\api\TalentManagement\Mobility\Concerns\ResolvesMobilityContext;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 
 /**
  * Ported from G2G's `App\Http\Controllers\Api\Mobility\MobilityJobController`.
@@ -18,6 +20,7 @@ use App\Http\Controllers\api\TalentManagement\Mobility\Concerns\ResolvesMobility
 class MobilityJobController extends Controller
 {
     use ResolvesMobilityContext;
+    use RequiresTalentAdmin;
 
     public function index(Request $request)
     {
@@ -92,6 +95,8 @@ class MobilityJobController extends Controller
 
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->mobilityContext($request);
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
@@ -147,14 +152,24 @@ class MobilityJobController extends Controller
 
         $postedOn = $request->input('posted_on') ?: now()->toDateString();
 
-        $job = MobilityJob::create(array_merge($validator->validated(), [
+        $jobData = array_merge($validator->validated(), [
             'sub_institute_id' => $subInstituteId,
             'job_id' => $jobIdCode,
             'department' => $deptName,
             'hiring_manager_name' => $hmName,
             'posted_on' => $postedOn,
             'created_by' => $actorId,
-        ]));
+        ]);
+
+        $job = MobilityJob::create($jobData);
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'mobility_job.created',
+            'entity_type' => 'mobility_job',
+            'entity_id' => $job->id,
+            'new_values' => $jobData,
+        ]);
 
         return $this->mobilityResponse($job, 'Job posting created successfully', 201);
     }
@@ -183,6 +198,8 @@ class MobilityJobController extends Controller
 
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->mobilityContext($request);
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
@@ -234,15 +251,27 @@ class MobilityJobController extends Controller
             }
         }
 
-        $job->update(array_merge($data, [
+        $updateData = array_merge($data, [
             'updated_by' => $context['user_id'],
-        ]));
+        ]);
+
+        $job->update($updateData);
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'mobility_job.updated',
+            'entity_type' => 'mobility_job',
+            'entity_id' => $job->id,
+            'new_values' => $updateData,
+        ]);
 
         return $this->mobilityResponse($job, 'Job posting updated successfully');
     }
 
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->mobilityContext($request);
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
@@ -257,6 +286,14 @@ class MobilityJobController extends Controller
 
         $job->update(['deleted_by' => $context['user_id']]);
         $job->delete();
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'mobility_job.deleted',
+            'entity_type' => 'mobility_job',
+            'entity_id' => $job->id,
+            'new_values' => ['deleted_by' => $context['user_id']],
+        ]);
 
         return $this->mobilityResponse(null, 'Job posting deleted successfully');
     }

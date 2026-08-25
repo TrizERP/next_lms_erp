@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\MobilityTalentPool;
 use App\Models\TalentManagement\MobilityTalentPoolMember;
 use App\Http\Controllers\api\TalentManagement\Mobility\Concerns\ResolvesMobilityContext;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 
 /**
  * Ported from G2G's `App\Http\Controllers\Api\Mobility\MobilityTalentPoolController`.
@@ -17,6 +19,7 @@ use App\Http\Controllers\api\TalentManagement\Mobility\Concerns\ResolvesMobility
 class MobilityTalentPoolController extends Controller
 {
     use ResolvesMobilityContext;
+    use RequiresTalentAdmin;
 
     public function index(Request $request)
     {
@@ -58,6 +61,8 @@ class MobilityTalentPoolController extends Controller
 
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->mobilityContext($request);
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
@@ -82,6 +87,17 @@ class MobilityTalentPoolController extends Controller
             'description' => $request->input('description'),
             'status' => $request->input('status'),
             'created_by' => $actorId,
+        ]);
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'mobility_talent_pool.created',
+            'entity_type' => 'mobility_talent_pool',
+            'entity_id' => $pool->id,
+            'new_values' => [
+                'name' => $request->input('name'),
+                'status' => $request->input('status'),
+            ],
         ]);
 
         return $this->mobilityResponse($pool, 'Talent pool created successfully', 201);
@@ -114,6 +130,8 @@ class MobilityTalentPoolController extends Controller
 
     public function addMember(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->mobilityContext($request);
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
@@ -152,11 +170,24 @@ class MobilityTalentPoolController extends Controller
             'created_by' => $context['user_id'],
         ]);
 
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'mobility_talent_pool.member_added',
+            'entity_type' => 'mobility_talent_pool_member',
+            'entity_id' => $member->id,
+            'new_values' => [
+                'pool_id' => $id,
+                'user_id' => $userId,
+            ],
+        ]);
+
         return $this->mobilityResponse($member, 'Member added to pool successfully', 201);
     }
 
     public function removeMember(Request $request, $id, $userId)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->mobilityContext($request);
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
@@ -177,7 +208,19 @@ class MobilityTalentPoolController extends Controller
             return $this->mobilityError('Member not found in this pool', 404);
         }
 
+        $memberId = $member->id;
         $member->delete();
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'mobility_talent_pool.member_removed',
+            'entity_type' => 'mobility_talent_pool_member',
+            'entity_id' => $memberId,
+            'new_values' => [
+                'pool_id' => $id,
+                'user_id' => $userId,
+            ],
+        ]);
 
         return $this->mobilityResponse(null, 'Member removed from pool successfully');
     }
