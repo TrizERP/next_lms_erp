@@ -67,7 +67,7 @@ use App\Http\Controllers\api\TalentManagement\Administration\AdminWorkflowContro
 | 1:1 and why).
 |
 */
-Route::middleware(['api.session'])->group(function () {
+Route::middleware(['api.session', 'staff.only'])->group(function () {
 
     // ---------------------------------------------------------------
     // Talent Dashboard

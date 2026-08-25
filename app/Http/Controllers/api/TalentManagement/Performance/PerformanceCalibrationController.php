@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api\TalentManagement\Performance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TalentManagement\Performance\Concerns\ResolvesPerformanceContext;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\PerformanceCalibrationSession;
 use App\Models\TalentManagement\PerformanceReview;
 use Illuminate\Http\Request;
@@ -21,6 +23,7 @@ use Illuminate\Support\Facades\DB;
 class PerformanceCalibrationController extends Controller
 {
     use ResolvesPerformanceContext;
+    use RequiresTalentAdmin;
 
     private const SORTABLE = ['name', 'scheduled_at', 'status', 'participant_count', 'created_at'];
 
@@ -98,6 +101,8 @@ class PerformanceCalibrationController extends Controller
     /** POST /api/performance/calibration-sessions */
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -170,12 +175,22 @@ class PerformanceCalibrationController extends Controller
             (int) $session->cycle_id
         );
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'calibration_session_created',
+            'entity_type' => 'performance_calibration_session',
+            'entity_id'   => $session->id,
+            'new_values'  => array_merge($validated, ['attached_reviews' => $attached]),
+        ]);
+
         return $this->performanceResponse($this->presentModel($session), 'Calibration session created', 201);
     }
 
     /** PUT /api/performance/calibration-sessions/{id} */
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -207,6 +222,14 @@ class PerformanceCalibrationController extends Controller
         $session->fill($validated);
         $session->updated_by = $context['user_id'];
         $session->save();
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'calibration_session_updated',
+            'entity_type' => 'performance_calibration_session',
+            'entity_id'   => $session->id,
+            'new_values'  => $validated,
+        ]);
 
         if (!empty($changes)) {
             $this->logPerformanceActivity(
@@ -341,6 +364,8 @@ class PerformanceCalibrationController extends Controller
      */
     public function calibrate(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -420,6 +445,19 @@ class PerformanceCalibrationController extends Controller
             $review->save();
             $updated++;
 
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'rating_calibrated',
+                'entity_type' => 'performance_review',
+                'entity_id'   => $review->id,
+                'new_values'  => [
+                    'calibration_session_id' => $session->id,
+                    'calibrated_rating'      => $rating,
+                    'previous_rating'        => $previous,
+                    'potential_rating'       => $pair['potential_rating'] ?? null,
+                ],
+            ]);
+
             $employeeName = $this->resolveActorName((int) $review->user_id) ?? 'an employee';
 
             $this->logPerformanceActivity(
@@ -461,6 +499,8 @@ class PerformanceCalibrationController extends Controller
      */
     public function lock(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -514,6 +554,14 @@ class PerformanceCalibrationController extends Controller
         $session->updated_by = $context['user_id'];
         $session->save();
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'calibration_session_locked',
+            'entity_type' => 'performance_calibration_session',
+            'entity_id'   => $session->id,
+            'new_values'  => ['status' => 'locked', 'advanced_reviews' => $advanced],
+        ]);
+
         $this->logPerformanceActivity(
             $tenant,
             $context['user_id'],
@@ -537,6 +585,8 @@ class PerformanceCalibrationController extends Controller
     /** DELETE /api/performance/calibration-sessions/{id} */
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -566,6 +616,14 @@ class PerformanceCalibrationController extends Controller
         $session->deleted_by = $context['user_id'];
         $session->save();
         $session->delete();
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'calibration_session_deleted',
+            'entity_type' => 'performance_calibration_session',
+            'entity_id'   => (int) $id,
+            'new_values'  => ['name' => $name],
+        ]);
 
         $this->logPerformanceActivity(
             $tenant,

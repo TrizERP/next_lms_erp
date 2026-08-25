@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api\TalentManagement\Performance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TalentManagement\Performance\Concerns\ResolvesPerformanceContext;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\PerformanceCompensationRevision;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +24,7 @@ use Illuminate\Support\Facades\DB;
 class PerformanceCompensationController extends Controller
 {
     use ResolvesPerformanceContext;
+    use RequiresTalentAdmin;
 
     private const SORTABLE = ['current_ctc', 'proposed_ctc', 'increment_amount', 'increment_pct', 'effective_date', 'status', 'created_at'];
 
@@ -86,6 +89,8 @@ class PerformanceCompensationController extends Controller
     /** POST /api/performance/compensation */
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -152,12 +157,22 @@ class PerformanceCompensationController extends Controller
             $revision->cycle_id ? (int) $revision->cycle_id : null
         );
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'compensation_created',
+            'entity_type' => 'performance_compensation_revision',
+            'entity_id'   => $revision->id,
+            'new_values'  => array_merge($validated, ['user_id' => $employeeId]),
+        ]);
+
         return $this->performanceResponse($this->presentModel($revision), 'Compensation revision created', 201);
     }
 
     /** PUT /api/performance/compensation/{id} */
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -197,6 +212,14 @@ class PerformanceCompensationController extends Controller
         $revision->updated_by = $context['user_id'];
         $revision->save();
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'compensation_updated',
+            'entity_type' => 'performance_compensation_revision',
+            'entity_id'   => $revision->id,
+            'new_values'  => $validated,
+        ]);
+
         if (!empty($changes)) {
             $employeeName = $this->resolveActorName((int) $revision->user_id) ?? 'an employee';
 
@@ -223,6 +246,8 @@ class PerformanceCompensationController extends Controller
      */
     public function decision(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -265,6 +290,14 @@ class PerformanceCompensationController extends Controller
         $revision->updated_by = $context['user_id'];
         $revision->save();
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'compensation_decision',
+            'entity_type' => 'performance_compensation_revision',
+            'entity_id'   => $revision->id,
+            'new_values'  => ['action' => $validated['action'], 'status' => $target, 'remarks' => $validated['remarks'] ?? null],
+        ]);
+
         $employeeName = $this->resolveActorName((int) $revision->user_id) ?? 'an employee';
 
         $this->logPerformanceActivity(
@@ -286,6 +319,8 @@ class PerformanceCompensationController extends Controller
     /** POST /api/performance/compensation/bulk */
     public function bulk(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -320,6 +355,14 @@ class PerformanceCompensationController extends Controller
 
             $revision->updated_by = $context['user_id'];
             $revision->save();
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'compensation_decision',
+                'entity_type' => 'performance_compensation_revision',
+                'entity_id'   => $revision->id,
+                'new_values'  => ['action' => $validated['action'], 'status' => $target, 'bulk' => true],
+            ]);
         }
 
         $this->logPerformanceActivity(
@@ -341,6 +384,8 @@ class PerformanceCompensationController extends Controller
     /** DELETE /api/performance/compensation/{id} */
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -364,6 +409,14 @@ class PerformanceCompensationController extends Controller
         $revision->deleted_by = $context['user_id'];
         $revision->save();
         $revision->delete();
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'compensation_deleted',
+            'entity_type' => 'performance_compensation_revision',
+            'entity_id'   => (int) $id,
+            'new_values'  => ['user_id' => (int) $revision->user_id],
+        ]);
 
         $this->logPerformanceActivity(
             $tenant,

@@ -24,7 +24,7 @@ class announcementController extends Controller
         $user_profile_id =session()->get('user_profile_id');
 
         if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
+            $sub_institute_id = session()->get('sub_institute_id');
             $syear = $request->syear;
             $user_profile_name = $request->user_profile_name;
             $user_profile_id = $request->user_profile_id;
@@ -51,7 +51,7 @@ class announcementController extends Controller
         $syear = session()->get('syear');
 
         if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
+            $sub_institute_id = session()->get('sub_institute_id');
             $syear = $request->syear;
         }
 
@@ -83,7 +83,7 @@ class announcementController extends Controller
                 return response()->json($response, 401);
             }
 
-            $sub_institute_id = $request->sub_institute_id;
+            $sub_institute_id = session()->get('sub_institute_id');
             $syear = $request->syear;
             $users = explode(',',$request->user_profiles);
 
@@ -139,7 +139,7 @@ class announcementController extends Controller
         $syear = session()->get('syear');
 
         if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
+            $sub_institute_id = session()->get('sub_institute_id');
             $syear = $request->syear;
         }
 
@@ -182,7 +182,7 @@ class announcementController extends Controller
                 return response()->json($response, 401);
             }
             
-            $sub_institute_id = $request->sub_institute_id;
+            $sub_institute_id = session()->get('sub_institute_id');
             $syear = $request->syear;
         }
 
@@ -274,7 +274,7 @@ class announcementController extends Controller
         $user_profile_id =session()->get('user_profile_id');
 
         if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
+            $sub_institute_id = session()->get('sub_institute_id');
             $syear = $request->syear;
             $user_profile_name = $request->user_profile_name;
             $user_profile_id = $request->user_profile_id;

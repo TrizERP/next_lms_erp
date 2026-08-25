@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\inventory\inventory_master_setupModel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 class inventory_master_setupController extends Controller
@@ -45,6 +47,17 @@ class inventory_master_setupController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
+        $validator = Validator::make($request->all(), [
+            'PO_NO_PREFIX' => 'required|string|max:50',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_inventory_master_setup.index", $message, "redirect");
+        }
+
         $newfilename = "";
         if ($request->hasFile('LOGO')) {
             $img = $request->file('LOGO');
@@ -67,6 +80,15 @@ class inventory_master_setupController extends Controller
             'SUB_INSTITUTE_ID'             => $sub_institute_id,
         ]);
         $inventory->save();
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_master_setup_store',
+            'entity_type' => 'inventory_master_setup',
+            'entity_id'   => $inventory->id,
+            'new_values'  => $request->except(['_token', 'LOGO']),
+        ]);
+
         $message['status_code'] = "1";
 //        $message = [
 //            "message" => "Inventory Setup Details Added Succesfully",
@@ -92,6 +114,17 @@ class inventory_master_setupController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
+        $validator = Validator::make($request->all(), [
+            'PO_NO_PREFIX' => 'required|string|max:50',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_inventory_master_setup.index", $message, "redirect");
+        }
+
         $inventory = [
             'GST_REGISTRATION_NO'          => $request->get('GST_REGISTRATION_NO'),
             'GST_REGISTRATION_DATE'        => $request->get('GST_REGISTRATION_DATE'),
@@ -114,6 +147,14 @@ class inventory_master_setupController extends Controller
 
         inventory_master_setupModel::where(["ID" => $id])->update($inventory);
 
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_master_setup_update',
+            'entity_type' => 'inventory_master_setup',
+            'entity_id'   => $id,
+            'new_values'  => $inventory,
+        ]);
+
         $message['status_code'] = "1";
         $message = [
             "message" => "Inventory Setup Details Updated Successfully",
@@ -127,6 +168,14 @@ class inventory_master_setupController extends Controller
     {
         $type = $request->input('type');
         inventory_master_setupModel::where(["ID" => $id])->delete();
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_master_setup_delete',
+            'entity_type' => 'inventory_master_setup',
+            'entity_id'   => $id,
+        ]);
+
         $message['status_code'] = "1";
         $message = [
             "message" => "Inventory Setup Details Deleted Successfully",

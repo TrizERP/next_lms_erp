@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\TalentManagement\Recruitment;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\settings\organizationDetails;
 use App\Models\TalentManagement\TalentJobApplication;
 use App\Models\TalentManagement\TalentJobPosting;
@@ -16,6 +17,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\View;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 
 /**
  * Ported 1:1 from hp_erp's `App\Http\Controllers\talent\TalentOfferController`.
@@ -25,6 +27,8 @@ use Illuminate\Support\Facades\View;
  */
 class OfferController extends Controller
 {
+    use RequiresTalentAdmin;
+
     private function subInstituteId(): int
     {
         return (int) session()->get('sub_institute_id');
@@ -54,6 +58,8 @@ class OfferController extends Controller
      */
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $subInstituteId = $this->subInstituteId();
 
         $org = organizationDetails::where('sub_institute_id', $subInstituteId)->first();
@@ -102,6 +108,21 @@ class OfferController extends Controller
             if ($offer->save()) {
                 DB::table('talent_offers')->where('id', $offer->id)->update(['updated_at' => null]);
 
+                AuditLog::record([
+                    'module' => 'talent_management',
+                    'action' => 'offer_created',
+                    'entity_type' => 'offer',
+                    'entity_id' => $offer->id,
+                    'new_values' => [
+                        'application_id' => $offer->application_id,
+                        'job_id' => $offer->job_id,
+                        'position' => $offer->position,
+                        'salary' => $offer->salary,
+                        'start_date' => $offer->start_date,
+                        'status' => $offer->status,
+                    ],
+                ]);
+
                 $existingOffers = TalentOffer::where('application_id', $request->application_id)
                     ->whereNotNull('offer_letter_url')
                     ->where('id', '!=', $offer->id)
@@ -115,6 +136,17 @@ class OfferController extends Controller
                             Storage::disk('digitalocean')->delete($file_path);
                             Log::info('Deleted old offer letter: ' . $file_path);
                             $existingOffer->delete();
+
+                            AuditLog::record([
+                                'module' => 'talent_management',
+                                'action' => 'offer_superseded',
+                                'entity_type' => 'offer',
+                                'entity_id' => $existingOffer->id,
+                                'new_values' => [
+                                    'reason' => 'superseded_by_new_offer',
+                                    'new_offer_id' => $offer->id,
+                                ],
+                            ]);
                         } catch (\Exception $e) {
                             Log::error('Failed to delete old offer letter: ' . $e->getMessage());
                         }
@@ -173,6 +205,16 @@ class OfferController extends Controller
                         $url = 'https://' . env('DO_SPACES_BUCKET') . '.' . env('DO_SPACES_REGION') . '.digitaloceanspaces.com/' . $file_path;
                         $offer->offer_letter_url = $url;
                         $offer->save();
+
+                        AuditLog::record([
+                            'module' => 'talent_management',
+                            'action' => 'offer_letter_generated',
+                            'entity_type' => 'offer',
+                            'entity_id' => $offer->id,
+                            'new_values' => [
+                                'offer_letter_url' => $offer->offer_letter_url,
+                            ],
+                        ]);
                     }
 
                     if (!\App\Support\MailGate::allowed()) {
@@ -186,6 +228,17 @@ class OfferController extends Controller
                     $offer->status = 'sent';
                     $offer->sent_at = now();
                     $offer->save();
+
+                    AuditLog::record([
+                        'module' => 'talent_management',
+                        'action' => 'offer_sent',
+                        'entity_type' => 'offer',
+                        'entity_id' => $offer->id,
+                        'new_values' => [
+                            'status' => $offer->status,
+                            'sent_at' => $offer->sent_at,
+                        ],
+                    ]);
                 }
 
                 return response()->json([
@@ -240,6 +293,8 @@ class OfferController extends Controller
      */
     public function reject(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         try {
             $offer = TalentOffer::find($id);
 
@@ -256,6 +311,18 @@ class OfferController extends Controller
                 ->update(['status' => 'rejected']);
             $offer->rejected_at = now();
             $offer->save();
+
+            AuditLog::record([
+                'module' => 'talent_management',
+                'action' => 'offer_rejected',
+                'entity_type' => 'offer',
+                'entity_id' => $offer->id,
+                'new_values' => [
+                    'status' => $offer->status,
+                    'rejected_at' => $offer->rejected_at,
+                    'application_id' => $offer->application_id,
+                ],
+            ]);
 
             return response()->json([
                 'status' => 1,

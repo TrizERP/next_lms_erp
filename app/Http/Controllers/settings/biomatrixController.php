@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\settings;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 class biomatrixController extends Controller
@@ -34,6 +36,18 @@ class biomatrixController extends Controller
     public function store(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $type = $request->input('type');
+
+        $validator = Validator::make($request->all(), [
+            'biomatrix_id' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $res['status_code'] = "0";
+            $res['message'] = $validator->messages()->first();
+
+            return is_mobile($type, "biomatrix.index", $res);
+        }
 
         $data = [
             'biomatrix_id'     => $request['biomatrix_id'],
@@ -41,11 +55,18 @@ class biomatrixController extends Controller
         ];
 
         DB::table('biomatrix')->insert($data);
+        $biomatrix_id = DB::getPdo()->lastInsertId();
+
+        AuditLog::record([
+            'module' => 'settings',
+            'action' => 'biomatrix_store',
+            'entity_type' => 'biomatrix',
+            'entity_id' => $biomatrix_id,
+            'new_values' => $data,
+        ]);
 
         $res['status_code'] = "1";
         $res['message'] = "Biomatrix added successfully";
-
-        $type = $request->input('type');
 
         return is_mobile($type, "biomatrix.index", $res);
     }
@@ -61,6 +82,19 @@ class biomatrixController extends Controller
     public function update(Request $request, $id)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
+        $type = $request->input('type');
+
+        $validator = Validator::make($request->all(), [
+            'biomatrix_id' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $res['status_code'] = "0";
+            $res['message'] = $validator->messages()->first();
+
+            return is_mobile($type, "biomatrix.index", $res, "redirect");
+        }
+
         $data = [
             'biomatrix_id'     => $request['biomatrix_id'],
             'sub_institute_id' => $sub_institute_id,
@@ -68,11 +102,18 @@ class biomatrixController extends Controller
 
         DB::table('biomatrix')->where(["id" => $id])->update($data);
 
+        AuditLog::record([
+            'module' => 'settings',
+            'action' => 'biomatrix_update',
+            'entity_type' => 'biomatrix',
+            'entity_id' => $id,
+            'new_values' => $data,
+        ]);
+
         $res = [
             "status_code" => 1,
             "message"     => "Data Saved",
         ];
-        $type = $request->input('type');
 
         return is_mobile($type, "biomatrix.index", $res, "redirect");
     }
@@ -80,6 +121,14 @@ class biomatrixController extends Controller
     public function destroy(Request $request, $id)
     {
         DB::table('biomatrix')->where('id', $id)->delete();
+
+        AuditLog::record([
+            'module' => 'settings',
+            'action' => 'biomatrix_delete',
+            'entity_type' => 'biomatrix',
+            'entity_id' => $id,
+        ]);
+
         $res['status_code'] = "1";
         $res['message'] = "Biomatrix Setting deleted successfully";
         $type = "";

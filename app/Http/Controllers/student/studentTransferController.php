@@ -38,7 +38,7 @@ class studentTransferController extends Controller
     {
         $type = $request->input('type');
         $submit = $request->input('submit');
-        $sub_institute_id = session()->get('sub_institute_id') ?: $request->input('sub_institute_id');
+        $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear') ?: $request->input('syear');
         $res['status'] = 1;
         $res['message'] = "Success";
@@ -69,7 +69,7 @@ class studentTransferController extends Controller
      */
     public function create(Request $request)
     {
-        $from_sub_institute_id = session()->get('sub_institute_id') ?: $request->input('sub_institute_id');
+        $from_sub_institute_id = session()->get('sub_institute_id');
         $from_sub_institute_name = $request->input('from_institute_name');
         $from_client_id = $request->input('from_client_id');
         $from_syear = $request->input('from_syear');
@@ -143,7 +143,7 @@ class studentTransferController extends Controller
      */
     public function store(Request $request)
     {
-        $from_sub_institute_id = session()->get('sub_institute_id') ?: $request->input('sub_institute_id');
+        $from_sub_institute_id = session()->get('sub_institute_id');
         $from_syear = $request->get('from_syear');
         $from_grade = $request->get('grade');
         $from_standard = $request->get('standard');
@@ -538,7 +538,7 @@ class studentTransferController extends Controller
     public function DocumentTypeDetails(Request $request){
    
     $type = $request->type;
-    $sub_institute_id = $request->sub_institute_id;
+    $sub_institute_id = session()->get('sub_institute_id');
     $document_type = $request->document_type;
     $student_id = $request->student_id;
         if(!isset($type) || $type != 'API'){

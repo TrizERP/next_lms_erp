@@ -8,6 +8,7 @@ use function App\Helpers\is_mobile;
 use DB;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Support\Facades\Validator;
+use App\Models\AuditLog;
 
 class departmentController extends Controller
 {
@@ -104,6 +105,16 @@ class departmentController extends Controller
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
 
+        $validator = Validator::make($request->all(), [
+            'department_name' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            $res['status_code'] = 0;
+            $res['message'] = $validator->messages()->first();
+            return is_mobile($type, "add_department.create", $res);
+        }
+
         $department_name = $request->department_name;
         $roles_responsibility = $request->roles_responsibility;
         $is_calculated = $request->is_calculated;
@@ -119,7 +130,7 @@ class departmentController extends Controller
 
         if(empty($check)){
             $i=1;
-            $insert = DB::table('hrms_departments')->insert([
+            $insertData = [
                 'department'=>$department_name,
                 'parent_id'=>$parent_id,
                 'tasks'=>$task,
@@ -127,6 +138,15 @@ class departmentController extends Controller
                 'status'=>1,
                 'is_calculated'=>$is_calculated,
                 'sub_institute_id'=>$sub_institute_id
+            ];
+            $insertId = DB::table('hrms_departments')->insertGetId($insertData);
+
+            AuditLog::record([
+                'module' => 'hrms',
+                'action' => 'department_added',
+                'entity_type' => 'department',
+                'entity_id' => $insertId,
+                'new_values' => $insertData,
             ]);
         }
         if($i!=0){
@@ -145,6 +165,16 @@ class departmentController extends Controller
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
 
+        $validator = Validator::make($request->all(), [
+            'department_name' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            $res['status_code'] = 0;
+            $res['message'] = $validator->messages()->first();
+            return is_mobile($type, "add_department.create", $res);
+        }
+
         $department_name = $request->department_name;
         $roles_responsibility = $request->roles_responsibility;
         $is_calculated = $request->is_calculated;
@@ -155,7 +185,7 @@ class departmentController extends Controller
             $parent_id = $request->parentDiv;
         }
 
-        $update = DB::table('hrms_departments')->where('id',$id)->Update([
+        $updateData = [
                 'department'=>$department_name,
                 'parent_id'=>$parent_id,
                 'tasks'=>$task,
@@ -163,11 +193,20 @@ class departmentController extends Controller
                 'status'=>1,
                 'is_calculated'=>$is_calculated,
                 'sub_institute_id'=>$sub_institute_id
-            ]);
+            ];
+        $update = DB::table('hrms_departments')->where('id',$id)->Update($updateData);
 
         if($update){
             $res['status_code']=1;
             $res['message']="Updated Successfully!!";
+
+            AuditLog::record([
+                'module' => 'hrms',
+                'action' => 'department_updated',
+                'entity_type' => 'department',
+                'entity_id' => $id,
+                'new_values' => $updateData,
+            ]);
         }else{
             $res['status_code']=0;
             $res['message']="Failed to Update!!";
@@ -185,6 +224,13 @@ class departmentController extends Controller
         if($delete){
             $res['status_code']=1;
             $res['message']="Deleted Successfully!!";
+
+            AuditLog::record([
+                'module' => 'hrms',
+                'action' => 'department_deleted',
+                'entity_type' => 'department',
+                'entity_id' => $id,
+            ]);
         }else{
             $res['status_code']=0;
             $res['message']="Failed to Delete!!";
@@ -329,10 +375,7 @@ class departmentController extends Controller
             return $auth;
         }
 
-        $sub_institute_id = $request->input('sub_institute_id');
-        if (!$sub_institute_id) {
-            return response()->json(['status' => 0, 'message' => 'sub_institute_id is required'], 400);
-        }
+        $sub_institute_id = $auth;
 
         $departments = DB::table('hrms_departments')
             ->where('status', 1)
@@ -385,7 +428,18 @@ class departmentController extends Controller
             return response()->json(['status' => 0, 'message' => 'Invalid token'], 401);
         }
 
-        return true;
+        // Tenant identity must come from the verified token payload, not the
+        // client-supplied request body - these routes carry no session
+        // middleware (see routes/api.php), so a validated token from School A
+        // could otherwise still write into School B's data by putting a
+        // different sub_institute_id in the request.
+        $sub_institute_id = $this->jwtPayload('sub_institute_id', $request);
+
+        if (empty($sub_institute_id)) {
+            return response()->json(['status' => 0, 'message' => 'Invalid token payload'], 401);
+        }
+
+        return $sub_institute_id;
     }
 
     /**
@@ -419,7 +473,7 @@ class departmentController extends Controller
             ], 400);
         }
 
-        $sub_institute_id = $request->sub_institute_id;
+        $sub_institute_id = $auth;
         $department = $request->department;
         $parent_id = $request->parent_id ?? 0;
         $user_id = $request->user_id;
@@ -441,7 +495,7 @@ class departmentController extends Controller
         // created_by/updated_by columns (see SHOW CREATE TABLE) - user_id is
         // still required/validated above to match hp_erp's contract, but is
         // not persisted since there's no column for it here.
-        $departmentId = DB::table('hrms_departments')->insertGetId([
+        $insertData = [
             'department' => $department,
             'parent_id' => $parent_id,
             'tasks' => null,
@@ -449,6 +503,15 @@ class departmentController extends Controller
             'status' => 1,
             'sub_institute_id' => $sub_institute_id,
             'created_at' => now(),
+        ];
+        $departmentId = DB::table('hrms_departments')->insertGetId($insertData);
+
+        AuditLog::record([
+            'module' => 'hrms',
+            'action' => 'department_management_added',
+            'entity_type' => 'department',
+            'entity_id' => $departmentId,
+            'new_values' => $insertData,
         ]);
 
         return response()->json([
@@ -486,20 +549,29 @@ class departmentController extends Controller
             ], 400);
         }
 
-        $sub_institute_id = $request->sub_institute_id;
+        $sub_institute_id = $auth;
         $department = $request->department;
         $user_id = $request->user_id;
 
         // See storeManagement() note above: no updated_by column on this table.
+        $updateData = [
+                'department' => $department,
+                'updated_at' => now(),
+            ];
         $update = DB::table('hrms_departments')
             ->where('id', $id)
             ->where('sub_institute_id', $sub_institute_id)
-            ->update([
-                'department' => $department,
-                'updated_at' => now(),
-            ]);
+            ->update($updateData);
 
         if ($update) {
+            AuditLog::record([
+                'module' => 'hrms',
+                'action' => 'department_management_updated',
+                'entity_type' => 'department',
+                'entity_id' => $id,
+                'new_values' => $updateData,
+            ]);
+
             return response()->json([
                 'status' => 1,
                 'message' => 'Department updated successfully'
@@ -529,11 +601,7 @@ class departmentController extends Controller
             return $auth;
         }
 
-        $sub_institute_id = $request->input('sub_institute_id');
-
-        if (!$sub_institute_id) {
-            return response()->json(['status' => 0, 'message' => 'sub_institute_id is required'], 400);
-        }
+        $sub_institute_id = $auth;
 
         $update = DB::table('hrms_departments')
             ->where('id', $id)
@@ -543,12 +611,20 @@ class departmentController extends Controller
             ->update(['status' => '', 'deleted_at' => now()]);
 
         // Soft delete direct subdepartments only.
-        DB::table('hrms_departments')
+        $subUpdated = DB::table('hrms_departments')
             ->where('parent_id', $id)
             ->where('sub_institute_id', $sub_institute_id)
             ->update(['status' => '', 'deleted_at' => now()]);
 
         if ($update) {
+            AuditLog::record([
+                'module' => 'hrms',
+                'action' => 'department_management_deleted',
+                'entity_type' => 'department',
+                'entity_id' => $id,
+                'new_values' => ['status' => '', 'sub_departments_updated' => $subUpdated],
+            ]);
+
             return response()->json([
                 'status' => 1,
                 'message' => 'Department and its subdepartments deleted successfully'

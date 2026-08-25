@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\api\TaskManagement;
 
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TaskManagement\Concerns\ResolvesTaskManagementContext;
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -28,9 +30,12 @@ use Illuminate\Support\Facades\DB;
 class JobRoleTaskLibraryController extends Controller
 {
     use ResolvesTaskManagementContext;
+    use RequiresTalentAdmin;
 
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->taskManagementContext($request);
 
         $task = trim((string) $request->input('task'));
@@ -60,6 +65,18 @@ class JobRoleTaskLibraryController extends Controller
             'created_by' => $context['user_id'],
             'created_at' => now(),
             'updated_at' => now(),
+        ]);
+
+        AuditLog::record([
+            'module' => 'task_management',
+            'action' => 'jobrole_task_library.store',
+            'entity_type' => 's_user_jobrole_task',
+            'entity_id' => $id,
+            'new_values' => [
+                'jobrole' => $jobrole,
+                'task' => $task,
+                'task_type' => $taskType !== '' ? $taskType : null,
+            ],
         ]);
 
         return $this->taskManagementResponse(['id' => $id], 'Added to the job role task library.', 201);

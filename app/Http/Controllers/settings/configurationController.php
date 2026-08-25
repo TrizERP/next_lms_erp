@@ -39,7 +39,7 @@ class configurationController extends Controller
                     'user_profile_id' => 'required|numeric',
                 ]);
     
-                $sub_institute_id = $request->get('sub_institute_id');
+                $sub_institute_id = session()->get('sub_institute_id');
                 $user_profile_id = $request->get('user_profile_id');
                 // validation check only for API and JSON
                 if ($validator->fails()) {
@@ -114,7 +114,7 @@ class configurationController extends Controller
                     'user_profile_id' => 'required|numeric',
                 ]);
     
-                $sub_institute_id = $request->get('sub_institute_id');
+                $sub_institute_id = session()->get('sub_institute_id');
                 $user_profile_id = $request->get('user_profile_id');
                 // validation check only for API and JSON
                 if ($validator->fails()) {
@@ -163,7 +163,7 @@ class configurationController extends Controller
                     'formType' => 'required',
                 ]);
     
-                $sub_institute_id = $request->get('sub_institute_id');
+                $sub_institute_id = session()->get('sub_institute_id');
                 $user_profile_id = $request->get('user_profile_id');
                 // validation check only for API and JSON
                 if ($validator->fails()) {
@@ -233,7 +233,7 @@ class configurationController extends Controller
                     'user_profile_id' => 'required|numeric',
                 ]);
     
-                $sub_institute_id = $request->get('sub_institute_id');
+                $sub_institute_id = session()->get('sub_institute_id');
                 $user_profile_id = $request->get('user_profile_id');
                 // validation check only for API and JSON
                 if ($validator->fails()) {
@@ -285,7 +285,7 @@ class configurationController extends Controller
                     'user_profile_id' => 'required|numeric',
                 ]);
     
-                $sub_institute_id = $request->get('sub_institute_id');
+                $sub_institute_id = session()->get('sub_institute_id');
                 $user_profile_id = $request->get('user_profile_id');
                 // validation check only for API and JSON
                 if ($validator->fails()) {
@@ -349,7 +349,7 @@ class configurationController extends Controller
                     'masterType'=>'required',
                 ]);
     
-                $sub_institute_id = $request->get('sub_institute_id');
+                $sub_institute_id = session()->get('sub_institute_id');
                 $user_profile_id = $request->get('user_profile_id');
                 // validation check only for API and JSON
                 if ($validator->fails()) {
@@ -429,7 +429,7 @@ class configurationController extends Controller
                     'main_menu_id' => 'required|numeric',
                 ]);
 
-                $sub_institute_id = $request->get('sub_institute_id');
+                $sub_institute_id = session()->get('sub_institute_id');
                 $user_profile_id = $request->get('user_profile_id');
                 // validation check only for API and JSON
                 if ($validator->fails()) {
@@ -618,7 +618,7 @@ class configurationController extends Controller
                     'user_profile_id' => 'required|numeric',
                 ]);
 
-                $sub_institute_id = $request->get('sub_institute_id');
+                $sub_institute_id = session()->get('sub_institute_id');
                 $user_profile_id = $request->get('user_profile_id');
                 // validation check only for API and JSON
                 if ($validator->fails()) {

@@ -203,12 +203,20 @@ class studentBulkUpdateController extends Controller
                                 $alreadyInactive[] = $get_student_detail;
                             }
 
-                            if(isset($get_student_detail->id)) 
+                            if(isset($get_student_detail->id))
                             {
                                 DB::table('tblstudent_enrollment')->where('id', $get_student_detail->id)->where('sub_institute_id', $sub_institute_id)->update([
                                     'end_date' => null,
                                     'updated_on' => $now,
-                                ]); 
+                                ]);
+
+                                // Mirrors tblstudentController::destroy() so a student re-activated
+                                // via this bulk Excel path is consistently active again (DATA-01).
+                                if (isset($get_student_detail->student_id)) {
+                                    DB::table('tblstudent')->where('id', $get_student_detail->student_id)->where('sub_institute_id', $sub_institute_id)->update([
+                                        'status' => 1,
+                                    ]);
+                                }
 
                                 // Delete Excel sheet
                                 $filePath = 'public/student_active_inactive_list/student_active_inactive_list_' . $timestamp . '.' . $ext;
@@ -234,12 +242,22 @@ class studentBulkUpdateController extends Controller
                                 $alreadyInactive[] = $get_student_detail;
                             }
 
-                            if(isset($get_student_detail->id)) 
+                            if(isset($get_student_detail->id))
                             {
                                 DB::table('tblstudent_enrollment')->where('id', $get_student_detail->id)->where('sub_institute_id', $sub_institute_id)->update([
                                     'end_date' => $now,
                                     'updated_on' => $now,
-                                ]); 
+                                ]);
+
+                                // DATA-01: mirror tblstudentController::destroy() so a student
+                                // deactivated via this bulk Excel path also has tblstudent.status
+                                // flipped — otherwise reports that filter on status = 1 (e.g. fee
+                                // defaulter lists) keep showing them as active.
+                                if (isset($get_student_detail->student_id)) {
+                                    DB::table('tblstudent')->where('id', $get_student_detail->student_id)->where('sub_institute_id', $sub_institute_id)->update([
+                                        'status' => 0,
+                                    ]);
+                                }
 
                                 // Delete Excel sheet
                                 $filePath = 'public/student_active_inactive_list/student_active_inactive_list_' . $timestamp . '.' . $ext;

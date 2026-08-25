@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\TalentManagement\Recruitment;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\TalentEvaluationForm;
 use App\Models\TalentManagement\TalentInterviewSchedule;
 use App\Models\TalentManagement\TalentJobApplication;
@@ -11,6 +12,7 @@ use App\Models\TalentManagement\TalentOffer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 
 /**
  * Ported 1:1 from hp_erp's `App\Http\Controllers\talent\talent_jobpostingcontroller`.
@@ -35,6 +37,8 @@ use Illuminate\Support\Facades\Validator;
  */
 class JobPostingController extends Controller
 {
+    use RequiresTalentAdmin;
+
     /** Tenant context, taken from the JWT-hydrated session only. */
     private function subInstituteId(): int
     {
@@ -87,6 +91,8 @@ class JobPostingController extends Controller
      */
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $subInstituteId = $this->subInstituteId();
 
         $validator = Validator::make($request->all(), [
@@ -137,6 +143,19 @@ class JobPostingController extends Controller
             $objtalent->created_by = $this->actorId();
 
             if ($objtalent->save()) {
+                AuditLog::record([
+                    'module' => 'talent_management',
+                    'action' => 'job_posting_created',
+                    'entity_type' => 'job_posting',
+                    'entity_id' => $objtalent->id,
+                    'new_values' => [
+                        'title' => $objtalent->title,
+                        'department_id' => $objtalent->department_id,
+                        'positions' => $objtalent->positions,
+                        'status' => $objtalent->status,
+                    ],
+                ]);
+
                 return response()->json(['message' => 'added successfully !!', 'data' => $objtalent], 200);
             }
 
@@ -247,6 +266,8 @@ class JobPostingController extends Controller
      */
     public function update(Request $request, string $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $subInstituteId = $this->subInstituteId();
 
         $exists = TalentJobPosting::where([
@@ -285,6 +306,21 @@ class JobPostingController extends Controller
             'updated_at' => now(),
         ]);
 
+        if ($updated) {
+            AuditLog::record([
+                'module' => 'talent_management',
+                'action' => 'job_posting_updated',
+                'entity_type' => 'job_posting',
+                'entity_id' => $id,
+                'new_values' => [
+                    'title' => $request->title,
+                    'department_id' => $request->department_id,
+                    'positions' => $request->positions,
+                    'status' => $request->status,
+                ],
+            ]);
+        }
+
         return response()->json([
             'message' => $updated ? 'Updated successfully' : 'Failed to update',
             'data' => $id,
@@ -298,6 +334,8 @@ class JobPostingController extends Controller
      */
     public function destroy(Request $request, string $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $subInstituteId = $this->subInstituteId();
 
         try {
@@ -332,6 +370,16 @@ class JobPostingController extends Controller
             ]);
 
             if ($delete) {
+                AuditLog::record([
+                    'module' => 'talent_management',
+                    'action' => 'job_posting_deleted',
+                    'entity_type' => 'job_posting',
+                    'entity_id' => $id,
+                    'new_values' => [
+                        'cascaded' => ['evaluation_forms', 'interview_schedules', 'job_applications', 'offers'],
+                    ],
+                ]);
+
                 return response()->json(['message' => 'Job posting and related data deleted successfully'], 200);
             }
 

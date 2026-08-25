@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\lms\pal;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
 use function App\Helpers\MappedStdDiv;
@@ -13,12 +14,17 @@ class resultPersonalizeMarksController extends Controller
 {
     public function index(Request $request){
         $type= $request->type;
-        if($type!='API' && $type!='noLog'){
-            $sub_institute_id = session()->get('sub_institute_id');
-            $syear = session()->get('syear');
-        }else{
+        if($type=='noLog'){
+            // 'noLog' is a session-bootstrap path that intentionally seeds the
+            // session from client-supplied values below; it is left as-is.
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
+        }else{
+            // sub_institute_id must come from the authenticated session (hydrated
+            // from a verified JWT for type=API) rather than the client-supplied
+            // request value, which is spoofable.
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = session()->get('syear');
         }
         if($type=='noLog'){
             session()->put('sub_institute_id',$sub_institute_id);
@@ -37,7 +43,7 @@ class resultPersonalizeMarksController extends Controller
         $grade_id = $request->grade;
         $standard_id = $request->standard;
         $division_id =$request->division;
-        $sub_institute_id = $request->sub_institute_id;
+        $sub_institute_id = session()->get('sub_institute_id');
         $syear = $request->syear;
 
         $getStudentLists = SearchStudent($grade_id,$standard_id,$division_id,$sub_institute_id,$syear);
@@ -47,7 +53,7 @@ class resultPersonalizeMarksController extends Controller
     public function store(Request $request){
         // echo "<pre>";print_r($request->all());exit;
         $type= $request->type;
-        $sub_institute_id = $request->get('sub_institute_id');
+        $sub_institute_id = session()->get('sub_institute_id');
         $syear = $request->get('syear');
         $std_div = $request->std_div;
         $student_name = $request->student_name;
@@ -83,13 +89,22 @@ class resultPersonalizeMarksController extends Controller
         // echo "<pre>";print_r($addedData);exit;
         $res['StudentData']=$addedData;
         // $check_data = DB::table()->get()->toArray();
-        return is_mobile($type, 'result_personalize_marks.index', $res, "redirect");                        
+        if ($res['status_code'] == 1 && ! empty($addedData)) {
+            AuditLog::record([
+                'module' => 'result',
+                'action' => 'personalize_marks_entry',
+                'entity_type' => 'result_personalize_marks',
+                'entity_id' => $sub_institute_id,
+                'new_values' => $addedData,
+            ]);
+        }
+        return is_mobile($type, 'result_personalize_marks.index', $res, "redirect");
     }
 
     public function resultPersonalMarksApi(Request $request){
         $type= $request->type;
         if($type=='API'){
-            $sub_institute_id = $request->get('sub_institute_id');
+            $sub_institute_id = session()->get('sub_institute_id');
             $syear = $request->get('syear');
         }else{
             $sub_institute_id = session()->get('sub_institute_id');
@@ -107,14 +122,14 @@ class resultPersonalizeMarksController extends Controller
     public function questionListsAPI(Request $request){
         $type= $request->type;
         if($type=='API'){
-            $sub_institute_id = $request->get('sub_institute_id');
+            $sub_institute_id = session()->get('sub_institute_id');
             $syear = $request->get('syear');
         }else{
             $sub_institute_id = session()->get('sub_institute_id');
             $syear = session()->get('syear');
         }
 
-        $grade_id = $res['grade_id'] = $request->grade_id;        
+        $grade_id = $res['grade_id'] = $request->grade_id;
         $standard_id = $res['standard_id'] = $request->standard_id;
         $subject_id = $res['subject_id']= $request->subject_id;
         $chapter_id = $res['chapter_id']= $request->chapter_id;

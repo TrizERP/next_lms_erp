@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\inventory\inventory_item_category_masterModel;
 use App\Models\inventory\inventory_item_direct_purchaseModel;
 use App\Models\inventory\inventory_item_masterModel;
@@ -11,6 +12,7 @@ use App\Models\inventory\inventory_master_setupModel;
 use App\Models\inventory\inventory_vendor_masterModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 class inventory_item_direct_purchaseController extends Controller
@@ -92,6 +94,18 @@ class inventory_item_direct_purchaseController extends Controller
         $created_ip = $_SERVER['REMOTE_ADDR'];
         $items = $request->get('item_id');
 
+        $validator = Validator::make($request->all(), [
+            'vendor_id' => 'required|integer',
+            'item_id'   => 'required|array|min:1',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_item_direct_purchase.index", $message, "redirect");
+        }
+
         foreach ($items as $key => $val) {
             $category_id = $request->input("category_id.$key", null);
             $sub_category_id = $request->input("sub_category_id.$key", null);
@@ -137,6 +151,14 @@ class inventory_item_direct_purchaseController extends Controller
                 inventory_item_masterModel::where(["id" => $request->get('item_id')[$key]])->update($item_stock);
             }
         }
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_direct_purchase_store',
+            'entity_type' => 'inventory_item_direct_purchase',
+            'entity_id'   => $request->get('bill_no'),
+            'new_values'  => $request->except(['_token']),
+        ]);
 
         $message['status_code'] = "1";
         $message['message'] = "Item Direct Purchase Added Succesfully";
@@ -195,6 +217,17 @@ class inventory_item_direct_purchaseController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $items = $request->get('item_id');
 
+        $validator = Validator::make($request->all(), [
+            'item_id' => 'required|array|min:1',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_item_direct_purchase.index", $message, "redirect");
+        }
+
         foreach ($items as $key => $val) {
 
             $category_id = isset($category_ids[$key]) ? $category_ids[$key] : null;
@@ -243,6 +276,14 @@ class inventory_item_direct_purchaseController extends Controller
             }
         }
 
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_direct_purchase_update',
+            'entity_type' => 'inventory_item_direct_purchase',
+            'entity_id'   => $id,
+            'new_values'  => $request->except(['_token']),
+        ]);
+
         $message['status_code'] = "1";
         $message['message'] = "Item Direct Purchase Updated Successfully";
         $type = $request->input('type');
@@ -254,6 +295,14 @@ class inventory_item_direct_purchaseController extends Controller
     {
         $type = $request->input('type');
         inventory_item_direct_purchaseModel::where(["id" => $id])->delete();
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_direct_purchase_delete',
+            'entity_type' => 'inventory_item_direct_purchase',
+            'entity_id'   => $id,
+        ]);
+
         $message['status_code'] = "1";
         $message['message'] = "Item Direct Purchase Deleted successfully";
 

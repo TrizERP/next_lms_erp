@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\inventory\inventory_item_category_masterModel;
 use App\Models\inventory\inventory_item_masterModel;
 use App\Models\inventory\inventory_item_sub_category_masterModel;
@@ -10,6 +11,7 @@ use App\Models\inventory\inventory_item_typeModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 class inventory_item_masterController extends Controller
@@ -64,6 +66,20 @@ class inventory_item_masterController extends Controller
 
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
+        $validator = Validator::make($request->all(), [
+            'category_id'     => 'required|integer',
+            'sub_category_id' => 'required|integer',
+            'item_type_id'    => 'required|integer',
+            'title'           => 'required|string|max:255',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_inventory_item.index", $message, "redirect");
+        }
+
         $file_name = "";
         if ($request->hasFile('item_attachment')) {
             $file = $request->file('item_attachment');
@@ -88,6 +104,15 @@ class inventory_item_masterController extends Controller
         ]);
 
         $item->save();
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_master_store',
+            'entity_type' => 'inventory_item_master',
+            'entity_id'   => $item->id,
+            'new_values'  => $request->except(['_token', 'item_attachment']),
+        ]);
+
         $message['status_code'] = "1";
 //        $message = [
 //            "message" => "Inventory Item Added Succesfully",
@@ -120,6 +145,21 @@ class inventory_item_masterController extends Controller
     public function update(Request $request, $id)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
+
+        $validator = Validator::make($request->all(), [
+            'category_id'     => 'required|integer',
+            'sub_category_id' => 'required|integer',
+            'item_type_id'    => 'required|integer',
+            'title'           => 'required|string|max:255',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_inventory_item.index", $message, "redirect");
+        }
+
         $data = [
             'category_id'      => $request->get('category_id'),
             'sub_category_id'  => $request->get('sub_category_id'),
@@ -147,6 +187,14 @@ class inventory_item_masterController extends Controller
         }
         inventory_item_masterModel::where(["id" => $id])->update($data);
 
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_master_update',
+            'entity_type' => 'inventory_item_master',
+            'entity_id'   => $id,
+            'new_values'  => $data,
+        ]);
+
         $message['status_code'] = "1";
         $message = [
             "message" => "Inventory Item Updated Successfully",
@@ -160,6 +208,14 @@ class inventory_item_masterController extends Controller
     {
         $type = $request->input('type');
         inventory_item_masterModel::where(["id" => $id])->delete();
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_master_delete',
+            'entity_type' => 'inventory_item_master',
+            'entity_id'   => $id,
+        ]);
+
         $message['status_code'] = "1";
         $message = [
             "message" => "Inventory Item Deleted successfully",

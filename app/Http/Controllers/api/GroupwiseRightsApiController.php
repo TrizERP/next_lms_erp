@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -393,6 +394,14 @@ class GroupwiseRightsApiController extends Controller
                 DB::table('tblgroupwise_rights')->insert($insert);
             }
         });
+
+        AuditLog::record([
+            'module' => 'permissions',
+            'action' => 'groupwise_rights_update',
+            'entity_type' => 'tblgroupwise_rights',
+            'entity_id' => $profileId,
+            'new_values' => ['profile_id' => $profileId, 'selected' => $selected],
+        ]);
 
         return response()->json([
             'status_code' => 1,

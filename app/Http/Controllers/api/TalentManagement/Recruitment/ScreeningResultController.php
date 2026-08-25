@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\TalentManagement\Recruitment;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\TalentScreeningResult;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -60,6 +61,22 @@ class ScreeningResultController extends Controller
         $data['created_by'] = $this->actorId();
 
         $result = TalentScreeningResult::create($data);
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'screening_result_created',
+            'entity_type' => 'screening_result',
+            'entity_id' => $result->id,
+            'new_values' => [
+                'candidate_id' => $result->candidate_id,
+                'competency_match' => $result->competency_match,
+                'cultural_fit' => $result->cultural_fit,
+                'predicted_success' => $result->predicted_success,
+                'overall_fit_score' => $result->overall_fit_score,
+                'ranking_score' => $result->ranking_score,
+                'recommendation' => $result->recommendation,
+            ],
+        ]);
 
         return response()->json(['success' => true, 'data' => $result], 201);
     }

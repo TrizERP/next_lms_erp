@@ -5,6 +5,7 @@ namespace App\Http\Controllers\api\OrganizationManagement\Disciplinary;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\OrganizationManagement\StoreDisciplinaryRecordRequest;
 use App\Http\Requests\OrganizationManagement\UpdateDisciplinaryRecordRequest;
+use App\Models\AuditLog;
 use App\Models\OrganizationManagement\DisciplinaryRecord;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -118,6 +119,14 @@ class DisciplinaryLibraryController extends Controller
 
         $record = DisciplinaryRecord::create($data);
 
+        AuditLog::record([
+            'module' => 'organization_management',
+            'action' => 'disciplinary_record_created',
+            'entity_type' => 'org_disciplinary_library',
+            'entity_id' => $record->id,
+            'new_values' => $data,
+        ]);
+
         return $this->response(
             $this->present($record->fresh(['departmentData', 'employeeData', 'witnessData', 'reportByData'])),
             'Data added successfully',
@@ -142,6 +151,14 @@ class DisciplinaryLibraryController extends Controller
         $record->fill($data);
         $record->save();
 
+        AuditLog::record([
+            'module' => 'organization_management',
+            'action' => 'disciplinary_record_updated',
+            'entity_type' => 'org_disciplinary_library',
+            'entity_id' => $record->id,
+            'new_values' => $data,
+        ]);
+
         return $this->response(
             $this->present($record->fresh(['departmentData', 'employeeData', 'witnessData', 'reportByData'])),
             'Data updated successfully'
@@ -162,6 +179,13 @@ class DisciplinaryLibraryController extends Controller
         $record->deleted_by = $actorId;
         $record->save();
         $record->delete();
+
+        AuditLog::record([
+            'module' => 'organization_management',
+            'action' => 'disciplinary_record_deleted',
+            'entity_type' => 'org_disciplinary_library',
+            'entity_id' => (int) $id,
+        ]);
 
         return $this->response(['id' => (int) $id], 'Data deleted successfully');
     }

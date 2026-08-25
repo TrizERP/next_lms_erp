@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\api\TalentManagement\Recruitment;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\TalentInterviewPanel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 
 /**
  * Ported 1:1 from hp_erp's
@@ -18,6 +20,8 @@ use Illuminate\Support\Facades\DB;
  */
 class InterviewPanelController extends Controller
 {
+    use RequiresTalentAdmin;
+
     private function subInstituteId(): int
     {
         return (int) session()->get('sub_institute_id');
@@ -117,6 +121,8 @@ class InterviewPanelController extends Controller
      */
     public function storeinterviewer(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $subInstituteId = $this->subInstituteId();
 
         $request->validate([
@@ -147,6 +153,18 @@ class InterviewPanelController extends Controller
             'created_by' => $this->actorId(),
         ]);
 
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'interview_panel_created',
+            'entity_type' => 'interview_panel',
+            'entity_id' => $panel->id,
+            'new_values' => [
+                'panel_name' => $request->panel_name,
+                'target_positions' => $request->target_positions,
+                'status' => $request->status ?? 'available',
+            ],
+        ]);
+
         return response()->json([
             'message' => 'Interview Panel Created Successfully',
             'data' => $panel,
@@ -159,6 +177,8 @@ class InterviewPanelController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $panel = TalentInterviewPanel::find($id);
         if (!$panel) {
             return response()->json(['message' => 'Interview Panel Not Found'], 404);
@@ -191,6 +211,18 @@ class InterviewPanelController extends Controller
             'updated_at' => now(),
         ]);
 
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'interview_panel_updated',
+            'entity_type' => 'interview_panel',
+            'entity_id' => $panel->id,
+            'new_values' => [
+                'panel_name' => $request->panel_name,
+                'target_positions' => $request->target_positions,
+                'status' => $request->status ?? 'available',
+            ],
+        ]);
+
         return response()->json([
             'message' => 'Interview Panel Updated Successfully',
             'data' => $panel,
@@ -203,6 +235,8 @@ class InterviewPanelController extends Controller
      */
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $panel = TalentInterviewPanel::find($id);
 
         if (!$panel) {
@@ -211,6 +245,16 @@ class InterviewPanelController extends Controller
 
         $panel->update(['deleted_by' => $this->actorId()]);
         $panel->delete();
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'interview_panel_deleted',
+            'entity_type' => 'interview_panel',
+            'entity_id' => $panel->id,
+            'new_values' => [
+                'panel_name' => $panel->panel_name,
+            ],
+        ]);
 
         return response()->json([
             'message' => 'Interview Panel Deleted Successfully',

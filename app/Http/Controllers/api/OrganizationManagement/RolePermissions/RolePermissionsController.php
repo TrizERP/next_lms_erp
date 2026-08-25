@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\OrganizationManagement\RolePermissions;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\user\tbluserModel;
 use App\Models\user\tbluserprofilemasterModel;
 use Illuminate\Http\Request;
@@ -50,6 +51,30 @@ class RolePermissionsController extends Controller
     }
 
     /**
+     * Roles and their rights (can_add/can_edit/can_delete/dashboard_right)
+     * are institute-wide privilege grants, so only a Super Admin caller
+     * (session `is_admin` 1 or 2 — see
+     * App\Http\Middleware\Concerns\HydratesLegacyApiSession, the same
+     * convention that stamps `user_profile_name = 'Super Admin'`) may create
+     * a role or change what a role can do. This module has no separate
+     * admin-equivalent role concept of its own to anchor the check to, so
+     * `is_admin` is used directly.
+     */
+    private function assertIsAdmin(): ?\Illuminate\Http\JsonResponse
+    {
+        $isAdmin = (int) session()->get('is_admin');
+
+        if ($isAdmin === 1 || $isAdmin === 2) {
+            return null;
+        }
+
+        return response()->json([
+            'status_code' => 0,
+            'message' => 'You are not authorized to manage roles and permissions',
+        ], 403);
+    }
+
+    /**
      * GET /organization-management/role-permissions/roles
      * Ported from displayUserProfilesG2g - every active role of the tenant,
      * with how many users currently sit on it.
@@ -92,6 +117,10 @@ class RolePermissionsController extends Controller
      */
     public function storeRole(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) {
+            return $response;
+        }
+
         $subInstituteId = $this->tenant();
 
         $validator = Validator::make($request->all(), [
@@ -117,6 +146,19 @@ class RolePermissionsController extends Controller
             'client_id' => $subInstituteId,
             'role_key' => $request->input('role_key'),
             'data_scope' => $request->input('data_scope'),
+        ]);
+
+        AuditLog::record([
+            'module' => 'permissions',
+            'action' => 'role_created',
+            'entity_type' => 'tbluserprofilemaster',
+            'entity_id' => $profile->id,
+            'new_values' => [
+                'name' => $profile->name,
+                'description' => $profile->description,
+                'role_key' => $profile->role_key,
+                'data_scope' => $profile->data_scope,
+            ],
         ]);
 
         return response()->json([
@@ -188,6 +230,10 @@ class RolePermissionsController extends Controller
      */
     public function store(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) {
+            return $response;
+        }
+
         $subInstituteId = $this->tenant();
 
         $profile = tbluserprofilemasterModel::where('sub_institute_id', $subInstituteId)->find($id);
@@ -240,6 +286,14 @@ class RolePermissionsController extends Controller
                 DB::table('tblgroupwise_rights')->insert($chunk);
             }
         });
+
+        AuditLog::record([
+            'module' => 'permissions',
+            'action' => 'role_rights_update',
+            'entity_type' => 'tblgroupwise_rights',
+            'entity_id' => (int) $id,
+            'new_values' => ['profile_id' => (int) $id, 'rights' => $rows],
+        ]);
 
         return response()->json([
             'status_code' => 1,

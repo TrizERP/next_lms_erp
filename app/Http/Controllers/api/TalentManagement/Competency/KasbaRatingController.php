@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api\TalentManagement\Competency;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TalentManagement\Competency\Concerns\ResolvesCompetencyContext;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -33,6 +35,7 @@ use Illuminate\Support\Facades\Validator;
 class KasbaRatingController extends Controller
 {
     use ResolvesCompetencyContext;
+    use RequiresTalentAdmin;
 
     /** 1..5. Zero is deliberately not a rating - it would collide with "unrated". */
     private const MIN = 1;
@@ -127,6 +130,8 @@ class KasbaRatingController extends Controller
      */
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -171,6 +176,19 @@ class KasbaRatingController extends Controller
             ]
         );
 
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'kasba_rating.saved',
+            'entity_type' => 'kasba_rating',
+            'entity_id'   => $itemId,
+            'new_values'  => [
+                'user_id'       => $subject,
+                'kasba_item_id' => $itemId,
+                'rating'        => $request->integer('rating'),
+                'note'          => $request->input('note'),
+            ],
+        ]);
+
         return response()->json([
             'status'  => 1,
             'message' => 'Rating saved.',
@@ -184,6 +202,8 @@ class KasbaRatingController extends Controller
      */
     public function destroy(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -202,6 +222,19 @@ class KasbaRatingController extends Controller
             ->where('user_id', $request->integer('user_id'))
             ->where('kasba_item_id', $request->integer('kasba_item_id'))
             ->delete();
+
+        if ($deleted) {
+            AuditLog::record([
+                'module'      => 'competency_management',
+                'action'      => 'kasba_rating.deleted',
+                'entity_type' => 'kasba_rating',
+                'entity_id'   => $request->integer('kasba_item_id'),
+                'new_values'  => [
+                    'user_id'       => $request->integer('user_id'),
+                    'kasba_item_id' => $request->integer('kasba_item_id'),
+                ],
+            ]);
+        }
 
         return response()->json([
             'status'  => 1,

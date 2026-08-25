@@ -57,8 +57,10 @@ class admissionFollowUpController extends Controller
     public function store(Request $request)
     {
         $type = $request->input("type");
-        // Prefer request param (headless type=API calls) and fall back to session.
-        $sub_institute_id = $request->input('sub_institute_id') ?: $request->session()->get('sub_institute_id');
+        // SessionMiddleware validates the bearer JWT and hydrates the session for
+        // every request (including type=API), so session() is always the correct,
+        // tenant-scoped source here - never trust the client-supplied param.
+        $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get("user_id");
         $syear = $request->session()->get("syear");
         $data = $request->except(['_method', '_token', 'submit', 'type']);

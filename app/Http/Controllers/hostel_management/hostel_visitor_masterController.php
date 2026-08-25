@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\hostel_management;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\hostel_management\hostel_visitor_masterModel;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
+use function App\Helpers\ValidateInsertData;
 
 class hostel_visitor_masterController extends Controller
 {
@@ -38,6 +40,8 @@ class hostel_visitor_masterController extends Controller
 
     public function store(Request $request)
     {
+        ValidateInsertData('hostel_visitor_master', $request);
+
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $visitor = new hostel_visitor_masterModel([
             'name'             => $request->get('name'),
@@ -52,6 +56,13 @@ class hostel_visitor_masterController extends Controller
             'sub_institute_id' => $sub_institute_id,
         ]);
         $visitor->save();
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_visitor_master_store',
+            'entity_type' => 'hostel_visitor_master',
+            'entity_id' => $visitor->id,
+            'new_values' => $visitor->toArray(),
+        ]);
 
         $message['status_code'] = "1";
 //        $message = [
@@ -73,6 +84,8 @@ class hostel_visitor_masterController extends Controller
 
     public function update(Request $request, $id)
     {
+        ValidateInsertData('hostel_visitor_master', 'update');
+
         $visitor = [
             'name'        => $request->get('name'),
             'contact'     => $request->get('contact'),
@@ -86,6 +99,13 @@ class hostel_visitor_masterController extends Controller
         ];
 
         hostel_visitor_masterModel::where(["id" => $id])->update($visitor);
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_visitor_master_update',
+            'entity_type' => 'hostel_visitor_master',
+            'entity_id' => $id,
+            'new_values' => $visitor,
+        ]);
 
         $message['status_code'] = "1";
         $message = [
@@ -101,6 +121,12 @@ class hostel_visitor_masterController extends Controller
         $type = $request->input('type');
 
         hostel_visitor_masterModel::where(["id" => $id])->delete();
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_visitor_master_delete',
+            'entity_type' => 'hostel_visitor_master',
+            'entity_id' => $id,
+        ]);
 
         $message['status_code'] = "1";
         $message = [

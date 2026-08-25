@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -57,14 +58,27 @@ class HostelSetupApiController extends Controller
 
         // The hostel modules reuse the Browser/Next.js session context carried in
         // `user_id` + `sub_institute_id` (same shape the legacy Blade screens rely
-        // on via `is_mobile()`). We validate the JWT is present and well formed,
-        // but we trust the request context for the actor lookup instead of
-        // comparing it against the token payload — the legacy transport/hostel
-        // tokens can carry a different `sub_institute_id` representation than the
-        // active session, which previously returned "Token context does not match
-        // the request." and blocked legitimate saves.
-        $actorId = $request->integer('user_id');
-        $tenantId = $request->integer('sub_institute_id');
+        // on via `is_mobile()`). A prior version of this method trusted those
+        // request values outright, which let any holder of a *valid* JWT for one
+        // account impersonate a different active user/tenant by simply naming
+        // them here. `ApiLoginController` always embeds `id` and `sub_institute_id`
+        // in the token payload (the same fields `HydratesLegacyApiSession` relies
+        // on), so we now require the request context to match the verified token
+        // instead of trusting it outright.
+        $payload = $this->jwtPayload(null, $request);
+        $payloadUserId = $payload['id'] ?? null;
+        $payloadSubInstituteId = $payload['sub_institute_id'] ?? null;
+
+        if (empty($payloadUserId) || empty($payloadSubInstituteId)) {
+            return response()->json(['status_code' => 2, 'message' => 'Invalid token payload.', 'data' => []], 401);
+        }
+        if ((string) $payloadUserId !== (string) $request->integer('user_id')
+            || (string) $payloadSubInstituteId !== (string) $request->integer('sub_institute_id')) {
+            return response()->json(['status_code' => 2, 'message' => 'Token context does not match the request.', 'data' => []], 403);
+        }
+
+        $actorId = (int) $payloadUserId;
+        $tenantId = (int) $payloadSubInstituteId;
 
         $actor = DB::table('tbluser as user')
             ->join('tbluserprofilemaster as profile', 'profile.id', '=', 'user.user_profile_id')
@@ -353,6 +367,13 @@ class HostelSetupApiController extends Controller
             return $this->failure('Record not found.', 404);
         }
 
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_setup_'.$module.'_deleted',
+            'entity_type' => $table,
+            'entity_id' => $id,
+        ]);
+
         return response()->json(['status_code' => 1, 'message' => 'Data Deleted Successfully.', 'data' => []]);
     }
 
@@ -459,9 +480,18 @@ class HostelSetupApiController extends Controller
             if (! $updated && ! DB::table($table)->where('id', $id)->where('sub_institute_id', $tenantId)->exists()) {
                 return $this->failure('Record not found.', 404);
             }
+            $recordId = $id;
         } else {
-            DB::table($table)->insert(array_merge($values, ['created_at' => now(), 'updated_at' => now()]));
+            $recordId = DB::table($table)->insertGetId(array_merge($values, ['created_at' => now(), 'updated_at' => now()]));
         }
+
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_setup_'.$module.($id ? '_updated' : '_added'),
+            'entity_type' => $table,
+            'entity_id' => $recordId,
+            'new_values' => $values,
+        ]);
 
         return response()->json([
             'status_code' => 1,
@@ -702,9 +732,18 @@ class HostelSetupApiController extends Controller
 
         if ($existing) {
             DB::table('hostel_room_allocation')->where('id', $existing->id)->update($allocationValues);
+            $allocationId = $existing->id;
         } else {
-            DB::table('hostel_room_allocation')->insert(array_merge($identity, $allocationValues, ['created_on' => now()]));
+            $allocationId = DB::table('hostel_room_allocation')->insertGetId(array_merge($identity, $allocationValues, ['created_on' => now()]));
         }
+
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_setup_hostel-room-allocation'.($existing ? '_updated' : '_added'),
+            'entity_type' => 'hostel_room_allocation',
+            'entity_id' => $allocationId,
+            'new_values' => array_merge($identity, $allocationValues),
+        ]);
 
         return response()->json(['status_code' => 1, 'message' => 'Room Allocation Successfully', 'data' => []]);
     }

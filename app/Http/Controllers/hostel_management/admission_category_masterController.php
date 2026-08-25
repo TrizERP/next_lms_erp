@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\hostel_management;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\hostel_management\admission_category_masterModel;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
@@ -53,6 +54,13 @@ class admission_category_masterController extends Controller
             'sub_institute_id' => $sub_institute_id,
         ]);
         $admission->save();
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'admission_category_master_store',
+            'entity_type' => 'admission_category_master',
+            'entity_id' => $admission->id,
+            'new_values' => $admission->toArray(),
+        ]);
         $message['status_code'] = "1";
 //        $message = array(
 //            "message" => "Admission category Added Succesfully",
@@ -83,6 +91,13 @@ class admission_category_masterController extends Controller
         ];
 
         admission_category_masterModel::where(["id" => $id])->update($data);
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'admission_category_master_update',
+            'entity_type' => 'admission_category_master',
+            'entity_id' => $id,
+            'new_values' => $data,
+        ]);
         $message['status_code'] = "1";
         $message = [
             "message" => "Data Updated Successfully",
@@ -97,6 +112,12 @@ class admission_category_masterController extends Controller
         $type = $request->input('type');
 
         admission_category_masterModel::where(["id" => $id])->delete();
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'admission_category_master_delete',
+            'entity_type' => 'admission_category_master',
+            'entity_id' => $id,
+        ]);
 
         $message['status_code'] = "1";
         $message = [

@@ -600,13 +600,32 @@ class marks_entry_controller extends Controller
 
         $sub_institute_id = session()->get('sub_institute_id');
         $client_id = session()->get('client_id');
+        $syear = session()->get('syear');
         $all_data = [];
 
         if (isset($_REQUEST["type"]) && $_REQUEST["type"] == "API") {
-            $sub_institute_id = $_REQUEST["sub_institute_id"];
             $all_data = json_decode($_REQUEST["data"], 1);
         } else {
             $all_data = $_REQUEST['values'];
+        }
+
+        // Result-lock guard: refuse to write marks for any exam that has been locked.
+        $exam_ids_to_check = [];
+        foreach ($all_data as $arr) {
+            if (! empty($arr['exam_id'])) {
+                $exam_ids_to_check[$arr['exam_id']] = true;
+            }
+        }
+        foreach (array_keys($exam_ids_to_check) as $exam_id_to_check) {
+            if (\App\Models\ResultLock::isLocked($sub_institute_id, $syear, $exam_id_to_check)) {
+                $res = [
+                    "status_code" => 0,
+                    "message"     => "This exam's results are locked and can no longer be edited.",
+                    "class"       => "error",
+                ];
+
+                return is_mobile($request->input('type'), "marks_entry.index", $res, "redirect");
+            }
         }
 
         foreach ($all_data as $student_id => $arr) {
@@ -753,6 +772,16 @@ class marks_entry_controller extends Controller
                    "message"     => "Some marks could not be saved. Please check the entries and try again.",
                    "class"       => "error",
                ];
+           }
+
+           if (($res['status_code'] ?? 0) == 1) {
+               \App\Models\AuditLog::record([
+                   'module'      => 'result',
+                   'action'      => 'marks_entry',
+                   'entity_type' => 'marks',
+                   'entity_id'   => $student_id ?? null,
+                   'new_values'  => $arr,
+               ]);
            }
         }
 

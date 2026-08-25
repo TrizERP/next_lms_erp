@@ -76,5 +76,6 @@ class Kernel extends HttpKernel
         'check_permissions' =>\App\Http\Middleware\checkPermission::class,
         'api.session' => \App\Http\Middleware\ApiSessionHydrator::class,
         'pal.auth' => \App\Http\Middleware\PalApiAuth::class,
+        'staff.only' => \App\Http\Middleware\RequireStaffRole::class,
     ];
 }

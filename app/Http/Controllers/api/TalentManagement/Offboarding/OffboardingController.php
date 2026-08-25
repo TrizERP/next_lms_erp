@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api\TalentManagement\Offboarding;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TalentManagement\Offboarding\Concerns\ResolvesOffboardingContext;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\TalentOffboardingCase;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -22,6 +24,7 @@ use Illuminate\Support\Facades\DB;
 class OffboardingController extends Controller
 {
     use ResolvesOffboardingContext;
+    use RequiresTalentAdmin;
 
     private const SORTABLE = ['last_working_day', 'created_at', 'status', 'exit_reason'];
 
@@ -384,6 +387,8 @@ class OffboardingController extends Controller
      */
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->offboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -457,6 +462,14 @@ class OffboardingController extends Controller
             'updated_at' => now(),
         ]);
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'offboarding_case_created',
+            'entity_type' => 'offboarding_case',
+            'entity_id'   => $caseId,
+            'new_values'  => $validated,
+        ]);
+
         return $this->offboardingResponse(['id' => $caseId], 'Exit Case created successfully', 201);
     }
 
@@ -465,6 +478,8 @@ class OffboardingController extends Controller
      */
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->offboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -513,6 +528,14 @@ class OffboardingController extends Controller
             $case->activity_log = json_encode($activityLog);
             $case->updated_by = $actorId;
             $case->save();
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'offboarding_case_updated',
+                'entity_type' => 'offboarding_case',
+                'entity_id'   => $case->id,
+                'new_values'  => ['changes' => $changes],
+            ]);
         }
 
         return $this->offboardingResponse($case, 'Exit Case updated successfully');
@@ -523,6 +546,8 @@ class OffboardingController extends Controller
      */
     public function updateStatus(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->offboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -555,6 +580,14 @@ class OffboardingController extends Controller
             $case->activity_log = json_encode($activityLog);
             $case->updated_by = $actorId;
             $case->save();
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'offboarding_status_changed',
+                'entity_type' => 'offboarding_case',
+                'entity_id'   => $case->id,
+                'new_values'  => ['status' => ['old' => $oldStatus, 'new' => $validated['status']]],
+            ]);
         }
 
         return $this->offboardingResponse($case, 'Status updated successfully');
@@ -565,6 +598,8 @@ class OffboardingController extends Controller
      */
     public function updateClearance(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->offboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -615,6 +650,14 @@ class OffboardingController extends Controller
             $case->activity_log = json_encode($activityLog);
             $case->updated_by = $actorId;
             $case->save();
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'offboarding_clearance_updated',
+                'entity_type' => 'offboarding_case',
+                'entity_id'   => $case->id,
+                'new_values'  => ['tasks' => $validated['tasks']],
+            ]);
         }
 
         return $this->offboardingResponse($existingTasks, 'Clearance checklist updated successfully');
@@ -625,6 +668,8 @@ class OffboardingController extends Controller
      */
     public function updateDocuments(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->offboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -682,6 +727,14 @@ class OffboardingController extends Controller
             $case->activity_log = json_encode($activityLog);
             $case->updated_by = $actorId;
             $case->save();
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'offboarding_documents_updated',
+                'entity_type' => 'offboarding_case',
+                'entity_id'   => $case->id,
+                'new_values'  => ['documents' => $validated['documents']],
+            ]);
         }
 
         return $this->offboardingResponse($existingDocs, 'Documents updated successfully');
@@ -734,6 +787,14 @@ class OffboardingController extends Controller
         $case->updated_by = $actorId;
         $case->save();
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'offboarding_comment_added',
+            'entity_type' => 'offboarding_case',
+            'entity_id'   => $case->id,
+            'new_values'  => ['comment' => $validated['comment']],
+        ]);
+
         return $this->offboardingResponse($comments, 'Comment added successfully');
     }
 
@@ -742,6 +803,8 @@ class OffboardingController extends Controller
      */
     public function updateExitInterview(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->offboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -778,6 +841,14 @@ class OffboardingController extends Controller
         $case->updated_by = $actorId;
         $case->save();
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'offboarding_exit_interview_updated',
+            'entity_type' => 'offboarding_case',
+            'entity_id'   => $case->id,
+            'new_values'  => $validated,
+        ]);
+
         return $this->offboardingResponse($case, 'Exit interview updated successfully');
     }
 
@@ -786,6 +857,8 @@ class OffboardingController extends Controller
      */
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->offboardingContext($request);
         if (!is_array($context)) {
             return $context;
@@ -798,6 +871,14 @@ class OffboardingController extends Controller
         $case->deleted_by = $actorId;
         $case->save();
         $case->delete();
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'offboarding_case_deleted',
+            'entity_type' => 'offboarding_case',
+            'entity_id'   => (int) $id,
+            'new_values'  => [],
+        ]);
 
         return $this->offboardingResponse(['id' => (int) $id], 'Exit Case deleted/withdrawn successfully');
     }
