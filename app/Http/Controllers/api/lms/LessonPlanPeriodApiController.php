@@ -17,8 +17,9 @@ class LessonPlanPeriodApiController extends Controller
 
     /**
      * Create a scheduled lesson period. Finds (or creates) the parent
-     * lms_intelligence_lesson_plans row for this sub_institute/syear/standard/
-     * subject/division, then inserts the period under it.
+     * lms_intelligence_lesson_plans row for this sub_institute/syear/term/
+     * standard/subject/division, then inserts the period under it along with
+     * its primary concept.
      *
      * POST /api/intelligence/lesson-plan-periods
      */
@@ -34,8 +35,18 @@ class LessonPlanPeriodApiController extends Controller
             'scheduled_date'       => 'required|date',
             'period_id'            => 'required|integer',
             'period_slot'          => 'required|string|max:10',
+            // Optional so the callers that predate term-scoped plans keep working.
+            // When sent it both scopes the plan lookup and lands on a newly created
+            // plan, so the calendar - which reads with the session's term_id - finds
+            // what was just written instead of silently missing it.
+            'term_id'              => 'nullable|integer',
             'chapter_id'           => 'nullable|integer',
             'chapter_name'         => 'nullable|string|max:255',
+            'primary_concept_id'   => 'nullable|integer',
+            'primary_concept_name' => 'nullable|string|max:255',
+            'pedagogy_method'      => 'nullable|string|max:100',
+            'learning_objectives'  => 'nullable|string',
+            'period_type'          => 'nullable|in:teaching,assessment,revision,activity,lab,project,buffer',
             'teacher_notes'        => 'nullable|string',
             'planned_duration_min' => 'nullable|integer|min:1',
         ]);
@@ -45,23 +56,23 @@ class LessonPlanPeriodApiController extends Controller
         }
 
         $data = $validator->validated();
-
-        // sub_institute_id 1 only has curriculum/lesson-plan data seeded for
-        // syear 2026 - force it for that institute so the session's normal
-        // "active academic year" (which may resolve to a different year)
-        // does not create a lesson under the wrong, dataless year.
-        if ((int) $data['sub_institute_id'] === 1) {
-            $data['syear'] = 2026;
-        }
+        $termId = isset($data['term_id']) ? (int) $data['term_id'] : null;
 
         try {
-            $plan = DB::table('lms_intelligence_lesson_plans')
+            $planQuery = DB::table('lms_intelligence_lesson_plans')
                 ->where('sub_institute_id', $data['sub_institute_id'])
                 ->where('syear', $data['syear'])
                 ->where('standard_id', $data['standard_id'])
                 ->where('subject_id', $data['subject_id'])
-                ->where('division_id', $data['division_id'])
-                ->first();
+                ->where('division_id', $data['division_id']);
+
+            // uk_plan spans term_id, so a caller that knows its term has to scope
+            // by it or the period gets attached to a different term's plan.
+            if ($termId !== null) {
+                $planQuery->where('term_id', $termId);
+            }
+
+            $plan = $planQuery->first();
 
             if ($plan) {
                 $planId = $plan->id;
@@ -74,7 +85,7 @@ class LessonPlanPeriodApiController extends Controller
                 $planId = DB::table('lms_intelligence_lesson_plans')->insertGetId([
                     'sub_institute_id'    => $data['sub_institute_id'],
                     'syear'               => $data['syear'],
-                    'term_id'             => 1,
+                    'term_id'             => $termId ?? 1,
                     'standard_id'         => $data['standard_id'],
                     'subject_id'          => $data['subject_id'],
                     'division_id'         => $data['division_id'],
@@ -104,6 +115,17 @@ class LessonPlanPeriodApiController extends Controller
                 $chapterName = DB::table('chapter_master')->where('id', $data['chapter_id'])->value('chapter_name') ?? $chapterName;
             }
 
+            $conceptId = !empty($data['primary_concept_id']) ? (int) $data['primary_concept_id'] : null;
+            $conceptName = $data['primary_concept_name'] ?? null;
+
+            // learning_objectives is a json column. The dialog collects one free-text
+            // block, so it is stored as a single-element list to keep the column's
+            // shape the same as the generated plans write it.
+            $objectives = null;
+            if (!empty($data['learning_objectives'])) {
+                $objectives = json_encode([trim($data['learning_objectives'])]);
+            }
+
             $scheduledDate = Carbon::parse($data['scheduled_date']);
             $weekDay = self::WEEKDAY_LETTER[$scheduledDate->dayOfWeekIso - 1];
             $weekNumber = intdiv(Carbon::parse($termStartDate)->diffInDays($scheduledDate), 7) + 1;
@@ -118,13 +140,31 @@ class LessonPlanPeriodApiController extends Controller
                 'teacher_id'           => $data['teacher_id'],
                 'chapter_id'           => $data['chapter_id'] ?? null,
                 'chapter_name'         => $chapterName,
-                'period_type'          => 'teaching',
+                'primary_concept_id'   => $conceptId,
+                'primary_concept_name' => $conceptName,
+                'period_type'          => $data['period_type'] ?? 'teaching',
+                'pedagogy_method'      => $data['pedagogy_method'] ?? null,
+                'learning_objectives'  => $objectives,
                 'planned_duration_min' => $data['planned_duration_min'] ?? 40,
                 'status'               => 'not_started',
                 'teacher_notes'        => $data['teacher_notes'] ?? null,
                 'created_at'           => now(),
                 'updated_at'           => now(),
             ]);
+
+            // The calendar reads a lesson's coverage from this table, so a lesson
+            // created for a concept needs the link row here and not just the
+            // denormalised name on the period.
+            if ($conceptId && $conceptName) {
+                DB::table('lms_lesson_plan_concepts')->insert([
+                    'lms_lesson_plan_periods_id' => $periodId,
+                    'concept_id'                 => $conceptId,
+                    'concept_name'               => $conceptName,
+                    'is_primary'                 => 1,
+                    'coverage_percent'           => 100,
+                    'created_at'                 => now(),
+                ]);
+            }
 
             $period = DB::table('lms_lesson_plan_periods')->where('id', $periodId)->first();
 
