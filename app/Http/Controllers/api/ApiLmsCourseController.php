@@ -508,6 +508,34 @@ class ApiLmsCourseController extends Controller
         });
     }
 
+    /**
+     * The concept a generated content row was built for, read from its description.
+     *
+     * The Generate Content flow writes a "Concept Data Block" into the description
+     * but does not stamp content_master.concept_id, so for that content this text
+     * is the only record of the concept. "Not specified" is the generator's own
+     * placeholder for a concept it was never given, so it counts as no concept
+     * rather than being shown as one.
+     */
+    private function conceptNameFromDescription(?string $description): ?string
+    {
+        if (!is_string($description) || $description === '') {
+            return null;
+        }
+
+        if (!preg_match('/^[ \t]*Concept[ \t]*:[ \t]*(.+)$/mi', $description, $matches)) {
+            return null;
+        }
+
+        $name = trim($matches[1]);
+
+        if ($name === '' || strcasecmp($name, 'Not specified') === 0) {
+            return null;
+        }
+
+        return $name;
+    }
+
     private function getChapterContentCategories($chapter_id, $subject_id, $standard_id, $sub_institute_id, ?string $source = null): array
     {
         $getIsLms = DB::table('school_setup')
@@ -545,6 +573,14 @@ class ApiLmsCourseController extends Controller
         foreach ($content_data as $content) {
             $contentArray = (array)$content;
             $contentArray['url'] = $this->resolveContentUrl($contentArray);
+            // concept_id is unstamped on virtually every row, so the lms_concept
+            // join alone leaves the concept blank. Generated content still records
+            // it in the description, which is the only place it survives.
+            if (empty($contentArray['concept_name'])) {
+                $contentArray['concept_name'] = $this->conceptNameFromDescription(
+                    $contentArray['description'] ?? null
+                );
+            }
             $cat = $contentArray['content_category'] ?? 'General';
             $content_by_category[$cat][] = $contentArray;
         }
@@ -1060,8 +1096,12 @@ $restrict_date = $request->input('restrict_date');
 
     public function getChapterConcepts(Request $request): JsonResponse
     {
+        // Create Exam scopes a paper across several chapters at once, so chapter_id
+        // arrives as a list. A single id stays valid for callers that ask about one
+        // chapter.
         $validator = Validator::make($request->all(), [
-            'chapter_id' => 'required|integer',
+            'chapter_id'   => 'required',
+            'chapter_id.*' => 'integer',
         ]);
 
         if ($validator->fails()) {
@@ -1072,12 +1112,28 @@ $restrict_date = $request->input('restrict_date');
             ], 422);
         }
 
-        $chapter_id = (int) $request->input('chapter_id');
+        $requestedChapterId = $request->input('chapter_id');
+        $chapterIds = array_values(array_unique(array_filter(
+            array_map(
+                static fn ($id) => (int) $id,
+                is_array($requestedChapterId) ? $requestedChapterId : [$requestedChapterId]
+            ),
+            static fn ($id) => $id > 0
+        )));
+
+        if (empty($chapterIds)) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Validation failed.',
+                'errors' => ['chapter_id' => ['The chapter id must be a chapter id, or a list of them.']],
+            ], 422);
+        }
+
         $sub_institute_id = $request->input('sub_institute_id') ?? $this->sessionValue($request, 'sub_institute_id');
 
         $query = DB::table('lms_concept')
             ->select('*')
-            ->where('chapter_id', $chapter_id);
+            ->whereIn('chapter_id', $chapterIds);
 
         if ($sub_institute_id) {
             $query->where(function ($q) use ($sub_institute_id) {
@@ -1086,13 +1142,15 @@ $restrict_date = $request->input('restrict_date');
             });
         }
 
-        $concepts = $query->orderBy('id')->get()->toArray();
+        $concepts = $query->orderBy('chapter_id')->orderBy('id')->get()->toArray();
 
         return response()->json([
             'status_code' => 1,
             'message' => 'SUCCESS',
             'data' => $concepts,
-            'chapter_id' => $chapter_id,
+            // Echoed in the shape it was asked for, so a caller sending one id
+            // still reads one id back.
+            'chapter_id' => is_array($requestedChapterId) ? $chapterIds : $chapterIds[0],
             'sub_institute_id' => $sub_institute_id,
             'total' => count($concepts),
         ], 200);
