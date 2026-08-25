@@ -7,8 +7,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Schema;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\MobilityPromotion;
 use App\Http\Controllers\api\TalentManagement\Mobility\Concerns\ResolvesMobilityContext;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 
 /**
  * Ported from G2G's `App\Http\Controllers\Api\Mobility\MobilityPromotionController`.
@@ -18,6 +20,7 @@ use App\Http\Controllers\api\TalentManagement\Mobility\Concerns\ResolvesMobility
 class MobilityPromotionController extends Controller
 {
     use ResolvesMobilityContext;
+    use RequiresTalentAdmin;
 
     public function index(Request $request)
     {
@@ -59,6 +62,8 @@ class MobilityPromotionController extends Controller
 
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->mobilityContext($request);
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
@@ -82,20 +87,32 @@ class MobilityPromotionController extends Controller
             return $this->mobilityError($validator->errors()->first(), 422);
         }
 
-        $promo = MobilityPromotion::create(array_merge($validator->validated(), [
+        $promoData = array_merge($validator->validated(), [
             'sub_institute_id' => $subInstituteId,
             'created_by' => $actorId,
-        ]));
+        ]);
+
+        $promo = MobilityPromotion::create($promoData);
 
         if ($promo->status === 'Completed') {
             $this->completePromotionInProfile($promo);
         }
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'mobility_promotion.created',
+            'entity_type' => 'mobility_promotion',
+            'entity_id' => $promo->id,
+            'new_values' => $promoData,
+        ]);
 
         return $this->mobilityResponse($promo, 'Promotion recorded successfully', 201);
     }
 
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->mobilityContext($request);
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
@@ -127,6 +144,18 @@ class MobilityPromotionController extends Controller
         if ($promo->status === 'Completed' && $oldStatus !== 'Completed') {
             $this->completePromotionInProfile($promo);
         }
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'mobility_promotion.status_updated',
+            'entity_type' => 'mobility_promotion',
+            'entity_id' => $promo->id,
+            'new_values' => [
+                'status' => $request->input('status'),
+                'remarks' => $request->input('remarks'),
+                'old_status' => $oldStatus,
+            ],
+        ]);
 
         return $this->mobilityResponse($promo, 'Promotion updated successfully');
     }

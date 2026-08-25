@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\inventory\inventory_item_receivableModel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 class inventory_item_receivableController extends Controller
@@ -146,6 +148,17 @@ class inventory_item_receivableController extends Controller
         $po_number = $request->input('po_number');
         $created_by = $request->session()->get('user_id');
 
+        $validator = Validator::make($request->all(), [
+            'po_number' => 'required',
+            'items'     => 'required|array|min:1',
+        ]);
+        if ($validator->fails()) {
+            $res['status'] = "0";
+            $res['message'] = $validator->messages()->first();
+
+            return is_mobile($type, "show_inventory_item_receivable.index", $res);
+        }
+
         $sql_chk = DB::table("inventory_item_receivable_details")
             ->where("PURCHASE_ORDER_NO", "=", $po_number)
             ->where("SUB_INSTITUTE_ID", "=", $sub_institute_id)
@@ -204,6 +217,14 @@ class inventory_item_receivableController extends Controller
                 ])->update($item_receivable);
             }
         }
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_receivable_store',
+            'entity_type' => 'inventory_item_receivable_details',
+            'entity_id'   => $po_number,
+            'new_values'  => $request->except(['_token']),
+        ]);
 
         $res['status'] = "1";
         $res['message'] = "Item Received successfully";

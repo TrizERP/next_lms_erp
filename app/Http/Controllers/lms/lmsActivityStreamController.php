@@ -35,13 +35,16 @@ class lmsActivityStreamController extends Controller
     public function index(Request $request)
     {
         $type = $request->input('type');
-      
-        // Prefer request params (headless API/type=API calls) and fall back to
-        // the Laravel session for classic Blade requests.
+
+        // sub_institute_id and user_id must always come from the authenticated
+        // session (hydrated from a verified JWT for type=API, or set at login for
+        // classic Blade requests) rather than the client-supplied request value,
+        // which is spoofable. The remaining fields are not tenant/user identity
+        // and keep the existing request-first-then-session fallback.
         $request=$request->merge([
-            'sub_institute_id' => $request->input('sub_institute_id') ?: session()->get('sub_institute_id'),
+            'sub_institute_id' => session()->get('sub_institute_id'),
             'syear' => $request->input('syear') ?: session()->get('syear'),
-            'user_id' => $request->input('user_id') ?: session()->get('user_id'),
+            'user_id' => session()->get('user_id'),
             'user_profile' => $request->input('user_profile') ?: session()->get('user_profile_name'),
             'user_profile_id'=> $request->input('user_profile_id') ?: session()->get('user_profile_id'),
             'term_id'=> $request->input('term_id') ?: session()->get('term_id'),
@@ -162,9 +165,15 @@ class lmsActivityStreamController extends Controller
     {
         $profileName = $request->user_profile;
         $profileId = $request->user_profile_id;
-        $sub_institute_id = $request->sub_institute_id;
+        // sub_institute_id must come from the authenticated session (hydrated
+        // from a verified JWT), not the client-supplied request value, which is
+        // spoofable.
+        $sub_institute_id = session()->get('sub_institute_id');
         $syear = $request->syear;
-        $user_id = $request->user_id;
+        // user_id must come from the authenticated session (hydrated from a
+        // verified JWT), not the client-supplied request value, which is
+        // spoofable.
+        $user_id = session()->get('user_id');
         $term_id = $request->term_id;
         
         $searchDate = date('Y-m-d', strtotime('+1 day'));
@@ -263,9 +272,15 @@ class lmsActivityStreamController extends Controller
     {
         $profileName = $request->user_profile;
         $profileId = $request->user_profile_id;
-        $sub_institute_id = $request->sub_institute_id;
+        // sub_institute_id must come from the authenticated session (hydrated
+        // from a verified JWT), not the client-supplied request value, which is
+        // spoofable.
+        $sub_institute_id = session()->get('sub_institute_id');
         $syear = $request->syear;
-        $user_id = $request->user_id;
+        // user_id must come from the authenticated session (hydrated from a
+        // verified JWT), not the client-supplied request value, which is
+        // spoofable.
+        $user_id = session()->get('user_id');
         $term_id = $request->term_id;
         
         $searchDate = date('Y-m-d');
@@ -372,9 +387,15 @@ class lmsActivityStreamController extends Controller
     {
         $profileName = $request->user_profile;
         $profileId = $request->user_profile_id;
-        $sub_institute_id = $request->sub_institute_id;
+        // sub_institute_id must come from the authenticated session (hydrated
+        // from a verified JWT), not the client-supplied request value, which is
+        // spoofable.
+        $sub_institute_id = session()->get('sub_institute_id');
         $syear = $request->syear;
-        $user_id = $request->user_id;
+        // user_id must come from the authenticated session (hydrated from a
+        // verified JWT), not the client-supplied request value, which is
+        // spoofable.
+        $user_id = session()->get('user_id');
         $term_id = $request->term_id;
         
         $searchDate = date('Y-m-d');

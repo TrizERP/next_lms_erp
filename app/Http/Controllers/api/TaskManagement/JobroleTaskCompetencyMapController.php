@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api\TaskManagement;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TaskManagement\Concerns\ResolvesTaskManagementContext;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -49,6 +51,7 @@ use Illuminate\Support\Facades\Validator;
 class JobroleTaskCompetencyMapController extends Controller
 {
     use ResolvesTaskManagementContext;
+    use RequiresTalentAdmin;
 
     /**
      * GET /competency/task-map/for-task - WHAT THIS TASK EXERCISES, AND WHERE
@@ -186,6 +189,8 @@ class JobroleTaskCompetencyMapController extends Controller
      */
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->taskManagementContext($request);
         $sid = $context['sub_institute_id'];
 
@@ -256,6 +261,19 @@ class JobroleTaskCompetencyMapController extends Controller
 
         $count = DB::table('jobrole_task_competency_map')
             ->where('sub_institute_id', $sid)->where('jobrole_task_id', $taskId)->count();
+
+        AuditLog::record([
+            'module' => 'task_management',
+            'action' => 'jobrole_task_competency_map.sync',
+            'entity_type' => 'jobrole_task_competency_map',
+            'entity_id' => $taskId,
+            'new_values' => [
+                'jobrole_task_id' => $taskId,
+                'competency_ids' => array_keys($seen),
+                'mapped' => $count,
+                'removed' => $removed,
+            ],
+        ]);
 
         return response()->json([
             'status' => 1,

@@ -6,7 +6,9 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
 use App\Traits\Helpers;
+use App\Models\AuditLog;
 use GenTux\Jwt\GetsJwtToken;
+use Illuminate\Support\Facades\Validator;
 use DB;
 
 class HrmsLeaveController extends Controller
@@ -20,7 +22,7 @@ class HrmsLeaveController extends Controller
         $syear = session()->get('syear');
     
         if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
+            $sub_institute_id = session()->get('sub_institute_id');
             $syear = $request->syear;
         }
 
@@ -54,7 +56,7 @@ class HrmsLeaveController extends Controller
         $syear = session()->get('syear');
     
         if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
+            $sub_institute_id = session()->get('sub_institute_id');
             $syear = $request->syear;
         }
 
@@ -86,15 +88,27 @@ class HrmsLeaveController extends Controller
     
                 return response()->json($response, 401);
             }
-            $sub_institute_id = $request->get('sub_institute_id');
-            $syear = $request->get('syear');            
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = $request->get('syear');
         }
-        
+
         $res['department_id'] = $department_ids = $request->department_id;
         $res['leave_type_ids'] = $leave_type_ids = $request->leave_type_ids;
         $res['year'] = $year = $request->year;
         $res['days'] = $days = $request->days;
         $res['emp_id'] = $emp_ids = $request->emp_id ?? [];
+
+        $validator = Validator::make($request->all(), [
+            'leave_type_ids' => 'required|array',
+            'year' => 'required',
+            'days' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $res['status_code'] = 0;
+            $res['message'] = $validator->messages()->first();
+            return is_mobile($type, "designation_leave.index", $res);
+        }
 
         $insert = 0;
         $departmentArray = is_array($department_ids) ? $department_ids : [$department_ids];
@@ -146,13 +160,27 @@ class HrmsLeaveController extends Controller
                 ->first();
             
             if(empty($check)){
-                DB::table('hrms_leave_allocation')->insert([
+                $newId = DB::table('hrms_leave_allocation')->insertGetId([
                     'department_id' => $department_id,
                     'leave_type_id' => $leave_type_id,
                     'year' => $year,
                     'value' => $days,
                     'sub_institute_id' => $sub_institute_id,
                     'created_at' => now()
+                ]);
+
+                AuditLog::record([
+                    'module' => 'hrms',
+                    'action' => 'leave_allocation_added',
+                    'entity_type' => 'hrms_leave_allocation',
+                    'entity_id' => $newId,
+                    'new_values' => [
+                        'department_id' => $department_id,
+                        'leave_type_id' => $leave_type_id,
+                        'year' => $year,
+                        'value' => $days,
+                        'sub_institute_id' => $sub_institute_id,
+                    ],
                 ]);
                 return 1;
             }
@@ -164,7 +192,7 @@ class HrmsLeaveController extends Controller
                 ->first();
             
             if(empty($check)){
-                DB::table('hrms_leave_allocation')->insert([
+                $newId = DB::table('hrms_leave_allocation')->insertGetId([
                     'department_id' => $department_id,
                     'employee_id' => $emp_id,
                     'leave_type_id' => $leave_type_id,
@@ -173,10 +201,25 @@ class HrmsLeaveController extends Controller
                     'sub_institute_id' => $sub_institute_id,
                     'created_at' => now()
                 ]);
+
+                AuditLog::record([
+                    'module' => 'hrms',
+                    'action' => 'leave_allocation_added',
+                    'entity_type' => 'hrms_leave_allocation',
+                    'entity_id' => $newId,
+                    'new_values' => [
+                        'department_id' => $department_id,
+                        'employee_id' => $emp_id,
+                        'leave_type_id' => $leave_type_id,
+                        'year' => $year,
+                        'value' => $days,
+                        'sub_institute_id' => $sub_institute_id,
+                    ],
+                ]);
                 return 1;
             }
         }
-        
+
         return 0;
     }
 
@@ -186,7 +229,7 @@ class HrmsLeaveController extends Controller
         $syear = session()->get('syear');
     
         if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
+            $sub_institute_id = session()->get('sub_institute_id');
             $syear = $request->syear;
         }
         $res['editData'] = DB::table('hrms_leave_allocation')->where('id',$id)->first();
@@ -215,8 +258,8 @@ class HrmsLeaveController extends Controller
     
                 return response()->json($response, 401);
             }
-            $sub_institute_id = $request->get('sub_institute_id');
-            $syear = $request->get('syear');            
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = $request->get('syear');
         }
 
         $res['department_ids'] = $department_ids = $request->department_id;
@@ -224,18 +267,35 @@ class HrmsLeaveController extends Controller
         $res['year'] = $year = $request->year;
         $res['days'] = $days = $request->days;
 
+        $validator = Validator::make($request->all(), [
+            'formType' => 'required|in:department,employee',
+            'department_id' => 'required',
+            'leave_type_ids' => 'required|array',
+            'year' => 'required',
+            'days' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $res['status_code'] = 0;
+            $res['message'] = $validator->messages()->first();
+            return is_mobile($type, "designation_leave.index", $res);
+        }
+
+        $updateData = null;
+
         if($formType=="department"){
-            $update = DB::table('hrms_leave_allocation')->where('id',$id)->update([
+            $updateData = [
                 'department_id'=>$department_ids,
                 'leave_type_id'=>$leave_type_ids,
                 'year'=>$year,
                 'value'=>$days,
                 'sub_institute_id'=>$sub_institute_id,
                 'updated_at'=>now()
-            ]);
+            ];
+            $update = DB::table('hrms_leave_allocation')->where('id',$id)->update($updateData);
         }
         else if($formType=="employee"){
-            $update = DB::table('hrms_leave_allocation')->where('id',$id)->update([
+            $updateData = [
                 'department_id'=>$department_ids,
                 'employee_id'=>$request->emp_id ?? 0,
                 'leave_type_id'=>$leave_type_ids,
@@ -243,12 +303,21 @@ class HrmsLeaveController extends Controller
                 'value'=>$days,
                 'sub_institute_id'=>$sub_institute_id,
                 'updated_at'=>now()
-            ]);
+            ];
+            $update = DB::table('hrms_leave_allocation')->where('id',$id)->update($updateData);
         }
 
         if($update){
             $res['status_code'] = 1;
             $res['message'] = "Updated SuccessFully";
+
+            AuditLog::record([
+                'module' => 'hrms',
+                'action' => 'leave_allocation_updated',
+                'entity_type' => 'hrms_leave_allocation',
+                'entity_id' => $id,
+                'new_values' => $updateData,
+            ]);
         }else{
             $res['status_code'] = 0;
             $res['message'] = "Failed to Update";
@@ -271,14 +340,24 @@ class HrmsLeaveController extends Controller
     
                 return response()->json($response, 401);
             }
-            $sub_institute_id = $request->get('sub_institute_id');
-            $syear = $request->get('syear');            
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = $request->get('syear');
         }
 
         $delete = DB::table('hrms_leave_allocation')->where('id',$id)->delete();
+
+        if ($delete) {
+            AuditLog::record([
+                'module' => 'hrms',
+                'action' => 'leave_allocation_deleted',
+                'entity_type' => 'hrms_leave_allocation',
+                'entity_id' => $id,
+            ]);
+        }
+
         $res['status_code'] = 1;
         $res['message'] = "Deleted SuccessFully";
-        
+
         return is_mobile($type, "designation_leave.index", $res);
     }
 

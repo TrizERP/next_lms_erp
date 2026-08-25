@@ -301,9 +301,12 @@ Route::group(['prefix' => 'bazar', 'middleware' => ['session', 'menu', 'logRoute
     Route::post('show_bazar_report', [bulkUploadedReportController::class, 'show_bazar_report'])->name('show_bazar_report');
 });
 
-Route::get('/upcoming', [lmsActivityStreamController::class, 'upcomingActivity'])->name('upcoming');
-Route::get('/today', [lmsActivityStreamController::class, 'todayActivity'])->name('today');
-Route::get('/recent', [lmsActivityStreamController::class, 'recentActivity'])->name('recent');
+// Also sat outside any session/check_permissions group - see note above.
+Route::middleware(['session', 'menu', 'logRoute', 'check_permissions'])->group(function () {
+    Route::get('/upcoming', [lmsActivityStreamController::class, 'upcomingActivity'])->name('upcoming');
+    Route::get('/today', [lmsActivityStreamController::class, 'todayActivity'])->name('today');
+    Route::get('/recent', [lmsActivityStreamController::class, 'recentActivity'])->name('recent');
+});
 Route::get('careerExplore', [lmsCounsellingController::class, 'careerExplore']);
 Route::get('careerExploreResult', [lmsCounsellingController::class, 'careerExploreResult']);
 Route::get('careerCluster', [lmsCounsellingController::class, 'careerCluster']);
@@ -337,7 +340,9 @@ Route::post('/set-book-session',[contentController::class,'setBookSession'])->na
 
 Route::get('/download-File', [contentLibraryController::class, 'downloadFile'])->name('downloadFile');
 
-Route::prefix('h5p')->group(function () {
+// This group sat outside any session/check_permissions middleware, so
+// type=API callers never got JWT-verified (see HydratesLegacyApiSession).
+Route::prefix('h5p')->middleware(['session', 'menu', 'logRoute', 'check_permissions'])->group(function () {
     Route::resource('html_contents',H5PIndexController::class);
     Route::resource('scenario_based',H5PScenarioController::class);
     Route::resource('h5p_mcq',H5PMCQController::class);

@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\MobilityApplication;
 use App\Models\TalentManagement\MobilityJob;
 use App\Http\Controllers\api\TalentManagement\Mobility\Concerns\ResolvesMobilityContext;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 
 /**
  * Ported from G2G's `App\Http\Controllers\Api\Mobility\MobilityApplicationController`.
@@ -17,6 +19,7 @@ use App\Http\Controllers\api\TalentManagement\Mobility\Concerns\ResolvesMobility
 class MobilityApplicationController extends Controller
 {
     use ResolvesMobilityContext;
+    use RequiresTalentAdmin;
 
     public function index(Request $request)
     {
@@ -113,11 +116,25 @@ class MobilityApplicationController extends Controller
             'created_by' => $actorId,
         ]);
 
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'mobility_application.created',
+            'entity_type' => 'mobility_application',
+            'entity_id' => $app->id,
+            'new_values' => [
+                'job_posting_id' => $jobId,
+                'user_id' => $userId,
+                'status' => 'Applied',
+            ],
+        ]);
+
         return $this->mobilityResponse($app, 'Application submitted successfully', 201);
     }
 
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->mobilityContext($request);
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
@@ -143,6 +160,17 @@ class MobilityApplicationController extends Controller
             'status' => $request->input('status'),
             'remarks' => $request->input('remarks'),
             'updated_by' => $context['user_id'],
+        ]);
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'mobility_application.status_updated',
+            'entity_type' => 'mobility_application',
+            'entity_id' => $app->id,
+            'new_values' => [
+                'status' => $request->input('status'),
+                'remarks' => $request->input('remarks'),
+            ],
         ]);
 
         return $this->mobilityResponse($app, 'Application status updated successfully');

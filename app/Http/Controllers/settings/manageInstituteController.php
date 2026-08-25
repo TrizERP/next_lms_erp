@@ -4,6 +4,7 @@ namespace App\Http\Controllers\settings;
 
 use App\Http\Controllers\api\NewLMS_ApiController;
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\fees\map_year\map_year;
 use App\Models\school_setup\academic_yearModel;
 use App\Models\school_setup\divisionModel;
@@ -12,6 +13,7 @@ use App\Models\school_setup\std_div_mappingModel;
 use App\Models\school_setupModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Storage;
 
@@ -53,6 +55,19 @@ class manageInstituteController extends Controller
         $client_id = session()->get('client_id');
         $created_at = date('Y-m-d H:i:s');
         $created_ip = $_SERVER['REMOTE_ADDR'];
+
+        $validator = Validator::make($request->all(), [
+            'SchoolName' => 'required|string',
+            'ShortCode'  => 'required|string',
+            'Email'      => 'nullable|email',
+        ]);
+
+        if ($validator->fails()) {
+            $res['status_code'] = "0";
+            $res['message'] = $validator->messages()->first();
+
+            return is_mobile($type, "manage_institute.index", $res, "redirect");
+        }
 
         $file_name = $file_size = $ext = "";
         if ($request->hasFile('Logo')) {
@@ -101,6 +116,14 @@ class manageInstituteController extends Controller
         $board = '';
         $section = '';
         $sub_institute_id = DB::getPdo()->lastInsertId();
+
+        AuditLog::record([
+            'module' => 'settings',
+            'action' => 'institute_store',
+            'entity_type' => 'school_setup',
+            'entity_id' => $sub_institute_id,
+            'new_values' => $school_setup->toArray(),
+        ]);
 
         $functions_object = new NewLMS_ApiController();
 
@@ -167,6 +190,21 @@ class manageInstituteController extends Controller
 
     public function update(Request $request, $id)
     {
+        $type = $request->input('type');
+
+        $validator = Validator::make($request->all(), [
+            'SchoolName' => 'required|string',
+            'ShortCode'  => 'required|string',
+            'Email'      => 'nullable|email',
+        ]);
+
+        if ($validator->fails()) {
+            $res['status_code'] = "0";
+            $res['message'] = $validator->messages()->first();
+
+            return is_mobile($type, "manage_institute.index", $res, "redirect");
+        }
+
         $updated_at = date('Y-m-d H:i:s');
         $data = [
             'SchoolName'            => $request->get('SchoolName'),
@@ -204,9 +242,16 @@ class manageInstituteController extends Controller
 
         school_setupModel::where(["Id" => $id])->update($data);
 
+        AuditLog::record([
+            'module' => 'settings',
+            'action' => 'institute_update',
+            'entity_type' => 'school_setup',
+            'entity_id' => $id,
+            'new_values' => $data,
+        ]);
+
         $res['status_code'] = "1";
         $res['message'] = "Institute Updated Successfully";
-        $type = $request->input('type');
 
         return is_mobile($type, "manage_institute.index", $res, "redirect");
     }
@@ -216,6 +261,14 @@ class manageInstituteController extends Controller
         $type = $request->input('type');
 
         school_setupModel::where(["Id" => $id])->delete();
+
+        AuditLog::record([
+            'module' => 'settings',
+            'action' => 'institute_delete',
+            'entity_type' => 'school_setup',
+            'entity_id' => $id,
+        ]);
+
         $res['status_code'] = "1";
         $res['message'] = "Institute Deleted successfully";
 

@@ -14,6 +14,7 @@ use App\Models\settings\tblfields_dataModel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 use function App\Helpers\sendSMS;
 use function App\Helpers\SearchStudent;
@@ -384,16 +385,42 @@ class admissionEnquiryController extends Controller
         else if($type=='webForm'){
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
+        }
 
-            $check = DB::table('admission_enquiry')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'first_name'=>$request->first_name,'last_name'=>$request->last_name,'mobile'=>$request->mobile])->first();
-            // return $check;
+        // Validate the incoming enquiry payload on every path (API, webForm, and default/admin form).
+        $validator = Validator::make($request->all(), [
+            'first_name'    => 'required|string|max:50',
+            'last_name'     => 'required|string|max:50',
+            'mobile'        => ['nullable', 'regex:/^[1-9][0-9]{9}$/'],
+            'date_of_birth' => 'nullable|date|after:1900-01-01|before_or_equal:today',
+        ]);
 
-            if(!empty($check) && isset($check->id)){
-                $res['status_code'] = 0;
-                $res['message'] = "Admission enquiry already exists";
-                $res['data'] = [];
+        if ($validator->fails()) {
+            $res['status_code'] = 0;
+            $res['message'] = $validator->errors()->first();
+            $res['data'] = $validator->errors()->toArray();
+
+            if ($type == 'webForm') {
                 return redirect('admission_enquiry?sub_institute_id='.$request->sub_institute_id.'&syear='.$request->syear.'&type=webForm')->with(['data'=>$res]);
             }
+
+            return is_mobile($type, "admission_enquiry.index", $res);
+        }
+
+        // Duplicate-enquiry guard (first_name + last_name + mobile), now enforced on every path
+        // (previously only ran inside the webForm branch, allowing default/API duplicate submissions).
+        $check = DB::table('admission_enquiry')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'first_name'=>$request->first_name,'last_name'=>$request->last_name,'mobile'=>$request->mobile])->first();
+
+        if(!empty($check) && isset($check->id)){
+            $res['status_code'] = 0;
+            $res['message'] = "Admission enquiry already exists";
+            $res['data'] = [];
+
+            if ($type == 'webForm') {
+                return redirect('admission_enquiry?sub_institute_id='.$request->sub_institute_id.'&syear='.$request->syear.'&type=webForm')->with(['data'=>$res]);
+            }
+
+            return is_mobile($type, "admission_enquiry.index", $res);
         }
 
         $data = $request->except([

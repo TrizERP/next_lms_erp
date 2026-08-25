@@ -22,7 +22,12 @@ class checkPermission
      */
     public function handle(Request $request, Closure $next)
     {
-        if ($request->get('type') != "API" && $request->get('type') != "JSON" && session()->get('user_profile_name')!="Super Admin") {
+        // Previously this check only ran for non-API requests, which meant
+        // check_view/can_add/can_edit/can_delete were never enforced for the
+        // Next.js frontend (every call from it carries type=API). Now that
+        // SessionMiddleware hydrates a real, JWT-verified session for type=API
+        // requests too, the same permission logic applies uniformly.
+        if (session()->get('user_profile_name') != "Super Admin") {
             $current_url = Route::currentRouteName();
             $userProfileId = session()->get('user_profile_id');
             $sub_institute_id = session()->get('sub_institute_id');

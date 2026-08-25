@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\inventory\inventory_item_defectiveModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 
@@ -81,6 +83,16 @@ class inventory_item_defectiveController extends Controller
         $created_by = $request->session()->get('user_id');
         $created_ip_address = $_SERVER['REMOTE_ADDR'];
 
+        $validator = Validator::make($request->all(), [
+            'item_id' => 'required|integer',
+        ]);
+        if ($validator->fails()) {
+            $message['status'] = "0";
+            $message['message'] = $validator->messages()->first();
+
+            return is_mobile($type, "add_inventory_item_defective.index", $message, "redirect");
+        }
+
         $item_defective = new inventory_item_defectiveModel([
             'SYEAR'                   => $syear,
             'SUB_INSTITUTE_ID'        => $sub_institute_id,
@@ -96,6 +108,15 @@ class inventory_item_defectiveController extends Controller
         ]);
 
         $item_defective->save();
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_defective_store',
+            'entity_type' => 'inventory_item_defective_details',
+            'entity_id'   => $item_defective->id,
+            'new_values'  => $request->except(['_token']),
+        ]);
+
         $message['status'] = "1";
         $message['message'] = "Defective Item Added Succesfully";
 
@@ -134,6 +155,16 @@ class inventory_item_defectiveController extends Controller
         $created_by = $request->session()->get('user_id');
         $created_ip_address = $_SERVER['REMOTE_ADDR'];
 
+        $validator = Validator::make($request->all(), [
+            'item_id' => 'required|integer',
+        ]);
+        if ($validator->fails()) {
+            $message['status'] = "0";
+            $message['message'] = $validator->messages()->first();
+
+            return is_mobile($type, "add_inventory_item_defective.index", $message, "redirect");
+        }
+
         $data = array(
             'ITEM_ID'                 => $request->get('item_id'),
             'WARRANTY_START_DATE'     => $request->get('warranty_start_date'),
@@ -148,6 +179,14 @@ class inventory_item_defectiveController extends Controller
 
         inventory_item_defectiveModel::where(["ID" => $id])->update($data);
 
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_defective_update',
+            'entity_type' => 'inventory_item_defective_details',
+            'entity_id'   => $id,
+            'new_values'  => $data,
+        ]);
+
         $message['status'] = "1";
         $message['message'] = "Defective Item Updated Successfully";
 
@@ -158,6 +197,14 @@ class inventory_item_defectiveController extends Controller
     {
         $type = $request->input('type');
         inventory_item_defectiveModel::where(["ID" => $id])->delete();
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_defective_delete',
+            'entity_type' => 'inventory_item_defective_details',
+            'entity_id'   => $id,
+        ]);
+
         $message['status'] = "1";
         $message['message'] = "Defective Item Deleted successfully";
 

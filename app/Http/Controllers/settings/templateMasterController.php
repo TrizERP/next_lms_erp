@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\settings;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\settings\templateMasterModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 class templateMasterController extends Controller
@@ -250,9 +252,22 @@ class templateMasterController extends Controller
 
     public function store(Request $request)
     {
-
+        $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $user_id = $request->session()->get('user_id');
+
+        $validator = Validator::make($request->all(), [
+            'module_name'  => 'required',
+            'title'        => 'required',
+            'html_content' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $res['status_code'] = "0";
+            $res['message'] = $validator->messages()->first();
+
+            return is_mobile($type, "templatemaster.index", $res, "redirect");
+        }
 
         $content = array(
             'module_name'      => $request->get('module_name'),
@@ -264,12 +279,20 @@ class templateMasterController extends Controller
         );
 
         templateMasterModel::insert($content);
+        $template_id = DB::getPdo()->lastInsertId();
+
+        AuditLog::record([
+            'module' => 'settings',
+            'action' => 'template_master_store',
+            'entity_type' => 'template_master',
+            'entity_id' => $template_id,
+            'new_values' => $content,
+        ]);
 
         $res = array(
             "status_code" => 1,
             "message"     => "Template Added Successfully",
         );
-        $type = $request->input('type');
 
         return is_mobile($type, "templatemaster.index", $res, "redirect");
     }
@@ -286,9 +309,23 @@ class templateMasterController extends Controller
 
     public function update(Request $request, $id)
     {
+        $type = $request->input('type');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $syear = $request->session()->get('syear');
         $user_id = $request->session()->get('user_id');
+
+        $validator = Validator::make($request->all(), [
+            'module_name'  => 'required',
+            'title'        => 'required',
+            'html_content' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $res['status_code'] = "0";
+            $res['message'] = $validator->messages()->first();
+
+            return is_mobile($type, "templatemaster.index", $res, "redirect");
+        }
 
         $data = [
             'module_name'      => $request->get('module_name'),
@@ -301,11 +338,18 @@ class templateMasterController extends Controller
 
         templateMasterModel::where(["id" => $id])->update($data);
 
+        AuditLog::record([
+            'module' => 'settings',
+            'action' => 'template_master_update',
+            'entity_type' => 'template_master',
+            'entity_id' => $id,
+            'new_values' => $data,
+        ]);
+
         $res = [
             "status_code" => 1,
             "message"     => "Template Updated Successfully",
         ];
-        $type = $request->input('type');
 
         return is_mobile($type, "templatemaster.index", $res, "redirect");
     }
@@ -315,6 +359,14 @@ class templateMasterController extends Controller
         $type = $request->input('type');
 
         templateMasterModel::where(["id" => $id])->delete();
+
+        AuditLog::record([
+            'module' => 'settings',
+            'action' => 'template_master_delete',
+            'entity_type' => 'template_master',
+            'entity_id' => $id,
+        ]);
+
         $res['status_code'] = "1";
         $res['message'] = "Template Deleted Successfully";
 

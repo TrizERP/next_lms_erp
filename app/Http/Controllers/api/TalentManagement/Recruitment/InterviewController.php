@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\api\TalentManagement\Recruitment;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\TalentEvaluationForm;
 use App\Models\TalentManagement\TalentJobApplication;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 
 /**
  * Ported 1:1 from hp_erp's `App\Http\Controllers\talent\InterviewController`.
@@ -17,6 +19,8 @@ use Illuminate\Support\Facades\Validator;
  */
 class InterviewController extends Controller
 {
+    use RequiresTalentAdmin;
+
     private function subInstituteId(): int
     {
         return (int) session()->get('sub_institute_id');
@@ -74,6 +78,8 @@ class InterviewController extends Controller
      */
     public function recordDecision(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $subInstituteId = $this->subInstituteId();
 
         $validator = Validator::make($request->all(), [
@@ -115,6 +121,19 @@ class InterviewController extends Controller
         $evaluation->update($updateData);
 
         TalentJobApplication::where('id', $evaluation->candidate_id)->update(['status' => $request->status]);
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'interview_decision_recorded',
+            'entity_type' => 'evaluation_form',
+            'entity_id' => $evaluation->id,
+            'new_values' => [
+                'candidate_id' => $evaluation->candidate_id,
+                'decision_status' => $request->status,
+                'evaluation_status' => $evaluationStatus,
+                'notes' => $request->notes,
+            ],
+        ]);
 
         return response()->json([
             'status' => true,

@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\MobilityTransfer;
 use App\Http\Controllers\api\TalentManagement\Mobility\Concerns\ResolvesMobilityContext;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 
 /**
  * Ported from G2G's `App\Http\Controllers\Api\Mobility\MobilityTransferController`.
@@ -17,6 +19,7 @@ use App\Http\Controllers\api\TalentManagement\Mobility\Concerns\ResolvesMobility
 class MobilityTransferController extends Controller
 {
     use ResolvesMobilityContext;
+    use RequiresTalentAdmin;
 
     public function index(Request $request)
     {
@@ -58,6 +61,8 @@ class MobilityTransferController extends Controller
 
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->mobilityContext($request);
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
@@ -87,22 +92,34 @@ class MobilityTransferController extends Controller
             : null;
         $toDept = DB::table('hrms_departments')->where('id', $request->input('to_department_id'))->value('department');
 
-        $transfer = MobilityTransfer::create(array_merge($validator->validated(), [
+        $transferData = array_merge($validator->validated(), [
             'sub_institute_id' => $subInstituteId,
             'from_department' => $fromDept,
             'to_department' => $toDept,
             'created_by' => $actorId,
-        ]));
+        ]);
+
+        $transfer = MobilityTransfer::create($transferData);
 
         if ($transfer->status === 'Completed') {
             $this->completeTransferInProfile($transfer);
         }
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'mobility_transfer.created',
+            'entity_type' => 'mobility_transfer',
+            'entity_id' => $transfer->id,
+            'new_values' => $transferData,
+        ]);
 
         return $this->mobilityResponse($transfer, 'Transfer recorded successfully', 201);
     }
 
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->mobilityContext($request);
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
@@ -134,6 +151,18 @@ class MobilityTransferController extends Controller
         if ($transfer->status === 'Completed' && $oldStatus !== 'Completed') {
             $this->completeTransferInProfile($transfer);
         }
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'mobility_transfer.status_updated',
+            'entity_type' => 'mobility_transfer',
+            'entity_id' => $transfer->id,
+            'new_values' => [
+                'status' => $request->input('status'),
+                'remarks' => $request->input('remarks'),
+                'old_status' => $oldStatus,
+            ],
+        ]);
 
         return $this->mobilityResponse($transfer, 'Transfer updated successfully');
     }

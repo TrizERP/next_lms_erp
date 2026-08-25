@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\inventory\inventory_tax_masterModel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 class inventory_tax_masterController extends Controller
@@ -43,6 +45,18 @@ class inventory_tax_masterController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $created_by = $request->session()->get('user_id');
 
+        $validator = Validator::make($request->all(), [
+            'title'             => 'required|string|max:255',
+            'amount_percentage' => 'required|numeric',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_inventory_item_tax_master.index", $message, "redirect");
+        }
+
         $item_category = new inventory_tax_masterModel([
             'syear'              => $syear,
             'title'              => $request->get('title'),
@@ -56,6 +70,14 @@ class inventory_tax_masterController extends Controller
             'sub_institute_id'   => $sub_institute_id,
         ]);
         $item_category->save();
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_tax_master_store',
+            'entity_type' => 'inventory_tax_master',
+            'entity_id'   => $item_category->id,
+            'new_values'  => $request->except(['_token']),
+        ]);
 
         $message['status_code'] = "1";
 //        $message = [
@@ -82,6 +104,19 @@ class inventory_tax_masterController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $created_by = $request->session()->get('user_id');
+
+        $validator = Validator::make($request->all(), [
+            'title'             => 'required|string|max:255',
+            'amount_percentage' => 'required|numeric',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_inventory_item_tax_master.index", $message, "redirect");
+        }
+
         $data = [
             'syear'              => $syear,
             'title'              => $request->get('title'),
@@ -97,6 +132,14 @@ class inventory_tax_masterController extends Controller
 
         inventory_tax_masterModel::where(["id" => $id])->update($data);
 
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_tax_master_update',
+            'entity_type' => 'inventory_tax_master',
+            'entity_id'   => $id,
+            'new_values'  => $data,
+        ]);
+
         $message['status_code'] = "1";
         $message = [
             "message" => "Item Tax Updated Successfully",
@@ -111,7 +154,14 @@ class inventory_tax_masterController extends Controller
     {
         $type = $request->input('type');
         inventory_tax_masterModel::where(["id" => $id])->delete();
-        
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_tax_master_delete',
+            'entity_type' => 'inventory_tax_master',
+            'entity_id'   => $id,
+        ]);
+
         $message['status_code'] = "1";
         $message = [
             "message" => "Item Tax Deleted successfully",
