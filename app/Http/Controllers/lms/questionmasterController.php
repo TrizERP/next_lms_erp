@@ -694,20 +694,39 @@ class questionmasterController extends Controller
      */
     public function destroy(Request $request, $id)
     {
-        $type = $request->input('type');
-        $questiondata = lmsQuestionMasterModel::where(["id" => $id])->get()->toArray();
-        $chapter_id = $questiondata[0]['chapter_id'];
-        $topic_id = $questiondata[0]['topic_id'];
-        $standard_id = $questiondata[0]['standard_id'];        
+        $question = lmsQuestionMasterModel::find($id);
 
-        lmsQuestionMasterModel::where(["id" => $id])->delete();
-        answermasterModel::where(["question_id" => $id])->delete();
-        lmsQuestionMappingModel::where(["questionmaster_id" => $id])->delete();
+        if (empty($question)) {
+            $res['status_code'] = "0";
+            $res['message'] = "Question not found or already deleted";
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json($res, 404);
+            }
+
+            return redirect()->back()->with('error', $res['message']);
+        }
+
+        $chapter_id = $question->chapter_id;
+        $topic_id = $question->topic_id;
+        $standard_id = $question->standard_id;
+
+        // Soft delete: stamps lms_question_master.deleted_at with the current
+        // date and time. The answer options and mapping rows are left alone so
+        // the question can be restored intact, and so question papers / exam
+        // answers that still point at this id keep resolving.
+        $question->delete();
+
         $res['status_code'] = "1";
         $res['message'] = "Question-Master Deleted Successfully";
+        $res['id'] = (int) $id;
+        $res['deleted_at'] = optional($question->deleted_at)->toDateTimeString();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json($res, 200);
+        }
 
         return redirect()->route('question_master.index', ['chapter_id' => $chapter_id, 'topic_id' => $topic_id,'standard_id'=>$standard_id]);
-        //return is_mobile($type, "question_master.index", $res);
     }
 
     function ajaxdestroyanswer_master(Request $request)
@@ -745,13 +764,24 @@ class questionmasterController extends Controller
     // Delete multiple questions
     public function ajax_multiDeleteQuestion(Request $request)
     {
-        $question_ids = lmsQuestionMasterModel::whereIn('id', $request->question_ids)->delete();
-        if ($question_ids) {
-            $res['status_code'] = "1";
-            $res['message'] = "Questions Deleted Successfully";
+        $question_ids = array_filter((array) $request->question_ids);
 
-            return response()->json($res, 200);
+        if (empty($question_ids)) {
+            return response()->json(['status_code' => "0", 'message' => "No questions selected"], 422);
         }
+
+        // Soft delete - stamps deleted_at on every selected row.
+        $deleted = lmsQuestionMasterModel::whereIn('id', $question_ids)->delete();
+
+        if (!$deleted) {
+            return response()->json(['status_code' => "0", 'message' => "Questions not found or already deleted"], 404);
+        }
+
+        $res['status_code'] = "1";
+        $res['message'] = "Questions Deleted Successfully";
+        $res['ids'] = array_map('intval', array_values($question_ids));
+
+        return response()->json($res, 200);
     }
 
     public function getMappedValue(Request $request){
