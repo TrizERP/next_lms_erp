@@ -178,6 +178,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\McpServiceProvider::class,
+        App\Providers\AiServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
         App\Providers\PALServiceProvider::class,
 

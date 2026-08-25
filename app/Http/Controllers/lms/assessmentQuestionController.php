@@ -1451,6 +1451,7 @@ public function getMasteryMatrix(Request $request)
         // Get all questions for this concept
         $questions = DB::table('lms_question_master')
             ->where('concept_id', $concept->id)
+            ->whereNull('deleted_at')
             ->pluck('id');
         
         // Get student attempts
@@ -1813,6 +1814,7 @@ private function getReviewUrgency($curveData)
                 $q = DB::table('lms_question_master as q')
                     ->select('q.*')
                     ->where('q.concept_id', $conceptId)
+                    ->whereNull('q.deleted_at')
                     ->where('q.status', 1);
                 if ($sub_institute_id) {
                     $q->where('q.sub_institute_id', $sub_institute_id);
@@ -2289,6 +2291,7 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
         $query = DB::table('lms_question_master as q')
             ->select('q.*')
             ->where('q.sub_institute_id', $sub_institute_id)
+            ->whereNull('q.deleted_at')
             ->where('q.status', 1);
 
         if ($standard_id) {
@@ -2414,6 +2417,7 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
         $query = DB::table('lms_question_master as q')
             ->select('q.*')
             ->where('q.sub_institute_id', session('sub_institute_id'))
+            ->whereNull('q.deleted_at')
             ->where('q.status', 1);
 
         if ($standard_id) {

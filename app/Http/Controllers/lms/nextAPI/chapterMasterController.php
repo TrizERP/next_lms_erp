@@ -40,7 +40,10 @@ class chapterMasterController extends Controller
         //    v2: response shape changed — full_intelegance_json removed from the list
         //    payload (now fetched lazily). Bumping the version invalidates any v1
         //    cache entries still holding the old heavy shape.
-        $cacheKey = "chapters_v2_{$subInstituteId}_{$standardId}_{$subjectId}_page_{$page}_limit_{$perPage}";
+        //    v3: chapters now carry their topic_master rows, and each concept
+        //    carries the topic it belongs to, so the UI can render
+        //    chapter -> topic -> concept.
+        $cacheKey = "chapters_v3_{$subInstituteId}_{$standardId}_{$subjectId}_page_{$page}_limit_{$perPage}";
         
         return Cache::remember($cacheKey, 3600, function () use ($subInstituteId, $standardId, $subjectId, $perPage) {
             
@@ -63,6 +66,7 @@ class chapterMasterController extends Controller
                     'standard_id'  => (int) $chapter->standard_id,
                     'chapter_name' => $chapter->chapter_name,
                     'semantic'     => null, 
+                    'topics'       => [],
                     'concepts'     => [],
                 ];
             }
@@ -70,8 +74,26 @@ class chapterMasterController extends Controller
             if (!empty($chapterIds)) {
                 // 6. Fetch related Concepts
                 $concepts = DB::table('lms_concept')
-                    ->select('id as concept_id', 'chapter_id', 'name as concept_name', 'description as concept_description')
+                    ->select('id as concept_id', 'chapter_id', 'topic_id', 'name as concept_name', 'description as concept_description')
                     ->whereIn('chapter_id', $chapterIds)
+                    ->get();
+
+                // 6b. Fetch the topics these chapters are split into. topic_master is
+                //     the curriculum's own chapter -> topic breakdown; lms_concept.topic_id
+                //     points back at it, which is what lets the UI nest concepts under
+                //     their topic instead of listing them flat under the chapter.
+                $topics = DB::table('topic_master')
+                    ->select(
+                        'id as topic_id',
+                        'chapter_id',
+                        'name as topic_name',
+                        'description as topic_description',
+                        'topic_sort_order',
+                        'topic_show_hide'
+                    )
+                    ->whereIn('chapter_id', $chapterIds)
+                    ->orderBy('topic_sort_order')
+                    ->orderBy('id')
                     ->get();
 
                 // 7. Fetch lightweight Semantic data.
@@ -94,10 +116,24 @@ class chapterMasterController extends Controller
                     ];
                 }
 
-                // 9. Attach Concepts
+                // 9. Attach Topics
+                foreach ($topics as $topic) {
+                    $formattedResponse[$topic->chapter_id]['topics'][] = [
+                        'topic_id'          => (int) $topic->topic_id,
+                        'topic_name'        => $topic->topic_name,
+                        'topic_description' => $topic->topic_description,
+                        'topic_sort_order'  => $topic->topic_sort_order !== null ? (int) $topic->topic_sort_order : null,
+                        'topic_show_hide'   => $topic->topic_show_hide !== null ? (int) $topic->topic_show_hide : null,
+                    ];
+                }
+
+                // 10. Attach Concepts, each tagged with the topic it sits under.
+                //     topic_id is null for concepts extracted before the topic split,
+                //     and the UI groups those separately rather than dropping them.
                 foreach ($concepts as $concept) {
                     $formattedResponse[$concept->chapter_id]['concepts'][] = [
                         'concept_id'          => (int) $concept->concept_id,
+                        'topic_id'            => $concept->topic_id !== null ? (int) $concept->topic_id : null,
                         'concept_name'        => $concept->concept_name,
                         'concept_description' => $concept->concept_description,
                     ];
