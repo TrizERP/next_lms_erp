@@ -35,6 +35,7 @@ class questionExcelDownloadController extends Controller  implements FromCollect
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
         $data = DB::table('lms_question_master as lqm')
+        ->whereNull('lqm.deleted_at')
         ->join('standard as s', 'lqm.standard_id', '=', 's.id')
         ->join('subject as sub', 'sub.id', '=', 'lqm.subject_id')
         ->join('answer_master as am', 'am.question_id', '=', 'lqm.id')

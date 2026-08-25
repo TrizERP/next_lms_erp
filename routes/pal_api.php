@@ -151,11 +151,18 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
     // Neo4j (the prerequisite CLOSURE is the one question a SQL join cannot
     // answer); mastery writes land in MariaDB first and are projected after.
     //
-    // Route order matters: the two literal prefixes (/map, /health) are declared
-    // before the {learnerId} routes, and every id segment is digit-constrained,
-    // so `/coherence/map` can never be parsed as a learner id.
+    // Route order matters: the three literal prefixes (/map, /health, /scopes)
+    // are declared before the {learnerId} routes, and every id segment is
+    // digit-constrained, so `/coherence/map` can never be parsed as a learner id.
     Route::get('/coherence/map', [CoherenceMapController::class, 'map']);
     Route::get('/coherence/health', [CoherenceMapController::class, 'health']);
+
+    // Which (standard, subject) pairs actually have a projected map. The client
+    // needs this to build a scope picker: /coherence/map REQUIRES standard_id
+    // and subject_id, so without it a front-end has to hardcode the pair or
+    // guess and take a 404. Reads the graph, not MariaDB — a scope only counts
+    // as available once pal:coherence-sync has run for it.
+    Route::get('/coherence/scopes', [CoherenceMapController::class, 'scopes']);
 
     // Learner-scoped. PalApiAuth resolves {learnerId} and enforces ownership
     // before the controller runs, so a student can only ever read their own.

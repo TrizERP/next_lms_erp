@@ -15,7 +15,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Throwable;
 
 class ApiLmsCourseController extends Controller
 {
@@ -478,13 +480,52 @@ class ApiLmsCourseController extends Controller
         return $this->isLmsCache[$key];
     }
 
-    private function getChapterContentCategories($chapter_id, $subject_id, $standard_id, $sub_institute_id): array
+    /**
+     * Content sources that mean "produced by the Generate Content flow" rather
+     * than uploaded by a person. Kept as a list because the generator has written
+     * more than one marker over time.
+     */
+    private const GENERATED_CONTENT_SOURCES = ['Gamma AI', 'aiGenerated'];
+
+    /**
+     * Restrict a content_master query to uploaded or generated rows.
+     *
+     * `source` was only ever stamped by part of the generator, so rows that
+     * predate the stamping are NULL. Those are uploads — the upload path is what
+     * created the bulk of the table — so NULL counts as uploaded, and only an
+     * explicit generated marker counts as generated.
+     */
+    private function applyContentSourceFilter($query, ?string $source)
+    {
+        $source = trim((string) $source);
+
+        if ($source === '' || strtolower($source) === 'all') {
+            return $query;
+        }
+
+        if (in_array($source, self::GENERATED_CONTENT_SOURCES, true)) {
+            return $query->whereIn('content_master.source', self::GENERATED_CONTENT_SOURCES);
+        }
+
+        return $query->where(function ($q) {
+            $q->whereNull('content_master.source')
+                ->orWhereNotIn('content_master.source', self::GENERATED_CONTENT_SOURCES);
+        });
+    }
+
+    private function getChapterContentCategories($chapter_id, $subject_id, $standard_id, $sub_institute_id, ?string $source = null): array
     {
         $getIsLms = DB::table('school_setup')
             ->where('Id', $sub_institute_id)
             ->value('is_Lms');
 
-        $content_data = DB::table('content_master')
+        // The concept a content item is filed under lives in lms_concept, reached
+        // through the existing content_master.concept_id mapping. Left-joined so
+        // untagged rows still come back, just without a concept name. `select` keeps
+        // content_master.* so the payload the client already reads is unchanged.
+        $content_query = DB::table('content_master')
+            ->leftJoin('lms_concept', 'lms_concept.id', '=', 'content_master.concept_id')
+            ->select('content_master.*', 'lms_concept.name as concept_name')
             ->where(function ($query) use ($getIsLms, $sub_institute_id) {
                 if ($getIsLms == 'Y') {
                     $query->where('content_master.sub_institute_id', '1')
@@ -499,7 +540,9 @@ class ApiLmsCourseController extends Controller
             ->where(function ($query) {
                 $query->whereNull('content_master.topic_id')
                     ->orWhere('content_master.topic_id', '0');
-            })
+            });
+
+        $content_data = $this->applyContentSourceFilter($content_query, $source)
             ->get()
             ->toArray();
 
@@ -511,10 +554,14 @@ class ApiLmsCourseController extends Controller
             $content_by_category[$cat][] = $contentArray;
         }
 
-        $flash = DB::table('lms_flashcard')
-            ->where(['chapter_id' => $chapter_id, 'sub_institute_id' => $sub_institute_id, 'status' => 1])
-            ->get()
-            ->toArray();
+        // Flashcards have no source column: they are authored, never generated, so
+        // they belong in an uploaded view and are left out of a generated one.
+        $flash = in_array(trim((string) $source), self::GENERATED_CONTENT_SOURCES, true)
+            ? []
+            : DB::table('lms_flashcard')
+                ->where(['chapter_id' => $chapter_id, 'sub_institute_id' => $sub_institute_id, 'status' => 1])
+                ->get()
+                ->toArray();
 
         $content_by_category['Flash Cards'] = array_map(function ($f) {
             return (array)$f;
@@ -569,7 +616,8 @@ class ApiLmsCourseController extends Controller
             $chapter->id,
             $chapter->subject_id,
             $chapter->standard_id,
-            $sub_institute_id
+            $sub_institute_id,
+            $request->input('source')
         );
 
         return response()->json([
@@ -1330,6 +1378,10 @@ $restrict_date = $request->input('restrict_date');
             'sort_order' => $request->input('sort_order'),
             'meta_tags' => $request->input('meta_tags'),
             'content_category' => $content_category,
+            // Stamped so the content library can tell an upload apart from
+            // generated content. Rows that predate this are NULL and are read as
+            // uploads, which is what they are.
+            'source' => 'Uploaded',
             'created_by' => $user_id,
             'sub_institute_id' => $sub_institute_id,
             'restrict_date' => $request->input('restrict_date') ? date('Y-m-d', strtotime($request->input('restrict_date'))) : null,
@@ -1420,6 +1472,12 @@ $restrict_date = $request->input('restrict_date');
                 'lms_question_master.id',
                 'lms_question_master.chapter_id',
                 'lms_question_master.topic_id',
+                // concept_id points at lms_concept and topic_id at topic_master —
+                // different id spaces. `concept` is the name stored on the question
+                // itself, which is the only link left on rows whose ids no longer
+                // resolve. The client needs all three to label a question correctly.
+                'lms_question_master.concept_id',
+                'lms_question_master.concept',
                 'lms_question_master.question_title',
                 'question_type_master.question_type',
                 'lms_question_master.points as marks',
@@ -1466,21 +1524,26 @@ $restrict_date = $request->input('restrict_date');
         $data = [];
         foreach ($questions as $question) {
             $qid = (int) $question['id'];
-            $questionTypeLabel = strtoupper((string) ($question['question_type'] ?? ''));
-            if ($questionTypeLabel === 'MCQ' || $questionTypeLabel === 'MULTIPLE_CHOICE') {
-                $questionTypeLabel = 'MCQ';
-            } elseif ($questionTypeLabel === 'NARRATIVE' || $questionTypeLabel === 'SUBJECTIVE') {
-                $questionTypeLabel = 'Narrative';
-            }
+            // question_type_master spells the multiple-choice row 'multiple', not
+            // 'MCQ' — that is what the ~55k MCQ rows point at. Anything that is not a
+            // multiple-choice type is answered in prose, so it presents as Narrative.
+            $rawQuestionType = strtolower(trim((string) ($question['question_type'] ?? '')));
+            $questionTypeLabel = in_array(
+                $rawQuestionType,
+                ['mcq', 'multiple', 'multiple choice', 'multiple_choice'],
+                true
+            ) ? 'MCQ' : 'Narrative';
 
             $data[] = [
                 'id' => (int) $question['id'],
                 'chapter_id' => (int) $question['chapter_id'],
                 'topic_id' => $question['topic_id'] !== null ? (int) $question['topic_id'] : null,
+                'concept_id' => $question['concept_id'] !== null ? (int) $question['concept_id'] : null,
+                'concept' => $question['concept'] !== null ? (string) $question['concept'] : null,
                 'question' => (string) ($question['question_title'] ?? ''),
                 'question_type' => $questionTypeLabel,
                 'options' => $optionsByQuestion[$qid] ?? [],
-                'model_answer' => $question['model_answer'] !== null ? (string) $question['model_answer'] : null,
+                'model_answer' => $this->readableModelAnswer($question['model_answer'] ?? null),
                 'marks' => (int) ($question['marks'] ?? 1),
             ];
         }
@@ -1490,6 +1553,331 @@ $restrict_date = $request->input('restrict_date');
             'message' => 'Questions fetched successfully.',
             'data' => $data,
         ], 200);
+    }
+
+    /**
+     * POST /api/lms-question-bank/update
+     *
+     * Save an edited Question Bank question. Writes to the same two tables the
+     * bank reads from — the question row in `lms_question_master` and its options
+     * in `answer_master` — so an edit is there on the next fetch.
+     */
+    public function updateQuestionBank(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'id'                   => 'required|integer',
+            'sub_institute_id'     => 'required|integer',
+            'question'             => 'required|string',
+            'question_type'        => 'required|string|in:MCQ,Narrative',
+            'marks'                => 'required|integer|min:1',
+            'concept_id'           => 'nullable|integer',
+            'concept'              => 'nullable|string|max:250',
+            'model_answer'         => 'nullable|string',
+            'options'              => 'required_if:question_type,MCQ|array',
+            'options.*.label'      => 'required_with:options|string|max:8',
+            'options.*.text'       => 'required_with:options|string',
+            'options.*.is_correct' => 'nullable|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Validation failed.',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        $input          = $validator->validated();
+        $questionId     = (int) $input['id'];
+        $subInstituteId = (int) $input['sub_institute_id'];
+
+        $question = DB::table('lms_question_master')->where('id', $questionId)->first();
+
+        if (!$question) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Question not found.',
+            ], 404);
+        }
+
+        // Tenant guard. The question row's own sub_institute_id is unreliable —
+        // shared content is stamped institute 1 while sitting on a tenant's chapter
+        // — so authority comes from the chapter that owns the question. A tenant may
+        // only rewrite questions on its own chapters: content shared from another
+        // institute is read-only here, because one tenant's edit would otherwise
+        // change what every other tenant sees.
+        $chapterInstituteId = DB::table('chapter_master')
+            ->where('id', $question->chapter_id)
+            ->value('sub_institute_id');
+
+        if ($chapterInstituteId === null || (int) $chapterInstituteId !== $subInstituteId) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'This question belongs to another institute and cannot be edited here.',
+            ], 403);
+        }
+
+        $isMcq = $input['question_type'] === 'MCQ';
+
+        // question_type_master spells multiple-choice 'multiple'. Resolved by name
+        // so the ids stay owned by the table instead of being hardcoded here.
+        $questionTypeId = DB::table('question_type_master')
+            ->whereIn(DB::raw('LOWER(question_type)'), $isMcq
+                ? ['multiple', 'mcq', 'multiple choice', 'multiple_choice']
+                : ['narrative'])
+            ->orderBy('id')
+            ->value('id');
+
+        $update = [
+            'question_title' => $input['question'],
+            'points'         => (int) $input['marks'],
+        ];
+
+        if ($questionTypeId) {
+            $update['question_type_id'] = (int) $questionTypeId;
+        }
+
+        if (array_key_exists('concept_id', $input)) {
+            $update['concept_id'] = $input['concept_id'] !== null ? (int) $input['concept_id'] : null;
+        }
+
+        if (array_key_exists('concept', $input)) {
+            $update['concept'] = $input['concept'];
+        }
+
+        $options = $isMcq ? array_values($input['options'] ?? []) : [];
+
+        // `answer` doubles as the generated-question JSON envelope and as the
+        // plain-text model answer. Only ever rewrite it in the shape it already
+        // holds, so an edit never destroys an envelope's rationales and metadata.
+        $envelope = $this->decodeAnswerEnvelope((string) ($question->answer ?? ''));
+
+        if ($isMcq) {
+            if ($envelope !== null) {
+                $update['answer'] = json_encode(
+                    $this->syncEnvelopeOptions($envelope, $options),
+                    JSON_UNESCAPED_UNICODE
+                );
+            }
+        } elseif ($envelope === null) {
+            $update['answer'] = $input['model_answer'] ?? null;
+        } elseif (array_key_exists('model_answer', $input)) {
+            // A generated narrative question keeps its model answer inside the
+            // envelope, alongside marking points and keywords. Write the edit into
+            // that field so it survives instead of being dropped.
+            $envelope['model_answer'] = (string) ($input['model_answer'] ?? '');
+            $update['answer'] = json_encode($envelope, JSON_UNESCAPED_UNICODE);
+        }
+
+        try {
+            DB::transaction(function () use ($questionId, $update, $isMcq, $options, $subInstituteId) {
+                DB::table('lms_question_master')->where('id', $questionId)->update($update);
+
+                // Options are replaced wholesale. Clearing them for a narrative
+                // question matters too: stale rows would make the bank render it
+                // as multiple choice on the next fetch.
+                DB::table('answer_master')->where('question_id', $questionId)->delete();
+
+                if (!$isMcq || empty($options)) {
+                    return;
+                }
+
+                $rows = [];
+                foreach ($options as $option) {
+                    $text = trim((string) ($option['text'] ?? ''));
+                    if ($text === '') {
+                        continue;
+                    }
+
+                    $rows[] = [
+                        'question_id'      => $questionId,
+                        // answer is varchar(250) — the same backstop the generator uses.
+                        'answer'           => mb_substr($text, 0, 250),
+                        'correct_answer'   => !empty($option['is_correct']) ? 1 : 0,
+                        'sub_institute_id' => $subInstituteId,
+                        'created_on'       => now(),
+                    ];
+                }
+
+                if (!empty($rows)) {
+                    DB::table('answer_master')->insert($rows);
+                }
+            });
+        } catch (Throwable $e) {
+            Log::error('Question bank update failed', [
+                'question_id' => $questionId,
+                'error'       => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status'  => false,
+                'message' => 'Failed to save the question.',
+            ], 500);
+        }
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Question updated successfully.',
+            'data'    => ['id' => $questionId],
+        ], 200);
+    }
+
+    /**
+     * POST /api/lms-question-bank/delete
+     *
+     * Remove a Question Bank question. This is a soft delete: it stamps
+     * `lms_question_master.deleted_at` with the current date and time and leaves
+     * the row (and its `answer_master` options) in place, so question papers and
+     * exam answers that still reference the id keep resolving, and the question
+     * can be restored. `getQuestionBank` reads through the model's soft-delete
+     * scope, so the question is gone from the bank on the next fetch.
+     */
+    public function deleteQuestionBank(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'id'               => 'required|integer',
+            'sub_institute_id' => 'required|integer',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Validation failed.',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        $input          = $validator->validated();
+        $questionId     = (int) $input['id'];
+        $subInstituteId = (int) $input['sub_institute_id'];
+
+        $question = lmsQuestionMasterModel::find($questionId);
+
+        if (!$question) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Question not found.',
+            ], 404);
+        }
+
+        // Same tenant guard as updateQuestionBank: authority comes from the chapter
+        // that owns the question, not from the question's own sub_institute_id,
+        // because shared content is stamped institute 1 while sitting on a tenant's
+        // chapter. A tenant may not delete a question on another institute's chapter.
+        $chapterInstituteId = DB::table('chapter_master')
+            ->where('id', $question->chapter_id)
+            ->value('sub_institute_id');
+
+        if ($chapterInstituteId === null || (int) $chapterInstituteId !== $subInstituteId) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'This question belongs to another institute and cannot be deleted here.',
+            ], 403);
+        }
+
+        try {
+            $question->delete();
+        } catch (Throwable $e) {
+            Log::error('Question bank delete failed', [
+                'question_id' => $questionId,
+                'error'       => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status'  => false,
+                'message' => 'Failed to delete the question.',
+            ], 500);
+        }
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Question deleted successfully.',
+            'data'    => [
+                'id'         => $questionId,
+                'deleted_at' => optional($question->deleted_at)->toDateTimeString(),
+            ],
+        ], 200);
+    }
+
+    /**
+     * The model answer to show for a question.
+     *
+     * `answer` holds either plain text or a generated-question JSON envelope. A
+     * narrative envelope carries the model answer in its own `model_answer` field,
+     * so that is unwrapped here — otherwise the bank would render raw JSON, and the
+     * editor would show an empty box. MCQ envelopes have no such field and are
+     * passed through untouched, because the client still reads their options from
+     * the envelope when a question has no answer_master rows.
+     */
+    private function readableModelAnswer($value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $envelope = $this->decodeAnswerEnvelope((string) $value);
+        $modelAnswer = $envelope['model_answer'] ?? null;
+
+        if (is_string($modelAnswer) && trim($modelAnswer) !== '') {
+            return $modelAnswer;
+        }
+
+        return (string) $value;
+    }
+
+    /**
+     * Decode `lms_question_master.answer` when it holds a generated-question JSON
+     * envelope. Returns null for a plain-text model answer or an empty column.
+     */
+    private function decodeAnswerEnvelope(string $value): ?array
+    {
+        $trimmed = trim($value);
+
+        if ($trimmed === '' || !str_starts_with($trimmed, '{')) {
+            return null;
+        }
+
+        $decoded = json_decode($trimmed, true);
+
+        return is_array($decoded) ? $decoded : null;
+    }
+
+    /**
+     * Apply edited option text and the correct answer back onto a JSON envelope,
+     * matching by label so the envelope's rationales and misconception refs survive.
+     */
+    private function syncEnvelopeOptions(array $envelope, array $options): array
+    {
+        $editedByLabel = [];
+        $correctLabel  = null;
+
+        foreach ($options as $option) {
+            $label = (string) ($option['label'] ?? '');
+            $editedByLabel[$label] = $option;
+
+            if ($correctLabel === null && !empty($option['is_correct'])) {
+                $correctLabel = $label;
+            }
+        }
+
+        if (isset($envelope['options']) && is_array($envelope['options'])) {
+            foreach ($envelope['options'] as $index => $envelopeOption) {
+                $label = (string) ($envelopeOption['label'] ?? '');
+
+                if (!isset($editedByLabel[$label])) {
+                    continue;
+                }
+
+                $envelope['options'][$index]['text']       = (string) $editedByLabel[$label]['text'];
+                $envelope['options'][$index]['is_correct'] = !empty($editedByLabel[$label]['is_correct']);
+            }
+        }
+
+        if ($correctLabel !== null) {
+            $envelope['correct_option'] = $correctLabel;
+        }
+
+        return $envelope;
     }
 
     /**

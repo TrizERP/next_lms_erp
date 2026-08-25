@@ -1527,6 +1527,43 @@ public function generateGammaPDF(Request $request)
 
     }
 
+    /**
+     * The lms_concept row a generated item belongs to.
+     *
+     * Prefers the id the caller sent, but only after checking it really belongs to
+     * this chapter, so a stale selection cannot file content under another
+     * chapter's concept. Falls back to an exact name match within the chapter.
+     * Returns null when neither resolves — content is never guessed into a concept.
+     */
+    private function resolveContentConceptId($chapterId, $conceptId, string $conceptName)
+    {
+        if (!empty($conceptId)) {
+            $verified = DB::table('lms_concept')
+                ->where('id', (int) $conceptId)
+                ->where('chapter_id', $chapterId)
+                ->value('id');
+
+            if ($verified) {
+                return (int) $verified;
+            }
+        }
+
+        $conceptName = trim($conceptName);
+
+        if ($conceptName !== '') {
+            $byName = DB::table('lms_concept')
+                ->where('chapter_id', $chapterId)
+                ->whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower($conceptName)])
+                ->value('id');
+
+            if ($byName) {
+                return (int) $byName;
+            }
+        }
+
+        return null;
+    }
+
     public function storeGammaContent(Request $request)
     {
         @set_time_limit(600);
@@ -1542,10 +1579,18 @@ public function generateGammaPDF(Request $request)
             'format' => 'nullable|in:presentation,document,social',
             'export_format' => 'nullable|in:pdf,pptx',
             'slide_count' => 'nullable|integer|min:1|max:50',
+            'concept_id' => 'nullable|integer',
+            'concept_name' => 'nullable|string|max:250',
         ]);
 
         $chapterName = $request->chapter_name;
         $prompt = $request->prompt;
+        // The generator is driven by one concept; recording it means the content
+        // library can show a concept name instead of only the chapter. Sent as an
+        // id by the drawer, with the name as a fallback for callers that only
+        // have that.
+        $requestConceptId = $request->input('concept_id');
+        $requestConceptName = trim((string) $request->input('concept_name', ''));
         $contentType = trim((string) $request->input('content_type'));
         $normalizedContentType = strtolower(str_replace(['-', ' '], '_', $contentType));
         // Teacher-training decks are generated the same way as classroom ones, but
@@ -1748,6 +1793,11 @@ public function generateGammaPDF(Request $request)
                     'subject_id' => $chapterData->subject_id,
                     'chapter_id' => $chapterData->id,
                     'topic_id' => null,
+                    'concept_id' => $this->resolveContentConceptId(
+                        $chapterData->id,
+                        $requestConceptId,
+                        $requestConceptName
+                    ),
                     'title' => $chapterName . ' ' . $contentType,
                     'description' => $prompt,
                     'file_folder' => '/lms_content_file',
@@ -1945,6 +1995,11 @@ public function generateGammaPDF(Request $request)
                 'subject_id' => $chapterData->subject_id,
                 'chapter_id' => $chapterData->id,
                 'topic_id' => null,
+                'concept_id' => $this->resolveContentConceptId(
+                    $chapterData->id,
+                    $requestConceptId,
+                    $requestConceptName
+                ),
                 'title' => $chapterName,
                 'description' => $prompt,
                 'file_folder' => '/lms_content_file',
@@ -1956,6 +2011,9 @@ public function generateGammaPDF(Request $request)
                 'sort_order' => null,
                 'meta_tags' => null,
                 'content_category' => $contentType,
+                // Matches the Gemini branch above: generated content is marked so
+                // the content library never presents it as an upload.
+                'source' => 'Gamma AI',
                 'created_by' => $user_id,
                 'sub_institute_id' => $sub_institute_id,
                 'restrict_date' => null,

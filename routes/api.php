@@ -140,6 +140,8 @@ Route::post('lms-chapters', [ApiLmsCourseController::class, 'chapters']);
 Route::post('lms-chapter-content', [ApiLmsCourseController::class, 'chapterContent']);
 Route::post('lms-questions', [ApiLmsCourseController::class, 'getLmsQuestions']);
 Route::post('lms-question-bank', [ApiLmsCourseController::class, 'getQuestionBank']);
+Route::post('lms-question-bank/update', [ApiLmsCourseController::class, 'updateQuestionBank']);
+Route::post('lms-question-bank/delete', [ApiLmsCourseController::class, 'deleteQuestionBank']);
 Route::get('question-mapping-levels', [ApiLmsCourseController::class, 'getQuestionMappingLevels']);
 Route::post('lms-chapters/store', [ApiLmsCourseController::class, 'storeChapter']);
 Route::post('lms-create-content', [ApiLmsCourseController::class, 'createContent']);

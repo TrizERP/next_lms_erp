@@ -1565,11 +1565,68 @@ SCHEMA;
         return $rows;
     }
 
+    /**
+     * Build answer_master rows for one inserted MCQ from its answer envelope.
+     *
+     * The envelope keeps the full option objects (rationale, distractor_type,
+     * misconception_ref) but the quiz runtime reads options from answer_master
+     * only: palController::create() INNER JOINs it to pick questions, and
+     * exam.blade.php renders `answer_master.id ## correct_answer` as the radio
+     * value that grading later compares against. A generated question with no
+     * answer_master rows is therefore invisible to the learner, so materialise
+     * them here alongside the envelope rather than only inside the JSON.
+     */
+    protected function buildAnswerRows(int $questionId, array $answer, array $ctx): array
+    {
+        $options = $answer['options'] ?? null;
+        if (!is_array($options) || empty($options)) {
+            return [];
+        }
+
+        $rows = [];
+        foreach ($options as $option) {
+            $text = trim((string) ($option['text'] ?? ''));
+            if ($text === '') {
+                continue;
+            }
+
+            // answer / feedback are varchar(250) — same backstop as description.
+            if (mb_strlen($text) > 250) {
+                Log::warning("QuestionGeneration: option text truncated for question {$questionId}");
+                $text = mb_substr($text, 0, 250);
+            }
+            $feedback = trim((string) ($option['rationale'] ?? ''));
+            $feedback = $feedback === '' ? null : mb_substr($feedback, 0, 250);
+
+            $rows[] = [
+                'question_id'      => $questionId,
+                'answer'           => $text,
+                'feedback'         => $feedback,
+                'correct_answer'   => !empty($option['is_correct']) ? 1 : 0,
+                'sub_institute_id' => $ctx['sub_institute_id'] ?? null,
+                'created_by'       => $ctx['created_by'] ?? null,
+                'created_on'       => now(),
+            ];
+        }
+
+        // Never persist an unanswerable option set: a question whose options all
+        // read is_correct=false would be served and then graded wrong for every
+        // learner. Drop it back into the JSON-only state and log instead.
+        $correct = array_sum(array_column($rows, 'correct_answer'));
+        if ($correct < 1) {
+            Log::warning("QuestionGeneration: no correct option for question {$questionId}, skipping answer_master");
+            return [];
+        }
+
+        return $rows;
+    }
+
     protected function persist(array $resp, string $type, array $ctx, array $meta): array
     {
         $insertedIds = [];
         $insertedQuestions = [];
         $mappingRows = [];
+        $answerRows = [];
         $skippedDup = 0;
         $conceptId = $ctx['concept_id'];
         $questionTypeId = $ctx['question_type_id'];
@@ -1646,11 +1703,17 @@ SCHEMA;
                 $insertedQuestions[] = $this->questionPreview((int) $id, $row, $type);
                 // Auto-tag DOK + Bloom in lms_question_mapping from the answer envelope.
                 $mappingRows = array_merge($mappingRows, $this->buildQuestionMappings((int) $id, $answer));
+                // Materialise the options the quiz runtime actually reads.
+                $answerRows = array_merge($answerRows, $this->buildAnswerRows((int) $id, $answer, $ctx));
             }
         }
 
         if (!empty($mappingRows)) {
             DB::table('lms_question_mapping')->insert($mappingRows);
+        }
+
+        if (!empty($answerRows)) {
+            DB::table('answer_master')->insert($answerRows);
         }
 
         return [
@@ -1659,6 +1722,7 @@ SCHEMA;
             'ids'               => $insertedIds,
             'questions'         => $insertedQuestions,
             'mappings_inserted' => count($mappingRows),
+            'answers_inserted'  => count($answerRows),
         ];
     }
 
@@ -1885,6 +1949,7 @@ SCHEMA;
                 'generated'             => $generated,
                 'inserted'              => $persist['inserted'],
                 'mappings_inserted'     => $persist['mappings_inserted'] ?? 0,
+                'answers_inserted'      => $persist['answers_inserted'] ?? 0,
                 'skipped_duplicate'     => $persist['skipped_duplicate'],
                 'skipped_invalid'       => count($invalidReasons),
                 'invalid_reasons'       => $invalidReasons,
