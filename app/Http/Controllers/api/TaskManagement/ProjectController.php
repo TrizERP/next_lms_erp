@@ -88,6 +88,7 @@ class ProjectController extends Controller
                 [$request->input('manager_id'), $request->input('sponsor_id')]
             ))));
             $this->syncMembers($id, $members, $context['user_id']);
+            $this->syncDepartments($id, $request, (int) $context['user_id']);
             return $id;
         });
 
@@ -128,6 +129,7 @@ class ProjectController extends Controller
                 [$request->input('manager_id'), $request->input('sponsor_id')]
             ))));
             $this->syncMembers($id, $members, $context['user_id']);
+            $this->syncDepartments($id, $request, (int) $context['user_id']);
         });
 
         return $this->taskManagementResponse($this->findProject($context, $id, true), 'Project updated successfully.');
@@ -350,6 +352,11 @@ class ProjectController extends Controller
         return Validator::make($request->all(), [
             'name' => 'required|string|max:191', 'category' => ['nullable', Rule::in(self::CATEGORIES)],
             'description' => 'required|string', 'department_id' => 'nullable|integer',
+            // department_id is THE PRIMARY department; department_ids is the
+            // full set. Both are tenant-checked in the after() hook below -
+            // without it any integer was accepted and stored, including
+            // another organisation's department.
+            'department_ids' => 'nullable|array', 'department_ids.*' => 'integer',
             'sponsor_id' => 'nullable|integer', 'manager_id' => 'required|integer',
             'team_size' => 'nullable|string|max:20', 'member_ids' => 'nullable|array',
             'member_ids.*' => 'integer', 'priority' => ['required', Rule::in(self::PRIORITIES)],
@@ -358,6 +365,25 @@ class ProjectController extends Controller
             'client_name' => 'nullable|string|max:191', 'regulatory_flags' => 'nullable|array',
             'regulatory_flags.*' => 'string|max:30',
         ])->after(function ($validator) use ($request, $context) {
+            // Every department named must belong to THIS tenant. Without this
+            // a caller could attach a project to another organisation's
+            // department and it would render under their name.
+            $departments = array_values(array_unique(array_filter(array_merge(
+                $request->input('department_ids', []),
+                [$request->input('department_id')]
+            ))));
+
+            if ($departments) {
+                $valid = DB::table('hrms_departments')
+                    ->whereIn('id', $departments)
+                    ->where('sub_institute_id', $context['sub_institute_id'])
+                    ->pluck('id')->all();
+
+                if (count($valid) !== count($departments)) {
+                    $validator->errors()->add('department_ids', 'One or more selected departments do not belong to this organisation.');
+                }
+            }
+
             try {
                 $this->validateTenantUsers(array_filter(array_merge($request->input('member_ids', []), [$request->input('manager_id'), $request->input('sponsor_id')])), $context);
             } catch (\InvalidArgumentException $e) {
@@ -373,8 +399,8 @@ class ProjectController extends Controller
             'description' => trim($request->input('description')), 'department_id' => $request->input('department_id'),
             'sponsor_id' => $request->input('sponsor_id'), 'manager_id' => $request->input('manager_id'),
             'team_size' => $request->input('team_size'), 'priority' => $request->input('priority'),
-            'status' => $request->input('status', 'PLANNING'), 'start_date' => $request->input('start_date'),
-            'due_date' => $request->input('due_date'), 'budget_estimate' => $request->input('budget_estimate'),
+            'status' => $request->input('status', 'PLANNING'), 'start_date' => $this->dateOnly($request->input('start_date')),
+            'due_date' => $this->dateOnly($request->input('due_date')), 'budget_estimate' => $request->input('budget_estimate'),
             'client_name' => $request->input('client_name'), 'regulatory_flags' => json_encode($request->input('regulatory_flags', [])),
             'sub_institute_id' => $context['sub_institute_id'], 'syear' => $context['syear'],
         ];
@@ -409,8 +435,113 @@ class ProjectController extends Controller
                 ->where('w.project_id', $id)->orderBy('w.sort_order')->orderBy('w.id')
                 ->select('w.*', DB::raw("TRIM(CONCAT_WS(' ', owner.first_name, owner.middle_name, owner.last_name)) as owner_name"))->get();
             $resource['task_ids'] = DB::table('task_management_project_tasks')->where('project_id', $id)->pluck('task_id')->map(fn ($id) => (string) $id)->all();
+            $resource['tasks'] = $this->linkedTasks($context, $id);
+            $resource['departments'] = $this->departments($id);
         }
         return $resource;
+    }
+
+    /**
+     * The tasks actually linked to this project, hydrated.
+     *
+     * The "Linked tasks" tab used to be built by filtering the global
+     * options()-style task list by the project's department - and that list
+     * carries the ASSIGNEE's department, not the task's, so the tab was
+     * empty whenever the project had no department, or when no assignee
+     * among the sampled tasks happened to match, even though tasks were
+     * actually linked. The link has always existed in
+     * task_management_project_tasks; this returns the whole row (including
+     * `workstream_id`, so workstream placement is visible too) instead of
+     * re-deriving membership from an unrelated field.
+     *
+     * TENANT SCOPING: task_management_project_tasks has no sub_institute_id.
+     * The `task` join is filtered on tenant + syear so a link row pointing
+     * at another tenant's task cannot surface it here.
+     */
+    private function linkedTasks(array $context, int $projectId)
+    {
+        return DB::table('task_management_project_tasks as pt')
+            ->join('task as t', 't.ID', '=', 'pt.task_id')
+            ->leftJoin('tbluser as assignee', 'assignee.id', '=', 't.TASK_ALLOCATED_TO')
+            ->leftJoin('task_management_workstreams as w', 'w.id', '=', 'pt.workstream_id')
+            ->where('pt.project_id', $projectId)
+            ->where('t.sub_institute_id', $context['sub_institute_id'])
+            ->where('t.SYEAR', $context['syear'])
+            ->whereNull('t.deleted_at')
+            ->orderBy('w.sort_order')->orderByDesc('t.ID')
+            ->select(
+                't.ID', 't.TASK_TITLE as title', 't.STATUS', 't.TASK_DATE as due_date',
+                'pt.workstream_id', 'w.name as workstream_name',
+                DB::raw("TRIM(CONCAT_WS(' ', assignee.first_name, assignee.middle_name, assignee.last_name)) as assignee")
+            )
+            ->get()
+            ->map(fn ($row) => [
+                'id' => (string) $row->ID,
+                'title' => $row->title,
+                'status' => $row->STATUS,
+                'due_date' => $row->due_date,
+                'assignee' => $row->assignee ?: null,
+                'workstream_id' => $row->workstream_id ? (string) $row->workstream_id : null,
+                'workstream_name' => $row->workstream_name,
+            ])
+            ->all();
+    }
+
+    /**
+     * Replace this project's department set.
+     *
+     * Mirrors syncMembers(): delete-and-reinsert, so the request describes
+     * the whole set rather than a diff. `department_id` on the project row
+     * is rewritten from whichever department is primary, which keeps the
+     * single column and the join table from ever disagreeing - the project
+     * list, the Home dashboard and every existing report still read that
+     * column.
+     *
+     * The primary is the explicit `department_id` when given, otherwise the
+     * first of `department_ids`. A project with no departments clears both.
+     */
+    private function syncDepartments(int $projectId, Request $request, int $userId): void
+    {
+        $all = array_values(array_unique(array_filter(array_merge(
+            $request->input('department_ids', []),
+            [$request->input('department_id')]
+        ))));
+
+        $primary = $request->input('department_id') ?: ($all[0] ?? null);
+
+        DB::table('task_management_project_departments')->where('project_id', $projectId)->delete();
+
+        if ($all) {
+            DB::table('task_management_project_departments')->insert(
+                array_map(fn ($departmentId) => [
+                    'project_id' => $projectId,
+                    'department_id' => (int) $departmentId,
+                    'is_primary' => (int) $departmentId === (int) $primary,
+                    'created_by' => $userId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ], $all)
+            );
+        }
+
+        // Keep the scalar column in step with the primary row.
+        DB::table('task_management_projects')->where('id', $projectId)
+            ->update(['department_id' => $primary ? (int) $primary : null]);
+    }
+
+    /** Every department on a project, primary first. */
+    private function departments(int $projectId): array
+    {
+        return DB::table('task_management_project_departments as pd')
+            ->leftJoin('hrms_departments as d', 'd.id', '=', 'pd.department_id')
+            ->where('pd.project_id', $projectId)
+            ->orderByDesc('pd.is_primary')->orderBy('d.department')
+            ->get(['pd.department_id', 'd.department as name', 'pd.is_primary'])
+            ->map(fn ($row) => [
+                'id' => (string) $row->department_id,
+                'name' => $row->name,
+                'is_primary' => (bool) $row->is_primary,
+            ])->all();
     }
 
     private function resource(object $row): array
@@ -497,7 +628,19 @@ class ProjectController extends Controller
 
     private function workstreamPayload(Request $request): array
     {
-        return $request->only(['name', 'description', 'owner_id', 'status', 'start_date', 'due_date', 'sort_order']);
+        $payload = $request->only(['name', 'description', 'owner_id', 'status', 'start_date', 'due_date', 'sort_order']);
+
+        // Same normalisation as projects. `only()` omits absent keys so a
+        // partial update still leaves untouched fields alone - but any date
+        // that IS present must be pinned to a calendar day before it reaches
+        // the `date` column.
+        foreach (['start_date', 'due_date'] as $field) {
+            if (array_key_exists($field, $payload)) {
+                $payload[$field] = $this->dateOnly($payload[$field]);
+            }
+        }
+
+        return $payload;
     }
 
     private function workstream(int $projectId, int $id)

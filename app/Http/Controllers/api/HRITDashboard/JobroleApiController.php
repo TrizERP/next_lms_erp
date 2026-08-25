@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\api\HRITDashboard;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Concerns\ResolvesApiIdentity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class JobroleApiController extends Controller
 {
+    use ResolvesApiIdentity;
+
     public function getDepartmentWise(Request $request)
 {
-    $subInstituteId = $request->sub_institute_id;
+    $subInstituteId = $this->apiTenantId($request);
     $departmentId   = $request->department_id;
 
     if (!$subInstituteId) {

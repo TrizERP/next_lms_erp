@@ -192,9 +192,24 @@ class WorkspaceController extends Controller
 
         $this->logTaskActivity($context['sub_institute_id'], $context['user_id'], 'workspace_updated', 'Task updated', null, null, null, null, $id);
 
+        // Out-of-order work is reported, not refused - the same rule as
+        // MyTasksController::updateStatus. See
+        // ResolvesTaskManagementContext::openPredecessors().
+        $warnings = [];
+        if (in_array($resolvedStatus['status'], ['IN-PROGRESS', 'COMPLETED'], true)) {
+            $open = $this->openPredecessors($id, $context['sub_institute_id'], $context['syear']);
+            foreach ($open as $predecessor) {
+                $warnings[] = [
+                    'code' => 'predecessor_open',
+                    'message' => 'This task depends on "' . $predecessor['title'] . '", which is still ' . $predecessor['status'] . '.',
+                    'task_id' => $predecessor['id'],
+                ];
+            }
+        }
+
         $updatedTask = $this->baseQuery($context, 'all')->where('t.ID', $id)->first();
 
-        return $this->taskManagementResponse($this->resource($updatedTask, true), 'Task updated successfully.');
+        return $this->taskManagementResponse($this->resource($updatedTask, true), 'Task updated successfully.', 200, ['warnings' => $warnings]);
     }
 
     public function destroy(Request $request, int $id)

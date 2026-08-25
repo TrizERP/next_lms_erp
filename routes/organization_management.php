@@ -51,9 +51,13 @@ Route::middleware(['api.session'])->group(function () {
         Route::get('/', [EmployeeDirectoryController::class, 'index']);
         Route::post('/', [EmployeeDirectoryController::class, 'store']);
         Route::get('/teachers', [EmployeeDirectoryController::class, 'teacherList']);
+        Route::get('/reference-data', [EmployeeDirectoryController::class, 'referenceData']);
+        Route::post('/create', [EmployeeDirectoryController::class, 'create']);
         Route::get('/{id}', [EmployeeDirectoryController::class, 'show'])->whereNumber('id');
         Route::put('/{id}', [EmployeeDirectoryController::class, 'update'])->whereNumber('id');
         Route::delete('/{id}', [EmployeeDirectoryController::class, 'destroy'])->whereNumber('id');
+        Route::patch('/{id}/status', [EmployeeDirectoryController::class, 'setStatus'])->whereNumber('id');
+        Route::post('/{id}/invite', [EmployeeDirectoryController::class, 'invite'])->whereNumber('id');
         Route::post('/{id}/documents', [EmployeeDirectoryController::class, 'uploadDocument'])->whereNumber('id');
         Route::get('/{id}/competency-profile', [EmployeeDirectoryController::class, 'competencyProfile'])->whereNumber('id');
         Route::put('/{id}/skills/{matrixId}', [EmployeeDirectoryController::class, 'updateSkillRating'])->whereNumber('id')->whereNumber('matrixId');

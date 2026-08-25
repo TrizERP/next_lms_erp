@@ -34,7 +34,7 @@ class ApplyLeaveController extends Controller
 
         $type = $request->type;
         if($type=="API"){
-            $sub_institute_id=$request->sub_institute_id;
+            // G-SEC-29: sub_institute_id stays the token-verified session value set above, not client-supplied
             $syear = $request->syear;
             $user_id= $request->user_id;
         }
@@ -155,7 +155,7 @@ class ApplyLeaveController extends Controller
                 return response()->json($response, 401);
             }
 
-            $subInstituteId=$request->sub_institute_id;
+            // G-SEC-29: $subInstituteId stays the token-verified session value set above, not client-supplied
             $syear = $request->syear;
             $user_id = $request->get('user_id');
         }
@@ -348,7 +348,7 @@ class ApplyLeaveController extends Controller
         $user_name = session()->get('user_name');
 
         if($type=="API"){
-            $sub_institute_id  = $request->sub_institute_id;
+            // G-SEC-29: $sub_institute_id stays the token-verified session value set above, not client-supplied
             $user_name  = $request->user_name;
         }
         $LeaveUpdate = $request->LeaveUpdate;

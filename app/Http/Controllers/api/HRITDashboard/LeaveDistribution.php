@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\HRITDashboard;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Concerns\ResolvesApiIdentity;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 class LeaveDistribution extends Controller
 {
     use GetsJwtToken;
+    use ResolvesApiIdentity;
 
     public function leaveDistribution(Request $request)
     {
@@ -43,8 +45,8 @@ class LeaveDistribution extends Controller
             }
         }
 
-        // Get sub institute id (header or params)
-        $subInstituteId = $request->sub_institute_id ?? $request->header('sub_institute_id');
+        // Get sub institute id from the verified token only (G-SEC-29)
+        $subInstituteId = $this->apiTenantId($request);
 
         if (!$subInstituteId) {
             return response()->json([

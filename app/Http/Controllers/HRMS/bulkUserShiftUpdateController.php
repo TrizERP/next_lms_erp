@@ -46,7 +46,7 @@ class bulkUserShiftUpdateController extends Controller
                     return response()->json(['status' =>0,'message'=>$validate->errors()->first()]);
                 }
 
-                $sub_institute_id = $request->sub_institute_id;
+                $sub_institute_id = session()->get('sub_institute_id'); // G-SEC-29: token-verified, not client-supplied
                 $syear = $request->syear;
                 
             } catch (\Exception $e) {
@@ -93,13 +93,13 @@ class bulkUserShiftUpdateController extends Controller
                     return response()->json(['status' =>0,'message'=>$validate->errors()->first()]);
                 }
 
-                $sub_institute_id = $request->sub_institute_id;
-                
+                $sub_institute_id = session()->get('sub_institute_id'); // G-SEC-29: token-verified, not client-supplied
+
             } catch (\Exception $e) {
                 $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-    
+
                 return response()->json($response, 401);
-            }           
+            }
         }
 
         $employee_id= ($request->emp_id!=0) ? implode(',',$request->emp_id) : '';
@@ -152,7 +152,7 @@ class bulkUserShiftUpdateController extends Controller
                     return response()->json(['status' =>0,'message'=>$validate->errors()->first()]);
                 }
 
-                $sub_institute_id = $request->sub_institute_id;
+                $sub_institute_id = session()->get('sub_institute_id'); // G-SEC-29: token-verified, not client-supplied
                 $user_id = $request->user_id;
                 
             } catch (\Exception $e) {
