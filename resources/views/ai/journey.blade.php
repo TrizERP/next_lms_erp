@@ -203,7 +203,7 @@
                 </div>
                 <div class="section">
                     <div class="stitle">What the panel on the right shows</div>
-                    <div>Every question is answered by the same fifteen-stage pipeline. Each stage reports
+                    <div>Every question is answered by the same twelve-stage lifecycle. Each stage reports
                         whether it ran, what it did, which class did it, which rows it wrote, and the exact
                         call you can make to check it yourself. Stages that did not run say why.</div>
                 </div>
@@ -298,7 +298,7 @@
                 'intent: ' + data.intent.key + ' (' + Math.round(data.intent.confidence * 100) + '%) · ' + data.duration_ms + 'ms';
 
             thread.appendChild(renderAnswer(data));
-            renderTrace(data.trace);
+            renderTrace(data.lifecycle_trace || data.trace);
             scroll();
         } catch (e) {
             waiting.remove();

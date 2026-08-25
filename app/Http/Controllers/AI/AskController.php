@@ -10,10 +10,12 @@ use Throwable;
 /**
  * The conversational front door.
  *
- * One endpoint answers a question and returns, alongside the answer, the full
- * fifteen-stage trace of which architectural layer did what. That second half is the
- * point: the layers underneath already worked, but a caller had no way to see them, so
- * from the outside the platform looked like a chatbot with an opinion.
+ * One endpoint answers a question and returns, alongside the answer, two views of what
+ * ran: `trace`, the fifteen-stage backend ladder used for diagnostics, and
+ * `lifecycle_trace`, the twelve-stage product lifecycle (Conversational AI -> Action)
+ * that the console renders. That second half is the point: the layers underneath
+ * already worked, but a caller had no way to see them, so from the outside the platform
+ * looked like a chatbot with an opinion.
  *
  * Same middleware stack as the rest of routes/ai.php — the scope comes from
  * McpContextHydrator, never from request input, so a question cannot be asked about

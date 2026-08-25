@@ -288,29 +288,36 @@ class ConversationStore
             ->orderBy('sequence')
             ->limit($limit)
             ->get()
-            ->map(fn ($row) => [
-                'id' => (int) $row->id,
-                'sequence' => (int) $row->sequence,
-                'question' => $row->question,
-                'intent' => [
-                    'key' => $row->intent_key,
-                    'confidence' => $row->intent_confidence === null ? null : (float) $row->intent_confidence,
-                    'slots' => $this->decode($row->intent_slots),
-                ],
-                'answer' => $this->decode($row->answer),
-                'trace' => $this->decode($row->trace),
-                'stage_counts' => $this->decode($row->stage_counts),
-                'links' => array_filter([
-                    'case_id' => $row->case_id ? (int) $row->case_id : null,
-                    'recommendation_id' => $row->recommendation_id ? (int) $row->recommendation_id : null,
-                    'agent_run_id' => $row->agent_run_id ? (int) $row->agent_run_id : null,
-                    'workflow_run_id' => $row->workflow_run_id ? (int) $row->workflow_run_id : null,
-                    'student_id' => $row->subject_id ? (int) $row->subject_id : null,
-                ]),
-                'duration_ms' => $row->duration_ms === null ? null : (int) $row->duration_ms,
-                'status' => $row->status,
-                'asked_at' => $row->created_at,
-            ])
+            ->map(function ($row) {
+                $trace = $this->decode($row->trace);
+                $lifecycle = (new LifecycleTraceProjector())->project($trace);
+
+                return [
+                    'id' => (int) $row->id,
+                    'sequence' => (int) $row->sequence,
+                    'question' => $row->question,
+                    'intent' => [
+                        'key' => $row->intent_key,
+                        'confidence' => $row->intent_confidence === null ? null : (float) $row->intent_confidence,
+                        'slots' => $this->decode($row->intent_slots),
+                    ],
+                    'answer' => $this->decode($row->answer),
+                    'trace' => $trace,
+                    'stage_counts' => $this->decode($row->stage_counts),
+                    'lifecycle_trace' => $lifecycle,
+                    'lifecycle_stage_counts' => (new LifecycleTraceProjector())->summaryCounts($lifecycle),
+                    'links' => array_filter([
+                        'case_id' => $row->case_id ? (int) $row->case_id : null,
+                        'recommendation_id' => $row->recommendation_id ? (int) $row->recommendation_id : null,
+                        'agent_run_id' => $row->agent_run_id ? (int) $row->agent_run_id : null,
+                        'workflow_run_id' => $row->workflow_run_id ? (int) $row->workflow_run_id : null,
+                        'student_id' => $row->subject_id ? (int) $row->subject_id : null,
+                    ]),
+                    'duration_ms' => $row->duration_ms === null ? null : (int) $row->duration_ms,
+                    'status' => $row->status,
+                    'asked_at' => $row->created_at,
+                ];
+            })
             ->all();
 
         return [
