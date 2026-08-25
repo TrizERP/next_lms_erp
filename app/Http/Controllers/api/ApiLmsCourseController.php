@@ -442,13 +442,8 @@ class ApiLmsCourseController extends Controller
                     continue;
                 }
 
+                $content['url'] = $this->resolveContentUrl($content);
                 $byCategory[$content['content_category'] ?? 'General'][] = $content;
-            $content_by_category = [];
-            foreach ($content_data as $content) {
-                $contentArray = (array)$content;
-                $contentArray['url'] = $this->resolveContentUrl($contentArray);
-                $cat = $contentArray['content_category'] ?? 'General';
-                $content_by_category[$cat][] = $contentArray;
             }
 
             $byCategory['Flash Cards'] = $flashByChapter[$chapterId] ?? [];
