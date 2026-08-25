@@ -912,98 +912,98 @@ $restrict_date = $request->input('restrict_date');
             'total' => count($concepts),
         ], 200);
     }
- public function getQuestionBank(Request $request): JsonResponse
-    {
-        $chapterId = $request->input('chapter_id');
-        $topicId = $request->input('topic_id');
-        $questionType = $request->input('question_type');
+    // public function getQuestionBank(Request $request): JsonResponse
+    // {
+    //     $chapterId = $request->input('chapter_id');
+    //     $topicId = $request->input('topic_id');
+    //     $questionType = $request->input('question_type');
 
-        if (!$chapterId) {
-            return response()->json([
-                'status' => false,
-                'message' => 'Missing required field: chapter_id is required.',
-                'data' => [],
-            ], 422);
-        }
+    //     if (!$chapterId) {
+    //         return response()->json([
+    //             'status' => false,
+    //             'message' => 'Missing required field: chapter_id is required.',
+    //             'data' => [],
+    //         ], 422);
+    //     }
 
-        $query = lmsQuestionMasterModel::query()
-            ->where('chapter_id', $chapterId)
-            ->join('question_type_master', 'question_type_master.id', '=', 'lms_question_master.question_type_id')
-            ->select(
-                'lms_question_master.id',
-                'lms_question_master.chapter_id',
-                'lms_question_master.topic_id',
-                'lms_question_master.question_title',
-                'question_type_master.question_type',
-                'lms_question_master.points as marks',
-                'lms_question_master.answer as model_answer'
-            );
+    //     $query = lmsQuestionMasterModel::query()
+    //         ->where('chapter_id', $chapterId)
+    //         ->join('question_type_master', 'question_type_master.id', '=', 'lms_question_master.question_type_id')
+    //         ->select(
+    //             'lms_question_master.id',
+    //             'lms_question_master.chapter_id',
+    //             'lms_question_master.topic_id',
+    //             'lms_question_master.question_title',
+    //             'question_type_master.question_type',
+    //             'lms_question_master.points as marks',
+    //             'lms_question_master.answer as model_answer'
+    //         );
 
-        if ($topicId) {
-            $query->where('lms_question_master.topic_id', $topicId);
-        }
+    //     if ($topicId) {
+    //         $query->where('lms_question_master.topic_id', $topicId);
+    //     }
 
-        if ($questionType) {
-            if (is_numeric($questionType)) {
-                $query->where('lms_question_master.question_type_id', (int) $questionType);
-            } else {
-                $query->where('question_type_master.question_type', trim($questionType));
-            }
-        }
+    //     if ($questionType) {
+    //         if (is_numeric($questionType)) {
+    //             $query->where('lms_question_master.question_type_id', (int) $questionType);
+    //         } else {
+    //             $query->where('question_type_master.question_type', trim($questionType));
+    //         }
+    //     }
 
-        $questions = $query->orderByDesc('lms_question_master.id')->get()->toArray();
+    //     $questions = $query->orderByDesc('lms_question_master.id')->get()->toArray();
 
-        $questionIds = array_column($questions, 'id');
-        $optionsByQuestion = [];
+    //     $questionIds = array_column($questions, 'id');
+    //     $optionsByQuestion = [];
 
-        if (!empty($questionIds)) {
-            $options = \App\Models\lms\answermasterModel::whereIn('question_id', $questionIds)  
-                ->orderBy('id')
-                ->get(['question_id', 'answer', 'correct_answer'])
-                ->toArray();
+    //     if (!empty($questionIds)) {
+    //         $options = \App\Models\lms\answermasterModel::whereIn('question_id', $questionIds)  
+    //             ->orderBy('id')
+    //             ->get(['question_id', 'answer', 'correct_answer'])
+    //             ->toArray();
 
-            $labels = ['A', 'B', 'C', 'D', 'E', 'F'];
-            foreach ($options as $option) {
-                $qid = (int) $option['question_id'];
-                $idx = count($optionsByQuestion[$qid] ?? []);
-                $label = $labels[$idx] ?? chr(65 + $idx);
+    //         $labels = ['A', 'B', 'C', 'D', 'E', 'F'];
+    //         foreach ($options as $option) {
+    //             $qid = (int) $option['question_id'];
+    //             $idx = count($optionsByQuestion[$qid] ?? []);
+    //             $label = $labels[$idx] ?? chr(65 + $idx);
 
-                $optionsByQuestion[$qid][] = [
-                    'label' => $label,
-                    'text' => (string) $option['answer'],
-                    'is_correct' => (bool) $option['correct_answer'],
-                ];
-            }
-        }
+    //             $optionsByQuestion[$qid][] = [
+    //                 'label' => $label,
+    //                 'text' => (string) $option['answer'],
+    //                 'is_correct' => (bool) $option['correct_answer'],
+    //             ];
+    //         }
+    //     }
 
-        $data = [];
-        foreach ($questions as $question) {
-            $qid = (int) $question['id'];
-            $questionTypeLabel = strtoupper((string) ($question['question_type'] ?? ''));
-            if ($questionTypeLabel === 'MCQ' || $questionTypeLabel === 'MULTIPLE_CHOICE') {
-                $questionTypeLabel = 'MCQ';
-            } elseif ($questionTypeLabel === 'NARRATIVE' || $questionTypeLabel === 'SUBJECTIVE') {
-                $questionTypeLabel = 'Narrative';
-            }
+    //     $data = [];
+    //     foreach ($questions as $question) {
+    //         $qid = (int) $question['id'];
+    //         $questionTypeLabel = strtoupper((string) ($question['question_type'] ?? ''));
+    //         if ($questionTypeLabel === 'MCQ' || $questionTypeLabel === 'MULTIPLE_CHOICE') {
+    //             $questionTypeLabel = 'MCQ';
+    //         } elseif ($questionTypeLabel === 'NARRATIVE' || $questionTypeLabel === 'SUBJECTIVE') {
+    //             $questionTypeLabel = 'Narrative';
+    //         }
 
-            $data[] = [
-                'id' => (int) $question['id'],
-                'chapter_id' => (int) $question['chapter_id'],
-                'topic_id' => $question['topic_id'] !== null ? (int) $question['topic_id'] : null,
-                'question' => (string) ($question['question_title'] ?? ''),
-                'question_type' => $questionTypeLabel,
-                'options' => $optionsByQuestion[$qid] ?? [],
-                'model_answer' => $question['model_answer'] !== null ? (string) $question['model_answer'] : null,
-                'marks' => (int) ($question['marks'] ?? 1),
-            ];
-        }
+    //         $data[] = [
+    //             'id' => (int) $question['id'],
+    //             'chapter_id' => (int) $question['chapter_id'],
+    //             'topic_id' => $question['topic_id'] !== null ? (int) $question['topic_id'] : null,
+    //             'question' => (string) ($question['question_title'] ?? ''),
+    //             'question_type' => $questionTypeLabel,
+    //             'options' => $optionsByQuestion[$qid] ?? [],
+    //             'model_answer' => $question['model_answer'] !== null ? (string) $question['model_answer'] : null,
+    //             'marks' => (int) ($question['marks'] ?? 1),
+    //         ];
+    //     }
 
-        return response()->json([
-            'status' => true,
-            'message' => 'Questions fetched successfully.',
-            'data' => $data,
-        ], 200);
-    }
+    //     return response()->json([
+    //         'status' => true,
+    //         'message' => 'Questions fetched successfully.',
+    //         'data' => $data,
+    //     ], 200);
+    // }
 
     /**
      * GET /api/question-mapping-levels
@@ -1013,34 +1013,34 @@ $restrict_date = $request->input('restrict_date');
      * parent 82 = Blooms Taxonomy). Nothing is hardcoded client-side, so
      * adding a new level row (e.g. a DOK level 4 label) shows up automatically.
      */
-    public function getQuestionMappingLevels(): JsonResponse
-    {
-        $children = DB::table('lms_mapping_type')
-            ->whereIn('parent_id', [9, 82])
-            ->where('status', 1)
-            ->orderBy('id')
-            ->get(['id', 'name', 'parent_id']);
+    // public function getQuestionMappingLevels(): JsonResponse
+    // {
+    //     $children = DB::table('lms_mapping_type')
+    //         ->whereIn('parent_id', [9, 82])
+    //         ->where('status', 1)
+    //         ->orderBy('id')
+    //         ->get(['id', 'name', 'parent_id']);
 
-        $dok = [];
-        $bloom = [];
-        foreach ($children as $child) {
-            $option = ['id' => (int) $child->id, 'name' => trim($child->name)];
-            if ((int) $child->parent_id === 9) {
-                $dok[] = $option;
-            } else {
-                $bloom[] = $option;
-            }
-        }
+    //     $dok = [];
+    //     $bloom = [];
+    //     foreach ($children as $child) {
+    //         $option = ['id' => (int) $child->id, 'name' => trim($child->name)];
+    //         if ((int) $child->parent_id === 9) {
+    //             $dok[] = $option;
+    //         } else {
+    //             $bloom[] = $option;
+    //         }
+    //     }
 
-        return response()->json([
-            'status_code' => 1,
-            'message' => 'SUCCESS',
-            'data' => [
-                'dok' => $dok,
-                'bloom' => $bloom,
-            ],
-        ], 200);
-    }
+    //     return response()->json([
+    //         'status_code' => 1,
+    //         'message' => 'SUCCESS',
+    //         'data' => [
+    //             'dok' => $dok,
+    //             'bloom' => $bloom,
+    //         ],
+    //     ], 200);
+    // }
     public function getLmsQuestions(Request $request): JsonResponse
     {
         $sub_institute_id = $request->input('sub_institute_id');
