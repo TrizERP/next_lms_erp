@@ -126,7 +126,7 @@ class HrmsController extends Controller
         $type = $request->input('type');
         if ($type == 'API') {
             $userId = $request->input('user_id');
-            $sub_institute_id = $request->input('sub_institute_id');
+            $sub_institute_id = $request->session()->get('sub_institute_id'); // G-SEC-29: token-verified, not client-supplied
             $punchin_time = $request->input('punchin_time');
             $address_in = $request->input('address_in');
             // $photo_in = $request->input('photo_in');
@@ -252,7 +252,7 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
         if ($type == 'API') {
 
             $userId = $request->input('user_id');
-            $sub_institute_id = $request->input('sub_institute_id');
+            $sub_institute_id = $request->session()->get('sub_institute_id'); // G-SEC-29: token-verified, not client-supplied
             $punchout_time = $request->input('punchout_time');
             $address_out = $request->input('address_out');
             // $photo_out = $request->input('photo_out');
@@ -394,8 +394,8 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
         $type = $request->input('type');
         // $hrmsAttendanceDetails = '';
 
-        if (in_array($type, ['API', 'JSON'])) $sub_institute_id = $request->input('sub_institute_id');
-        else   $sub_institute_id = $request->session()->get('sub_institute_id');
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         if ($request->employee_id) {
             $hrmsAttendanceInOutTime['employee_id'] = $request->employee_id;
@@ -445,11 +445,8 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
 
         $type = $request->input('type');
 
-        if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $formattedDate = Carbon::parse($request->indate)->format('Y-m-d');
 
@@ -538,11 +535,8 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     public function hrmsAttendanceReportIndex(Request $request)
     {
         $type = $request->input('type');
-        if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $res['employee_id'] = $employee_id = $request->get('employee_id');
         $res['department_id'] = $department_id = $request->get('department_id');
@@ -570,11 +564,8 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     public function hrmsAttendanceReport(Request $request)
     {
         $type = $request->input('type');
-        if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $from_date = $request->get('from_date');
         $to_date = $request->get('to_date');
@@ -696,11 +687,8 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     public function generalSettingIndex(Request $request)
     {
         $type = $request->input('type');
-        if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $get_sandwich_leave_data = DB::table('general_data')->where(['fieldname' => 'sandwich_leave', 'sub_institute_id' => $sub_institute_id])->first();
 
@@ -754,13 +742,9 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     {
         // echo "<pre>";print_r($request->all());exit;        
         $type = $request->input('type');
-        if (in_array($type, ['API', 'JSON'])) {
-            $userId = $request->input('user_id');
-            $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $userId = $request->session()->get('user_id');
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        $userId = in_array($type, ['API', 'JSON']) ? $request->input('user_id') : $request->session()->get('user_id');
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $sandwich_leave = $request->input('sandwich_leave');
         $casual_leave_at_one_time = $request->input('casual_leave_at_one_time');
@@ -1083,11 +1067,8 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     public function earlyGoingHrmsAttendanceReportIndex(Request $request)
     {
         $type = $request->input('type');
-        if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $employee_id = $request->get('employee_id');
         $department_id = $request->get('department_id');
@@ -1109,11 +1090,8 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     {
         // echo "<pre>";print_r($request->all());exit; 
         $type = $request->input('type');
-        if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $department_id = ($request->department_id != 0) ? implode(',', $request->department_id) : 0;
         $employee_id = ($request->emp_id != 0) ? implode(',', $request->emp_id) : 0;
@@ -1225,10 +1203,7 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     public function departmentAttendanceReportCreate(Request $request)
     {
         $type = $request->type;
-        $sub_institute_id = session()->get('sub_institute_id');
-        if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->sub_institute_id;
-        }
+        $sub_institute_id = session()->get('sub_institute_id'); // G-SEC-29: token-verified, not client-supplied
         $res['selDepartments'] = $department_ids = $request->department_id;
         // Some API callers send `employee_id` (the modern param name used
         // elsewhere in the Attendance API) instead of the legacy `emp_id`
@@ -1636,10 +1611,9 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     public function DaywiseAttendanceportCreate(Request $request)
     {
         $type = $request->type;
-        $sub_institute_id = session()->get('sub_institute_id');
+        $sub_institute_id = session()->get('sub_institute_id'); // G-SEC-29: token-verified, not client-supplied
         $syear = session()->get('syear');
         if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
         }
         $department_id = ($request->department_id != 0) ? implode(',', $request->department_id) : '';

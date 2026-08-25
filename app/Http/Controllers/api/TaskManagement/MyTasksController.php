@@ -153,12 +153,26 @@ class MyTasksController extends Controller
             $this->resolveTaskDependenciesAfterCompletion($id, $context['user_id']);
         }
 
+        // Out-of-order work is reported, not refused - see
+        // ResolvesTaskManagementContext::openPredecessors().
+        $warnings = [];
+        if (in_array($resolved['status'], ['IN-PROGRESS', 'COMPLETED'], true)) {
+            $open = $this->openPredecessors($id, $context['sub_institute_id'], $context['syear']);
+            foreach ($open as $predecessor) {
+                $warnings[] = [
+                    'code' => 'predecessor_open',
+                    'message' => 'This task depends on "' . $predecessor['title'] . '", which is still ' . $predecessor['status'] . '.',
+                    'task_id' => $predecessor['id'],
+                ];
+            }
+        }
+
         return $this->taskManagementResponse([
             'id' => (string) $id,
             'status' => $resolved['status'],
             'status_label' => $resolved['label'],
             'remarks' => $request->input('remarks'),
-        ], 'Task status updated successfully.');
+        ], 'Task status updated successfully.', 200, ['warnings' => $warnings]);
     }
 
     private function baseQuery(array $context): Builder

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\HRITDashboard;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Api\Concerns\ResolvesApiIdentity;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -12,6 +13,7 @@ use Carbon\Carbon;
 class AttendanceApiController extends Controller
 {
     use GetsJwtToken;
+    use ResolvesApiIdentity;
 
     /**
      * True when $token validates as this app's own JWT (see
@@ -45,7 +47,7 @@ class AttendanceApiController extends Controller
             }
         }
 
-        $subInstituteId = $request->sub_institute_id;
+        $subInstituteId = $this->apiTenantId($request);
         $departmentId   = $request->department_id;  // <── NEW FILTER VARIABLE
 
         if (!$subInstituteId) {
@@ -210,7 +212,7 @@ class AttendanceApiController extends Controller
             }
         }
 
-        $subInstituteId = $request->sub_institute_id;
+        $subInstituteId = $this->apiTenantId($request);
         $departmentId   = $request->department_id;
 
         if (!$subInstituteId) {
@@ -312,7 +314,7 @@ class AttendanceApiController extends Controller
             }
         }
 
-        $subInstituteId = $request->sub_institute_id;
+        $subInstituteId = $this->apiTenantId($request);
         $userId         = $request->user_id;
         $month          = $request->month; // Expected format: YYYY-MM
 

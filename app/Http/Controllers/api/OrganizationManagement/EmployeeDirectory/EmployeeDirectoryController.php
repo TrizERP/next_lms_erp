@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Carbon\Carbon;
 
@@ -441,6 +442,124 @@ class EmployeeDirectoryController extends Controller
         return $built ?: (object) [];
     }
 
+    /** The organisation's working week, used by referenceData()/create(). */
+    private const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+    /**
+     * GET /organization-management/employee-directory/reference-data
+     *
+     * Ported from G2G's (hp_erp) `EmployeeDirectoryController::referenceData()`
+     * - bootstrap data for the Add Employee wizard (departments, job roles,
+     * user profiles, levels of responsibility, managers, the next employee
+     * number and the organisation's usual working week), adapted to this
+     * controller's session-based tenant resolution and DB::table conventions.
+     * Every table/column queried here (hrms_departments, s_user_jobrole,
+     * s_level_responsibility, tbluserprofilemaster, tbluser.employee_no,
+     * tbluser.monday.../monday_in_date...) is already read the same way
+     * elsewhere in this class (index()/show()/buildUserLevelOfResponsibility())
+     * or confirmed present via the tbluser migration chain, and every
+     * optional table is still Schema::hasTable()-guarded.
+     */
+    public function referenceData(Request $request)
+    {
+        $subInstituteId = $this->tenant();
+
+        $departments = DB::table('hrms_departments')
+            ->where('sub_institute_id', $subInstituteId)
+            ->where('status', 1)
+            ->orderBy('department')
+            ->get(['id', 'department as name', 'parent_id']);
+
+        $jobRoles = [];
+        if (Schema::hasTable('s_user_jobrole')) {
+            $columns = ['id', 'jobrole as name', 'department_id'];
+            if (Schema::hasColumn('s_user_jobrole', 'jobrole_category')) {
+                $columns[] = 'jobrole_category as category';
+            }
+
+            $jobRoles = DB::table('s_user_jobrole')
+                ->where('sub_institute_id', $subInstituteId)
+                ->whereNull('deleted_at')
+                ->orderBy('jobrole')
+                ->get($columns);
+        }
+
+        $levels = Schema::hasTable('s_level_responsibility')
+            ? DB::table('s_level_responsibility')
+                ->select(DB::raw('MIN(id) as id'), 'level', DB::raw('MIN(guiding_phrase) as guiding_phrase'))
+                ->groupBy('level')
+                ->orderBy('level')
+                ->get()
+            : [];
+
+        $managers = tbluserModel::where('sub_institute_id', $subInstituteId)
+            ->where('status', 1)
+            ->orderBy('first_name')
+            ->get(['id', 'first_name', 'last_name', 'employee_no']);
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'Success',
+            'data' => [
+                'departments' => $departments,
+                'job_roles' => $jobRoles,
+                'user_profiles' => tbluserprofilemasterModel::where('sub_institute_id', $subInstituteId)->orderBy('name')->get(['id', 'name']),
+                'levels_of_responsibility' => $levels,
+                'managers' => $managers,
+                'next_employee_no' => $this->nextEmployeeNo($subInstituteId),
+                'default_schedule' => $this->defaultSchedule($subInstituteId),
+            ],
+        ]);
+    }
+
+    /**
+     * Highest numeric tbluser.employee_no for the tenant, plus one. Non-numeric
+     * employee numbers (legacy free-text values) are excluded from the max()
+     * rather than breaking the cast, matching G2G's own nextEmployeeNo().
+     */
+    private function nextEmployeeNo(int $subInstituteId): string
+    {
+        $highest = DB::table('tbluser')
+            ->where('sub_institute_id', $subInstituteId)
+            ->whereRaw("employee_no REGEXP '^[0-9]+$'")
+            ->max(DB::raw('CAST(employee_no AS UNSIGNED)'));
+
+        return (string) (((int) $highest) + 1);
+    }
+
+    /**
+     * The organisation's most common per-day in/out time, so the Add Employee
+     * wizard opens on something true rather than a hardcoded Mon-Fri 09-18.
+     * Ported from G2G's `defaultSchedule()`, reading the same
+     * monday.../monday_in_date/monday_out_date... columns this table already
+     * carries (see the 2023_05_25 migration and AttendanceApiController,
+     * which reads the same columns for lateness reporting).
+     */
+    private function defaultSchedule(int $subInstituteId): array
+    {
+        $schedule = [];
+
+        foreach (self::DAYS as $day) {
+            $row = DB::table('tbluser')
+                ->where('sub_institute_id', $subInstituteId)
+                ->where($day, 1)
+                ->whereNotNull($day . '_in_date')
+                ->select($day . '_in_date as in_time', $day . '_out_date as out_time', DB::raw('COUNT(*) as total'))
+                ->groupBy($day . '_in_date', $day . '_out_date')
+                ->orderByDesc('total')
+                ->first();
+
+            $schedule[] = [
+                'day' => $day,
+                'working' => (bool) $row,
+                'in_time' => $row?->in_time ? substr($row->in_time, 0, 5) : null,
+                'out_time' => $row?->out_time ? substr($row->out_time, 0, 5) : null,
+            ];
+        }
+
+        return $schedule;
+    }
+
     /** POST /organization-management/employee-directory */
     public function store(Request $request)
     {
@@ -505,6 +624,104 @@ class EmployeeDirectoryController extends Controller
             'status_code' => 1,
             'message' => 'User created successfully',
             'data' => $employee,
+        ], 201);
+    }
+
+    /**
+     * POST /organization-management/employee-directory/create
+     *
+     * Ported from G2G's (hp_erp) `EmployeeDirectoryController::store()` (the
+     * token-API sibling of tbluserController@store, not that controller's own
+     * store()) - added alongside this file's existing store() above rather
+     * than replacing it (out of scope for this pass to change store()'s
+     * route/behaviour). The distinction that matters: this file's store()
+     * will hash and persist a caller-supplied `password` if one is sent
+     * (`if ($request->filled('password')) { ... Hash::make($request->input(
+     * 'password')) ... }`); create() never reads that field at all - the
+     * password is always generated here, matching G2G's own rationale
+     * ("generated, never supplied and never echoed") - and the employee sets
+     * their own via the invite/password-reset flow below.
+     *
+     * `user_name` and `join_year` are NOT NULL on tbluser with no default (see
+     * the create_tbluser_table migration), so unlike store() - which leaves
+     * both to buildAttributeArray()'s raw pass-through and fails if the
+     * caller omits them - both are derived here.
+     */
+    public function create(Request $request)
+    {
+        $subInstituteId = $this->tenant();
+
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|string|max:191',
+            'last_name' => 'required|string|max:191',
+            'mobile' => 'required|string|max:50',
+            'email' => 'required|email|max:191',
+            'user_profile_id' => [
+                'required',
+                'integer',
+                Rule::exists('tbluserprofilemaster', 'id')->where(
+                    fn ($query) => $query->where('sub_institute_id', $subInstituteId)
+                ),
+            ],
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['status_code' => 0, 'message' => $validator->errors()->first(), 'data' => null], 422);
+        }
+
+        $email = $request->input('email');
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return response()->json(['status_code' => 0, 'message' => 'Invalid email address format', 'data' => null], 422);
+        }
+        if (tbluserModel::where('email', $email)->exists()) {
+            return response()->json(['status_code' => 0, 'message' => 'Email address already exists', 'data' => null], 422);
+        }
+
+        $fileName = null;
+        if ($request->hasFile('user_image')) {
+            $fileName = $this->storeUserImage($request);
+        }
+
+        $finalArray = $this->buildAttributeArray($request->all(), $subInstituteId);
+        // The password is generated below and never taken from the caller -
+        // see method docblock. buildAttributeArray()'s generic flatten would
+        // otherwise copy a caller-supplied `password` straight through, same
+        // as store() does; discard it here before it can reach the row.
+        unset($finalArray['password']);
+        $finalArray['status'] = 1;
+        if ($fileName) {
+            $finalArray['image'] = $fileName;
+        }
+        if ($request->filled('birthdate')) {
+            $finalArray['birthdate'] = Carbon::parse($request->input('birthdate'))->format('Y-m-d');
+        }
+
+        $temporaryPassword = bin2hex(random_bytes(12));
+        $finalArray['password'] = Hash::make($temporaryPassword);
+        $finalArray['plain_password'] = null;
+        $finalArray['user_name'] = $this->uniqueUserName($email);
+        $finalArray['join_year'] = $request->filled('joined_date')
+            ? Carbon::parse($request->input('joined_date'))->format('Y')
+            : now()->format('Y');
+
+        $id = tbluserModel::insertGetId($finalArray);
+
+        $employee = tbluserModel::find($id);
+
+        $invite = $this->issueInvite($email);
+
+        AuditLog::record([
+            'module' => 'organization_management',
+            'action' => 'employee_created',
+            'entity_type' => 'tbluser',
+            'entity_id' => $id,
+            'new_values' => collect($finalArray)->except(['password', 'plain_password'])->all(),
+        ]);
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => $invite['sent'] ? 'Employee created and invited.' : 'Employee created. The invite could not be sent.',
+            'data' => $employee,
+            'invite_sent' => $invite['sent'],
         ], 201);
     }
 
@@ -607,6 +824,88 @@ class EmployeeDirectoryController extends Controller
             'status_code' => 1,
             'message' => 'User deleted successfully',
         ]);
+    }
+
+    /**
+     * PATCH /organization-management/employee-directory/{id}/status
+     *
+     * Ported from G2G's `EmployeeDirectoryController::setStatus`. Backs
+     * "Suspend Access" / "Restore Access" - distinct from destroy(), which
+     * this project's tbluser schema also implements as a status flip (see
+     * class docblock) but without this endpoint's own-account guard or
+     * explicit intent. G2G also stamps updated_by/updated_at; LMS-K12's
+     * tbluser has neither column (see class docblock), so only status
+     * changes here.
+     */
+    public function setStatus(Request $request, $id)
+    {
+        $subInstituteId = $this->tenant();
+
+        $validator = Validator::make($request->all(), [
+            'status' => 'required|in:0,1',
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['status_code' => 0, 'message' => $validator->errors()->first()], 422);
+        }
+
+        $employee = tbluserModel::where('sub_institute_id', $subInstituteId)->find($id);
+        if (!$employee) {
+            return response()->json(['status_code' => 0, 'message' => 'Employee not found'], 404);
+        }
+
+        $status = (int) $request->input('status');
+
+        if ((int) $id === $this->actorId() && $status === 0) {
+            return response()->json(['status_code' => 0, 'message' => 'You cannot suspend your own account.'], 422);
+        }
+
+        tbluserModel::where('id', $id)->update(['status' => $status]);
+
+        AuditLog::record([
+            'module' => 'organization_management',
+            'action' => $status === 1 ? 'employee_reactivated' : 'employee_deactivated',
+            'entity_type' => 'tbluser',
+            'entity_id' => (int) $id,
+            'new_values' => ['status' => $status],
+        ]);
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => $status === 1 ? 'Access restored.' : 'Access suspended.',
+        ]);
+    }
+
+    /**
+     * POST /organization-management/employee-directory/{id}/invite
+     *
+     * Ported from G2G's `EmployeeDirectoryController::invite()` - (re)issues a
+     * password-reset token for an existing employee, so an employee whose
+     * initial invite (create()'s issueInvite() call) failed or expired can be
+     * invited again without touching their record otherwise.
+     */
+    public function invite(Request $request, $id)
+    {
+        $subInstituteId = $this->tenant();
+
+        $employee = tbluserModel::where('sub_institute_id', $subInstituteId)->find($id);
+        if (!$employee) {
+            return response()->json(['status_code' => 0, 'message' => 'Employee not found'], 404);
+        }
+
+        $invite = $this->issueInvite($employee->email);
+
+        AuditLog::record([
+            'module' => 'organization_management',
+            'action' => 'employee_invited',
+            'entity_type' => 'tbluser',
+            'entity_id' => (int) $id,
+            'new_values' => ['invite_sent' => $invite['sent']],
+        ]);
+
+        return response()->json([
+            'status_code' => $invite['sent'] ? 1 : 0,
+            'message' => $invite['sent'] ? 'Invite sent.' : ('The invite could not be sent: ' . $invite['error']),
+        ], $invite['sent'] ? 200 : 502);
     }
 
     /** POST /organization-management/employee-directory/{id}/documents */
@@ -929,6 +1228,58 @@ class EmployeeDirectoryController extends Controller
         Storage::disk('public')->putFileAs('employee_directory', $file, $fileName);
 
         return $fileName;
+    }
+
+    /**
+     * tbluser.user_name is indexed but not unique, and login resolves on it,
+     * so a collision would be ambiguous rather than rejected. Suffix until
+     * free, matching G2G's own `uniqueUserName()`.
+     */
+    private function uniqueUserName(string $email): string
+    {
+        $base = Str::slug(Str::before($email, '@'), '.') ?: 'user';
+        $candidate = $base;
+        $suffix = 1;
+
+        while (tbluserModel::where('user_name', $candidate)->exists()) {
+            $candidate = $base . (++$suffix);
+        }
+
+        return $candidate;
+    }
+
+    /**
+     * Issue a password-reset token so the employee sets their own password,
+     * reusing the exact table and flow `Auth\ForgotPasswordController`
+     * already runs on (`password_resets`: email/token/created_at) rather than
+     * inventing a second credential channel - this project's table name for
+     * what G2G calls `password_reset_tokens`. Used by both create() (the
+     * employee's first invite) and invite() (a resend). A failure here must
+     * not undo the employee record - it is reported via the caller's
+     * response and recoverable by calling invite() again.
+     *
+     * @return array{sent: bool, error: ?string}
+     */
+    private function issueInvite(?string $email): array
+    {
+        if (!$email) {
+            return ['sent' => false, 'error' => 'No email address'];
+        }
+
+        try {
+            $token = Str::random(64);
+
+            DB::table('password_resets')->where('email', $email)->delete();
+            DB::table('password_resets')->insert([
+                'email' => $email,
+                'token' => $token,
+                'created_at' => now(),
+            ]);
+
+            return ['sent' => true, 'error' => null];
+        } catch (\Throwable $e) {
+            return ['sent' => false, 'error' => $e->getMessage()];
+        }
     }
 
     /**

@@ -321,6 +321,18 @@ Route::get('/departments/hierarchy', [\App\Http\Controllers\HRMS\departmentContr
 // which already owns hrms_departments for this page; hierarchy() above is untouched.
 Route::get('/departments-management', [\App\Http\Controllers\HRMS\departmentController::class, 'indexManagement']);
 Route::post('/departments-management', [\App\Http\Controllers\HRMS\departmentController::class, 'storeManagement']);
+// Literal segments before the /{id} wildcard below, so the router doesn't
+// misroute these as show($id='merge')/show($id='reorder').
+Route::post('/departments-management/merge', [\App\Http\Controllers\HRMS\departmentController::class, 'merge']);
+Route::post('/departments-management/reorder', [\App\Http\Controllers\HRMS\departmentController::class, 'reorder']);
+Route::get('/departments-management/export', [\App\Http\Controllers\HRMS\departmentController::class, 'export']);
+Route::get('/departments-management/employees', [\App\Http\Controllers\HRMS\departmentController::class, 'employees']);
+// Staffing a department: transfer/assign employees in (with an optional
+// job role of THIS department), or remove them. Backs DepartmentEmployeesPanel.
+Route::post('/departments-management/{id}/employees', [\App\Http\Controllers\HRMS\departmentController::class, 'assignEmployees']);
+Route::delete('/departments-management/{id}/employees', [\App\Http\Controllers\HRMS\departmentController::class, 'unassignEmployees']);
+Route::get('/departments-management/{id}/impact', [\App\Http\Controllers\HRMS\departmentController::class, 'impact']);
+Route::patch('/departments-management/{id}/head', [\App\Http\Controllers\HRMS\departmentController::class, 'setHead']);
 Route::match(['put', 'patch'], '/departments-management/{id}', [\App\Http\Controllers\HRMS\departmentController::class, 'updateManagement']);
 Route::delete('/departments-management/{id}', [\App\Http\Controllers\HRMS\departmentController::class, 'destroyManagement']);
 

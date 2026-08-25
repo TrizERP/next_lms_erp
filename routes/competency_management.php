@@ -17,9 +17,11 @@ use App\Http\Controllers\api\TalentManagement\Competency\MappingReviewController
 use App\Http\Controllers\api\TalentManagement\Competency\CompetencyLibraryCrudController;
 use App\Http\Controllers\api\TalentManagement\Competency\CapabilityLibraryController;
 use App\Http\Controllers\api\TalentManagement\Competency\CompetencyRoleMapController;
+use App\Http\Controllers\api\TalentManagement\Competency\CompetencyGapController;
 use App\Http\Controllers\api\TalentManagement\Competency\CompetencyDefinitionController;
 use App\Http\Controllers\api\TalentManagement\Competency\CompetencyApprovalController;
 use App\Http\Controllers\api\TalentManagement\Competency\CompetencyLibraryDependantsController;
+use App\Http\Controllers\api\TalentManagement\Competency\SeedLibraryPreviewController;
 
 /*
 |--------------------------------------------------------------------------
@@ -146,6 +148,15 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     Route::delete('competency/kasba-rating', [KasbaRatingController::class, 'destroy']);
 
     // ---------------------------------------------------------------
+    // Competency Gap (Employee Profiles sub-feature) - required minus
+    // measured, resolved by key. Reads jobrole_competency_map's requirements
+    // against ProficiencyService's KASBA roll-up. Read-only, so no profile
+    // gate: an employee may read their OWN gap (competencySubject), anyone
+    // else needs an elevated role_key.
+    // ---------------------------------------------------------------
+    Route::get('competency/gap', [CompetencyGapController::class, 'show']);
+
+    // ---------------------------------------------------------------
     // Command Center (Capability Intelligence Dashboard)
     // ---------------------------------------------------------------
     // Static segment before the bare prefix route.
@@ -232,6 +243,9 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     Route::get('competency/library/work-functions', [CapabilityLibraryController::class, 'workFunctions']);
     // Delete-impact check (Capability Library's delete dialog).
     Route::get('competency/library/dependants', [CompetencyLibraryDependantsController::class, 'index']);
+
+    // What a seed-library import would give you, before you run it. Reports only.
+    Route::get('competency/seed-library/preview', [SeedLibraryPreviewController::class, 'index']);
 
     Route::get('competency/library/taxonomy/{type}', [CapabilityLibraryController::class, 'taxonomy']);
     Route::post('competency/library/taxonomy/{type}', [CapabilityLibraryController::class, 'storeTaxonomy']);

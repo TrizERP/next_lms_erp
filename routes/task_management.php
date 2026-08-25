@@ -51,11 +51,13 @@ use App\Http\Controllers\api\TaskManagement\WorkspaceController;
 |   - `task.sanitize` (input sanitisation) - no equivalent middleware alias
 |     exists in this target; request validation is enforced per-endpoint by
 |     each controller instead, as this target's other ported modules do.
-|   - `task.permission:<ability>` (per-ability authorization) - this target
-|     has no task-module permission gate yet. Routes are grouped under
-|     `api.session` only, matching every other ported module here
-|     (TalentManagement, OrganizationManagement); adding a `task.permission`
-|     middleware is a follow-up, not part of this as-is port.
+|   - `task.permission:<ability>` (per-ability authorization) - G-SEC follow-up:
+|     App\Http\Middleware\TaskPermissionMiddleware now backs this alias and
+|     gates the report.view-classified `permissions`, `integrations`,
+|     `reports/productivity` and `reports/delays` routes below, matching the
+|     source's ELEVATED-role check. It is not yet applied to every other
+|     ported route here (task.delete, project.create, etc.) - that remains a
+|     separate follow-up.
 |
 | Deliberately NOT added here (see stage-2 report for detail):
 |   - `/tasks/counts`, `/tasks/daily`, `/tasks/weekly`, `/tasks/monthly` -
@@ -110,7 +112,7 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     // ---------------------------------------------------------------
     Route::prefix('task-management')->group(function () {
         Route::get('session', [SessionController::class, 'show']);
-        Route::get('permissions', [SessionController::class, 'permissions']);
+        Route::get('permissions', [SessionController::class, 'permissions'])->middleware('task.permission:report.view');
 
         Route::post('bulk-tasks/import', [BulkTaskController::class, 'import']);
 
@@ -124,7 +126,7 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
         Route::put('priorities/{id}', [TaskOptionController::class, 'updatePriority'])->whereNumber('id');
         Route::delete('priorities/{id}', [TaskOptionController::class, 'destroyPriority'])->whereNumber('id');
 
-        Route::get('integrations', [SessionController::class, 'integrations']);
+        Route::get('integrations', [SessionController::class, 'integrations'])->middleware('task.permission:report.view');
         Route::delete('session', [SessionController::class, 'destroy']);
 
         Route::post('assignment-capacity', [CapacityController::class, 'check']);
@@ -146,8 +148,8 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
         Route::post('templates', [TaskTemplateController::class, 'store']);
         Route::delete('templates/{id}', [TaskTemplateController::class, 'destroy'])->whereNumber('id');
 
-        Route::get('reports/productivity', [ReportController::class, 'productivity']);
-        Route::get('reports/delays', [ReportController::class, 'delays']);
+        Route::get('reports/productivity', [ReportController::class, 'productivity'])->middleware('task.permission:report.view');
+        Route::get('reports/delays', [ReportController::class, 'delays'])->middleware('task.permission:report.view');
 
         Route::get('audit-logs', [AuditLogController::class, 'index']);
         Route::get('audit-logs/export', [AuditLogController::class, 'export']);
@@ -191,6 +193,7 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
         Route::put('dependencies/{id}', [DependencyController::class, 'update'])->whereNumber('id');
         Route::delete('dependencies/{id}', [DependencyController::class, 'destroy'])->whereNumber('id');
 
+        Route::get('milestones', [DependencyController::class, 'indexMilestones']);
         Route::post('milestones', [DependencyController::class, 'storeMilestone']);
         Route::put('milestones/{id}', [DependencyController::class, 'updateMilestone'])->whereNumber('id');
         Route::delete('milestones/{id}', [DependencyController::class, 'destroyMilestone'])->whereNumber('id');
