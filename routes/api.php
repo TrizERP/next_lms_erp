@@ -176,19 +176,42 @@ Route::post('lms-homework/submission-report', [\App\Http\Controllers\api\lms\Stu
 // (dedicated LmsAssignmentApiController - token-auth counterparts of the
 //  session/blade controllers under App\Http\Controllers\lms\assignment)
 // ------------------------------------------------------------------
-// Module 1 - Assignment (teacher create)
-Route::post('lms-assignment/subjects', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'subjects']);
-Route::post('lms-assignment/students', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'students']);
-Route::post('lms-assignment/exam-papers', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'examPapers']);
-Route::post('lms-assignment/store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'store']);
-Route::post('lms-assignment/list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'index']);
-// Module 2 - Assignment Submission (student upload)
-Route::post('lms-assignment/submission-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionList']);
-Route::post('lms-assignment/submission-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionStore']);
-// Module 3 - Annotate Assignment (teacher review / grade)
-Route::post('lms-assignment/annotate-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateList']);
-Route::post('lms-assignment/annotate-questions', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateQuestions']);
-Route::post('lms-assignment/annotate-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateStore']);
+// Student side of the Assignment module is deliberately narrow: a student may
+// VIEW the assignments given to them and SUBMIT a file against them, nothing
+// else. Every other screen -- creating assignments, picking students, reading
+// the class-wide list, annotating and grading -- is teacher-side only, so those
+// endpoints sit behind `staff.only`, which rejects Student/Parent tokens.
+//
+// Both groups run `api.session` first: it verifies the bearer JWT and hydrates
+// the session from the token payload. That is what `staff.only` reads, and what
+// lets the submission endpoints pin themselves to the caller's own student id
+// instead of trusting the user_id in the request body.
+
+// Modules 1 & 3 - Assignment (teacher create) and Annotate Assignment (review / grade)
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::post('lms-assignment/subjects', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'subjects']);
+    Route::post('lms-assignment/students', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'students']);
+    Route::post('lms-assignment/exam-papers', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'examPapers']);
+    Route::post('lms-assignment/store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'store']);
+    Route::post('lms-assignment/list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'index']);
+    Route::post('lms-assignment/annotate-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateList']);
+    Route::post('lms-assignment/annotate-questions', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateQuestions']);
+    Route::post('lms-assignment/annotate-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateStore']);
+});
+
+// Module 2 - Assignment Submission (the student's own view + upload screen)
+Route::middleware('api.session')->group(function () {
+    Route::post('lms-assignment/submission-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionList']);
+    Route::post('lms-assignment/submission-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionStore']);
+});
+
+// ------------------------------------------------------------------
+// LMS Result Dashboard - the "Results dashboard" tab beside "Exams" on
+// LMS > Test > Exam. Teacher-side only, same gate as the exam screens.
+// ------------------------------------------------------------------
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::post('lms-result-dashboard/summary', [\App\Http\Controllers\api\lms\LmsResultDashboardApiController::class, 'summary']);
+});
 
 Route::controller(admissionEnquiryAPIController::class)->group(function () {
     Route::get('admission_enquiry', 'index');
