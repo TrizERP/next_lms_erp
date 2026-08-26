@@ -1229,7 +1229,17 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
                 ->where('hh.to_date', '<=', $to_date)
                 ->where(['hh.sub_institute_id' => $sub_institute_id]);
             })
-            ->selectRaw('tu.id as user_id, tu.employee_no, CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.middle_name, "-"),COALESCE(tu.last_name, "-")) as full_name, tu.sub_institute_id, IFNULL(upm.name, "-") as user_profile, hd.department, COUNT(DISTINCT ha.id) as total_att_day, GROUP_CONCAT(DISTINCT ha.id) as worked_days, COUNT(DISTINCT hel.id) as total_ab_day, GROUP_CONCAT(DISTINCT hel.id) as ab_days, COUNT(DISTINCT hh.id) as total_holidays, GROUP_CONCAT(DISTINCT hh.id) as holidays,GROUP_CONCAT(DISTINCT hd.id) as department_id')
+            // total_att_day counts DISTINCT ha.day (calendar days), not
+            // ha.id (attendance rows): an employee can have more than one
+            // hrms_attendances row for the same day (re-punching sometimes
+            // inserts a fresh row instead of updating the existing one), and
+            // counting by row id double-counted that single day as two
+            // present days - inflating total_att_day beyond what the
+            // separate day-by-day absence loop below (which matches by
+            // calendar day, so a duplicated day only ever counts once)
+            // expects, and letting total_att_day + total_ab_day exceed
+            // workingDays by however many duplicate-day rows existed.
+            ->selectRaw('tu.id as user_id, tu.employee_no, CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.middle_name, "-"),COALESCE(tu.last_name, "-")) as full_name, tu.sub_institute_id, IFNULL(upm.name, "-") as user_profile, hd.department, COUNT(DISTINCT ha.day) as total_att_day, GROUP_CONCAT(DISTINCT ha.id) as worked_days, COUNT(DISTINCT hel.id) as total_ab_day, GROUP_CONCAT(DISTINCT hel.id) as ab_days, COUNT(DISTINCT hh.id) as total_holidays, GROUP_CONCAT(DISTINCT hh.id) as holidays,GROUP_CONCAT(DISTINCT hd.id) as department_id')
             ->where('tu.sub_institute_id', $sub_institute_id)
             ->when($department_ids != 0, function ($q) use ($department_ids) {
                 $q->whereRaw('tu.department_id in (' . implode(',', $department_ids) . ')');
@@ -1332,7 +1342,12 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
                     }
                 }
             }
-            $holidays = $value->holidays ?? 0;
+            // total_holidays (a real COUNT), not holidays (the GROUP_CONCAT
+            // id list, e.g. "12,13") - subtracting the latter arithmetically
+            // coerces it to its leading numeric portion (12), silently
+            // wrecking workingDays for any employee whose range actually
+            // includes a holiday.
+            $holidays = $value->total_holidays ?? 0;
             $newEmpData[$key]->weekday_off = $countSundays;
             $newEmpData[$key]->totalDays = $totalDays;
             $newEmpData[$key]->workingDays = ($totalDays - $countSundays - $holidays);
