@@ -55,16 +55,20 @@ class RolePermissionsController extends Controller
      * are institute-wide privilege grants, so only a Super Admin caller
      * (session `is_admin` 1 or 2 — see
      * App\Http\Middleware\Concerns\HydratesLegacyApiSession, the same
-     * convention that stamps `user_profile_name = 'Super Admin'`) may create
-     * a role or change what a role can do. This module has no separate
-     * admin-equivalent role concept of its own to anchor the check to, so
-     * `is_admin` is used directly.
+     * convention that stamps `user_profile_name = 'Super Admin'`) or a
+     * tenant-level `Admin` role caller (session `user_profile_name ===
+     * 'Admin'`, i.e. tbluserprofilemaster.name) may create a role or change
+     * what a role can do.
      */
     private function assertIsAdmin(): ?\Illuminate\Http\JsonResponse
     {
         $isAdmin = (int) session()->get('is_admin');
 
         if ($isAdmin === 1 || $isAdmin === 2) {
+            return null;
+        }
+
+        if (session()->get('user_profile_name') === 'Admin') {
             return null;
         }
 
