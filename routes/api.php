@@ -578,6 +578,8 @@ Route::prefix('attendance')->group(function () {
     // Report lookups
     Route::get('/report-filters', [\App\Http\Controllers\api\Attendance\AttendanceReportApiController::class, 'filters']);
     Route::get('/employees', [\App\Http\Controllers\api\Attendance\AttendanceReportApiController::class, 'employees']);
+    Route::get('/day-detail', [\App\Http\Controllers\api\Attendance\AttendanceReportApiController::class, 'dayDetail']);
+    Route::get('/latest-activity-date', [\App\Http\Controllers\api\Attendance\AttendanceReportApiController::class, 'latestActivityDate']);
 
     // Dashboard analytics (department + employee scoped)
     Route::get('/weekly-summary', [\App\Http\Controllers\api\Attendance\AttendanceDashboardApiController::class, 'weeklySummary']);
