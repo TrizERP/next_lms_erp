@@ -17,9 +17,8 @@ class LessonPlanPeriodApiController extends Controller
 
     /**
      * Create a scheduled lesson period. Finds (or creates) the parent
-     * lms_intelligence_lesson_plans row for this sub_institute/syear/term/
-     * standard/subject/division, then inserts the period under it along with
-     * its primary concept.
+     * lms_intelligence_lesson_plans row for this sub_institute/syear/standard/
+     * subject/division, then inserts the period under it.
      *
      * POST /api/intelligence/lesson-plan-periods
      */
@@ -35,13 +34,15 @@ class LessonPlanPeriodApiController extends Controller
             'scheduled_date'       => 'required|date',
             'period_id'            => 'required|integer',
             'period_slot'          => 'required|string|max:10',
+            'chapter_id'           => 'nullable|integer',
+            'chapter_name'         => 'nullable|string|max:255',
             // Optional so the callers that predate term-scoped plans keep working.
             // When sent it both scopes the plan lookup and lands on a newly created
             // plan, so the calendar - which reads with the session's term_id - finds
             // what was just written instead of silently missing it.
             'term_id'              => 'nullable|integer',
-            'chapter_id'           => 'nullable|integer',
-            'chapter_name'         => 'nullable|string|max:255',
+            // 'chapter_id'           => 'nullable|integer',
+            // 'chapter_name'         => 'nullable|string|max:255',
             'primary_concept_id'   => 'nullable|integer',
             'primary_concept_name' => 'nullable|string|max:255',
             'pedagogy_method'      => 'nullable|string|max:100',
@@ -56,23 +57,23 @@ class LessonPlanPeriodApiController extends Controller
         }
 
         $data = $validator->validated();
-        $termId = isset($data['term_id']) ? (int) $data['term_id'] : null;
+
+        // sub_institute_id 1 only has curriculum/lesson-plan data seeded for
+        // syear 2026 - force it for that institute so the session's normal
+        // "active academic year" (which may resolve to a different year)
+        // does not create a lesson under the wrong, dataless year.
+        if ((int) $data['sub_institute_id'] === 1) {
+            $data['syear'] = 2026;
+        }
 
         try {
-            $planQuery = DB::table('lms_intelligence_lesson_plans')
+            $plan = DB::table('lms_intelligence_lesson_plans')
                 ->where('sub_institute_id', $data['sub_institute_id'])
                 ->where('syear', $data['syear'])
                 ->where('standard_id', $data['standard_id'])
                 ->where('subject_id', $data['subject_id'])
-                ->where('division_id', $data['division_id']);
-
-            // uk_plan spans term_id, so a caller that knows its term has to scope
-            // by it or the period gets attached to a different term's plan.
-            if ($termId !== null) {
-                $planQuery->where('term_id', $termId);
-            }
-
-            $plan = $planQuery->first();
+                ->where('division_id', $data['division_id'])
+                ->first();
 
             if ($plan) {
                 $planId = $plan->id;
