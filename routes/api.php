@@ -34,6 +34,9 @@ use App\Http\Controllers\api\HostelDashboardApiController;
 use App\Http\Controllers\api\TransportationDashboardApiController;
 use App\Http\Controllers\api\FeesRefundApiController;
 use App\Http\Controllers\api\TeacherAssignmentMobileApiController;
+use App\Http\Controllers\api\TeacherTimetableApiController;
+use App\Http\Controllers\api\TeacherFeeDuesApiController;
+use App\Http\Controllers\api\TeacherIcardApiController;
 
 
 // Student Assessment API - Get student assessment data with scores and levels
@@ -103,7 +106,12 @@ Route::post('transportation-dashboard/summary', [TransportationDashboardApiContr
 Route::middleware('api.session')->group(function () {
     Route::post('admin-dashboard/summary', [RoleDashboardApiController::class, 'adminSummary']);
     Route::post('teacher-dashboard/summary', [RoleDashboardApiController::class, 'teacherSummary']);
+    Route::post('teacher-timetable/summary', [TeacherTimetableApiController::class, 'summary']);
+    Route::post('teacher-fee-dues/summary', [TeacherFeeDuesApiController::class, 'summary']);
     Route::post('student-dashboard/summary', [RoleDashboardApiController::class, 'studentSummary']);
+    // Self-service "My ID card" — scoped to the caller's own user_id only,
+    // see App\Http\Controllers\api\TeacherIcardApiController::mine().
+    Route::post('teacher-icard/mine', [TeacherIcardApiController::class, 'mine']);
 });
 Route::middleware('api.session')->prefix('fees-refund')->group(function () {
     Route::post('search', [FeesRefundApiController::class, 'search']);

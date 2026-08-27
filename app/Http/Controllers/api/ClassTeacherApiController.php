@@ -34,6 +34,96 @@ class ClassTeacherApiController extends Controller
         return null;
     }
 
+    /**
+     * Assigning/reassigning/deleting a class teacher is an admin action.
+     * Mirrors TeacherTransferApiController::authorizeRequest() — JWT payload
+     * cross-checked against the request's declared identity, then gated by
+     * the "Assign Class Teacher" (tblmenumaster.link = '/classteacher') rights
+     * row, since this controller previously had no identity/role check at all.
+     */
+    private function authorizeRequest(Request $request, string $action)
+    {
+        if ($authResponse = $this->authenticate()) {
+            return $authResponse;
+        }
+
+        $validator = Validator::make($request->all(), [
+            'sub_institute_id' => 'required|integer',
+            'syear' => 'required|integer',
+            'user_id' => 'required|integer',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => $validator->messages()->first(),
+                'data' => [],
+            ], 422);
+        }
+
+        $authorization = (string) $request->header('Authorization');
+        $token = preg_replace('/^Bearer\s+/i', '', $authorization);
+        $parts = explode('.', $token);
+        $payload = [];
+        if (count($parts) === 3) {
+            $decoded = base64_decode(strtr($parts[1], '-_', '+/'));
+            $payload = json_decode($decoded ?: '{}', true) ?: [];
+        }
+
+        $actorId = (int) ($payload['id'] ?? 0);
+        $tenantId = (int) ($payload['sub_institute_id'] ?? 0);
+        if ($actorId !== $request->integer('user_id') || $tenantId !== $request->integer('sub_institute_id')) {
+            return response()->json(['status_code' => 2, 'message' => 'Token context does not match the request.', 'data' => []], 403);
+        }
+
+        $actor = DB::table('tbluser as u')
+            ->join('tbluserprofilemaster as p', 'p.id', '=', 'u.user_profile_id')
+            ->select('u.id', 'u.user_profile_id', 'u.sub_institute_id', 'p.name as profile_name')
+            ->where('u.id', $actorId)
+            ->where('u.sub_institute_id', $tenantId)
+            ->where('u.status', 1)
+            ->first();
+        if (! $actor) {
+            return response()->json(['status_code' => 2, 'message' => 'Active user context was not found.', 'data' => []], 403);
+        }
+
+        if (strtolower((string) $actor->profile_name) === 'super admin') {
+            return null;
+        }
+
+        $menuId = DB::table('tblmenumaster')
+            ->where('status', 1)
+            ->where('link', '/classteacher')
+            ->value('id');
+        $rights = null;
+        if ($menuId) {
+            $rights = DB::table('tblindividual_rights')
+                ->where('menu_id', $menuId)
+                ->where('profile_id', $actor->user_profile_id)
+                ->where('user_id', $actor->id)
+                ->where('sub_institute_id', $actor->sub_institute_id)
+                ->first();
+            if (! $rights) {
+                $rights = DB::table('tblgroupwise_rights')
+                    ->where('menu_id', $menuId)
+                    ->where('profile_id', $actor->user_profile_id)
+                    ->where('sub_institute_id', $actor->sub_institute_id)
+                    ->first();
+            }
+        }
+
+        $column = ['view' => 'can_view', 'add' => 'can_add', 'edit' => 'can_edit', 'delete' => 'can_delete'][$action];
+        $allowed = (bool) ($rights->{$column} ?? false);
+        if (! $allowed) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'You do not have permission to '.$action.' class teacher assignments.',
+                'data' => [],
+            ], 403);
+        }
+
+        return null;
+    }
+
     private function validateContext(Request $request)
     {
         return Validator::make($request->all(), [
@@ -70,7 +160,7 @@ class ClassTeacherApiController extends Controller
 
     public function index(Request $request)
     {
-        if ($authResponse = $this->authenticate()) {
+        if ($authResponse = $this->authorizeRequest($request, 'view')) {
             return $authResponse;
         }
 
@@ -139,7 +229,7 @@ class ClassTeacherApiController extends Controller
 
     public function store(Request $request)
     {
-        if ($authResponse = $this->authenticate()) {
+        if ($authResponse = $this->authorizeRequest($request, 'add')) {
             return $authResponse;
         }
 
@@ -198,7 +288,7 @@ class ClassTeacherApiController extends Controller
 
     public function update(Request $request, $id)
     {
-        if ($authResponse = $this->authenticate()) {
+        if ($authResponse = $this->authorizeRequest($request, 'edit')) {
             return $authResponse;
         }
 
@@ -263,7 +353,7 @@ class ClassTeacherApiController extends Controller
 
     public function destroy(Request $request, $id)
     {
-        if ($authResponse = $this->authenticate()) {
+        if ($authResponse = $this->authorizeRequest($request, 'delete')) {
             return $authResponse;
         }
 
