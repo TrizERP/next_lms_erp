@@ -301,9 +301,12 @@ Route::group(['prefix' => 'bazar', 'middleware' => ['session', 'menu', 'logRoute
     Route::post('show_bazar_report', [bulkUploadedReportController::class, 'show_bazar_report'])->name('show_bazar_report');
 });
 
-Route::get('/upcoming', [lmsActivityStreamController::class, 'upcomingActivity'])->name('upcoming');
-Route::get('/today', [lmsActivityStreamController::class, 'todayActivity'])->name('today');
-Route::get('/recent', [lmsActivityStreamController::class, 'recentActivity'])->name('recent');
+// Also sat outside any session/check_permissions group - see note above.
+Route::middleware(['session', 'menu', 'logRoute', 'check_permissions'])->group(function () {
+    Route::get('/upcoming', [lmsActivityStreamController::class, 'upcomingActivity'])->name('upcoming');
+    Route::get('/today', [lmsActivityStreamController::class, 'todayActivity'])->name('today');
+    Route::get('/recent', [lmsActivityStreamController::class, 'recentActivity'])->name('recent');
+});
 Route::get('careerExplore', [lmsCounsellingController::class, 'careerExplore']);
 Route::get('careerExploreResult', [lmsCounsellingController::class, 'careerExploreResult']);
 Route::get('careerCluster', [lmsCounsellingController::class, 'careerCluster']);
@@ -322,6 +325,14 @@ Route::get('/api/get-curriculum-list', [lmsSyllabusController::class, 'getCurric
 Route::get('intrestEnterScore', [lmsCounsellingController::class, 'intrestEnterScore'])->name('intrestEnterScores');
 Route::get('intrestArea', [lmsCounsellingController::class, 'intrestArea']);
 Route::get('matchProfile', [lmsCounsellingController::class, 'matchProfile']);
+
+// Career certainty (CI-GUIDE-DEV-001, Group A). Only 'session' — this hydrates
+// student identity from the JWT so the endpoint can trust student_id server-side;
+// 'menu'/'check_permissions' are skipped since this module has no menu entry yet.
+Route::middleware(['session'])->group(function () {
+    Route::get('studentAspiration', [lmsCounsellingController::class, 'studentAspiration']);
+    Route::post('studentAspiration', [lmsCounsellingController::class, 'saveStudentAspiration']);
+});
 Route::post('/ai/processData',[contentController::class,'processAIData'])->name('ai.processData');
 Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan');
 Route::post('/ai/generateLessonPlanNew', [contentController::class, 'generateLessonPlanNew'])->name('ai.generateLessonPlanNew');
@@ -337,7 +348,9 @@ Route::post('/set-book-session',[contentController::class,'setBookSession'])->na
 
 Route::get('/download-File', [contentLibraryController::class, 'downloadFile'])->name('downloadFile');
 
-Route::prefix('h5p')->group(function () {
+// This group sat outside any session/check_permissions middleware, so
+// type=API callers never got JWT-verified (see HydratesLegacyApiSession).
+Route::prefix('h5p')->middleware(['session', 'menu', 'logRoute', 'check_permissions'])->group(function () {
     Route::resource('html_contents',H5PIndexController::class);
     Route::resource('scenario_based',H5PScenarioController::class);
     Route::resource('h5p_mcq',H5PMCQController::class);

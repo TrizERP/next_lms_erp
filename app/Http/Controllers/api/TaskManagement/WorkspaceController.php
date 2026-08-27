@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\TaskManagement;
 
 use App\Http\Controllers\api\TaskManagement\Concerns\ResolvesTaskManagementContext;
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\TaskManagement\Task;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -191,9 +192,24 @@ class WorkspaceController extends Controller
 
         $this->logTaskActivity($context['sub_institute_id'], $context['user_id'], 'workspace_updated', 'Task updated', null, null, null, null, $id);
 
+        // Out-of-order work is reported, not refused - the same rule as
+        // MyTasksController::updateStatus. See
+        // ResolvesTaskManagementContext::openPredecessors().
+        $warnings = [];
+        if (in_array($resolvedStatus['status'], ['IN-PROGRESS', 'COMPLETED'], true)) {
+            $open = $this->openPredecessors($id, $context['sub_institute_id'], $context['syear']);
+            foreach ($open as $predecessor) {
+                $warnings[] = [
+                    'code' => 'predecessor_open',
+                    'message' => 'This task depends on "' . $predecessor['title'] . '", which is still ' . $predecessor['status'] . '.',
+                    'task_id' => $predecessor['id'],
+                ];
+            }
+        }
+
         $updatedTask = $this->baseQuery($context, 'all')->where('t.ID', $id)->first();
 
-        return $this->taskManagementResponse($this->resource($updatedTask, true), 'Task updated successfully.');
+        return $this->taskManagementResponse($this->resource($updatedTask, true), 'Task updated successfully.', 200, ['warnings' => $warnings]);
     }
 
     public function destroy(Request $request, int $id)
@@ -218,6 +234,10 @@ class WorkspaceController extends Controller
 
     public function approve(Request $request, int $id)
     {
+        if ($this->isEmployeeProfile((int) session()->get('user_id'))) {
+            return $this->taskManagementError('You do not have permission to approve or reject tasks.', 403);
+        }
+
         $context = $this->taskManagementContext($request);
 
         $request->validate([
@@ -249,6 +269,19 @@ class WorkspaceController extends Controller
         ]);
 
         $this->logTaskActivity($context['sub_institute_id'], $context['user_id'], $approving ? 'approved' : 'rejected', (string) $request->input('remarks'), null, null, null, null, $id);
+
+        AuditLog::record([
+            'module' => 'task_management',
+            'action' => $approving ? 'task.approve' : 'task.reject',
+            'entity_type' => 'task',
+            'entity_id' => $id,
+            'new_values' => [
+                'approve_status' => $approving ? 'Approved' : 'Rejected',
+                'approved_by' => $context['user_id'],
+                'approve_remarks' => $request->input('remarks'),
+                'status' => $approving ? $task->STATUS : 'ON HOLD',
+            ],
+        ]);
 
         return $this->taskManagementResponse(null, $approving ? 'Task approved.' : 'Task sent back for rework.');
     }

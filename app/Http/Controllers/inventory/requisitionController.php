@@ -3,12 +3,14 @@
 namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\inventory\inventory_item_category_masterModel;
 use App\Models\inventory\inventory_item_sub_category_masterModel;
 use App\Models\inventory\inventory_master_setupModel;
 use App\Models\inventory\requisitionModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 use DateTime;
 
@@ -139,6 +141,20 @@ $item_setting_data = inventory_master_setupModel::where([
 
         $items = $request->get('item_id');
 
+        $validator = Validator::make($request->all(), [
+            'requisition_no'   => 'required|string|max:50',
+            'requisition_by'   => 'required|integer',
+            'requisition_date' => 'required',
+            'item_id'          => 'required|array|min:1',
+        ]);
+        if ($validator->fails()) {
+            $res['status_code'] = "0";
+            $res['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_requisition.index", $res, "redirect");
+        }
+
         foreach ($items as $key => $val) {
 
             $expected_delivery_time = $request->get('expected_delivery_time')[$key];
@@ -167,6 +183,14 @@ $item_setting_data = inventory_master_setupModel::where([
             ]);
             $requisition->save();
         }
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'requisition_store',
+            'entity_type' => 'tblrequisition',
+            'entity_id'   => $request->get('requisition_no'),
+            'new_values'  => $request->except(['_token']),
+        ]);
 
         $res['status_code'] = "1";
         $res['message'] = "Requisition Added Succesfully";
@@ -247,6 +271,19 @@ $item_setting_data = inventory_master_setupModel::where([
             }
         }
 
+        $validator = Validator::make($request->all(), [
+            'item_id'   => 'required|integer',
+            'item_qty'  => 'required',
+            'item_unit' => 'required|string|max:50',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_requisition.index", $message, "redirect");
+        }
+
         $requisition = [
             'item_id'                => $request->get('item_id'),
             'item_qty'               => $request->get('item_qty'),
@@ -257,6 +294,14 @@ $item_setting_data = inventory_master_setupModel::where([
         ];
 
         requisitionModel::where(["id" => $id])->update($requisition);
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'requisition_update',
+            'entity_type' => 'tblrequisition',
+            'entity_id'   => $id,
+            'new_values'  => $requisition,
+        ]);
 
         $message['status_code'] = "1";
         $message = [
@@ -272,6 +317,14 @@ $item_setting_data = inventory_master_setupModel::where([
     {
         $type = $request->input('type');
         requisitionModel::where(["ID" => $id])->delete();
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'requisition_delete',
+            'entity_type' => 'tblrequisition',
+            'entity_id'   => $id,
+        ]);
+
         $message['status_code'] = "1";
         $message = [
             "message" => "Requisition Setup Details Deleted successfully",

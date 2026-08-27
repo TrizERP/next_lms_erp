@@ -3,11 +3,18 @@
 namespace App\Models\lms;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class lmsQuestionMasterModel extends Model
 {
+    use SoftDeletes;
+
     protected $table = "lms_question_master";
 	public $timestamps = false;
+
+    // created_on/updated_on are managed by hand ($timestamps = false); only the
+    // soft-delete column is cast so deletes stamp the current date and time.
+    protected $dates = ['deleted_at'];
 
     protected $fillable = [
         'id',
@@ -33,7 +40,8 @@ class lmsQuestionMasterModel extends Model
         'created_on',
         'answer',
         'hint_text',
-        'learning_outcome'
+        'learning_outcome',
+        'deleted_at'
     ];
 
 }

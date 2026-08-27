@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\MobilitySuccessionPlan;
 use App\Http\Controllers\api\TalentManagement\Mobility\Concerns\ResolvesMobilityContext;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 
 /**
  * Ported from G2G's `App\Http\Controllers\Api\Mobility\MobilitySuccessionController`.
@@ -16,6 +18,7 @@ use App\Http\Controllers\api\TalentManagement\Mobility\Concerns\ResolvesMobility
 class MobilitySuccessionController extends Controller
 {
     use ResolvesMobilityContext;
+    use RequiresTalentAdmin;
 
     public function index(Request $request)
     {
@@ -58,6 +61,8 @@ class MobilitySuccessionController extends Controller
 
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->mobilityContext($request);
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
@@ -98,17 +103,29 @@ class MobilitySuccessionController extends Controller
             return $this->mobilityError('This successor has already been nominated for this role', 400);
         }
 
-        $plan = MobilitySuccessionPlan::create(array_merge($validator->validated(), [
+        $planData = array_merge($validator->validated(), [
             'sub_institute_id' => $subInstituteId,
             'critical_jobrole_name' => $roleName,
             'created_by' => $actorId,
-        ]));
+        ]);
+
+        $plan = MobilitySuccessionPlan::create($planData);
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'mobility_succession_plan.created',
+            'entity_type' => 'mobility_succession_plan',
+            'entity_id' => $plan->id,
+            'new_values' => $planData,
+        ]);
 
         return $this->mobilityResponse($plan, 'Succession plan created successfully', 201);
     }
 
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->mobilityContext($request);
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
@@ -131,15 +148,27 @@ class MobilitySuccessionController extends Controller
             return $this->mobilityError($validator->errors()->first(), 422);
         }
 
-        $plan->update(array_merge($validator->validated(), [
+        $planUpdate = array_merge($validator->validated(), [
             'updated_by' => $context['user_id'],
-        ]));
+        ]);
+
+        $plan->update($planUpdate);
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'mobility_succession_plan.updated',
+            'entity_type' => 'mobility_succession_plan',
+            'entity_id' => $plan->id,
+            'new_values' => $planUpdate,
+        ]);
 
         return $this->mobilityResponse($plan, 'Succession plan updated successfully');
     }
 
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->mobilityContext($request);
         if ($context instanceof \Illuminate\Http\JsonResponse) {
             return $context;
@@ -154,6 +183,14 @@ class MobilitySuccessionController extends Controller
 
         $plan->update(['deleted_by' => $context['user_id']]);
         $plan->delete();
+
+        AuditLog::record([
+            'module' => 'talent_management',
+            'action' => 'mobility_succession_plan.deleted',
+            'entity_type' => 'mobility_succession_plan',
+            'entity_id' => $plan->id,
+            'new_values' => ['deleted_by' => $context['user_id']],
+        ]);
 
         return $this->mobilityResponse(null, 'Succession plan deleted successfully');
     }

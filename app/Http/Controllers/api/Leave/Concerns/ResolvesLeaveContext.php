@@ -40,7 +40,9 @@ trait ResolvesLeaveContext
             return response()->json(['status' => 0, 'message' => 'Invalid token'], 401);
         }
 
-        $subInstituteId = $request->input('sub_institute_id') ?? $request->header('sub_institute_id');
+        // G-SEC-29: the tenant comes from the verified JWT payload, never the
+        // caller-suppliable request body/header.
+        $subInstituteId = $this->jwtPayload('sub_institute_id', $request);
 
         if (!$subInstituteId || !is_numeric($subInstituteId)) {
             return response()->json(['status' => 0, 'message' => 'sub_institute_id is required'], 400);

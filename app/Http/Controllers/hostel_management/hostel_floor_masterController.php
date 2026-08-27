@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\hostel_management;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\hostel_management\hostel_building_masterModel;
 use App\Models\hostel_management\hostel_floor_masterModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
+use function App\Helpers\ValidateInsertData;
 
 class hostel_floor_masterController extends Controller
 {
@@ -43,6 +45,8 @@ class hostel_floor_masterController extends Controller
 
     public function store(Request $request)
     {
+        ValidateInsertData('hostel_floor_master', $request);
+
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $floor = new hostel_floor_masterModel([
@@ -51,6 +55,13 @@ class hostel_floor_masterController extends Controller
             'sub_institute_id' => $sub_institute_id,
         ]);
         $floor->save();
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_floor_master_store',
+            'entity_type' => 'hostel_floor_master',
+            'entity_id' => $floor->id,
+            'new_values' => $floor->toArray(),
+        ]);
         $message['status_code'] = "1";
 //        $message = array(
 //            "message" => "Building's Floor Added Succesfully",
@@ -76,12 +87,21 @@ class hostel_floor_masterController extends Controller
 
     public function update(Request $request, $id)
     {
+        ValidateInsertData('hostel_floor_master', 'update');
+
         $data = [
             'floor_name'  => $request->get('floor_name'),
             'building_id' => $request->get('building_id'),
         ];
 
         hostel_floor_masterModel::where(["id" => $id])->update($data);
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_floor_master_update',
+            'entity_type' => 'hostel_floor_master',
+            'entity_id' => $id,
+            'new_values' => $data,
+        ]);
 
         $message['status_code'] = "1";
         $message = [
@@ -96,6 +116,12 @@ class hostel_floor_masterController extends Controller
     {
         $type = $request->input('type');
         hostel_floor_masterModel::where(["id" => $id])->delete();
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'hostel_floor_master_delete',
+            'entity_type' => 'hostel_floor_master',
+            'entity_id' => $id,
+        ]);
         $message['status_code'] = "1";
         $message = [
             "message" => "Building's Floor Deleted successfully",

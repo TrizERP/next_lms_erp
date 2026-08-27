@@ -22,7 +22,12 @@ class checkPermission
      */
     public function handle(Request $request, Closure $next)
     {
-        if ($request->get('type') != "API" && $request->get('type') != "JSON" && session()->get('user_profile_name')!="Super Admin") {
+        // Previously this check only ran for non-API requests, which meant
+        // check_view/can_add/can_edit/can_delete were never enforced for the
+        // Next.js frontend (every call from it carries type=API). Now that
+        // SessionMiddleware hydrates a real, JWT-verified session for type=API
+        // requests too, the same permission logic applies uniformly.
+        if (session()->get('user_profile_name') != "Super Admin") {
             $current_url = Route::currentRouteName();
             $userProfileId = session()->get('user_profile_id');
             $sub_institute_id = session()->get('sub_institute_id');
@@ -128,7 +133,24 @@ class checkPermission
             
             $checkUserTour = tourModel::where(['user_id'=> $user_id, 'sub_institute_id' => $sub_institute_id,
             ])->get()->toArray();
-            $inTour = $checkUserTour[0];
+
+            // Most users have no erptour row: it is only ever written by the fees
+            // routes above and at login. Indexing [0] blindly made every request by
+            // such a user a 500 -- which is what students hit, since they never go
+            // near a fees screen. An unseen tour is every step still to do, so the
+            // flags default to 0 and the blades reading them keep working.
+            $inTour = $checkUserTour[0] ?? [
+                'dashboard'        => 0,
+                'school_sidebar'   => 0,
+                'student_quota'    => 0,
+                'fees_title'       => 0,
+                'fees_structure'   => 0,
+                'fees_receipt'     => 0,
+                'fees_map'         => 0,
+                'fees_collect'     => 0,
+                'user_id'          => $user_id,
+                'sub_institute_id' => $sub_institute_id,
+            ];
 
             $request->session()->put('erpTour', $inTour);
             // 06-01-2025 add for erpTour end 

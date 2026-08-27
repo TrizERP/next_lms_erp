@@ -809,10 +809,41 @@ Route::get('/lms/misconception', [\App\Http\Controllers\lms\pal\palController::c
 // Set Coherence Map — the LMS (Blade) view. Renders through the same services
 // the JSON API uses, so the two front-ends can never disagree about a learner's
 // readiness. Scope comes from the session's institute, not the query string.
-Route::get('/lms/coherence-map', [\App\Http\Controllers\lms\pal\CoherenceMapWebController::class, 'index'])
-    ->name('coherence.map');
-Route::post('/lms/coherence-map/answer', [\App\Http\Controllers\lms\pal\CoherenceMapWebController::class, 'answer'])
-    ->name('coherence.map.answer');
+//
+// `session` is not optional here. This view extends `lmslayout`, which does
+//     $words = explode(" ", Session::get('name'));
+//     $name_initial = strtoupper($words[0][0] . $words[1][0]);
+// at line 149 — unguarded on both indexes. With no session that is a fatal
+// "Uninitialized string offset 0", so an anonymous visitor got a 500 where every
+// other page in this file gets a redirect. SessionMiddleware sends them to
+// `home` when `user_id` is absent, which is the convention here. (Note the same
+// two lines also fatal for any real user whose stored name is a single word —
+// `$words[1]` does not exist. Pre-existing, affects every LMS page, not fixed
+// here because it is not this feature's to change.)
+//
+// `menu` populates the sidebar the layout renders. It only works because
+// `tblmenumaster` row 604 exists (link = 'coherence.map', parent 531 "New PAL",
+// level 3, sort_order 4) alongside three `tblgroupwise_rights` rows for profiles
+// 1, 5 and 2067 — the same grant the sibling PAL menus carry. MenuMiddleware
+// resolves the current route name against that table and joins it to the rights
+// tables, so WITHOUT both the row and the rights the page is reachable by URL
+// but invisible in the navigation.
+//
+// `check_permissions` is deliberately off: it gates on a separate permission
+// record that does not exist for this page, and adding the middleware before
+// that record would lock out the very reviewers the map is built for.
+Route::middleware(['session', 'menu'])->group(function () {
+    Route::get('/lms/coherence-map', [\App\Http\Controllers\lms\pal\CoherenceMapWebController::class, 'index'])
+        ->name('coherence.map');
+    Route::post('/lms/coherence-map/answer', [\App\Http\Controllers\lms\pal\CoherenceMapWebController::class, 'answer'])
+        ->name('coherence.map.answer');
+    // The drawer payload for one concept — fetched on click rather than shipped
+    // for all 118 concepts up front, since content and questions are most of the
+    // weight and the user opens one node at a time.
+    Route::get('/lms/coherence-map/concept/{conceptId}', [\App\Http\Controllers\lms\pal\CoherenceMapWebController::class, 'concept'])
+        ->where('conceptId', '[0-9]+')
+        ->name('coherence.map.concept');
+});
 Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
 Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
 Route::group(['middleware' => ['session', 'menu', 'logRoute', 'check_permissions']], function () {
@@ -824,3 +855,14 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute', 'check_permissions
     Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
 });
 Route::get('/download-folder', [FileController::class, 'downloadFolder']);
+
+/*
+| AI Journey console.
+|
+| One page that asks a question and renders the fifteen-stage trace that comes back.
+| Behind `session` and `menu` like the rest of the authenticated UI; the page mints its
+| own scoped token for the /api/ai endpoints rather than reaching into them directly.
+*/
+Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
+    Route::get('ai/journey', [\App\Http\Controllers\AI\AiJourneyController::class, 'index'])->name('ai.journey');
+});

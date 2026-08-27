@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\TalentManagement\Performance;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\api\TalentManagement\Performance\Concerns\ResolvesPerformanceContext;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\PerformanceSavedView;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -128,6 +129,19 @@ class PerformanceSavedViewController extends Controller
             $view->name
         );
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'saved_view_created',
+            'entity_type' => 'performance_saved_view',
+            'entity_id'   => $view->id,
+            'new_values'  => [
+                'name'       => $view->name,
+                'tab'        => $view->tab,
+                'is_shared'  => (bool) $view->is_shared,
+                'is_default' => (bool) $view->is_default,
+            ],
+        ]);
+
         return $this->performanceResponse($this->presentModel($view, $context['user_id']), 'View saved', 201);
     }
 
@@ -171,6 +185,14 @@ class PerformanceSavedViewController extends Controller
         $view->fill($validated);
         $view->updated_by = $context['user_id'];
         $view->save();
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'saved_view_updated',
+            'entity_type' => 'performance_saved_view',
+            'entity_id'   => $view->id,
+            'new_values'  => $validated,
+        ]);
 
         if (!empty($changes)) {
             $this->logPerformanceActivity(
@@ -222,6 +244,14 @@ class PerformanceSavedViewController extends Controller
             (int) $id,
             $name
         );
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'saved_view_deleted',
+            'entity_type' => 'performance_saved_view',
+            'entity_id'   => (int) $id,
+            'new_values'  => ['name' => $name],
+        ]);
 
         return $this->performanceResponse(['id' => (int) $id], 'Saved view deleted');
     }

@@ -1321,6 +1321,7 @@ foreach ($previous_standard as $item) {
         }
         DB::enableQueryLog();
         $getQuestions = DB::table('lms_question_master')
+            ->whereNull('deleted_at')
             ->where('standard_id', $request->standard_id)
             ->where('subject_id', $request->subject_id)
             ->whereRaw('chapter_id IN (' . $request->chapter_ids . ')')
@@ -2535,7 +2536,7 @@ foreach ($previous_standard as $item) {
             if(isset($request->topic_id) && $request->topic_id!=''){
                 $topics = " and topic_id ='".$request->topic_id."'";
             }
-           $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->where('status',1)->pluck('question_title');
+           $getAllQuestion = DB::table('lms_question_master')->whereNull('deleted_at')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->where('status',1)->pluck('question_title');
             $questionPrompt = $this->appendSelectedMappingsToDistributionRequirements($request->question_prompt, $request);
             $message=array($questionPrompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");
             // return $message;exit;
@@ -2848,7 +2849,7 @@ foreach ($previous_standard as $item) {
             if(isset($request->topic_id) && $request->topic_id!=''){
                 $topics = " and topic_id ='".$request->topic_id."'";
             }
-           $getAllQuestion = DB::table('lms_question_master')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->where('status',1)->pluck('question_title');
+           $getAllQuestion = DB::table('lms_question_master')->whereNull('deleted_at')->whereRaw('sub_institute_id = '.$sub_institute_id.' and standard_id='.$standard.' and chapter_id ='.$request->chapter_id.$topics.' ')->where('status',1)->pluck('question_title');
             
            $questionPrompt = $this->appendSelectedMappingsToDistributionRequirements($request->question_prompt, $request);
            $message=array($questionPrompt,"search only 1 question from mentioned standard and subject and chapter and topic and get different question which are not in this '".$getAllQuestion."'");

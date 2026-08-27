@@ -68,6 +68,23 @@ class CoherenceMapController extends Controller
     }
 
     /**
+     * GET /api/pal/coherence/scopes
+     *
+     * The (standard, subject) pairs this caller may open a map on, richest
+     * first. Exists because `/coherence/map` requires both ids and there is no
+     * other way for a client to discover a valid pair — without it a front-end
+     * hardcodes one and breaks the moment a different institute signs in.
+     *
+     * Tenancy: `tenantFor` returns null only for a super-admin who named no
+     * institute, and the repository treats null as "every tenant" — which is
+     * the correct answer for that caller and no one else.
+     */
+    public function scopes(Request $request): JsonResponse
+    {
+        return $this->ok(['scopes' => $this->map->scopes($this->tenantFor($request))]);
+    }
+
+    /**
      * GET /api/pal/coherence/learner/{learnerId}
      *
      * The learner's own view: their enrolled class resolved automatically, the

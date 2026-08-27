@@ -4,23 +4,59 @@ namespace App\Http\Controllers\api\TalentManagement\Competency;
 
 use App\Http\Controllers\api\TalentManagement\Competency\Concerns\ResolvesCompetencyContext;
 use App\Http\Controllers\Controller;
+use App\Services\Competency\CommandCenterService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Ported from G2G's `App\Services\Competency\CommandCenterService::filterOptions()`.
+ * `filters()` ported from G2G's `App\Services\Competency\CommandCenterService::filterOptions()`.
  *
- * The Competency Command Center screen itself is out of scope for this port
- * (see the port's class docs elsewhere in this namespace), but the
- * Development & Career Paths workspace's `useWorkspaceLookups()` hook calls
- * this one endpoint (`GET /competency/command-center/filters`) purely to
- * populate its "Department" dropdown — ported without pulling in the rest of
- * the Command Center dashboard. Logic/field names/response shape are
- * unchanged from the source.
+ * The Competency Command Center screen itself was originally out of scope for
+ * this port (see this class's earlier doc, preserved below), but the
+ * Capability Intelligence Dashboard screen needs the full Command Center
+ * payload, so `index()` (ported from G2G's
+ * `App\Http\Controllers\Api\Competency\CommandCenterController::index()` +
+ * `App\Services\Competency\CommandCenterService::dashboard()`, the latter
+ * ported into `App\Services\Competency\CommandCenterService` in this project)
+ * was added alongside it.
+ *
+ * Original doc, still true of `filters()`: the Development & Career Paths
+ * workspace's `useWorkspaceLookups()` hook calls
+ * `GET /competency/command-center/filters` purely to populate its
+ * "Department" dropdown — ported without pulling in the rest of the Command
+ * Center dashboard. Logic/field names/response shape are unchanged from the
+ * source.
  */
 class CompetencyCommandCenterController extends Controller
 {
     use ResolvesCompetencyContext;
+
+    public function __construct(private CommandCenterService $service)
+    {
+    }
+
+    /** GET /competency/command-center */
+    public function index(Request $request)
+    {
+        $context = $this->competencyContext($request);
+        if (!is_array($context)) {
+            return $context;
+        }
+
+        $filters = $this->competencyFilters($request);
+
+        $data = $this->service->dashboard(
+            $context['sub_institute_id'],
+            $context['user_id'],
+            $filters
+        );
+
+        return response()->json([
+            'status'  => 1,
+            'message' => 'Competency command center fetched successfully',
+            'data'    => $data,
+        ]);
+    }
 
     public function filters(Request $request)
     {

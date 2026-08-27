@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\TalentManagement\Performance;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\api\TalentManagement\Performance\Concerns\ResolvesPerformanceContext;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\PerformanceAttachment;
 use App\Models\TalentManagement\PerformanceNote;
 use Illuminate\Http\Request;
@@ -281,6 +282,14 @@ class PerformanceActivityController extends Controller
             $review->cycle_id ? (int) $review->cycle_id : null
         );
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => $noteType === 'note' ? 'note_created' : 'comment_created',
+            'entity_type' => 'performance_note',
+            'entity_id'   => $note->id,
+            'new_values'  => $validated + ['review_id' => (int) $reviewId, 'note_type' => $noteType],
+        ]);
+
         return $this->performanceResponse($this->presentNoteModel($note), ucfirst($noteType) . ' added', 201);
     }
 
@@ -313,6 +322,14 @@ class PerformanceActivityController extends Controller
         $note->fill($validated);
         $note->updated_by = $context['user_id'];
         $note->save();
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => $note->note_type === 'note' ? 'note_updated' : 'comment_updated',
+            'entity_type' => 'performance_note',
+            'entity_id'   => $note->id,
+            'new_values'  => $validated,
+        ]);
 
         if (!empty($changes)) {
             $employeeName = $this->resolveActorName((int) $note->user_id) ?? 'an employee';
@@ -370,6 +387,14 @@ class PerformanceActivityController extends Controller
             (int) $reviewId,
             $cycleId ? (int) $cycleId : null
         );
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => $noteType === 'note' ? 'note_deleted' : 'comment_deleted',
+            'entity_type' => 'performance_note',
+            'entity_id'   => (int) $id,
+            'new_values'  => ['review_id' => $reviewId ? (int) $reviewId : null],
+        ]);
 
         return $this->performanceResponse(['id' => (int) $id], ucfirst((string) $noteType) . ' deleted');
     }
@@ -492,6 +517,18 @@ class PerformanceActivityController extends Controller
             $review->cycle_id ? (int) $review->cycle_id : null
         );
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'attachment_uploaded',
+            'entity_type' => 'performance_attachment',
+            'entity_id'   => $attachment->id,
+            'new_values'  => [
+                'review_id'     => (int) $reviewId,
+                'file_name'     => $fileName,
+                'document_type' => $validated['document_type'] ?? 'other',
+            ],
+        ]);
+
         $row = DB::table('s_performance_attachments')->where('id', $attachment->id)->first();
 
         return $this->performanceResponse($this->presentAttachment($row), 'Attachment uploaded', 201);
@@ -532,6 +569,14 @@ class PerformanceActivityController extends Controller
             $reviewId ? (int) $reviewId : null,
             $cycleId ? (int) $cycleId : null
         );
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'attachment_deleted',
+            'entity_type' => 'performance_attachment',
+            'entity_id'   => (int) $id,
+            'new_values'  => ['file_name' => $fileName, 'review_id' => $reviewId ? (int) $reviewId : null],
+        ]);
 
         return $this->performanceResponse(['id' => (int) $id], 'Attachment deleted');
     }

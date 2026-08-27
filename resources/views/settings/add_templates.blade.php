@@ -57,7 +57,11 @@
                                         <option value="Bonafide" @if(isset($data['template_data']['module_name'])) @if($data['template_data']['module_name'] == "Bonafide") selected @endif @endif >Bonafide</option>                                        
                                         <option value="Transfer Certificate" @if(isset($data['template_data']['module_name'])) @if($data['template_data']['module_name'] == "Transfer Certificate") selected @endif @endif >Transfer Certificate</option>   
                                         <option value="Student Fees Certificate" @if(isset($data['template_data']['module_name'])) @if($data['template_data']['module_name'] == "Student Fees Certificate") selected @endif @endif >Student Fees Certificate</option> 
-                                        <option value="REIMBURSEMENT OF CEA" @if(isset($data['template_data']['module_name'])) @if($data['template_data']['module_name'] == "REIMBURSEMENT OF CEA") selected @endif @endif >REIMBURSEMENT OF CEA</option>                                        
+                                        <option value="REIMBURSEMENT OF CEA" @if(isset($data['template_data']['module_name'])) @if($data['template_data']['module_name'] == "REIMBURSEMENT OF CEA") selected @endif @endif >REIMBURSEMENT OF CEA</option>
+                                        {{-- The assistant's category. A template filed here is readable by the AI
+                                             through ai.templates.list / ai.templates.render; everything else about
+                                             designing, storing and editing it is unchanged. --}}
+                                        <option value="AI" @if(isset($data['template_data']['module_name'])) @if($data['template_data']['module_name'] == "AI") selected @endif @endif >AI</option>
                                     </select>
                                 </div>
                                 

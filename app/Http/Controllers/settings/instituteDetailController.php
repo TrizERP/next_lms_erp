@@ -35,17 +35,15 @@ class instituteDetailController extends Controller
                 'formName' => 'required',
             ]);
 
-            $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
-            $user_id = $request->get('user_id');
 
             if ($validator->fails()) {
                 $response['status'] = '0';
                 $response['message'] = $validator->messages();
                 return response()->json($response);
-            } 
+            }
         }
-        
+
         $res['complainceData'] = DB::table('master_compliance as mc')
                                 ->select('mc.*',DB::Raw('(SELECT CONCAT_WS(" ",COALESCE(first_name,"-"),COALESCE(middle_name,"-"),COALESCE(last_name,"-")) FROM tbluser WHERE id=mc.assigned_to) as assigned_user'))
                                 ->where('mc.sub_institute_id',$sub_institute_id)
@@ -102,9 +100,7 @@ class instituteDetailController extends Controller
                     return response()->json($response, 401);
                 }
                 
-                $sub_institute_id = $request->get('sub_institute_id');
                 $syear = $request->get('syear');
-                $user_id = $request->get('user_id');
 
                 $validator = Validator::make($request->all(), [
                     'sub_institute_id' => 'required|numeric',
@@ -269,9 +265,7 @@ class instituteDetailController extends Controller
                     return response()->json($response, 401);
                 }
                 
-                $sub_institute_id = $request->get('sub_institute_id');
                 $syear = $request->get('syear');
-                $user_id = $request->get('user_id');
 
                 $validator = Validator::make($request->all(), [
                     'sub_institute_id' => 'required|numeric',

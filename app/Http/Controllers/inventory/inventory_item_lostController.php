@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\inventory\inventory_item_lostModel;
 use App\Models\inventory\inventory_item_masterModel;
 use App\Models\user\tbluserModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 class inventory_item_lostController extends Controller
@@ -58,6 +60,18 @@ class inventory_item_lostController extends Controller
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $created_by = $request->session()->get('user_id');
 
+        $validator = Validator::make($request->all(), [
+            'item_id' => 'required|integer',
+            'lost_date' => 'required',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_inventory_item_lost.index", $message, "redirect");
+        }
+
         $data = new inventory_item_lostModel([
             'SYEAR'              => $syear,
             'SUB_INSTITUTE_ID'   => $sub_institute_id,
@@ -71,6 +85,14 @@ class inventory_item_lostController extends Controller
         ]);
 
         $data->save();
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_lost_store',
+            'entity_type' => 'inventory_item_lost_details',
+            'entity_id'   => $data->id,
+            'new_values'  => $request->except(['_token']),
+        ]);
 
         $message['status_code'] = "1";
 //        $message = array(
@@ -101,6 +123,18 @@ class inventory_item_lostController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
 
+        $validator = Validator::make($request->all(), [
+            'item_id' => 'required|integer',
+            'lost_date' => 'required',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_inventory_item_lost.index", $message, "redirect");
+        }
+
         $data = [
             'SUB_INSTITUTE_ID' => $sub_institute_id,
             'ITEM_ID'          => $request->get('item_id'),
@@ -110,6 +144,15 @@ class inventory_item_lostController extends Controller
         ];
 
         inventory_item_lostModel::where(["id" => $id])->update($data);
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_lost_update',
+            'entity_type' => 'inventory_item_lost_details',
+            'entity_id'   => $id,
+            'new_values'  => $data,
+        ]);
+
         $message['status_code'] = "1";
         $message = [
             "message" => "Lost Item Details Updated Successfully",
@@ -123,6 +166,13 @@ class inventory_item_lostController extends Controller
     {
         $type = $request->input('type');
         inventory_item_lostModel::where(["id" => $id])->delete();
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_item_lost_delete',
+            'entity_type' => 'inventory_item_lost_details',
+            'entity_id'   => $id,
+        ]);
 
         $message['status_code'] = "1";
         $message = [

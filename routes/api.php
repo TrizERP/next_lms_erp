@@ -130,13 +130,18 @@ Route::post('/compliance/delete/{id}',[instituteDetailController::class,'destroy
 Route::post('/menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMenuRightsLevelWise']);
 Route::get('/master-menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMasterMenuApi']);
 
-Route::post('lms-courses', [ApiLmsCourseController::class, 'index']);
-Route::post('lms-courses/search', [ApiLmsCourseController::class, 'search']);
+// GET is accepted alongside POST so these can be opened in a browser or curled without
+// a body — the handlers read their parameters through $request->input(), which covers
+// the query string as well. POST is unchanged, so existing callers are unaffected.
+Route::match(['get', 'post'], 'lms-courses', [ApiLmsCourseController::class, 'index']);
+Route::match(['get', 'post'], 'lms-courses/search', [ApiLmsCourseController::class, 'search']);
 Route::post('lms-chapter-concepts', [ApiLmsCourseController::class, 'getChapterConcepts']);
 Route::post('lms-chapters', [ApiLmsCourseController::class, 'chapters']);
 Route::post('lms-chapter-content', [ApiLmsCourseController::class, 'chapterContent']);
 Route::post('lms-questions', [ApiLmsCourseController::class, 'getLmsQuestions']);
 Route::post('lms-question-bank', [ApiLmsCourseController::class, 'getQuestionBank']);
+Route::post('lms-question-bank/update', [ApiLmsCourseController::class, 'updateQuestionBank']);
+Route::post('lms-question-bank/delete', [ApiLmsCourseController::class, 'deleteQuestionBank']);
 Route::get('question-mapping-levels', [ApiLmsCourseController::class, 'getQuestionMappingLevels']);
 Route::post('lms-chapters/store', [ApiLmsCourseController::class, 'storeChapter']);
 Route::post('lms-create-content', [ApiLmsCourseController::class, 'createContent']);
@@ -171,19 +176,42 @@ Route::post('lms-homework/submission-report', [\App\Http\Controllers\api\lms\Stu
 // (dedicated LmsAssignmentApiController - token-auth counterparts of the
 //  session/blade controllers under App\Http\Controllers\lms\assignment)
 // ------------------------------------------------------------------
-// Module 1 - Assignment (teacher create)
-Route::post('lms-assignment/subjects', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'subjects']);
-Route::post('lms-assignment/students', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'students']);
-Route::post('lms-assignment/exam-papers', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'examPapers']);
-Route::post('lms-assignment/store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'store']);
-Route::post('lms-assignment/list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'index']);
-// Module 2 - Assignment Submission (student upload)
-Route::post('lms-assignment/submission-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionList']);
-Route::post('lms-assignment/submission-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionStore']);
-// Module 3 - Annotate Assignment (teacher review / grade)
-Route::post('lms-assignment/annotate-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateList']);
-Route::post('lms-assignment/annotate-questions', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateQuestions']);
-Route::post('lms-assignment/annotate-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateStore']);
+// Student side of the Assignment module is deliberately narrow: a student may
+// VIEW the assignments given to them and SUBMIT a file against them, nothing
+// else. Every other screen -- creating assignments, picking students, reading
+// the class-wide list, annotating and grading -- is teacher-side only, so those
+// endpoints sit behind `staff.only`, which rejects Student/Parent tokens.
+//
+// Both groups run `api.session` first: it verifies the bearer JWT and hydrates
+// the session from the token payload. That is what `staff.only` reads, and what
+// lets the submission endpoints pin themselves to the caller's own student id
+// instead of trusting the user_id in the request body.
+
+// Modules 1 & 3 - Assignment (teacher create) and Annotate Assignment (review / grade)
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::post('lms-assignment/subjects', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'subjects']);
+    Route::post('lms-assignment/students', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'students']);
+    Route::post('lms-assignment/exam-papers', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'examPapers']);
+    Route::post('lms-assignment/store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'store']);
+    Route::post('lms-assignment/list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'index']);
+    Route::post('lms-assignment/annotate-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateList']);
+    Route::post('lms-assignment/annotate-questions', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateQuestions']);
+    Route::post('lms-assignment/annotate-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateStore']);
+});
+
+// Module 2 - Assignment Submission (the student's own view + upload screen)
+Route::middleware('api.session')->group(function () {
+    Route::post('lms-assignment/submission-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionList']);
+    Route::post('lms-assignment/submission-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionStore']);
+});
+
+// ------------------------------------------------------------------
+// LMS Result Dashboard - the "Results dashboard" tab beside "Exams" on
+// LMS > Test > Exam. Teacher-side only, same gate as the exam screens.
+// ------------------------------------------------------------------
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::post('lms-result-dashboard/summary', [\App\Http\Controllers\api\lms\LmsResultDashboardApiController::class, 'summary']);
+});
 
 Route::controller(admissionEnquiryAPIController::class)->group(function () {
     Route::get('admission_enquiry', 'index');
@@ -316,6 +344,18 @@ Route::get('/departments/hierarchy', [\App\Http\Controllers\HRMS\departmentContr
 // which already owns hrms_departments for this page; hierarchy() above is untouched.
 Route::get('/departments-management', [\App\Http\Controllers\HRMS\departmentController::class, 'indexManagement']);
 Route::post('/departments-management', [\App\Http\Controllers\HRMS\departmentController::class, 'storeManagement']);
+// Literal segments before the /{id} wildcard below, so the router doesn't
+// misroute these as show($id='merge')/show($id='reorder').
+Route::post('/departments-management/merge', [\App\Http\Controllers\HRMS\departmentController::class, 'merge']);
+Route::post('/departments-management/reorder', [\App\Http\Controllers\HRMS\departmentController::class, 'reorder']);
+Route::get('/departments-management/export', [\App\Http\Controllers\HRMS\departmentController::class, 'export']);
+Route::get('/departments-management/employees', [\App\Http\Controllers\HRMS\departmentController::class, 'employees']);
+// Staffing a department: transfer/assign employees in (with an optional
+// job role of THIS department), or remove them. Backs DepartmentEmployeesPanel.
+Route::post('/departments-management/{id}/employees', [\App\Http\Controllers\HRMS\departmentController::class, 'assignEmployees']);
+Route::delete('/departments-management/{id}/employees', [\App\Http\Controllers\HRMS\departmentController::class, 'unassignEmployees']);
+Route::get('/departments-management/{id}/impact', [\App\Http\Controllers\HRMS\departmentController::class, 'impact']);
+Route::patch('/departments-management/{id}/head', [\App\Http\Controllers\HRMS\departmentController::class, 'setHead']);
 Route::match(['put', 'patch'], '/departments-management/{id}', [\App\Http\Controllers\HRMS\departmentController::class, 'updateManagement']);
 Route::delete('/departments-management/{id}', [\App\Http\Controllers\HRMS\departmentController::class, 'destroyManagement']);
 
@@ -561,6 +601,8 @@ Route::prefix('attendance')->group(function () {
     // Report lookups
     Route::get('/report-filters', [\App\Http\Controllers\api\Attendance\AttendanceReportApiController::class, 'filters']);
     Route::get('/employees', [\App\Http\Controllers\api\Attendance\AttendanceReportApiController::class, 'employees']);
+    Route::get('/day-detail', [\App\Http\Controllers\api\Attendance\AttendanceReportApiController::class, 'dayDetail']);
+    Route::get('/latest-activity-date', [\App\Http\Controllers\api\Attendance\AttendanceReportApiController::class, 'latestActivityDate']);
 
     // Dashboard analytics (department + employee scoped)
     Route::get('/weekly-summary', [\App\Http\Controllers\api\Attendance\AttendanceDashboardApiController::class, 'weeklySummary']);

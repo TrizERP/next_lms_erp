@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\api\TalentManagement\Competency;
 
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TalentManagement\Competency\Concerns\ResolvesCompetencyContext;
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -29,6 +31,7 @@ use Illuminate\Support\Facades\Validator;
 class DevelopmentPlanController extends Controller
 {
     use ResolvesCompetencyContext;
+    use RequiresTalentAdmin;
 
     private const TABLE = 's_competency_development_plans';
 
@@ -391,6 +394,8 @@ class DevelopmentPlanController extends Controller
 
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -429,6 +434,18 @@ class DevelopmentPlanController extends Controller
             'updated_at'       => now(),
         ]);
 
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'development_plan.created',
+            'entity_type' => 'development_plan',
+            'entity_id'   => $id,
+            'new_values'  => [
+                'title'   => $request->input('title'),
+                'user_id' => $request->input('user_id_target') ?: $request->input('user_id'),
+                'status'  => $request->input('status', 'active'),
+            ],
+        ]);
+
         $this->logCompetencyActivity(
             $context['sub_institute_id'],
             $context['user_id'],
@@ -449,6 +466,8 @@ class DevelopmentPlanController extends Controller
     /** PUT /api/competency/development-plans/{id} */
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -505,6 +524,14 @@ class DevelopmentPlanController extends Controller
 
         DB::table(self::TABLE)->where('id', $plan->id)->update($update);
 
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'development_plan.updated',
+            'entity_type' => 'development_plan',
+            'entity_id'   => $plan->id,
+            'new_values'  => $update,
+        ]);
+
         $this->logCompetencyActivity(
             $sid,
             $context['user_id'],
@@ -525,6 +552,8 @@ class DevelopmentPlanController extends Controller
 
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -538,6 +567,14 @@ class DevelopmentPlanController extends Controller
         DB::table(self::TABLE)->where('id', $plan->id)->update([
             'deleted_at' => now(),
             'deleted_by' => $context['user_id'],
+        ]);
+
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'development_plan.deleted',
+            'entity_type' => 'development_plan',
+            'entity_id'   => $plan->id,
+            'new_values'  => ['title' => $plan->title],
         ]);
 
         $this->logCompetencyActivity(
@@ -697,6 +734,8 @@ class DevelopmentPlanController extends Controller
     /** POST /api/competency/development-plans/{id}/actions */
     public function storeAction(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -749,6 +788,18 @@ class DevelopmentPlanController extends Controller
 
         $progress = $this->syncPlanProgress((int) $plan->id, $sid, $context['user_id']);
 
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'development_plan.action_added',
+            'entity_type' => 'development_plan',
+            'entity_id'   => $plan->id,
+            'new_values'  => [
+                'action_id' => $actionId,
+                'title'     => $request->input('title'),
+                'status'    => $status,
+            ],
+        ]);
+
         $this->logCompetencyActivity(
             $sid,
             $context['user_id'],
@@ -769,6 +820,8 @@ class DevelopmentPlanController extends Controller
     /** PUT /api/competency/development-plans/{id}/actions/{actionId} */
     public function updateAction(Request $request, $id, $actionId)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -824,6 +877,14 @@ class DevelopmentPlanController extends Controller
 
         $progress = $this->syncPlanProgress((int) $plan->id, $sid, $context['user_id']);
 
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'development_plan.action_updated',
+            'entity_type' => 'development_plan',
+            'entity_id'   => $plan->id,
+            'new_values'  => array_merge($update, ['action_id' => $action->id]),
+        ]);
+
         $this->logCompetencyActivity(
             $sid,
             $context['user_id'],
@@ -857,6 +918,8 @@ class DevelopmentPlanController extends Controller
     /** DELETE /api/competency/development-plans/{id}/actions/{actionId} */
     public function destroyAction(Request $request, $id, $actionId)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->competencyContext($request);
         if (!is_array($context)) {
             return $context;
@@ -882,6 +945,14 @@ class DevelopmentPlanController extends Controller
         ]);
 
         $progress = $this->syncPlanProgress((int) $plan->id, $sid, $context['user_id']);
+
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'development_plan.action_deleted',
+            'entity_type' => 'development_plan',
+            'entity_id'   => $plan->id,
+            'new_values'  => ['action_id' => (int) $actionId, 'title' => $action->title],
+        ]);
 
         $this->logCompetencyActivity(
             $sid,

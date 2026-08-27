@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\TalentManagement\Competency;
 
 use App\Http\Controllers\api\TalentManagement\Competency\Concerns\ResolvesCompetencyContext;
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -378,6 +379,18 @@ class EmployeeCompetencyProfileController extends Controller
 
         $skillName = DB::table('s_users_skills')->where('id', $request->input('skill_id'))->value('title');
 
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'employee_skill.added',
+            'entity_type' => 'employee_skill',
+            'entity_id'   => $id,
+            'new_values'  => [
+                'matrix_id'   => $matrixId,
+                'skill_id'    => $request->input('skill_id'),
+                'skill_level' => $request->input('skill_level'),
+            ],
+        ]);
+
         $this->logCompetencyActivity(
             $context['sub_institute_id'],
             $context['user_id'],
@@ -443,6 +456,14 @@ class EmployeeCompetencyProfileController extends Controller
         ]);
 
         $skillName = DB::table('s_users_skills')->where('id', $row->skill_id)->value('title');
+
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'employee_skill.updated',
+            'entity_type' => 'employee_skill',
+            'entity_id'   => $id,
+            'new_values'  => array_merge($update, ['matrix_id' => (int) $matrixId]),
+        ]);
 
         $this->logCompetencyActivity(
             $context['sub_institute_id'],
@@ -610,6 +631,14 @@ class EmployeeCompetencyProfileController extends Controller
             ]);
         }
 
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => $existing ? 'employee_note.updated' : 'employee_note.created',
+            'entity_type' => 'employee_note',
+            'entity_id'   => $id,
+            'new_values'  => ['note' => $request->input('note')],
+        ]);
+
         $this->logCompetencyActivity(
             $sid,
             $context['user_id'],
@@ -761,6 +790,18 @@ class EmployeeCompetencyProfileController extends Controller
             'updated_at'       => now(),
         ]);
 
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'evidence.added',
+            'entity_type' => 'evidence',
+            'entity_id'   => $newId,
+            'new_values'  => [
+                'user_id' => $id,
+                'title'   => $request->input('title'),
+                'status'  => $request->input('status', 'pending'),
+            ],
+        ]);
+
         $this->logCompetencyActivity($sid, $context['user_id'], 'added_evidence', 'Added evidence "' . $request->input('title') . '"', 'evidence', $newId, $request->input('title'));
 
         return response()->json(['status' => 1, 'message' => 'Evidence added successfully', 'data' => ['id' => $newId]], 201);
@@ -787,6 +828,14 @@ class EmployeeCompetencyProfileController extends Controller
         DB::table('s_competency_evidence')->where('id', $evidenceId)->update([
             'deleted_at' => now(),
             'deleted_by' => $context['user_id'],
+        ]);
+
+        AuditLog::record([
+            'module'      => 'competency_management',
+            'action'      => 'evidence.deleted',
+            'entity_type' => 'evidence',
+            'entity_id'   => (int) $evidenceId,
+            'new_values'  => ['user_id' => $id, 'title' => $evidence->title],
         ]);
 
         $this->logCompetencyActivity(

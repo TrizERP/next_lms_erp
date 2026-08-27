@@ -22,14 +22,8 @@ class LeaveSummaryReportController extends Controller
     public function leaveSummaryReport(Request $request) 
     {
         $type = $request->input('type');
-        if ($type == 'API') 
-        {
-            $sub_institute_id = $request->input('sub_institute_id');
-        } 
-        else 
-        {
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
 	    $employee_id = $request->get('employee_id');
         $department_id = $request->get('department_id');
@@ -59,11 +53,8 @@ class LeaveSummaryReportController extends Controller
     public function leaveSummaryReportShow(Request $request) 
     {
         $type = $request->type;
-        if ($type == 'API') {
-            $sub_institute_id = $request->get('sub_institute_id');
-        } else {
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         // $from_date = $request->get('from_date');
         // $to_date = $request->get('to_date');
@@ -277,10 +268,7 @@ class LeaveSummaryReportController extends Controller
 
     public function leaveLists(Request $request){
         $type=$request->type;
-        $sub_institute_id = session()->get('sub_institute_id');
-        if($type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
-        }
+        $sub_institute_id = session()->get('sub_institute_id'); // G-SEC-29: token-verified, not client-supplied
         $employee_id = $request->emp_id;
         $department_id = $request->department_id;
         $leaveTypeId = $request->leave_type_id;

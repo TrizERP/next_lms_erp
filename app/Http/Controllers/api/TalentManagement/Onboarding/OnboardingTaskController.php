@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\TalentManagement\Onboarding;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\api\TalentManagement\Onboarding\Concerns\ResolvesOnboardingContext;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\TalentOnboardingJourney;
 use App\Models\TalentManagement\TalentOnboardingTask;
 use Illuminate\Http\Request;
@@ -136,6 +137,14 @@ class OnboardingTaskController extends Controller
             (int) $journey->id
         );
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'onboarding_task_created',
+            'entity_type' => 'onboarding_task',
+            'entity_id'   => $task->id,
+            'new_values'  => $validated,
+        ]);
+
         $directory = $this->onboardingDirectory($tenant, [$task->owner_id]);
 
         return $this->onboardingResponse($this->presentTask($task, $directory), 'Task added', 201);
@@ -190,6 +199,14 @@ class OnboardingTaskController extends Controller
                 $changes,
                 (int) $task->journey_id
             );
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'onboarding_task_updated',
+                'entity_type' => 'onboarding_task',
+                'entity_id'   => $task->id,
+                'new_values'  => $validated,
+            ]);
         }
 
         $directory = $this->onboardingDirectory($tenant, [$task->owner_id]);
@@ -237,6 +254,14 @@ class OnboardingTaskController extends Controller
             (int) $task->journey_id
         );
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => $reopen ? 'onboarding_task_reopened' : 'onboarding_task_completed',
+            'entity_type' => 'onboarding_task',
+            'entity_id'   => $task->id,
+            'new_values'  => ['status' => ['old' => $previous, 'new' => $task->status]],
+        ]);
+
         $directory = $this->onboardingDirectory($tenant, [$task->owner_id]);
 
         return $this->onboardingResponse(
@@ -278,6 +303,14 @@ class OnboardingTaskController extends Controller
             null,
             $journeyId
         );
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'onboarding_task_deleted',
+            'entity_type' => 'onboarding_task',
+            'entity_id'   => (int) $id,
+            'new_values'  => ['title' => $title, 'journey_id' => $journeyId],
+        ]);
 
         return $this->onboardingResponse(['id' => (int) $id], 'Task deleted');
     }
@@ -373,6 +406,14 @@ class OnboardingTaskController extends Controller
                 null,
                 (int) $tasks->first()->journey_id
             );
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'onboarding_task_bulk_' . $action,
+                'entity_type' => 'onboarding_task',
+                'entity_id'   => null,
+                'new_values'  => ['task_ids' => $validated['task_ids'], 'affected' => $affected],
+            ]);
         }
 
         return $this->onboardingResponse(

@@ -57,6 +57,32 @@ class LmsAssignmentApiController extends Controller
         ], $extra), $status);
     }
 
+    /**
+     * The student whose assignments this request is allowed to touch.
+     *
+     * The submission endpoints run behind `api.session`, so the JWT-verified
+     * identity is already in the session. For a student caller the user_id /
+     * student_id in the body is therefore ignored outright -- otherwise one
+     * student could list, or upload against, another student's assignments
+     * just by editing the request. Staff callers (teacher/admin tooling that
+     * legitimately inspects a named student) keep the body-driven behaviour.
+     */
+    private function submissionStudentId(Request $request)
+    {
+        if ($this->isStudentSession()) {
+            return session()->get('user_id');
+        }
+
+        return $request->input('user_id') ?? $request->input('student_id');
+    }
+
+    /** True when the verified token belongs to a student. */
+    private function isStudentSession(): bool
+    {
+        return (bool) session()->get('is_student')
+            || strtolower(trim((string) session()->get('user_profile_name'))) === 'student';
+    }
+
     // ==================================================================
     // MODULE 1 - Assignment (teacher create screen)
     // ==================================================================
@@ -378,7 +404,7 @@ class LmsAssignmentApiController extends Controller
     {
         $sub_institute_id = $request->input('sub_institute_id');
         $syear = $request->input('syear');
-        $student_id = $request->input('user_id') ?? $request->input('student_id');
+        $student_id = $this->submissionStudentId($request);
 
         if (!$sub_institute_id || !$syear) {
             return $this->fail('sub_institute_id and syear are required');
@@ -421,7 +447,7 @@ class LmsAssignmentApiController extends Controller
     {
         $sub_institute_id = $request->input('sub_institute_id');
         $syear = $request->input('syear');
-        $student_id = $request->input('user_id') ?? $request->input('student_id');
+        $student_id = $this->submissionStudentId($request);
 
         if (!$sub_institute_id || !$syear || !$student_id) {
             return $this->fail('sub_institute_id, syear and user_id are required');

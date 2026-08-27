@@ -24,6 +24,10 @@ class VerifyCsrfToken extends Middleware
         'fees/*',
         'https://erp.triz.co.in/*',
         'https://dev.triz.co.in/*',
-        'http://127.0.0.1:8000/*'        
+        'http://127.0.0.1:8000/*',
+        // Career certainty (CI-GUIDE-DEV-001): a stateless JWT-bearer endpoint
+        // reached through the Next.js proxy, same as api/* — the client never
+        // holds a Laravel session cookie/XSRF token pair to present.
+        'studentAspiration',
     ];
 }

@@ -96,7 +96,7 @@
                                                     $edit = 1;
                                                 }
                                             @endphp
-                                            <tr>
+                                            <tr id="question-row-{{ $quesdata->id }}">
                                                 <td>@php echo $i++;@endphp</td>
                                                {{-- <td>{{$quesdata->grade_name}}</td>
                                                 <td>{{$quesdata->standard_name}}</td>
@@ -134,15 +134,11 @@
                                                             <i class="ti-pencil-alt"></i>
                                                         </a>
                                                         @if($edit==0)
-                                                        <form class="d-inline"
-                                                              action="{{ route('question_master.destroy', $quesdata->id)}}"
-                                                              method="post"
-                                                              onsubmit="return delete_question({{$quesdata->id}});">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="btn btn-outline-danger"><i
-                                                                    class="ti-trash"></i></button>
-                                                        </form>
+                                                        <button type="button"
+                                                                class="btn btn-outline-danger"
+                                                                data-delete-url="{{ route('question_master.destroy', $quesdata->id) }}"
+                                                                onclick="delete_question({{ $quesdata->id }}, this);"><i
+                                                                class="ti-trash"></i></button>
                                                         @endif
                                                     </div>
                                                 </td>
@@ -194,37 +190,72 @@
         })
     });
 
-    function delete_question(question_id) {
-        if (confirm('Are you sure?')) {
-            var error = 1;
-            var path = "{{ route('ajax_questionDependencies') }}";
-            $.ajax({
-                url: path,
-                data: "question_id=" + question_id,
-                async: false,
-                success: function (result) {
-
-                    if (result > 0) {
-                        alert("You cannot delete Question.Question is having dependencies in Other Module");
-                        error = 1;
-                    } else {
-                        error = 0;
-                    }
-                },
-                failure: function (er) {
-                    alert('error' + er);
-                    error = 1;
-                }
-            });
-        } else {
-            error = 1;
+    // Removes the question row from the table without a page reload. Falls back
+    // to a plain row removal when the table is not a DataTable.
+    function remove_question_row(question_id) {
+        var row = document.getElementById('question-row-' + question_id);
+        if (!row) {
+            return;
         }
 
-        if (error == 1) {
+        var table = $(row).closest('table');
+        if ($.fn.DataTable && $.fn.DataTable.isDataTable(table)) {
+            table.DataTable().row(row).remove().draw(false);
+        } else {
+            $(row).remove();
+        }
+
+        if ($('#subject_list tbody tr').length === 0) {
+            $('#subject_list tbody').html('<tr><td colspan="10"><center>No records</center></td></tr>');
+        }
+    }
+
+    function delete_question(question_id, button) {
+        if (!confirm('Are you sure?')) {
             return false;
-        } else {
-            return true;
         }
+
+        $(button).prop('disabled', true);
+
+        $.ajax({
+            url: "{{ route('ajax_questionDependencies') }}",
+            data: {question_id: question_id},
+            success: function (result) {
+                if (parseInt(result, 10) > 0) {
+                    alert("You cannot delete Question.Question is having dependencies in Other Module");
+                    $(button).prop('disabled', false);
+                    return;
+                }
+
+                $.ajax({
+                    url: $(button).data('delete-url'),
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        _method: 'DELETE'
+                    },
+                    success: function (res) {
+                        if (res && res.status_code == 1) {
+                            remove_question_row(question_id);
+                        } else {
+                            alert((res && res.message) || 'Unable to delete question.');
+                            $(button).prop('disabled', false);
+                        }
+                    },
+                    error: function (xhr) {
+                        alert('Unable to delete question. ' + (xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : ''));
+                        $(button).prop('disabled', false);
+                    }
+                });
+            },
+            error: function (er) {
+                alert('error' + er.responseText);
+                $(button).prop('disabled', false);
+            }
+        });
+
+        return false;
     }
 
 </script>

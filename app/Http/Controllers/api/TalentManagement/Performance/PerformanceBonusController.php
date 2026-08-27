@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api\TalentManagement\Performance;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\api\Concerns\RequiresTalentAdmin;
 use App\Http\Controllers\api\TalentManagement\Performance\Concerns\ResolvesPerformanceContext;
+use App\Models\AuditLog;
 use App\Models\TalentManagement\PerformanceBonusAward;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,6 +21,7 @@ use Illuminate\Support\Facades\DB;
 class PerformanceBonusController extends Controller
 {
     use ResolvesPerformanceContext;
+    use RequiresTalentAdmin;
 
     private const SORTABLE = ['bonus_type', 'amount', 'pct_of_ctc', 'payout_month', 'status', 'created_at'];
 
@@ -83,6 +86,8 @@ class PerformanceBonusController extends Controller
     /** POST /api/performance/bonus */
     public function store(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -144,12 +149,22 @@ class PerformanceBonusController extends Controller
             $award->cycle_id ? (int) $award->cycle_id : null
         );
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'bonus_created',
+            'entity_type' => 'performance_bonus_award',
+            'entity_id'   => $award->id,
+            'new_values'  => array_merge($validated, ['user_id' => $employeeId]),
+        ]);
+
         return $this->performanceResponse($this->presentModel($award), 'Bonus award created', 201);
     }
 
     /** PUT /api/performance/bonus/{id} */
     public function update(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -188,6 +203,14 @@ class PerformanceBonusController extends Controller
         $award->updated_by = $context['user_id'];
         $award->save();
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'bonus_updated',
+            'entity_type' => 'performance_bonus_award',
+            'entity_id'   => $award->id,
+            'new_values'  => $validated,
+        ]);
+
         if (!empty($changes)) {
             $employeeName = $this->resolveActorName((int) $award->user_id) ?? 'an employee';
 
@@ -214,6 +237,8 @@ class PerformanceBonusController extends Controller
      */
     public function decision(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -266,6 +291,14 @@ class PerformanceBonusController extends Controller
         $award->updated_by = $context['user_id'];
         $award->save();
 
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'bonus_decision',
+            'entity_type' => 'performance_bonus_award',
+            'entity_id'   => $award->id,
+            'new_values'  => ['action' => $validated['action'], 'status' => $target, 'remarks' => $validated['remarks'] ?? null],
+        ]);
+
         $employeeName = $this->resolveActorName((int) $award->user_id) ?? 'an employee';
 
         $this->logPerformanceActivity(
@@ -287,6 +320,8 @@ class PerformanceBonusController extends Controller
     /** POST /api/performance/bonus/bulk */
     public function bulk(Request $request)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -334,6 +369,14 @@ class PerformanceBonusController extends Controller
 
             $award->updated_by = $context['user_id'];
             $award->save();
+
+            AuditLog::record([
+                'module'      => 'talent_management',
+                'action'      => 'bonus_decision',
+                'entity_type' => 'performance_bonus_award',
+                'entity_id'   => $award->id,
+                'new_values'  => ['action' => $validated['action'], 'status' => $target, 'bulk' => true],
+            ]);
         }
 
         $this->logPerformanceActivity(
@@ -355,6 +398,8 @@ class PerformanceBonusController extends Controller
     /** DELETE /api/performance/bonus/{id} */
     public function destroy(Request $request, $id)
     {
+        if ($response = $this->assertIsAdmin()) { return $response; }
+
         $context = $this->performanceContext($request);
         if (!is_array($context)) {
             return $context;
@@ -378,6 +423,14 @@ class PerformanceBonusController extends Controller
         $award->deleted_by = $context['user_id'];
         $award->save();
         $award->delete();
+
+        AuditLog::record([
+            'module'      => 'talent_management',
+            'action'      => 'bonus_deleted',
+            'entity_type' => 'performance_bonus_award',
+            'entity_id'   => (int) $id,
+            'new_values'  => ['user_id' => (int) $award->user_id],
+        ]);
 
         $this->logPerformanceActivity(
             $tenant,

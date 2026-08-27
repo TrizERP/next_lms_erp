@@ -184,6 +184,7 @@ class GraphControllerNew extends Controller
     public function getQuestionsForChapter($chapterId): JsonResponse
 {
     $questions = DB::table('lms_question_master as lqm')
+        ->whereNull('lqm.deleted_at')
         ->leftJoin('standard', 'standard.id', '=', 'lqm.standard_id')
         ->leftJoin('academic_section', 'academic_section.id', '=', 'lqm.grade_id')
         ->leftJoin('subject', 'subject.id', '=', 'lqm.subject_id')

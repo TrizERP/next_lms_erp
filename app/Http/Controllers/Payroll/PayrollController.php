@@ -7,6 +7,7 @@ use App\Models\EmployeeMonthlySalaryData;
 use App\Models\EmployeeSalaryStructure;
 use App\Models\PayrollType;
 use App\Models\HrmsDepartment;
+use App\Models\AuditLog;
 use App\Models\user\tbluserModel;
 use App\Http\Controllers\HRMS\HrmsController;
 use App\Traits\Helpers;
@@ -91,6 +92,20 @@ class PayrollController extends Controller
             $user_id = $request->get('user_id');
         }
 
+        $validator = Validator::make($request->all(), [
+            'payroll_type' => 'required',
+            'payroll_name' => 'required|string',
+            'amount_type' => 'required',
+            'status' => 'required',
+            'day_count' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $res['status_code'] = 0;
+            $res['message'] = $validator->messages()->first();
+            return is_mobile($type, "payroll.payroll_type.index", $res, "redirect");
+        }
+
         if ($request->id > 0) {
             $payrollType = PayrollType::find($request->id);
         } else {
@@ -120,6 +135,22 @@ class PayrollController extends Controller
         // restore these two assignments (see git history / this comment).
         $payrollType->save();
 
+        AuditLog::record([
+            'module' => 'payroll',
+            'action' => $request->id > 0 ? 'payroll_type_updated' : 'payroll_type_added',
+            'entity_type' => 'payroll_type',
+            'entity_id' => $payrollType->id,
+            'new_values' => [
+                'payroll_type' => $payrollType->payroll_type,
+                'payroll_name' => $payrollType->payroll_name,
+                'amount_type' => $payrollType->amount_type,
+                'status' => $payrollType->status,
+                'day_count' => $payrollType->day_count,
+                'payroll_percentage' => $payrollType->payroll_percentage,
+                'sub_institute_id' => $payrollType->sub_institute_id,
+            ],
+        ]);
+
         $res['status_code'] = 1;
         $res['message'] = $request->id > 0 ? 'Payroll type updated successfully' : 'Payroll type added successfully';
 
@@ -142,6 +173,13 @@ class PayrollController extends Controller
 
         if ($id > 0) {
             PayrollType::where('id', $id)->delete();
+
+            AuditLog::record([
+                'module' => 'payroll',
+                'action' => 'payroll_type_deleted',
+                'entity_type' => 'payroll_type',
+                'entity_id' => $id,
+            ]);
         }
 
         $res['status_code'] = 1;
@@ -234,9 +272,19 @@ class PayrollController extends Controller
             $sub_institute_id = $request->get('sub_institute_id');
             $year = Carbon::now()->format('Y');
         }
-        
+
+        $validator = Validator::make($request->all(), [
+            'emp' => 'required|array',
+        ]);
+
+        if ($validator->fails()) {
+            $res['status_code'] = 0;
+            $res['message'] = $validator->messages()->first();
+            return is_mobile($type, "employee_salary_structure.index", $res, "redirect");
+        }
+
         $res['status_code']=0;
-        $res['message']="Failed to Save";   
+        $res['message']="Failed to Save";
         // remove datas with value 0
         $empDetails =[];
         $totalAllowance = 0;
@@ -364,23 +412,39 @@ class PayrollController extends Controller
                 $res['status_code']=1;
                 if(!empty($find) && $totalSalary!=0){
                     EmployeeSalaryStructure::where(['employee_id' => $emp_ids,'year' => $year,'sub_institute_id' => $sub_institute_id])->update([
-                        'employee_id' => $emp_ids, 
+                        'employee_id' => $emp_ids,
                         'employee_salary_data' => $encodeData,
                         'year' => $year,
                         'sub_institute_id' => $sub_institute_id,
                         'updated_at'=>now(),
                     ]);
                     $res['message']="Updated Successfully";
+
+                    AuditLog::record([
+                        'module' => 'payroll',
+                        'action' => 'employee_salary_structure_updated',
+                        'entity_type' => 'employee_salary_structure',
+                        'entity_id' => $emp_ids,
+                        'new_values' => ['year' => $year, 'employee_salary_data' => $jsonData],
+                    ]);
                 }
-                // insert data 
+                // insert data
                 else{
                     if($totalSalary!=0){
                         EmployeeSalaryStructure::insert([
-                            'employee_id' => $emp_ids, 
+                            'employee_id' => $emp_ids,
                             'employee_salary_data' => $encodeData,
                             'year' => $year,
                             'sub_institute_id' => $sub_institute_id,
                             'created_at'=>now(),
+                        ]);
+
+                        AuditLog::record([
+                            'module' => 'payroll',
+                            'action' => 'employee_salary_structure_added',
+                            'entity_type' => 'employee_salary_structure',
+                            'entity_id' => $emp_ids,
+                            'new_values' => ['year' => $year, 'employee_salary_data' => $jsonData],
                         ]);
                     }
                     $res['message']="Added Successfully";
@@ -968,9 +1032,30 @@ class PayrollController extends Controller
         $sub_institute_id = session()->get('sub_institute_id');
         $created_by = session()->get('user_id');
         if ($type == "API") {
-            $sub_institute_id = $request->sub_institute_id;
-            $created_by = $request->user_id;
+            try {
+                if (!$this->jwtToken()->validate()) {
+                    return response()->json(['status' => '2', 'message' => 'Token Auth Failed', 'data' => []], 401);
+                }
+            } catch (\Exception $e) {
+                return response()->json(['status' => '2', 'message' => $e->getMessage(), 'data' => []], 401);
+            }
+
+            $sub_institute_id = session()->get('sub_institute_id');
+            $created_by = session()->get('user_id');
         }
+        $validator = Validator::make($request->all(), [
+            'payroll_type' => 'required',
+            'month' => 'required',
+            'year' => 'required',
+            'deductAmt' => 'required|array',
+        ]);
+
+        if ($validator->fails()) {
+            $res['status_code'] = 0;
+            $res['message'] = $validator->messages()->first();
+            return is_mobile($type, "payroll_deduction.index", $res);
+        }
+
         $payroll_type = $request->payroll_type;
         $month = $request->month;
         $year = $request->year;
@@ -990,15 +1075,33 @@ class PayrollController extends Controller
                 $checkArr['deduction_amount']=$amount ?? 0;
                 $checkArr['created_at']=now();
 
-                $insert = DB::table('hrms_emp_payroll_deduction')->insert($checkArr);
+                $insertId = DB::table('hrms_emp_payroll_deduction')->insertGetId($checkArr);
                 $i++;
+
+                AuditLog::record([
+                    'module' => 'payroll',
+                    'action' => 'payroll_deduction_added',
+                    'entity_type' => 'payroll_deduction',
+                    'entity_id' => $insertId,
+                    'new_values' => $checkArr,
+                ]);
             }else{
+                $oldValues = ['deduction_amount' => $check->deduction_amount];
                 $checkArr['created_by']=$created_by;
                 $checkArr['deduction_amount']=$amount ?? 0;
                 $checkArr['updated_at']=now();
-                
+
                 $update = DB::table('hrms_emp_payroll_deduction')->where('id',$check->id)->update($checkArr);
                 $i++;
+
+                AuditLog::record([
+                    'module' => 'payroll',
+                    'action' => 'payroll_deduction_updated',
+                    'entity_type' => 'payroll_deduction',
+                    'entity_id' => $check->id,
+                    'old_values' => $oldValues,
+                    'new_values' => $checkArr,
+                ]);
             }
         }
         // echo "<pre>";print_r($request->all());exit;
@@ -1047,6 +1150,14 @@ class PayrollController extends Controller
                     'employee_salary_data' => json_encode($employeeDetails['data']),
                     'year' => $employee['year'] + 1
                 ]);
+
+                AuditLog::record([
+                    'module' => 'payroll',
+                    'action' => 'employee_salary_structure_rolled_over',
+                    'entity_type' => 'employee_salary_structure',
+                    'entity_id' => $employeeDetails['id'],
+                    'new_values' => ['year' => $employee['year'] + 1, 'employee_salary_data' => $employeeDetails['data']],
+                ]);
             }
         }
         return redirect('roll-over');
@@ -1084,6 +1195,12 @@ class PayrollController extends Controller
             $employeeSalaryData = EmployeeMonthlySalaryData::where(['employee_id'=> $request->emp_id,'month'=>$request->month,'year'=>$request->year,'sub_institute_id'=>$sub_institute_id])->delete();
         $del = 1;
 
+            AuditLog::record([
+                'module' => 'payroll',
+                'action' => 'monthly_payroll_deleted',
+                'entity_type' => 'employee_monthly_salary_data',
+                'new_values' => ['employee_id' => $request->emp_id, 'month' => $request->month, 'year' => $request->year],
+            ]);
         }
         if ($request->emp_id && $request->year && $request->month) {
             
@@ -1195,7 +1312,7 @@ class PayrollController extends Controller
             if(!$employeeSalaryData) {
                 // echo "<pre>";print_r($request->all());exit;
                 // return $request->emp['total_payment'];
-                EmployeeMonthlySalaryData::create([
+                $newSalaryData = [
                     'month' => $request->month,
                     'year' => $request->year,
                     'employee_id' => $request->emp['id'],
@@ -1205,8 +1322,17 @@ class PayrollController extends Controller
                     'received_by' => $request->received_by,
                     'total_day' => $request->total_day,
                     'employee_salary_data' => json_encode($request->emp['salary']),
-                ]);
+                ];
+                $createdSalaryData = EmployeeMonthlySalaryData::create($newSalaryData);
                 $res['pdf_link'] = env('APP_URL')."/monthly-payroll-report/pdf/".$request->emp['id']."/".$request->month.'/'.$request->year;
+
+                AuditLog::record([
+                    'module' => 'payroll',
+                    'action' => 'monthly_payroll_saved',
+                    'entity_type' => 'employee_monthly_salary_data',
+                    'entity_id' => $createdSalaryData->id,
+                    'new_values' => $newSalaryData,
+                ]);
             }
             $res['hide_button'] = false;
         }
@@ -2047,6 +2173,19 @@ class PayrollController extends Controller
     public function monthlyPayrollStore(Request $request){
         $type=$request->type;
         $sub_institute_id = session()->get('sub_institute_id');
+
+        $validator = Validator::make($request->all(), [
+            'payrollVal' => 'required|array',
+            'month' => 'required',
+            'year' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            $res['status_code'] = 0;
+            $res['message'] = $validator->messages()->first();
+            return is_mobile($type,'monthly_payroll.index',$res);
+        }
+
         $payrollVal = $request->payrollVal;
         $jsonVal=[];
         // echo "<pre>";print_r($request->all());exit;
@@ -2087,8 +2226,16 @@ class PayrollController extends Controller
 	                $i++;
 	            }else{
 	                $dataArr['created_at'] = now();
-	                $insert = DB::table("employee_monthly_salary_data")->insert($dataArr);
+	                $insertId = DB::table("employee_monthly_salary_data")->insertGetId($dataArr);
 	                $i++;
+
+	                AuditLog::record([
+	                    'module' => 'payroll',
+	                    'action' => 'monthly_payroll_added',
+	                    'entity_type' => 'employee_monthly_salary_data',
+	                    'entity_id' => $insertId,
+	                    'new_values' => $dataArr,
+	                ]);
 	            }
 	            // store pdf 29-10-2024
                 if($dataArr['total_day']!=0){
@@ -2102,10 +2249,26 @@ class PayrollController extends Controller
 
 	                if(empty($checkDoc)){
 	                    $pdfData['created_at']=now();
-	                    $insertDoc = DB::table('staff_document')->insert($pdfData);
+	                    $insertDocId = DB::table('staff_document')->insertGetId($pdfData);
+
+	                    AuditLog::record([
+	                        'module' => 'payroll',
+	                        'action' => 'payslip_document_added',
+	                        'entity_type' => 'staff_document',
+	                        'entity_id' => $insertDocId,
+	                        'new_values' => $pdfData,
+	                    ]);
 	                }else{
 	                    $pdfData['updated_at']=now();
 	                    $updateDoc = DB::table('staff_document')->where(['sub_institute_id'=>$sub_institute_id,'document_type_id'=>56,'user_id'=>$emp_id,'file_name'=>$pdfName])->update($pdfData);
+
+	                    AuditLog::record([
+	                        'module' => 'payroll',
+	                        'action' => 'payslip_document_updated',
+	                        'entity_type' => 'staff_document',
+	                        'entity_id' => $checkDoc->id,
+	                        'new_values' => $pdfData,
+	                    ]);
 	                }
 	            }
             }
@@ -2168,9 +2331,24 @@ class PayrollController extends Controller
 
                     if(!empty($checkInStaffDoc)){
                         $deleteDoc =  DB::table('staff_document')->where('id',$checkInStaffDoc->id)->delete();
+
+                        AuditLog::record([
+                            'module' => 'payroll',
+                            'action' => 'payslip_document_deleted',
+                            'entity_type' => 'staff_document',
+                            'entity_id' => $checkInStaffDoc->id,
+                            'old_values' => (array) $checkInStaffDoc,
+                        ]);
                     }
 
                     $checkInMonthly = DB::table('employee_monthly_salary_data')->where('id',$dataId)->delete();
+
+                    AuditLog::record([
+                        'module' => 'payroll',
+                        'action' => 'monthly_payroll_deleted',
+                        'entity_type' => 'employee_monthly_salary_data',
+                        'entity_id' => $dataId,
+                    ]);
                }
                $i++;
             }

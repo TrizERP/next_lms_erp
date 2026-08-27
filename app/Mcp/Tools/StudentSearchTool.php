@@ -27,6 +27,7 @@ class StudentSearchTool extends AbstractMcpTool
         return [
             'type' => 'object',
             'properties' => [
+                'student_id' => ['type' => 'integer', 'minimum' => 1, 'description' => 'Exact student id within the authenticated institute scope.'],
                 'query' => ['type' => 'string', 'description' => 'Free-text search by name, admission id, enrollment number, mobile, or email.'],
                 'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 50, 'default' => 20],
                 'active_only' => ['type' => 'boolean', 'default' => true],
