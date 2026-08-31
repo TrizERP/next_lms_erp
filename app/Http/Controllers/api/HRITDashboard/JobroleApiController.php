@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\api\HRITDashboard;
 
 use App\Http\Controllers\Controller;
-use App\Http\Controllers\Api\Concerns\ResolvesApiIdentity;
+use App\Http\Controllers\api\Concerns\ResolvesApiIdentity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
