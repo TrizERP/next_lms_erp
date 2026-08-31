@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\inventory\inventory_item_returnModel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 class inventory_item_returnController extends Controller
@@ -111,8 +113,11 @@ class inventory_item_returnController extends Controller
         $return_qty = $request->get('return_qty');
         $remarks = $request->get('remarks');
 
+        $validator = Validator::make($request->all(), [
+            'items' => 'required|array|min:1',
+        ]);
 
-        if (! empty($items)) {
+        if (! $validator->fails() && ! empty($items)) {
             foreach ($items as $k => $item_id) {
                 $check = DB::table("inventory_item_return_details")
                     ->where("SUB_INSTITUTE_ID", "=", $sub_institute_id)
@@ -139,6 +144,14 @@ class inventory_item_returnController extends Controller
                     $item_return->save();
                 }
             }
+
+            AuditLog::record([
+                'module'      => 'inventory',
+                'action'      => 'inventory_item_return_store',
+                'entity_type' => 'inventory_item_return_details',
+                'entity_id'   => $requisition_details_id,
+                'new_values'  => $request->except(['_token']),
+            ]);
 
             $res['status'] = "1";
             $res['message'] = "Item Return successfully";

@@ -126,7 +126,7 @@ class HrmsController extends Controller
         $type = $request->input('type');
         if ($type == 'API') {
             $userId = $request->input('user_id');
-            $sub_institute_id = $request->input('sub_institute_id');
+            $sub_institute_id = $request->session()->get('sub_institute_id'); // G-SEC-29: token-verified, not client-supplied
             $punchin_time = $request->input('punchin_time');
             $address_in = $request->input('address_in');
             // $photo_in = $request->input('photo_in');
@@ -252,7 +252,7 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
         if ($type == 'API') {
 
             $userId = $request->input('user_id');
-            $sub_institute_id = $request->input('sub_institute_id');
+            $sub_institute_id = $request->session()->get('sub_institute_id'); // G-SEC-29: token-verified, not client-supplied
             $punchout_time = $request->input('punchout_time');
             $address_out = $request->input('address_out');
             // $photo_out = $request->input('photo_out');
@@ -394,8 +394,8 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
         $type = $request->input('type');
         // $hrmsAttendanceDetails = '';
 
-        if (in_array($type, ['API', 'JSON'])) $sub_institute_id = $request->input('sub_institute_id');
-        else   $sub_institute_id = $request->session()->get('sub_institute_id');
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         if ($request->employee_id) {
             $hrmsAttendanceInOutTime['employee_id'] = $request->employee_id;
@@ -445,11 +445,8 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
 
         $type = $request->input('type');
 
-        if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $formattedDate = Carbon::parse($request->indate)->format('Y-m-d');
 
@@ -538,11 +535,8 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     public function hrmsAttendanceReportIndex(Request $request)
     {
         $type = $request->input('type');
-        if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $res['employee_id'] = $employee_id = $request->get('employee_id');
         $res['department_id'] = $department_id = $request->get('department_id');
@@ -570,11 +564,8 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     public function hrmsAttendanceReport(Request $request)
     {
         $type = $request->input('type');
-        if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $from_date = $request->get('from_date');
         $to_date = $request->get('to_date');
@@ -696,11 +687,8 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     public function generalSettingIndex(Request $request)
     {
         $type = $request->input('type');
-        if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $get_sandwich_leave_data = DB::table('general_data')->where(['fieldname' => 'sandwich_leave', 'sub_institute_id' => $sub_institute_id])->first();
 
@@ -754,13 +742,9 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     {
         // echo "<pre>";print_r($request->all());exit;        
         $type = $request->input('type');
-        if (in_array($type, ['API', 'JSON'])) {
-            $userId = $request->input('user_id');
-            $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $userId = $request->session()->get('user_id');
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        $userId = in_array($type, ['API', 'JSON']) ? $request->input('user_id') : $request->session()->get('user_id');
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $sandwich_leave = $request->input('sandwich_leave');
         $casual_leave_at_one_time = $request->input('casual_leave_at_one_time');
@@ -1083,11 +1067,8 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     public function earlyGoingHrmsAttendanceReportIndex(Request $request)
     {
         $type = $request->input('type');
-        if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $employee_id = $request->get('employee_id');
         $department_id = $request->get('department_id');
@@ -1109,11 +1090,8 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     {
         // echo "<pre>";print_r($request->all());exit; 
         $type = $request->input('type');
-        if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->input('sub_institute_id');
-        } else {
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-        }
+        // G-SEC-29: token-verified session value regardless of caller type, not client-supplied
+        $sub_institute_id = $request->session()->get('sub_institute_id');
 
         $department_id = ($request->department_id != 0) ? implode(',', $request->department_id) : 0;
         $employee_id = ($request->emp_id != 0) ? implode(',', $request->emp_id) : 0;
@@ -1133,13 +1111,10 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
         $hrmsList = HrmsAttendance::join('tbluser as u', 'u.id', '=', 'hrms_attendances.user_id')->where('hrms_attendances.sub_institute_id', $sub_institute_id);
 
         if ($employee_id != 0) {
-            echo $employee_id;
             $hrmsList = $hrmsList->when(isset($employee_id), function ($q) use ($employee_id) {
                 $q->whereRaw('user_id in (' . $employee_id . ')');
             });
         } else if ($department_id != 0) {
-            echo "else";
-
             $hrmsList = $hrmsList->when(isset($employeeDep->user_id), function ($q) use ($employeeDep) {
                 $q->whereRaw('user_id in (' . $employeeDep->user_id . ')');
             });
@@ -1191,7 +1166,13 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
                 }
             }
             return $e;
-        })->where('is_late', 1);
+        })->where('is_late', 1)->values();
+        // ->values() re-indexes the filtered collection to sequential keys
+        // (0, 1, 2, ...). Without it, PHP's json_encode() serialises a
+        // collection with gapped keys (e.g. only indices 3 and 7 survived
+        // the filter above) as a JSON OBJECT ({"3":..., "7":...}) instead of
+        // an array ([...]), which broke `hrmsList.map(...)` on the frontend
+        // as soon as real data made the filter actually drop some rows.
 
         $res['employees'] = $employeeDep;
         $res['date_formatted'] = $date_formatted;
@@ -1222,12 +1203,13 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     public function departmentAttendanceReportCreate(Request $request)
     {
         $type = $request->type;
-        $sub_institute_id = session()->get('sub_institute_id');
-        if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->sub_institute_id;
-        }
+        $sub_institute_id = session()->get('sub_institute_id'); // G-SEC-29: token-verified, not client-supplied
         $res['selDepartments'] = $department_ids = $request->department_id;
-        $res['emp_id'] = $emp_id = $request->emp_id;
+        // Some API callers send `employee_id` (the modern param name used
+        // elsewhere in the Attendance API) instead of the legacy `emp_id`
+        // this Blade-era endpoint expects - accept either so the employee
+        // filter isn't silently dropped when a caller uses the newer name.
+        $res['emp_id'] = $emp_id = $request->emp_id ?? $request->employee_id;
         $res['selectedFromDate'] = $from_date = $request->from_date;
         $res['selectedToDate'] = $to_date = $request->to_date;
 
@@ -1247,7 +1229,17 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
                 ->where('hh.to_date', '<=', $to_date)
                 ->where(['hh.sub_institute_id' => $sub_institute_id]);
             })
-            ->selectRaw('tu.id as user_id, tu.employee_no, CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.middle_name, "-"),COALESCE(tu.last_name, "-")) as full_name, tu.sub_institute_id, IFNULL(upm.name, "-") as user_profile, hd.department, COUNT(DISTINCT ha.id) as total_att_day, GROUP_CONCAT(DISTINCT ha.id) as worked_days, COUNT(DISTINCT hel.id) as total_ab_day, GROUP_CONCAT(DISTINCT hel.id) as ab_days, COUNT(DISTINCT hh.id) as total_holidays, GROUP_CONCAT(DISTINCT hh.id) as holidays,GROUP_CONCAT(DISTINCT hd.id) as department_id')
+            // total_att_day counts DISTINCT ha.day (calendar days), not
+            // ha.id (attendance rows): an employee can have more than one
+            // hrms_attendances row for the same day (re-punching sometimes
+            // inserts a fresh row instead of updating the existing one), and
+            // counting by row id double-counted that single day as two
+            // present days - inflating total_att_day beyond what the
+            // separate day-by-day absence loop below (which matches by
+            // calendar day, so a duplicated day only ever counts once)
+            // expects, and letting total_att_day + total_ab_day exceed
+            // workingDays by however many duplicate-day rows existed.
+            ->selectRaw('tu.id as user_id, tu.employee_no, CONCAT_WS(" ", COALESCE(tu.first_name, "-"), COALESCE(tu.middle_name, "-"),COALESCE(tu.last_name, "-")) as full_name, tu.sub_institute_id, IFNULL(upm.name, "-") as user_profile, hd.department, COUNT(DISTINCT ha.day) as total_att_day, GROUP_CONCAT(DISTINCT ha.id) as worked_days, COUNT(DISTINCT hel.id) as total_ab_day, GROUP_CONCAT(DISTINCT hel.id) as ab_days, COUNT(DISTINCT hh.id) as total_holidays, GROUP_CONCAT(DISTINCT hh.id) as holidays,GROUP_CONCAT(DISTINCT hd.id) as department_id')
             ->where('tu.sub_institute_id', $sub_institute_id)
             ->when($department_ids != 0, function ($q) use ($department_ids) {
                 $q->whereRaw('tu.department_id in (' . implode(',', $department_ids) . ')');
@@ -1259,25 +1251,52 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
             ->orderBy('tu.first_name')
             ->groupBy('tu.id')->get()->toArray();
 
+        // Batched up front instead of inside the per-employee loop below,
+        // which previously re-queried `tbluser` once per PUNCH RECORD (not
+        // even once per employee) just to read that employee's expected
+        // check-in time for that day of week, plus a separate
+        // `hrms_attendances` query per employee to re-fetch punches already
+        // summarised by the main query above. With little real attendance
+        // data this was slow but unnoticeable (near-zero rows to iterate);
+        // with real data for e.g. 115 employees x ~18 punch days each, that
+        // was ~2,000+ individual queries for one page load - this is what
+        // made "Loading attendance data..." take so long. Behaviour/output
+        // is unchanged, only how the same data gets fetched.
+        $userIds = collect($empData)->pluck('user_id')->all();
+        $userInTimesById = DB::table('tbluser')
+            ->whereIn('id', $userIds)
+            ->get(['id', 'monday_in_date', 'tuesday_in_date', 'wednesday_in_date', 'thursday_in_date', 'friday_in_date', 'saturday_in_date', 'sunday_in_date'])
+            ->keyBy('id');
+
+        $allWorkedDayIds = collect($empData)
+            ->flatMap(fn ($value) => $value->worked_days ? explode(',', $value->worked_days) : [])
+            ->filter()
+            ->unique()
+            ->values();
+        $punchRowsById = $allWorkedDayIds->isEmpty()
+            ? collect()
+            : DB::table('hrms_attendances')->whereIn('id', $allWorkedDayIds)->get()->keyBy('id');
+
         $newEmpData = [];
         foreach ($empData as $key => $value) {
             $newEmpData[] = $value;
-            // add half days 
+            // add half days
             $ab = $value->ab_days ?? 0;
             $totAb = $value->total_ab_day ?? 0;
             $getHlafDays = DB::table('hrms_emp_leaves')->whereRaw('id in (' . $ab . ')')->where('day_type', '0.5')->count();
             $newEmpData[$key]->half_day = $getHlafDays ?? 0;
-            // add late comes 
+            // add late comes
             $wkDay = $value->worked_days ?? 0;
-            $getPunchTime = DB::table('hrms_attendances')->whereRaw('id in (' . $wkDay . ')')->get()->toArray();
-            // get user working time 
+            $workedDayIds = $wkDay ? array_filter(explode(',', $wkDay)) : [];
+            $getPunchTime = $punchRowsById->only($workedDayIds)->values();
+            $userInTimeRow = $userInTimesById->get($value->user_id);
+            // get user working time
             $late = 0;
             $lateArr = $punchDates = [];
             foreach ($getPunchTime as $punchkey => $punchvalue) {
-                $dayOfWeek = Carbon::parse($punchvalue->day)->dayOfWeek;
                 $dayName = strtolower(Carbon::parse($punchvalue->day)->format('l'));
 
-                $getUserInTime = DB::table('tbluser')->where('id', $value->user_id)->value($dayName . '_in_date') ?? 0;
+                $getUserInTime = ($userInTimeRow->{$dayName . '_in_date'} ?? null) ?: 0;
                 $punchInTime = Carbon::parse($punchvalue->punchin_time)->toTimeString();
 
                 $punchDates[] = $punchvalue->day;
@@ -1323,7 +1342,12 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
                     }
                 }
             }
-            $holidays = $value->holidays ?? 0;
+            // total_holidays (a real COUNT), not holidays (the GROUP_CONCAT
+            // id list, e.g. "12,13") - subtracting the latter arithmetically
+            // coerces it to its leading numeric portion (12), silently
+            // wrecking workingDays for any employee whose range actually
+            // includes a holiday.
+            $holidays = $value->total_holidays ?? 0;
             $newEmpData[$key]->weekday_off = $countSundays;
             $newEmpData[$key]->totalDays = $totalDays;
             $newEmpData[$key]->workingDays = ($totalDays - $countSundays - $holidays);
@@ -1602,10 +1626,9 @@ $day = Carbon::parse($punchin_time)->format('Y-m-d');
     public function DaywiseAttendanceportCreate(Request $request)
     {
         $type = $request->type;
-        $sub_institute_id = session()->get('sub_institute_id');
+        $sub_institute_id = session()->get('sub_institute_id'); // G-SEC-29: token-verified, not client-supplied
         $syear = session()->get('syear');
         if (in_array($type, ['API', 'JSON'])) {
-            $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
         }
         $department_id = ($request->department_id != 0) ? implode(',', $request->department_id) : '';

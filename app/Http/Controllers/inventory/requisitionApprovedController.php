@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\inventory\requisitionModel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 class requisitionApprovedController extends Controller
@@ -65,7 +67,11 @@ class requisitionApprovedController extends Controller
         $requisition_status = $request->input('requisition_status');
         $requisition_approved_remarks = $request->input('requisition_approved_remarks');
 
-        if (empty($requisitions)) {
+        $validator = Validator::make($request->all(), [
+            'requisitions' => 'required|array|min:1',
+        ]);
+
+        if ($validator->fails() || empty($requisitions)) {
             $res['status_code'] = "0";
             $res['message'] = "Please select minimum one requistion for approval.";
         } else {
@@ -81,6 +87,14 @@ class requisitionApprovedController extends Controller
                     "id"               => $id, 'syear' => $syear,
                     'sub_institute_id' => $sub_institute_id,
                 ])->update($requisitionsArray);
+
+                AuditLog::record([
+                    'module'      => 'inventory',
+                    'action'      => 'requisition_approve',
+                    'entity_type' => 'tblrequisition',
+                    'entity_id'   => $id,
+                    'new_values'  => $requisitionsArray,
+                ]);
             }
 
             $res['status_code'] = "1";

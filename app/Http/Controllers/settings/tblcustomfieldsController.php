@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\settings;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\settings\tblcustomfieldsModel;
 use App\Models\settings\tblfields_dataModel;
 use Illuminate\Http\Request;
@@ -103,6 +104,15 @@ class tblcustomfieldsController extends Controller
 
             $fields->save();
             $fieldsId = $fields->id;
+
+            AuditLog::record([
+                'module' => 'settings',
+                'action' => 'custom_field_store',
+                'entity_type' => 'tblcustomfields',
+                'entity_id' => $fieldsId,
+                'new_values' => $fields->toArray(),
+            ]);
+
             foreach ($newRequest['display_name'] as $key => $value) {
                 $fieldsData = new tblfields_dataModel([
                     'field_id'      => $fieldsId,
@@ -198,6 +208,14 @@ class tblcustomfieldsController extends Controller
 
         $field->save();
 
+        AuditLog::record([
+            'module' => 'settings',
+            'action' => 'custom_field_update',
+            'entity_type' => 'tblcustomfields',
+            'entity_id' => $id,
+            'new_values' => $field->toArray(),
+        ]);
+
         $res['status_code'] = "1";
         $res['message'] = "Custom field updated successfully";
 
@@ -212,6 +230,14 @@ class tblcustomfieldsController extends Controller
         $type = $request->input('type');
 
         tblcustomfieldsModel::where(["id" => $id])->update($fields);
+
+        AuditLog::record([
+            'module' => 'settings',
+            'action' => 'custom_field_delete',
+            'entity_type' => 'tblcustomfields',
+            'entity_id' => $id,
+            'new_values' => $fields,
+        ]);
 
         $res['status_code'] = "1";
         $res['message'] = "Cutsom Field deleted successfully";
@@ -298,6 +324,14 @@ class tblcustomfieldsController extends Controller
         foreach ($order as $index => $id) {
             tblcustomfieldsModel::where('id', $id)->update(['sort_order' => $index + 1]);
         }
+
+        AuditLog::record([
+            'module' => 'settings',
+            'action' => 'custom_field_sort_order_update',
+            'entity_type' => 'tblcustomfields',
+            'entity_id' => null,
+            'new_values' => ['order' => $order],
+        ]);
 
         return response()->json(['status' => 'success']);
     }

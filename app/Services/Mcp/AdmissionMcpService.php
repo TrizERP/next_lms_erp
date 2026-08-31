@@ -3,8 +3,10 @@
 namespace App\Services\Mcp;
 
 use App\Http\Controllers\api\admissionRegistrationAPIController;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class AdmissionMcpService
 {
@@ -16,6 +18,24 @@ class AdmissionMcpService
         'student_quota' => 'Quota',
         'admission_date' => 'Admission date',
         'enrollment_no' => 'Enrollment number',
+    ];
+
+    /**
+     * Which table owns each required field.
+     *
+     * `validateConfirmation()` reads them through a join and cannot tell you where they
+     * live; a write has to know. Keeping the map beside `$requiredFields` means adding a
+     * required field forces you to say where it is written, rather than discovering at
+     * runtime that it silently went nowhere.
+     */
+    private array $fieldOwners = [
+        'first_name' => 'admission_enquiry',
+        'last_name' => 'admission_enquiry',
+        'admission_standard' => 'admission_enquiry',
+        'admission_division' => 'admission_registration',
+        'student_quota' => 'admission_registration',
+        'admission_date' => 'admission_registration',
+        'enrollment_no' => 'admission_registration',
     ];
 
     public function listEnquiries(McpRequestContext $context, array $filters): array
@@ -205,6 +225,157 @@ class AdmissionMcpService
         );
     }
 
+    /**
+     * Fill in the fields an admission is missing, and nothing else.
+     *
+     * The estate's own `admissionFormController::update()` writes some forty columns and
+     * reads the session before it does, so it is reachable from a browser and from
+     * nowhere else. Rather than reproduce it, this writes only the fields
+     * `validateConfirmation()` names as required — seven columns across two tables.
+     *
+     * The narrow surface is the point, not a shortcut. This method exists to let a
+     * conversation complete an admission, and the only fields a conversation should be
+     * able to set are the ones that were blocking it. Anything outside that list is
+     * rejected rather than ignored, so a caller is told its update did not happen.
+     *
+     * It does not create a registration row. An enquiry with no registration is at an
+     * earlier stage of a real process, and inventing the record to make a chat reply
+     * succeed would put the estate in a state its own screens never produce.
+     *
+     * @param  array<string, mixed>  $arguments
+     * @return array<string, mixed>
+     */
+    public function updateEnquiry(McpRequestContext $context, array $arguments): array
+    {
+        $enquiryId = (int) ($arguments['enquiry_id'] ?? 0);
+        $updates = is_array($arguments['updates'] ?? null) ? $arguments['updates'] : [];
+
+        if ($enquiryId <= 0) {
+            return ToolResult::failure('admissions.updateEnquiry', 'A valid enquiry is required.', 'MISSING_ENQUIRY_ID');
+        }
+
+        $rejected = array_values(array_diff(array_keys($updates), array_keys($this->requiredFields)));
+
+        if ($rejected !== []) {
+            return ToolResult::failure(
+                'admissions.updateEnquiry',
+                'This tool may only set the fields required to confirm an admission.',
+                'FIELD_NOT_WRITABLE',
+                ['rejected_fields' => $rejected, 'writable_fields' => array_keys($this->requiredFields)]
+            );
+        }
+
+        $clean = [];
+
+        foreach ($updates as $field => $value) {
+            $value = is_scalar($value) ? trim((string) $value) : '';
+
+            if ($value !== '') {
+                $clean[$field] = $value;
+            }
+        }
+
+        if ($clean === []) {
+            return ToolResult::failure(
+                'admissions.updateEnquiry',
+                'No values were supplied to set.',
+                'NOTHING_TO_UPDATE'
+            );
+        }
+
+        $enquiry = DB::table('admission_enquiry')
+            ->where('id', $enquiryId)
+            ->where('sub_institute_id', $context->selectedInstituteId)
+            ->where('syear', $context->academicYear)
+            ->first();
+
+        if (! $enquiry) {
+            return ToolResult::failure('admissions.updateEnquiry', 'Admission enquiry not found.', 'RECORD_NOT_FOUND');
+        }
+
+        $byTable = [];
+
+        foreach ($clean as $field => $value) {
+            $byTable[$this->fieldOwners[$field]][$field] = $value;
+        }
+
+        $registration = DB::table('admission_registration')
+            ->where('enquiry_id', $enquiryId)
+            ->where('sub_institute_id', $context->selectedInstituteId)
+            ->first();
+
+        if (isset($byTable['admission_registration']) && ! $registration) {
+            return ToolResult::failure(
+                'admissions.updateEnquiry',
+                'This enquiry has no registration record yet, so those fields cannot be set. '
+                . 'Register the applicant first.',
+                'NOT_REGISTERED',
+                ['fields_needing_registration' => array_keys($byTable['admission_registration'])]
+            );
+        }
+
+        $applied = [];
+
+        DB::transaction(function () use ($byTable, $enquiryId, $context, &$applied) {
+            if (isset($byTable['admission_enquiry'])) {
+                DB::table('admission_enquiry')
+                    ->where('id', $enquiryId)
+                    ->where('sub_institute_id', $context->selectedInstituteId)
+                    ->update($byTable['admission_enquiry']);
+
+                $applied += $byTable['admission_enquiry'];
+            }
+
+            if (isset($byTable['admission_registration'])) {
+                DB::table('admission_registration')
+                    ->where('enquiry_id', $enquiryId)
+                    ->where('sub_institute_id', $context->selectedInstituteId)
+                    ->update($byTable['admission_registration']);
+
+                $applied += $byTable['admission_registration'];
+            }
+        });
+
+        // `record()` defaults the actor from the session, which an MCP call does not
+        // have — so the tenant and actor are passed explicitly. They win over the
+        // defaults, and without them this write would be attributed to nobody.
+        AuditLog::record([
+            'module' => 'mcp',
+            'action' => 'admission_update_enquiry',
+            'entity_type' => 'admission_enquiry',
+            'entity_id' => $enquiryId,
+            'sub_institute_id' => $context->selectedInstituteId,
+            'actor_id' => $context->userId,
+            'new_values' => [
+                'enquiry_id' => $enquiryId,
+                'updated_fields' => $applied,
+                'academic_year' => $context->academicYear,
+            ],
+        ]);
+
+        // Re-validate rather than assume: the caller's real question is "can it be
+        // confirmed now?", and answering that from the database is the only honest way.
+        $validation = $this->validateConfirmation($context, ['enquiry_id' => $enquiryId]);
+        $stillMissing = $validation['data']['missing_fields'] ?? [];
+
+        return ToolResult::success(
+            'admissions.updateEnquiry',
+            $stillMissing === []
+                ? 'Details updated. This admission is now ready to confirm.'
+                : sprintf(
+                    'Details updated. %d required field%s still missing.',
+                    count($stillMissing),
+                    count($stillMissing) === 1 ? ' is' : 's are'
+                ),
+            [
+                'enquiry_id' => $enquiryId,
+                'updated_fields' => array_keys($applied),
+                'missing_fields' => $stillMissing,
+                'ready' => $validation['data']['ready'] ?? false,
+            ]
+        );
+    }
+
     public function previewConfirm(McpRequestContext $context, array $arguments): array
     {
         $validation = $this->validateConfirmation($context, $arguments);
@@ -276,6 +447,38 @@ class AdmissionMcpService
             return ToolResult::failure('admissions.confirm', 'This admission is already confirmed.', 'ALREADY_CONFIRMED');
         }
 
+        // Re-validate required fields immediately before the write. previewConfirm()
+        // already checks this via validateConfirmation(), but executeConfirmed() calls
+        // confirm() directly with the confirmation payload and does not guarantee a fresh
+        // preview() just ran - the underlying enquiry/registration data could have changed
+        // (or been incomplete all along) since the confirmation was issued. saveStudent()
+        // itself only checks that the standard and quota exist, not that name/DOB/etc. are
+        // present, so this closes that gap without touching the shared controller method.
+        $record = DB::table('admission_enquiry as ae')
+            ->leftJoin('admission_registration as ar', function ($join) use ($context) {
+                $join->on('ar.enquiry_id', '=', 'ae.id')
+                    ->where('ar.sub_institute_id', '=', $context->selectedInstituteId);
+            })
+            ->where('ae.sub_institute_id', $context->selectedInstituteId)
+            ->where('ae.syear', $context->academicYear)
+            ->where('ae.id', $enquiryId)
+            ->selectRaw('ae.*, ar.*')
+            ->first();
+
+        if (!$record) {
+            return ToolResult::failure('admissions.confirm', 'Admission enquiry not found.', 'RECORD_NOT_FOUND');
+        }
+
+        $validator = Validator::make((array) $record, array_fill_keys(array_keys($this->requiredFields), 'required'));
+        if ($validator->fails()) {
+            return ToolResult::failure(
+                'admissions.confirm',
+                'Admission cannot be confirmed because required fields are missing.',
+                'MISSING_REQUIRED_FIELDS',
+                ['missing_fields' => array_keys($validator->errors()->messages())]
+            );
+        }
+
         $controller = app(admissionRegistrationAPIController::class);
         $request = Request::create('/api/admission_student', 'POST', [
             'type' => 'API',
@@ -308,6 +511,23 @@ class AdmissionMcpService
         if (!$student) {
             return ToolResult::failure('admissions.confirm', 'The backend did not confirm the admission.', 'BACKEND_CONFIRMATION_FAILED', ['backend' => $payload]);
         }
+
+        AuditLog::record([
+            'module' => 'mcp',
+            'action' => 'admission_confirm',
+            'entity_type' => 'tblstudent',
+            'entity_id' => $student->student_id,
+            'new_values' => [
+                'enquiry_id' => $enquiryId,
+                'student_id' => (int) $student->student_id,
+                'student_name' => trim((string) $student->student_name),
+                'enrollment_no' => $student->enrollment_no,
+                'standard_name' => $student->standard_name,
+                'division_name' => $student->division_name,
+                'sub_institute_id' => $context->selectedInstituteId,
+                'academic_year' => $context->academicYear,
+            ],
+        ]);
 
         return ToolResult::success(
             'admissions.confirm',

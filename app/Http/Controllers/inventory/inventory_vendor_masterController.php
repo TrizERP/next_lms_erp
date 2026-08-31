@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\inventory\inventory_vendor_masterModel;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 class inventory_vendor_masterController extends Controller
@@ -40,6 +42,19 @@ class inventory_vendor_masterController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $created_by = $request->session()->get('user_id');
+
+        $validator = Validator::make($request->all(), [
+            'vendor_name'    => 'required|string|max:255',
+            'contact_number' => 'required|string|max:50',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_inventory_vendor_master.index", $message, "redirect");
+        }
+
         $vendor = new inventory_vendor_masterModel([
             'syear'                 => $syear,
             'sub_institute_id'      => $sub_institute_id,
@@ -74,6 +89,14 @@ class inventory_vendor_masterController extends Controller
         ]);
         $vendor->save();
 
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_vendor_master_store',
+            'entity_type' => 'inventory_vendor_master',
+            'entity_id'   => $vendor->id,
+            'new_values'  => $request->except(['_token']),
+        ]);
+
         $message['status_code'] = "1";
 //        $message = array(
 //            "message" => "Vendor Added Succesfully",
@@ -101,6 +124,19 @@ class inventory_vendor_masterController extends Controller
         $syear = $request->session()->get('syear');
         $sub_institute_id = $request->session()->get('sub_institute_id');
         $created_by = $request->session()->get('user_id');
+
+        $validator = Validator::make($request->all(), [
+            'vendor_name'    => 'required|string|max:255',
+            'contact_number' => 'required|string|max:50',
+        ]);
+        if ($validator->fails()) {
+            $message['status_code'] = "0";
+            $message['message'] = $validator->messages()->first();
+            $type = $request->input('type');
+
+            return is_mobile($type, "add_inventory_vendor_master.index", $message, "redirect");
+        }
+
         $data = [
             'syear'                 => $syear,
             'sub_institute_id'      => $sub_institute_id,
@@ -135,6 +171,15 @@ class inventory_vendor_masterController extends Controller
         ];
 
         inventory_vendor_masterModel::where(["id" => $id])->update($data);
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_vendor_master_update',
+            'entity_type' => 'inventory_vendor_master',
+            'entity_id'   => $id,
+            'new_values'  => $data,
+        ]);
+
         $message['status_code'] = "1";
         $message = [
             "message" => "Vendor Updated Successfully",
@@ -148,6 +193,14 @@ class inventory_vendor_masterController extends Controller
     {
         $type = $request->input('type');
         inventory_vendor_masterModel::where(["id" => $id])->delete();
+
+        AuditLog::record([
+            'module'      => 'inventory',
+            'action'      => 'inventory_vendor_master_delete',
+            'entity_type' => 'inventory_vendor_master',
+            'entity_id'   => $id,
+        ]);
+
         $message['status_code'] = "1";
         $message = [
             "message" => "Vendor Deleted successfully",

@@ -6,6 +6,7 @@ use App\Mcp\AbstractMcpTool;
 use App\Mcp\ConfirmableMcpToolInterface;
 use App\Services\Mcp\AdmissionMcpService;
 use App\Services\Mcp\McpRequestContext;
+use Illuminate\Auth\Access\AuthorizationException;
 
 class AdmissionsConfirmTool extends AbstractMcpTool implements ConfirmableMcpToolInterface
 {
@@ -52,6 +53,24 @@ class AdmissionsConfirmTool extends AbstractMcpTool implements ConfirmableMcpToo
     public function execute(array $arguments, McpRequestContext $context): array
     {
         return $this->preview($arguments, $context);
+    }
+
+    /**
+     * Confirming an admission creates a real student enrollment. The base
+     * role gate (`allowedRoles()` = admin|staff) lets ANY staff account
+     * through; this tool additionally requires the caller to be an admin,
+     * mirroring `RolePermissionsController::assertIsAdmin()` via the
+     * pre-computed `McpRequestContext::$isAdmin` flag. Overriding here (once)
+     * covers both `preview()` and `executeConfirmed()`, which already call
+     * `$this->authorize($context)` as their first line.
+     */
+    protected function authorize(McpRequestContext $context): void
+    {
+        parent::authorize($context);
+
+        if (! $context->isAdmin) {
+            throw new AuthorizationException('You do not have permission to use this MCP tool.');
+        }
     }
 
     public function preview(array $arguments, McpRequestContext $context): array

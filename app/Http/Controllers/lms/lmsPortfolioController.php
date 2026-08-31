@@ -70,7 +70,7 @@ class lmsPortfolioController extends Controller
                 ])
                 ->get()->toArray();
         } else {
-            if (strtoupper(session()->get('user_profile_name')) == "LMS TEACHER" || strtoupper(session()->get('user_profile_name')) == " TEACHER") {
+            if (strtoupper(session()->get('user_profile_name')) == "LMS TEACHER" || strtoupper(session()->get('user_profile_name')) == "TEACHER") {
                 $data['portfolio_data'] = portfolioModel::select('lms_portfolio.*',
                     DB::raw('date_format(lms_portfolio.created_at,"%d-%m-%Y") AS created_at,
                     CONCAT_WS(" ",s.first_name,s.middle_name,s.last_name) AS student_name,se.standard_id,

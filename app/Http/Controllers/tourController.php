@@ -40,7 +40,25 @@ class tourController extends Controller
 
         $checkUserTour = tourModel::where(['user_id'=> $user_id, 'sub_institute_id' => $sub_institute_id,
         ])->get()->toArray();
-        $inTour = $checkUserTour[0];
+
+        // The update above changes nothing when the user has no erptour row, so the
+        // read back can legitimately be empty. Indexing [0] regardless turned that
+        // into a 500, the same way it did in checkPermission.
+        $inTour = $checkUserTour[0] ?? [
+            'dashboard'        => 0,
+            'school_sidebar'   => 0,
+            'student_quota'    => 0,
+            'fees_title'       => 0,
+            'fees_structure'   => 0,
+            'fees_receipt'     => 0,
+            'fees_map'         => 0,
+            'fees_collect'     => 0,
+            'user_id'          => $user_id,
+            'sub_institute_id' => $sub_institute_id,
+        ];
+        if (!empty($module)) {
+            $inTour[$module] = 1;
+        }
 
         $request->session()->put('erpTour', $inTour);
     }

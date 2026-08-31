@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\hostel_management;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\hostel_management\admission_category_masterModel;
 use App\Models\hostel_management\hostel_masterModel;
 use App\Models\hostel_management\tblhostelRoomAllocationModel;
@@ -79,6 +80,13 @@ class tblhostelRoomAllocationController extends Controller
             return is_mobile($type, "hostel_room_allocation.index", $res);
         }
 
+        if ($user_group_id == '') {
+            $res['status_code'] = 0;
+            $res['message'] = "User group is required to allocate rooms.";
+
+            return is_mobile($type, "hostel_room_allocation.index", $res);
+        }
+
         foreach ($students as $key => $user_id) {
             $checkAllocation = tblhostelRoomAllocationModel::where([
                 'user_id'          => $user_id, 'user_group_id' => $user_group_id, 'syear' => $syear,
@@ -100,6 +108,13 @@ class tblhostelRoomAllocationController extends Controller
                 $hostelAllocation['sub_institute_id'] = $sub_institute_id;
 
                 tblhostelRoomAllocationModel::insert($hostelAllocation);
+                AuditLog::record([
+                    'module' => 'hostel',
+                    'action' => 'hostel_room_allocation_store',
+                    'entity_type' => 'hostel_room_allocation',
+                    'entity_id' => $user_id,
+                    'new_values' => $hostelAllocation,
+                ]);
 
             } else {
 
@@ -116,6 +131,13 @@ class tblhostelRoomAllocationController extends Controller
                     "user_id"          => $user_id, 'user_group_id' => $user_group_id, 'syear' => $syear,
                     'sub_institute_id' => $sub_institute_id,
                 ])->update($hostelAllocation);
+                AuditLog::record([
+                    'module' => 'hostel',
+                    'action' => 'hostel_room_allocation_update',
+                    'entity_type' => 'hostel_room_allocation',
+                    'entity_id' => $user_id,
+                    'new_values' => $hostelAllocation,
+                ]);
             }
 
         }
@@ -382,7 +404,7 @@ class tblhostelRoomAllocationController extends Controller
         }
 
         $student_id = $request->input("student_id");
-        $sub_institute_id = $request->input("sub_institute_id");
+        $sub_institute_id = session()->get('sub_institute_id');
         $syear = $request->input("syear");
 
         if ($student_id != "" && $sub_institute_id != "" && $syear != "") {

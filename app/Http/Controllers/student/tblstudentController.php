@@ -79,7 +79,6 @@ class tblstudentController extends Controller
 		$sub_institute_id = $request->session()->get('sub_institute_id');
 		$syear = $request->session()->get('syear');
         if(in_array($type,['API','web'])){
-            $sub_institute_id = $request->sub_institute_id;
             $syear = $request->syear;
         }
 		$data = tblstudentModel::where(['sub_institute_id' => $sub_institute_id, 'status' => "1"])->get();
@@ -346,6 +345,13 @@ class tblstudentController extends Controller
 		}
 
 		$data = $this->saveData($request);
+        if (is_array($data) && !empty($data['error'])) {
+            $res['status_code'] = 0;
+            $res['message'] = $data['message'];
+            $res['data'] = [];
+
+            return is_mobile($type, "search_student.index", $res);
+        }
 		$student_id = $data;
 
 		//START Save Optional Subject
@@ -534,6 +540,64 @@ class tblstudentController extends Controller
 			}
 		}
 
+        // Server-side validation (added as part of remediation for missing input
+        // validation on student creation — previously $request->post() was inserted
+        // directly with no checks at all).
+        $validationRules = [
+            'first_name' => 'required|string|max:50',
+            'last_name'  => 'required|string|max:50',
+            'dob'        => 'required|date|after:1900-01-01|before_or_equal:today',
+        ];
+        if (!empty($finalArray['mobile'])) {
+            $validationRules['mobile'] = 'regex:/^[0-9]{7,15}$/';
+        }
+        if (!empty($finalArray['student_mobile'])) {
+            $validationRules['student_mobile'] = 'regex:/^[0-9]{7,15}$/';
+        }
+        if (!empty($finalArray['mother_mobile'])) {
+            $validationRules['mother_mobile'] = 'regex:/^[0-9]{7,15}$/';
+        }
+        if (!empty($finalArray['enrollment_no'])) {
+            $validationRules['enrollment_no'] = 'string|max:50|regex:/^[A-Za-z0-9\/\-_]+$/';
+        }
+
+        $validator = Validator::make($finalArray, $validationRules);
+
+        if ($validator->fails()) {
+            return [
+                'error'   => true,
+                'message' => $validator->messages()->first(),
+            ];
+        }
+
+        // Duplicate check — reject if a student with the same identity already exists
+        // for this tenant (same name + date of birth, or same enrollment/admission no).
+        $duplicateStudent = tblstudentModel::where('sub_institute_id', $sub_institute_id)
+            ->where('first_name', $finalArray['first_name'])
+            ->where('last_name', $finalArray['last_name'])
+            ->where('dob', $finalArray['dob'])
+            ->exists();
+
+        if ($duplicateStudent) {
+            return [
+                'error'   => true,
+                'message' => 'A student with the same name and date of birth already exists.',
+            ];
+        }
+
+        if (!empty($finalArray['enrollment_no'])) {
+            $duplicateEnrollment = tblstudentModel::where('sub_institute_id', $sub_institute_id)
+                ->where('enrollment_no', $finalArray['enrollment_no'])
+                ->exists();
+
+            if ($duplicateEnrollment) {
+                return [
+                    'error'   => true,
+                    'message' => 'A student with the same admission/enrollment number already exists.',
+                ];
+            }
+        }
+
 		tblstudentModel::insert($finalArray);
 		$id = DB::getPdo()->lastInsertId();
 
@@ -637,23 +701,8 @@ class tblstudentController extends Controller
     {
         $type = $request->input('type');
 
-        if ($type == "API") {
-            $sub_institute_id = $request->input('sub_institute_id');
-            $syear = $request->input('syear');
-            $validator = Validator::make($request->all(), [
-                'sub_institute_id'  => 'required|numeric',
-                'syear'   => 'required|numeric',
-            ]);
-            
-            if ($validator->fails()) {
-                $res['status'] = '0';
-                $res['response'] = $validator->messages()->first();
-		        return is_mobile($type, "student/edit_student", $res, "view");
-            } 
-        } else {
-            $sub_institute_id = $request->session()->get('sub_institute_id');
-            $syear = session()->get('syear');
-		}
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
 
         // $data = file_get_contents('https://erp.triz.co.in/get_adminParentCommunicationListAPI');
         // $payload = array(
@@ -907,9 +956,6 @@ class tblstudentController extends Controller
 
         if(count($familyHistory)==0){
             $user_id = $request->session()->get('user_id');
-            if($type=='API'){
-                $user_id = $request->input('user_id') ?? 0;
-            }
             $inserts=[];
             if(!empty($student_data->father_name ?? null)){
                 $inserts[]=[
@@ -1529,11 +1575,17 @@ die; */
             }
         }
 		//END Save Optional Subject
+        // Snapshot the pre-change class/section before it's overwritten below,
+        // so a section/standard move is at least reconstructable afterwards
+        // (the enrollment row itself is updated in place, not versioned).
+        $priorEnrollment = tblstudentEnrollmentModel::where(['student_id' => $student_id, 'syear' => $syear])
+            ->first(['standard_id', 'section_id', 'grade_id']);
+
         if($request->input('editable') == 1){
             $studentEnrollment['standard_id'] = $request->input('standard');
             $studentEnrollment['grade_id'] = $request->input('grade');
         }
-        
+
         $studentEnrollment['section_id'] = $request->input('division');
 
 		$studentEnrollment['syear'] = $syear;
@@ -1561,9 +1613,34 @@ die; */
 		tblstudentEnrollmentModel::where(['student_id' => $student_id, 'syear' => $syear])->update($studentEnrollment);
         // 2024-08-23
         $queries = DB::getQueryLog(); // 2024-08-24 required to convert query into sql for json
-        $sendQuery = end($queries); // 2024-08-24 required to convert query into sql for json 
+        $sendQuery = end($queries); // 2024-08-24 required to convert query into sql for json
         accesslog_json($sendQuery,'update','Student Edit Profile (Enrollment)',$studentEnrollment);
         //2024-08-23
+
+        // Record a WHO/WHAT/WHEN/OLD/NEW entry whenever the class/section
+        // actually changed, since the enrollment row itself doesn't keep
+        // history - see DATA-02 in the integrity audit.
+        if ($priorEnrollment && (
+            (string) $priorEnrollment->standard_id !== (string) ($studentEnrollment['standard_id'] ?? $priorEnrollment->standard_id) ||
+            (string) $priorEnrollment->section_id !== (string) ($studentEnrollment['section_id'] ?? $priorEnrollment->section_id)
+        )) {
+            \App\Models\AuditLog::record([
+                'module' => 'student',
+                'action' => 'section_change',
+                'entity_type' => 'tblstudent_enrollment',
+                'entity_id' => $student_id,
+                'old_values' => [
+                    'standard_id' => $priorEnrollment->standard_id,
+                    'section_id' => $priorEnrollment->section_id,
+                    'grade_id' => $priorEnrollment->grade_id,
+                ],
+                'new_values' => [
+                    'standard_id' => $studentEnrollment['standard_id'] ?? $priorEnrollment->standard_id,
+                    'section_id' => $studentEnrollment['section_id'] ?? $priorEnrollment->section_id,
+                    'grade_id' => $studentEnrollment['grade_id'] ?? $priorEnrollment->grade_id,
+                ],
+            ]);
+        }
 		$res['status_code'] = 1;
 		$res['message'] = "Student Edit Profiled successfully.";
         $res['data'] = $data;
@@ -1604,6 +1681,16 @@ die; */
         $sendQuery2 = end($queries2); // 2024-08-24 required to convert query into sql for json 
         accesslog_json($sendQuery2,'Delete','Student Edit Profile (Enrollment)',$fields);
         //2024-08-23
+
+        \App\Models\AuditLog::record([
+            'module'      => 'student',
+            'action'      => 'withdraw',
+            'entity_type' => 'tblstudent',
+            'entity_id'   => $id,
+            'old_values'  => ['status' => 1],
+            'new_values'  => ['status' => 0, 'end_date' => $fields['end_date']],
+        ]);
+
 		$res['status_code'] = "1";
 		$res['message'] = "Student deleted successfully";
 		return is_mobile($type, "search_student.index", $res);
@@ -1663,10 +1750,11 @@ CASE
     WHEN an.NOTIFICATION_TYPE = 'Photo Gallery' THEN '#429ad0'
     ELSE ''
 END as color_code
-				FROM app_notification an
-				LEFT JOIN tblstudent s ON s.id=an.STUDENT_ID
-				WHERE an.student_id = '" . $student_id . "' AND an.syear = '" . $syear . "'
-				ORDER BY an.ID DESC"); //(an.STUDENT_ID IN (SELECT id FROM tblstudent WHERE mobile='".$sms_mobile."') OR an.STUDENT_ID=0) AND s.SUB_INSTITUTE_ID = '".$sub_institute_id."'
+FROM app_notification an
+LEFT JOIN tblstudent s ON s.id=an.STUDENT_ID
+WHERE an.student_id = '" . $student_id . "' AND an.syear = '" . $syear . "'
+GROUP BY an.NOTIFICATION_TYPE,an.NOTIFICATION_DATE,an.STUDENT_ID,an.NOTIFICATION_DESCRIPTION,an.SUB_INSTITUTE_ID,an.SYEAR
+ORDER BY an.ID DESC"); //(an.STUDENT_ID IN (SELECT id FROM tblstudent WHERE mobile='".$sms_mobile."') OR an.STUDENT_ID=0) AND s.SUB_INSTITUTE_ID = '".$sub_institute_id."'
 
 			$res['status'] = 1;
 			$res['message'] = "Success";
@@ -1840,10 +1928,6 @@ END as color_code
 		$std_id = $request->input("std_id");
 		$sub_institute_id = $request->session()->get("sub_institute_id");
         $syear = $request->session()->get("syear");
-        if($request->has('type') && $request->type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
-            $syear = $request->syear;
-        }
 		$batchData = batchModel::where(['sub_institute_id' => $sub_institute_id, 'standard_id' => $std_id, 'division_id' => $div_id, 'syear' => $syear])
 			->get()->toArray();
 
@@ -1854,9 +1938,6 @@ END as color_code
     {
         $std_id = $request->input("std_id");
         $sub_institute_id = $request->session()->get("sub_institute_id");
-        if($request->has('type') && $request->type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
-        }
         return sub_std_mapModel::select('sub_std_map.*', 'subject.subject_name', 'subject.subject_code')
             ->join('subject', 'subject.id', '=', 'sub_std_map.subject_id')
             ->where([
@@ -1933,9 +2014,6 @@ END as color_code
     public function checkExists(Request $request){
        
         $sub_institute_id = session()->get('sub_institute_id');
-        if($request->has('type') && $request->type=="API"){
-            $sub_institute_id = $request->sub_institute_id;
-        }
 
         $response = DB::table('tblstudent as ts')
         ->join('tblstudent_enrollment as se', function ($join) {
@@ -2013,10 +2091,8 @@ END as color_code
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         if(in_array($type,['API','JSON'])){
-            $sub_institute_id = $request->sub_institute_id;
             $syear = $request->syear;
             $validator = Validator::make($request->all(), [
-               'sub_institute_id'  => 'required|numeric',
                 'syear'   => 'required|numeric',
             ]);
 

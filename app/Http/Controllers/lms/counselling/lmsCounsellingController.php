@@ -10,6 +10,7 @@ use App\Models\lms\counselling\OnetCareerCluster;
 use App\Models\lms\counselling\OnetEmployer;
 use App\Models\lms\counselling\OnetInstitutes;
 use App\Models\lms\counselling\OnetOccupationData;
+use App\Models\lms\counselling\StudentAspiration;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -17,6 +18,7 @@ use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Http\Client\RequestException;
 use App\Traits\Constants;
+use Illuminate\Support\Facades\Validator;
 
 class lmsCounsellingController extends Controller
 {
@@ -1442,5 +1444,123 @@ class lmsCounsellingController extends Controller
             $errorMessage = $exception->getMessage();
             return response()->json(['error' => $errorMessage], 500); // Return the exception message with a 500 status code
         }
+    }
+
+    /**
+     * Career certainty (CI-GUIDE-DEV-001, Group A). Student identity, grade and
+     * academic year are resolved server-side from the authenticated session —
+     * never trusted from the request body — so a request can only read/write its
+     * own student's aspiration.
+     */
+    private const CERTAINTY_MAP = [
+        'not_sure' => 0.3,
+        'somewhat_sure' => 0.6,
+        'very_sure' => 0.9,
+    ];
+
+    private function resolveStudentGrade(string $studentId, $subInstituteId, string $syear): ?int
+    {
+        $standard = DB::table('tblstudent_enrollment as se')
+            ->join('standard as st', 'st.id', '=', 'se.standard_id')
+            ->where('se.student_id', $studentId)
+            ->where('se.sub_institute_id', $subInstituteId)
+            ->where('se.syear', $syear)
+            ->select('st.name')
+            ->first();
+
+        // standard.grade_id is a grade-BAND grouping id (e.g. one id spans classes
+        // 1-8), not the class number, so it cannot be used here. The actual class
+        // number is embedded in standard.name (e.g. "9", "CBSE-9", "CBSE-NR" for
+        // nursery). Extract it; if the name carries no digits (nursery/junior/
+        // senior KG etc.) there is no grade to resolve — never guess one.
+        if (! $standard || ! preg_match('/(\d+)/', $standard->name, $matches)) {
+            return null;
+        }
+
+        return (int) $matches[1];
+    }
+
+    public function studentAspiration(Request $request)
+    {
+        $studentId = $request->session()->get('user_id');
+        if (empty($studentId)) {
+            return response()->json(['status_code' => 0, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $current = StudentAspiration::where('student_id', $studentId)
+            ->where('is_current', true)
+            ->orderByDesc('captured_at')
+            ->first();
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $current,
+        ]);
+    }
+
+    public function saveStudentAspiration(Request $request)
+    {
+        $studentId = $request->session()->get('user_id');
+        $subInstituteId = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+
+        if (empty($studentId) || empty($subInstituteId) || empty($syear)) {
+            return response()->json(['status_code' => 0, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'occupation_id' => 'nullable|string|max:191',
+            'occupation_name' => 'nullable|string|max:191',
+            'expectation_age_30' => 'required|string|max:191',
+            'certainty' => ['required', 'string', 'in:' . implode(',', array_keys(self::CERTAINTY_MAP))],
+            'parent_occupation_id' => 'nullable|string|max:191',
+            'parent_occupation_name' => 'nullable|string|max:191',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $grade = $this->resolveStudentGrade($studentId, $subInstituteId, $syear);
+        if ($grade === null) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Could not resolve the current class/grade for this student.',
+            ], 422);
+        }
+
+        $data = $validator->validated();
+
+        $saved = DB::transaction(function () use ($data, $studentId, $grade, $syear) {
+            StudentAspiration::where('student_id', $studentId)
+                ->where('is_current', true)
+                ->update(['is_current' => false]);
+
+            return StudentAspiration::create([
+                'student_id' => $studentId,
+                'grade' => $grade,
+                'academic_year' => $syear,
+                'occupation_id' => $data['occupation_id'] ?? null,
+                'occupation_name' => $data['occupation_name'] ?? null,
+                'expectation_age_30' => $data['expectation_age_30'],
+                'certainty' => self::CERTAINTY_MAP[$data['certainty']],
+                'parent_occupation_id' => $data['parent_occupation_id'] ?? null,
+                'parent_occupation_name' => $data['parent_occupation_name'] ?? null,
+                'source' => 'student_form',
+                'is_current' => true,
+                'captured_at' => now(),
+            ]);
+        });
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $saved,
+        ]);
     }
 }

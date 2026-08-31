@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\inventory;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\inventory\inventory_item_allocationModel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 
 class inventory_item_allocationController extends Controller
@@ -202,7 +204,11 @@ class inventory_item_allocationController extends Controller
         $location_of_material = $request->get('location_of_material');
         $person_responsible = $request->get('person_responsible');
 
-        if (empty($items)) {
+        $validator = Validator::make($request->all(), [
+            'items' => 'required|array|min:1',
+        ]);
+
+        if ($validator->fails() || empty($items)) {
             $res['status'] = "0";
             $res['message'] = "Please Select Minimum One Inventory Items.";
         } else {
@@ -221,6 +227,14 @@ class inventory_item_allocationController extends Controller
                 ]);
                 $item_allocation->save();
             }
+
+            AuditLog::record([
+                'module'      => 'inventory',
+                'action'      => 'inventory_item_allocation_store',
+                'entity_type' => 'inventory_allocation_details',
+                'entity_id'   => $requisition_details_id,
+                'new_values'  => $request->except(['_token']),
+            ]);
 
             $res['status'] = "1";
             $res['message'] = "Item Allocated successfully";

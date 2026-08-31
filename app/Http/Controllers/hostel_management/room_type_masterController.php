@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\hostel_management;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\hostel_management\room_type_masterModel;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
@@ -51,6 +52,13 @@ class room_type_masterController extends Controller
             'sub_institute_id' => $sub_institute_id,
         ]);
         $room_type->save();
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'room_type_master_store',
+            'entity_type' => 'room_type_master',
+            'entity_id' => $room_type->id,
+            'new_values' => $room_type->toArray(),
+        ]);
 
         $message['status_code'] = "1";
 //        $message = [
@@ -81,6 +89,13 @@ class room_type_masterController extends Controller
         ];
 
         room_type_masterModel::where(["id" => $id])->update($data);
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'room_type_master_update',
+            'entity_type' => 'room_type_master',
+            'entity_id' => $id,
+            'new_values' => $data,
+        ]);
 
         $message['status_code'] = "1";
         $message['message'] = "Data Updated Successfully";
@@ -94,6 +109,12 @@ class room_type_masterController extends Controller
         $type = $request->input('type');
 
         room_type_masterModel::where(["id" => $id])->delete();
+        AuditLog::record([
+            'module' => 'hostel',
+            'action' => 'room_type_master_delete',
+            'entity_type' => 'room_type_master',
+            'entity_id' => $id,
+        ]);
 
         $message['status_code'] = "1";
         $message = [

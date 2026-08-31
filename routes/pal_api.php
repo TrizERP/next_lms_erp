@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\api\PAL\CoherenceMapController;
 use App\Http\Controllers\api\PAL\NewPalContentModelController;
 use App\Http\Controllers\api\PAL\NewPalGamificationController;
 use App\Http\Controllers\api\PAL\PALAPIController;
@@ -144,6 +145,38 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
     Route::get('/metacognition/prompts/{learnerId}', [PALAPIController::class, 'getMetacognitivePrompts']);
     Route::post('/metacognition/reflect', [PALAPIController::class, 'recordReflection']);
 
+    // ==================== SET COHERENCE MAP (Neo4j) ====================
+    //
+    // The prerequisite graph and the recommendation that walks it. Reads go to
+    // Neo4j (the prerequisite CLOSURE is the one question a SQL join cannot
+    // answer); mastery writes land in MariaDB first and are projected after.
+    //
+    // Route order matters: the three literal prefixes (/map, /health, /scopes)
+    // are declared before the {learnerId} routes, and every id segment is
+    // digit-constrained, so `/coherence/map` can never be parsed as a learner id.
+    Route::get('/coherence/map', [CoherenceMapController::class, 'map']);
+    Route::get('/coherence/health', [CoherenceMapController::class, 'health']);
+
+    // Which (standard, subject) pairs actually have a projected map. The client
+    // needs this to build a scope picker: /coherence/map REQUIRES standard_id
+    // and subject_id, so without it a front-end has to hardcode the pair or
+    // guess and take a 404. Reads the graph, not MariaDB — a scope only counts
+    // as available once pal:coherence-sync has run for it.
+    Route::get('/coherence/scopes', [CoherenceMapController::class, 'scopes']);
+
+    // Learner-scoped. PalApiAuth resolves {learnerId} and enforces ownership
+    // before the controller runs, so a student can only ever read their own.
+    Route::get('/coherence/learner/{learnerId}', [CoherenceMapController::class, 'learner'])
+        ->where('learnerId', '[0-9]+');
+    Route::get('/coherence/next/{learnerId}', [CoherenceMapController::class, 'next'])
+        ->where('learnerId', '[0-9]+');
+    Route::get('/coherence/remediation/{learnerId}/{conceptId}', [CoherenceMapController::class, 'remediation'])
+        ->where(['learnerId' => '[0-9]+', 'conceptId' => '[0-9]+']);
+
+    // The real-time write path: one answer in, new mastery + next action out.
+    // learner_id travels in the body, which is what PalApiAuth ownership-checks.
+    Route::post('/coherence/evidence', [CoherenceMapController::class, 'evidence']);
+
     /*
     |--------------------------------------------------------------------------
     | Content Intelligence Layer
@@ -247,14 +280,23 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
             ->where('subsystem', $subsystem);
         Route::post('/{subsystem}/reset', [PalArchitectureController::class, 'reset'])
             ->where('subsystem', $subsystem);
-    });
-
-    /*
-    |--------------------------------------------------------------------------
-    | H5P Model
-    |--------------------------------------------------------------------------
-    */
-    Route::prefix('h5p')->group(function () {
+    // ==================== H5P MODEL ====================
+    //
+    // The backend for LMS+PAL → Tech/Learn → Subject → Chapter → H5P Content:
+    // the 21-type registry, the 12 pedagogies, the CASEL/NGSS/NCDG/Music/
+    // Sports/Finance frameworks, the §9 coverage matrix, per-node PAL tagging,
+    // computed §8.3 engagement metadata and the §8.2 xAPI pipeline.
+    //
+    // Reads the H5P tables that already exist (h5p_scenarios,
+    // h5p_interactive_video, h5p_flashcard, the MCQ slice of
+    // lms_question_master) plus pal_vocabulary, pal_h5p_node_metadata and
+    // pal_telemetry_events. Nothing in a response is hard-coded here.
+    //
+    // Route ordering: every literal segment precedes the wildcard that could
+    // swallow it, {nodeId} is constrained to digits, and {h5pType} to the
+    // registry's snake_case code grammar — the same collision guard the
+    // /workspace and /new/content-model groups use.
+    Route::prefix('/h5p')->group(function () {
         $h5pType = '[a-z][a-z0-9_]{1,47}';
         $numericId = '[0-9]+';
 
@@ -359,5 +401,6 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
         Route::get('/session-summary', [NewPalGamificationController::class, 'sessionSummary']);
         Route::post('/notifications/read', [NewPalGamificationController::class, 'readNotifications']);
         Route::get('/notifications', [NewPalGamificationController::class, 'notifications']);
+});
 });
 });

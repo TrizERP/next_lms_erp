@@ -9,12 +9,15 @@ use App\Models\admission\admissionFormModel;
 use App\Models\admission\admissionRegistrationModel;
 use App\Models\settings\tblcustomfieldsModel;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 use GenTux\Jwt\GetsJwtToken;
 use DB;
 
 class admissionMasterController extends Controller
 {
+    use GetsJwtToken;
+
     public function index(Request $request)
     {
         $type = $request->input('type');
@@ -107,7 +110,21 @@ class admissionMasterController extends Controller
                 return response()->json($response, 401);
             }
             $sub_institute_id = $request->get('sub_institute_id');
-            $syear = $request->get('syear');            
+            $syear = $request->get('syear');
+        }
+
+        $validator = Validator::make($request->all(), [
+            'table_name' => 'required|string|in:enquiry,registration,confirmation,changeFields',
+        ]);
+
+        if ($validator->fails()) {
+            $res = [
+                'status_code' => 0,
+                'message' => $validator->errors()->first(),
+                'data' => $validator->errors()->toArray(),
+            ];
+
+            return is_mobile($type, 'admission_master.index', $res);
         }
         // echo "<pre>";print_r($request->all());exit;
         $table_name = $table_alias = '';
@@ -281,10 +298,34 @@ class admissionMasterController extends Controller
         $date = $request->date;
 
         if($type=="API"){
-           
-            $sub_institute_id = $request->get('sub_institute_id');
-            $syear = $request->get('syear'); 
-            $user_id = $request->get('user_id');            
+
+            $sub_institute_id = session()->get('sub_institute_id');
+            $syear = $request->get('syear');
+            $user_id = session()->get('user_id');
+        }
+
+        if (in_array($formType, ['add', 'edit'], true)) {
+            $rules = [
+                'standard_id' => 'required|integer',
+                'date' => 'required|date',
+            ];
+            if ($formType === 'edit') {
+                $rules['id'] = 'required|integer';
+            }
+
+            $validator = Validator::make($request->all(), $rules);
+
+            if ($validator->fails()) {
+                $res['status_code'] = 0;
+                $res['message'] = $validator->errors()->first();
+
+                return is_mobile($type, 'admission_master.index', $res);
+            }
+        } elseif ($formType === 'delete' && ! $request->has('id')) {
+            $res['status_code'] = 0;
+            $res['message'] = 'id is required';
+
+            return is_mobile($type, 'admission_master.index', $res);
         }
 
         $i=0;

@@ -630,7 +630,20 @@ Route::get('/assessment_question/concepts', [\App\Http\Controllers\lms\assessmen
 Route::post('assessment_question/store', [\App\Http\Controllers\lms\assessmentQuestionController::class, 'store'])->name('assessment_question.store');
 Route::any('geminiAI',[AJAXController::class, 'geminiAI'])->name('geminiAI');
 Route::get('lms_data',[AJAXController::class, 'lmsDataApi'])->name('lms_data');
+Route::get('table_data',[AJAXController::class, 'lmsDataApi'])->name('table_data');
 Route::any('python_timetable',[AJAXController::class, 'pythonTimetable'])->name('python_timetable');
+
+// Task Management "New Assignment" modal: bare-host legacy endpoints the
+// ported frontend calls via its non-`/api` webClient (see
+// `app/task-management/_lib/my-tasks-api.ts`'s `legacyGet`/`legacyPostForm`
+// doc-comment). `getSupervisor` mirrors hp_erp's bare `/getSupervisor`
+// (AJAXController). `/task` mirrors hp_erp's bare `Route::resource('task', ...)`
+// (routes/lms.php) - this target's own `taskController` is already
+// registered, but only under `frontdesk/task` (routes/frontdesk.php), which
+// 404s for the legacy client. Named distinctly from the `frontdesk.*`
+// resource's `task.*` names so the two registrations don't collide.
+Route::get('getSupervisor', [AJAXController::class, 'getSupervisor'])->name('legacy.getSupervisor');
+Route::post('task', [\App\Http\Controllers\frontdesk\taskController::class, 'store'])->name('legacy.task.store');
 
 // to transfer files to digital ocean
 Route::post('transferDocs', [oldDocumentTransfer::class, 'storeImagesToDigitalOcean']);
@@ -788,6 +801,51 @@ Route::group(['prefix' => 'agent', 'middleware' => ['session', 'menu', 'logRoute
 route::get('geminiChat', [AJAXController::class, 'geminiChat']);
 Route::get('ajaxQuestionLists', [AJAXController::class, 'ajaxQuestionListsFunction'])->name('ajaxQuestionLists');
 
+Route::get('/suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggested.content');
+Route::post('/lms/store-suggested-content', [palController::class, 'storeSuggestedContent'])->name('store.suggested.content');
+Route::get('/lms/pedagogy-suggested-content', [\App\Http\Controllers\lms\pal\palController::class, 'getPedagogySuggestedContent'])->name('pal.pedagogy.suggested.content');
+Route::get('/lms/misconception', [\App\Http\Controllers\lms\pal\palController::class, 'misconception'])->name('misconception');
+
+// Set Coherence Map — the LMS (Blade) view. Renders through the same services
+// the JSON API uses, so the two front-ends can never disagree about a learner's
+// readiness. Scope comes from the session's institute, not the query string.
+//
+// `session` is not optional here. This view extends `lmslayout`, which does
+//     $words = explode(" ", Session::get('name'));
+//     $name_initial = strtoupper($words[0][0] . $words[1][0]);
+// at line 149 — unguarded on both indexes. With no session that is a fatal
+// "Uninitialized string offset 0", so an anonymous visitor got a 500 where every
+// other page in this file gets a redirect. SessionMiddleware sends them to
+// `home` when `user_id` is absent, which is the convention here. (Note the same
+// two lines also fatal for any real user whose stored name is a single word —
+// `$words[1]` does not exist. Pre-existing, affects every LMS page, not fixed
+// here because it is not this feature's to change.)
+//
+// `menu` populates the sidebar the layout renders. It only works because
+// `tblmenumaster` row 604 exists (link = 'coherence.map', parent 531 "New PAL",
+// level 3, sort_order 4) alongside three `tblgroupwise_rights` rows for profiles
+// 1, 5 and 2067 — the same grant the sibling PAL menus carry. MenuMiddleware
+// resolves the current route name against that table and joins it to the rights
+// tables, so WITHOUT both the row and the rights the page is reachable by URL
+// but invisible in the navigation.
+//
+// `check_permissions` is deliberately off: it gates on a separate permission
+// record that does not exist for this page, and adding the middleware before
+// that record would lock out the very reviewers the map is built for.
+Route::middleware(['session', 'menu'])->group(function () {
+    Route::get('/lms/coherence-map', [\App\Http\Controllers\lms\pal\CoherenceMapWebController::class, 'index'])
+        ->name('coherence.map');
+    Route::post('/lms/coherence-map/answer', [\App\Http\Controllers\lms\pal\CoherenceMapWebController::class, 'answer'])
+        ->name('coherence.map.answer');
+    // The drawer payload for one concept — fetched on click rather than shipped
+    // for all 118 concepts up front, since content and questions are most of the
+    // weight and the user opens one node at a time.
+    Route::get('/lms/coherence-map/concept/{conceptId}', [\App\Http\Controllers\lms\pal\CoherenceMapWebController::class, 'concept'])
+        ->where('conceptId', '[0-9]+')
+        ->name('coherence.map.concept');
+});
+Route::post('/lms/misconception/generate-content', [\App\Http\Controllers\lms\pal\palController::class, 'generateMisconceptionContent'])->name('misconception.generate.content');
+Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
 Route::group(['middleware' => ['session', 'menu', 'logRoute', 'check_permissions']], function () {
     Route::get('/suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggested.content');
     Route::post('/lms/store-suggested-content', [palController::class, 'storeSuggestedContent'])->name('store.suggested.content');
@@ -797,3 +855,14 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute', 'check_permissions
     Route::post('/lms/increment-content-visit', [palController::class, 'incrementContentVisit'])->name('increment.content.visit');
 });
 Route::get('/download-folder', [FileController::class, 'downloadFolder']);
+
+/*
+| The AI Journey console used to be served from here as a Blade page. It now lives in
+| the Next.js frontend at `app/ai-journey`, which calls the same `/api/ai/*` endpoints
+| this application already exposes. Laravel owns the pipeline and the API; it no longer
+| renders any part of the AI surface.
+|
+| The CLI equivalent is unaffected: `php artisan ai:journey` still runs a whole journey
+| in the terminal, which is the supported way to exercise the pipeline without a
+| browser.
+*/

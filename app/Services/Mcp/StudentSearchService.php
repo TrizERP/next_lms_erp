@@ -10,6 +10,7 @@ class StudentSearchService
     {
         $limit = min(max((int) ($filters['limit'] ?? 20), 1), 50);
         $queryText = trim((string) ($filters['query'] ?? ''));
+        $studentId = isset($filters['student_id']) ? max(0, (int) $filters['student_id']) : 0;
 
         $query = DB::table('tblstudent')
             ->selectRaw("
@@ -26,7 +27,9 @@ class StudentSearchService
             ")
             ->where('sub_institute_id', $context->selectedInstituteId);
 
-        if ($queryText !== '') {
+        if ($studentId > 0) {
+            $query->where('id', $studentId);
+        } elseif ($queryText !== '') {
             $query->where(function ($builder) use ($queryText) {
                 $builder->where('enrollment_no', 'like', '%' . $queryText . '%')
                     ->orWhere('admission_id', 'like', '%' . $queryText . '%')
@@ -72,6 +75,7 @@ class StudentSearchService
             ->all();
 
         return [
+            'student_id' => $studentId > 0 ? $studentId : null,
             'query' => $queryText,
             'count' => count($students),
             'students' => $students,

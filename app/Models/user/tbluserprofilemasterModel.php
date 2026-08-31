@@ -18,7 +18,10 @@ class tbluserprofilemasterModel extends Model
         'sort_order',
         'status',
         'sub_institute_id',
-        'client_id'
+        'client_id',
+        'role_key',
+        'data_scope',
+        'is_system',
     ];
 
 

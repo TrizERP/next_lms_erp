@@ -89,6 +89,14 @@ Route::group([ 'middleware' => ['session', 'menu', 'logRoute','check_permissions
     Route::get('early-going-hrms-attendance-report',[HrmsController::Class,'earlyGoingHrmsAttendanceReportIndex'])->name('hrms_attendance_report.early_going_report');
 
     Route::post('/show-early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report');
+    // GET alias, additive only - the existing POST route above is untouched.
+    // hp_erp (the source this HRIT module was ported from) registers this
+    // same route as GET, and the ported frontend (app/hrit/_lib/attendance-api.ts
+    // -> getEarlyGoingAttendanceReport) calls it with GET accordingly; this
+    // repo's route predates the HRIT migration and was already POST-only,
+    // which 405'd every call from the new frontend. Same controller method,
+    // reads via $request->input() either way, so both verbs work identically.
+    Route::get('/show-early-going-hrms-attendance-report', [HrmsController::class, 'earlyGoingHrmsAttendanceReport'])->name('hrms.show_early_going_hrms_attendance_report.get');
     Route::get('hrms-general-setting',[HrmsController::Class,'generalSettingIndex'])->name('hrms_general_setting.index');
     Route::post('hrms-general-setting/store',[HrmsController::Class,'generalSettingStore'])->name('hrms_general_setting.store');
     
