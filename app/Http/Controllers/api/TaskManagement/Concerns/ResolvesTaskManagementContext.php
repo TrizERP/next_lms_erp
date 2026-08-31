@@ -422,19 +422,20 @@ trait ResolvesTaskManagementContext
         $toActive = $to !== 'COMPLETED';
         $isReopen = $fromTerminal && $toActive;
 
+        // Delay fields belong to the hold state. Leaving a stale reason on a
+        // task that has resumed would explain a delay that is over: on hold,
+        // take what the caller supplied or keep what is already there; off
+        // hold, clear both.
+        $onHold = $to === 'ON HOLD';
+
         $update = [
             'STATUS' => $to,
             'status_label' => $statusLabel,
+            'delay_category' => $onHold ? ($delayCategory ?? $task->delay_category ?? null) : null,
+            'delay_reason' => $onHold ? ($delayReason ?? $task->delay_reason ?? null) : null,
             'updated_by' => $actorId,
             'updated_at' => now(),
         ];
-
-        if ($delayCategory !== null) {
-            $update['delay_category'] = $delayCategory;
-        }
-        if ($delayReason !== null) {
-            $update['delay_reason'] = $delayReason;
-        }
 
         Task::where('ID', $task->ID)->update($update);
 
@@ -488,6 +489,73 @@ trait ResolvesTaskManagementContext
             }
 
             $this->writeTaskStatus($successor, 'PENDING', null, (int) ($actorId ?? 0));
+        }
+    }
+
+    /**
+     * Ported from hp_erp's `TaskDependencyResolutionService::openPredecessors`.
+     *
+     * Predecessors of $taskId that are still not COMPLETED. Nothing in this
+     * product consults the dependency graph when a status changes - a task
+     * whose predecessor was never touched could move to IN-PROGRESS or
+     * COMPLETED in complete silence. Callers use this to build a
+     * non-blocking `warnings` array on the response: real work runs out of
+     * order, and a hard refusal here would strand people whose predecessor's
+     * owner is on leave, so the move proceeds and the caller is told what it
+     * stepped over.
+     *
+     * @return array<int, array{id: string, title: string, status: string}>
+     */
+    protected function openPredecessors(int $taskId, int $tenantId, string $syear): array
+    {
+        return DB::table('task_management_dependencies as d')
+            ->join('task as p', 'p.ID', '=', 'd.predecessor_task_id')
+            ->where('d.successor_task_id', $taskId)
+            ->where('d.sub_institute_id', $tenantId)
+            ->where('d.syear', $syear)
+            ->whereNull('p.deleted_at')
+            ->whereRaw("UPPER(COALESCE(p.STATUS, 'PENDING')) <> 'COMPLETED'")
+            ->get(['p.ID', 'p.TASK_TITLE', 'p.STATUS'])
+            ->map(fn ($row) => [
+                'id' => (string) $row->ID,
+                'title' => $row->TASK_TITLE,
+                'status' => $row->STATUS ?: 'PENDING',
+            ])
+            ->all();
+    }
+
+    /**
+     * Normalise a date-only value before it reaches a `date` column.
+     *
+     * A calendar date has no timezone - it is three numbers. A validator of
+     * `required|date` happily accepts a full ISO datetime with a `Z` suffix
+     * (exactly what a browser's `toISOString()` produces), and routing that
+     * through `Carbon::parse()` applies the app's timezone to what is really
+     * a UTC instant, which can shift the calendar day for any tenant east of
+     * Greenwich - the same class of bug `lib/date-only.ts` documents and
+     * fixes on the frontend by reading the leading Y-M-D digits directly
+     * instead of going through `Date`/`toISOString()`.
+     *
+     * This mirrors that: a leading `YYYY-MM-DD` is read off the string
+     * as-is, with no timezone conversion applied. Only a value that does not
+     * start with a plain date falls back to `Carbon::parse()`.
+     */
+    protected function dateOnly(?string $value): ?string
+    {
+        if ($value === null || trim($value) === '') {
+            return null;
+        }
+
+        $value = trim($value);
+
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $value, $matches)) {
+            return "{$matches[1]}-{$matches[2]}-{$matches[3]}";
+        }
+
+        try {
+            return \Illuminate\Support\Carbon::parse($value)->toDateString();
+        } catch (\Throwable $e) {
+            return null;
         }
     }
 }

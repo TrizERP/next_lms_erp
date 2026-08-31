@@ -42,9 +42,17 @@ class IntelligenceQuestionGenerationApiController extends Controller
             'model'             => 'nullable|string',
             'temperature'       => 'nullable|numeric|between:0,1.5',
             'seed'              => 'nullable|integer',
-            'quota'             => 'nullable|array',
-            'quota.*.level'     => 'nullable|string',
-            'quota.*.count'     => 'nullable|integer|min:0',
+            // Every quota key needs a rule of its own. The service is handed
+            // $validator->validated(), which returns ONLY attributes that were
+            // validated - so a key with no rule here is silently dropped before
+            // QuestionGenerationService::buildQuota ever sees it, and the caller's
+            // difficulty/marks quietly become the built-in BLOOM_META defaults.
+            'quota'                 => 'nullable|array',
+            'quota.*.level'         => 'nullable|string',
+            'quota.*.count'         => 'nullable|integer|min:0',
+            'quota.*.difficulty'    => 'nullable|string|in:Easy,Medium,Hard',
+            'quota.*.points'        => 'nullable|integer|min:0|max:100',
+            'quota.*.dok'           => 'nullable|integer|min:1|max:4',
             'pre_grade_topic'             => 'nullable|string|max:250',
             'post_grade_topic'            => 'nullable|string|max:250',
             'cross_curriculum_grade_topic'=> 'nullable|string|max:250',

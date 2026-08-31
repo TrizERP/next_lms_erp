@@ -835,6 +835,7 @@ class admissionEnquiryController extends Controller
             $nextYear = ((int) substr($syear, 2, 2)+1);
             $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
             $standard_id = $getStandard->id?? '';
+
             $activityDate = null;
 
             if (!empty($data["activity_date"])) {
@@ -851,12 +852,23 @@ class admissionEnquiryController extends Controller
                 }
             }
 
+            // activity_time can be submitted as a time or as a database datetime.
+            // Format it before rendering the email so parents see the selected AM/PM
+            // time rather than a raw value such as "2026-08-27 12:19:00".
+            $activityTime = $data['activity_time'] ?? '';
+            if ($activityTime !== '') {
+                try {
+                    $activityTime = Carbon::parse($activityTime)->format('h:i A');
+                } catch (\Exception $e) {
+                    // Preserve the original value if it cannot be parsed.
+                }
+            }
 
             if ($standard_id == 3291) {
                 $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
                     'page_type'=>'parent',
                     'parent_date' => $activityDate ?? '',
-                    'parent_time' => $data["activity_time"] ?? '',
+                    'parent_time' => $activityTime,
                     'aca_year'    => $syear.'-'.$nextYear,
                     'admission_std'    => $getStandard->name ?? '-',
                 ])->render();
@@ -864,7 +876,7 @@ class admissionEnquiryController extends Controller
                 $htmlContent = view('admission.registrationHills.admissionEnquiryStd2to9', [
                     'page_type'=>'parent',
                     'parent_date' => $activityDate ?? '',
-                    'parent_time' => $data["activity_time"] ?? '',
+                    'parent_time' => $activityTime,
                     'aca_year'    => $syear.'-'.$nextYear,
                     'admission_std'    => $getStandard->name ?? '-',
                 ])->render();   

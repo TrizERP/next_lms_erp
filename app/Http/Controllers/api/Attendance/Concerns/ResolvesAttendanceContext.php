@@ -10,8 +10,10 @@ use Illuminate\Http\Request;
  *
  * The legacy attendance screens live on stateful web routes and read
  * sub_institute_id / user_id out of the session. The endpoints under
- * /api/attendance are stateless, so everything is resolved from the request
- * and authenticated with the same JWT already used by this app's own
+ * /api/attendance are stateless, so sub_institute_id is resolved from the
+ * verified JWT payload (G-SEC-29) rather than the session; user_id/syear are
+ * still read from the request. Authenticated with the same JWT already used
+ * by this app's own
  * login/session (App\Http\Controllers\api\ApiLoginController, and see
  * App\Http\Middleware\ApiSessionHydrator for the established precedent of
  * validating this exact token type on a stateless API route) - NOT a Laravel
@@ -41,7 +43,9 @@ trait ResolvesAttendanceContext
             return response()->json(['status' => 0, 'message' => 'Invalid token'], 401);
         }
 
-        $subInstituteId = $request->input('sub_institute_id') ?? $request->header('sub_institute_id');
+        // G-SEC-29: the tenant comes from the verified JWT payload, never the
+        // caller-suppliable request body/header.
+        $subInstituteId = $this->jwtPayload('sub_institute_id', $request);
 
         if (!$subInstituteId || !is_numeric($subInstituteId)) {
             return response()->json(['status' => 0, 'message' => 'sub_institute_id is required'], 400);

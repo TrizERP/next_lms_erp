@@ -509,6 +509,34 @@ class ApiLmsCourseController extends Controller
         });
     }
 
+    /**
+     * The concept a generated content row was built for, read from its description.
+     *
+     * The Generate Content flow writes a "Concept Data Block" into the description
+     * but does not stamp content_master.concept_id, so for that content this text
+     * is the only record of the concept. "Not specified" is the generator's own
+     * placeholder for a concept it was never given, so it counts as no concept
+     * rather than being shown as one.
+     */
+    private function conceptNameFromDescription(?string $description): ?string
+    {
+        if (!is_string($description) || $description === '') {
+            return null;
+        }
+
+        if (!preg_match('/^[ \t]*Concept[ \t]*:[ \t]*(.+)$/mi', $description, $matches)) {
+            return null;
+        }
+
+        $name = trim($matches[1]);
+
+        if ($name === '' || strcasecmp($name, 'Not specified') === 0) {
+            return null;
+        }
+
+        return $name;
+    }
+
     private function getChapterContentCategories($chapter_id, $subject_id, $standard_id, $sub_institute_id, ?string $source = null): array
     {
         $getIsLms = DB::table('school_setup')
@@ -546,6 +574,14 @@ class ApiLmsCourseController extends Controller
         foreach ($content_data as $content) {
             $contentArray = (array)$content;
             $contentArray['url'] = $this->resolveContentUrl($contentArray);
+            // concept_id is unstamped on virtually every row, so the lms_concept
+            // join alone leaves the concept blank. Generated content still records
+            // it in the description, which is the only place it survives.
+            if (empty($contentArray['concept_name'])) {
+                $contentArray['concept_name'] = $this->conceptNameFromDescription(
+                    $contentArray['description'] ?? null
+                );
+            }
             $cat = $contentArray['content_category'] ?? 'General';
             $content_by_category[$cat][] = $contentArray;
         }
