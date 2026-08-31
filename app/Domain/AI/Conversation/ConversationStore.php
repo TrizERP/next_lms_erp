@@ -4,8 +4,11 @@ namespace App\Domain\AI\Conversation;
 
 use App\Domain\AI\Lifecycle\RecordableTrace;
 use App\Services\Mcp\McpRequestContext;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 /**
  * The thread, and the memory that makes a follow-up question possible.
@@ -22,6 +25,16 @@ use Illuminate\Support\Facades\Schema;
  */
 class ConversationStore
 {
+    /** Retries allowed when two threads race for the same reference. */
+    private const REFERENCE_ATTEMPTS = 3;
+
+    /** Retries allowed when two turns race for the same sequence number. */
+    private const SEQUENCE_ATTEMPTS = 3;
+
+    private ?bool $hasConversations = null;
+
+    private ?bool $hasTurns = null;
+
     /** Referents that survive between turns. */
     public const MEMORY_KEYS = [
         'student_id',
@@ -53,15 +66,33 @@ class ConversationStore
     /**
      * Load an existing thread or open a new one.
      *
-     * @return array{id:int|null, reference:string|null, memory:array, turn_count:int}
+     * Opening a fresh thread when the caller asked for a specific one is a legitimate
+     * outcome — an id from another user or another institute must not be honoured, and
+     * memory starting empty is what stops it leaking. What was wrong was doing it
+     * *silently*: the turn came back reading `turn 1, memory {}` with nothing anywhere
+     * saying the requested thread had been declined, which is indistinguishable from
+     * the frontend having failed to send an id at all. Those two have completely
+     * different fixes, so the return now carries which happened and why.
+     *
+     * @return array{
+     *   id:int|null, reference:string|null, memory:array, turn_count:int,
+     *   module_key:string|null, requested_id:int|null, reused:bool,
+     *   not_reused_reason:string|null
+     * }
      */
     public function open(?int $conversationId, McpRequestContext $scope, string $moduleKey = 'student_profiles'): array
     {
-        if (! Schema::hasTable('ai_conversations')) {
+        if (! $this->hasConversations()) {
             // The console still works without the tables; it simply forgets between
             // turns, and the trace says so rather than pretending to remember.
-            return ['id' => null, 'reference' => null, 'memory' => [], 'turn_count' => 0];
+            return $this->ephemeral(
+                $conversationId,
+                'The ai_conversations table is not present in this database, so nothing about this '
+                . 'thread can be stored or recalled. Run the AI conversation migration to fix it.'
+            );
         }
+
+        $declined = null;
 
         if ($conversationId !== null) {
             $row = DB::table('ai_conversations')
@@ -76,32 +107,122 @@ class ConversationStore
                     'reference' => $row->conversation_reference,
                     'memory' => $this->decode($row->memory),
                     'turn_count' => (int) $row->turn_count,
+                    'module_key' => $row->module_key,
+                    'requested_id' => $conversationId,
+                    'reused' => true,
+                    'not_reused_reason' => null,
                 ];
             }
-            // An unknown or out-of-scope id opens a fresh thread rather than failing —
-            // and, because memory starts empty, cannot leak the other thread's context.
+
+            $declined = sprintf(
+                'Conversation #%d was requested but is not readable as user %d in institute %d — it '
+                . 'does not exist, or belongs to another user or another school. A new thread was '
+                . 'opened instead, with empty memory, rather than reading someone else\'s.',
+                $conversationId,
+                $scope->userId,
+                $scope->selectedInstituteId
+            );
         }
 
-        $reference = $this->nextReference();
+        return $this->create($scope, $moduleKey, $conversationId, $declined);
+    }
 
-        $id = (int) DB::table('ai_conversations')->insertGetId([
-            'conversation_reference' => $reference,
-            'module_key' => $moduleKey,
-            'title' => null,
-            'memory' => json_encode([]),
+    /**
+     * Insert a new thread, tolerating a reference collision.
+     *
+     * `conversation_reference` is unique and its sequence is read-then-written, so two
+     * questions asked in the same instant compute the same reference and one insert
+     * fails. That used to escape as a QueryException, which the pipeline turned into a
+     * blocked stage 1 — halting all twelve stages and returning no answer at all,
+     * because two people pressed Ask together. A retry costs one query; the alternative
+     * cost the whole turn.
+     *
+     * @return array<string, mixed>
+     */
+    private function create(
+        McpRequestContext $scope,
+        string $moduleKey,
+        ?int $requestedId,
+        ?string $declined
+    ): array {
+        for ($attempt = 0; $attempt < self::REFERENCE_ATTEMPTS; $attempt++) {
+            $reference = $this->nextReference($attempt);
+
+            try {
+                $id = (int) DB::table('ai_conversations')->insertGetId([
+                    'conversation_reference' => $reference,
+                    'module_key' => $moduleKey,
+                    'title' => null,
+                    'memory' => $this->encode([]),
+                    'turn_count' => 0,
+                    'status' => 'open',
+                    'user_id' => $scope->userId,
+                    'actor_role' => $scope->role,
+                    'sub_institute_id' => $scope->selectedInstituteId,
+                    'client_id' => $scope->clientId,
+                    'academic_year' => $scope->academicYear,
+                    'term_id' => $scope->termId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                return [
+                    'id' => $id,
+                    'reference' => $reference,
+                    'memory' => [],
+                    'turn_count' => 0,
+                    'module_key' => $moduleKey,
+                    'requested_id' => $requestedId,
+                    'reused' => false,
+                    'not_reused_reason' => $declined,
+                ];
+            } catch (QueryException $exception) {
+                if ($this->isDuplicate($exception) && $attempt < self::REFERENCE_ATTEMPTS - 1) {
+                    continue;
+                }
+
+                $this->warn('AI conversation could not be opened.', $exception, [
+                    'reference' => $reference,
+                    'user_id' => $scope->userId,
+                    'sub_institute_id' => $scope->selectedInstituteId,
+                ]);
+
+                // The docblock on ConversationalAiStage promises that an unopenable
+                // thread costs continuity rather than the answer. This is where that
+                // promise is kept: the turn runs on an in-memory thread and the trace
+                // says the storage failed.
+                return $this->ephemeral(
+                    $requestedId,
+                    'The thread could not be written to the database, so this turn will not be '
+                    . 'remembered: ' . $exception->getMessage()
+                );
+            }
+        }
+
+        return $this->ephemeral(
+            $requestedId,
+            'A unique conversation reference could not be allocated after '
+            . self::REFERENCE_ATTEMPTS . ' attempts.'
+        );
+    }
+
+    /**
+     * A thread that exists only for this turn.
+     *
+     * @return array<string, mixed>
+     */
+    private function ephemeral(?int $requestedId, string $reason): array
+    {
+        return [
+            'id' => null,
+            'reference' => null,
+            'memory' => [],
             'turn_count' => 0,
-            'status' => 'open',
-            'user_id' => $scope->userId,
-            'actor_role' => $scope->role,
-            'sub_institute_id' => $scope->selectedInstituteId,
-            'client_id' => $scope->clientId,
-            'academic_year' => $scope->academicYear,
-            'term_id' => $scope->termId,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        return ['id' => $id, 'reference' => $reference, 'memory' => [], 'turn_count' => 0];
+            'module_key' => null,
+            'requested_id' => $requestedId,
+            'reused' => false,
+            'not_reused_reason' => $reason,
+        ];
     }
 
     /**
@@ -198,24 +319,19 @@ class ConversationStore
         int $durationMs,
         ?string $error = null
     ): ?int {
-        if ($conversationId === null || ! Schema::hasTable('ai_conversation_turns')) {
+        if ($conversationId === null || ! $this->hasTurns()) {
             return null;
         }
 
-        $sequence = ((int) DB::table('ai_conversation_turns')
-            ->where('conversation_id', $conversationId)
-            ->max('sequence')) + 1;
-
-        $turnId = (int) DB::table('ai_conversation_turns')->insertGetId([
+        $row = [
             'conversation_id' => $conversationId,
-            'sequence' => $sequence,
             'question' => $question,
             'intent_key' => $intent->key,
             'intent_confidence' => round($intent->confidence, 4),
-            'intent_slots' => json_encode($intent->slots),
-            'answer' => json_encode($answer),
-            'trace' => json_encode($trace->toArray()),
-            'stage_counts' => json_encode($trace->summaryCounts()),
+            'intent_slots' => $this->encode($intent->slots),
+            'answer' => $this->encode($answer),
+            'trace' => $this->encode($trace->toArray()),
+            'stage_counts' => $this->encode($trace->summaryCounts()),
             'subject_entity_key' => $links['subject_entity_key'] ?? null,
             'subject_id' => $links['student_id'] ?? null,
             'case_id' => $links['case_id'] ?? null,
@@ -230,11 +346,72 @@ class ConversationStore
             'user_id' => $scope->userId,
             'created_at' => now(),
             'updated_at' => now(),
-        ]);
+        ];
 
-        $this->rememberOn($conversationId, $scope, $links + ['last_intent' => $intent->key], $question, $sequence);
+        // Two questions on one thread at the same moment computed the same sequence.
+        // With the unique index now on (conversation_id, sequence) the loser retries
+        // instead of quietly writing a second "turn 2" that made turn_count disagree
+        // with the rows underneath it.
+        for ($attempt = 0; $attempt < self::SEQUENCE_ATTEMPTS; $attempt++) {
+            $sequence = $this->nextSequence($conversationId);
 
-        return $turnId;
+            try {
+                $turnId = (int) DB::table('ai_conversation_turns')
+                    ->insertGetId($row + ['sequence' => $sequence]);
+            } catch (QueryException $exception) {
+                if ($this->isDuplicate($exception) && $attempt < self::SEQUENCE_ATTEMPTS - 1) {
+                    continue;
+                }
+
+                // Recording a turn is bookkeeping. It runs after the answer is fully
+                // composed, and it used to run unguarded — so a failure here escaped to
+                // the controller, which turned a complete, correct answer into a 500.
+                // Losing the audit row is bad; throwing away the work that produced it
+                // and telling the user their question failed is worse.
+                $this->warn('AI conversation turn could not be recorded.', $exception, [
+                    'conversation_id' => $conversationId,
+                    'sequence' => $sequence,
+                ]);
+
+                return null;
+            }
+
+            // Guarded separately, and deliberately: the turn is already written, and a
+            // failure to merge memory must not discard it. It does mean the next turn
+            // opens with empty memory, which is exactly the symptom this log explains.
+            try {
+                $this->rememberOn(
+                    $conversationId,
+                    $scope,
+                    $links + ['last_intent' => $intent->key],
+                    $question,
+                    $sequence
+                );
+            } catch (Throwable $exception) {
+                $this->warn('AI conversation memory could not be merged.', $exception, [
+                    'conversation_id' => $conversationId,
+                    'sequence' => $sequence,
+                    'consequence' => 'The next turn on this thread will start with empty memory.',
+                ]);
+            }
+
+            return $turnId;
+        }
+
+        return null;
+    }
+
+    /**
+     * The next sequence number on a thread.
+     *
+     * `max(sequence) + 1` rather than `turn_count + 1`, so a thread whose counter has
+     * drifted still numbers its turns from the rows that actually exist.
+     */
+    private function nextSequence(int $conversationId): int
+    {
+        return ((int) DB::table('ai_conversation_turns')
+            ->where('conversation_id', $conversationId)
+            ->max('sequence')) + 1;
     }
 
     /**
@@ -250,13 +427,18 @@ class ConversationStore
         ?string $question = null,
         int $sequence = 0
     ): void {
-        if (! Schema::hasTable('ai_conversations')) {
+        if (! $this->hasConversations()) {
             return;
         }
 
+        // Scoped by user as well as institute, matching `open()`. It read only
+        // sub_institute_id, so two colleagues in one school had a window in which one
+        // could write referents onto the other's thread — the read gate and the write
+        // gate on the same row have to agree.
         $row = DB::table('ai_conversations')
             ->where('id', $conversationId)
             ->where('sub_institute_id', $scope->selectedInstituteId)
+            ->where('user_id', $scope->userId)
             ->first();
 
         if (! $row) {
@@ -272,7 +454,7 @@ class ConversationStore
         }
 
         DB::table('ai_conversations')->where('id', $conversationId)->update([
-            'memory' => json_encode($memory),
+            'memory' => $this->encode($memory),
             'turn_count' => $sequence > 0 ? $sequence : (int) $row->turn_count,
             'title' => $row->title ?: ($question ? mb_substr($question, 0, 200) : null),
             'last_turn_at' => now(),
@@ -294,13 +476,14 @@ class ConversationStore
      */
     public function forgetOn(int $conversationId, McpRequestContext $scope, array $keys): void
     {
-        if ($keys === [] || ! Schema::hasTable('ai_conversations')) {
+        if ($keys === [] || ! $this->hasConversations()) {
             return;
         }
 
         $row = DB::table('ai_conversations')
             ->where('id', $conversationId)
             ->where('sub_institute_id', $scope->selectedInstituteId)
+            ->where('user_id', $scope->userId)
             ->first();
 
         if (! $row) {
@@ -314,7 +497,7 @@ class ConversationStore
         }
 
         DB::table('ai_conversations')->where('id', $conversationId)->update([
-            'memory' => json_encode($memory),
+            'memory' => $this->encode($memory),
             'updated_at' => now(),
         ]);
     }
@@ -393,18 +576,85 @@ class ConversationStore
 
     // ---------------------------------------------------------------- internals
 
-    private function nextReference(): string
+    /**
+     * The next thread reference, skipping `$offset` places on a retry.
+     *
+     * Ordered by the reference itself rather than by id: the highest id whose reference
+     * matches this year's prefix is not necessarily the highest reference, and taking
+     * the wrong one produces a number already in use.
+     */
+    private function nextReference(int $offset = 0): string
     {
         $prefix = sprintf('CONV-%d-', now()->year);
 
         $last = DB::table('ai_conversations')
             ->where('conversation_reference', 'like', $prefix . '%')
-            ->orderByDesc('id')
+            ->orderByDesc('conversation_reference')
             ->value('conversation_reference');
 
-        $sequence = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
+        $sequence = ($last ? (int) substr($last, strlen($prefix)) : 0) + 1 + $offset;
 
         return $prefix . str_pad((string) $sequence, 6, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * JSON that is always writable to a json column.
+     *
+     * `json_encode` returns false on malformed UTF-8, and this estate's student names
+     * come from tables old enough to contain some. That false became an empty string in
+     * the insert, MySQL rejected it as invalid JSON, and the exception took the answer
+     * with it. Substituting the bad bytes keeps a slightly lossy audit row, which is
+     * strictly better than none.
+     */
+    private function encode(mixed $value): string
+    {
+        $json = json_encode($value, JSON_INVALID_UTF8_SUBSTITUTE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+
+        return is_string($json) ? $json : '{}';
+    }
+
+    /** A unique-constraint violation, as opposed to any other database error. */
+    private function isDuplicate(QueryException $exception): bool
+    {
+        return ($exception->errorInfo[1] ?? null) === 1062
+            || $exception->getCode() === '23000';
+    }
+
+    /**
+     * Report a storage failure without becoming a second failure.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    private function warn(string $message, Throwable $exception, array $context = []): void
+    {
+        try {
+            report($exception);
+
+            Log::warning($message, $context + [
+                'exception' => $exception->getMessage(),
+                'class' => $exception::class,
+            ]);
+        } catch (Throwable) {
+            // Deliberately swallowed. The caller's fallback matters more than the log.
+        }
+    }
+
+    /**
+     * Memoised table checks.
+     *
+     * `Schema::hasTable()` is a metadata query, and Stage 1 asked it four times per
+     * turn. Memoising per instance keeps the answer fresh across requests — the store
+     * is resolved from the container per request — while costing one query instead of
+     * four.
+     */
+    private function hasConversations(): bool
+    {
+        return $this->hasConversations ??= Schema::hasTable('ai_conversations');
+    }
+
+    private function hasTurns(): bool
+    {
+        return $this->hasTurns ??= Schema::hasTable('ai_conversation_turns');
     }
 
     private function decode(mixed $value): array
