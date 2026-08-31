@@ -4,6 +4,7 @@ namespace App\Domain\K12\AcademicRisk;
 
 use App\Domain\AI\Evidence\EvidenceItem;
 use App\Domain\AI\Signals\DetectedSignal;
+use App\Domain\AI\Signals\DetectorCoverage;
 use App\Domain\AI\Signals\SignalDetector;
 use App\Domain\AI\Signals\ThresholdRegistry;
 use App\Services\Mcp\McpRequestContext;
@@ -33,10 +34,17 @@ class MissedAssignmentDetector implements SignalDetector
     /** Miss rate at which risk saturates. */
     private const RATE_CEILING = 0.6;
 
+    private ?DetectorCoverage $coverage = null;
+
     public function __construct(
         private readonly StudentScope $scope,
         private readonly ThresholdRegistry $thresholds,
     ) {
+    }
+
+    public function coverage(): ?DetectorCoverage
+    {
+        return $this->coverage;
     }
 
     public function key(): string
@@ -64,13 +72,24 @@ class MissedAssignmentDetector implements SignalDetector
      */
     public function detect(McpRequestContext $context, ?array $subjectIds = null, int $limit = 100): array
     {
+        $requirement = sprintf(
+            'needs at least %d assigned activities past their due date within the last %d days.',
+            self::MIN_ASSIGNED,
+            self::LOOKBACK_DAYS
+        );
+
         if (! Schema::hasTable('homework')) {
+            $this->coverage = new DetectorCoverage(self::KEY, 0, 0, 0, $requirement);
+
             return [];
         }
 
-        $students = $this->scope->students($context, $subjectIds, max($limit, 1));
+        // `$limit` caps how many signals come back, not how many students are read.
+        $students = $this->scope->students($context, $subjectIds);
 
         if ($students === []) {
+            $this->coverage = new DetectorCoverage(self::KEY, 0, 0, 0, $requirement);
+
             return [];
         }
 
@@ -94,6 +113,7 @@ class MissedAssignmentDetector implements SignalDetector
         $subjectNames = $this->subjectNames($assignments, $context);
 
         $signals = [];
+        $evaluated = 0;
 
         foreach ($students as $studentId => $studentName) {
             $items = $assignments->get($studentId);
@@ -101,6 +121,8 @@ class MissedAssignmentDetector implements SignalDetector
             if (! $items || $items->count() < self::MIN_ASSIGNED) {
                 continue;
             }
+
+            $evaluated++;
 
             $signal = $this->evaluate($studentId, $studentName, $items->all(), $subjectNames, $context);
 
@@ -112,6 +134,14 @@ class MissedAssignmentDetector implements SignalDetector
                 break;
             }
         }
+
+        $this->coverage = new DetectorCoverage(
+            self::KEY,
+            count($students),
+            $evaluated,
+            count($signals),
+            $requirement
+        );
 
         return $signals;
     }
@@ -234,24 +264,14 @@ class MissedAssignmentDetector implements SignalDetector
     /**
      * Completion is inferred from the estate's own columns: an explicit status where
      * one is set, otherwise the presence of a submission date.
+     *
+     * The rule itself lives in HomeworkCompletion because the MCP homework tool needs
+     * the identical answer. A second copy here would let a chat reply call an assignment
+     * submitted while this detector counted it as missed, and nothing would look wrong.
      */
     private function isMissed(object $item): bool
     {
-        $status = $item->completion_status ?? null;
-
-        if ($status !== null && $status !== '') {
-            $normalized = strtolower(trim((string) $status));
-
-            if (in_array($normalized, ['1', 'y', 'yes', 'completed', 'complete', 'submitted', 'done'], true)) {
-                return false;
-            }
-
-            if (in_array($normalized, ['0', 'n', 'no', 'pending', 'incomplete', 'not submitted'], true)) {
-                return true;
-            }
-        }
-
-        return empty($item->submission_date);
+        return HomeworkCompletion::isMissed($item);
     }
 
     /**

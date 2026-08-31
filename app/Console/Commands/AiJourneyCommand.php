@@ -2,19 +2,25 @@
 
 namespace App\Console\Commands;
 
-use App\Domain\AI\Conversation\AskService;
+use App\Domain\AI\Conversation\AskPipeline;
 use App\Services\Mcp\McpRequestContext;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
- * Walk the Student Profiles journey from the command line and print every stage.
+ * Walk the AI journey from the command line and print every stage.
  *
- * This exists so the pipeline can be verified without a browser, a token or a login —
- * the same AskService the HTTP endpoint calls, driven by a scripted conversation, with
- * the fifteen-stage ladder printed after each turn. If this command shows a stage as
- * `ran`, that stage genuinely ran against the database named in .env.
+ * This exists so the pipeline can be verified without a browser, a token or a login. It
+ * goes through AskPipeline, which is the same object the HTTP endpoint uses — so the
+ * command reaches whichever pipeline is live rather than pinning itself to one. That
+ * matters more than it sounds: this command used to inject the legacy AskService
+ * directly, which meant that the moment the lifecycle flag was turned on, the terminal
+ * and the API would have been running different code while appearing to agree. A
+ * verification tool that can disagree with the thing it verifies is worse than none.
+ *
+ * The banner names the pipeline that answered, so a trace pasted into a ticket says
+ * which one produced it.
  *
  *   php artisan ai:journey --institute=1
  *   php artisan ai:journey --institute=1 --ask="Why is Ravi Kumar at risk?"
@@ -52,7 +58,7 @@ class AiJourneyCommand extends Command
         'What has the system learned?',
     ];
 
-    public function handle(AskService $ask): int
+    public function handle(AskPipeline $ask): int
     {
         $scope = $this->resolveScope();
 
@@ -68,6 +74,11 @@ class AiJourneyCommand extends Command
             $scope->termId ?? '—',
             $scope->role,
             $scope->userId
+        ));
+        $this->line(sprintf(
+            '<fg=gray>pipeline %s — the same one POST %s/ask would use</>',
+            $ask->name(),
+            rtrim((string) config('ai.route_prefix', 'api/ai'), '/')
         ));
 
         $questions = $this->option('ask')

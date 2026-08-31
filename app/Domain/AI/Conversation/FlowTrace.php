@@ -14,7 +14,7 @@ namespace App\Domain\AI\Conversation;
  * Nothing in here decides anything. It is a recorder: AskService runs the real
  * services and reports what happened into this object.
  */
-final class FlowTrace
+final class FlowTrace implements \App\Domain\AI\Lifecycle\RecordableTrace
 {
     /**
      * Canonical stage definitions. `component` names the class that genuinely does the
@@ -271,6 +271,20 @@ final class FlowTrace
 
         if (! $stage) {
             return $this;
+        }
+
+        // A stage's own payload is replaced wholesale — a stage that reports twice means
+        // the second reading, not a merge of both. The `lifecycle_*` keys are the one
+        // exception, because they are not this stage's payload at all: they are the
+        // product lifecycle's bookkeeping, appended to `gen_ai` by whichever code path
+        // built the plan or called an MCP tool. Overwriting them meant that an ambiguous
+        // student name — which reports `blocked` on gen_ai with no data — silently
+        // deleted the record of a plan and of MCP calls that had genuinely happened, and
+        // the replayed trace then showed Planning and Laravel MCP as never reached.
+        foreach ($stage->data as $key => $value) {
+            if (str_starts_with((string) $key, 'lifecycle_') && ! array_key_exists($key, $data)) {
+                $data[$key] = $value;
+            }
         }
 
         $stage->status = $status;

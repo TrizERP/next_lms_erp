@@ -12,6 +12,7 @@ use App\Models\lms\topicModel;
 use App\Models\student\tblstudentEnrollmentModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -1096,12 +1097,15 @@ $restrict_date = $request->input('restrict_date');
 
     public function getChapterConcepts(Request $request): JsonResponse
     {
-        // Create Exam scopes a paper across several chapters at once, so chapter_id
-        // arrives as a list. A single id stays valid for callers that ask about one
-        // chapter.
-        $validator = Validator::make($request->all(), [
-            'chapter_id'   => 'required',
-            'chapter_id.*' => 'integer',
+        // chapter_id accepts a single id or a list of ids (the exam scope screen selects many chapters).
+        $chapter_ids = array_values(array_unique(array_filter(
+            array_map(static fn ($id) => (int) $id, Arr::wrap($request->input('chapter_id'))),
+            static fn ($id) => $id > 0
+        )));
+
+        $validator = Validator::make(['chapter_id' => $chapter_ids], [
+            'chapter_id' => 'required|array|min:1',
+            'chapter_id.*' => 'integer|min:1',
         ]);
 
         if ($validator->fails()) {
@@ -1112,28 +1116,11 @@ $restrict_date = $request->input('restrict_date');
             ], 422);
         }
 
-        $requestedChapterId = $request->input('chapter_id');
-        $chapterIds = array_values(array_unique(array_filter(
-            array_map(
-                static fn ($id) => (int) $id,
-                is_array($requestedChapterId) ? $requestedChapterId : [$requestedChapterId]
-            ),
-            static fn ($id) => $id > 0
-        )));
-
-        if (empty($chapterIds)) {
-            return response()->json([
-                'status_code' => 0,
-                'message' => 'Validation failed.',
-                'errors' => ['chapter_id' => ['The chapter id must be a chapter id, or a list of them.']],
-            ], 422);
-        }
-
         $sub_institute_id = $request->input('sub_institute_id') ?? $this->sessionValue($request, 'sub_institute_id');
 
         $query = DB::table('lms_concept')
             ->select('*')
-            ->whereIn('chapter_id', $chapterIds);
+            ->whereIn('chapter_id', $chapter_ids);
 
         if ($sub_institute_id) {
             $query->where(function ($q) use ($sub_institute_id) {
@@ -1148,9 +1135,7 @@ $restrict_date = $request->input('restrict_date');
             'status_code' => 1,
             'message' => 'SUCCESS',
             'data' => $concepts,
-            // Echoed in the shape it was asked for, so a caller sending one id
-            // still reads one id back.
-            'chapter_id' => is_array($requestedChapterId) ? $chapterIds : $chapterIds[0],
+            'chapter_id' => $chapter_ids,
             'sub_institute_id' => $sub_institute_id,
             'total' => count($concepts),
         ], 200);
