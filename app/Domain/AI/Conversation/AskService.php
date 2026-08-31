@@ -423,8 +423,46 @@ class AskService
             ];
         }
 
+        // A crash is not an empty result, and until now it was reported as one. A failed
+        // run returns no cases, so it fell through to noCasesOpened(), which told the
+        // reader "the detectors read attendance, assessment and assignment records and
+        // nothing crossed its trigger" — a confident statement about the school, made on
+        // the strength of an exception. The two outcomes need different words.
+        if ($run['status'] === 'failed') {
+            $trace->blocked('agent', $run['summary'], [
+                'agent_key' => self::AGENT_KEY,
+                'status' => $run['status'],
+                'error' => $run['error'],
+                'run_reference' => $run['run_id'],
+                'counters_before_failure' => $run['counters'] ?? [],
+            ]);
+
+            foreach (['ontology', 'data', 'evidence', 'case', 'explanation', 'template', 'recommendation', 'approval', 'workflow', 'action', 'outcome', 'learning'] as $stage) {
+                $trace->notReached($stage, 'The agent run failed part-way, so nothing downstream can be trusted to have run.');
+            }
+
+            return [
+                $this->compose->make(
+                    'The risk analysis failed part-way through.',
+                    [
+                        $this->compose->text('What happened', (string) ($run['error'] ?? $run['summary'])),
+                        $this->compose->text(
+                            'What this is not',
+                            'This is not a finding that no student is at risk. The analysis did not complete, '
+                            . 'so nothing at all is known about the students it had not reached.'
+                        ),
+                    ],
+                    [],
+                    ['Which students are at academic risk?']
+                ),
+                ['agent_run_id' => $run['run_id']],
+            ];
+        }
+
         $counters = $run['counters'] ?? [];
         $cases = $run['result']['cases'] ?? [];
+        $cohort = is_array($run['result']['cohort'] ?? null) ? $run['result']['cohort'] : [];
+        $coverage = is_array($run['result']['detector_coverage'] ?? null) ? $run['result']['detector_coverage'] : [];
 
         $trace->ran(
             'agent',
@@ -457,7 +495,7 @@ class AskService
         );
 
         if ($cases === []) {
-            return $this->noCasesOpened($scope, $trace, $run, $counters);
+            return $this->noCasesOpened($scope, $trace, $run, $counters, $cohort, $coverage);
         }
 
         $top = $cases[0];
@@ -476,7 +514,7 @@ class AskService
         $this->ontologyStage($scope, $trace, $topStudentId, $topStudentName);
 
         // ---- Stage 5: Real data --------------------------------------------
-        $this->dataStage($scope, $trace, $cases, $counters);
+        $this->dataStage($scope, $trace, $cases, $counters, $cohort, $coverage);
 
         // ---- Stage 6: Evidence ---------------------------------------------
         $topEvidence = $this->evidence->forCase((int) $top['case_id'], $scope);
@@ -727,8 +765,14 @@ class AskService
      * result, so it is reported as such — with the detected signals, the rule that held
      * them back, and how far short they fell.
      */
-    private function noCasesOpened(McpRequestContext $scope, FlowTrace $trace, array $run, array $counters): array
-    {
+    private function noCasesOpened(
+        McpRequestContext $scope,
+        FlowTrace $trace,
+        array $run,
+        array $counters,
+        array $cohort = [],
+        array $coverage = []
+    ): array {
         $detected = Schema::hasTable('ai_signals') && $run['run_id']
             ? DB::table('ai_signals')
                 ->where('sub_institute_id', $scope->selectedInstituteId)
@@ -752,26 +796,42 @@ class AskService
             $bySubject[$signal['student_id']][] = $signal;
         }
 
-        $rule = 'A case opens when one signal reaches "high" (score 0.5 or more), or when the same '
-            . 'student has at least two signals at "moderate" or above. Corroboration matters: one '
-            . 'middling number is not yet a case.';
+        // Every floor quoted below is read back from the same registry warrantsCase()
+        // consults, per signal type, so a school that has retuned its bands is told its
+        // own numbers rather than the defaults this sentence used to hard-code.
+        $floors = [];
+
+        foreach ($detected as $signal) {
+            $key = (string) ($signal['signal_key'] ?? '');
+            $floors[$key] = $this->cases->caseFloor($scope, $key ?: null);
+        }
+
+        $rule = $this->caseRuleSentence($scope, $floors);
 
         $trace->skipped('ontology', 'No case was opened, so no student needed a relationship walk.');
 
         $trace->ran(
             'data',
             $detected === []
-                ? 'The detectors read attendance, assessment and assignment records and nothing crossed its trigger.'
+                ? sprintf(
+                    'The detectors read attendance, assessment and assignment records for %s and nothing crossed its trigger.%s',
+                    $this->cohortPhrase($cohort),
+                    $this->blindDetectorPhrase($coverage)
+                )
                 : sprintf(
-                    '%d signal%s raised across %d student%s — but none reached the bar for opening a case.',
+                    '%d signal%s raised across %d student%s — but none reached the bar for opening a case.%s',
                     count($detected),
                     count($detected) === 1 ? '' : 's',
                     count($bySubject),
-                    count($bySubject) === 1 ? '' : 's'
+                    count($bySubject) === 1 ? '' : 's',
+                    $this->blindDetectorPhrase($coverage)
                 ),
             [
+                'cohort' => $cohort,
+                'detector_coverage' => $coverage,
                 'signals_detected' => $detected,
                 'case_rule' => $rule,
+                'case_floors_in_force' => $floors,
                 'tune_it' => 'The per-signal trigger and severity bands live in ai_signal_definitions.thresholds, '
                     . 'so a school can retune what counts as risk without a deploy.',
             ],
@@ -818,8 +878,11 @@ class AskService
                     'No students are currently showing academic risk signals.',
                     [$this->compose->text(
                         'What was checked',
-                        'Attendance rate and absence streaks, assessment averages and their trend, and assignment '
-                        . 'completion — for every student in the current scope. Nothing crossed its trigger.'
+                        sprintf(
+                            'Attendance rate and absence streaks, assessment averages and their trend, and assignment '
+                            . 'completion — for %s. Nothing crossed its trigger.',
+                            $this->cohortPhrase($cohort)
+                        )
                     )],
                     [],
                     ['What has the system learned?']
@@ -836,23 +899,27 @@ class AskService
                     count($detected) === 1 ? '' : 's'
                 ),
                 [
-                    $this->compose->records('Signals below the case threshold', array_map(fn ($signal) => [
-                        'title' => $signal['student'] ?: ('Student #' . $signal['student_id']),
-                        'badge' => ucfirst($signal['severity']),
-                        'badge_tone' => 'warning',
-                        'lines' => [str_replace('_', ' ', $signal['signal_key'])],
-                        'meta' => [
-                            'Score' => number_format($signal['score'], 3),
-                            'Needs' => '0.500 to open a case alone',
-                            'Short by' => number_format(max(0, 0.5 - $signal['score']), 3),
-                        ],
-                    ], $detected)),
+                    $this->compose->records('Signals below the case threshold', array_map(function (array $signal) use ($floors) {
+                        $floor = $floors[$signal['signal_key'] ?? ''] ?? 0.5;
+
+                        return [
+                            'title' => $signal['student'] ?: ('Student #' . $signal['student_id']),
+                            'badge' => ucfirst($signal['severity']),
+                            'badge_tone' => 'warning',
+                            'lines' => [str_replace('_', ' ', $signal['signal_key'])],
+                            'meta' => [
+                                'Score' => number_format($signal['score'], 3),
+                                'Needs' => number_format($floor, 3) . ' to open a case alone',
+                                'Short by' => number_format(max(0, $floor - $signal['score']), 3),
+                            ],
+                        ];
+                    }, $detected)),
                     $this->compose->text('Why no case was opened', $rule),
                     $this->compose->text(
                         'This is not a failure',
                         'The evidence behind these signals is stored either way. If a second signal appears for the '
-                        . 'same student, or one of these worsens past 0.5, the next run opens a case automatically '
-                        . 'and the rest of the journey follows.'
+                        . 'same student, or one of these worsens past the floor shown against it, the next run opens '
+                        . 'a case automatically and the rest of the journey follows.'
                     ),
                 ],
                 [],
@@ -1997,8 +2064,14 @@ class AskService
     /**
      * The real-data stage: which detectors ran, and against which tables.
      */
-    private function dataStage(McpRequestContext $scope, FlowTrace $trace, array $cases, array $counters): void
-    {
+    private function dataStage(
+        McpRequestContext $scope,
+        FlowTrace $trace,
+        array $cases,
+        array $counters,
+        array $cohort = [],
+        array $coverage = []
+    ): void {
         $signalKinds = [];
 
         foreach ($cases as $case) {
@@ -2011,18 +2084,22 @@ class AskService
         $trace->ran(
             'data',
             sprintf(
-                'Three detectors queried live records and raised %d signal%s across %d student%s.',
+                'Three detectors queried live records for %s and raised %d signal%s across %d student%s.%s',
+                $this->cohortPhrase($cohort),
                 $counters['signals_detected'] ?? 0,
                 ($counters['signals_detected'] ?? 0) === 1 ? '' : 's',
                 count($cases),
-                count($cases) === 1 ? '' : 's'
+                count($cases) === 1 ? '' : 's',
+                $this->blindDetectorPhrase($coverage)
             ),
             [
+                'cohort' => $cohort,
                 'detectors' => [
                     'attendance_risk' => 'reads the attendance records in scope and computes absence rate and streak',
                     'assessment_decline' => 'reads assessment attempts and compares the recent window against the previous one',
                     'missed_assignments' => 'reads assigned activities and their completion state',
                 ],
+                'detector_coverage' => $coverage,
                 'signals_by_type' => $signalKinds,
                 'scope_pinned_to' => [
                     'sub_institute_id' => $scope->selectedInstituteId,
@@ -2037,6 +2114,104 @@ class AskService
                 'sql' => 'select signal_key, severity, score, detected_at from ai_signals order by id desc limit 20',
             ]
         );
+    }
+
+    /**
+     * How wide the sweep was, in words a teacher can read.
+     *
+     * A truncated sweep has to say so in the sentence itself, not only in the payload:
+     * "every student in scope" and "the 5,000 students this sweep read" support very
+     * different conclusions, and the difference decides whether "no one is at risk" is
+     * an answer or an artefact.
+     *
+     * @param  array<string, mixed>  $cohort
+     */
+    /**
+     * The case-opening rule, stated in the numbers actually in force.
+     *
+     * Signal types can carry different bands — a school may retune assessment decline
+     * and leave attendance alone — so when the floors disagree the sentence stops
+     * quoting one number and points at the per-row figures instead of picking a
+     * plausible-looking average.
+     *
+     * @param  array<string, float>  $floors  Floor per signal key seen on this turn
+     */
+    private function caseRuleSentence(McpRequestContext $scope, array $floors): string
+    {
+        $distinct = array_values(array_unique(array_map(
+            static fn (float $floor) => number_format($floor, 3),
+            $floors
+        )));
+
+        $threshold = match (count($distinct)) {
+            0 => 'score ' . number_format($this->cases->caseFloor($scope), 3) . ' or more',
+            1 => 'score ' . $distinct[0] . ' or more',
+            default => "its own signal type's high band, shown against each signal below",
+        };
+
+        $corroboration = $this->cases->corroborationCount();
+
+        return sprintf(
+            'A case opens when one signal reaches "high" (%s), or when the same student has at least '
+            . '%d signals at "moderate" or above. Corroboration matters: one middling number is not yet a case.',
+            $threshold,
+            $corroboration
+        );
+    }
+
+    /**
+     * Names the detectors that ran but could not judge a single student.
+     *
+     * "Three detectors queried live records" was true and misleading in the same
+     * sentence: one of them skipped every student in the school for want of five
+     * attendance rows, and no reader of the trace could have known. A detector that
+     * contributes nothing has to say so where the claim of coverage is made.
+     *
+     * @param  array<string, array<string, mixed>>  $coverage
+     */
+    private function blindDetectorPhrase(array $coverage): string
+    {
+        $blind = [];
+
+        foreach ($coverage as $entry) {
+            if (! is_array($entry) || empty($entry['blind'])) {
+                continue;
+            }
+
+            $blind[] = str_replace('_', ' ', (string) ($entry['signal_key'] ?? 'a detector'))
+                . ' (' . trim((string) ($entry['requirement'] ?? 'insufficient data'), '. ') . ')';
+        }
+
+        if ($blind === []) {
+            return '';
+        }
+
+        return sprintf(
+            ' %d detector%s could not judge anyone: %s.',
+            count($blind),
+            count($blind) === 1 ? '' : 's',
+            implode('; ', $blind)
+        );
+    }
+
+    private function cohortPhrase(array $cohort): string
+    {
+        $scanned = (int) ($cohort['scanned'] ?? 0);
+        $inScope = (int) ($cohort['in_scope'] ?? 0);
+
+        if ($cohort === [] || $scanned === 0) {
+            return 'the students in scope';
+        }
+
+        if (! empty($cohort['narrowed_to_named_students'])) {
+            return sprintf('the %d student%s named in the question', $scanned, $scanned === 1 ? '' : 's');
+        }
+
+        if (! empty($cohort['complete'])) {
+            return sprintf('all %d student%s in scope', $scanned, $scanned === 1 ? '' : 's');
+        }
+
+        return sprintf('%d of the %d students in scope', $scanned, $inScope);
     }
 
     /**

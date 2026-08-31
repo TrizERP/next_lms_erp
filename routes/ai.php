@@ -68,6 +68,9 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             Route::post('/ask', [AskController::class, 'ask']);
             Route::post('/ask/interpret', [AskController::class, 'interpret']);
             Route::get('/ask/intents', [AskController::class, 'intents']);
+            // Which modules the lifecycle serves and how deep each one reaches — the
+            // honest inventory behind "what can this thing actually answer?".
+            Route::get('/ask/modules', [AskController::class, 'modules']);
             Route::get('/conversations/{conversation}', [AskController::class, 'conversation'])
                 ->whereNumber('conversation');
 
