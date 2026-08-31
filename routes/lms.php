@@ -325,6 +325,14 @@ Route::get('/api/get-curriculum-list', [lmsSyllabusController::class, 'getCurric
 Route::get('intrestEnterScore', [lmsCounsellingController::class, 'intrestEnterScore'])->name('intrestEnterScores');
 Route::get('intrestArea', [lmsCounsellingController::class, 'intrestArea']);
 Route::get('matchProfile', [lmsCounsellingController::class, 'matchProfile']);
+
+// Career certainty (CI-GUIDE-DEV-001, Group A). Only 'session' — this hydrates
+// student identity from the JWT so the endpoint can trust student_id server-side;
+// 'menu'/'check_permissions' are skipped since this module has no menu entry yet.
+Route::middleware(['session'])->group(function () {
+    Route::get('studentAspiration', [lmsCounsellingController::class, 'studentAspiration']);
+    Route::post('studentAspiration', [lmsCounsellingController::class, 'saveStudentAspiration']);
+});
 Route::post('/ai/processData',[contentController::class,'processAIData'])->name('ai.processData');
 Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan');
 Route::post('/ai/generateLessonPlanNew', [contentController::class, 'generateLessonPlanNew'])->name('ai.generateLessonPlanNew');

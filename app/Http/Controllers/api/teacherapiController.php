@@ -24,6 +24,7 @@ use App\Models\settings\tblcustomfieldsModel;
 use App\Models\settings\tblfields_dataModel;
 use App\Models\user\tbluserModel;
 use GenTux\Jwt\GetsJwtToken;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -33,18 +34,100 @@ class teacherapiController extends Controller
 {
     use GetsJwtToken;
 
-    public function teacher_homescreen(Request $request)
+    /**
+     * Resolves the real, server-verified identity of the caller instead of
+     * trusting a client-supplied teacher_id/created_by/user_id value.
+     *
+     * Mirrors TeacherTransferApiController::authorizeRequest() /
+     * ClassTeacherApiController::authorizeRequest(): the JWT payload is
+     * decoded directly from the Authorization header (no external library)
+     * to get the actor's real id and tenant, then the actor's row is looked
+     * up from tbluser/tbluserprofilemaster (status=1, matching tenant) to
+     * get their real profile — never a client-supplied profile string.
+     *
+     * A plain teacher may only ever act as themselves: the resolved actor id
+     * is returned regardless of what the request claims. An admin-type
+     * profile may legitimately act on/view another teacher's data, so for
+     * admins the client-supplied teacher_id/created_by/user_id is honoured.
+     *
+     * @return int|JsonResponse The acting teacher's real user id, or a 401/403 JsonResponse to return as-is.
+     */
+    private function resolveActingTeacherId(Request $request)
     {
         try {
             if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 200);
+                return response()->json(['status' => '2', 'message' => 'Token Auth Failed', 'data' => []], 401);
             }
         } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
+            return response()->json(['status' => '2', 'message' => $e->getMessage(), 'data' => []], 401);
+        }
 
-            return response()->json($response, 200);
+        $authorization = (string) $request->header('Authorization');
+        $token = preg_replace('/^Bearer\s+/i', '', $authorization);
+        $parts = explode('.', $token);
+        $payload = [];
+        if (count($parts) === 3) {
+            $decoded = base64_decode(strtr($parts[1], '-_', '+/'));
+            $payload = json_decode($decoded ?: '{}', true) ?: [];
+        }
+
+        $actorId = (int) ($payload['id'] ?? 0);
+        $tenantId = (int) ($payload['sub_institute_id'] ?? 0);
+
+        if ($actorId <= 0) {
+            return response()->json(['status' => '2', 'message' => 'Token context could not be resolved.', 'data' => []], 403);
+        }
+
+        $actor = DB::table('tbluser as u')
+            ->join('tbluserprofilemaster as p', 'p.id', '=', 'u.user_profile_id')
+            ->select('u.id', 'u.is_admin', 'p.name as profile_name', 'p.parent_id as profile_parent_id')
+            ->where('u.id', $actorId)
+            ->where('u.sub_institute_id', $tenantId)
+            ->where('u.status', 1)
+            ->first();
+
+        if (! $actor) {
+            return response()->json(['status' => '2', 'message' => 'Active user context was not found.', 'data' => []], 403);
+        }
+
+        if (! $this->isAdminActorProfile($actor)) {
+            return $actorId;
+        }
+
+        // Admins may legitimately act on/view another teacher's data.
+        foreach (['teacher_id', 'created_by', 'user_id'] as $field) {
+            if ($request->has($field) && $request->input($field) !== '' && $request->input($field) !== null) {
+                return (int) $request->input($field);
+            }
+        }
+
+        return $actorId;
+    }
+
+    /**
+     * Mirrors RoleDashboardApiController::isAdminProfile() (is_admin flag,
+     * tbluserprofilemaster.parent_id = 1, or a known admin profile name).
+     */
+    private function isAdminActorProfile($actor): bool
+    {
+        if ((int) ($actor->is_admin ?? 0) === 1 || (int) ($actor->is_admin ?? 0) === 2) {
+            return true;
+        }
+
+        if ((int) ($actor->profile_parent_id ?? 0) === 1) {
+            return true;
+        }
+
+        $normalized = strtolower(trim((string) ($actor->profile_name ?? '')));
+
+        return in_array($normalized, ['super admin', 'admin', 'school admin'], true);
+    }
+
+    public function teacher_homescreen(Request $request)
+    {
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $payload = $this->jwtPayload();
@@ -130,16 +213,9 @@ class teacherapiController extends Controller
 
     public function teacherSocialCollabrativeAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $teacher_id = $request->input("teacher_id");
@@ -213,16 +289,9 @@ class teacherapiController extends Controller
 
     public function add_teacherSocialCollabrativeAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $response = [];
@@ -237,7 +306,7 @@ class teacherapiController extends Controller
         if ($validator->fails()) {
             $response['response'] = $validator->messages();
         } else {
-            $teacher_id = $request->input("teacher_id");
+            $teacher_id = $actingTeacherId;
             $user_data = tbluserModel::select("*")->where('id', "=", $teacher_id)->where('status',1)->get()->toArray(); // 23-04-24 by uma
             $user_profile_id = $user_data[0]['user_profile_id'];
 
@@ -261,16 +330,9 @@ class teacherapiController extends Controller
 
     public function add_teacherContentAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $response = [];
@@ -330,7 +392,7 @@ class teacherapiController extends Controller
                 'show_hide'        => "1",
                 'sort_order'       => $request->get('sort_order'),
                 'meta_tags'        => $request->get('meta_tags'),
-                'created_by'       => $request->get('teacher_id'),
+                'created_by'       => $actingTeacherId,
                 'sub_institute_id' => $request->get('sub_institute_id'),
                 'restrict_date'    => $request->get('restrict_date'),
                 'basic_advance'    => "1",
@@ -348,16 +410,9 @@ class teacherapiController extends Controller
 
     public function add_teacherVirtualClassroomAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $response = [];
@@ -406,7 +461,7 @@ class teacherapiController extends Controller
                 'sort_order'       => $request->get('sort_order'),
                 'syear'            => $request->get('syear'),
                 'sub_institute_id' => $request->get('sub_institute_id'),
-                'created_by'       => $request->get('teacher_id'),
+                'created_by'       => $actingTeacherId,
                 'created_ip'       => $created_ip,
             ];
 
@@ -421,19 +476,12 @@ class teacherapiController extends Controller
 
     public function get_teacherVirtualClassroomAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
-        $teacher_id = $request->input("teacher_id");
+        $teacher_id = $actingTeacherId;
         $type = $request->input("type");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
@@ -476,16 +524,9 @@ class teacherapiController extends Controller
 
     public function get_teacherResourceFieldAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $sub_institute_id = $request->get('sub_institute_id');
@@ -530,19 +571,12 @@ class teacherapiController extends Controller
 
     public function get_teacherResourceAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
-        $teacher_id = $request->input("teacher_id");
+        $teacher_id = $actingTeacherId;
         $type = $request->input("type");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
@@ -586,16 +620,9 @@ class teacherapiController extends Controller
 
     public function add_teacherResourceAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $response = [];
@@ -644,7 +671,7 @@ class teacherapiController extends Controller
                 'file_size'        => $size,
                 'status'           => "1",
                 'sub_institute_id' => $request->get('sub_institute_id'),
-                'created_by'       => $request->get('teacher_id'),
+                'created_by'       => $actingTeacherId,
             ];
 
             //START Add Dynamic Field data
@@ -669,16 +696,9 @@ class teacherapiController extends Controller
 
     public function add_teacherQuestionAnswerAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $response = [];
@@ -721,7 +741,7 @@ class teacherapiController extends Controller
                 'multiple_answer'  => "0",
                 'sub_institute_id' => $request->get('sub_institute_id'),
                 'status'           => "1",
-                'created_by'       => $request->get('teacher_id'),
+                'created_by'       => $actingTeacherId,
                 'hint_text'        => $request->get('question_hint'),
             ];
 
@@ -741,7 +761,7 @@ class teacherapiController extends Controller
                     'question_id'      => $question_id,
                     'answer'           => $val,
                     'correct_answer'   => $correct_answer_val,
-                    'created_by'       => $request->get('teacher_id'),
+                    'created_by'       => $actingTeacherId,
                     'sub_institute_id' => $request->get('sub_institute_id'),
                 ];
 
@@ -758,16 +778,9 @@ class teacherapiController extends Controller
 
     public function add_teacherStudentDisciplineAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $response = [];
@@ -782,7 +795,7 @@ class teacherapiController extends Controller
             $response['response'] = $validator->messages();
         } else {
             $result = DB::table('tbluser')->selectRaw("CONCAT(first_name,' ',last_name) as name")
-                ->where('id', $request->get('teacher_id'))->where('status',1)->get()->toArray(); // 23-04-24 by uma
+                ->where('id', $actingTeacherId)->where('status',1)->get()->toArray(); // 23-04-24 by uma
 
             $teacher_name = $result[0]->name;
 
@@ -815,7 +828,7 @@ $data[] = $dataArray;
                     'message'          => $val['message'],
                     'date_'            => date('Y-m-d'),
                     'sub_institute_id' => $request->get('sub_institute_id'),
-                    'created_by'       => $request->get('teacher_id'),
+                    'created_by'       => $actingTeacherId,
                     'created_at'       => now(),
                     'updated_at'       => now(),
                 ]);
@@ -830,16 +843,9 @@ $data[] = $dataArray;
 
     public function get_teacherSubjectAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $type = $request->input("type");
@@ -870,16 +876,9 @@ $data[] = $dataArray;
 
     public function get_teacherContentAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $type = $request->input("type");
@@ -944,22 +943,15 @@ $data[] = $dataArray;
 
     public function get_teacher_timetablewiseStandard(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $type = $request->input("type");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
-        $teacher_id = $request->input("teacher_id");
+        $teacher_id = $actingTeacherId;
 
         $response = [];
         $validator = Validator::make($request->all(), [
@@ -989,22 +981,15 @@ $data[] = $dataArray;
 
     public function get_teacher_timetablewiseSubject(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $type = $request->input("type");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
-        $teacher_id = $request->input("teacher_id");
+        $teacher_id = $actingTeacherId;
         $standard_id = $request->input("standard_id");
 
         $response = [];
@@ -1039,22 +1024,15 @@ $data[] = $dataArray;
 
     public function get_teacher_timetablewiseDivision(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $type = $request->input("type");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
-        $teacher_id = $request->input("teacher_id");
+        $teacher_id = $actingTeacherId;
         $standard_id = $request->input("standard_id");
 
         $response = [];
@@ -1097,16 +1075,9 @@ $data[] = $dataArray;
 
     public function add_teacherLessonPlanning(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $response = [];
@@ -1134,7 +1105,7 @@ $data[] = $dataArray;
                 'division_id'      => $request->get('division_id'),
                 'grade_id'         => '1',
                 'user_group_id'    => $request->get('user_profile_id'),
-                'teacher_id'       => $request->get('teacher_id'),
+                'teacher_id'       => $actingTeacherId,
                 'syear'            => $request->get('syear'),
                 'sub_institute_id' => $request->get('sub_institute_id'),
                 'created_at'       => now(),
@@ -1151,16 +1122,9 @@ $data[] = $dataArray;
 
     public function add_teacherLessonPlanningExecution(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $response = [];
@@ -1192,7 +1156,7 @@ $data[] = $dataArray;
                 'standard_id'       => $lessonplan_DATA['standard_id'],
                 'division_id'       => $lessonplan_DATA['division_id'],
                 'subject_id'        => $lessonplan_DATA['subject_id'],
-                'teacher_id'        => $request->get('teacher_id'),
+                'teacher_id'        => $actingTeacherId,
                 'lessonplan_id'     => $request->get('lessonplan_id'),
                 'lessonplan_status' => $request->get('status'),
                 'lessonplan_reason' => $request->get('reason'),
@@ -1211,16 +1175,9 @@ $data[] = $dataArray;
     /* START PTM Module Teacher API*/
     public function get_teacherPTMBookingList(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $response = [];
@@ -1247,7 +1204,7 @@ $data[] = $dataArray;
                     pb.SUB_INSTITUTE_ID,pb.PTM_ATTENDED_STATUS,pb.PTM_ATTENDED_REMARKS,pb.PTM_ATTENDED_ENTRY_DATE,
                     ps.from_time AS FROM_TIME,ps.to_time AS TO_TIME,ps.ptm_date AS PTM_DATE")
                 ->where('pb.SUB_INSTITUTE_ID', $request->get('sub_institute_id'))
-                ->where('pb.TEACHER_ID', $request->get('teacher_id'))
+                ->where('pb.TEACHER_ID', $actingTeacherId)
                 ->where('se.syear', $request->get('syear'))
                 ->get()->toArray();
 
@@ -1261,16 +1218,9 @@ $data[] = $dataArray;
 
     public function add_teacherPTMStatus(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $response = [];
@@ -1291,7 +1241,7 @@ $data[] = $dataArray;
 
             $PTMArray['PTM_ATTENDED_REMARKS'] = $request->get('remarks');
             $PTMArray['PTM_ATTENDED_STATUS'] = $request->get('status');
-            $PTMArray['PTM_ATTENDED_BY'] = $request->get('teacher_id');
+            $PTMArray['PTM_ATTENDED_BY'] = $actingTeacherId;
             $PTMArray['PTM_ATTENDED_ENTRY_DATE'] = $request->get('entry_date');
             $PTMArray['PTM_ATTENDED_CREATED_IP'] = $request->get('ip_address');
             $booking_id = $request->get('booking_id');
@@ -1313,16 +1263,9 @@ $data[] = $dataArray;
 
     public function get_teacherResultExamList(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $response = [];
@@ -1357,16 +1300,9 @@ $data[] = $dataArray;
 
     public function get_teacherResultCoscholasticParentList(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $response = [];
@@ -1391,16 +1327,9 @@ $data[] = $dataArray;
 
     public function get_teacherResultCoscholasticList(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $response = [];
@@ -1428,16 +1357,9 @@ $data[] = $dataArray;
 
     public function add_teacherExamSchedule(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $response = [];
@@ -1495,20 +1417,13 @@ $data[] = $dataArray;
 
     public function get_teachertaskAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $sub_institute_id = $request->input("sub_institute_id");
-        $teacher_id = $request->input("teacher_id");
+        $teacher_id = $actingTeacherId;
         $syear = $request->input("syear");
 
         $response = [];
@@ -1554,21 +1469,14 @@ $data[] = $dataArray;
     public function add_teachertaskAPI(Request $request)
     {
 
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $syear = $request->get('syear');
         $sub_institute_id = $request->get('sub_institute_id');
-        $teacher_id = $request->get('teacher_id');
+        $teacher_id = $actingTeacherId;
         $title = $request->get('title');
         $date = $request->get('date');
         $allocated_to = $request->get('allocated_to');
@@ -1621,22 +1529,15 @@ $data[] = $dataArray;
 
     public function get_teacherRequisitionAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $type = $request->input("type");
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
-        $teacher_id = $request->input("teacher_id");
+        $teacher_id = $actingTeacherId;
 
         $response = [];
         $validator = Validator::make($request->all(), [
@@ -1681,29 +1582,25 @@ $data[] = $dataArray;
 
     public function add_teacherRequisitionAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
 
         $syear = $request->get('syear');
         $sub_institute_id = $request->get('sub_institute_id');
-        $requisition_by = $request->get('requisition_by');
+        // Both requisition_by (who the requisition is for) and created_by (who submitted
+        // it) are treated as the acting teacher's identity — a non-admin teacher can only
+        // ever raise a requisition as themselves; an admin may act on a teacher's behalf.
+        $requisition_by = $actingTeacherId;
         $requisition_date = date('Y-m-d H:i:s');
         $item_id = $request->get('item_id');
         $item_unit = $request->get('item_unit');
         $item_qty = $request->get('item_qty');
         $expected_delivery_time = $request->get('expected_delivery_time');
         $remarks = $request->get('remarks');
-        $created_by = $request->get('created_by');
+        $created_by = $actingTeacherId;
         $created_ip_address = $request->get('created_ip_address');
 
         $response = [];
@@ -1759,19 +1656,12 @@ $data[] = $dataArray;
 
     public function get_teachercomplaintAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
-        $teacher_id = $request->input("teacher_id");
+        $teacher_id = $actingTeacherId;
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
 
@@ -1815,21 +1705,14 @@ $data[] = $dataArray;
 
     public function add_teachercomplaintAPI(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $syear = $request->get('syear');
         $sub_institute_id = $request->get('sub_institute_id');
-        $teacher_id = $request->get('teacher_id');
+        $teacher_id = $actingTeacherId;
         $title = $request->get('title');
         $date = $request->get('date');
         $allocated_to = $request->get('allocated_to');
@@ -1881,20 +1764,13 @@ $data[] = $dataArray;
 
     public function get_teacherExamSchedule(Request $request)
     {
-        try {
-            if (! $this->jwtToken()->validate()) {
-                $response = ['status' => '2', 'message' => 'Token Auth Failed', 'data' => []];
-
-                return response()->json($response, 401);
-            }
-        } catch (\Exception $e) {
-            $response = ['status' => '2', 'message' => $e->getMessage(), 'data' => []];
-
-            return response()->json($response, 401);
+        $actingTeacherId = $this->resolveActingTeacherId($request);
+        if ($actingTeacherId instanceof JsonResponse) {
+            return $actingTeacherId;
         }
 
         $type = $request->input("type");
-        $teacher_id = $request->input("teacher_id");
+        $teacher_id = $actingTeacherId;
         $sub_institute_id = $request->input("sub_institute_id");
         $syear = $request->input("syear");
 

@@ -655,6 +655,13 @@ class CapabilityLibraryController extends Controller
             if ($status = $this->activeFilter($request->input('status'))) {
                 $query->where('status', $status);
             }
+            // Scopes the catalogue to one department's roles - used by the
+            // Department Management job-roles panel/wizard step, which has
+            // no use for `department` (the free-text name column above) and
+            // needs the real foreign key instead.
+            if ($departmentId = $this->activeFilter($request->input('department_id'))) {
+                $query->where('department_id', $departmentId);
+            }
         }
 
         if ($type === 'jobrole-task') {
