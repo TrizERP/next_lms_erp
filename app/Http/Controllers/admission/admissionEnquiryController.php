@@ -14,6 +14,7 @@ use App\Models\settings\tblfields_dataModel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use function App\Helpers\is_mobile;
 use function App\Helpers\sendSMS;
 use function App\Helpers\SearchStudent;
@@ -384,16 +385,42 @@ class admissionEnquiryController extends Controller
         else if($type=='webForm'){
             $sub_institute_id = $request->get('sub_institute_id');
             $syear = $request->get('syear');
+        }
 
-            $check = DB::table('admission_enquiry')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'first_name'=>$request->first_name,'last_name'=>$request->last_name,'mobile'=>$request->mobile])->first();
-            // return $check;
+        // Validate the incoming enquiry payload on every path (API, webForm, and default/admin form).
+        $validator = Validator::make($request->all(), [
+            'first_name'    => 'required|string|max:50',
+            'last_name'     => 'required|string|max:50',
+            'mobile'        => ['nullable', 'regex:/^[1-9][0-9]{9}$/'],
+            'date_of_birth' => 'nullable|date|after:1900-01-01|before_or_equal:today',
+        ]);
 
-            if(!empty($check) && isset($check->id)){
-                $res['status_code'] = 0;
-                $res['message'] = "Admission enquiry already exists";
-                $res['data'] = [];
+        if ($validator->fails()) {
+            $res['status_code'] = 0;
+            $res['message'] = $validator->errors()->first();
+            $res['data'] = $validator->errors()->toArray();
+
+            if ($type == 'webForm') {
                 return redirect('admission_enquiry?sub_institute_id='.$request->sub_institute_id.'&syear='.$request->syear.'&type=webForm')->with(['data'=>$res]);
             }
+
+            return is_mobile($type, "admission_enquiry.index", $res);
+        }
+
+        // Duplicate-enquiry guard (first_name + last_name + mobile), now enforced on every path
+        // (previously only ran inside the webForm branch, allowing default/API duplicate submissions).
+        $check = DB::table('admission_enquiry')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'first_name'=>$request->first_name,'last_name'=>$request->last_name,'mobile'=>$request->mobile])->first();
+
+        if(!empty($check) && isset($check->id)){
+            $res['status_code'] = 0;
+            $res['message'] = "Admission enquiry already exists";
+            $res['data'] = [];
+
+            if ($type == 'webForm') {
+                return redirect('admission_enquiry?sub_institute_id='.$request->sub_institute_id.'&syear='.$request->syear.'&type=webForm')->with(['data'=>$res]);
+            }
+
+            return is_mobile($type, "admission_enquiry.index", $res);
         }
 
         $data = $request->except([
@@ -584,9 +611,6 @@ class admissionEnquiryController extends Controller
                 }
             }
         } else {
-            if (isset($data['sibling_in_anandniketan']) && is_array($data['sibling_in_anandniketan'])) {
-                $data['sibling_in_anandniketan'] = implode(',', $data['sibling_in_anandniketan']);
-            }
             admissionEnquiryModel::insert($data);
             $last_inserted_id = DB::getPdo()->lastInsertId();
             if (isset($data['send_sms']) && $data['send_sms'] == 1) {
@@ -811,6 +835,7 @@ class admissionEnquiryController extends Controller
             $nextYear = ((int) substr($syear, 2, 2)+1);
             $getStandard = DB::table('standard')->where(['id'=>$data['admission_standard'],'sub_institute_id'=>$sub_institute_id])->first();
             $standard_id = $getStandard->id?? '';
+
             $activityDate = null;
 
             if (!empty($data["activity_date"])) {
@@ -827,12 +852,23 @@ class admissionEnquiryController extends Controller
                 }
             }
 
+            // activity_time can be submitted as a time or as a database datetime.
+            // Format it before rendering the email so parents see the selected AM/PM
+            // time rather than a raw value such as "2026-08-27 12:19:00".
+            $activityTime = $data['activity_time'] ?? '';
+            if ($activityTime !== '') {
+                try {
+                    $activityTime = Carbon::parse($activityTime)->format('h:i A');
+                } catch (\Exception $e) {
+                    // Preserve the original value if it cannot be parsed.
+                }
+            }
 
             if ($standard_id == 3291) {
                 $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
                     'page_type'=>'parent',
                     'parent_date' => $activityDate ?? '',
-                    'parent_time' => $data["activity_time"] ?? '',
+                    'parent_time' => $activityTime,
                     'aca_year'    => $syear.'-'.$nextYear,
                     'admission_std'    => $getStandard->name ?? '-',
                 ])->render();
@@ -840,7 +876,7 @@ class admissionEnquiryController extends Controller
                 $htmlContent = view('admission.registrationHills.admissionEnquiryStd2to9', [
                     'page_type'=>'parent',
                     'parent_date' => $activityDate ?? '',
-                    'parent_time' => $data["activity_time"] ?? '',
+                    'parent_time' => $activityTime,
                     'aca_year'    => $syear.'-'.$nextYear,
                     'admission_std'    => $getStandard->name ?? '-',
                 ])->render();   
@@ -861,7 +897,7 @@ class admissionEnquiryController extends Controller
             // send email from here
             $sendController = new admissionRegistrationHillController;
             $sendEmail = $sendController->sendEmail($emailRequest);
-            // echo "<pre>";print_r($sendEmail);exit;
+            //echo "<pre>";print_r($sendEmail);exit;
         }
         $res['status_code'] = "1";
         $res['message'] = "Updated successfully";

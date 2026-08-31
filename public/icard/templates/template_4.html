@@ -12,8 +12,8 @@
         border: 0;
         border-collapse: collapse;
         border-spacing: 0;
-        overflow: hidden;
         width: 100%;
+        margin-top: 12%;
     }
 
     .icard-item {
@@ -22,18 +22,18 @@
     }
 
     .icard-left {
-        width: 50%;
+        width: 55%;
     }
 
     .icard-right {
-        width: 50%;
+        width: 45%;
         margin-right: 5%;
-        margin-left: 15%;
+        margin-left: 14%;
     }    
 
     .icard-content {
-        margin-top: 40%;
-        margin-bottom: 10%;
+        height: 69mm !important;
+        overflow: hidden !important;
     }
 
     .icard-division {
@@ -41,7 +41,7 @@
         font-size: 24px !important;
         color: #000000;
         -webkit-text-fill-color: #000000;
-        margin-right: 15%;
+        margin-right: 10%;
     }
 
     .icard-enrollment {
@@ -50,15 +50,15 @@
         margin-top: -8px;
         color: #000000;
         -webkit-text-fill-color: #000000;
-        margin-right: 20%;
+        margin-right: 15%;
     }
 
     .icard-student-name {
         font-size: 17px !important;
         color: #000000;
         -webkit-text-fill-color: #000000;
-        margin-top: 20px;
-        /*margin-bottom: 10px;*/
+        margin-top: 15px;
+        margin-bottom: 5px;
     }
 
     .icard-address {
@@ -140,143 +140,138 @@
     ============================== */
 
     @media print {
-        .icard-content,
-        .icard-content * {
-            font-family: "Josefin Sans", sans-serif !important;
-            font-weight: bold;
-        }
+    .icard-content,
+    .icard-content * {
+        font-family: "Josefin Sans", sans-serif !important;
+        font-weight: bold;
+    }
 
-        .icard-wrapper {
-            width: 100%;
-            overflow: hidden;
-            border: 0;
-            margin: 0;
-            padding: 0;
-        }
+    .icard-wrapper {
+        border: 0;
+        border-collapse: collapse;
+        border-spacing: 0;
+        width: 100%;
+        margin-top: 12%;
+    }
+    .icard-item {
+        width: 100%;
+        overflow: hidden;
+        page-break-inside: avoid;
+        break-inside: avoid;
+    }
 
-        .icard-item {
-            width: 100%;
-            overflow: hidden;
-            page-break-inside: avoid;
-            break-inside: avoid;
-        }
+    .icard-left {
+        width: 55%;
+    }
 
-        .icard-left {
-	        width: 50%;
-	    }
+    .icard-right {
+        width: 45%;
+        margin-right: 5%;
+        margin-left: 14%;
+    }    
 
-	    .icard-left {
-            width: 50%;
-        }
+    .icard-content {
+        height: 69mm !important;
+        overflow: hidden !important;
+    }
 
-        .icard-right {
-            width: 50%;
-            margin-right: 5%;
-            margin-left: 15%;
-        }    
+    .icard-division {
+        text-align: right;
+        font-size: 24px !important;
+        color: #000000;
+        -webkit-text-fill-color: #000000;
+        margin-right: 10%;
+    }
 
-        .icard-content {
-            margin-top: 40%;
-            margin-bottom: 10%;
-        }
+    .icard-enrollment {
+        text-align: right;
+        font-size: 12px !important;
+        margin-top: -8px;
+        color: #000000;
+        -webkit-text-fill-color: #000000;
+        margin-right: 15%;
+    }
 
-        .icard-division {
-            text-align: right;
-            font-size: 24px !important;
-            color: #000000;
-            -webkit-text-fill-color: #000000;
-            margin-right: 15%;
-        }
+    .icard-student-name {
+        font-size: 17px !important;
+        color: #000000;
+        -webkit-text-fill-color: #000000;
+        margin-top: 15px;
+        margin-bottom: 5px;
+    }
 
-        .icard-enrollment {
-            text-align: right;
-            font-size: 12px !important;
-            margin-top: -8px;
-            color: #000000;
-            -webkit-text-fill-color: #000000;
-            margin-right: 20%;
-        }
+    .icard-address {
+        font-size: 15px !important;
+        height: 55px;
+        overflow: hidden;
+        line-height: 25px;
+        padding-left: 0px;
+        vertical-align: text-top;
+        color: #000000;
+        -webkit-text-fill-color: #000000;
+    }
 
-        .icard-student-name {
-            font-size: 17px !important;
-            color: #000000;
-            -webkit-text-fill-color: #000000;
-            margin-top: 20px;
-            /*margin-bottom: 10px;*/
-        }
+    .icard-mobile-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
 
-        .icard-address {
-            font-size: 15px !important;
-            height: 55px;
-            overflow: hidden;
-            line-height: 25px;
-            padding-left: 0px;
-            vertical-align: text-top;
-            color: #000000;
-            -webkit-text-fill-color: #000000;
-        }
+    .icard-mobile-left {
+        font-size: 15px !important;
+        padding-left: 0px;
+        color: #000000;
+        -webkit-text-fill-color: #000000;
+    }
 
-        .icard-mobile-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 10px;
-        }
+    .icard-mobile-right {
+        font-size: 15px !important;
+        text-align: right;
+        margin-right: 15px;
+        color: #000000;
+        -webkit-text-fill-color: #000000;
+    }
 
-        .icard-mobile-left {
-            font-size: 15px !important;
-            padding-left: 0px;
-            color: #000000;
-            -webkit-text-fill-color: #000000;
-        }
+    .icard-driver-row {
+        padding-left: 0px;
+        display: flex;
+        justify-content: space-between;
+    }
 
-        .icard-mobile-right {
-            font-size: 15px !important;
-            text-align: right;
-            margin-right: 15px;
-            color: #000000;
-            -webkit-text-fill-color: #000000;
-        }
+    .icard-driver-info {
+        color: #000000;
+        -webkit-text-fill-color: #000000;
+    }
 
-        .icard-driver-row {
-            padding-left: 0px;
-            display: flex;
-            justify-content: space-between;
-        }
+    .icard-driver-name {
+        font-size: 17px !important;
+        color: #000000;
+        -webkit-text-fill-color: #000000;
+    }
 
-        .icard-driver-info {
-            color: #000000;
-            -webkit-text-fill-color: #000000;
-        }
+    .icard-driver-mobile {
+        font-size: 15px !important;
+        color: #000000;
+        -webkit-text-fill-color: #000000;
+    }
 
-        .icard-driver-name {
-            font-size: 17px !important;
-            color: #000000;
-            -webkit-text-fill-color: #000000;
-        }
+    .icard-distance-row {
+        display: flex;
+        align-items: center;
+    }
 
-        .icard-driver-mobile {
-            font-size: 15px !important;
-            color: #000000;
-            -webkit-text-fill-color: #000000;
-        }
+    .icard-distance {
+        padding-right: 10px;
+        font-size: 13px !important;
+        color: #000000;
+        -webkit-text-fill-color: #000000;
+    }
 
-        .icard-distance-row {
-            display: flex;
-            align-items: center;
-        }
-
-        .icard-distance {
-            padding-right: 10px;
-            font-size: 13px !important;
-            color: #000000;
-            -webkit-text-fill-color: #000000;
-        }
-
-        .icard-icon {
-            border: 1px solid;
-            height: auto;
-            width: 35px;
-        }
+    .icard-icon {
+        border: 1px solid;
+        height: auto;
+        width: 35px;
+    }
    }
 </style>
 
