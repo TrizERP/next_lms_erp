@@ -40,4 +40,14 @@ interface SignalDetector
      * @return array<int, DetectedSignal>
      */
     public function detect(McpRequestContext $context, ?array $subjectIds = null, int $limit = 100): array;
+
+    /**
+     * What the last `detect()` call was able to judge, or null if it has not run.
+     *
+     * Returning no signals is ambiguous — it means either "nobody is at risk" or "I had
+     * nothing to go on" — and a caller reporting the first when it was the second is
+     * making a claim about a school on the strength of missing rows. This is how a
+     * detector says which of the two it meant.
+     */
+    public function coverage(): ?DetectorCoverage;
 }

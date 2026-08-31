@@ -22,6 +22,16 @@ class FeesPendingService
             'syear' => $context->academicYear,
         ]);
 
+        // `studentFeesDetailAPI` writes the tenant and year into the session, and the
+        // arrears engine underneath it (`getBk`) reads them back from there rather than
+        // from its arguments. A request built with `Request::create()` carries no session
+        // store at all, so that write threw "Session store not set on request." and the
+        // whole call failed — in every context, not just the console.
+        //
+        // Binding the container's own store keeps one session instance, so what the
+        // controller puts is what the global `session()` helper inside `getBk` reads.
+        $request->setLaravelSession(app('session.store'));
+
         $payload = json_decode((string) $controller->studentFeesDetailAPI($request), true) ?: [];
         $data = $payload['data'] ?? [];
         $student = $data['STU_DATA'] ?? [];

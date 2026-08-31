@@ -2,6 +2,7 @@
 
 namespace App\Domain\AI\Conversation;
 
+use App\Domain\AI\Lifecycle\RecordableTrace;
 use App\Services\Mcp\McpRequestContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -34,6 +35,19 @@ class ConversationStore
         'agent_run_id',
         'last_intent',
         'last_case_list',
+        /*
+         * A task the thread is part-way through.
+         *
+         * Everything else here is a referent — a noun an later turn can point at. This
+         * is different: it is a task with state, and it is what makes a multi-turn
+         * exchange possible at all. Confirming an admission takes three turns because
+         * the estate needs seven fields and the user has four of them; without somewhere
+         * to park "we are collecting fields for enquiry 21", each turn would start over
+         * and the flow could never finish.
+         *
+         * Shape: {kind, ...task state}. Cleared with forgetOn(), never by writing null.
+         */
+        'pending_action',
     ];
 
     /**
@@ -176,7 +190,10 @@ class ConversationStore
         string $question,
         Intent $intent,
         array $answer,
-        FlowTrace $trace,
+        // Widened from FlowTrace so both pipelines can record a turn: the legacy
+        // fifteen-stage ladder and the twelve-stage lifecycle store identically, which
+        // is what lets the cutover happen module by module rather than all at once.
+        RecordableTrace $trace,
         array $links,
         int $durationMs,
         ?string $error = null
@@ -259,6 +276,45 @@ class ConversationStore
             'turn_count' => $sequence > 0 ? $sequence : (int) $row->turn_count,
             'title' => $row->title ?: ($question ? mb_substr($question, 0, 200) : null),
             'last_turn_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    /**
+     * Drop keys from a thread's memory.
+     *
+     * `rememberOn()` deliberately never lets a null overwrite a value, so a turn that
+     * does not mention a case cannot erase the case the thread is about. That rule is
+     * right for referents and wrong for tasks: without an explicit way to forget, a
+     * half-finished admission would follow the user for the rest of the conversation
+     * and there would be no way to cancel it. Hence a separate, obvious verb rather
+     * than a magic value threaded through the merge.
+     *
+     * @param  array<int, string>  $keys
+     */
+    public function forgetOn(int $conversationId, McpRequestContext $scope, array $keys): void
+    {
+        if ($keys === [] || ! Schema::hasTable('ai_conversations')) {
+            return;
+        }
+
+        $row = DB::table('ai_conversations')
+            ->where('id', $conversationId)
+            ->where('sub_institute_id', $scope->selectedInstituteId)
+            ->first();
+
+        if (! $row) {
+            return;
+        }
+
+        $memory = $this->decode($row->memory);
+
+        foreach ($keys as $key) {
+            unset($memory[$key]);
+        }
+
+        DB::table('ai_conversations')->where('id', $conversationId)->update([
+            'memory' => json_encode($memory),
             'updated_at' => now(),
         ]);
     }

@@ -4,6 +4,7 @@ namespace App\Domain\K12\AcademicRisk;
 
 use App\Domain\AI\Evidence\EvidenceItem;
 use App\Domain\AI\Signals\DetectedSignal;
+use App\Domain\AI\Signals\DetectorCoverage;
 use App\Domain\AI\Signals\SignalDetector;
 use App\Domain\AI\Signals\ThresholdRegistry;
 use App\Services\Mcp\McpRequestContext;
@@ -33,10 +34,40 @@ class AssessmentDeclineDetector implements SignalDetector
     /** Below this proportion of marks an attempt counts as a weak result outright. */
     private const WEAK_RESULT_RATIO = 0.4;
 
+    /**
+     * How far back an attempt may sit and still count towards "recent".
+     *
+     * A term rather than the attendance detector's 45 days, because assessments are
+     * far sparser than attendance days and a tighter window would leave most students
+     * with nothing to compare. But it must be bounded: without any window at all this
+     * detector was slicing a student's whole exam history into "recent" and "previous",
+     * so a paper sat in 2023 became the baseline for a paper sat last week. That is not
+     * a decline, and reporting it as one put a case in front of a teacher on the
+     * strength of a three-year-old result.
+     */
+    private const LOOKBACK_DAYS = 180;
+
+    /**
+     * Attempts answering fewer questions than this are ignored.
+     *
+     * A one-question quiz scores 0% or 100% and nothing else. Two of them landing in
+     * the recent window moved a student's average by 33 points and switched a live
+     * signal off overnight, which is noise being read as a finding. Three questions is
+     * the smallest number at which a ratio carries any information at all.
+     */
+    private const MIN_ANSWERED_QUESTIONS = 3;
+
+    private ?DetectorCoverage $coverage = null;
+
     public function __construct(
         private readonly StudentScope $scope,
         private readonly ThresholdRegistry $thresholds,
     ) {
+    }
+
+    public function coverage(): ?DetectorCoverage
+    {
+        return $this->coverage;
     }
 
     public function key(): string
@@ -66,20 +97,36 @@ class AssessmentDeclineDetector implements SignalDetector
      */
     public function detect(McpRequestContext $context, ?array $subjectIds = null, int $limit = 100): array
     {
+        $requirement = sprintf(
+            'needs at least 2 assessment attempts of %d or more questions within the last %d days.',
+            self::MIN_ANSWERED_QUESTIONS,
+            self::LOOKBACK_DAYS
+        );
+
         if (! Schema::hasTable('lms_online_exam')) {
+            $this->coverage = new DetectorCoverage(self::KEY, 0, 0, 0, $requirement);
+
             return [];
         }
 
-        $students = $this->scope->students($context, $subjectIds, max($limit, 1));
+        // `$limit` caps how many signals come back, not how many students are read.
+        // Passing it as the cohort size meant a scan that wanted 50 findings only ever
+        // looked at 50 students.
+        $students = $this->scope->students($context, $subjectIds);
 
         if ($students === []) {
+            $this->coverage = new DetectorCoverage(self::KEY, 0, 0, 0, $requirement);
+
             return [];
         }
 
         // One query for the whole cohort rather than one per student: this runs over
         // a class, and per-student queries would make a 40-student sweep 40 round trips.
+        // The date bound is what keeps that single query proportionate now that the
+        // cohort is the whole school rather than an arbitrary fifty.
         $attempts = DB::table('lms_online_exam')
             ->whereIn('student_id', array_keys($students))
+            ->where('created_at', '>=', now()->subDays(self::LOOKBACK_DAYS))
             ->orderBy('student_id')
             ->orderByDesc('created_at')
             ->orderByDesc('id')
@@ -87,6 +134,7 @@ class AssessmentDeclineDetector implements SignalDetector
             ->groupBy('student_id');
 
         $signals = [];
+        $evaluated = 0;
 
         foreach ($students as $studentId => $studentName) {
             $studentAttempts = $attempts->get($studentId);
@@ -95,6 +143,8 @@ class AssessmentDeclineDetector implements SignalDetector
                 // Nothing to compare. Not a finding — silence is the correct answer.
                 continue;
             }
+
+            $evaluated++;
 
             $signal = $this->evaluate($studentId, $studentName, $studentAttempts->all(), $context);
 
@@ -106,6 +156,14 @@ class AssessmentDeclineDetector implements SignalDetector
                 break;
             }
         }
+
+        $this->coverage = new DetectorCoverage(
+            self::KEY,
+            count($students),
+            $evaluated,
+            count($signals),
+            $requirement
+        );
 
         return $signals;
     }
@@ -268,7 +326,11 @@ class AssessmentDeclineDetector implements SignalDetector
         $answered = $right + $wrong;
 
         if ($answered > 0) {
-            return $right / $answered;
+            // An attempt too short to carry a meaningful ratio is discarded rather than
+            // averaged in. It is not fed to the marks fallback either: the counts are
+            // present and they are simply too few, which is a different thing from a row
+            // that never recorded them.
+            return $answered < self::MIN_ANSWERED_QUESTIONS ? null : $right / $answered;
         }
 
         // No question counts recorded — fall back to marks, treating 100 as the scale.

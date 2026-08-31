@@ -79,6 +79,7 @@ class AiServiceProvider extends ServiceProvider
         $this->registerWorkflow();
         $this->registerAgents();
         $this->registerWorkspace();
+        $this->registerLifecycle();
         $this->registerK12();
     }
 
@@ -211,7 +212,8 @@ class AiServiceProvider extends ServiceProvider
             $app->make(TemplateRegistry::class),
             $app->make(OutputValidator::class),
             $app->make(SafetyChecker::class),
-            $app->make(AiAuditLogger::class)
+            $app->make(AiAuditLogger::class),
+            $app->make(\App\Domain\AI\Support\OpenRouterClient::class)
         ));
     }
 
@@ -344,6 +346,119 @@ class AiServiceProvider extends ServiceProvider
             $app->make(GraphQueryService::class),
             $app->make(OntologyRegistry::class)
         ));
+    }
+
+    // ---- The twelve-stage lifecycle ----------------------------------------
+
+    /**
+     * One pipeline, twelve stages, one class each.
+     *
+     * The tagged list below is the lifecycle. Reading it tells you every stage the
+     * platform has, in one place, and the pipeline sorts them into execution order
+     * itself — so a stage cannot be accidentally left out of the middle of the ladder by
+     * a registration written in the wrong order.
+     *
+     * Everything here is additive. While `ai.lifecycle.enabled` is false these bindings
+     * are constructed but never invoked, and /ask keeps using the previous service.
+     */
+    private function registerLifecycle(): void
+    {
+        $this->app->singleton(\App\Domain\AI\Support\OpenRouterClient::class);
+
+        $this->app->singleton(
+            \App\Domain\AI\Lifecycle\Modules\ModuleRegistry::class,
+            fn ($app) => new \App\Domain\AI\Lifecycle\Modules\ModuleRegistry(
+                $app->make(AgentRegistry::class)
+            )
+        );
+
+        $this->app->singleton(
+            \App\Domain\AI\Lifecycle\Modules\ModuleResolver::class,
+            fn ($app) => new \App\Domain\AI\Lifecycle\Modules\ModuleResolver(
+                $app->make(\App\Domain\AI\Lifecycle\Modules\ModuleRegistry::class),
+                $app->make(RouteMatcher::class)
+            )
+        );
+
+        $this->app->singleton(
+            \App\Domain\AI\Lifecycle\Support\McpToolCaller::class,
+            fn ($app) => new \App\Domain\AI\Lifecycle\Support\McpToolCaller(
+                $app->make(\App\Mcp\ToolRegistry::class)
+            )
+        );
+
+        $this->app->singleton(
+            \App\Domain\AI\Lifecycle\Support\CaseResolver::class,
+            fn ($app) => new \App\Domain\AI\Lifecycle\Support\CaseResolver(
+                $app->make(CaseBuilder::class),
+                $app->make(EntityResolver::class)
+            )
+        );
+
+        // ---- planning: deterministic first, model second --------------------
+
+        $this->app->singleton(\App\Domain\AI\Lifecycle\Plan\DeterministicPlanner::class);
+
+        $this->app->singleton(
+            \App\Domain\AI\Lifecycle\Plan\LlmPlanner::class,
+            fn ($app) => new \App\Domain\AI\Lifecycle\Plan\LlmPlanner(
+                $app->make(\App\Domain\AI\Support\OpenRouterClient::class),
+                $app->make(\App\Mcp\ToolRegistry::class)
+            )
+        );
+
+        $this->app->singleton(
+            \App\Domain\AI\Lifecycle\Plan\HybridPlanner::class,
+            fn ($app) => new \App\Domain\AI\Lifecycle\Plan\HybridPlanner(
+                $app->make(\App\Domain\AI\Lifecycle\Plan\DeterministicPlanner::class),
+                $app->make(\App\Domain\AI\Lifecycle\Plan\LlmPlanner::class)
+            )
+        );
+
+        // ---- the twelve stages ----------------------------------------------
+
+        $this->app->tag([
+            \App\Domain\AI\Lifecycle\Stages\ConversationalAiStage::class,
+            \App\Domain\AI\Lifecycle\Stages\GenerativeAiStage::class,
+            \App\Domain\AI\Lifecycle\Stages\AgentStage::class,
+            \App\Domain\AI\Lifecycle\Stages\PlanningStage::class,
+            \App\Domain\AI\Lifecycle\Stages\McpToolSelectionStage::class,
+            \App\Domain\AI\Lifecycle\Stages\LaravelMcpStage::class,
+            \App\Domain\AI\Lifecycle\Stages\RealDataStage::class,
+            \App\Domain\AI\Lifecycle\Stages\EvidenceStage::class,
+            \App\Domain\AI\Lifecycle\Stages\ReasoningStage::class,
+            \App\Domain\AI\Lifecycle\Stages\RecommendationStage::class,
+            \App\Domain\AI\Lifecycle\Stages\HumanApprovalStage::class,
+            \App\Domain\AI\Lifecycle\Stages\ActionStage::class,
+        ], 'ai.lifecycle_stages');
+
+        $this->app->singleton(
+            \App\Domain\AI\Lifecycle\LifecyclePipeline::class,
+            fn ($app) => new \App\Domain\AI\Lifecycle\LifecyclePipeline(
+                $app->tagged('ai.lifecycle_stages')
+            )
+        );
+
+        $this->app->singleton(
+            \App\Domain\AI\Lifecycle\LifecycleAskService::class,
+            fn ($app) => new \App\Domain\AI\Lifecycle\LifecycleAskService(
+                $app->make(\App\Domain\AI\Lifecycle\Modules\ModuleResolver::class),
+                $app->make(\App\Domain\AI\Lifecycle\LifecyclePipeline::class),
+                $app->make(\App\Domain\AI\Conversation\ConversationStore::class),
+                $app->make(\App\Domain\AI\Conversation\AnswerComposer::class)
+            )
+        );
+
+        // The one place the cutover flag is read. Both the HTTP endpoint and
+        // `php artisan ai:journey` go through this, so the terminal can never be
+        // verifying a different pipeline than the API is serving.
+        $this->app->singleton(
+            \App\Domain\AI\Conversation\AskPipeline::class,
+            fn ($app) => new \App\Domain\AI\Conversation\AskPipeline(
+                $app->make(\App\Domain\AI\Lifecycle\LifecycleAskService::class),
+                $app->make(\App\Domain\AI\Conversation\AskService::class)
+            )
+        );
     }
 
     // ---- K-12 domain -------------------------------------------------------

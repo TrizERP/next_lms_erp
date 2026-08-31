@@ -12,6 +12,7 @@ use App\Models\lms\topicModel;
 use App\Models\student\tblstudentEnrollmentModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -1060,8 +1061,15 @@ $restrict_date = $request->input('restrict_date');
 
     public function getChapterConcepts(Request $request): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'chapter_id' => 'required|integer',
+        // chapter_id accepts a single id or a list of ids (the exam scope screen selects many chapters).
+        $chapter_ids = array_values(array_unique(array_filter(
+            array_map(static fn ($id) => (int) $id, Arr::wrap($request->input('chapter_id'))),
+            static fn ($id) => $id > 0
+        )));
+
+        $validator = Validator::make(['chapter_id' => $chapter_ids], [
+            'chapter_id' => 'required|array|min:1',
+            'chapter_id.*' => 'integer|min:1',
         ]);
 
         if ($validator->fails()) {
@@ -1072,12 +1080,11 @@ $restrict_date = $request->input('restrict_date');
             ], 422);
         }
 
-        $chapter_id = (int) $request->input('chapter_id');
         $sub_institute_id = $request->input('sub_institute_id') ?? $this->sessionValue($request, 'sub_institute_id');
 
         $query = DB::table('lms_concept')
             ->select('*')
-            ->where('chapter_id', $chapter_id);
+            ->whereIn('chapter_id', $chapter_ids);
 
         if ($sub_institute_id) {
             $query->where(function ($q) use ($sub_institute_id) {
@@ -1086,13 +1093,13 @@ $restrict_date = $request->input('restrict_date');
             });
         }
 
-        $concepts = $query->orderBy('id')->get()->toArray();
+        $concepts = $query->orderBy('chapter_id')->orderBy('id')->get()->toArray();
 
         return response()->json([
             'status_code' => 1,
             'message' => 'SUCCESS',
             'data' => $concepts,
-            'chapter_id' => $chapter_id,
+            'chapter_id' => $chapter_ids,
             'sub_institute_id' => $sub_institute_id,
             'total' => count($concepts),
         ], 200);

@@ -26,6 +26,22 @@ class IntentClassifier
     private const CONFIDENCE_FLOOR = 0.34;
 
     /**
+     * The least evidence an intent needs before it may claim a question.
+     *
+     * Confidence alone cannot carry this. It is the winner's *share* of everything that
+     * scored, so an intent matching one generic word — "which", "who" — reports 100%
+     * whenever nothing else matched at all. That is uncontestedness, not confidence, and
+     * it sent "which students are in class 5?" to the academic-risk agent on the
+     * strength of the word "which", answering a roster question with a risk scan.
+     *
+     * 2.5 is set just above the generic vocabulary: the words that merely make an intent
+     * plausible are weighted 0.5 to 2.0, while the terms that actually distinguish one —
+     * "struggling", "evidence", "approve", "academic risk" — start at 3.0. So an intent
+     * must match at least one word that means something in its own domain.
+     */
+    private const MINIMUM_SCORE = 2.5;
+
+    /**
      * Intent definitions, scoped to the Student Profiles module.
      *
      * `anchors` are the terms that make an intent plausible at all; `signals` are the
@@ -194,6 +210,40 @@ class IntentClassifier
             'slots' => ['case'],
         ],
 
+        'admission_enquiry_list' => [
+            'label' => 'List admission enquiries',
+            'description' => 'Shows the admission enquiries on record and which are still pending.',
+            'anchors' => ['admission', 'admissions', 'enquiry', 'enquiries', 'applicant', 'applicants'],
+            'signals' => [
+                'admission' => 3.0, 'admissions' => 3.0, 'enquiry' => 3.5, 'enquiries' => 3.5,
+                'applicant' => 3.0, 'applicants' => 3.0, 'pending admission' => 5.0,
+                'admission list' => 4.5, 'new admission' => 3.5, 'registration' => 2.0,
+            ],
+            'patterns' => [
+                '/\b(which|what|show|list|any)\b.{0,30}\b(admission|enquir|applicant)/i',
+                '/\badmission (enquiries|enquiry|list)\b/i',
+            ],
+            'slots' => [],
+        ],
+
+        'admission_confirm' => [
+            'label' => 'Confirm an admission',
+            'description' => 'Collects any missing details and, once a person approves, confirms the admission.',
+            'anchors' => ['confirm', 'admission', 'enquiry', 'admit', 'enrol', 'enroll'],
+            'signals' => [
+                'confirm admission' => 6.0, 'confirm the admission' => 6.0,
+                'admission confirm' => 5.5, 'admit' => 4.0, 'enrol' => 3.5, 'enroll' => 3.5,
+                'finalise admission' => 5.0, 'finalize admission' => 5.0,
+                'complete admission' => 5.0, 'confirm' => 2.5, 'admission' => 2.0,
+            ],
+            'patterns' => [
+                '/\bconfirm\b.{0,25}\badmission\b/i',
+                '/\badmission\b.{0,25}\bconfirm/i',
+                '/^\s*(please\s+)?(confirm|admit|enrol|enroll)\b.{0,30}\b(enquiry|admission|applicant)\b/i',
+            ],
+            'slots' => ['enquiry'],
+        ],
+
         'learning_effectiveness' => [
             'label' => 'What the system has learned',
             'description' => 'Aggregate effectiveness of each action type, from measured outcomes.',
@@ -227,6 +277,14 @@ class IntentClassifier
             return $this->unknown();
         }
 
+        // Extracted before any routing decision, and kept even when nothing matches.
+        //
+        // "Show me CASE-2026-000001" names a record unambiguously. Whether the sentence
+        // resolves to an intent is a separate question from whether it identified a
+        // record, and discarding the reference because the surrounding words were weak
+        // throws away the one certain thing in the message.
+        $slots = $this->extractSlots($utterance, $normalised);
+
         $scores = [];
         $matches = [];
 
@@ -240,7 +298,7 @@ class IntentClassifier
         }
 
         if ($scores === []) {
-            return $this->unknown();
+            return $this->unknown([], $slots);
         }
 
         arsort($scores);
@@ -259,17 +317,24 @@ class IntentClassifier
         }
 
         if ($confidence < self::CONFIDENCE_FLOOR) {
-            return $this->unknown(array_slice(array_keys($scores), 0, 3));
+            return $this->unknown(array_slice(array_keys($scores), 0, 3), $slots);
         }
 
-        $slots = $this->extractSlots($utterance, $normalised);
+        // Being the only intent that matched is not evidence. Without this an intent
+        // could win on one generic word and report perfect confidence for it.
+        if ($bestScore < self::MINIMUM_SCORE) {
+            return $this->unknown(array_slice(array_keys($scores), 0, 3), $slots);
+        }
 
         return new Intent(
             key: $best,
             label: self::INTENTS[$best]['label'],
             confidence: $confidence,
             slots: $slots,
-            matched: $matches[$best],
+            // The raw score travels with the match so the trace can show *why* an intent
+            // won, not just that it did. A reader comparing two turns needs to be able
+            // to tell a decisive match from a bare one.
+            matched: $matches[$best] + ['score' => round($bestScore, 2), 'minimum_score' => self::MINIMUM_SCORE],
         );
     }
 
@@ -380,6 +445,11 @@ class IntentClassifier
             $slots['student_id'] = (int) $m[1];
         }
 
+        // "enquiry 21", "admission 21", "enquiry #21", "application 21"
+        if (preg_match('/\b(?:enquiry|inquiry|admission|application)\s+(?:id\s+|no\.?\s+|number\s+)?#?(\d{1,9})\b/i', $raw, $m)) {
+            $slots['enquiry_id'] = (int) $m[1];
+        }
+
         // The worked example labels students "Student A" — support it explicitly so the
         // documented walkthrough works verbatim. Checked before the name rule, because
         // "Student A" would otherwise be read as somebody called A.
@@ -413,12 +483,18 @@ class IntentClassifier
         return $slots;
     }
 
-    private function unknown(array $nearMisses = []): Intent
+    /**
+     * @param  array<int, string>  $nearMisses
+     * @param  array<string, mixed>  $slots  Records the sentence named, kept even though
+     *                                       the intent is unknown — see classify().
+     */
+    private function unknown(array $nearMisses = [], array $slots = []): Intent
     {
         return new Intent(
             key: Intent::UNKNOWN,
             label: 'Not understood',
             confidence: 0.0,
+            slots: $slots,
             suggestions: [
                 'Which students are at academic risk?',
                 'Why is <student name> at risk?',

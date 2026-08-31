@@ -4,6 +4,7 @@ namespace App\Domain\K12\AcademicRisk;
 
 use App\Domain\AI\Evidence\EvidenceItem;
 use App\Domain\AI\Signals\DetectedSignal;
+use App\Domain\AI\Signals\DetectorCoverage;
 use App\Domain\AI\Signals\SignalDetector;
 use App\Domain\AI\Signals\ThresholdRegistry;
 use App\Services\Mcp\McpRequestContext;
@@ -41,10 +42,17 @@ class AttendanceRiskDetector implements SignalDetector
     /** Consecutive absences treated as fully saturated risk. */
     private const STREAK_CEILING = 5;
 
+    private ?DetectorCoverage $coverage = null;
+
     public function __construct(
         private readonly StudentScope $scope,
         private readonly ThresholdRegistry $thresholds,
     ) {
+    }
+
+    public function coverage(): ?DetectorCoverage
+    {
+        return $this->coverage;
     }
 
     public function key(): string
@@ -72,13 +80,24 @@ class AttendanceRiskDetector implements SignalDetector
      */
     public function detect(McpRequestContext $context, ?array $subjectIds = null, int $limit = 100): array
     {
+        $requirement = sprintf(
+            'needs at least %d attendance records within the last %d days.',
+            self::MIN_RECORDS,
+            self::LOOKBACK_DAYS
+        );
+
         if (! Schema::hasTable('attendance_student')) {
+            $this->coverage = new DetectorCoverage(self::KEY, 0, 0, 0, $requirement);
+
             return [];
         }
 
-        $students = $this->scope->students($context, $subjectIds, max($limit, 1));
+        // `$limit` caps how many signals come back, not how many students are read.
+        $students = $this->scope->students($context, $subjectIds);
 
         if ($students === []) {
+            $this->coverage = new DetectorCoverage(self::KEY, 0, 0, 0, $requirement);
+
             return [];
         }
 
@@ -98,6 +117,7 @@ class AttendanceRiskDetector implements SignalDetector
             ->groupBy('student_id');
 
         $signals = [];
+        $evaluated = 0;
 
         foreach ($students as $studentId => $studentName) {
             $studentRecords = $records->get($studentId);
@@ -105,6 +125,8 @@ class AttendanceRiskDetector implements SignalDetector
             if (! $studentRecords || $studentRecords->count() < self::MIN_RECORDS) {
                 continue;
             }
+
+            $evaluated++;
 
             $signal = $this->evaluate($studentId, $studentName, $studentRecords->all(), $context);
 
@@ -116,6 +138,14 @@ class AttendanceRiskDetector implements SignalDetector
                 break;
             }
         }
+
+        $this->coverage = new DetectorCoverage(
+            self::KEY,
+            count($students),
+            $evaluated,
+            count($signals),
+            $requirement
+        );
 
         return $signals;
     }
