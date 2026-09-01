@@ -83,6 +83,89 @@ class EsoPalRenderer
     }
 
     /**
+     * Deterministic display copy for the chapter dashboard's "Next Step"
+     * panel, keyed off the exact `action` nextAction() already resolved —
+     * pure string assembly like teachInstruction()/contrastPairInstruction()
+     * above, no LLM call. The dashboard is a summary view, not a place to
+     * introduce a second opinion about what the student should do next.
+     *
+     * @return array{title:string, subtitle:string, reasons:array<int,string>, cta_label:?string}
+     */
+    public static function dashboardNextStep(string $action, ?string $conceptName, ?string $prerequisiteName): array
+    {
+        $concept = $conceptName ?? 'this concept';
+
+        return match ($action) {
+            'diagnostic' => [
+                'title' => 'Start with a quick check',
+                'subtitle' => "We need a few responses on {$concept} before this step can be personalised.",
+                'reasons' => ["No responses recorded for {$concept}"],
+                'cta_label' => 'Start diagnostic',
+            ],
+            'remediate_prerequisite' => [
+                'title' => 'Master a prerequisite first',
+                'subtitle' => $prerequisiteName
+                    ? "Strengthen {$prerequisiteName} before continuing with {$concept}."
+                    : "A prerequisite concept needs work before continuing with {$concept}.",
+                'reasons' => [
+                    $prerequisiteName
+                        ? "{$prerequisiteName} is below the mastery needed to unlock {$concept}"
+                        : 'A prerequisite concept is below the mastery needed to unlock this one',
+                ],
+                'cta_label' => 'Review prerequisite',
+            ],
+            'teach' => [
+                'title' => "Learn {$concept}",
+                'subtitle' => 'This is your first look at this part of the concept.',
+                'reasons' => ["No responses recorded for {$concept} yet"],
+                'cta_label' => 'Start learning',
+            ],
+            'practice' => [
+                'title' => 'Keep practicing',
+                'subtitle' => "A few more responses on {$concept} will help PAL personalise your path.",
+                'reasons' => ['Not enough recent responses to confirm mastery yet'],
+                'cta_label' => 'Practice now',
+            ],
+            'serve_contrast_pair' => [
+                'title' => "Let's clear up a mix-up",
+                'subtitle' => "One of your responses on {$concept} pointed at a common misunderstanding.",
+                'reasons' => ['A response matched a known misconception'],
+                'cta_label' => 'Review the mix-up',
+            ],
+            'mastered_stop_practice' => [
+                'title' => 'Concept mastered',
+                'subtitle' => "You've cleared {$concept} — practice stops here.",
+                'reasons' => ['Knowledge and application mastery thresholds are both met'],
+                'cta_label' => 'See mastery details',
+            ],
+            'continue_practice' => [
+                'title' => 'Keep practicing',
+                'subtitle' => "{$concept} is close, but not yet at the mastery threshold.",
+                'reasons' => ['Knowledge or application mastery is still below threshold'],
+                'cta_label' => 'Practice now',
+            ],
+            'retrieval_due' => [
+                'title' => 'Quick review',
+                'subtitle' => "A short check to make sure {$concept} is still solid.",
+                'reasons' => ['Scheduled spaced-review check is due'],
+                'cta_label' => 'Start review',
+            ],
+            'no_nodes_defined' => [
+                'title' => 'Not ready yet',
+                'subtitle' => "{$concept} doesn't have adaptive content authored yet.",
+                'reasons' => ['No K/A/S nodes are defined for this concept'],
+                'cta_label' => null,
+            ],
+            default => [
+                'title' => 'Continue learning',
+                'subtitle' => "Keep going with {$concept}.",
+                'reasons' => [],
+                'cta_label' => 'Continue',
+            ],
+        };
+    }
+
+    /**
      * Render an engine instruction conversationally. This is the ONLY LLM
      * call in the Adaptive Learning Engine — the system prompt is the
      * enforcement point that keeps Pal from choosing content on its own.

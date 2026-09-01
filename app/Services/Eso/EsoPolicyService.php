@@ -9,6 +9,7 @@ use App\Models\PAL\ConceptRelation;
 use App\Models\PAL\MisconceptionLibrary;
 use App\Models\PAL\QuestionMetadata;
 use App\Services\PAL\Content\MisconceptionLibraryService;
+use App\Services\PAL\Runtime\PalEvidenceRepository;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -52,8 +53,12 @@ class EsoPolicyService
     /** Simple update rule: correct +0.2, wrong -0.2, clamped 0-1. */
     protected const MASTERY_STEP = 0.2;
 
+    /** Chapter dashboard — a node needs at least this many attempts before its mastery signal is shown at all. */
+    public const MIN_ATTEMPTS_FOR_EVIDENCE = 1;
+
     public function __construct(
         protected MisconceptionLibraryService $misconceptions,
+        protected PalEvidenceRepository $evidence,
     ) {
     }
 
@@ -247,7 +252,14 @@ class EsoPolicyService
      * -> D4 (mastery verdict) in that order, and writes exactly one
      * eso_decision_log row for whichever decision it returns.
      */
-    public function nextAction(int $studentId, int $conceptId, int $subInstituteId): array
+    /**
+     * $silent suppresses every eso_decision_log write this call (and its
+     * delegates) would otherwise make — for read-only callers like the
+     * chapter dashboard that need "what would happen next" without producing
+     * an audit-log entry on every page view. The real per-concept flow never
+     * passes this (default false), so its logging is unchanged.
+     */
+    public function nextAction(int $studentId, int $conceptId, int $subInstituteId, bool $silent = false): array
     {
         $nodes = $this->nodesForConcept($conceptId, $subInstituteId);
 
@@ -268,13 +280,15 @@ class EsoPolicyService
 
         // D1 entry: nothing has been diagnosed for this concept yet.
         if ($states->isEmpty()) {
-            $this->log($studentId, $conceptId, null, $subInstituteId, [], 'D1: concept entry, no diagnostic on file', 'diagnostic');
+            if (! $silent) {
+                $this->log($studentId, $conceptId, null, $subInstituteId, [], 'D1: concept entry, no diagnostic on file', 'diagnostic');
+            }
 
             return $this->respond('diagnostic', $conceptId, null, 'D1', null);
         }
 
         // D2: prerequisite gate.
-        $gate = $this->prerequisiteGate($studentId, $conceptId, $subInstituteId);
+        $gate = $this->prerequisiteGate($studentId, $conceptId, $subInstituteId, $silent);
         if ($gate !== null) {
             return $gate;
         }
@@ -283,25 +297,25 @@ class EsoPolicyService
             $state = $states->get($node->id) ?? $this->stateFor($studentId, $node->id, $subInstituteId);
 
             if ($state->status === LearnerNodeState::STATUS_MISCONCEPTION_FLAGGED) {
-                return $this->reserveContrastPairAction($studentId, $conceptId, $node, $state, $subInstituteId);
+                return $this->reserveContrastPairAction($studentId, $conceptId, $node, $state, $subInstituteId, $silent);
             }
 
             if ($state->status === LearnerNodeState::STATUS_MASTERED
                 && $state->next_review_at !== null
                 && $state->next_review_at->lte(now())) {
-                return $this->retrievalDueAction($studentId, $conceptId, $node, $subInstituteId);
+                return $this->retrievalDueAction($studentId, $conceptId, $node, $subInstituteId, $silent);
             }
 
             if ($state->isMastered() || $this->hasSatisfiedOwnThreshold($node, $state)) {
                 continue;
             }
 
-            return $this->teachOrPracticeAction($studentId, $conceptId, $node, $state, $subInstituteId);
+            return $this->teachOrPracticeAction($studentId, $conceptId, $node, $state, $subInstituteId, $silent);
         }
 
         // Every node mastered or retained: run the concept-level D4 verdict
         // (idempotent — if already mastered, this just confirms/stops practice).
-        return $this->masteryVerdict($studentId, $conceptId, $subInstituteId);
+        return $this->masteryVerdict($studentId, $conceptId, $subInstituteId, $silent);
     }
 
     /**
@@ -342,26 +356,13 @@ class EsoPolicyService
      * pal_concept_relations rows where from_concept_id = this concept and
      * relation_type = 'requires'; to_concept_id is the prerequisite concept.
      */
-    protected function prerequisiteGate(int $studentId, int $conceptId, int $subInstituteId): ?array
+    protected function prerequisiteGate(int $studentId, int $conceptId, int $subInstituteId, bool $silent = false): ?array
     {
-        $prerequisiteConceptIds = ConceptRelation::where('from_concept_id', $conceptId)
-            ->where('relation_type', 'requires')
-            ->forTenant($subInstituteId)
-            ->pluck('to_concept_id');
-
-        foreach ($prerequisiteConceptIds as $prerequisiteConceptId) {
-            $prerequisiteConceptId = (int) $prerequisiteConceptId;
+        foreach ($this->unmetPrerequisiteConceptIds($conceptId, $studentId, $subInstituteId) as $prerequisiteConceptId) {
             $mastery = $this->conceptMasteryAverage($studentId, $prerequisiteConceptId, $subInstituteId);
+            $rule = sprintf('D2: prerequisite concept %d mastery %.2f < %.2f', $prerequisiteConceptId, $mastery, self::PREREQUISITE_THRESHOLD);
 
-            // No K/A/S nodes authored for the prerequisite yet — cannot gate on
-            // data that doesn't exist; skip rather than block indefinitely.
-            if ($mastery === null) {
-                continue;
-            }
-
-            if ($mastery < self::PREREQUISITE_THRESHOLD) {
-                $rule = sprintf('D2: prerequisite concept %d mastery %.2f < %.2f', $prerequisiteConceptId, $mastery, self::PREREQUISITE_THRESHOLD);
-
+            if (! $silent) {
                 $this->log(
                     $studentId,
                     $conceptId,
@@ -371,18 +372,49 @@ class EsoPolicyService
                     $rule,
                     'remediate_prerequisite'
                 );
-
-                return [
-                    'action' => 'remediate_prerequisite',
-                    'concept_id' => $conceptId,
-                    'prerequisite_concept_id' => $prerequisiteConceptId,
-                    'rule_fired' => 'D2',
-                    'llm_instruction' => null,
-                ];
             }
+
+            return [
+                'action' => 'remediate_prerequisite',
+                'concept_id' => $conceptId,
+                'prerequisite_concept_id' => $prerequisiteConceptId,
+                'rule_fired' => 'D2',
+                'llm_instruction' => null,
+            ];
         }
 
         return null;
+    }
+
+    /**
+     * The concept's `requires` prerequisites whose average node mastery is
+     * below PREREQUISITE_THRESHOLD. A prerequisite with no K/A/S nodes
+     * authored yet is skipped, not blocked — can't gate on data that doesn't
+     * exist. Shared by prerequisiteGate() (D2, logs + builds an action) and
+     * prerequisitesMet() (a plain read for the chapter dashboard's lock
+     * icons) so both agree on exactly the same rule.
+     */
+    protected function unmetPrerequisiteConceptIds(int $conceptId, int $studentId, int $subInstituteId): Collection
+    {
+        $prerequisiteConceptIds = ConceptRelation::where('from_concept_id', $conceptId)
+            ->where('relation_type', 'requires')
+            ->forTenant($subInstituteId)
+            ->pluck('to_concept_id');
+
+        return $prerequisiteConceptIds
+            ->map(fn ($id) => (int) $id)
+            ->filter(function (int $prerequisiteConceptId) use ($studentId, $subInstituteId) {
+                $mastery = $this->conceptMasteryAverage($studentId, $prerequisiteConceptId, $subInstituteId);
+
+                return $mastery !== null && $mastery < self::PREREQUISITE_THRESHOLD;
+            })
+            ->values();
+    }
+
+    /** Plain read: does this concept have any unmet prerequisite right now? No logging, no action payload. */
+    public function prerequisitesMet(int $studentId, int $conceptId, int $subInstituteId): bool
+    {
+        return $this->unmetPrerequisiteConceptIds($conceptId, $studentId, $subInstituteId)->isEmpty();
     }
 
     /** Average mastery across a concept's node states; unseen nodes count as 0. */
@@ -501,7 +533,7 @@ class EsoPolicyService
     }
 
     /** Re-serve (or first-serve) the contrast pair for the node's active misconception. */
-    protected function reserveContrastPairAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId): array
+    protected function reserveContrastPairAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
     {
         if ($state->active_misconception_id === null) {
             // Defensive: flagged with no recorded misconception id should not happen,
@@ -509,29 +541,31 @@ class EsoPolicyService
             $state->status = LearnerNodeState::STATUS_LEARNING;
             $state->save();
 
-            return $this->teachOrPracticeAction($studentId, $conceptId, $node, $state, $subInstituteId);
+            return $this->teachOrPracticeAction($studentId, $conceptId, $node, $state, $subInstituteId, $silent);
         }
 
-        return $this->contrastPairAction($studentId, $conceptId, $node, (int) $state->active_misconception_id, $subInstituteId, firstFlag: false);
+        return $this->contrastPairAction($studentId, $conceptId, $node, (int) $state->active_misconception_id, $subInstituteId, firstFlag: false, silent: $silent);
     }
 
-    protected function contrastPairAction(int $studentId, int $conceptId, ConceptNode $node, int $misconceptionId, int $subInstituteId, bool $firstFlag): array
+    protected function contrastPairAction(int $studentId, int $conceptId, ConceptNode $node, int $misconceptionId, int $subInstituteId, bool $firstFlag, bool $silent = false): array
     {
         $misconception = MisconceptionLibrary::find($misconceptionId);
         $corrective = $this->misconceptions->selectCorrective($misconceptionId, $studentId, $subInstituteId);
 
         $instruction = EsoPalRenderer::contrastPairInstruction($node, $misconception, $corrective);
 
-        $this->log(
-            $studentId,
-            $conceptId,
-            $node->id,
-            $subInstituteId,
-            ['misconception_id' => $misconceptionId, 'tag' => $misconception?->tag],
-            $firstFlag ? "D3: distractor mapped to misconception {$misconceptionId}" : "D3: misconception {$misconceptionId} still active, re-serving contrast pair",
-            'serve_contrast_pair',
-            $instruction
-        );
+        if (! $silent) {
+            $this->log(
+                $studentId,
+                $conceptId,
+                $node->id,
+                $subInstituteId,
+                ['misconception_id' => $misconceptionId, 'tag' => $misconception?->tag],
+                $firstFlag ? "D3: distractor mapped to misconception {$misconceptionId}" : "D3: misconception {$misconceptionId} still active, re-serving contrast pair",
+                'serve_contrast_pair',
+                $instruction
+            );
+        }
 
         return [
             'action' => 'serve_contrast_pair',
@@ -546,7 +580,7 @@ class EsoPolicyService
 
     // ── D4: practice gating + mastery verdict ───────────────────────────
 
-    protected function teachOrPracticeAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId): array
+    protected function teachOrPracticeAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
     {
         $firstExposure = $state->attempts === 0;
         $instruction = EsoPalRenderer::teachInstruction($node, $state, $this->priorNodeLabels($node));
@@ -556,16 +590,18 @@ class EsoPolicyService
             ? 'D1: node not yet taught'
             : sprintf('D4: mastery %.2f, mode=%s, continue practice', $state->mastery_estimate, $state->practice_mode);
 
-        $this->log(
-            $studentId,
-            $conceptId,
-            $node->id,
-            $subInstituteId,
-            ['mastery_estimate' => $state->mastery_estimate, 'attempts' => $state->attempts, 'practice_mode' => $state->practice_mode],
-            $rule,
-            $action,
-            $instruction
-        );
+        if (! $silent) {
+            $this->log(
+                $studentId,
+                $conceptId,
+                $node->id,
+                $subInstituteId,
+                ['mastery_estimate' => $state->mastery_estimate, 'attempts' => $state->attempts, 'practice_mode' => $state->practice_mode],
+                $rule,
+                $action,
+                $instruction
+            );
+        }
 
         return [
             'action' => $action,
@@ -690,17 +726,19 @@ class EsoPolicyService
      * "next best action" flow — retrievalCheck()/dueForRetrieval() alone are
      * reachable but were never wired into nextAction() itself until this.
      */
-    protected function retrievalDueAction(int $studentId, int $conceptId, ConceptNode $node, int $subInstituteId): array
+    protected function retrievalDueAction(int $studentId, int $conceptId, ConceptNode $node, int $subInstituteId, bool $silent = false): array
     {
-        $this->log(
-            $studentId,
-            $conceptId,
-            $node->id,
-            $subInstituteId,
-            ['next_review_at' => now()->toDateTimeString()],
-            'D5: scheduled retrieval check is due',
-            'retrieval_due'
-        );
+        if (! $silent) {
+            $this->log(
+                $studentId,
+                $conceptId,
+                $node->id,
+                $subInstituteId,
+                ['next_review_at' => now()->toDateTimeString()],
+                'D5: scheduled retrieval check is due',
+                'retrieval_due'
+            );
+        }
 
         return [
             'action' => 'retrieval_due',
@@ -786,6 +824,359 @@ class EsoPolicyService
             'rule_fired' => 'D5',
             'llm_instruction' => null,
         ];
+    }
+
+    // ── Student dashboard — chapterDashboard() with the chapter auto-picked ──
+
+    /**
+     * The main-dashboard variant of chapterDashboard(): no {chapterId} in the
+     * URL, so this picks the single most relevant chapter across the
+     * student's whole enrollment for the given academic year — the first
+     * ESO-ready chapter (subject order, then chapter sort_order) that still
+     * has open work, falling back to the first ESO-ready chapter at all if
+     * every one of them is already complete — then returns the exact same
+     * shape chapterDashboard() does.
+     *
+     * Returns null when the student has no enrollment for $syear.
+     * Returns ['no_content' => true] when the student's curriculum has no
+     * ESO-ready chapter anywhere yet (a real, honest state — Phase 0 tagging
+     * hasn't reached any of their subjects — not an error).
+     */
+    public function studentDashboard(int $studentId, int $subInstituteId, string $syear): ?array
+    {
+        $standardId = DB::table('tblstudent_enrollment')
+            ->where('student_id', $studentId)
+            ->where('syear', $syear)
+            ->whereNull('end_date')
+            ->value('standard_id');
+
+        if ($standardId === null) {
+            return null;
+        }
+
+        $subjectIds = DB::table('sub_std_map')
+            ->where('sub_institute_id', $subInstituteId)
+            ->where('standard_id', $standardId)
+            ->orderBy('sort_order')
+            ->pluck('subject_id')
+            ->all();
+
+        if ($subjectIds === []) {
+            return ['no_content' => true];
+        }
+
+        // Preserve subject order (sub_std_map.sort_order), then chapter
+        // sort_order within each subject — matches PalWorkspaceController::
+        // workspace()'s subject/chapter resolution so "current chapter" here
+        // agrees with how the student's own /pal subject list is ordered.
+        $chapterIds = DB::table('chapter_master')
+            ->where('sub_institute_id', $subInstituteId)
+            ->where('standard_id', $standardId)
+            ->whereIn('subject_id', $subjectIds)
+            ->orderByRaw('FIELD(subject_id, ' . implode(',', $subjectIds) . ')')
+            ->orderBy('sort_order')
+            ->pluck('id')
+            ->all();
+
+        if ($chapterIds === []) {
+            return ['no_content' => true];
+        }
+
+        $readyChapterIds = array_flip(
+            $this->esoReadyConceptsForChapters($chapterIds, $subInstituteId)->pluck('chapter_id')->unique()->all()
+        );
+        $orderedReadyChapterIds = array_values(array_filter($chapterIds, fn ($id) => isset($readyChapterIds[$id])));
+
+        if ($orderedReadyChapterIds === []) {
+            return ['no_content' => true];
+        }
+
+        $fallback = null;
+        foreach ($orderedReadyChapterIds as $chapterId) {
+            $dashboard = $this->chapterDashboard($studentId, $chapterId, $subInstituteId);
+            if ($dashboard === null) {
+                continue;
+            }
+            if ($fallback === null) {
+                $fallback = $dashboard;
+            }
+            if (! $dashboard['chapter_complete']) {
+                return $dashboard;
+            }
+        }
+
+        return $fallback ?? ['no_content' => true];
+    }
+
+    // ── Chapter dashboard — read-only aggregate for the "where am I" screen ──
+
+    /**
+     * Everything the chapter-level student dashboard needs in one call:
+     * chapter identity, every ESO-ready concept in it with a lock/mastery
+     * status, the current concept's next action (via nextAction(...,
+     * silent: true) — the exact resolver the per-concept flow uses, without
+     * writing a decision-log row for a plain page view), response counts,
+     * and the best-effort mastery-signal panel (see masterySignals()).
+     * Returns null when the chapter itself doesn't exist.
+     */
+    public function chapterDashboard(int $studentId, int $chapterId, int $subInstituteId): ?array
+    {
+        $chapter = DB::table('chapter_master')->where('id', $chapterId)->first(['id', 'chapter_name', 'subject_id', 'standard_id']);
+        if ($chapter === null) {
+            return null;
+        }
+
+        $subjectName = DB::table('subject')->where('id', $chapter->subject_id)->value('subject_name');
+        $readyConcepts = $this->esoReadyConceptsForChapters([$chapterId], $subInstituteId);
+
+        $sections = [];
+        $currentConceptId = null;
+
+        foreach ($readyConcepts as $concept) {
+            $conceptId = (int) $concept->id;
+            $locked = ! $this->prerequisitesMet($studentId, $conceptId, $subInstituteId);
+            $verdict = $locked ? null : $this->masteryVerdict($studentId, $conceptId, $subInstituteId, silent: true);
+            $mastered = $verdict['mastered'] ?? false;
+            $attempts = $this->conceptAttemptCount($studentId, $conceptId, $subInstituteId);
+
+            $status = $locked ? 'locked' : ($mastered ? 'mastered' : ($attempts > 0 ? 'in_progress' : 'not_started'));
+
+            $sections[] = [
+                'concept_id' => $conceptId,
+                'name' => $concept->name,
+                'status' => $status,
+                'knowledge_mastery' => $verdict['knowledge_mastery'] ?? null,
+                'application_mastery' => $verdict['application_mastery'] ?? null,
+            ];
+
+            if ($currentConceptId === null && ! in_array($status, ['locked', 'mastered'], true)) {
+                $currentConceptId = $conceptId;
+            }
+        }
+
+        // Every concept locked or mastered: fall back to the last ready
+        // concept so the page still has something to show.
+        if ($currentConceptId === null && $readyConcepts->isNotEmpty()) {
+            $currentConceptId = (int) $readyConcepts->last()->id;
+        }
+
+        $nextStep = null;
+        $currentConceptName = null;
+        $responsesOnCurrentConcept = 0;
+        $masterySignals = [];
+        $chapterComplete = $sections !== [] && collect($sections)->every(fn (array $s) => $s['status'] === 'mastered');
+
+        if ($currentConceptId !== null) {
+            $currentConceptName = optional($readyConcepts->firstWhere('id', $currentConceptId))->name;
+            $action = $this->nextAction($studentId, $currentConceptId, $subInstituteId, silent: true);
+            $prerequisiteName = isset($action['prerequisite_concept_id'])
+                ? DB::table('lms_concept')->where('id', $action['prerequisite_concept_id'])->value('name')
+                : null;
+            $responsesOnCurrentConcept = $this->conceptAttemptCount($studentId, $currentConceptId, $subInstituteId);
+
+            $nextStep = array_merge(
+                EsoPalRenderer::dashboardNextStep($action['action'], $currentConceptName, $prerequisiteName),
+                [
+                    'action' => $action['action'],
+                    'rule_fired' => $action['rule_fired'],
+                    'has_evidence' => $responsesOnCurrentConcept > 0,
+                ]
+            );
+            $masterySignals = $this->masterySignals($studentId, $currentConceptId, $subInstituteId);
+        }
+
+        [$masteredInCurriculum, $totalInCurriculum] = $this->curriculumMasteryCount(
+            $studentId,
+            (int) $chapter->subject_id,
+            (int) $chapter->standard_id,
+            $subInstituteId
+        );
+
+        return [
+            'chapter_id' => $chapterId,
+            'chapter_name' => $chapter->chapter_name,
+            'subject_id' => (int) $chapter->subject_id,
+            'subject_name' => $subjectName,
+            'chapter_complete' => $chapterComplete,
+            'current_concept_id' => $currentConceptId,
+            'current_concept_name' => $currentConceptName,
+            'mastered_concepts' => $masteredInCurriculum,
+            'total_concepts_in_curriculum' => $totalInCurriculum,
+            'responses_on_current_concept' => $responsesOnCurrentConcept,
+            'all_responses' => $this->allResponsesCount($studentId),
+            'next_step' => $nextStep,
+            'chapter_sections' => $sections,
+            'mastery_signals' => $masterySignals,
+        ];
+    }
+
+    /**
+     * ESO-ready concepts (>=1 pal_concept_nodes row) across a set of
+     * chapters, in lms_concept.id order. Shared by chapterDashboard() and
+     * EsoEngineController::chapterConcepts() so both agree on the exact same
+     * "is this concept ESO-ready" join instead of duplicating it.
+     */
+    public function esoReadyConceptsForChapters(array $chapterIds, ?int $subInstituteId): Collection
+    {
+        $concepts = collect($this->evidence->conceptsForChapters($chapterIds, $subInstituteId));
+        if ($concepts->isEmpty()) {
+            return collect();
+        }
+
+        $readyIds = ConceptNode::whereIn('concept_id', $concepts->pluck('id'))
+            ->forTenant($subInstituteId)
+            ->distinct()
+            ->pluck('concept_id')
+            ->all();
+
+        return $concepts->whereIn('id', $readyIds)->sortBy('id')->values()->map(fn ($c) => (object) $c);
+    }
+
+    /** Total attempts recorded across a concept's node states for one student. */
+    protected function conceptAttemptCount(int $studentId, int $conceptId, int $subInstituteId): int
+    {
+        $nodeIds = $this->nodesForConcept($conceptId, $subInstituteId)->pluck('id');
+        if ($nodeIds->isEmpty()) {
+            return 0;
+        }
+
+        return (int) LearnerNodeState::forStudent($studentId)->whereIn('node_id', $nodeIds)->sum('attempts');
+    }
+
+    /** Total attempts recorded across every node state for one student, any concept. */
+    protected function allResponsesCount(int $studentId): int
+    {
+        return (int) LearnerNodeState::forStudent($studentId)->sum('attempts');
+    }
+
+    /** [masteredCount, totalCount] of ESO-ready concepts across every chapter of a subject+standard. */
+    protected function curriculumMasteryCount(int $studentId, int $subjectId, int $standardId, int $subInstituteId): array
+    {
+        $chapterIds = DB::table('chapter_master')
+            ->where('subject_id', $subjectId)
+            ->where('standard_id', $standardId)
+            ->pluck('id')
+            ->all();
+
+        if ($chapterIds === []) {
+            return [0, 0];
+        }
+
+        $concepts = $this->esoReadyConceptsForChapters($chapterIds, $subInstituteId);
+        $mastered = 0;
+
+        foreach ($concepts as $concept) {
+            $verdict = $this->masteryVerdict($studentId, (int) $concept->id, $subInstituteId, silent: true);
+            if ($verdict['mastered']) {
+                $mastered++;
+            }
+        }
+
+        return [$mastered, $concepts->count()];
+    }
+
+    /**
+     * Best-effort "What PAL has seen so far" panel. None of these six labels
+     * correspond to a field the schema tracks directly — each is a
+     * deliberate mapping onto real per-node evidence (documented per-signal
+     * below), not a literal existing metric. A signal reports `value: null`
+     * ("not enough evidence") until at least one node it reads from has
+     * MIN_ATTEMPTS_FOR_EVIDENCE attempts.
+     */
+    protected function masterySignals(int $studentId, int $conceptId, int $subInstituteId): array
+    {
+        $nodes = $this->nodesForConcept($conceptId, $subInstituteId);
+        $states = LearnerNodeState::forStudent($studentId)->whereIn('node_id', $nodes->pluck('id'))->get()->keyBy('node_id');
+
+        $statesOfType = fn (string $type) => $nodes->where('node_type', $type)
+            ->map(fn (ConceptNode $n) => $states->get($n->id))
+            ->filter();
+
+        $kStates = $statesOfType('K');
+        $aStates = $statesOfType('A');
+        $sStates = $statesOfType('S');
+        $allStates = $states->values();
+
+        return [
+            // Procedural correctness on the Knowledge node.
+            $this->signal('getting_method_right', 'Getting the method right', $this->averageEstimate($kStates)),
+            // Conceptual correctness on the Application node.
+            $this->signal('understanding_the_idea', 'Understanding the idea', $this->averageEstimate($aStates)),
+            // Correctness on the Skill node (the concept's "demonstrate it" practice).
+            $this->signal('explaining_your_thinking', 'Explaining your thinking', $this->averageEstimate($sStates)),
+            // Share of Application attempts made once practice had already advanced to independent mode (no guided scaffolding).
+            $this->signal('using_it_somewhere_new', 'Using it somewhere new', $this->independentShare($aStates)),
+            // 1 - hint rate, across every node of the concept.
+            $this->signal('working_without_support', 'Working without support', $this->hintFreeShare($allStates)),
+            // Share of nodes that survived a spaced-retrieval check, falling back to the current correct-streak ratio before any node has been retested.
+            $this->signal('doing_it_reliably', 'Doing it reliably', $this->reliabilityShare($allStates)),
+        ];
+    }
+
+    protected function signal(string $key, string $label, ?float $value): array
+    {
+        return ['key' => $key, 'label' => $label, 'value' => $value, 'has_evidence' => $value !== null];
+    }
+
+    /** @param  Collection<int, LearnerNodeState>  $states */
+    protected function evidencedStates(Collection $states): Collection
+    {
+        return $states->filter(fn (LearnerNodeState $s) => $s->attempts >= self::MIN_ATTEMPTS_FOR_EVIDENCE);
+    }
+
+    protected function averageEstimate(Collection $states): ?float
+    {
+        $evidenced = $this->evidencedStates($states);
+
+        return $evidenced->isEmpty() ? null : round((float) $evidenced->avg('mastery_estimate'), 3);
+    }
+
+    protected function independentShare(Collection $states): ?float
+    {
+        $evidenced = $this->evidencedStates($states);
+        if ($evidenced->isEmpty()) {
+            return null;
+        }
+
+        $independent = $evidenced->filter(fn (LearnerNodeState $s) => $s->practice_mode === LearnerNodeState::MODE_INDEPENDENT)->count();
+
+        return round($independent / $evidenced->count(), 3);
+    }
+
+    protected function hintFreeShare(Collection $states): ?float
+    {
+        $evidenced = $this->evidencedStates($states);
+        if ($evidenced->isEmpty()) {
+            return null;
+        }
+
+        $totalAttempts = $evidenced->sum('attempts');
+        if ($totalAttempts <= 0) {
+            return null;
+        }
+
+        return round(max(0.0, 1 - ($evidenced->sum('hint_used_count') / $totalAttempts)), 3);
+    }
+
+    protected function reliabilityShare(Collection $states): ?float
+    {
+        $evidenced = $this->evidencedStates($states);
+        if ($evidenced->isEmpty()) {
+            return null;
+        }
+
+        $retained = $evidenced->filter(fn (LearnerNodeState $s) => $s->status === LearnerNodeState::STATUS_RETAINED)->count();
+        if ($retained > 0) {
+            return round($retained / $evidenced->count(), 3);
+        }
+
+        // No node has survived a spaced-retrieval check yet — the correct-
+        // in-a-row streak against the practice-mode-advance threshold is an
+        // interim reliability signal instead of reporting "no evidence" the
+        // moment a student starts practicing.
+        $streakRatio = $evidenced->avg(fn (LearnerNodeState $s) => min(1.0, $s->consecutive_correct / self::CONSECUTIVE_CORRECT_TO_ADVANCE));
+
+        return round((float) $streakRatio, 3);
     }
 
     // ── shared internals ─────────────────────────────────────────────────

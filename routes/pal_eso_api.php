@@ -55,6 +55,12 @@ Route::prefix('api/pal/eso')->middleware('pal.auth')->group(function () {
         Route::get('/next-action/{learnerId}/{conceptId}', [EsoEngineController::class, 'nextAction'])
             ->where(['learnerId' => '[0-9]+', 'conceptId' => '[0-9]+']);
 
+        Route::get('/chapter-dashboard/{learnerId}/{chapterId}', [EsoEngineController::class, 'chapterDashboard'])
+            ->where(['learnerId' => '[0-9]+', 'chapterId' => '[0-9]+']);
+
+        Route::get('/student-dashboard/{learnerId}', [EsoEngineController::class, 'studentDashboard'])
+            ->where('learnerId', '[0-9]+');
+
         Route::post('/practice/{learnerId}/{nodeId}/attempt', [EsoEngineController::class, 'recordAttempt'])
             ->where(['learnerId' => '[0-9]+', 'nodeId' => '[0-9]+']);
 
