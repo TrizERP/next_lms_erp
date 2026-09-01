@@ -6,7 +6,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Eso\DecisionLog;
 use App\Services\Eso\EsoPalRenderer;
 use App\Services\Eso\EsoPolicyService;
-use App\Services\PAL\Runtime\PalEvidenceRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +25,6 @@ class EsoEngineController extends Controller
     public function __construct(
         protected EsoPolicyService $policy,
         protected EsoPalRenderer $renderer,
-        protected PalEvidenceRepository $evidence,
     ) {
     }
 
@@ -66,16 +64,10 @@ class EsoEngineController extends Controller
     {
         $tenant = $this->callerInstitute($request);
 
-        $concepts = $this->evidence->conceptsForChapters([$chapterId], $tenant);
-        $conceptIds = array_column($concepts, 'id');
-
-        $readyIds = $conceptIds === [] ? [] : DB::table('pal_concept_nodes')
-            ->whereIn('concept_id', $conceptIds)
-            ->distinct()
-            ->pluck('concept_id')
+        $ready = $this->policy->esoReadyConceptsForChapters([$chapterId], $tenant)
+            ->map(fn ($c) => (array) $c)
+            ->values()
             ->all();
-
-        $ready = array_values(array_filter($concepts, fn ($c) => in_array($c['id'], $readyIds, true)));
 
         return $this->ok(['chapter_id' => $chapterId, 'concepts' => $ready]);
     }
@@ -237,6 +229,56 @@ class EsoEngineController extends Controller
         }
 
         return $this->ok($this->policy->dueForRetrieval($learnerId, $subInstituteId)->values());
+    }
+
+    /**
+     * GET /api/pal/eso/student-dashboard/{learnerId}?syear=
+     *
+     * The main-dashboard variant of chapter-dashboard: no {chapterId} in the
+     * URL — the chapter is auto-picked across the student's whole enrollment
+     * for $syear. See EsoPolicyService::studentDashboard().
+     */
+    public function studentDashboard(Request $request, int $learnerId): JsonResponse
+    {
+        $syear = $request->input('syear');
+        if ($syear === null || $syear === '') {
+            return $this->fail('syear is required.');
+        }
+
+        $subInstituteId = $this->subInstituteId($learnerId);
+        if ($subInstituteId === null) {
+            return $this->fail('Unknown learner.', 404);
+        }
+
+        $dashboard = $this->policy->studentDashboard($learnerId, $subInstituteId, (string) $syear);
+        if ($dashboard === null) {
+            return $this->fail('No enrollment found for this student in that academic year.', 404);
+        }
+
+        return $this->ok($dashboard);
+    }
+
+    /**
+     * GET /api/pal/eso/chapter-dashboard/{learnerId}/{chapterId}
+     *
+     * The "where am I" screen a student sees before drilling into a
+     * concept: chapter-wide progress, the current concept's next step (via
+     * the same resolver nextAction() uses, silently — no decision-log row
+     * for a plain page view), and the mastery-signal panel.
+     */
+    public function chapterDashboard(Request $request, int $learnerId, int $chapterId): JsonResponse
+    {
+        $subInstituteId = $this->subInstituteId($learnerId);
+        if ($subInstituteId === null) {
+            return $this->fail('Unknown learner.', 404);
+        }
+
+        $dashboard = $this->policy->chapterDashboard($learnerId, $chapterId, $subInstituteId);
+        if ($dashboard === null) {
+            return $this->fail('Unknown chapter.', 404);
+        }
+
+        return $this->ok($dashboard);
     }
 
     /**
