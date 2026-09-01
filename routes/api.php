@@ -327,6 +327,38 @@ Route::post('intelligence/lesson-plan-periods/{id}/delete', [\App\Http\Controlle
 Route::match(['GET', 'POST'], 'intelligence/lesson-plan-lookup/chapters', [\App\Http\Controllers\api\lms\LessonPlanLookupApiController::class, 'chapters']);
 Route::match(['GET', 'POST'], 'intelligence/lesson-plan-lookup/periods', [\App\Http\Controllers\api\lms\LessonPlanLookupApiController::class, 'periods']);
 
+/*
+| Lesson Intelligence - the four-phase lesson-plan generator.
+|   Phase 0  capacity     how much teaching time the term actually has
+|   Phase 1  macro-plan   chapters spread across the term's weeks
+|   Phase 2  meso-plan    concepts placed into dated period slots
+|   Phase 3  micro-plan   the LLM-written 5E content for a period
+| Phases 0-2 are pure arithmetic and free to re-run; phase 3 costs one DeepSeek
+| call per period, so it is only ever triggered explicitly.
+*/
+Route::prefix('lesson-intelligence')->group(function () {
+    // Cascading selection - only combinations that have a real timetable.
+    Route::match(['GET', 'POST'], 'dropdowns', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'dropdowns']);
+    Route::match(['GET', 'POST'], 'dropdowns/filter', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'dropdownFilter']);
+
+    // Phase 0 - read-only.
+    Route::match(['GET', 'POST'], 'capacity', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'capacity']);
+    Route::match(['GET', 'POST'], 'calendar-events', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'calendarEvents']);
+
+    // Phase 1.
+    Route::match(['GET', 'POST'], 'macro-plan/show', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'showMacroPlan']);
+    Route::post('macro-plan', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'storeMacroPlan']);
+
+    // Phase 2.
+    Route::match(['GET', 'POST'], 'meso-plan/{planId}/teachers', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'mesoPlanTeachers']);
+    Route::match(['GET', 'POST'], 'meso-plan/{planId}/periods', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'mesoPlanPeriods']);
+    Route::post('meso-plan/{planId}', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'storeMesoPlan']);
+
+    // Phase 3 - billable.
+    Route::post('micro-plan/period/{periodId}', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'storeMicroPlan']);
+    Route::post('micro-plan/plan/{planId}/batch', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'storeMicroPlanBatch']);
+});
+
 // Intelligence Question Generation - MCQ / narrative items via DeepSeek LLM -> lms_question_master
 Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);
 

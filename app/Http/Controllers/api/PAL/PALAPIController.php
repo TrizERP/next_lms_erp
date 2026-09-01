@@ -199,10 +199,15 @@ class PALAPIController extends Controller
      * GET /api/pal/remediation/{learnerId}/{misconceptionId}
      * Get targeted remediation
      */
-    public function getRemediation(int $learnerId, int $misconceptionId): JsonResponse
+    public function getRemediation(Request $request, int $learnerId, int $misconceptionId): JsonResponse
     {
-        $remediation = $this->intelligence->getRemediation($learnerId, $misconceptionId);
-        
+        // Misconception ids are unique only WITHIN a registry -- library id 19
+        // and runtime id 19 are different rows -- so cluster() stamps each
+        // entry with its source and the client passes it back here.
+        $source = $request->get('source') === 'library' ? 'library' : 'runtime';
+
+        $remediation = $this->intelligence->getRemediation($learnerId, $misconceptionId, $source);
+
         return response()->json([
             'success' => true,
             'data' => $remediation,
