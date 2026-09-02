@@ -89,7 +89,7 @@
     <h3 style="color: #444; margin-top: 25px;">STAGE 2 - ENTRANCE TEST</h3>
     <ul style="font-size: 15px; color: #333;">
         <li>	A fun filled activity session will be conducted at Hills High School, Vesu on <strong>{{date('d-m-Y',strtotime($parent_date))}}  {{$parent_time}}</strong>.</li>
-        <li>Child must be present with current School I-card and stationery.</li>
+        <li>Child must be present with current School I-card.</li>
         <li> The session would be for approx 45mins.
             
         </li>
