@@ -19,7 +19,8 @@
       "Bash(php artisan tinker '--execute= *)",
       "Bash(rm -f /c/Users/Asus/AppData/Local/Temp/claude/d--next-lms-erp/519e8996-acad-4eca-ae0b-9c46cc1e4701/scratchpad/pw/*.png)",
       "Bash(NODE_PATH=/c/Users/Asus/AppData/Local/npm-cache/_npx/e41f203b7505f1fb/node_modules node /c/Users/Asus/AppData/Local/Temp/claude/d--next-lms-erp/519e8996-acad-4eca-ae0b-9c46cc1e4701/scratchpad/pw/walkthrough2.js)",
-      "PowerShell(Get-CimInstance Win32_Process -Filter \"ProcessId=13824 or ProcessId=23288 or ProcessId=19208\")"
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"ProcessId=13824 or ProcessId=23288 or ProcessId=19208\")",
+      "Bash(php -l app/Services/Eso/EsoPolicyService.php)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Asus\\AppData\\Local\\Temp\\claude\\d--next-lms-erp\\519e8996-acad-4eca-ae0b-9c46cc1e4701\\scratchpad",

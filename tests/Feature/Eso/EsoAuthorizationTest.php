@@ -180,6 +180,16 @@ class EsoAuthorizationTest extends TestCase
         $response->assertStatus(403);
     }
 
+    public function test_staff_cannot_open_a_students_knowledge_map_even_within_their_own_institute(): void
+    {
+        $token = $this->tokenFor($this->staffInInstituteA, $this->instituteA, isStudent: false, isAdmin: 1);
+
+        $response = $this->withHeaders(['Authorization' => 'Bearer ' . $token])
+            ->getJson("/api/pal/eso/knowledge-map/{$this->studentA}/{$this->conceptId}");
+
+        $response->assertStatus(403);
+    }
+
     public function test_staff_cannot_submit_a_diagnostic_for_a_student_in_their_own_institute(): void
     {
         $token = $this->tokenFor($this->staffInInstituteA, $this->instituteA, isStudent: false, isAdmin: 1);

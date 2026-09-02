@@ -152,6 +152,52 @@ class EsoEngineController extends Controller
     }
 
     /**
+     * GET /api/pal/eso/concept-mastery-details/{learnerId}/{conceptId}
+     *
+     * The "Mastery details" modal's data: status, confidence note, the 6
+     * mastery signals with descriptions, guided-vs-independent support
+     * split, misconception history, and recent individual responses. See
+     * EsoPolicyService::conceptMasteryDetails().
+     */
+    public function conceptMasteryDetails(Request $request, int $learnerId, int $conceptId): JsonResponse
+    {
+        $subInstituteId = $this->subInstituteId($learnerId);
+        if ($subInstituteId === null) {
+            return $this->fail('Unknown learner.', 404);
+        }
+
+        $details = $this->policy->conceptMasteryDetails($learnerId, $conceptId, $subInstituteId);
+        if ($details === null) {
+            return $this->fail('Unknown concept.', 404);
+        }
+
+        return $this->ok($details);
+    }
+
+    /**
+     * GET /api/pal/eso/knowledge-map/{learnerId}/{conceptId}
+     *
+     * The whole chapter's real concept-relationship graph, with this concept
+     * marked as current — on the same ESO mastery pipeline as the rest of
+     * this student's dashboard (not the separate BKT/Coherence-Map system).
+     * See EsoPolicyService::chapterKnowledgeMap().
+     */
+    public function knowledgeMap(Request $request, int $learnerId, int $conceptId): JsonResponse
+    {
+        $subInstituteId = $this->subInstituteId($learnerId);
+        if ($subInstituteId === null) {
+            return $this->fail('Unknown learner.', 404);
+        }
+
+        $map = $this->policy->chapterKnowledgeMap($learnerId, $conceptId, $subInstituteId);
+        if ($map === null) {
+            return $this->fail('Unknown concept.', 404);
+        }
+
+        return $this->ok($map);
+    }
+
+    /**
      * POST /api/pal/eso/practice/{learnerId}/{nodeId}/attempt
      * body: { concept_id, answer_master_id, hint_used?, mode? }
      *
