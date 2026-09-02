@@ -332,6 +332,11 @@ Route::get('matchProfile', [lmsCounsellingController::class, 'matchProfile']);
 Route::middleware(['session'])->group(function () {
     Route::get('studentAspiration', [lmsCounsellingController::class, 'studentAspiration']);
     Route::post('studentAspiration', [lmsCounsellingController::class, 'saveStudentAspiration']);
+    // Career alignment (CI-GUIDE-DEV-001 Group D1) — GET only, so no CSRF
+    // exemption needed (VerifyCsrfToken never checks GET/HEAD/OPTIONS).
+    Route::get('careerAlignment', [lmsCounsellingController::class, 'careerAlignment']);
+    // Phase-1 Career Intelligence (evidence-first UI). GET only, same reasoning.
+    Route::get('studentCareerEvidence', [lmsCounsellingController::class, 'studentCareerEvidence']);
 });
 Route::post('/ai/processData',[contentController::class,'processAIData'])->name('ai.processData');
 Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan');
