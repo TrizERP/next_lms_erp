@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\lms;
 
+use App\Events\Lms\ExamSubmitted;
 use App\Http\Controllers\Controller;
 use App\Models\lms\answermasterModel;
 use App\Models\lms\lmsOnlineExamAnswerModel;
@@ -109,6 +110,7 @@ class onlineExamController extends Controller
         // Request-with-session fallback so token/API clients can submit.
         $sub_institute_id = $request->get('sub_institute_id') ?: $request->session()->get('sub_institute_id');
         $user_id = $request->get('user_id') ?: $request->session()->get('user_id');
+        $syear = $request->get('syear') ?: $request->session()->get('syear');
 
         //$questionpaper_details = $this->get_questionpaper_details($request->get('questionpaper_id'));
         $result = $this->get_calculate_marks($request);
@@ -233,6 +235,19 @@ class onlineExamController extends Controller
         // }
         //END Insert into lms_online_exam_answer table
 
+        // Fire the real-time exam-to-evidence pipeline. Dispatched ONCE per
+        // submission, not per question — AssessmentEvidenceAdapter re-derives
+        // evidence across the student's whole answer history per call, so
+        // firing this once here (not inside the per-question loops above,
+        // unlike recordMisconceptionOnWrongAnswer) is deliberate. This is the
+        // earliest point every required lms_online_exam / lms_online_exam_answer
+        // row for the attempt has been committed, i.e. the attempt is complete
+        // and valid to analyze. Queued (see GenerateAssessmentEvidenceListener),
+        // so it can never delay or break the exam-submission response below.
+        if ($user_id && $syear) {
+            event(new ExamSubmitted((string) $user_id, (string) $syear, (int) $online_exam_id, (int) $request->get('questionpaper_id')));
+        }
+
         // API/JSON clients get the ids back (no cross-origin redirect a browser
         // SPA can't follow); web keeps the redirect to the result page.
         $type = $request->input('type');
@@ -251,7 +266,6 @@ class onlineExamController extends Controller
         //return is_mobile($type,'lms/online_exam_result',$res,"view");
         return redirect()->route('online_exam.show',[$request->get('questionpaper_id'),"online_exam_id"=> $online_exam_id]);
     }
-
 
     public function get_calculate_marks(Request $request)
     {

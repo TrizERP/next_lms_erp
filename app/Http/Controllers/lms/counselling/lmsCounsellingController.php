@@ -1563,4 +1563,74 @@ class lmsCounsellingController extends Controller
             'data' => $saved,
         ]);
     }
+
+    /**
+     * Career alignment (CI-GUIDE-DEV-001 Group D1). Thin wrapper — all
+     * computation lives in CaiCoreService (Phase 3); this endpoint only
+     * resolves the caller's identity from the session and shapes the
+     * response envelope, matching studentAspiration's pattern.
+     */
+    public function careerAlignment(Request $request)
+    {
+        $studentId = $request->session()->get('user_id');
+        $syear = $request->session()->get('syear');
+
+        if (empty($studentId) || empty($syear)) {
+            return response()->json(['status_code' => 0, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $result = app(\App\CareerIntelligence\CaiCoreService::class)->evaluate((string) $studentId, (string) $syear);
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $result,
+        ]);
+    }
+
+    /**
+     * Phase-1 Career Intelligence UI (evidence-first — no career-match
+     * scores, no AI recommendations). All computation lives in
+     * CareerEvidenceService; this endpoint resolves the caller's identity
+     * and shapes the response envelope, matching studentAspiration's and
+     * careerAlignment's pattern.
+     *
+     * `student_id` may be passed to view a DIFFERENT student's evidence
+     * (staff opening it from a student's profile), but only for a caller
+     * whose session carries `is_admin` 1 or 2 — mirrors the admin gate
+     * already used elsewhere (see RequiresTalentAdmin::assertIsAdmin()).
+     * A non-admin passing someone else's student_id is rejected outright,
+     * never silently downgraded to their own id.
+     */
+    public function studentCareerEvidence(Request $request)
+    {
+        $sessionStudentId = $request->session()->get('user_id');
+        $syear = $request->session()->get('syear');
+
+        if (empty($sessionStudentId) || empty($syear)) {
+            return response()->json(['status_code' => 0, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $requestedStudentId = $request->query('student_id');
+        $studentId = (string) $sessionStudentId;
+
+        if (! empty($requestedStudentId) && (string) $requestedStudentId !== (string) $sessionStudentId) {
+            $isAdmin = (int) $request->session()->get('is_admin');
+            if ($isAdmin !== 1 && $isAdmin !== 2) {
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => 'You do not have permission to view this student\'s career evidence.',
+                ], 403);
+            }
+            $studentId = (string) $requestedStudentId;
+        }
+
+        $result = app(\App\CareerIntelligence\CareerEvidenceService::class)->build($studentId, (string) $syear);
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $result,
+        ]);
+    }
 }

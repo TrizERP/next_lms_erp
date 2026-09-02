@@ -80,6 +80,28 @@ class ErpSubjectEnrolmentAdapter implements SubjectEnrolmentAdapter
             ->where('sm.sub_institute_id', $enrollment->sub_institute_id)
             ->where('sm.standard_id', $enrollment->standard_id)
             ->where('sm.allow_grades', 'Yes')
+            // `allow_grades='Yes'` alone isn't sufficient to mean "this is a
+            // curriculum subject the student studies" — this ERP also uses
+            // `sub_std_map.subject_category` for non-curriculum catalog rows
+            // (confirmed: 'STEM Resources' rows exist with allow_grades='Yes'
+            // but zero real question/exam-paper content anywhere in the ERP,
+            // e.g. "Physical Science"/"Life Science"/"Earth & Space Science"/
+            // "Engineering Design" on standard_id=42 — these are supplementary
+            // resource-library entries, not subjects ever actually taught or
+            // assessed, and their unmapped labels were hard-failing every
+            // DeclaredPlan for standards that carry them). Excluded by
+            // blocklisting the specific known-non-curriculum value rather than
+            // allow-listing 'My Course', since `subject_category` is a
+            // free-text field with real variance across tenants (e.g. a
+            // 'My Courses' typo-variant elsewhere in this same table) — an
+            // allow-list would silently drop other tenants' real curriculum
+            // subjects. NULL-safe: `subject_category` is NULL for most
+            // tenants' rows (697 gradeable rows ERP-wide) and must stay
+            // included.
+            ->where(function ($query) {
+                $query->whereNull('sm.subject_category')
+                    ->orWhere('sm.subject_category', '!=', 'STEM Resources');
+            })
             ->select('sub.id as subject_id', 'sub.subject_name', 'sm.elective_subject')
             ->get();
 

@@ -25,15 +25,11 @@ class StudentRegistrationApiController extends Controller
     }
 
     /**
-     * Next auto-generated GR No, scoped to admission year: MAX(enrollment_no) + 1
-     * across tblstudent rows sharing the same tblstudent.admission_year as the
-     * current syear, matching GR No sequencing tied to the student's admission
-     * year (a static column on tblstudent, not the per-year enrollment table).
-     *
-     * Excludes enrollment_no values longer than 8 digits: some historical rows
-     * have a mobile number stored in enrollment_no by mistake (10-11 digits),
-     * which would otherwise dominate MAX() and produce a nonsensical next
-     * number. Real GR numbers in this data are 2-7 digits.
+     * Next auto-generated GR No: MAX(enrollment_no) + 1 across all tblstudent
+     * rows for this tenant, deliberately NOT scoped to admission_year/syear.
+     * GR No. is a single continuous sequence for the institute — it must not
+     * restart or change format when the admission year changes, and existing
+     * enrollment numbers from earlier years remain part of the same series.
      */
    public function nextEnrollmentNo(Request $request): JsonResponse
 {
@@ -43,7 +39,6 @@ class StudentRegistrationApiController extends Controller
 
     $next = DB::table('tblstudent')
         ->where('sub_institute_id', $request->sub_institute_id)
-        ->where('admission_year', $request->syear)
         ->whereNotNull('enrollment_no')
         ->where('enrollment_no', '!=', '')
         ->selectRaw('MAX(CAST(enrollment_no AS UNSIGNED)) + 1 AS next_enrollment_no')
@@ -72,7 +67,36 @@ class StudentRegistrationApiController extends Controller
         if ($validator->fails()) return response()->json(['status' => 0, 'message' => $validator->errors()->first(), 'data' => []], 422);
         $duplicate = DB::table('tblstudent')->where('sub_institute_id', $request->sub_institute_id)->where('enrollment_no', $request->enrollment_no)->exists();
         if ($duplicate) return response()->json(['status' => 0, 'message' => 'GR No. already exists.', 'data' => []], 422);
-        $studentId = DB::transaction(function () use ($request) {
+        // The exists() check above is only a fast-path courtesy: two concurrent
+        // requests can both pass it for the same enrollment_no before either
+        // inserts. The `tblstudent_sub_institute_enrollment_no_unique` DB
+        // constraint is the real guard — a violation here means a race was
+        // lost, not a server error, so it maps to the same 422 the client
+        // already knows how to react to (refetch next-enrollment-no + retry).
+        try {
+            $studentId = $this->insertStudent($request);
+        } catch (\Illuminate\Database\QueryException $e) {
+            if ((int) $e->getCode() === 23000) {
+                return response()->json(['status' => 0, 'message' => 'GR No. already exists.', 'data' => []], 422);
+            }
+            throw $e;
+        }
+
+        // Transactional outbox: the AFTER INSERT triggers on tblstudent and
+        // tblstudent_enrollment queued the graph events into `sync_log` inside
+        // the transaction above, so they committed atomically with the student
+        // and a crash after COMMIT cannot lose them. This call only pushes them
+        // to Neo4j now, so the student is in the Browser by the time this
+        // responds rather than at the next scheduled drain. Never throws —
+        // anything undelivered stays PENDING for `neo4j:drain`.
+        app(GraphSync::class)->flushRecord('tblstudent', (int) $studentId);
+
+        return response()->json(['status' => 1, 'message' => 'Student successfully created.', 'data' => ['id' => $studentId]], 201);
+    }
+
+    private function insertStudent(Request $request): int
+    {
+        return DB::transaction(function () use ($request) {
             $profile = DB::table('tbluserprofilemaster')->where('sub_institute_id', $request->sub_institute_id)->where('name', 'Student')->value('id');
             $studentId = DB::table('tblstudent')->insertGetId([
                 'enrollment_no' => $request->enrollment_no, 'first_name' => trim($request->first_name),
@@ -92,17 +116,6 @@ class StudentRegistrationApiController extends Controller
             ]);
             return $studentId;
         });
-
-        // Transactional outbox: the AFTER INSERT triggers on tblstudent and
-        // tblstudent_enrollment queued the graph events into `sync_log` inside
-        // the transaction above, so they committed atomically with the student
-        // and a crash after COMMIT cannot lose them. This call only pushes them
-        // to Neo4j now, so the student is in the Browser by the time this
-        // responds rather than at the next scheduled drain. Never throws —
-        // anything undelivered stays PENDING for `neo4j:drain`.
-        app(GraphSync::class)->flushRecord('tblstudent', (int) $studentId);
-
-        return response()->json(['status' => 1, 'message' => 'Student successfully created.', 'data' => ['id' => $studentId]], 201);
     }
 
     private function guard(Request $request): ?JsonResponse

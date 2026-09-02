@@ -87,6 +87,13 @@ class ErpSubjectNormaliser implements SubjectNormaliser
         'BANKING & INSURANCE' => CanonicalSubject::BANKING_AND_INSURANCE,
         'BANKING AND INSURANCE' => CanonicalSubject::BANKING_AND_INSURANCE,
         'STATISTICS' => CanonicalSubject::STATISTICS,
+        // Real answer-data audit: CBSE's own Class 11 Commerce paper, taught
+        // as part of the Economics subject group (not the same subject as
+        // plain "Statistics" above — kept as its own exact-string entry, not
+        // folded into a fuzzy match against it). 3 students, 140 real
+        // attempts, content confirmed genuine CBSE Economics/Statistics
+        // curriculum — approved addition.
+        'STATISTICS FOR ECONOMICS' => CanonicalSubject::ECONOMICS,
 
         // Humanities
         'HISTORY' => CanonicalSubject::HISTORY,
@@ -111,6 +118,10 @@ class ErpSubjectNormaliser implements SubjectNormaliser
         'INFORMATICS PRAC' => CanonicalSubject::INFORMATICS_PRACTICES,
         'INFORMATION TECHNOLOGY' => CanonicalSubject::INFORMATION_TECHNOLOGY,
         'IT' => CanonicalSubject::INFORMATION_TECHNOLOGY,
+        // Real answer-data audit (Phase 6 coverage analysis): 277 students,
+        // 208,828 real attempts, content confirmed genuine ICT curriculum
+        // (PowerPoint/presentation-software questions) — approved addition.
+        'ICT' => CanonicalSubject::INFORMATION_TECHNOLOGY,
         'ARTIFICIAL INTELLIGENCE' => CanonicalSubject::ARTIFICIAL_INTELLIGENCE,
         'ROBOTICS' => CanonicalSubject::ROBOTICS,
 
@@ -122,6 +133,10 @@ class ErpSubjectNormaliser implements SubjectNormaliser
         'EVS' => CanonicalSubject::ENVIRONMENTAL_STUDIES,
         'ENVIRONMENTAL STUDIES' => CanonicalSubject::ENVIRONMENTAL_STUDIES,
         'ENVIRONMENTAL SCIENCE' => CanonicalSubject::ENVIRONMENTAL_STUDIES,
+        // Real answer-data audit: 355 students, 24,786 real attempts, content
+        // confirmed textbook primary-grade EVS (air/water/plants/animals) —
+        // approved addition.
+        'ENVIRONMENT' => CanonicalSubject::ENVIRONMENTAL_STUDIES,
     ];
 
     public function toCanonical(string $rawSubjectLabel): ?string
