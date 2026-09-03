@@ -337,6 +337,9 @@ Route::middleware(['session'])->group(function () {
     Route::get('careerAlignment', [lmsCounsellingController::class, 'careerAlignment']);
     // Phase-1 Career Intelligence (evidence-first UI). GET only, same reasoning.
     Route::get('studentCareerEvidence', [lmsCounsellingController::class, 'studentCareerEvidence']);
+    // Knowledge-Based Career Recommendation Engine — additive, dynamic
+    // knowledge-vs-occupation matching. GET only, same reasoning.
+    Route::get('careerRecommendation', [\App\Http\Controllers\lms\counselling\CareerRecommendationController::class, 'recommend']);
 });
 Route::post('/ai/processData',[contentController::class,'processAIData'])->name('ai.processData');
 Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan');

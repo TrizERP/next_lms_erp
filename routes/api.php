@@ -365,6 +365,7 @@ Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\In
 // Semantic Intelligence - read-only chapter intelligence for presentation generators
 Route::get('semantic-intelligence', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'index']);
 Route::get('semantic-intelligence/{extraction_id}/result', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'show']);
+Route::get('semantic-intelligence/rows', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'rows']);
 
 // Concept Intelligence tab names - renamed per institute, defaults in
 // config/lms_concept_intelligence_tabs.php
