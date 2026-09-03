@@ -79,5 +79,8 @@ class Kernel extends HttpKernel
         'eso.student' => \App\Http\Middleware\EsoStudentOnlyAuth::class,
         'staff.only' => \App\Http\Middleware\RequireStaffRole::class,
         'task.permission' => \App\Http\Middleware\TaskPermissionMiddleware::class,
+        'brain.auth' => \App\Http\Middleware\Brain\BrainAuthenticate::class,
+        'brain.tenant' => \App\Http\Middleware\Brain\BrainTenantScope::class,
+        'brain.permission' => \App\Http\Middleware\Brain\BrainRequirePermission::class,
     ];
 }

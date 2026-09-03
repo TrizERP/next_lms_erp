@@ -118,6 +118,8 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapTaskManagementRoutes();
 
         $this->mapCompetencyManagementRoutes();
+
+        $this->mapBrainRoutes();
     }
 
     /**
@@ -385,6 +387,13 @@ class RouteServiceProvider extends ServiceProvider
         Route::namespace($this->namespace)
             ->middleware('web')
             ->group(base_path('routes/skill.php'));
+    }
+
+    protected function mapBrainRoutes()
+    {
+        Route::prefix('api/brain')
+            ->middleware('api')
+            ->group(base_path('routes/brain.php'));
     }
     
     /**
