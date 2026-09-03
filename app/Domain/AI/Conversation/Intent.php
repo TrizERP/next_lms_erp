@@ -28,6 +28,25 @@ final class Intent
     ) {
     }
 
+    /**
+     * The intent for a question nothing matched.
+     *
+     * Exists as a named constructor so the pipeline has something well-formed to record
+     * when a turn halts before the classifier produced anything — a turn with no intent
+     * at all would store a null key and become invisible to every later query.
+     *
+     * @param  array<int, string>  $suggestions
+     */
+    public static function unknown(array $suggestions = []): self
+    {
+        return new self(
+            key: self::UNKNOWN,
+            label: 'Not understood',
+            confidence: 0.0,
+            suggestions: $suggestions,
+        );
+    }
+
     public function isUnknown(): bool
     {
         return $this->key === self::UNKNOWN;

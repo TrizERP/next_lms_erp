@@ -26,6 +26,13 @@ class AcademicRiskAgent implements Agent
 
     public const WORKFLOW_KEY = 'k12_academic_intervention';
 
+    /**
+     * What each detector managed to judge on the last sweep, keyed by signal.
+     *
+     * @var array<string, array<string, mixed>>
+     */
+    private array $coverage = [];
+
     public function __construct(
         private readonly AssessmentDeclineDetector $assessmentDecline,
         private readonly AttendanceRiskDetector $attendanceRisk,
@@ -41,6 +48,12 @@ class AcademicRiskAgent implements Agent
         $studentIds = $this->resolveStudentIds($context, $subjectId);
         $limit = (int) ($context->input['limit'] ?? 50);
 
+        // How wide the sweep actually was. "No signals" and "no signals among the
+        // students we got round to reading" are different answers, and only one of them
+        // means the school is fine — so the breadth travels with the result rather than
+        // being inferred from a limit the reader never sees.
+        $cohort = $this->cohort($context, $studentIds);
+
         // ---- Detect --------------------------------------------------------
         $detected = $this->detectAll($context, $studentIds, $limit);
 
@@ -48,8 +61,16 @@ class AcademicRiskAgent implements Agent
             return [
                 'students_at_risk' => 0,
                 'cases' => [],
+                'cohort' => $cohort,
+                'detector_coverage' => $this->coverage,
                 'confidence' => 1.0,
-                'message' => 'No academic risk signals were found in the current scope.',
+                'message' => $cohort['complete']
+                    ? 'No academic risk signals were found in the current scope.'
+                    : sprintf(
+                        'No academic risk signals were found among the %d of %d students this sweep read.',
+                        $cohort['scanned'],
+                        $cohort['in_scope']
+                    ),
             ];
         }
 
@@ -77,7 +98,28 @@ class AcademicRiskAgent implements Agent
             'students_at_risk' => count($cases),
             'signals_detected' => count($detected),
             'cases' => $cases,
+            'cohort' => $cohort,
+            'detector_coverage' => $this->coverage,
             'confidence' => $this->overallConfidence($detected),
+        ];
+    }
+
+    /**
+     * The breadth of one sweep: how many students were read, out of how many exist.
+     *
+     * @param  array<int, int>|null  $studentIds  Non-null when the caller named them.
+     * @return array{scanned:int, in_scope:int, complete:bool, narrowed_to_named_students:bool}
+     */
+    private function cohort(AgentContext $context, ?array $studentIds): array
+    {
+        $scanned = count($this->scope->students($context->scope, $studentIds));
+        $inScope = $studentIds === null ? $this->scope->total($context->scope) : count($studentIds);
+
+        return [
+            'scanned' => $scanned,
+            'in_scope' => $inScope,
+            'complete' => $scanned >= $inScope,
+            'narrowed_to_named_students' => $studentIds !== null,
         ];
     }
 
@@ -111,16 +153,29 @@ class AcademicRiskAgent implements Agent
     private function detectAll(AgentContext $context, ?array $studentIds, int $limit): array
     {
         $signals = [];
+        $this->coverage = [];
 
         foreach ([$this->assessmentDecline, $this->attendanceRisk, $this->missedAssignments] as $detector) {
             // An agent may be licensed for only some of these signals.
             if (! $context->manifest->permitsSignal($detector->key())) {
+                $this->coverage[$detector->key()] = [
+                    'signal_key' => $detector->key(),
+                    'ran' => false,
+                    'summary' => 'This agent is not licensed to raise this signal, so the detector did not run.',
+                ];
+
                 continue;
             }
 
             foreach ($detector->detect($context->scope, $studentIds, $limit) as $signal) {
                 $signals[] = $signal;
             }
+
+            $coverage = $detector->coverage();
+
+            $this->coverage[$detector->key()] = $coverage === null
+                ? ['signal_key' => $detector->key(), 'ran' => true, 'summary' => 'No coverage reported.']
+                : ['ran' => true] + $coverage->toArray();
         }
 
         return $signals;
