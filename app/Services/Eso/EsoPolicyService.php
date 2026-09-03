@@ -4,6 +4,7 @@ namespace App\Services\Eso;
 
 use App\Models\Eso\DecisionLog;
 use App\Models\Eso\LearnerNodeState;
+use App\Models\Eso\ResponseLog;
 use App\Models\PAL\ConceptNode;
 use App\Models\PAL\ConceptRelation;
 use App\Models\PAL\MisconceptionLibrary;
@@ -191,6 +192,38 @@ class EsoPolicyService
     }
 
     /**
+     * One append-only eso_response_log row per scored response (diagnostic
+     * item, practice attempt, or retrieval-check item) — the "Mastery
+     * details" screen's support split and recent-responses list read this;
+     * nothing else in this class needs it, so every call site logs after it
+     * has already resolved correctness for its own purposes rather than
+     * this method re-deriving it.
+     */
+    protected function logResponse(
+        int $studentId,
+        int $conceptId,
+        int $nodeId,
+        int $subInstituteId,
+        int $answerMasterId,
+        bool $correct,
+        bool $hintUsed = false,
+        ?string $mode = null
+    ): void {
+        $questionId = DB::table('answer_master')->where('id', $answerMasterId)->value('question_id');
+
+        ResponseLog::create([
+            'student_id' => $studentId,
+            'concept_id' => $conceptId,
+            'node_id' => $nodeId,
+            'sub_institute_id' => $subInstituteId,
+            'question_id' => $questionId,
+            'correct' => $correct,
+            'hint_used' => $hintUsed,
+            'mode' => $mode,
+        ]);
+    }
+
+    /**
      * Score a diagnostic and set every node's initial state (D1, weighted double
      * per the brief). Nodes at/above SKIP_THRESHOLD are marked mastered and
      * skipped; everything else starts in "learning". Correctness is resolved
@@ -210,8 +243,10 @@ class EsoPolicyService
             $state = $this->stateFor($studentId, $nodeId, $subInstituteId);
 
             foreach ($nodeResponses as $response) {
-                $correct = $this->isAnswerCorrect((int) $response['answer_master_id']);
+                $answerMasterId = (int) $response['answer_master_id'];
+                $correct = $this->isAnswerCorrect($answerMasterId);
                 $this->applyUpdate($state, $correct, weight: 2.0);
+                $this->logResponse($studentId, $conceptId, $nodeId, $subInstituteId, $answerMasterId, $correct);
             }
 
             $skip = $state->mastery_estimate >= self::SKIP_THRESHOLD;
@@ -460,6 +495,7 @@ class EsoPolicyService
         $correct = $this->isAnswerCorrect($answerMasterId);
         $hintUsed = (bool) ($attempt['hint_used'] ?? false);
         $mode = $attempt['mode'] ?? $state->practice_mode ?? LearnerNodeState::MODE_GUIDED;
+        $this->logResponse($studentId, $conceptId, $nodeId, $subInstituteId, $answerMasterId, $correct, $hintUsed, $mode);
 
         // "Independent-practice correctness only counts hint-free."
         $countsForMastery = ! ($mode === LearnerNodeState::MODE_INDEPENDENT && $hintUsed);
@@ -795,7 +831,14 @@ class EsoPolicyService
     public function retrievalCheck(int $studentId, int $nodeId, int $conceptId, int $subInstituteId, array $responses): array
     {
         $state = $this->stateFor($studentId, $nodeId, $subInstituteId);
-        $allCorrect = collect($responses)->every(fn ($r) => $this->isAnswerCorrect((int) $r['answer_master_id']));
+        $correctness = collect($responses)->map(function ($r) use ($studentId, $conceptId, $nodeId, $subInstituteId) {
+            $answerMasterId = (int) $r['answer_master_id'];
+            $correct = $this->isAnswerCorrect($answerMasterId);
+            $this->logResponse($studentId, $conceptId, $nodeId, $subInstituteId, $answerMasterId, $correct);
+
+            return $correct;
+        });
+        $allCorrect = $correctness->every(fn (bool $correct) => $correct);
 
         if ($allCorrect) {
             $state->status = LearnerNodeState::STATUS_RETAINED;
@@ -934,22 +977,17 @@ class EsoPolicyService
 
         foreach ($readyConcepts as $concept) {
             $conceptId = (int) $concept->id;
-            $locked = ! $this->prerequisitesMet($studentId, $conceptId, $subInstituteId);
-            $verdict = $locked ? null : $this->masteryVerdict($studentId, $conceptId, $subInstituteId, silent: true);
-            $mastered = $verdict['mastered'] ?? false;
-            $attempts = $this->conceptAttemptCount($studentId, $conceptId, $subInstituteId);
-
-            $status = $locked ? 'locked' : ($mastered ? 'mastered' : ($attempts > 0 ? 'in_progress' : 'not_started'));
+            $classification = $this->conceptStatusFor($studentId, $conceptId, $subInstituteId);
 
             $sections[] = [
                 'concept_id' => $conceptId,
                 'name' => $concept->name,
-                'status' => $status,
-                'knowledge_mastery' => $verdict['knowledge_mastery'] ?? null,
-                'application_mastery' => $verdict['application_mastery'] ?? null,
+                'status' => $classification['status'],
+                'knowledge_mastery' => $classification['knowledge_mastery'],
+                'application_mastery' => $classification['application_mastery'],
             ];
 
-            if ($currentConceptId === null && ! in_array($status, ['locked', 'mastered'], true)) {
+            if ($currentConceptId === null && ! in_array($classification['status'], ['locked', 'mastered'], true)) {
                 $currentConceptId = $conceptId;
             }
         }
@@ -1008,6 +1046,227 @@ class EsoPolicyService
             'chapter_sections' => $sections,
             'mastery_signals' => $masterySignals,
         ];
+    }
+
+    /**
+     * Real ESO status for one concept, for one student — locked / not_started
+     * / in_progress / mastered, or 'not_ready' when the concept has no K/A/S
+     * nodes authored at all (nothing to gate or master yet — a real, honest
+     * state, not an error). Shared by chapterDashboard() and knowledgeMap()
+     * so both agree on exactly the same classification.
+     */
+    protected function conceptStatusFor(int $studentId, int $conceptId, int $subInstituteId): array
+    {
+        $nodes = $this->nodesForConcept($conceptId, $subInstituteId);
+        if ($nodes->isEmpty()) {
+            return [
+                'status' => 'not_ready',
+                'knowledge_mastery' => null,
+                'application_mastery' => null,
+                'responses' => 0,
+            ];
+        }
+
+        $locked = ! $this->prerequisitesMet($studentId, $conceptId, $subInstituteId);
+        $verdict = $locked ? null : $this->masteryVerdict($studentId, $conceptId, $subInstituteId, silent: true);
+        $mastered = $verdict['mastered'] ?? false;
+        $responses = $this->conceptAttemptCount($studentId, $conceptId, $subInstituteId);
+
+        return [
+            'status' => $locked ? 'locked' : ($mastered ? 'mastered' : ($responses > 0 ? 'in_progress' : 'not_started')),
+            'knowledge_mastery' => $verdict['knowledge_mastery'] ?? null,
+            'application_mastery' => $verdict['application_mastery'] ?? null,
+            'responses' => $responses,
+        ];
+    }
+
+    // ── Knowledge map — the whole chapter's real concept-relationship graph ──
+
+    /**
+     * The whole chapter's ESO-ready concepts as one connected graph, with the
+     * requested concept marked `is_current` — matches the shape of a real
+     * curriculum map (a single concept's 2-4 immediate neighbors reads as a
+     * stub, not a map). Edges are read straight from `pal_concept_relations`,
+     * scoped to pairs that are BOTH in this chapter (same "no link crosses a
+     * chapter boundary" convention the existing Coherence Map already uses on
+     * this data) — `requires` becomes a direct-prerequisite edge (drawn
+     * prerequisite → dependent), `cross_curricular` becomes an undirected
+     * related edge. Every concept's status/response/misconception counts are
+     * real, computed the same way chapterDashboard() computes them
+     * (conceptStatusFor(), the same ESO pipeline the rest of the student
+     * dashboard uses — not the separate BKT/Coherence-Map mastery pipeline).
+     *
+     * Returns null when the concept doesn't exist or isn't itself ESO-ready.
+     */
+    public function chapterKnowledgeMap(int $studentId, int $conceptId, int $subInstituteId): ?array
+    {
+        $conceptRow = DB::table('lms_concept')->where('id', $conceptId)->first(['id', 'chapter_id']);
+        if ($conceptRow === null) {
+            return null;
+        }
+
+        $chapterId = (int) $conceptRow->chapter_id;
+        $chapter = DB::table('chapter_master')->where('id', $chapterId)->first(['id', 'chapter_name', 'chapter_desc']);
+        if ($chapter === null) {
+            return null;
+        }
+
+        $readyConcepts = $this->esoReadyConceptsForChapters([$chapterId], $subInstituteId);
+        $conceptIds = $readyConcepts->pluck('id')->map(fn ($id) => (int) $id)->all();
+
+        if (! in_array($conceptId, $conceptIds, true)) {
+            return null;
+        }
+
+        $misconceptionCounts = MisconceptionLibrary::whereIn('concept_ref_id', $conceptIds)
+            ->selectRaw('concept_ref_id, count(*) as n')
+            ->groupBy('concept_ref_id')
+            ->pluck('n', 'concept_ref_id');
+
+        $classifications = [];
+        foreach ($conceptIds as $id) {
+            $classifications[$id] = $this->conceptStatusFor($studentId, $id, $subInstituteId);
+        }
+
+        $relations = ConceptRelation::whereIn('from_concept_id', $conceptIds)
+            ->whereIn('to_concept_id', $conceptIds)
+            ->whereIn('relation_type', ['requires', 'cross_curricular'])
+            ->forTenant($subInstituteId)
+            ->get(['from_concept_id', 'to_concept_id', 'relation_type']);
+
+        // `from_concept_id` requires `to_concept_id`: from = the dependent
+        // concept, to = its prerequisite. Drawn prerequisite -> dependent.
+        $prerequisitesOf = [];
+        $edges = [];
+        $seenEdgeKeys = [];
+        foreach ($relations as $r) {
+            $dependent = (int) $r->from_concept_id;
+            $prerequisite = (int) $r->to_concept_id;
+
+            if ($r->relation_type === 'requires') {
+                $prerequisitesOf[$dependent][] = $prerequisite;
+                $key = "prereq:{$prerequisite}:{$dependent}";
+                if (! isset($seenEdgeKeys[$key])) {
+                    $seenEdgeKeys[$key] = true;
+                    $edges[] = ['from_concept_id' => $prerequisite, 'to_concept_id' => $dependent, 'type' => 'direct_prerequisite'];
+                }
+            } else {
+                // cross_curricular has no meaningful direction for display — dedupe both orders.
+                $key = 'related:' . min($dependent, $prerequisite) . ':' . max($dependent, $prerequisite);
+                if (! isset($seenEdgeKeys[$key])) {
+                    $seenEdgeKeys[$key] = true;
+                    $edges[] = ['from_concept_id' => $dependent, 'to_concept_id' => $prerequisite, 'type' => 'related'];
+                }
+            }
+        }
+
+        // Longest prerequisite chain beneath each concept — the vertical
+        // layout axis. Cycle-safe: pal_concept_relations is not guaranteed
+        // acyclic (see CoherenceMapRepository's own note on this same table),
+        // so a node currently being visited contributes depth 0, not infinity.
+        $depthMemo = [];
+        $computeDepth = function (int $id, array $visiting = []) use (&$computeDepth, &$depthMemo, $prerequisitesOf): int {
+            if (isset($depthMemo[$id])) {
+                return $depthMemo[$id];
+            }
+            if (isset($visiting[$id])) {
+                return 0;
+            }
+            $visiting[$id] = true;
+
+            $depth = 0;
+            foreach ($prerequisitesOf[$id] ?? [] as $prerequisiteId) {
+                $depth = max($depth, 1 + $computeDepth($prerequisiteId, $visiting));
+            }
+
+            return $depthMemo[$id] = $depth;
+        };
+
+        // "Right now X stays closed, because it needs Y" — real, from the
+        // same prerequisite check nextAction()/prerequisitesMet() already
+        // use. Computed per concept (for its own card's reason) AND
+        // aggregated (for the page-level summary sentence).
+        $lockedNames = [];
+        $blockingNames = [];
+        $blockingNamesByConceptId = [];
+        foreach ($conceptIds as $id) {
+            if ($classifications[$id]['status'] !== 'locked') {
+                continue;
+            }
+            $unmetIds = $this->unmetPrerequisiteConceptIds($id, $studentId, $subInstituteId);
+            $names = $unmetIds->isEmpty() ? [] : DB::table('lms_concept')->whereIn('id', $unmetIds)->pluck('name')->all();
+            $blockingNamesByConceptId[$id] = $names;
+            $blockingNames = array_merge($blockingNames, $names);
+        }
+
+        $concepts = [];
+        foreach ($readyConcepts as $concept) {
+            $id = (int) $concept->id;
+            $classification = $classifications[$id];
+            $status = $classification['status'];
+
+            // A "mastered" concept whose every node has independently survived
+            // a D5 spaced-retrieval check reads as "Retained" rather than
+            // "Mastered" — same underlying eso_learner_node_state.status D5
+            // already writes (STATUS_RETAINED), just surfaced as a distinct
+            // concept-level label here. Does not change chapterDashboard()'s
+            // own status contract or any D1-D5 behavior.
+            if ($status === 'mastered' && $this->isConceptRetained($studentId, $id, $subInstituteId)) {
+                $status = 'retained';
+            }
+
+            $lockedNames[] = $status === 'locked' ? $concept->name : null;
+
+            $concepts[] = [
+                'concept_id' => $id,
+                'name' => $concept->name,
+                'status' => $status,
+                'responses' => $classification['responses'],
+                'misconception_count' => (int) ($misconceptionCounts[$id] ?? 0),
+                'depth' => $computeDepth($id),
+                'is_current' => $id === $conceptId,
+                'blocking_prerequisite_names' => $blockingNamesByConceptId[$id] ?? [],
+            ];
+        }
+        $lockedNames = array_values(array_unique(array_filter($lockedNames)));
+
+        return [
+            'chapter_id' => $chapterId,
+            'chapter_name' => $chapter->chapter_name,
+            'chapter_description' => $chapter->chapter_desc !== null && trim((string) $chapter->chapter_desc) !== '' ? $chapter->chapter_desc : null,
+            'current_concept_id' => $conceptId,
+            'concepts' => $concepts,
+            'edges' => $edges,
+            'locked_concept_names' => $lockedNames,
+            'blocking_prerequisite_names' => array_values(array_unique($blockingNames)),
+            'stats' => [
+                'concepts' => count($concepts),
+                'direct_prerequisites' => count(array_filter($edges, fn (array $e) => $e['type'] === 'direct_prerequisite')),
+                'related' => count(array_filter($edges, fn (array $e) => $e['type'] === 'related')),
+                'misconceptions' => array_sum(array_column($concepts, 'misconception_count')),
+            ],
+        ];
+    }
+
+    /**
+     * True when every node of this concept has independently reached
+     * STATUS_RETAINED (survived a D5 spaced-retrieval check) — a real,
+     * already-written signal, just read here rather than mutated. A concept
+     * with zero nodes, or any node not yet retained, is not retained.
+     */
+    protected function isConceptRetained(int $studentId, int $conceptId, int $subInstituteId): bool
+    {
+        $nodeIds = $this->nodesForConcept($conceptId, $subInstituteId)->pluck('id');
+        if ($nodeIds->isEmpty()) {
+            return false;
+        }
+
+        $retainedCount = LearnerNodeState::forStudent($studentId)
+            ->whereIn('node_id', $nodeIds)
+            ->where('status', LearnerNodeState::STATUS_RETAINED)
+            ->count();
+
+        return $retainedCount === $nodeIds->count();
     }
 
     /**
@@ -1099,23 +1358,36 @@ class EsoPolicyService
 
         return [
             // Procedural correctness on the Knowledge node.
-            $this->signal('getting_method_right', 'Getting the method right', $this->averageEstimate($kStates)),
+            $this->signal('getting_method_right', 'Getting the method right', 'Carrying out the method accurately.', $this->averageEstimate($kStates), $this->totalAttempts($kStates)),
             // Conceptual correctness on the Application node.
-            $this->signal('understanding_the_idea', 'Understanding the idea', $this->averageEstimate($aStates)),
+            $this->signal('understanding_the_idea', 'Understanding the idea', 'Knowing why the method works, not just that it does.', $this->averageEstimate($aStates), $this->totalAttempts($aStates)),
             // Correctness on the Skill node (the concept's "demonstrate it" practice).
-            $this->signal('explaining_your_thinking', 'Explaining your thinking', $this->averageEstimate($sStates)),
+            $this->signal('explaining_your_thinking', 'Explaining your thinking', 'Justifying, critiquing and convincing.', $this->averageEstimate($sStates), $this->totalAttempts($sStates)),
             // Share of Application attempts made once practice had already advanced to independent mode (no guided scaffolding).
-            $this->signal('using_it_somewhere_new', 'Using it somewhere new', $this->independentShare($aStates)),
+            $this->signal('using_it_somewhere_new', 'Using it somewhere new', 'Applying the idea in a new or unfamiliar context.', $this->independentShare($aStates), $this->totalAttempts($aStates)),
             // 1 - hint rate, across every node of the concept.
-            $this->signal('working_without_support', 'Working without support', $this->hintFreeShare($allStates)),
+            $this->signal('working_without_support', 'Working without support', 'Getting it right without hints or scaffolding.', $this->hintFreeShare($allStates), $this->totalAttempts($allStates)),
             // Share of nodes that survived a spaced-retrieval check, falling back to the current correct-streak ratio before any node has been retested.
-            $this->signal('doing_it_reliably', 'Doing it reliably', $this->reliabilityShare($allStates)),
+            $this->signal('doing_it_reliably', 'Doing it reliably', 'Getting it right consistently, not just once.', $this->reliabilityShare($allStates), $this->totalAttempts($allStates)),
         ];
     }
 
-    protected function signal(string $key, string $label, ?float $value): array
+    protected function signal(string $key, string $label, string $description, ?float $value, int $responseCount): array
     {
-        return ['key' => $key, 'label' => $label, 'value' => $value, 'has_evidence' => $value !== null];
+        return [
+            'key' => $key,
+            'label' => $label,
+            'description' => $description,
+            'value' => $value,
+            'has_evidence' => $value !== null,
+            'response_count' => $responseCount,
+        ];
+    }
+
+    /** @param  Collection<int, LearnerNodeState>  $states */
+    protected function totalAttempts(Collection $states): int
+    {
+        return (int) $states->sum('attempts');
     }
 
     /** @param  Collection<int, LearnerNodeState>  $states */
@@ -1177,6 +1449,136 @@ class EsoPolicyService
         $streakRatio = $evidenced->avg(fn (LearnerNodeState $s) => min(1.0, $s->consecutive_correct / self::CONSECUTIVE_CORRECT_TO_ADVANCE));
 
         return round((float) $streakRatio, 3);
+    }
+
+    // ── Concept mastery details — the "Mastery details" modal ───────────
+
+    /**
+     * Everything the "Mastery details" modal for one concept needs: status,
+     * an honest confidence note, the same 6 mastery signals chapterDashboard()
+     * uses (with description + response_count), a guided-vs-independent
+     * support split, this concept's misconception history, and its most
+     * recent individual responses. Returns null when the concept doesn't
+     * exist or has no K/A/S nodes authored yet.
+     */
+    public function conceptMasteryDetails(int $studentId, int $conceptId, int $subInstituteId): ?array
+    {
+        $conceptRow = DB::table('lms_concept')->where('id', $conceptId)->first(['id', 'name', 'chapter_id']);
+        if ($conceptRow === null) {
+            return null;
+        }
+
+        $nodes = $this->nodesForConcept($conceptId, $subInstituteId);
+        if ($nodes->isEmpty()) {
+            return null;
+        }
+
+        $locked = ! $this->prerequisitesMet($studentId, $conceptId, $subInstituteId);
+        $verdict = $locked ? null : $this->masteryVerdict($studentId, $conceptId, $subInstituteId, silent: true);
+        $mastered = $verdict['mastered'] ?? false;
+        $responses = $this->conceptAttemptCount($studentId, $conceptId, $subInstituteId);
+
+        $status = $locked ? 'locked' : ($mastered ? 'mastered' : ($responses > 0 ? 'in_progress' : 'not_started'));
+
+        $support = ResponseLog::forStudent($studentId)->forConcept($conceptId)->get(['hint_used', 'correct']);
+        $withHint = $support->where('hint_used', true);
+        $independent = $support->where('hint_used', false);
+
+        return [
+            'concept_id' => $conceptId,
+            'concept_name' => $conceptRow->name,
+            'chapter_id' => (int) $conceptRow->chapter_id,
+            'status' => $status,
+            'responses_on_concept' => $responses,
+            'confidence_note' => $this->confidenceNote($responses),
+            'mastery_signals' => $this->masterySignals($studentId, $conceptId, $subInstituteId),
+            'support_with_hint' => ['count' => $withHint->count(), 'correct' => $withHint->where('correct', true)->count()],
+            'support_independent' => ['count' => $independent->count(), 'correct' => $independent->where('correct', true)->count()],
+            'misconceptions' => $this->misconceptionHistory($studentId, $conceptId),
+            'recent_responses' => $this->recentResponses($studentId, $conceptId),
+        ];
+    }
+
+    /**
+     * Plain, honest evidence framing — no invented confidence tiers, and
+     * deliberately no recency-decay claim (the update rule has none, see
+     * applyUpdate()'s docblock — a "recent work counts for more" line would
+     * misrepresent how mastery_estimate actually moves).
+     */
+    protected function confidenceNote(int $responses): string
+    {
+        $base = $responses === 0
+            ? 'Based on 0 recorded responses on this concept — no confidence yet.'
+            : sprintf('Based on %d recorded response%s on this concept.', $responses, $responses === 1 ? '' : 's');
+
+        return $base . ' This is an inference from your responses, not a measurement of what you know.';
+    }
+
+    /**
+     * `misconception_corrected` rows don't carry a misconception_id in their
+     * own state_snapshot (only `serve_contrast_pair` does — see
+     * checkMisconception()/contrastPairAction()), so a correction is
+     * correlated to its misconception via node_id instead: walk the concept's
+     * D3 decisions chronologically, tracking which misconception is
+     * currently active on each node, and flip that misconception's
+     * `corrected` flag when its node's contrast pair is cleanly resolved.
+     *
+     * @return array<int, array{description:string, corrected:bool, detected_at:?string}>
+     */
+    protected function misconceptionHistory(int $studentId, int $conceptId): array
+    {
+        $rows = DecisionLog::forStudent($studentId)
+            ->forConcept($conceptId)
+            ->whereIn('action', ['serve_contrast_pair', 'misconception_corrected'])
+            ->orderBy('id') // chronological — oldest first
+            ->get(['action', 'node_id', 'state_snapshot', 'created_at']);
+
+        $activeMisconceptionByNode = [];
+        $entries = [];
+
+        foreach ($rows as $row) {
+            if ($row->action === 'serve_contrast_pair') {
+                $misconceptionId = $row->state_snapshot['misconception_id'] ?? null;
+                if ($misconceptionId === null) {
+                    continue;
+                }
+                $activeMisconceptionByNode[$row->node_id] = $misconceptionId;
+                if (! isset($entries[$misconceptionId])) {
+                    $library = MisconceptionLibrary::find($misconceptionId);
+                    $entries[$misconceptionId] = [
+                        'description' => $library->description ?? 'A specific mix-up in this concept.',
+                        'corrected' => false,
+                        'detected_at' => optional($row->created_at)->toIso8601String(),
+                    ];
+                }
+            } elseif (isset($activeMisconceptionByNode[$row->node_id], $entries[$activeMisconceptionByNode[$row->node_id]])) {
+                $entries[$activeMisconceptionByNode[$row->node_id]]['corrected'] = true;
+            }
+        }
+
+        return array_values($entries);
+    }
+
+    /** Last 10 individual responses for this concept, newest first. */
+    protected function recentResponses(int $studentId, int $conceptId): array
+    {
+        $rows = ResponseLog::forStudent($studentId)
+            ->forConcept($conceptId)
+            ->orderByDesc('id')
+            ->limit(10)
+            ->get(['question_id', 'correct', 'created_at']);
+
+        $questionIds = $rows->pluck('question_id')->filter()->unique()->all();
+        $titles = $questionIds === [] ? [] : DB::table('lms_question_master')
+            ->whereIn('id', $questionIds)
+            ->pluck('question_title', 'id')
+            ->all();
+
+        return $rows->map(fn ($row) => [
+            'question' => $titles[$row->question_id] ?? 'Question',
+            'correct' => (bool) $row->correct,
+            'at' => optional($row->created_at)->toIso8601String(),
+        ])->all();
     }
 
     // ── shared internals ─────────────────────────────────────────────────
