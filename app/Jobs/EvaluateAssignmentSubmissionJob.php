@@ -5,9 +5,10 @@ namespace App\Jobs;
 use App\Models\lms\assignment\lms_assignmentModel;
 use App\Services\Homework\Exceptions\DocumentExtractionException;
 use App\Services\Homework\Exceptions\EvaluationException;
+use App\Services\Homework\HomeworkAnnotatedPdfService;
+use App\Services\Homework\HomeworkAnswerLocatorService;
 use App\Services\Homework\HomeworkDocumentExtractionService;
 use App\Services\Homework\HomeworkEvaluationService;
-use App\Services\Homework\HomeworkReviewPdfService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -21,11 +22,15 @@ use Throwable;
 /**
  * Queued AI evaluation pipeline for the LMS Assignment module, keeping the
  * ENTIRE lifecycle on the existing `lms_assignment` row — no separate
- * submission/evaluation table. Reuses the same Gemini/OCR/PDF services as
- * EvaluateHomeworkSubmissionJob (App\Services\Homework\*): those services
- * only take file paths/mime types/plain text in and structured results out,
- * so they are not actually homework-specific and are shared across both
- * the Homework and LMS Assignment modules.
+ * submission/evaluation table. Reuses the same Gemini/OCR/annotation
+ * services as EvaluateHomeworkSubmissionJob (App\Services\Homework\*):
+ * those services only take file paths/mime types/plain text in and
+ * structured results out, so they are not actually homework-specific and
+ * are shared across both the Homework and LMS Assignment modules.
+ *
+ * The output is the student's OWN uploaded pages with verdict marks drawn
+ * directly on them (see HomeworkAnnotatedPdfService) — never a separate
+ * typed report.
  *
  * Column reuse on `lms_assignment` (see the 2026_09_04_130000 migration for
  * the handful of genuinely new columns):
@@ -51,8 +56,9 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
 
     public function handle(
         HomeworkDocumentExtractionService $extractor,
+        HomeworkAnswerLocatorService $locator,
         HomeworkEvaluationService $evaluationService,
-        HomeworkReviewPdfService $pdfService
+        HomeworkAnnotatedPdfService $annotatedPdfService
     ): void {
         $assignment = lms_assignmentModel::where([
             'id' => $this->assignmentId,
@@ -78,7 +84,8 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
         }
 
         $questionsText = '';
-        $answersText = '';
+        $submissionMime = $this->mimeFromExtension($assignment->submission_image);
+        $located = null;
 
         try {
             $questionsText = $extractor->extractText(
@@ -86,11 +93,7 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
                 'application/pdf',
                 'assignment questions'
             );
-            $answersText = $extractor->extractText(
-                $submissionPath,
-                $this->mimeFromExtension($assignment->submission_image),
-                'student answers'
-            );
+            $located = $locator->locateAnswers($submissionPath, $submissionMime);
         } catch (DocumentExtractionException $exception) {
             Log::warning('Assignment OCR/extraction failed', [
                 'assignment_id' => $this->assignmentId,
@@ -102,7 +105,7 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
         }
 
         try {
-            $evaluation = $evaluationService->evaluate($questionsText, $answersText, null);
+            $evaluation = $evaluationService->evaluate($questionsText, $located['combined_text'], null);
         } catch (EvaluationException $exception) {
             Log::warning('Assignment Gemini evaluation failed', [
                 'assignment_id' => $this->assignmentId,
@@ -113,29 +116,25 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
             return;
         }
 
-        $reviewedPdfUrl = null;
+        $evaluatedSubmissionUrl = null;
         try {
-            $pdfBinary = $pdfService->generate($evaluation, [
-                'title' => (string) $assignment->title,
-                'studentName' => $this->studentName($assignment->student_id),
-                'subjectName' => $this->subjectName($assignment->subject_id),
-                'standardName' => $this->standardName($assignment->standard_id),
-            ]);
-            $filePath = 'public/assignment_evaluations/evaluation-' . $this->assignmentId . '-' . now()->format('YmdHis') . '.pdf';
+            $annotations = $this->mergeAnnotations($evaluation['results'], $located['answers']);
+            $pdfBinary = $annotatedPdfService->annotate($submissionPath, $submissionMime, $annotations);
+            $filePath = 'public/assignment_evaluated_submissions/evaluated-' . $this->assignmentId . '-' . now()->format('YmdHis') . '.pdf';
             Storage::disk('digitalocean')->put($filePath, $pdfBinary, 'public');
-            $reviewedPdfUrl = Storage::disk('digitalocean')->url($filePath);
+            $evaluatedSubmissionUrl = Storage::disk('digitalocean')->url($filePath);
         } catch (Throwable $exception) {
-            Log::warning('Assignment reviewed-PDF generation/storage failed', [
+            Log::warning('Assignment annotated-submission generation/storage failed', [
                 'assignment_id' => $this->assignmentId,
                 'message' => $exception->getMessage(),
             ]);
-            // Non-fatal: the structured result is still saved even if the PDF could not be produced.
+            // Non-fatal: the structured result is still saved even if the annotated PDF could not be produced.
         }
 
         $summary = $this->buildTeacherRemarks($evaluation);
 
         $updateData = [
-            'reviewed_pdf_path' => $reviewedPdfUrl,
+            'reviewed_pdf_path' => $evaluatedSubmissionUrl,
             'json_annotation' => json_encode($evaluation),
             'ai_score' => $evaluation['overall_score'],
             'ai_total_questions' => $evaluation['total_questions'],
@@ -171,6 +170,30 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
         if ($assignment) {
             $this->markFailed($assignment, 'Failed', $exception->getMessage());
         }
+    }
+
+    /** @see EvaluateHomeworkSubmissionJob::mergeAnnotations() — identical join, different model. */
+    private function mergeAnnotations(array $results, array $located): array
+    {
+        $byQuestion = [];
+        foreach ($located as $answer) {
+            $byQuestion[$answer['question_no']] = $answer;
+        }
+
+        $annotations = [];
+        foreach ($results as $result) {
+            $location = $byQuestion[$result['question_no']] ?? null;
+            $annotations[] = [
+                'question_no' => $result['question_no'],
+                'status' => $result['status'],
+                'expected_answer' => $result['expected_answer'],
+                'remarks' => $result['remarks'],
+                'page' => $location['page'] ?? 1,
+                'box_2d' => $location['box_2d'] ?? null,
+            ];
+        }
+
+        return $annotations;
     }
 
     private function markFailed(lms_assignmentModel $assignment, string $status, string $reason): void

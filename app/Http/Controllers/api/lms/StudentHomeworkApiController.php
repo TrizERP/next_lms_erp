@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use function App\Helpers\getStudents;
 use App\Models\school_setup\subjectModel;
@@ -771,25 +772,58 @@ class StudentHomeworkApiController extends Controller
                 'updated_by' => $user_id,
                 'updated_on' => date('Y-m-d H:i:s'),
             ];
-
-            // AI evaluation runs out-of-band (see EvaluateHomeworkSubmissionJob) so the
-            // upload request never waits on OCR/Gemini/PDF work; the UI polls ai_status.
-            if ($uploadedFile) {
-                $arr['ai_status'] = 'Checking';
-                $arr['ai_failure_reason'] = null;
-            }
-
-            $ok = studentHomeworkModel::where([
+            $whereRow = [
                 'id' => $hw_id,
                 'syear' => $syear,
                 'sub_institute_id' => $sub_institute_id,
-            ])->update($arr);
+            ];
+
+            // Recording the submission must succeed even if the AI evaluation
+            // columns aren't there yet (e.g. migration not run in this env) —
+            // fall back to the core submission fields rather than 500 the
+            // student's upload over a missing 'ai_status' column.
+            if ($uploadedFile) {
+                try {
+                    $ok = studentHomeworkModel::where($whereRow)->update(array_merge($arr, [
+                        'ai_status' => 'Checking',
+                        'ai_failure_reason' => null,
+                    ]));
+                } catch (\Throwable $exception) {
+                    Log::warning('Could not set ai_status on homework submission — falling back without AI columns', [
+                        'homework_id' => $hw_id,
+                        'message' => $exception->getMessage(),
+                    ]);
+                    $ok = studentHomeworkModel::where($whereRow)->update($arr);
+                }
+            } else {
+                $ok = studentHomeworkModel::where($whereRow)->update($arr);
+            }
 
             if ($ok) {
                 $updated++;
 
                 if ($uploadedFile) {
-                    EvaluateHomeworkSubmissionJob::dispatch((int) $hw_id, (int) $sub_institute_id, (int) $syear);
+                    // AI evaluation is best-effort and must never break the upload
+                    // response: dispatch() re-throws job exceptions synchronously
+                    // when QUEUE_CONNECTION=sync, so this call itself needs a guard
+                    // even though the job's own handle() already catches its
+                    // internal OCR/Gemini/PDF failures.
+                    try {
+                        EvaluateHomeworkSubmissionJob::dispatch((int) $hw_id, (int) $sub_institute_id, (int) $syear);
+                    } catch (\Throwable $exception) {
+                        Log::error('AI evaluation failed for homework submission', [
+                            'homework_id' => $hw_id,
+                            'message' => $exception->getMessage(),
+                        ]);
+                        try {
+                            studentHomeworkModel::where($whereRow)->update([
+                                'ai_status' => 'Failed',
+                                'ai_failure_reason' => mb_substr($exception->getMessage(), 0, 250),
+                            ]);
+                        } catch (\Throwable $updateException) {
+                            // AI columns may not exist in this environment — the submission itself is already saved.
+                        }
+                    }
                 }
             }
         }

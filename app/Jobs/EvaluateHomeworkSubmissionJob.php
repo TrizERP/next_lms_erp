@@ -5,10 +5,10 @@ namespace App\Jobs;
 use App\Models\student\studentHomeworkModel;
 use App\Services\Homework\Exceptions\DocumentExtractionException;
 use App\Services\Homework\Exceptions\EvaluationException;
-use App\Services\Homework\GeminiClient;
+use App\Services\Homework\HomeworkAnnotatedPdfService;
+use App\Services\Homework\HomeworkAnswerLocatorService;
 use App\Services\Homework\HomeworkDocumentExtractionService;
 use App\Services\Homework\HomeworkEvaluationService;
-use App\Services\Homework\HomeworkReviewPdfService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -20,9 +20,12 @@ use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
- * Queued homework evaluation pipeline: OCR/text-extraction of both the
- * teacher's assignment file and the student's submission, Gemini grading,
- * reviewed-PDF generation, and persistence back onto the `homework` row.
+ * Queued homework evaluation pipeline: text-extraction of the teacher's
+ * assignment file, spatial answer-location + grading of the student's
+ * submission, and drawing the verdicts directly onto the STUDENT'S OWN
+ * uploaded pages (never a separate typed report — see
+ * HomeworkAnnotatedPdfService), then persistence back onto the `homework`
+ * row.
  *
  * Dispatched from StudentHomeworkApiController::submissionStore() right
  * after the student's file is saved, so the upload request itself never
@@ -47,9 +50,9 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
 
     public function handle(
         HomeworkDocumentExtractionService $extractor,
+        HomeworkAnswerLocatorService $locator,
         HomeworkEvaluationService $evaluationService,
-        HomeworkReviewPdfService $pdfService,
-        GeminiClient $gemini
+        HomeworkAnnotatedPdfService $annotatedPdfService
     ): void {
         $homework = studentHomeworkModel::where([
             'id' => $this->homeworkId,
@@ -70,7 +73,8 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
         }
 
         $questionsText = '';
-        $answersText = '';
+        $submissionMime = $this->mimeFromExtension($homework->submission_image_type);
+        $located = null;
 
         try {
             $questionsText = $extractor->extractText(
@@ -78,11 +82,7 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
                 $this->mimeFromExtension($homework->image_type),
                 'assignment questions'
             );
-            $answersText = $extractor->extractText(
-                $submissionPath,
-                $this->mimeFromExtension($homework->submission_image_type),
-                'student answers'
-            );
+            $located = $locator->locateAnswers($submissionPath, $submissionMime);
         } catch (DocumentExtractionException $exception) {
             Log::warning('Homework OCR/extraction failed', [
                 'homework_id' => $this->homeworkId,
@@ -94,7 +94,7 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
         }
 
         try {
-            $evaluation = $evaluationService->evaluate($questionsText, $answersText, $homework->student_level);
+            $evaluation = $evaluationService->evaluate($questionsText, $located['combined_text'], $homework->student_level);
         } catch (EvaluationException $exception) {
             Log::warning('Homework Gemini evaluation failed', [
                 'homework_id' => $this->homeworkId,
@@ -105,29 +105,25 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
             return;
         }
 
-        $reviewedPdfUrl = null;
+        $evaluatedSubmissionUrl = null;
         try {
-            $pdfBinary = $pdfService->generate($evaluation, [
-                'title' => (string) $homework->title,
-                'studentName' => $this->studentName($homework->student_id),
-                'subjectName' => $this->subjectName($homework->subject_id),
-                'standardName' => $this->standardName($homework->standard_id),
-            ]);
-            $filePath = 'public/homework_evaluations/evaluation-' . $this->homeworkId . '-' . now()->format('YmdHis') . '.pdf';
+            $annotations = $this->mergeAnnotations($evaluation['results'], $located['answers']);
+            $pdfBinary = $annotatedPdfService->annotate($submissionPath, $submissionMime, $annotations);
+            $filePath = 'public/homework_evaluated_submissions/evaluated-' . $this->homeworkId . '-' . now()->format('YmdHis') . '.pdf';
             Storage::disk('digitalocean')->put($filePath, $pdfBinary, 'public');
-            $reviewedPdfUrl = Storage::disk('digitalocean')->url($filePath);
+            $evaluatedSubmissionUrl = Storage::disk('digitalocean')->url($filePath);
         } catch (Throwable $exception) {
-            Log::warning('Homework reviewed-PDF generation/storage failed', [
+            Log::warning('Homework annotated-submission generation/storage failed', [
                 'homework_id' => $this->homeworkId,
                 'message' => $exception->getMessage(),
             ]);
-            // Non-fatal: the structured result is still saved even if the PDF could not be produced.
+            // Non-fatal: the structured result is still saved even if the annotated PDF could not be produced.
         }
 
         $summary = $this->buildTeacherRemarks($evaluation);
 
         $homework->update([
-            'reviewed_pdf_path' => $reviewedPdfUrl,
+            'reviewed_pdf_path' => $evaluatedSubmissionUrl,
             'ai_result_json' => json_encode($evaluation),
             'ai_score' => $evaluation['overall_score'],
             'ai_total_questions' => $evaluation['total_questions'],
@@ -139,6 +135,36 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
         ]);
 
         $this->logAiInteraction($homework, $evaluation, null);
+    }
+
+    /**
+     * Joins each graded question (status/remarks/expected_answer, from
+     * HomeworkEvaluationService) with where that answer actually sits on
+     * the student's page (page/box_2d, from HomeworkAnswerLocatorService),
+     * matched by question_no, so the annotator knows both WHAT to draw and
+     * WHERE.
+     */
+    private function mergeAnnotations(array $results, array $located): array
+    {
+        $byQuestion = [];
+        foreach ($located as $answer) {
+            $byQuestion[$answer['question_no']] = $answer;
+        }
+
+        $annotations = [];
+        foreach ($results as $result) {
+            $location = $byQuestion[$result['question_no']] ?? null;
+            $annotations[] = [
+                'question_no' => $result['question_no'],
+                'status' => $result['status'],
+                'expected_answer' => $result['expected_answer'],
+                'remarks' => $result['remarks'],
+                'page' => $location['page'] ?? 1,
+                'box_2d' => $location['box_2d'] ?? null,
+            ];
+        }
+
+        return $annotations;
     }
 
     public function failed(Throwable $exception): void

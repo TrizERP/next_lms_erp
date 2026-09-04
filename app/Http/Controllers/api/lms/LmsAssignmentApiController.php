@@ -12,6 +12,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use function App\Helpers\getStudents;
 
@@ -485,25 +486,60 @@ class LmsAssignmentApiController extends Controller
             $file_name = 'assignment_' . $assignment_id . '-' . date('YmdHis') . '-' . $student_id . '.' . $ext;
             $file->storeAs('public/lms_assignment_submission', $file_name);
 
-            // AI evaluation runs out-of-band (see EvaluateAssignmentSubmissionJob) so
-            // the upload request never waits on OCR/Gemini/PDF work; the UI polls ai_status.
-            $ok = lms_assignmentModel::where([
-                'id' => $assignment_id,
-                'syear' => $syear,
-                'sub_institute_id' => $sub_institute_id,
-                'student_id' => $student_id,
-            ])->update([
+            $submissionData = [
                 'submission_image' => $file_name,
                 'student_submitted_date' => date('Y-m-d'),
                 'student_submission_status' => 'Y',
                 'student_submitted_by' => $student_id,
-                'ai_status' => 'Checking',
-                'ai_failure_reason' => null,
-            ]);
+            ];
+            $whereRow = [
+                'id' => $assignment_id,
+                'syear' => $syear,
+                'sub_institute_id' => $sub_institute_id,
+                'student_id' => $student_id,
+            ];
+
+            // Recording the submission must succeed even if the AI evaluation
+            // columns aren't there yet (e.g. migration not run in this env) —
+            // fall back to the core submission fields rather than 500 the
+            // student's upload over a missing 'ai_status' column.
+            try {
+                $ok = lms_assignmentModel::where($whereRow)->update(array_merge($submissionData, [
+                    'ai_status' => 'Checking',
+                    'ai_failure_reason' => null,
+                ]));
+            } catch (\Throwable $exception) {
+                Log::warning('Could not set ai_status on assignment submission — falling back without AI columns', [
+                    'assignment_id' => $assignment_id,
+                    'message' => $exception->getMessage(),
+                ]);
+                $ok = lms_assignmentModel::where($whereRow)->update($submissionData);
+            }
 
             if ($ok) {
                 $updated++;
-                EvaluateAssignmentSubmissionJob::dispatch((int) $assignment_id, (int) $sub_institute_id, (int) $syear);
+
+                // AI evaluation is best-effort and must never break the upload
+                // response: dispatch() re-throws job exceptions synchronously
+                // when QUEUE_CONNECTION=sync, so this call itself needs a guard
+                // even though the job's own handle() already catches its
+                // internal OCR/Gemini/PDF failures.
+                try {
+                    EvaluateAssignmentSubmissionJob::dispatch((int) $assignment_id, (int) $sub_institute_id, (int) $syear);
+                } catch (\Throwable $exception) {
+                    Log::error('AI evaluation failed for assignment submission', [
+                        'assignment_id' => $assignment_id,
+                        'message' => $exception->getMessage(),
+                    ]);
+                    try {
+                        lms_assignmentModel::where($whereRow)->update([
+                            'ai_status' => 'Failed',
+                            'ai_failure_reason' => mb_substr($exception->getMessage(), 0, 250),
+                        ]);
+                    } catch (\Throwable $updateException) {
+                        // AI columns may not exist in this environment — the submission itself is already saved.
+                    }
+                }
             }
         }
 
