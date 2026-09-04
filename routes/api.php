@@ -178,12 +178,28 @@ Route::post('lms-homework/homework-subjects', [\App\Http\Controllers\api\lms\Stu
 Route::post('lms-homework/submission-list', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionList']);
 Route::post('lms-homework/submission-store', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionStore']);
 Route::post('lms-homework/submission-report', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionReport']);
+Route::post('lms-homework/ai-status/{id}', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'aiEvaluationStatus']);
 
 // ------------------------------------------------------------------
 // LMS Assignment / Assignment Submission / Annotate Assignment
 // (dedicated LmsAssignmentApiController - token-auth counterparts of the
 //  session/blade controllers under App\Http\Controllers\lms\assignment)
 // ------------------------------------------------------------------
+// Module 1 - Assignment (teacher create)
+Route::post('lms-assignment/subjects', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'subjects']);
+Route::post('lms-assignment/students', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'students']);
+Route::post('lms-assignment/exam-papers', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'examPapers']);
+Route::post('lms-assignment/store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'store']);
+Route::post('lms-assignment/list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'index']);
+Route::post('lms-assignment/bulk-delete', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'bulkDelete']);
+// Module 2 - Assignment Submission (student upload)
+Route::post('lms-assignment/submission-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionList']);
+Route::post('lms-assignment/submission-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionStore']);
+Route::post('lms-assignment/ai-status/{id}', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'aiEvaluationStatus']);
+// Module 3 - Annotate Assignment (teacher review / grade)
+Route::post('lms-assignment/annotate-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateList']);
+Route::post('lms-assignment/annotate-questions', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateQuestions']);
+Route::post('lms-assignment/annotate-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateStore']);
 // Student side of the Assignment module is deliberately narrow: a student may
 // VIEW the assignments given to them and SUBMIT a file against them, nothing
 // else. Every other screen -- creating assignments, picking students, reading

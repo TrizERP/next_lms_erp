@@ -34,6 +34,19 @@ class lms_assignmentModel extends Model
         'created_by',
         'created_ip',
         'created_on',
-        'json_annotation'
+        'json_annotation',
+        'reviewed_pdf_path',
+        'ai_score',
+        'ai_total_questions',
+        'ai_percentage',
+        'ai_status',
+        'ai_failure_reason',
+        'evaluated_at',
+    ];
+
+    protected $casts = [
+        'json_annotation' => 'array',
+        'evaluated_at' => 'datetime',
+        'ai_percentage' => 'float',
     ];
 }
