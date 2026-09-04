@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\lms;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\EvaluateAssignmentSubmissionJob;
 use App\Models\lms\assignment\lms_assignmentModel;
 use App\Models\lms\lmsOfflineExamModel;
 use App\Models\lms\lmsOfflineExamAnswerModel;
@@ -304,6 +305,7 @@ class LmsAssignmentApiController extends Controller
     {
         $sub_institute_id = $request->input('sub_institute_id');
         $syear = $request->input('syear');
+        $grade = $request->input('grade');
         $standard_id = $request->input('standard_id');
         $division_id = $request->input('division_id');
         $subject_id = $request->input('subject_id');
@@ -316,12 +318,19 @@ class LmsAssignmentApiController extends Controller
 
         $server = $request->getSchemeAndHttpHost();
 
+        // subject/tblstudent are left-joined (not inner) so a row is never
+        // silently dropped from the report just because its subject_id or
+        // student_id fails to resolve — every assigned/submitted row must
+        // stay visible even if a reference lookup is stale.
         $query = DB::table('lms_assignment as a')
-            ->join('subject as s', function ($join) {
+            ->leftJoin('subject as s', function ($join) {
                 $join->whereRaw('s.id = a.subject_id');
             })
-            ->join('tblstudent as ts', function ($join) {
+            ->leftJoin('tblstudent as ts', function ($join) {
                 $join->whereRaw('ts.id = a.student_id');
+            })
+            ->leftJoin('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw('se.student_id = a.student_id AND se.syear = a.syear AND se.end_date IS NULL');
             })
             ->leftJoin('standard as st', function ($join) {
                 $join->whereRaw('st.id = a.standard_id');
@@ -331,7 +340,7 @@ class LmsAssignmentApiController extends Controller
             })
             ->selectRaw("a.*, s.subject_name, st.name AS standard_name, d.name AS division_name,
                 CONCAT_WS(' ', ts.first_name, ts.middle_name, ts.last_name) AS student_name,
-                ts.enrollment_no,
+                ts.enrollment_no, ts.mobile,
                 IF(a.exam_pdf IS NULL OR a.exam_pdf = '', '', CONCAT('$server/storage/', a.exam_pdf)) AS exam_pdf_url,
                 IF(a.submission_image IS NULL OR a.submission_image = '', '',
                     CONCAT('$server/storage/lms_assignment_submission/', a.submission_image)) AS submission_file_url,
@@ -340,6 +349,9 @@ class LmsAssignmentApiController extends Controller
             ->where('a.sub_institute_id', $sub_institute_id)
             ->where('a.syear', $syear);
 
+        if ($grade) {
+            $query->where('se.grade_id', $grade);
+        }
         if ($standard_id) {
             $query->where('a.standard_id', $standard_id);
         }
@@ -362,6 +374,37 @@ class LmsAssignmentApiController extends Controller
             'status_code' => 1,
             'message' => 'SUCCESS',
             'data' => $data,
+        ], 200);
+    }
+
+    /**
+     * Bulk hard-delete lms_assignment rows (Student Homework Report action).
+     * API counterpart of StudentHomeworkApiController::bulkDelete().
+     */
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $ids = $request->input('selected_students', $request->input('ids'));
+        if (is_string($ids)) {
+            $ids = array_filter(array_map('trim', explode(',', $ids)), fn ($id) => $id !== '');
+        }
+
+        if (empty($ids)) {
+            return $this->fail('No assignment selected');
+        }
+
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+
+        $deleted = DB::table('lms_assignment')
+            ->whereIn('id', $ids)
+            ->when($sub_institute_id, fn ($q) => $q->where('sub_institute_id', $sub_institute_id))
+            ->when($syear, fn ($q) => $q->where('syear', $syear))
+            ->delete();
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'Assignment Deleted Successfully',
+            'deleted' => $deleted,
         ], 200);
     }
 
@@ -390,7 +433,7 @@ class LmsAssignmentApiController extends Controller
         $server = $request->getSchemeAndHttpHost();
 
         $data = DB::table('lms_assignment as a')
-            ->join('subject as s', function ($join) {
+            ->leftJoin('subject as s', function ($join) {
                 $join->whereRaw('s.id = a.subject_id');
             })
             ->selectRaw("a.*, s.subject_name,
@@ -442,6 +485,8 @@ class LmsAssignmentApiController extends Controller
             $file_name = 'assignment_' . $assignment_id . '-' . date('YmdHis') . '-' . $student_id . '.' . $ext;
             $file->storeAs('public/lms_assignment_submission', $file_name);
 
+            // AI evaluation runs out-of-band (see EvaluateAssignmentSubmissionJob) so
+            // the upload request never waits on OCR/Gemini/PDF work; the UI polls ai_status.
             $ok = lms_assignmentModel::where([
                 'id' => $assignment_id,
                 'syear' => $syear,
@@ -452,10 +497,13 @@ class LmsAssignmentApiController extends Controller
                 'student_submitted_date' => date('Y-m-d'),
                 'student_submission_status' => 'Y',
                 'student_submitted_by' => $student_id,
+                'ai_status' => 'Checking',
+                'ai_failure_reason' => null,
             ]);
 
             if ($ok) {
                 $updated++;
+                EvaluateAssignmentSubmissionJob::dispatch((int) $assignment_id, (int) $sub_institute_id, (int) $syear);
             }
         }
 
@@ -464,6 +512,42 @@ class LmsAssignmentApiController extends Controller
             'message' => $updated > 0 ? 'Assignment Submited successfully' : 'Failed to submit assignment please try again',
             'updated' => $updated,
         ], $updated > 0 ? 200 : 422);
+    }
+
+    /**
+     * Poll AI evaluation status/result for a single assignment (used by the
+     * student submission screen and the teacher annotate list to refresh
+     * "Checking..." rows without a full reload).
+     */
+    public function aiEvaluationStatus(Request $request, $id): JsonResponse
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+
+        $assignment = lms_assignmentModel::where('id', $id)
+            ->when($sub_institute_id, fn ($q) => $q->where('sub_institute_id', $sub_institute_id))
+            ->when($syear, fn ($q) => $q->where('syear', $syear))
+            ->first();
+
+        if (!$assignment) {
+            return $this->fail('Assignment not found', 404);
+        }
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => [
+                'id' => $assignment->id,
+                'ai_status' => $assignment->ai_status,
+                'ai_failure_reason' => $assignment->ai_failure_reason,
+                'ai_score' => $assignment->ai_score,
+                'ai_total_questions' => $assignment->ai_total_questions,
+                'ai_percentage' => $assignment->ai_percentage,
+                'reviewed_pdf_path' => $assignment->reviewed_pdf_path,
+                'teacher_remarks' => $assignment->teacher_remarks,
+                'evaluated_at' => optional($assignment->evaluated_at)->toDateTimeString(),
+            ],
+        ], 200);
     }
 
     // ==================================================================
@@ -478,9 +562,13 @@ class LmsAssignmentApiController extends Controller
     {
         $sub_institute_id = $request->input('sub_institute_id');
         $syear = $request->input('syear');
+        $grade = $request->input('grade');
         $standard_id = $request->input('standard_id');
         $division_id = $request->input('division_id');
         $subject_id = $request->input('subject_id');
+        $from_date = $request->input('from_date');
+        $to_date = $request->input('to_date');
+        $status = $request->input('status');
 
         if (!$sub_institute_id || !$syear) {
             return $this->fail('sub_institute_id and syear are required');
@@ -489,16 +577,23 @@ class LmsAssignmentApiController extends Controller
         $server = $request->getSchemeAndHttpHost();
 
         $query = DB::table('lms_assignment as a')
-            ->join('subject as s', function ($join) {
+            ->leftJoin('subject as s', function ($join) {
                 $join->whereRaw('s.id = a.subject_id');
             })
-            ->join('tblstudent as ts', function ($join) {
+            ->leftJoin('tblstudent as ts', function ($join) {
                 $join->whereRaw('ts.id = a.student_id');
+            })
+            ->leftJoin('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw('se.student_id = a.student_id AND se.syear = a.syear AND se.end_date IS NULL');
             })
             ->leftJoin('standard as st', function ($join) {
                 $join->whereRaw('st.id = a.standard_id');
             })
-            ->selectRaw("a.*, s.subject_name, st.name AS standard_name,
+            ->leftJoin('division as d', function ($join) {
+                $join->whereRaw('d.id = a.division_id');
+            })
+            ->selectRaw("a.*, s.subject_name, st.name AS standard_name, d.name AS division_name,
+                ts.enrollment_no, ts.mobile,
                 CONCAT_WS(' ', ts.first_name, ts.middle_name, ts.last_name) AS student_name,
                 IF(a.exam_pdf IS NULL OR a.exam_pdf = '', '', CONCAT('$server/storage/', a.exam_pdf)) AS exam_pdf_url,
                 IF(a.submission_image IS NULL OR a.submission_image = '', '',
@@ -508,6 +603,9 @@ class LmsAssignmentApiController extends Controller
             ->where('a.sub_institute_id', $sub_institute_id)
             ->where('a.syear', $syear);
 
+        if ($grade) {
+            $query->where('se.grade_id', $grade);
+        }
         if ($standard_id) {
             $query->where('a.standard_id', $standard_id);
         }
@@ -516,6 +614,12 @@ class LmsAssignmentApiController extends Controller
         }
         if ($subject_id) {
             $query->where('a.subject_id', $subject_id);
+        }
+        if ($status && in_array($status, ['Y', 'N'], true)) {
+            $query->where('a.student_submission_status', $status);
+        }
+        if ($from_date && $to_date) {
+            $query->whereRaw("DATE_FORMAT(a.submission_date, '%Y-%m-%d') BETWEEN ? AND ?", [$from_date, $to_date]);
         }
 
         $data = $query->orderBy('a.id', 'DESC')->get()->toArray();

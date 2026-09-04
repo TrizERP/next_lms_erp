@@ -14,9 +14,12 @@ use App\Models\lms\topicModel;
 use App\Models\school_setup\sub_std_mapModel;
 use App\Models\school_setup\subjectModel;
 use App\Models\student\tblstudentEnrollmentModel;
+use Dompdf\Dompdf;
+use Dompdf\Options;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Validator;
 use function App\Helpers\is_mobile;
 use function App\Helpers\SearchStudent;
@@ -321,7 +324,13 @@ class questionpaperController extends Controller
             "message"     => "Question-Paper Added Successfully",
         );
         $type = $request['type'];
-        $this->generatePDF($questionpaper, $questionpaper_id);
+        try {
+            $this->generatePDF($questionpaper, $questionpaper_id);
+        } catch (\Throwable $e) {
+            // Question paper creation must not fail because the offline PDF
+            // couldn't be rendered; the backfill command can regenerate it later.
+            Log::error("questionpaperController::store PDF generation failed for paper {$questionpaper_id}: {$e->getMessage()}");
+        }
 
         return is_mobile($type, "question_paper.index", $res, "redirect");
     }
@@ -365,7 +374,7 @@ class questionpaperController extends Controller
 
         $html = view('lms/questionpaper_html', compact('data'))->render();
 
-        $pdf_folder = $_SERVER['DOCUMENT_ROOT'].'/storage/QuestionPaper';
+        $pdf_folder = public_path('storage/QuestionPaper');
 
         $html_filename = $questionpaper_id.'_'.$sub_institute_id.'_'.$syear.".html";
         $pdf_filename = $questionpaper_id.'_'.$sub_institute_id.'_'.$syear.".pdf";
@@ -376,22 +385,58 @@ class questionpaperController extends Controller
 
         $html = str_replace('##HTML_SEC##', $html, $dom);
 
+        if (!file_exists($pdf_folder)) {
+            mkdir($pdf_folder, 0777, true);
+        }
+
         $html_file_path = $pdf_folder.'/'.$html_filename;
         $pdf_file_path = $pdf_folder.'/'.$pdf_filename;
-        if(file_exists($html_file_path)){
+
         file_put_contents($html_file_path, $html);
-        $this->htmlToPDF($html_file_path, $pdf_file_path);
-        unlink($html_file_path);
+
+        try {
+            $this->htmlToPDF($html_file_path, $pdf_file_path);
+        } finally {
+            if (file_exists($html_file_path)) {
+                unlink($html_file_path);
+            }
+        }
+
+        if (!file_exists($pdf_file_path)) {
+            throw new \RuntimeException("PDF generation failed for question paper {$questionpaper_id} (expected file: {$pdf_file_path}).");
         }
     }
 
+    /**
+     * Renders an HTML file to a PDF file using Dompdf (pure PHP, no external
+     * binary). Replaces the previous exec('/usr/local/bin/wkhtmltopdf ...')
+     * call, which depended on a Unix-only binary at a hardcoded path, was not
+     * available on every environment, wasn't shell-escaped, and swallowed
+     * failures silently (exec() returns the last output line, never throws).
+     */
     public function htmlToPDF($htmlPath, $pdfPath)
     {
-        $command = '/usr/local/bin/wkhtmltopdf '; // --page-height 297mm //-L 0 -R 0 -B 0 -T 0 -s A4
-        $command .= " $htmlPath ";
-        $command .= " $pdfPath ";
+        if (!file_exists($htmlPath)) {
+            throw new \RuntimeException("htmlToPDF: source HTML file not found: {$htmlPath}");
+        }
 
-        return exec($command);
+        $options = new Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultPaperSize', 'a4');
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml(file_get_contents($htmlPath));
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+
+        file_put_contents($pdfPath, $dompdf->output());
+
+        if (!file_exists($pdfPath)) {
+            throw new \RuntimeException("htmlToPDF: failed to write PDF to {$pdfPath}");
+        }
+
+        return true;
     }
 public function edit(Request $request, $id)
 {
@@ -1657,11 +1702,15 @@ public function search_question($all_data){
         $questionpaper_id = $questionpaper->id;
         
         // Generate PDF
-        $this->generatePDF([
-            'sub_institute_id' => $sub_institute_id,
-            'syear' => $syear
-        ], $questionpaper_id);
-        
+        try {
+            $this->generatePDF([
+                'sub_institute_id' => $sub_institute_id,
+                'syear' => $syear
+            ], $questionpaper_id);
+        } catch (\Throwable $e) {
+            Log::error("questionpaperController::generateAIPaper PDF generation failed for paper {$questionpaper_id}: {$e->getMessage()}");
+        }
+
         $res = [
             'status_code' => 1,
             'message' => 'AI Question Paper Generated Successfully'
