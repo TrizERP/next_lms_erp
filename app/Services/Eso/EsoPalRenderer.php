@@ -38,8 +38,12 @@ class EsoPalRenderer
      * Do not re-explain K1-K3." — the brief's own example, generated exactly
      * this way.
      */
-    public static function teachInstruction(ConceptNode $node, LearnerNodeState $state, Collection $priorNodeLabels): string
-    {
+    public static function teachInstruction(
+        ConceptNode $node,
+        LearnerNodeState $state,
+        Collection $priorNodeLabels,
+        ?array $learningContent = null
+    ): string {
         $lines = [];
         $lines[] = sprintf('Teach %s: %s.', $node->node_type, $node->label);
 
@@ -47,13 +51,100 @@ class EsoPalRenderer
             ? 'The student has not attempted this node yet. Use a minimal explanation with exactly one worked example.'
             : sprintf('The student is still practicing this node (mastery %.0f%%, %d attempt(s) so far). Reinforce briefly — do not re-explain from the beginning.', $state->mastery_estimate * 100, $state->attempts);
 
+        $lines[] = self::learningMaterialLine($learningContent);
+
         if ($priorNodeLabels->isNotEmpty()) {
             $lines[] = 'Do not re-explain: ' . $priorNodeLabels->implode(', ') . '.';
         }
 
         $lines[] = 'Do not introduce any node beyond ' . $node->node_type . ': ' . $node->label . '.';
 
+        return implode(' ', array_filter($lines));
+    }
+
+    /**
+     * Ground the explanation in the concept's own authored/extracted material
+     * when the content model has any, so Pal is rephrasing real curriculum
+     * text instead of improvising from a node label.
+     *
+     * Returns '' when there is nothing — the instruction then reads exactly as
+     * it did before this existed, which is the required graceful fallback.
+     *
+     * @param  array{format:string, format_label:string, title:?string, body:?string, media_url:?string, source:string}|null  $content
+     */
+    protected static function learningMaterialLine(?array $content): string
+    {
+        $body = trim((string) ($content['body'] ?? ''));
+        if ($content === null || $body === '') {
+            return '';
+        }
+
+        $line = 'Base the explanation ONLY on this approved material for the concept, and do not add facts it does not contain: '
+            . strip_tags($body);
+
+        // An authored asset is shown to the student alongside the text, so Pal
+        // must introduce it rather than duplicate what it contains.
+        if (($content['media_url'] ?? null) !== null) {
+            $line .= ' The student is also being shown a ' . ($content['format_label'] ?? 'resource')
+                . ' alongside this — point them at it briefly, do not describe its contents.';
+        }
+
+        return $line;
+    }
+
+    /**
+     * The Check-For-Understanding gate, served immediately after teaching and
+     * before any scored practice.
+     *
+     * This is deliberately framed as a check, not as practice: the answers do
+     * not move mastery_estimate, attempts or consecutive_correct (see
+     * EsoPolicyService::recordCheckUnderstanding()), so Pal must not present
+     * it as a test the student can fail their way out of the concept with.
+     */
+    public static function checkUnderstandingInstruction(ConceptNode $node, int $itemCount): string
+    {
+        $lines = [];
+        $lines[] = sprintf('The student has just been taught %s: %s and is about to answer a short check of understanding (%d question(s)).', $node->node_type, $node->label, $itemCount);
+        $lines[] = 'In one or two sentences, tell them this is a quick check to see whether the explanation landed, not a graded test, and that getting one wrong just means we explain it a different way.';
+        $lines[] = 'Do not re-teach the material here, and do not reveal or hint at any answer.';
+
         return implode(' ', $lines);
+    }
+
+    /**
+     * The "not understood" branch of CFU: re-explain the SAME node a different
+     * way. Distinct from teachInstruction() (which assumes a blank slate) and
+     * from contrastPairInstruction() (which targets one identified
+     * misconception) — here we know only that the first explanation did not
+     * land, so the instruction is to change the approach, not to repeat it.
+     */
+    public static function reteachInstruction(
+        ConceptNode $node,
+        Collection $priorNodeLabels,
+        int $cfuAttempts,
+        ?array $learningContent = null
+    ): string {
+        $lines = [];
+        $lines[] = sprintf('The student was taught %s: %s but did not pass the check of understanding (attempt %d).', $node->node_type, $node->label, max(1, $cfuAttempts));
+        $lines[] = 'Explain the SAME material again in a different way from the first explanation — change the angle, the example or the representation. Do not simply repeat the earlier wording.';
+
+        // When the content model has a different FORMAT authored for this
+        // concept, the change of approach is not left to Pal's imagination.
+        if (($learningContent['format_label'] ?? null) !== null) {
+            $lines[] = 'This time the material is presented as: ' . $learningContent['format_label'] . '.';
+        }
+
+        $lines[] = 'Use exactly one fresh worked example.';
+        $lines[] = self::learningMaterialLine($learningContent);
+
+        if ($priorNodeLabels->isNotEmpty()) {
+            $lines[] = 'Do not re-explain: ' . $priorNodeLabels->implode(', ') . '.';
+        }
+
+        $lines[] = 'Do not introduce any node beyond ' . $node->node_type . ': ' . $node->label . '.';
+        $lines[] = 'Do not reveal or hint at the check questions that will follow.';
+
+        return implode(' ', array_filter($lines));
     }
 
     /**
@@ -80,6 +171,138 @@ class EsoPalRenderer
         $lines[] = 'Do not reveal or hint at the retest question that will follow.';
 
         return implode(' ', $lines);
+    }
+
+    /**
+     * The "activation energy" message: shown once, at the moment a student
+     * moves from having UNDERSTOOD a node to having to grind through practice
+     * on it. Understanding is not the hard part for many students — starting
+     * the practice is, so this names a concrete reason the concept is worth
+     * the effort rather than cheering generically.
+     *
+     * The fact itself comes from ConceptRelevanceResolver: the concept's own
+     * extracted real-world application where one exists, otherwise its plain
+     * definition. Both are stated as the deterministic instruction Pal may
+     * only rephrase — it must never invent an application the data doesn't
+     * contain, which is why the definition fallback is explicitly labelled as
+     * a definition here rather than passed off as a real-world use.
+     *
+     * @param  array{source:string, text:?string, application_type:?string}  $relevance
+     */
+    public static function practiceMotivationInstruction(ConceptNode $node, string $conceptName, array $relevance): ?string
+    {
+        $text = trim((string) ($relevance['text'] ?? ''));
+        if ($text === '') {
+            return null; // nothing honest to say — say nothing rather than pad it
+        }
+
+        $lines = [];
+        $lines[] = sprintf(
+            'The student has just understood %s: %s and is about to start practising it. They may need a reason to push through the practice.',
+            $node->node_type,
+            $node->label
+        );
+
+        if (($relevance['source'] ?? null) === 'real_world') {
+            $lines[] = ($relevance['application_type'] ?? null) !== null
+                ? sprintf('A real use of %s (%s): %s', $conceptName, $relevance['application_type'], $text)
+                : sprintf('A real use of %s: %s', $conceptName, $text);
+        } else {
+            // Definition, not an application — say so, so Pal doesn't dress a
+            // definition up as a real-world example the data never claimed.
+            $lines[] = sprintf('What %s actually is: %s', $conceptName, $text);
+            $lines[] = 'Do not invent a real-world application — none is available for this concept.';
+        }
+
+        $lines[] = 'In one or two short sentences, encourage them to practise this now, using only the fact above. Do not add new facts, do not restate the question, do not give away any answer.';
+
+        return implode(' ', $lines);
+    }
+
+    /**
+     * The same nudge written FOR the student, used when Pal can't render.
+     *
+     * Every other instruction here is engine-facing prose ("The student has
+     * just understood…") that reads as meta-commentary if it ever reaches a
+     * student's screen. That is tolerable for a teach/practice instruction,
+     * which is at least about the material — but a motivational line that
+     * talks about the student in the third person is worse than no line at
+     * all, so this pass supplies a plain student-facing version for the
+     * provider-unavailable path rather than leaking the instruction.
+     *
+     * @param  array{source:string, text:?string, application_type:?string}  $relevance
+     */
+    public static function practiceMotivationFallback(string $conceptName, array $relevance): ?string
+    {
+        $text = trim((string) ($relevance['text'] ?? ''));
+        if ($text === '') {
+            return null;
+        }
+
+        return ($relevance['source'] ?? null) === 'real_world'
+            ? sprintf('Worth the practice: %s Get this solid and you can actually use it.', rtrim($text, '.') . '.')
+            : sprintf('Quick reminder of why this matters — %s A few practice questions and this one is yours.', rtrim($text, '.') . '.');
+    }
+
+    /**
+     * A short recap attached to a due spaced-retrieval check, so the reminder
+     * carries something to jog the memory rather than assuming the student
+     * remembers what a node label meant weeks (or months) later. Deterministic
+     * string assembly, same as the other *Instruction() methods.
+     */
+    public static function retentionSummaryInstruction(
+        ConceptNode $node,
+        string $conceptName,
+        int $daysSinceMastery,
+        ?string $material = null
+    ): ?string {
+        $material = trim((string) $material);
+
+        // No approved material behind it means the only way Pal could produce
+        // a "refresher" is by inventing one from a node label. A student
+        // returning after 180 days deserves silence over a confident summary
+        // of something nobody wrote — so the recap is omitted and they go
+        // straight to the check.
+        if ($material === '') {
+            return null;
+        }
+
+        $lines = [];
+        $lines[] = sprintf(
+            'The student mastered %s: %s (part of %s) about %d day(s) ago and is due a short spaced-review check.',
+            $node->node_type,
+            $node->label,
+            $conceptName,
+            max(1, $daysSinceMastery)
+        );
+        $lines[] = 'Give a two-line refresher as a memory jog before the check, using ONLY this approved material and adding no facts it does not contain: ' . strip_tags($material);
+        $lines[] = 'Do not re-teach the concept from the beginning, and do not reveal or hint at the review questions that follow.';
+
+        return implode(' ', $lines);
+    }
+
+    /**
+     * The same recap written FOR the student, used when Pal can't render.
+     *
+     * Same reasoning as practiceMotivationFallback(): the instruction above is
+     * engine-facing ("The student mastered…") and reads as meta-commentary if
+     * it reaches a screen verbatim, which is worse than showing nothing.
+     */
+    public static function retentionSummaryFallback(string $conceptName, ?string $material = null): ?string
+    {
+        $material = trim((string) $material);
+        if ($material === '') {
+            return null;
+        }
+
+        // Kept genuinely brief — this is a memory jog before a check, not a
+        // second teaching screen.
+        $jog = strip_tags($material);
+        if (mb_strlen($jog) > 240) {
+            $jog = rtrim(mb_substr($jog, 0, 240)) . '…';
+        }
+
+        return sprintf('Quick refresher on %s before the check — %s', $conceptName, $jog);
     }
 
     /**
@@ -120,6 +343,18 @@ class EsoPalRenderer
                 'reasons' => ["No responses recorded for {$concept} yet"],
                 'cta_label' => 'Start learning',
             ],
+            'check_understanding' => [
+                'title' => 'Quick check',
+                'subtitle' => "A couple of questions to see whether the explanation of {$concept} landed.",
+                'reasons' => ['This part of the concept has been taught but not yet checked'],
+                'cta_label' => 'Check my understanding',
+            ],
+            'reteach' => [
+                'title' => "Let's try that a different way",
+                'subtitle' => "The first explanation of {$concept} didn't quite land — here's another angle.",
+                'reasons' => ['The check of understanding was not passed'],
+                'cta_label' => 'Show me again',
+            ],
             'practice' => [
                 'title' => 'Keep practicing',
                 'subtitle' => "A few more responses on {$concept} will help PAL personalise your path.",
@@ -134,9 +369,11 @@ class EsoPalRenderer
             ],
             'mastered_stop_practice' => [
                 'title' => 'Concept mastered',
-                'subtitle' => "You've cleared {$concept} — practice stops here.",
+                // No longer a dead end: practice stops, but the concept opens
+                // onto enrichment and the next eligible concept.
+                'subtitle' => "You've cleared {$concept} — practice stops here and the next concept opens up.",
                 'reasons' => ['Knowledge and application mastery thresholds are both met'],
-                'cta_label' => 'See mastery details',
+                'cta_label' => 'See what opens up',
             ],
             'continue_practice' => [
                 'title' => 'Keep practicing',

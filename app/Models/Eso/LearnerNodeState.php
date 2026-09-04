@@ -27,6 +27,7 @@ class LearnerNodeState extends Model
         'student_id', 'node_id', 'sub_institute_id', 'mastery_estimate',
         'attempts', 'consecutive_correct', 'practice_mode', 'hint_used_count',
         'status', 'active_misconception_id', 'last_seen_at', 'next_review_at',
+        'retention_stage', 'taught_at', 'cfu_passed_at', 'cfu_attempts',
     ];
 
     protected $casts = [
@@ -34,8 +35,12 @@ class LearnerNodeState extends Model
         'attempts' => 'integer',
         'consecutive_correct' => 'integer',
         'hint_used_count' => 'integer',
+        'retention_stage' => 'integer',
+        'cfu_attempts' => 'integer',
         'last_seen_at' => 'datetime',
         'next_review_at' => 'datetime',
+        'taught_at' => 'datetime',
+        'cfu_passed_at' => 'datetime',
     ];
 
     public function node()

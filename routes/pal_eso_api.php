@@ -70,6 +70,14 @@ Route::prefix('api/pal/eso')->middleware('pal.auth')->group(function () {
         Route::post('/practice/{learnerId}/{nodeId}/attempt', [EsoEngineController::class, 'recordAttempt'])
             ->where(['learnerId' => '[0-9]+', 'nodeId' => '[0-9]+']);
 
+        // Check For Understanding — the gate between teaching a node and
+        // starting scored practice on it.
+        Route::get('/cfu-items/{learnerId}/{nodeId}', [EsoEngineController::class, 'cfuItems'])
+            ->where(['learnerId' => '[0-9]+', 'nodeId' => '[0-9]+']);
+
+        Route::post('/cfu/{learnerId}/{nodeId}/check', [EsoEngineController::class, 'submitCheckUnderstanding'])
+            ->where(['learnerId' => '[0-9]+', 'nodeId' => '[0-9]+']);
+
         Route::post('/retrieval/{learnerId}/{nodeId}/check', [EsoEngineController::class, 'retrievalCheck'])
             ->where(['learnerId' => '[0-9]+', 'nodeId' => '[0-9]+']);
 
