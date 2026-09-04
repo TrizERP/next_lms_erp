@@ -113,6 +113,84 @@ class MasteryUpdater
 
     // ==================================================================
 
+    /**
+     * Record a batch of responses for ONE (learner, concept) as a single
+     * operation: append every evidence row, then replay/upsert/push exactly
+     * once.
+     *
+     * record() is the right shape for one answered question arriving on its
+     * own. It is the wrong shape for an operation that produces several at
+     * once — a submitted diagnostic, or a multi-item retrieval check — because
+     * calling it per response would replay the whole history N times and, far
+     * worse, make N synchronous Neo4j round-trips where one is owed. The
+     * ordering discipline is identical to record()'s: everything durable
+     * inside the transaction, the graph push strictly after the commit.
+     *
+     * @param  array<int, array{question_id?: int|null, content_id?: int|null, session_id?: int|null, correct: bool, misconception_tag?: string|null, duration_seconds?: int|null, evidence_source?: string|null}>  $responses
+     * @return array<string, mixed>  the new state
+     */
+    public function recordBatch(int $learnerId, int $conceptId, int $tenantId, array $responses): array
+    {
+        if ($responses === []) {
+            return [];
+        }
+
+        $state = DB::transaction(function () use ($learnerId, $conceptId, $tenantId, $responses) {
+            foreach ($responses as $evidence) {
+                $this->appendEvidence($learnerId, $conceptId, $evidence);
+                $this->appendExposure($learnerId, $conceptId, $tenantId, $evidence);
+            }
+
+            $trace = $this->replay($learnerId, $conceptId, $tenantId);
+            $this->upsertMastery($learnerId, $conceptId, $tenantId, $trace);
+
+            return $trace;
+        });
+
+        $this->pushToGraph($learnerId, $conceptId);
+
+        return $state;
+    }
+
+    /**
+     * Append one NON-response learning outcome to the evidence ledger.
+     *
+     * Some things worth recording are not answered questions — a concept
+     * reaching its mastery verdict, a spaced-retrieval check being survived, a
+     * misconception being detected or corrected. They belong in the same
+     * append-only ledger for audit and replay, but they are emphatically NOT
+     * BKT input: replay() reads only `evidence_type = 'question_response'`, so
+     * an outcome row is recorded without moving the mastery estimate. Writing
+     * them as responses instead would let one verdict silently count as an
+     * extra correct answer.
+     *
+     * No BKT replay and no graph push: nothing about the learner's response
+     * history changed, so there is nothing new to project.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    public function recordOutcome(
+        int $learnerId,
+        int $conceptId,
+        string $evidenceType,
+        string $evidenceSource,
+        array $context = []
+    ): void {
+        DB::table('pal_learning_evidence')->insert([
+            'learner_id'       => $learnerId,
+            'concept_id'       => $conceptId,
+            'evidence_type'    => $evidenceType,
+            'score'            => 0.0,
+            'completion'       => true,
+            'duration_seconds' => 0,
+            'evidence_source'  => $evidenceSource,
+            'context_data'     => json_encode($context),
+            'recorded_at'      => now(),
+            'created_at'       => now(),
+            'updated_at'       => now(),
+        ]);
+    }
+
     private function appendEvidence(int $learnerId, int $conceptId, array $evidence): void
     {
         DB::table('pal_learning_evidence')->insert([
@@ -128,7 +206,10 @@ class MasteryUpdater
             // NOT NULL with a default of 0 on this table - passing null is a
             // constraint violation, not an "unknown".
             'duration_seconds' => (int) ($evidence['duration_seconds'] ?? 0),
-            'evidence_source'  => 'coherence_map',
+            // Defaults to the original caller's value, so existing behaviour is
+            // unchanged; a different producer (the Adaptive Learning Engine)
+            // names itself so its contribution stays identifiable in the ledger.
+            'evidence_source'  => $evidence['evidence_source'] ?? 'coherence_map',
             'context_data'     => json_encode(array_filter([
                 'question_id'       => $evidence['question_id'] ?? null,
                 'misconception_tag' => $evidence['misconception_tag'] ?? null,

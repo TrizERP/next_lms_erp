@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\PAL;
 
 use App\Http\Controllers\Controller;
 use App\Models\Eso\DecisionLog;
+use App\Models\Eso\LearnerNodeState;
 use App\Services\Eso\EsoPalRenderer;
 use App\Services\Eso\EsoPolicyService;
 use Illuminate\Http\JsonResponse;
@@ -105,7 +106,11 @@ class EsoEngineController extends Controller
             return $this->fail('Unknown learner.', 404);
         }
 
-        $item = $this->policy->practiceItem($nodeId, $subInstituteId);
+        // Pass the learner's node state so practice climbs in difficulty with
+        // their correct-streak (see EsoPolicyService::orderCandidatesByDifficulty()).
+        $state = LearnerNodeState::forStudent($learnerId)->where('node_id', $nodeId)->first();
+
+        $item = $this->policy->practiceItem($nodeId, $subInstituteId, $state);
         if ($item === null) {
             return $this->fail('No tagged practice item is available for this node yet.', 404);
         }
@@ -225,6 +230,54 @@ class EsoEngineController extends Controller
         ];
 
         $result = $this->policy->recordAttempt($learnerId, $nodeId, (int) $validated['concept_id'], $subInstituteId, $attempt);
+
+        return $this->ok($result);
+    }
+
+    /**
+     * GET /api/pal/eso/cfu-items/{learnerId}/{nodeId}
+     *
+     * The questions for a node's check of understanding — the gate between
+     * being taught and starting scored practice. See
+     * EsoPolicyService::checkUnderstandingItems().
+     */
+    public function cfuItems(Request $request, int $learnerId, int $nodeId): JsonResponse
+    {
+        $subInstituteId = $this->subInstituteId($learnerId);
+        if ($subInstituteId === null) {
+            return $this->fail('Unknown learner.', 404);
+        }
+
+        $items = $this->policy->checkUnderstandingItems($nodeId, $subInstituteId);
+        if ($items === []) {
+            return $this->fail('No tagged question is available for this node yet.', 404);
+        }
+
+        return $this->ok($items);
+    }
+
+    /**
+     * POST /api/pal/eso/cfu/{learnerId}/{nodeId}/check
+     * body: { concept_id, responses: [{answer_master_id}] }
+     *
+     * Correctness is resolved server-side, never taken from the request.
+     * These responses are not mastery evidence — see
+     * EsoPolicyService::recordCheckUnderstanding().
+     */
+    public function submitCheckUnderstanding(Request $request, int $learnerId, int $nodeId): JsonResponse
+    {
+        $validated = $request->validate([
+            'concept_id' => 'required|integer',
+            'responses' => 'required|array|min:1',
+            'responses.*.answer_master_id' => 'required|integer',
+        ]);
+
+        $subInstituteId = $this->subInstituteId($learnerId);
+        if ($subInstituteId === null) {
+            return $this->fail('Unknown learner.', 404);
+        }
+
+        $result = $this->policy->recordCheckUnderstanding($learnerId, $nodeId, (int) $validated['concept_id'], $subInstituteId, $validated['responses']);
 
         return $this->ok($result);
     }

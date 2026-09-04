@@ -433,6 +433,54 @@ return [
             'scope' => 'global',
             'trigger' => ['type' => 'return_after_gap', 'gap_days' => 5],
         ],
+        // ── Adaptive Learning Engine (ESO) evidence ──────────────────────
+        // Fired from the engine's own D4/D5 outcomes (eso_decision_log), a
+        // source no other badge reads — see LearnerActivitySource::
+        // esoConceptsMastered()/esoRetentionChecksPassed(). Deliberately
+        // recognition only: no spendable currency, per this file's own
+        // `safeguards.points_currency = false`.
+        [
+            'badge_id' => 'BADGE_ADAPTIVE_FIRST_MASTERY',
+            'name' => 'Concept unlocked',
+            'category' => 'mastery',
+            'description' => 'Mastered a concept through adaptive learning',
+            'student_message' => 'You worked a concept all the way to mastery — diagnostic, practice and all. That one is yours now.',
+            'hpc_domain' => 'positive_learning_habits',
+            'casel_domain' => 'self_management',
+            'ncdg_goal' => 'ED1',
+            'rarity' => 'common',
+            'hpc_evidence_weight' => 0.6,
+            'scope' => 'global',
+            'trigger' => ['type' => 'eso_concepts_mastered', 'count' => 1],
+        ],
+        [
+            'badge_id' => 'BADGE_ADAPTIVE_FIVE_MASTERED',
+            'name' => 'Five concepts deep',
+            'category' => 'mastery',
+            'description' => 'Mastered five concepts through adaptive learning',
+            'student_message' => 'Five concepts mastered the hard way. That is a real body of work.',
+            'hpc_domain' => 'positive_learning_habits',
+            'casel_domain' => 'self_management',
+            'ncdg_goal' => 'ED1',
+            'rarity' => 'uncommon',
+            'hpc_evidence_weight' => 0.8,
+            'scope' => 'global',
+            'trigger' => ['type' => 'eso_concepts_mastered', 'count' => 5],
+        ],
+        [
+            'badge_id' => 'BADGE_ADAPTIVE_IT_STUCK',
+            'name' => 'It stuck',
+            'category' => 'persistence',
+            'description' => 'Passed a spaced-retention check days after mastering something',
+            'student_message' => 'You still had it days later — that is the difference between learning something and just passing something.',
+            'hpc_domain' => 'positive_learning_habits',
+            'casel_domain' => 'self_management',
+            'ncdg_goal' => 'ED1',
+            'rarity' => 'uncommon',
+            'hpc_evidence_weight' => 0.9,
+            'scope' => 'global',
+            'trigger' => ['type' => 'eso_retention_verified', 'count' => 1],
+        ],
         [
             'badge_id' => 'BADGE_BOUNCED_BACK',
             'name' => 'Bounced back',
