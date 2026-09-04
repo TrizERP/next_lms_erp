@@ -43,6 +43,38 @@ class LearnerNodeState extends Model
         'cfu_passed_at' => 'datetime',
     ];
 
+    /**
+     * Bumped on every write to this table.
+     *
+     * EsoPolicyService batches this table's reads (one query for a learner
+     * instead of one per concept — the database is remote, so a round trip
+     * costs far more than the rows), and a batched read of learner state is
+     * only safe if it can never outlive a write. Rather than trusting ~15
+     * `save()` call sites to remember to invalidate, the model itself
+     * invalidates: any create/update/delete moves the version, and a reader
+     * holding an older version must discard it.
+     *
+     * This is complete for this table because nothing in app/ writes it
+     * through the query builder — every write goes through this model, so
+     * every write passes through these events.
+     */
+    protected static int $writeVersion = 0;
+
+    public static function writeVersion(): int
+    {
+        return self::$writeVersion;
+    }
+
+    protected static function booted(): void
+    {
+        $bump = static function (): void {
+            self::$writeVersion++;
+        };
+
+        static::saved($bump);
+        static::deleted($bump);
+    }
+
     public function node()
     {
         return $this->belongsTo(\App\Models\PAL\ConceptNode::class, 'node_id');
