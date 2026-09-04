@@ -25,6 +25,14 @@ use Illuminate\Support\Facades\Schema;
  */
 class CaseBuilder
 {
+    /**
+     * Pass as `$status` to `list()` to return cases in every state.
+     *
+     * Needed because null already means "the default view" there rather than
+     * "unfiltered" — see the comment at the filter itself.
+     */
+    public const ANY_STATUS = 'any';
+
     public function __construct(
         private readonly SignalStore $signalStore,
         private readonly EvidenceStore $evidenceStore,
@@ -38,6 +46,31 @@ class CaseBuilder
      * individually actionable.
      */
     private const CORROBORATION_COUNT = 2;
+
+    /**
+     * The score at which a single signal is enough on its own, in this tenant's numbers.
+     *
+     * `warrantsCase()` has always asked ThresholdRegistry for this, but the sentence the
+     * console printed alongside it said "0.5" as a literal — so a school that had
+     * retuned `ai_signal_definitions` to 0.35 was told its 0.39 signal was "short by
+     * 0.11" when it had in fact cleared the bar. The number the reader sees and the
+     * number the code applies have to come from the same place.
+     */
+    public function caseFloor(McpRequestContext $context, ?string $signalKey = null): float
+    {
+        $bands = $this->thresholds->bands($context->selectedInstituteId, $signalKey);
+
+        return (float) ($bands['high'] ?? 0.5);
+    }
+
+    /**
+     * How many moderate signals on one subject add up to a case when none is actionable
+     * on its own.
+     */
+    public function corroborationCount(): int
+    {
+        return self::CORROBORATION_COUNT;
+    }
 
     /**
      * Open (or update) a case from one subject's signals.
@@ -203,7 +236,19 @@ class CaseBuilder
             $query->where('case_type', $caseType);
         }
 
-        $query->where('status', $status ?? 'open');
+        // `null` means "the default view", which is open cases — not "every status".
+        // That is inconsistent with `$caseType` and `$minSeverity` above, where null
+        // genuinely means unfiltered, and the inconsistency cost a working feature: a
+        // follow-up question resolving its case passed null expecting every status, got
+        // only open ones, and found nothing — because a case moves to `in_progress` the
+        // moment anyone acts on it, which is exactly when people ask about it.
+        //
+        // Changing the default would alter what /api/ai/cases returns, so the escape is
+        // explicit instead. `ANY_STATUS` reads clearly at the call site, which `null`
+        // never did.
+        if ($status !== self::ANY_STATUS) {
+            $query->where('status', $status ?? 'open');
+        }
 
         if ($minSeverity !== null) {
             $ladder = ['low', 'moderate', 'high', 'critical'];

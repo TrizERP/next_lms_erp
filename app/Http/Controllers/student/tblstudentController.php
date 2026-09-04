@@ -1750,10 +1750,11 @@ CASE
     WHEN an.NOTIFICATION_TYPE = 'Photo Gallery' THEN '#429ad0'
     ELSE ''
 END as color_code
-				FROM app_notification an
-				LEFT JOIN tblstudent s ON s.id=an.STUDENT_ID
-				WHERE an.student_id = '" . $student_id . "' AND an.syear = '" . $syear . "'
-				ORDER BY an.ID DESC"); //(an.STUDENT_ID IN (SELECT id FROM tblstudent WHERE mobile='".$sms_mobile."') OR an.STUDENT_ID=0) AND s.SUB_INSTITUTE_ID = '".$sub_institute_id."'
+FROM app_notification an
+LEFT JOIN tblstudent s ON s.id=an.STUDENT_ID
+WHERE an.student_id = '" . $student_id . "' AND an.syear = '" . $syear . "'
+GROUP BY an.NOTIFICATION_TYPE,an.NOTIFICATION_DATE,an.STUDENT_ID,an.NOTIFICATION_DESCRIPTION,an.SUB_INSTITUTE_ID,an.SYEAR
+ORDER BY an.ID DESC"); //(an.STUDENT_ID IN (SELECT id FROM tblstudent WHERE mobile='".$sms_mobile."') OR an.STUDENT_ID=0) AND s.SUB_INSTITUTE_ID = '".$sub_institute_id."'
 
 			$res['status'] = 1;
 			$res['message'] = "Success";

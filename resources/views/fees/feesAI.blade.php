@@ -133,14 +133,14 @@ $(document).ready(function () {
             </div>
 
             <div class="col-lg-4 col-md-6 col-sm-6 col-xs-12">
-                <a href="https://datastudio.google.com/s/og1f6rXztWY" target="_blank" rel="noopener noreferrer" class="card report-card daily-report" aria-label="Open Daily Report in a new tab">
+                <a href="{{ url('/daily-summary-report') }}" target="_blank" rel="noopener noreferrer" class="card report-card daily-report" aria-label="Open Daily Report in a new tab">
                     <div class="report-icon-wrapper">
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2">
                             <circle cx="12" cy="12" r="10"></circle>
                             <polyline points="12 6 12 12 16 14"></polyline>
                         </svg>
                     </div>
-                    <h4 class="report-title">Daily Report</h4>
+                    <h4 class="report-title">MIS Daily Report</h4>
                     <p class="report-description">View daily operational reports, activities, and performance statistics.</p>
                     <span class="report-link">
                         View Report

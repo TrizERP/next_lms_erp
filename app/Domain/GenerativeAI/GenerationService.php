@@ -3,10 +3,10 @@
 namespace App\Domain\GenerativeAI;
 
 use App\Domain\AI\Support\AiAuditLogger;
+use App\Domain\AI\Support\OpenRouterClient;
 use App\Domain\Templates\TemplateRegistry;
 use App\Services\Mcp\McpRequestContext;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Throwable;
 
@@ -32,15 +32,14 @@ class GenerationService
 {
     private const DEFAULT_MODEL = 'deepseek/deepseek-chat';
 
-    private const DEFAULT_MAX_TOKENS = 1466;
-
-    private const DEFAULT_TIMEOUT = 45;
-
     public function __construct(
         private readonly TemplateRegistry $templates,
         private readonly OutputValidator $validator,
         private readonly SafetyChecker $safety,
         private readonly AiAuditLogger $audit,
+        // The transport and the `ai_api_keys` rotation pool, shared with lifecycle
+        // planning. This service used to carry its own copy of both.
+        private readonly OpenRouterClient $client,
     ) {
     }
 
@@ -225,16 +224,15 @@ class GenerationService
     // ---------------------------------------------------------------- internals
 
     /**
-     * Calls OpenRouter using the estate's existing key pool.
+     * Send the rendered template to the model.
+     *
+     * The transport, the headers and the `ai_api_keys` rotation all live in
+     * OpenRouterClient now — this method's remaining job is to turn a rendered template
+     * into messages and to say what the template expects back. It still throws on
+     * failure, because the caller records a failed request row from the exception.
      */
     private function callModel(array $rendered, $template, string $model): ?string
     {
-        $key = $this->resolveApiKey();
-
-        if ($key === null) {
-            throw new \RuntimeException('No usable AI API key is configured.');
-        }
-
         $messages = [];
 
         if (! empty($rendered['system'])) {
@@ -243,72 +241,13 @@ class GenerationService
 
         $messages[] = ['role' => 'user', 'content' => $rendered['user']];
 
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $key['api_key'],
-            'Content-Type' => 'application/json',
-            'HTTP-Referer' => config('app.url', 'https://nextlms.in'),
-            'X-Title' => config('app.name', 'Next LMS ERP'),
-        ])
-            ->timeout(self::DEFAULT_TIMEOUT)
-            ->post('https://openrouter.ai/api/v1/chat/completions', array_filter([
-                'model' => $model,
-                'messages' => $messages,
-                'max_tokens' => $template->maxTokens ?? $key['api_limit'] ?? self::DEFAULT_MAX_TOKENS,
-                'temperature' => $template->temperature,
-                // Ask for JSON explicitly when the template expects it; it materially
-                // reduces the "prose wrapped around JSON" failure the validator has
-                // to recover from.
-                'response_format' => $template->outputFormat === 'json'
-                    ? ['type' => 'json_object']
-                    : null,
-            ], fn ($value) => $value !== null));
-
-        if (! $response->successful()) {
-            throw new \RuntimeException(sprintf(
-                'The AI provider returned %d: %s',
-                $response->status(),
-                mb_substr($response->body(), 0, 300)
-            ));
-        }
-
-        return $response->json('choices.0.message.content');
-    }
-
-    /**
-     * Reuses `getAIKey()` (ai_api_keys + daily limits) with an env fallback, matching
-     * what OpenAIService::generateContent already does.
-     *
-     * @return array{api_key:string, api_limit:int|null, id:int|null}|null
-     */
-    private function resolveApiKey(): ?array
-    {
-        if (function_exists('getAIKey')) {
-            try {
-                $key = getAIKey('OPENROUTER_API_KEY', 1);
-
-                if ($key !== '-' && ! empty($key->api_key)) {
-                    return [
-                        'api_key' => trim((string) $key->api_key),
-                        'api_limit' => isset($key->api_limit) ? (int) $key->api_limit : null,
-                        'id' => $key->id ?? null,
-                    ];
-                }
-            } catch (Throwable) {
-                // Fall through to env — a key-table outage should not stop generation.
-            }
-        }
-
-        $envKey = config('openrouter.api_key') ?: env('OPENROUTER_API_KEY');
-
-        if (empty($envKey)) {
-            return null;
-        }
-
-        return [
-            'api_key' => trim((string) $envKey, " \t\n\r\0\x0B'\""),
-            'api_limit' => self::DEFAULT_MAX_TOKENS,
-            'id' => null,
-        ];
+        return $this->client->chat(
+            $messages,
+            $model,
+            maxTokens: $template->maxTokens ?? null,
+            temperature: $template->temperature,
+            expectJson: $template->outputFormat === 'json',
+        );
     }
 
     private function recordRequest(

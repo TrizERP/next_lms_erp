@@ -34,6 +34,9 @@ use App\Http\Controllers\api\HostelDashboardApiController;
 use App\Http\Controllers\api\TransportationDashboardApiController;
 use App\Http\Controllers\api\FeesRefundApiController;
 use App\Http\Controllers\api\TeacherAssignmentMobileApiController;
+use App\Http\Controllers\api\TeacherTimetableApiController;
+use App\Http\Controllers\api\TeacherFeeDuesApiController;
+use App\Http\Controllers\api\TeacherIcardApiController;
 
 
 // Student Assessment API - Get student assessment data with scores and levels
@@ -103,7 +106,12 @@ Route::post('transportation-dashboard/summary', [TransportationDashboardApiContr
 Route::middleware('api.session')->group(function () {
     Route::post('admin-dashboard/summary', [RoleDashboardApiController::class, 'adminSummary']);
     Route::post('teacher-dashboard/summary', [RoleDashboardApiController::class, 'teacherSummary']);
+    Route::post('teacher-timetable/summary', [TeacherTimetableApiController::class, 'summary']);
+    Route::post('teacher-fee-dues/summary', [TeacherFeeDuesApiController::class, 'summary']);
     Route::post('student-dashboard/summary', [RoleDashboardApiController::class, 'studentSummary']);
+    // Self-service "My ID card" — scoped to the caller's own user_id only,
+    // see App\Http\Controllers\api\TeacherIcardApiController::mine().
+    Route::post('teacher-icard/mine', [TeacherIcardApiController::class, 'mine']);
 });
 Route::middleware('api.session')->prefix('fees-refund')->group(function () {
     Route::post('search', [FeesRefundApiController::class, 'search']);
@@ -192,6 +200,42 @@ Route::post('lms-assignment/ai-status/{id}', [\App\Http\Controllers\api\lms\LmsA
 Route::post('lms-assignment/annotate-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateList']);
 Route::post('lms-assignment/annotate-questions', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateQuestions']);
 Route::post('lms-assignment/annotate-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateStore']);
+// Student side of the Assignment module is deliberately narrow: a student may
+// VIEW the assignments given to them and SUBMIT a file against them, nothing
+// else. Every other screen -- creating assignments, picking students, reading
+// the class-wide list, annotating and grading -- is teacher-side only, so those
+// endpoints sit behind `staff.only`, which rejects Student/Parent tokens.
+//
+// Both groups run `api.session` first: it verifies the bearer JWT and hydrates
+// the session from the token payload. That is what `staff.only` reads, and what
+// lets the submission endpoints pin themselves to the caller's own student id
+// instead of trusting the user_id in the request body.
+
+// Modules 1 & 3 - Assignment (teacher create) and Annotate Assignment (review / grade)
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::post('lms-assignment/subjects', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'subjects']);
+    Route::post('lms-assignment/students', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'students']);
+    Route::post('lms-assignment/exam-papers', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'examPapers']);
+    Route::post('lms-assignment/store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'store']);
+    Route::post('lms-assignment/list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'index']);
+    Route::post('lms-assignment/annotate-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateList']);
+    Route::post('lms-assignment/annotate-questions', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateQuestions']);
+    Route::post('lms-assignment/annotate-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateStore']);
+});
+
+// Module 2 - Assignment Submission (the student's own view + upload screen)
+Route::middleware('api.session')->group(function () {
+    Route::post('lms-assignment/submission-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionList']);
+    Route::post('lms-assignment/submission-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionStore']);
+});
+
+// ------------------------------------------------------------------
+// LMS Result Dashboard - the "Results dashboard" tab beside "Exams" on
+// LMS > Test > Exam. Teacher-side only, same gate as the exam screens.
+// ------------------------------------------------------------------
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::post('lms-result-dashboard/summary', [\App\Http\Controllers\api\lms\LmsResultDashboardApiController::class, 'summary']);
+});
 
 Route::controller(admissionEnquiryAPIController::class)->group(function () {
     Route::get('admission_enquiry', 'index');
@@ -298,6 +342,38 @@ Route::post('intelligence/lesson-plan-periods/{id}/delete', [\App\Http\Controlle
 // Lesson Plan lookups - chapter and period-slot options for the "Add lesson" form
 Route::match(['GET', 'POST'], 'intelligence/lesson-plan-lookup/chapters', [\App\Http\Controllers\api\lms\LessonPlanLookupApiController::class, 'chapters']);
 Route::match(['GET', 'POST'], 'intelligence/lesson-plan-lookup/periods', [\App\Http\Controllers\api\lms\LessonPlanLookupApiController::class, 'periods']);
+
+/*
+| Lesson Intelligence - the four-phase lesson-plan generator.
+|   Phase 0  capacity     how much teaching time the term actually has
+|   Phase 1  macro-plan   chapters spread across the term's weeks
+|   Phase 2  meso-plan    concepts placed into dated period slots
+|   Phase 3  micro-plan   the LLM-written 5E content for a period
+| Phases 0-2 are pure arithmetic and free to re-run; phase 3 costs one DeepSeek
+| call per period, so it is only ever triggered explicitly.
+*/
+Route::prefix('lesson-intelligence')->group(function () {
+    // Cascading selection - only combinations that have a real timetable.
+    Route::match(['GET', 'POST'], 'dropdowns', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'dropdowns']);
+    Route::match(['GET', 'POST'], 'dropdowns/filter', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'dropdownFilter']);
+
+    // Phase 0 - read-only.
+    Route::match(['GET', 'POST'], 'capacity', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'capacity']);
+    Route::match(['GET', 'POST'], 'calendar-events', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'calendarEvents']);
+
+    // Phase 1.
+    Route::match(['GET', 'POST'], 'macro-plan/show', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'showMacroPlan']);
+    Route::post('macro-plan', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'storeMacroPlan']);
+
+    // Phase 2.
+    Route::match(['GET', 'POST'], 'meso-plan/{planId}/teachers', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'mesoPlanTeachers']);
+    Route::match(['GET', 'POST'], 'meso-plan/{planId}/periods', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'mesoPlanPeriods']);
+    Route::post('meso-plan/{planId}', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'storeMesoPlan']);
+
+    // Phase 3 - billable.
+    Route::post('micro-plan/period/{periodId}', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'storeMicroPlan']);
+    Route::post('micro-plan/plan/{planId}/batch', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'storeMicroPlanBatch']);
+});
 
 // Intelligence Question Generation - MCQ / narrative items via DeepSeek LLM -> lms_question_master
 Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);

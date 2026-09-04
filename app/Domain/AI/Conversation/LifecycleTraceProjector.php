@@ -553,10 +553,28 @@ final class LifecycleTraceProjector
             $status = TraceStage::PENDING;
             $summary = (string) ($workflow['summary'] ?? 'A workflow is waiting before any record can change.');
         } elseif (($workflow['status'] ?? TraceStage::NOT_REACHED) === TraceStage::RAN) {
+            // The workflow moving is not the action happening. Approving a recommendation
+            // starts the run and parks it at its own confirmation step — no record has
+            // changed yet — and reporting that as a completed Action told the reader the
+            // intervention existed when it did not. The first branch above already caught
+            // the case where the action genuinely ran, so reaching here means it did not:
+            // this stage is waiting, and waiting is what it should say.
+            $status = TraceStage::PENDING;
             $summary = (string) ($workflow['summary'] ?? 'The workflow advanced toward a real action.');
-            $note = 'The workflow ran, but no downstream record change was reported in this turn.';
+            $note = 'The workflow ran, but no record has changed yet — this stage completes when the '
+                . 'workflow reaches the step that writes one.';
         } elseif ($summary === '') {
             $summary = $this->combinedSummary($sources, $status, 'No action stage was reached on this turn.');
+        }
+
+        // Stage 12 is the one a reader checks first, and it was the one stage that could
+        // render completely blank: on an ordinary scan turn both sources are not_reached,
+        // so the summary is empty and nothing above sets a note. Meanwhile the backend
+        // ladder holds a perfectly good reason on those very stages — "Waiting on the
+        // human decision above. This is the gate, not a gap." Dropping it turned the
+        // deliberate design of the whole pipeline into an apparently dead end.
+        if ($note === null) {
+            $note = $this->firstNote([$action, $workflow]);
         }
 
         return [
@@ -622,6 +640,11 @@ final class LifecycleTraceProjector
             }
         }
 
+        // Folded stages often share one reason — three backend stages skipped by the same
+        // route all report the same sentence — and printing it three times reads as
+        // padding rather than as the single fact it is.
+        $parts = array_values(array_unique($parts));
+
         if ($parts !== []) {
             return implode(' ', array_slice($parts, 0, 3));
         }
@@ -631,6 +654,28 @@ final class LifecycleTraceProjector
         }
 
         return $fallback;
+    }
+
+    /**
+     * The first reason any of these stages gave for its own status.
+     *
+     * @param  array<int, array<string, mixed>|null>  $stages
+     */
+    private function firstNote(array $stages): ?string
+    {
+        foreach ($stages as $stage) {
+            if (! is_array($stage)) {
+                continue;
+            }
+
+            $note = trim((string) ($stage['note'] ?? ''));
+
+            if ($note !== '') {
+                return $note;
+            }
+        }
+
+        return null;
     }
 
     /**

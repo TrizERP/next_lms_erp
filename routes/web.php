@@ -857,12 +857,12 @@ Route::group(['middleware' => ['session', 'menu', 'logRoute', 'check_permissions
 Route::get('/download-folder', [FileController::class, 'downloadFolder']);
 
 /*
-| AI Journey console.
+| The AI Journey console used to be served from here as a Blade page. It now lives in
+| the Next.js frontend at `app/ai-journey`, which calls the same `/api/ai/*` endpoints
+| this application already exposes. Laravel owns the pipeline and the API; it no longer
+| renders any part of the AI surface.
 |
-| One page that asks a question and renders the fifteen-stage trace that comes back.
-| Behind `session` and `menu` like the rest of the authenticated UI; the page mints its
-| own scoped token for the /api/ai endpoints rather than reaching into them directly.
+| The CLI equivalent is unaffected: `php artisan ai:journey` still runs a whole journey
+| in the terminal, which is the supported way to exercise the pipeline without a
+| browser.
 */
-Route::group(['middleware' => ['session', 'menu', 'logRoute']], function () {
-    Route::get('ai/journey', [\App\Http\Controllers\AI\AiJourneyController::class, 'index'])->name('ai.journey');
-});

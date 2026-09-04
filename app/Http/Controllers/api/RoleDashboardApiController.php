@@ -116,13 +116,24 @@ class RoleDashboardApiController extends Controller
             ->limit(5)
             ->get();
 
+        // fees_collect holds one row per fee head, so a receipt is the (syear, receipt_no, student) group.
         $recentFeeReceipts = DB::table('fees_collect as fc')
             ->join('tblstudent as ts', 'ts.id', '=', 'fc.student_id')
-            ->selectRaw("fc.receipt_no, fc.amount, fc.receiptdate, CONCAT_WS(' ', ts.first_name, ts.last_name) as student_name")
+            ->selectRaw("MIN(fc.id) as id, fc.receipt_no, SUM(fc.amount) as amount, MAX(fc.receiptdate) as receiptdate, CONCAT_WS(' ', ts.first_name, ts.last_name) as student_name")
             ->where(['fc.sub_institute_id' => $subInstituteId, 'fc.syear' => $syear, 'fc.is_deleted' => 'N'])
-            ->orderByDesc('fc.receiptdate')
+            ->groupBy('fc.syear', 'fc.receipt_no', 'fc.student_id', 'ts.first_name', 'ts.last_name')
+            ->orderByDesc(DB::raw('MAX(fc.receiptdate)'))
+            ->orderByDesc(DB::raw('MIN(fc.id)'))
             ->limit(5)
-            ->get();
+            ->get()
+            ->map(static function ($row) {
+                // MySQL returns DECIMAL/SUM as strings; the dashboard formats these as numbers.
+                $row->id = (int) $row->id;
+                $row->receipt_no = (string) $row->receipt_no;
+                $row->amount = round((float) $row->amount, 2);
+
+                return $row;
+            });
 
         // Fee collection trend — last 7 days, for the collection chart.
         $startDate = Carbon::today()->subDays(6)->toDateString();
@@ -212,9 +223,19 @@ class RoleDashboardApiController extends Controller
             ->whereIn('section_id', $divisionIds)
             ->count();
 
-        $mySubjects = DB::table('subject')
-            ->select('id', 'subject_code', 'subject_name', 'short_name', 'subject_type')
+        // Scoped via the teacher's own timetable rows (the same source
+        // TeacherAssignmentMobileApiController::standards()/divisions() use for
+        // class scoping) — there is no dedicated teacher-subject mapping table.
+        $mySubjectIds = DB::table('timetable')
+            ->where('teacher_id', $userId)
             ->where('sub_institute_id', $subInstituteId)
+            ->where('syear', $syear)
+            ->distinct()
+            ->pluck('subject_id');
+
+        $mySubjects = $mySubjectIds->isEmpty() ? collect() : DB::table('subject')
+            ->select('id', 'subject_code', 'subject_name', 'short_name', 'subject_type')
+            ->whereIn('id', $mySubjectIds)
             ->where('status', '1')
             ->get();
 
