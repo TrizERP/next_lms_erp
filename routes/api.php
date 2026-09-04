@@ -214,6 +214,53 @@ Route::middleware('api.session')->group(function () {
 });
 
 // ------------------------------------------------------------------
+// LMS Engagement - Leader Board + Social & Collaborative
+// (K12 rebuild of the legacy Blade modules lms/lmsLeaderboard and
+//  lms/lmsSocialCollabrotive. Both are reimplemented as stateless REST APIs in
+//  App\Http\Controllers\api\lms; the legacy web controllers and routes are
+//  untouched and keep serving the old ERP.)
+//
+// `api.session` validates the bearer JWT and hydrates the session from the
+// verified payload, so tenant (sub_institute_id), user and academic year come
+// from the token - never from the request body. Both modules are open to
+// students AND staff (that is the legacy behaviour: a student raises a doubt,
+// a teacher or a classmate replies), so neither sits behind `staff.only`;
+// per-role visibility is enforced inside the services.
+// ------------------------------------------------------------------
+Route::middleware('api.session')->prefix('lms')->group(function () {
+    // Leader Board (read-only - nothing in the ERP writes lb_points).
+    Route::get('leaderboard', [\App\Http\Controllers\api\lms\LmsLeaderboardApiController::class, 'index']);
+    Route::get('leaderboard/filters', [\App\Http\Controllers\api\lms\LmsLeaderboardApiController::class, 'filters']);
+    Route::get('leaderboard/rankings', [\App\Http\Controllers\api\lms\LmsLeaderboardApiController::class, 'rankings']);
+    Route::get('leaderboard/{userId}', [\App\Http\Controllers\api\lms\LmsLeaderboardApiController::class, 'show'])
+        ->where('userId', '[0-9]+');
+
+    // Leader Board Master - the admin points configuration (lb_master).
+    // Staff-only: students and parents must not reach the configuration screen.
+    Route::middleware('staff.only')->group(function () {
+        Route::get('leaderboard-master', [\App\Http\Controllers\api\lms\LmsLeaderboardMasterApiController::class, 'index']);
+        Route::post('leaderboard-master', [\App\Http\Controllers\api\lms\LmsLeaderboardMasterApiController::class, 'store']);
+        Route::get('leaderboard-master/{id}', [\App\Http\Controllers\api\lms\LmsLeaderboardMasterApiController::class, 'show'])
+            ->where('id', '[0-9]+');
+        Route::put('leaderboard-master/{id}', [\App\Http\Controllers\api\lms\LmsLeaderboardMasterApiController::class, 'update'])
+            ->where('id', '[0-9]+');
+        Route::delete('leaderboard-master/{id}', [\App\Http\Controllers\api\lms\LmsLeaderboardMasterApiController::class, 'destroy'])
+            ->where('id', '[0-9]+');
+    });
+
+    // Social & Collaborative (doubt feed + conversations).
+    Route::get('social-collaborative', [\App\Http\Controllers\api\lms\LmsSocialCollaborativeApiController::class, 'index']);
+    Route::get('social-collaborative/lookups/subjects', [\App\Http\Controllers\api\lms\LmsSocialCollaborativeApiController::class, 'subjects']);
+    Route::get('social-collaborative/lookups/chapters', [\App\Http\Controllers\api\lms\LmsSocialCollaborativeApiController::class, 'chapters']);
+    Route::get('social-collaborative/lookups/topics', [\App\Http\Controllers\api\lms\LmsSocialCollaborativeApiController::class, 'topics']);
+    Route::get('social-collaborative/{id}', [\App\Http\Controllers\api\lms\LmsSocialCollaborativeApiController::class, 'show'])
+        ->where('id', '[0-9]+');
+    Route::post('social-collaborative', [\App\Http\Controllers\api\lms\LmsSocialCollaborativeApiController::class, 'store']);
+    Route::post('social-collaborative/{id}/comments', [\App\Http\Controllers\api\lms\LmsSocialCollaborativeApiController::class, 'storeComment'])
+        ->where('id', '[0-9]+');
+});
+
+// ------------------------------------------------------------------
 // LMS Result Dashboard - the "Results dashboard" tab beside "Exams" on
 // LMS > Test > Exam. Teacher-side only, same gate as the exam screens.
 // ------------------------------------------------------------------

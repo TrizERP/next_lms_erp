@@ -457,10 +457,7 @@ class EsoPolicyService
             );
         }
 
-        $states = LearnerNodeState::forStudent($studentId)
-            ->whereIn('node_id', $nodes->pluck('id'))
-            ->get()
-            ->keyBy('node_id');
+        $states = $this->statesForNodes($studentId, $nodes->pluck('id'))->keyBy('node_id');
 
         // D1 entry: nothing has been diagnosed for this concept yet.
         if ($states->isEmpty()) {
@@ -749,8 +746,7 @@ class EsoPolicyService
             return null;
         }
 
-        $estimates = LearnerNodeState::forStudent($studentId)
-            ->whereIn('node_id', $nodeIds)
+        $estimates = $this->statesForNodes($studentId, $nodeIds)
             ->pluck('mastery_estimate', 'node_id');
 
         $sum = 0.0;
@@ -1309,7 +1305,7 @@ class EsoPolicyService
         $nodes = $this->nodesForConcept($conceptId, $subInstituteId);
         $nodeIds = $nodes->pluck('id');
 
-        $states = LearnerNodeState::forStudent($studentId)->whereIn('node_id', $nodeIds)->get()->keyBy('node_id');
+        $states = $this->statesForNodes($studentId, $nodeIds)->keyBy('node_id');
 
         $kNodes = $nodes->where('node_type', 'K');
         $aNodes = $nodes->where('node_type', 'A');
@@ -1738,6 +1734,11 @@ class EsoPolicyService
         $subjectName = DB::table('subject')->where('id', $chapter->subject_id)->value('subject_name');
         $readyConcepts = $this->esoReadyConceptsForChapters([$chapterId], $subInstituteId);
 
+        // Two queries up front for content the loop below would otherwise
+        // fetch one concept at a time. Purely a warm-up of the same memo the
+        // per-concept accessors already use — no behaviour depends on it.
+        $this->primeConceptContent($readyConcepts->pluck('id')->all(), $subInstituteId);
+
         $sections = [];
         $currentConceptId = null;
 
@@ -2090,8 +2091,7 @@ class EsoPolicyService
             return false;
         }
 
-        $retainedCount = LearnerNodeState::forStudent($studentId)
-            ->whereIn('node_id', $nodeIds)
+        $retainedCount = $this->statesForNodes($studentId, $nodeIds)
             ->where('status', LearnerNodeState::STATUS_RETAINED)
             ->count();
 
@@ -2179,7 +2179,7 @@ class EsoPolicyService
             return 0;
         }
 
-        return (int) LearnerNodeState::forStudent($studentId)->whereIn('node_id', $nodeIds)->sum('attempts');
+        return (int) $this->statesForNodes($studentId, $nodeIds)->sum('attempts');
     }
 
     /** Total attempts recorded across every node state for one student, any concept. */
@@ -2225,7 +2225,7 @@ class EsoPolicyService
     protected function masterySignals(int $studentId, int $conceptId, int $subInstituteId): array
     {
         $nodes = $this->nodesForConcept($conceptId, $subInstituteId);
-        $states = LearnerNodeState::forStudent($studentId)->whereIn('node_id', $nodes->pluck('id'))->get()->keyBy('node_id');
+        $states = $this->statesForNodes($studentId, $nodes->pluck('id'))->keyBy('node_id');
 
         $statesOfType = fn (string $type) => $nodes->where('node_type', $type)
             ->map(fn (ConceptNode $n) => $states->get($n->id))
@@ -2367,7 +2367,7 @@ class EsoPolicyService
         // The verdict already computed these; they used to be thrown away, so
         // the "Mastery details" screen could not show the two numbers the D4
         // rule actually turns on.
-        $states = LearnerNodeState::forStudent($studentId)->whereIn('node_id', $nodes->pluck('id'))->get();
+        $states = $this->statesForNodes($studentId, $nodes->pluck('id'))->values();
 
         return [
             'concept_id' => $conceptId,
@@ -2616,6 +2616,64 @@ class EsoPolicyService
      */
     protected array $requestMemo = [];
 
+    /**
+     * One learner's full node-state set, loaded once per request instead of
+     * once per concept.
+     *
+     * The chapter dashboard walks 17 concepts and each one asked the database
+     * separately for its own slice of this table — plus a separate SUM for the
+     * attempt count. With a remote database at ~29ms a round trip that is over
+     * a second of pure latency for rows that all come from a single learner's
+     * partition of one table.
+     *
+     * SAFETY. This is a learner-state read, so unlike the content memo it can
+     * be invalidated by this engine's own writes — including on a "silent"
+     * dashboard resolve, because masteryVerdict() sweeps nodes to `mastered`
+     * regardless of $silent. The cache is therefore versioned against
+     * LearnerNodeState::writeVersion(), which the model bumps on every saved
+     * and deleted event. Any write anywhere — including stateFor()'s
+     * firstOrCreate and every $state->save() — invalidates it, so a stale row
+     * can never reach a decision. Verified complete: nothing in app/ writes
+     * this table through the query builder.
+     *
+     * @return \Illuminate\Support\Collection<int, LearnerNodeState> keyed by node_id
+     */
+    protected function learnerStates(int $studentId): Collection
+    {
+        $version = LearnerNodeState::writeVersion();
+
+        if (($this->learnerStateCache['student'] ?? null) !== $studentId
+            || ($this->learnerStateCache['version'] ?? null) !== $version) {
+            $this->learnerStateCache = [
+                'student' => $studentId,
+                'version' => $version,
+                'rows' => LearnerNodeState::forStudent($studentId)->get()->keyBy('node_id'),
+            ];
+        }
+
+        return $this->learnerStateCache['rows'];
+    }
+
+    /**
+     * The learner's states for a specific set of nodes, served from the
+     * per-request batch. Identical result to querying with a whereIn — the
+     * same rows, keyed the same way — but without the round trip.
+     *
+     * @param  \Illuminate\Support\Collection<int, mixed>|array<int, mixed>  $nodeIds
+     * @return \Illuminate\Support\Collection<int, LearnerNodeState>
+     */
+    protected function statesForNodes(int $studentId, $nodeIds): Collection
+    {
+        $wanted = collect($nodeIds)->map(fn ($id) => (int) $id)->flip();
+
+        return $this->learnerStates($studentId)->filter(
+            fn (LearnerNodeState $state) => $wanted->has((int) $state->node_id)
+        );
+    }
+
+    /** @var array{student?:int, version?:int, rows?:Collection} */
+    protected array $learnerStateCache = [];
+
     /** @param  callable():mixed  $resolve */
     protected function memo(string $key, callable $resolve): mixed
     {
@@ -2636,6 +2694,52 @@ class EsoPolicyService
     public function forgetMemoized(): void
     {
         $this->requestMemo = [];
+    }
+
+    /**
+     * Load the K/A/S nodes and `requires` relations for a whole set of
+     * concepts in two queries, and seed the per-concept memo with the result.
+     *
+     * The memo already collapsed the old 73-per-page node lookups down to one
+     * per concept, but "one per concept" is still 17 round trips on a chapter
+     * page — and on a remote database a round trip costs far more than the
+     * handful of rows it returns. This turns those 34 trips into 2.
+     *
+     * Seeding the same memo the per-concept accessors read means callers are
+     * unchanged and a concept that was NOT part of the prime still resolves
+     * itself lazily; this is a warm-up, never a gate.
+     *
+     * @param  array<int, int>  $conceptIds
+     */
+    protected function primeConceptContent(array $conceptIds, int $subInstituteId): void
+    {
+        $conceptIds = array_values(array_unique(array_map('intval', $conceptIds)));
+        if ($conceptIds === []) {
+            return;
+        }
+
+        $nodesByConcept = ConceptNode::whereIn('concept_id', $conceptIds)
+            ->forTenant($subInstituteId)
+            ->orderBy('sort_order')
+            ->get()
+            ->groupBy('concept_id');
+
+        $relationsByConcept = ConceptRelation::whereIn('from_concept_id', $conceptIds)
+            ->where('relation_type', 'requires')
+            ->forTenant($subInstituteId)
+            ->get()
+            ->groupBy('from_concept_id');
+
+        foreach ($conceptIds as $conceptId) {
+            // An absent key is a real answer — the concept has no nodes, or no
+            // prerequisites — so it is memoised as an empty collection rather
+            // than left to fall through and re-query.
+            $this->requestMemo["nodes:{$conceptId}:{$subInstituteId}"] =
+                $nodesByConcept->get($conceptId, collect())->values();
+
+            $this->requestMemo["prereq:{$conceptId}:{$subInstituteId}"] =
+                $relationsByConcept->get($conceptId, collect())->pluck('to_concept_id');
+        }
     }
 
     protected function nodesForConcept(int $conceptId, int $subInstituteId): Collection
