@@ -332,9 +332,17 @@ Route::get('matchProfile', [lmsCounsellingController::class, 'matchProfile']);
 Route::middleware(['session'])->group(function () {
     Route::get('studentAspiration', [lmsCounsellingController::class, 'studentAspiration']);
     Route::post('studentAspiration', [lmsCounsellingController::class, 'saveStudentAspiration']);
+    // Career ambition (CI-GUIDE-DEV-001, Career Awareness Level-3) — free-text
+    // ambition capture, mirrors career certainty's pattern.
+    Route::get('studentAmbition', [lmsCounsellingController::class, 'studentAmbition']);
+    Route::post('studentAmbition', [lmsCounsellingController::class, 'saveStudentAmbition']);
     // Career alignment (CI-GUIDE-DEV-001 Group D1) — GET only, so no CSRF
     // exemption needed (VerifyCsrfToken never checks GET/HEAD/OPTIONS).
     Route::get('careerAlignment', [lmsCounsellingController::class, 'careerAlignment']);
+    // Career originality (CI-GUIDE-DEV-001, Career Awareness Level-3) —
+    // free-text originality capture, mirrors career ambition's pattern.
+    Route::get('studentOriginality', [lmsCounsellingController::class, 'studentOriginality']);
+    Route::post('studentOriginality', [lmsCounsellingController::class, 'saveStudentOriginality']);
     // Phase-1 Career Intelligence (evidence-first UI). GET only, same reasoning.
     Route::get('studentCareerEvidence', [lmsCounsellingController::class, 'studentCareerEvidence']);
     // Knowledge-Based Career Recommendation Engine — additive, dynamic
