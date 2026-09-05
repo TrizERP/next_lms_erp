@@ -78,6 +78,7 @@ class Kernel extends HttpKernel
         'pal.auth' => \App\Http\Middleware\PalApiAuth::class,
         'eso.student' => \App\Http\Middleware\EsoStudentOnlyAuth::class,
         'staff.only' => \App\Http\Middleware\RequireStaffRole::class,
+        'throttle.qgen' => \App\Http\Middleware\ThrottleQuestionGeneration::class,
         'task.permission' => \App\Http\Middleware\TaskPermissionMiddleware::class,
     ];
 }

@@ -18,7 +18,9 @@ return [
 
     'base_url' => env('DEEPSEEK_BASE_URL', 'https://api.deepseek.com'),
 
-    // Public DeepSeek model. Override per-request via `model`.
+    // Public DeepSeek model. Server-side only - the API no longer accepts a
+    // caller-supplied `model`/`temperature`, since that let an unauthenticated
+    // client select an arbitrarily expensive model on the tenant's account.
     'model' => env('DEEPSEEK_MODEL', 'deepseek-v4-pro'),
 
     // api_type used to look the key up in the ai_api_keys table.
@@ -38,6 +40,12 @@ return [
     'max_output_tokens' => (int) env('DEEPSEEK_MAX_OUTPUT_TOKENS', 0),
     'batch_size_mcq' => (int) env('DEEPSEEK_BATCH_SIZE_MCQ', 10),
     'batch_size_narrative' => (int) env('DEEPSEEK_BATCH_SIZE_NARRATIVE', 3),
+
+    // Per-user rate limit on the billable generation endpoint, applied by
+    // App\Http\Middleware\ThrottleQuestionGeneration. One generation run can be
+    // ~17 sequential LLM calls, so this is a spend control, not a DoS control.
+    'rate_limit_attempts' => (int) env('DEEPSEEK_RATE_LIMIT_ATTEMPTS', 5),
+    'rate_limit_decay_minutes' => (int) env('DEEPSEEK_RATE_LIMIT_DECAY_MINUTES', 1),
 
     // DeepSeek "pro/thinking" style flags. Left off for deepseek-chat; enable
     // for reasoner-class models that accept them.

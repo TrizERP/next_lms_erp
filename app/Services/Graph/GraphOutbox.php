@@ -75,7 +75,8 @@ class GraphOutbox
         string $targetLabel,
         ?int $newTargetId,
         ?int $oldTargetId = null,
-        string $event = 'INSERT'
+        string $event = 'INSERT',
+        array $edgeKey = []
     ): int {
         GraphSchema::assertLabel($sourceLabel);
         GraphSchema::assertLabel($targetLabel);
@@ -89,6 +90,12 @@ class GraphOutbox
             'target_table'   => $targetLabel,
             'old_target_id'  => $oldTargetId,
             'new_target_id'  => $newTargetId,
+            // The properties that identify THIS edge, when more than one edge of
+            // the same type can exist between the same two nodes — a person can
+            // take many leaves of one type. Null means (source, type, target) is
+            // the whole identity, which is right for most edges and is exactly
+            // how this table behaved before 2026-09-04.
+            'edge_key'       => $edgeKey === [] ? null : json_encode($edgeKey),
             'status'         => 'pending',
             'created_at'     => now(),
         ]);

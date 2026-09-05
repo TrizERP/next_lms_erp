@@ -53,9 +53,30 @@ class TableGraphProjection implements GraphProjection
         private readonly array $spec,
         private readonly GraphOutbox $outbox,
     ) {
+        if ($this->edgesOnly()) {
+            if (empty($spec['relationships'])) {
+                throw new RuntimeException("Edge-only projection spec for '{$table}' needs 'relationships'");
+            }
+
+            return;
+        }
+
         if (! isset($spec['label'], $spec['properties'])) {
             throw new RuntimeException("Projection spec for '{$table}' needs both 'label' and 'properties'");
         }
+    }
+
+    /**
+     * A join table is edges and nothing else.
+     *
+     * `hrms_emp_leaves`, `class_teacher`, `transport_route_stop` and their kin
+     * describe a link between two things that are already nodes. Without this,
+     * every such row would also MERGE a node — 28,408 `:LeaveType`-ish nodes
+     * that nothing asked for, keyed on a row id that means nothing in the graph.
+     */
+    private function edgesOnly(): bool
+    {
+        return ($this->spec['edges_only'] ?? false) === true;
     }
 
     public function tables(): array
@@ -65,7 +86,7 @@ class TableGraphProjection implements GraphProjection
 
     public function labels(): array
     {
-        return [$this->spec['label']];
+        return $this->edgesOnly() ? [] : [$this->spec['label']];
     }
 
     public function enqueue(string $table, int $recordId, array $hints = []): array
@@ -77,6 +98,25 @@ class TableGraphProjection implements GraphProjection
         }
 
         $row = (array) $row;
+
+        if ($this->edgesOnly()) {
+            $queue = [];
+
+            foreach ($this->spec['relationships'] as $rel) {
+                // `id` as an endpoint column means "this row's node key", which an
+                // edge-only row does not have. Passing the row id keeps
+                // endpointIds() total, and no spec here uses `id`.
+                foreach ($this->edges($rel, $row, $recordId) as [$sourceId, $targetId]) {
+                    $queue[] = $this->outbox->relationship(
+                        $rel['from'][0], $sourceId, $rel['type'], $rel['to'][0], $targetId,
+                        null, 'INSERT', $this->edgeKey($rel, $row, $recordId)
+                    );
+                }
+            }
+
+            return ['log' => [], 'queue' => $queue];
+        }
+
         $label = $this->spec['label'];
         $nodeId = $this->nodeId($row, $recordId);
 
@@ -93,7 +133,8 @@ class TableGraphProjection implements GraphProjection
         foreach ($this->spec['relationships'] ?? [] as $rel) {
             foreach ($this->edges($rel, $row, $nodeId) as [$sourceId, $targetId]) {
                 $queue[] = $this->outbox->relationship(
-                    $rel['from'][0], $sourceId, $rel['type'], $rel['to'][0], $targetId
+                    $rel['from'][0], $sourceId, $rel['type'], $rel['to'][0], $targetId,
+                    null, 'INSERT', $this->edgeKey($rel, $row, $nodeId)
                 );
             }
         }
@@ -103,6 +144,24 @@ class TableGraphProjection implements GraphProjection
 
     public function delete(string $table, int $recordId, array $hints = []): array
     {
+        // An edge-only row is gone, so its edge should be too. The endpoints are
+        // read from the trigger hints, because the row itself no longer exists
+        // to be re-read.
+        if ($this->edgesOnly()) {
+            $queue = [];
+
+            foreach ($this->spec['relationships'] as $rel) {
+                foreach ($this->edges($rel, $hints, $recordId) as [$sourceId, $targetId]) {
+                    $queue[] = $this->outbox->relationship(
+                        $rel['from'][0], $sourceId, $rel['type'], $rel['to'][0],
+                        null, $targetId, 'DELETE', $this->edgeKey($rel, $hints, $recordId)
+                    );
+                }
+            }
+
+            return ['log' => [], 'queue' => $queue];
+        }
+
         $keyColumn = $this->spec['key_column'] ?? null;
 
         if ($keyColumn === null) {
@@ -149,7 +208,8 @@ class TableGraphProjection implements GraphProjection
 
     public function enqueueNode(string $label, int $nodeId): array
     {
-        if ($label !== $this->spec['label']) {
+        // An edge-only projection owns no label, so it can never rebuild a node.
+        if ($this->edgesOnly() || $label !== ($this->spec['label'] ?? null)) {
             return ['log' => [], 'queue' => []];
         }
 
@@ -272,6 +332,36 @@ class TableGraphProjection implements GraphProjection
         }
 
         return $edges;
+    }
+
+    /**
+     * The properties that identify ONE edge, when several of the same type can
+     * exist between the same two nodes.
+     *
+     * Declared on the relationship spec as `'key' => ['leaveId' => 'id']` —
+     * graph property => column of this row — and it must match what the module
+     * script writes, or the live sync and the bulk load will build two different
+     * edges for the same fact. `hrms_emp_leaves` is the case that proves it: a
+     * person takes many leaves of one type, so without `{leaveId}` a DELETE
+     * removes every leave they ever took of that kind.
+     *
+     * @return array<string, mixed>
+     */
+    private function edgeKey(array $rel, array $row, int $nodeId): array
+    {
+        $key = [];
+
+        foreach ($rel['key'] ?? [] as $property => $column) {
+            $value = $column === 'id' ? $nodeId : ($row[$column] ?? null);
+
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            $key[$property] = is_numeric($value) ? (int) $value : trim((string) $value);
+        }
+
+        return $key;
     }
 
     /** @return int[] */

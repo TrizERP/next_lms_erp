@@ -20,7 +20,9 @@
 <div id="mynetwork"></div> <!-- Div for rendering the LMS graph -->
 
 <div style="text-align: center; margin-top: 20px;">
-    <button id="sync-data" style="padding: 10px 20px;">Sync Data from MySQL to Neo4j</button>
+    {{-- Sync button removed 2026-09-04: /sync-neo4j and Neo4jSyncController are gone.
+        MariaDB reaches the graph through App\Services\Graph (neo4j:drain), which runs
+        on the scheduler, so there is nothing for a person to trigger here. --}}
     <button id="refresh-graph" style="padding: 10px 20px;">Refresh Graph</button>
 </div>
 <br>
@@ -66,17 +68,6 @@
     };
     var options = {};
     var network = new vis.Network(container, data, options);
-
-    // Sync MySQL data to Neo4j
-    document.getElementById('sync-data').addEventListener('click', function () {
-        fetch('/sync-neo4j')
-            .then(response => response.json())
-            .then(data => {
-                alert('Sync complete: ' + data.status);
-                loadGraphData(); // Optionally refresh the LMS graph data after sync
-            })
-            .catch(error => console.error('Error syncing data:', error));
-    });
 
     // Fetch LMS graph data from your API
     function loadGraphData() {

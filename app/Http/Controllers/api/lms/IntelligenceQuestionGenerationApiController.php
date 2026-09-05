@@ -13,6 +13,11 @@ use Illuminate\Support\Facades\Validator;
  *
  * Generates MCQ / narrative assessment items for a concept via the DeepSeek LLM
  * and writes them (column-shaped) into `lms_question_master`.
+ *
+ * Gated by `api.session` + `staff.only` + `throttle.qgen` (see routes/api.php).
+ * Tenant and author identity come from the verified JWT via the hydrated
+ * session - never from the request body - and the LLM model/temperature are
+ * server-owned so a caller cannot select an arbitrarily expensive model.
  */
 class IntelligenceQuestionGenerationApiController extends Controller
 {
@@ -30,17 +35,18 @@ class IntelligenceQuestionGenerationApiController extends Controller
 
         $validator = Validator::make($request->all(), [
             'concept_id'        => 'required|integer|min:1',
-            'sub_institute_id'  => 'required',
+            // sub_institute_id and created_by are deliberately NOT accepted from
+            // the request. They are injected from the verified session below.
             'subject_id'        => 'required|integer',
             'standard_id'       => 'required|integer',
             'chapter_id'        => 'required|integer',
             'question_type_id'  => 'required|integer|min:1',
             'question_type'     => 'required|in:mcq,narrative',
             'total_questions'   => 'required|integer|min:1|max:100',
-            'created_by'        => 'required|integer',
             'grade_id'          => 'nullable|integer',
-            'model'             => 'nullable|string',
-            'temperature'       => 'nullable|numeric|between:0,1.5',
+            // `model` and `temperature` are intentionally absent: they are
+            // server-owned (config/deepseek.php). `seed` is kept because it only
+            // makes a run reproducible and carries no cost implication.
             'seed'              => 'nullable|integer',
             // Every quota key needs a rule of its own. The service is handed
             // $validator->validated(), which returns ONLY attributes that were
@@ -66,9 +72,20 @@ class IntelligenceQuestionGenerationApiController extends Controller
             ], 422);
         }
 
-        $result = $this->service->generate($validator->validated());
+        // Identity from the verified token payload only. `api.session` refuses
+        // the request outright if either value is missing from the JWT, so these
+        // are guaranteed present here.
+        $payload = $validator->validated();
+        $payload['sub_institute_id'] = (int) $request->session()->get('sub_institute_id');
+        $payload['created_by']       = (int) $request->session()->get('user_id');
 
-        $httpStatus = $result['status'] ? 200 : 422;
+        $result = $this->service->generate($payload);
+
+        // 403 for a tenant-ownership rejection so it is distinguishable from an
+        // ordinary generation failure; everything else stays 422.
+        $httpStatus = $result['status']
+            ? 200
+            : (($result['code'] ?? null) === 'forbidden' ? 403 : 422);
 
         return response()->json($result, $httpStatus);
     }
