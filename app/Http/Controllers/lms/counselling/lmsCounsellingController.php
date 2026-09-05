@@ -11,6 +11,8 @@ use App\Models\lms\counselling\OnetEmployer;
 use App\Models\lms\counselling\OnetInstitutes;
 use App\Models\lms\counselling\OnetOccupationData;
 use App\Models\lms\counselling\StudentAspiration;
+use App\Models\lms\counselling\StudentAmbition;
+use App\Models\lms\counselling\StudentCareerOriginality;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -1631,6 +1633,179 @@ class lmsCounsellingController extends Controller
             'status_code' => 1,
             'message' => 'SUCCESS',
             'data' => $result,
+        ]);
+    }
+
+    /**
+     * Career ambition (CI-GUIDE-DEV-001, Career Awareness Level-3). Mirrors
+     * studentAspiration's pattern (session-resolved identity, latest
+     * is_current snapshot), but this is a free-text ambition capture with
+     * no scoring.
+     */
+    public function studentAmbition(Request $request)
+    {
+        $studentId = $request->session()->get('user_id');
+        if (empty($studentId)) {
+            return response()->json(['status_code' => 0, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $current = StudentAmbition::where('student_id', $studentId)
+            ->where('is_current', true)
+            ->orderByDesc('captured_at')
+            ->first();
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $current,
+        ]);
+    }
+
+    /**
+     * Mirrors saveStudentAspiration's pattern (resolveStudentGrade, snapshot
+     * versioning inside a transaction), but validates a free-text ambition
+     * statement/reason instead of scored fields.
+     */
+    public function saveStudentAmbition(Request $request)
+    {
+        $studentId = $request->session()->get('user_id');
+        $subInstituteId = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+
+        if (empty($studentId) || empty($subInstituteId) || empty($syear)) {
+            return response()->json(['status_code' => 0, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'ambition_statement' => 'required|string|max:2000',
+            'ambition_reason' => 'nullable|string|max:2000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $grade = $this->resolveStudentGrade($studentId, $subInstituteId, $syear);
+        if ($grade === null) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Could not resolve the current class/grade for this student.',
+            ], 422);
+        }
+
+        $data = $validator->validated();
+
+        $saved = DB::transaction(function () use ($data, $studentId, $grade, $syear) {
+            StudentAmbition::where('student_id', $studentId)
+                ->where('is_current', true)
+                ->update(['is_current' => false]);
+
+            return StudentAmbition::create([
+                'student_id' => $studentId,
+                'grade' => $grade,
+                'academic_year' => $syear,
+                'ambition_statement' => $data['ambition_statement'],
+                'ambition_reason' => $data['ambition_reason'] ?? null,
+                'source' => 'student_form',
+                'is_current' => true,
+                'captured_at' => now(),
+            ]);
+        });
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $saved,
+        ]);
+    }
+
+    /**
+     * Career originality (CI-GUIDE-DEV-001, Career Awareness Level-3).
+     * Mirrors studentAmbition's pattern exactly (session-resolved identity,
+     * latest is_current snapshot) — a free-text capture with no scoring.
+     */
+    public function studentOriginality(Request $request)
+    {
+        $studentId = $request->session()->get('user_id');
+        if (empty($studentId)) {
+            return response()->json(['status_code' => 0, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $current = StudentCareerOriginality::where('student_id', $studentId)
+            ->where('is_current', true)
+            ->orderByDesc('captured_at')
+            ->first();
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $current,
+        ]);
+    }
+
+    /**
+     * Mirrors saveStudentAmbition's pattern (resolveStudentGrade, snapshot
+     * versioning inside a transaction), but validates a free-text
+     * originality statement/reason instead.
+     */
+    public function saveStudentOriginality(Request $request)
+    {
+        $studentId = $request->session()->get('user_id');
+        $subInstituteId = $request->session()->get('sub_institute_id');
+        $syear = $request->session()->get('syear');
+
+        if (empty($studentId) || empty($subInstituteId) || empty($syear)) {
+            return response()->json(['status_code' => 0, 'message' => 'Unauthenticated.'], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'originality_statement' => 'required|string|max:2000',
+            'originality_reason' => 'nullable|string|max:2000',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => $validator->errors()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $grade = $this->resolveStudentGrade($studentId, $subInstituteId, $syear);
+        if ($grade === null) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Could not resolve the current class/grade for this student.',
+            ], 422);
+        }
+
+        $data = $validator->validated();
+
+        $saved = DB::transaction(function () use ($data, $studentId, $grade, $syear) {
+            StudentCareerOriginality::where('student_id', $studentId)
+                ->where('is_current', true)
+                ->update(['is_current' => false]);
+
+            return StudentCareerOriginality::create([
+                'student_id' => $studentId,
+                'grade' => $grade,
+                'academic_year' => $syear,
+                'originality_statement' => $data['originality_statement'],
+                'originality_reason' => $data['originality_reason'] ?? null,
+                'source' => 'student_form',
+                'is_current' => true,
+                'captured_at' => now(),
+            ]);
+        });
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => $saved,
         ]);
     }
 }

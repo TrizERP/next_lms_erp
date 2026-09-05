@@ -29,5 +29,9 @@ class VerifyCsrfToken extends Middleware
         // reached through the Next.js proxy, same as api/* — the client never
         // holds a Laravel session cookie/XSRF token pair to present.
         'studentAspiration',
+        // Career ambition / originality (CI-GUIDE-DEV-001, Career Awareness
+        // Level-3): same stateless JWT-bearer reasoning as studentAspiration.
+        'studentAmbition',
+        'studentOriginality',
     ];
 }
