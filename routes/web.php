@@ -72,7 +72,6 @@ use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\lms\chapterController as LmsChapterController;
 use App\Http\Controllers\library\itemVerificationController;
 use App\Http\Controllers\library\itemScanController;
-use App\Http\Controllers\DataMigrationController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\library\LostandDamage;
 use App\Http\Controllers\neo4jGraph\GraphController;
@@ -660,8 +659,6 @@ Route::post('/flush-session', function () {
     return response()->json(['success' => true]);
 });
 
-use App\Http\Controllers\Neo4jSyncController;
-use App\Http\Controllers\Graph1Controller;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\GraphControllerNew;
 
@@ -671,8 +668,12 @@ Route::get('/get-chapters-for-subject/{subjectId}', [GraphControllerNew::class, 
 Route::get('/get-questions-for-chapter/{chapterId}', [GraphControllerNew::class, 'getQuestionsForChapter']);
 Route::get('/get-personalized-learning-path/{studentId}', [GraphControllerNew::class, 'getPersonalizedLearningPath']);
 Route::get('/recommendations', [RecommendationController::class, 'getRecommendations']);
-Route::get('/graph-data', [GraphController::class, 'getGraphData']);
-Route::get('/graph-data-learning-path', [GraphController::class, 'getLearningPath']);
+// FIXED 2026-09-04. These two resolved to `neo4jGraph\GraphController` (imported at the
+// top of this file for /avionics-graph), which has neither method, so both returned 500
+// to the two views that fetch them — welcomenew and newD3recommendnew.
+// The root App\Http\Controllers\GraphController is the class that owns them.
+Route::get('/graph-data', [\App\Http\Controllers\GraphController::class, 'getGraphData']);
+Route::get('/graph-data-learning-path', [\App\Http\Controllers\GraphController::class, 'getLearningPath']);
 Route::get('/welcome', function () {
     return view('welcomenew');
 });
@@ -685,11 +686,10 @@ Route::get('/new', function () {
 Route::get('/dashboard_new', function () {
     return view('newD3recommend');
 });
-// DISABLED 2026-08-10 — Neo4j migration Phase 0 (freeze). See docs/neo4j-migration-status.md.
-// Neo4jSyncController MERGEs on NAMES (MERGE (subject:Subject {subject: $subject})), which would
-// collapse all 56 tenants into shared nodes. Verified never run against the live instance: the
-// graph has no :AcademicSection label and no OFFERS relationship. Phase 16 deletes it properly.
-// Route::get('/sync-neo4j', [Neo4jSyncController::class, 'sync']);
+// REMOVED 2026-09-04 — Neo4jSyncController and its /sync-neo4j route are gone. It MERGEd on
+// NAMES (MERGE (subject:Subject {subject: $subject})), which collapses all 56 tenants into
+// shared nodes; the route had been disabled since 2026-08-10 and was never run against the
+// live instance. Application writes to the graph go through App\Services\Graph (neo4j:drain).
 
 
 Route::get('/ChartDashboard', function () {
@@ -777,11 +777,9 @@ Route::get('/get-fields', function (Request $request) {
 });
 
 Route::resource('blogs', BlogController::class);
-// DISABLED 2026-08-10 — Neo4j migration Phase 0 (freeze). See docs/neo4j-migration-status.md.
-// DataMigrationController::migrateDataToNeo4j creates AcademicSection/Standard/Subject/Chapter
-// nodes keyed on NAME via Neo4jService::createOrGetNode, and OFFERS edges via the unparameterised
-// createRelationship() (defect D7). Running it mid-rebuild reintroduces D2/D3. Phase 16 deletes it.
-// Route::get('/migrate-data', [DataMigrationController::class, 'migrateDataToNeo4j']);
+// REMOVED 2026-09-04 — DataMigrationController and its /migrate-data route are gone. It keyed
+// nodes on NAME via Neo4jService::createOrGetNode and built OFFERS edges with unparameterised
+// Cypher; the route had been disabled since 2026-08-10.
 // added hills nursey hc
 Route::post('getHillsHPCPDF', [AJAXController::class, 'getHillsHPCPDF'])->name('getHillsHPCPDF');
 

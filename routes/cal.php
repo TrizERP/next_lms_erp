@@ -28,12 +28,9 @@ Route::controller(calendar_controller::class)->group(function () {
 Route::prefix('neo4j')->group(function () {
     // Assessment CRUD operations
     Route::post('/assessment', [addAssesmentController::class, 'store']);
-    Route::get('/assessments', [Neo4jAssessmentController::class, 'index']);
-    Route::get('/assessment/{assId}', [Neo4jAssessmentController::class, 'show']);
-    Route::put('/assessment/{assId}', [Neo4jAssessmentController::class, 'update']);
-    Route::delete('/assessment/{assId}', [Neo4jAssessmentController::class, 'destroy']);
-    
-    // Special endpoint for question paper data
-    Route::post('/assessment/question-paper', [Neo4jAssessmentController::class, 'storeFromQuestionPaper']);
+    // REMOVED 2026-09-04 — five routes bound to Neo4jAssessmentController, a class that exists
+    // nowhere in the repo and was never imported here, so every one of them threw on dispatch:
+    // GET /assessments, GET|PUT|DELETE /assessment/{assId}, POST /assessment/question-paper.
+    // addAssesmentController already carries equivalent methods if they are wanted back.
 });
 

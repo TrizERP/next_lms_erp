@@ -1817,6 +1817,31 @@ SCHEMA;
             return $this->fail("Concept {$conceptId} not found.");
         }
 
+        // Tenant ownership. loadConceptSlice() already pins the concept to the
+        // caller's chapter/subject/standard, so a mismatched curriculum id fails
+        // as "not found" above - but nothing compared the concept's OWNING
+        // school to the caller's. Without this, a teacher at school A could
+        // spend school A's LLM budget generating against school B's concept and
+        // file the result under school A. lms_concept.sub_institute_id is NOT
+        // NULL, so this is always a real comparison.
+        $conceptTenantId = $this->nullableInt($slice['concept']->sub_institute_id ?? null);
+        $callerTenantId  = $this->nullableInt($subInstituteId);
+
+        if ($callerTenantId === null) {
+            return $this->fail('No tenant on the request. This endpoint requires an authenticated session.', 'forbidden');
+        }
+
+        if ($conceptTenantId !== null && $conceptTenantId !== $callerTenantId) {
+            Log::warning('QuestionGeneration: cross-tenant attempt', [
+                'concept_id'       => $conceptId,
+                'concept_tenant'   => $conceptTenantId,
+                'caller_tenant'    => $callerTenantId,
+                'caller_user_id'   => $input['created_by'] ?? null,
+            ]);
+
+            return $this->fail("Concept {$conceptId} does not belong to your institute.", 'forbidden');
+        }
+
         $conceptName = $slice['concept']->name ?? 'CONCEPT';
         $semanticKey = $this->semanticConceptKey($conceptId, $conceptName);
         $conceptIntelligence = $this->buildConceptIntelligence($slice);
@@ -1832,11 +1857,14 @@ SCHEMA;
 
         $system = $this->systemPrompt();
 
+        // Model and temperature are server-owned. They are not read from $input
+        // even if a caller manages to smuggle them past the validator: a
+        // client-selected model is a direct spend vector on the tenant's key.
         $opts = [
-            'model'       => $input['model'] ?? $this->model,
-            'temperature' => $input['temperature'] ?? ($type === 'narrative'
+            'model'       => $this->model,
+            'temperature' => $type === 'narrative'
                 ? config('deepseek.temperature_narrative', 0.6)
-                : config('deepseek.temperature_mcq', 0.4)),
+                : config('deepseek.temperature_mcq', 0.4),
             'seed'        => $input['seed'] ?? null,
         ];
 
@@ -1966,8 +1994,12 @@ SCHEMA;
         ];
     }
 
-    protected function fail(string $message): array
+    /**
+     * @param string|null $code Machine-readable reason. 'forbidden' is mapped to
+     *                          HTTP 403 by the controller; everything else 422.
+     */
+    protected function fail(string $message, ?string $code = null): array
     {
-        return ['status' => false, 'message' => $message, 'data' => []];
+        return ['status' => false, 'message' => $message, 'code' => $code, 'data' => []];
     }
 }

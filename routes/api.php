@@ -423,7 +423,20 @@ Route::prefix('lesson-intelligence')->group(function () {
 });
 
 // Intelligence Question Generation - MCQ / narrative items via DeepSeek LLM -> lms_question_master
-Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);
+//
+// Teacher-side and billable: one call can be ~17 sequential DeepSeek calls that
+// write rows into lms_question_master. It therefore runs the full gate:
+//   api.session   verifies the bearer JWT and hydrates the session. The tenant
+//                 (sub_institute_id) and author (created_by) are read from that
+//                 hydrated session, NOT from the request body, so a caller can
+//                 no longer write AI questions into another school attributed
+//                 to another user.
+//   staff.only    rejects Student/Parent tokens.
+//   throttle.qgen per-user spend cap (see config/deepseek.php), replacing the
+//                 group's throttle:1000,1 which was no limit at all here.
+Route::middleware(['api.session', 'staff.only', 'throttle.qgen'])->group(function () {
+    Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);
+});
 
 // Semantic Intelligence - read-only chapter intelligence for presentation generators
 Route::get('semantic-intelligence', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'index']);

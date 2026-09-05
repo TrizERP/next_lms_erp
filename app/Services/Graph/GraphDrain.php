@@ -166,7 +166,17 @@ class GraphDrain
                     $matched = $this->applyRelationship($row);
                 }
 
-                if ($matched === 0) {
+                // A DELETE that matches nothing has already achieved what it
+                // asked for: the edge is not there. Treating that as a failure
+                // retries it five times and then parks it as `failed` forever,
+                // which reads as a broken sync when the graph is in exactly the
+                // right state. It also fires on every ordinary re-drain, because
+                // the first attempt removed the edge and the second cannot find
+                // it. Only a MERGE can genuinely miss its endpoints.
+                $isDelete = strtoupper((string) $row->event_type) === 'DELETE'
+                    || $row->new_target_id === null;
+
+                if ($matched === 0 && ! $isDelete) {
                     throw new RuntimeException(
                         "endpoint missing: ({$row->source_table}#{$row->source_id})"
                         . "-[:{$row->rel_type}]->({$row->target_table}#{$row->new_target_id})"
@@ -499,6 +509,14 @@ class GraphDrain
         GraphSchema::assertLabel($tgtLabel);
         GraphSchema::assertRelationship($relType);
 
+        // A label with a sibling (only :Staff -> :Teacher) may not be the label
+        // that actually holds this person. Resolve it BEFORE building any
+        // Cypher, so every query below is unchanged for the other 100+ labels.
+        $srcLabel = $this->resolveSibling($srcLabel, (int) $row->source_id);
+        if ($row->new_target_id !== null) {
+            $tgtLabel = $this->resolveSibling($tgtLabel, (int) $row->new_target_id);
+        }
+
         $srcKey = GraphSchema::key($srcLabel);
         $tgtKey = GraphSchema::key($tgtLabel);
         $event  = strtoupper((string) $row->event_type);
@@ -513,18 +531,24 @@ class GraphDrain
             );
         }
 
+        // The properties that identify this edge, when the type alone does not.
+        // Without them a DELETE would remove EVERY edge of this type between the
+        // two nodes — every leave a person ever took of one kind, not the one
+        // that was deleted.
+        [$edgePattern, $edgeParams] = $this->edgeKey($row);
+
         if ($event === 'DELETE' || $row->new_target_id === null) {
             // countOf, not ->first(): a DELETE that matches nothing returns an
             // EMPTY result, and first() throws OutOfBoundsException on empty —
             // turning "the edge was already gone" into a hard error.
             return $this->countOf($this->neo4j->run(
-                "MATCH (s:`{$srcLabel}` {`{$srcKey}`: \$sid})-[r:`{$relType}`]->(t:`{$tgtLabel}` {`{$tgtKey}`: \$tid})
+                "MATCH (s:`{$srcLabel}` {`{$srcKey}`: \$sid})-[r:`{$relType}`{$edgePattern}]->(t:`{$tgtLabel}` {`{$tgtKey}`: \$tid})
                  DELETE r RETURN count(r) AS c",
-                ['sid' => (int) $row->source_id, 'tid' => (int) $row->old_target_id]
+                ['sid' => (int) $row->source_id, 'tid' => (int) $row->old_target_id] + $edgeParams
             ));
         }
 
-        $params = ['sid' => (int) $row->source_id, 'tid' => (int) $row->new_target_id];
+        $params = ['sid' => (int) $row->source_id, 'tid' => (int) $row->new_target_id] + $edgeParams;
 
         // Target may be keyed under either convention. Resolve legacy first,
         // fall back to uid, link exactly one — and never CREATE a target:
@@ -540,13 +564,13 @@ class GraphDrain
                 OPTIONAL MATCH (modern:`{$tgtLabel}` {uid: {$uid}})
                 WITH s, coalesce(legacy, modern) AS t
                 WHERE t IS NOT NULL
-                MERGE (s)-[r:`{$relType}`]->(t)
+                MERGE (s)-[r:`{$relType}`{$edgePattern}]->(t)
                 RETURN count(r) AS c";
         } else {
             $cypher = "
                 MATCH (s:`{$srcLabel}` {`{$srcKey}`: \$sid})
                 MATCH (t:`{$tgtLabel}` {`{$tgtKey}`: \$tid})
-                MERGE (s)-[r:`{$relType}`]->(t)
+                MERGE (s)-[r:`{$relType}`{$edgePattern}]->(t)
                 RETURN count(r) AS c";
         }
 
@@ -576,9 +600,79 @@ class GraphDrain
             OPTIONAL MATCH (modern:`{$srcLabel}` {uid: {$srcUid}})
             WITH t, coalesce(legacy, modern) AS s
             WHERE s IS NOT NULL
-            MERGE (s)-[r:`{$relType}`]->(t)
+            MERGE (s)-[r:`{$relType}`{$edgePattern}]->(t)
             RETURN count(r) AS c
         ", $params));
+    }
+
+    /**
+     * The `{...}` clause that identifies one edge among several of the same type
+     * between the same two nodes, and the parameters it binds.
+     *
+     * Returns `['', []]` when the row carries no key — which is most of them,
+     * and is how this table behaved before `edge_key` existed. The property
+     * names come from the relationship spec, not from user input, and are
+     * additionally filtered to word characters before being interpolated: a
+     * relationship property name cannot be parameterised in Cypher any more than
+     * a label can.
+     *
+     * @return array{0: string, 1: array<string, mixed>}
+     */
+    private function edgeKey(object $row): array
+    {
+        $raw = $row->edge_key ?? null;
+
+        if ($raw === null || $raw === '') {
+            return ['', []];
+        }
+
+        $decoded = is_array($raw) ? $raw : json_decode((string) $raw, true);
+
+        if (! is_array($decoded) || $decoded === []) {
+            return ['', []];
+        }
+
+        $pairs = [];
+        $params = [];
+
+        foreach ($decoded as $property => $value) {
+            if (! is_string($property) || ! preg_match('/^\w+$/', $property)) {
+                continue;
+            }
+
+            $param = 'ek_' . $property;
+            $pairs[] = "`{$property}`: \${$param}";
+            $params[$param] = $value;
+        }
+
+        return $pairs === [] ? ['', []] : [' {' . implode(', ', $pairs) . '}', $params];
+    }
+
+    /**
+     * Which of two sibling labels actually holds this id?
+     *
+     * Returns the declared label when it holds the node, or when the label has
+     * no sibling at all (the overwhelmingly common case — one `isset` and no
+     * query). Only when the declared label does NOT hold it and the sibling
+     * does is the sibling returned.
+     *
+     * Falls back to the declared label when neither holds it, so a genuinely
+     * missing endpoint still fails the way it always did — through
+     * `repairEndpoints()` and the retry counter — rather than being masked.
+     */
+    private function resolveSibling(string $label, int $id): string
+    {
+        $sibling = GraphSchema::siblingOf($label);
+
+        if ($sibling === null) {
+            return $label;
+        }
+
+        if ($this->nodeExistsEitherConvention($label, $id)) {
+            return $label;
+        }
+
+        return $this->nodeExistsEitherConvention($sibling, $id) ? $sibling : $label;
     }
 
     private function countOf($result): int

@@ -381,7 +381,6 @@ Route::resource('lms/new_chapter_master',chapterMasterController::class);
 Route::resource('lms/new_curriculum',newCurricuumController::class);
 
 
-// use App\Http\Controllers\lms\Neo4jSyncController;
 // use App\Http\Controllers\lms\GraphController;
 // use App\Http\Controllers\lms\RecommendationController;
 // use App\Http\Controllers\lms\GraphControllerNew;
@@ -401,7 +400,6 @@ Route::resource('lms/new_curriculum',newCurricuumController::class);
 // Route::get('/dashboard', function () {
 //     return view('recommend');
 // });
-// Route::get('/sync-neo4j', [Neo4jSyncController::class, 'sync']);
 Route::prefix('lms/api/teacher_resource')->group(function () {
     Route::get('/', [\App\Http\Controllers\lms\teacher_resource\TeacherResourceApiController::class, 'index']);
     Route::get('{id}', [\App\Http\Controllers\lms\teacher_resource\TeacherResourceApiController::class, 'show']);
