@@ -1696,6 +1696,9 @@ SCHEMA;
                 'hint_text'        => $row['hint_text'],
                 'learning_outcome' => json_encode($row['learning_outcome'], JSON_UNESCAPED_UNICODE),
                 'answer'           => json_encode($answer, JSON_UNESCAPED_UNICODE),
+
+                // Derived, not LLM-owned: the Question Bank filters on this.
+                'category'         => $this->learningFlowCategory($answer, $row),
             ]);
 
             if ($id) {
@@ -1786,6 +1789,61 @@ SCHEMA;
     /* ----------------------------------------------------------------
      * Public entry point
      * ---------------------------------------------------------------- */
+
+    /**
+     * PAL learning-flow category for a generated item.
+     *
+     * The prompt pack is quota-driven (Bloom x count) and says nothing about the
+     * learning journey, so the category is DERIVED from what the item turned out
+     * to be, and stored on the question so the Question Bank can filter on it.
+     *
+     * The two prerequisite categories are deliberately unreachable here. System
+     * prompt rule 4 forbids testing prerequisites ("The learner already knows the
+     * listed prerequisites. Do not test them."), so no item this service produces
+     * can honestly carry them.
+     */
+    protected function learningFlowCategory(array $answer, array $row): string
+    {
+        $bloom   = (string) ($answer['bloom_level'] ?? 'Understand');
+        $subType = (string) ($answer['sub_type'] ?? '');
+        $options = (array) ($answer['options'] ?? []);
+
+        // How many distractors were actually built on a misconception. The count
+        // matters, not the presence: system prompt rule 6 asks EVERY item at
+        // Understand or above to target a misconception, so `misconception_refs`
+        // is non-empty on all of them and cannot separate anything. An option
+        // grid built around two or more RIVAL misconceptions is a genuine
+        // misconception probe; one built around a single one is a concept check.
+        $misconceptionDistractors = 0;
+        foreach ($options as $option) {
+            if (($option['distractor_type'] ?? null) === 'misconception') {
+                $misconceptionDistractors++;
+            }
+        }
+
+        // Bloom is the primary axis, because the quota ladder ties it to
+        // difficulty, DOK and marks — so it is the one field that reliably
+        // separates a placement item from a mastery task.
+        if (str_contains($subType, 'Case') || $bloom === 'Create') {
+            return 'mastery_reverification';
+        }
+        if ($bloom === 'Evaluate') {
+            return 'mastery_check';
+        }
+        if ($bloom === 'Analyze') {
+            return 'adaptive_test';
+        }
+        if ($bloom === 'Remember') {
+            return 'adaptive_diagnostic';
+        }
+        if (!empty($options)) {
+            return $misconceptionDistractors >= 2 ? 'misconception_detection' : 'concept_diagnostic';
+        }
+        if ($bloom === 'Apply') {
+            return 'adaptive_test';
+        }
+        return 'concept_understanding';
+    }
 
     public function generate(array $input): array
     {
