@@ -45,6 +45,30 @@ class EsoEnrichmentResolver
     }
 
     /**
+     * Suggested content for a concept the learner is still working on.
+     *
+     * Same pipeline as forConcept(), different bucket: PedagogySuggestedContentService
+     * already splits its output into remediation / practice / enrichment and
+     * already scores each against the learner's mastery, so the bucket is
+     * chosen from where the learner actually is rather than recomputed here.
+     *
+     * Returns [] when nothing is authored — which is the honest answer, not a
+     * failure. Callers render an explicit "nothing authored yet" state; they do
+     * not substitute content from elsewhere.
+     *
+     * @return array<int, array{title:string, description:?string, url:?string, content_type:?string, category:string}>
+     */
+    public function suggestionsFor(int $studentId, int $conceptId, int $subInstituteId, string $bucket): array
+    {
+        $allowed = ['remediation_content', 'practice_content', 'enrichment_content'];
+        if (! in_array($bucket, $allowed, true)) {
+            return [];
+        }
+
+        return $this->fromPipeline($studentId, $conceptId, $subInstituteId, $bucket);
+    }
+
+    /**
      * Enrichment items for a concept the student has just mastered.
      *
      * Returns [] whenever nothing is authored for the chapter, the content
@@ -54,6 +78,14 @@ class EsoEnrichmentResolver
      * @return array<int, array{title:string, description:?string, url:?string, content_type:?string, category:string}>
      */
     public function forConcept(int $studentId, int $conceptId, int $subInstituteId): array
+    {
+        return $this->fromPipeline($studentId, $conceptId, $subInstituteId, 'enrichment_content');
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    protected function fromPipeline(int $studentId, int $conceptId, int $subInstituteId, string $bucket): array
     {
         try {
             $concept = DB::table('lms_concept')
@@ -77,7 +109,7 @@ class EsoEnrichmentResolver
                 'student_level' => 'advanced',
             ]);
 
-            $items = $result['content_data']['enrichment_content'] ?? [];
+            $items = $result['content_data'][$bucket] ?? [];
 
             if (! is_array($items)) {
                 return [];
@@ -85,7 +117,7 @@ class EsoEnrichmentResolver
 
             return collect($items)
                 ->take(self::MAX_ITEMS)
-                ->map(fn ($item) => $this->shape((array) $item))
+                ->map(fn ($item) => $this->shape((array) $item, str_replace('_content', '', $bucket)))
                 ->filter(fn (array $item) => $item['title'] !== '')
                 ->values()
                 ->all();
@@ -108,7 +140,7 @@ class EsoEnrichmentResolver
      * @param  array<string, mixed>  $item
      * @return array{title:string, description:?string, url:?string, content_type:?string, category:string}
      */
-    protected function shape(array $item): array
+    protected function shape(array $item, string $category = 'enrichment'): array
     {
         $value = static function (array $keys) use ($item): ?string {
             foreach ($keys as $key) {
@@ -126,7 +158,7 @@ class EsoEnrichmentResolver
             'description' => $value(['description', 'summary', 'content_description']),
             'url' => $value(['url', 'content_url', 'file_url', 'link']),
             'content_type' => $value(['content_type', 'type', 'format']),
-            'category' => 'enrichment',
+            'category' => $category,
         ];
     }
 }

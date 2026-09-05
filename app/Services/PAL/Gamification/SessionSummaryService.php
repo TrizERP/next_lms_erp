@@ -145,7 +145,12 @@ class SessionSummaryService
                     && $attempt['occurred_at']->toDateString() === $day;
 
                 if ($isSessionDay && $before === null) {
-                    $before = $mastery ?? 0.0;
+                    // Leave null when there is no prior estimate. Defaulting to
+                    // 0.0 manufactured growth out of nothing: a learner whose
+                    // first ever attempt was in this session would show a rise
+                    // from "zero" they were never measured at. Callers suppress
+                    // the growth statement when `before` is null (ADR-001 §5.2).
+                    $before = $mastery;
                 }
 
                 $mastery = $mastery === null

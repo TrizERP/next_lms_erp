@@ -101,6 +101,57 @@ class EsoPolicyService
     /** Chapter dashboard — a node needs at least this many attempts before its mastery signal is shown at all. */
     public const MIN_ATTEMPTS_FOR_EVIDENCE = 1;
 
+    // ── D1: the canonical mastery evidence floor (ADR-001) ───────────────
+    //
+    // Thresholds alone were never enough. With MASTERY_STEP = 0.2 from a 0.000
+    // default, four correct answers reach 0.80 — and the diagnostic's weight of
+    // 2.0 meant TWO correct diagnostic answers reached it, so a node could be
+    // mastered on two scaffolded guesses. These floors are what make "mastered"
+    // mean "demonstrated", and they are also the denominator that
+    // distance-to-mastery is computed from. See ADR-001 §4.
+
+    /** Distinct, non-diagnostic, non-CFU scored responses required on each K node. */
+    public const MIN_EVENTS_K = 3;
+
+    /** Same, for each A node. */
+    public const MIN_EVENTS_A = 3;
+
+    /** Hint-free independent-mode events required per gated node type. */
+    public const MIN_INDEPENDENT = 1;
+
+    /**
+     * How long evidence stays fresh, for BOTH the D2 prerequisite gate and the
+     * D1 mastery-staleness rule. Deliberately a reference to the existing
+     * constant rather than a second number: one recency policy, one value.
+     */
+    public const EVIDENCE_RECENCY_DAYS = self::PREREQUISITE_STALE_AFTER_DAYS;
+
+    /**
+     * `eso_response_log.mode` values that are NOT practice modes.
+     *
+     * Diagnostic and retrieval responses were both written with a NULL mode,
+     * which made them indistinguishable from each other and impossible to
+     * exclude from the mastery evidence count. Labelling them is what lets
+     * validEvidence() enforce "diagnostic informs state but cannot complete
+     * mastery" (ADR-001 §4.1).
+     */
+    public const RESPONSE_MODE_DIAGNOSTIC = 'diagnostic';
+
+    public const RESPONSE_MODE_RETRIEVAL = 'retrieval';
+
+    public const RESPONSE_MODE_CFU = 'cfu';
+
+    /**
+     * Derived concept status: mastery is held, but its newest evidence is
+     * outside EVIDENCE_RECENCY_DAYS and needs verifying.
+     *
+     * Deliberately NOT a `learner_node_state.status` value — it is computed on
+     * read and never written, so no learner is silently downgraded by someone
+     * loading a dashboard. Internal/teacher-facing only: students see the
+     * ordinary "time for a quick review" retrieval surface.
+     */
+    public const CONCEPT_STATUS_STALE_MASTERY = 'stale_mastery';
+
     public function __construct(
         protected MisconceptionLibraryService $misconceptions,
         protected PalEvidenceRepository $evidence,
@@ -389,23 +440,38 @@ class EsoPolicyService
                 $answerMasterId = (int) $response['answer_master_id'];
                 $correct = $this->isAnswerCorrect($answerMasterId);
                 $this->applyUpdate($state, $correct, weight: 2.0);
-                $this->logResponse($studentId, $conceptId, $nodeId, $subInstituteId, $answerMasterId, $correct);
+                $this->logResponse($studentId, $conceptId, $nodeId, $subInstituteId, $answerMasterId, $correct, false, self::RESPONSE_MODE_DIAGNOSTIC);
                 // Collected across every node, published once below — a whole
                 // diagnostic is one operation, not eight.
                 $evidence[] = ['question_id' => $this->questionIdFor($answerMasterId), 'correct' => $correct];
             }
 
             $skip = $state->mastery_estimate >= self::SKIP_THRESHOLD;
-            $state->status = $skip ? LearnerNodeState::STATUS_MASTERED : LearnerNodeState::STATUS_LEARNING;
-            // D1 skip is a mastery path exactly like the D4 verdict (masteryVerdict()
-            // schedules D5 retrieval the same way on that path) — without this, a node
-            // that skips straight from diagnostic never gets a next_review_at, so D5
-            // silently never fires for it. Only reachable end-to-end once every node in
-            // a concept has answerable content, which is what surfaced it here.
-            // Enters the retention ladder at its first rung (stage 0 = Day 2).
+
+            // A diagnostic skip means "do not TEACH this — the learner already
+            // appears to know it". It does NOT mean mastered.
+            //
+            // This branch used to write STATUS_MASTERED and schedule retention,
+            // which is how two correct diagnostic answers (weight 2.0, so
+            // 0.000 -> 0.400 -> 0.800) could master a node outright. Writing a
+            // diagnostic outcome as mastery state is the semantic defect
+            // underneath that arithmetic; lowering the weight would have hidden
+            // it rather than fixed it (ADR-001 §4.2).
+            //
+            // The skip still works: nextAction()'s loop passes over a node via
+            // hasSatisfiedOwnThreshold(), which reads the estimate, not the
+            // status. Mastery — and therefore the retention ladder — is granted
+            // only by masteryVerdict() once the evidence floor is met.
+            $state->status = LearnerNodeState::STATUS_LEARNING;
+
             if ($skip) {
-                $this->scheduleRetention($state);
+                // Skip the teach/CFU phases too: the learner has demonstrated
+                // enough to go straight to practice, which is where the valid
+                // evidence the floor requires actually gets recorded.
+                $state->taught_at ??= now();
+                $state->cfu_passed_at ??= now();
             }
+
             $state->save();
 
             $this->log(
@@ -474,17 +540,54 @@ class EsoPolicyService
             return $gate;
         }
 
+        // D2 STALE_MASTERY (derived): the concept is historically mastered but
+        // its newest evidence is outside EVIDENCE_RECENCY_DAYS. Recomputed here
+        // (not read from conceptStatusFor()) so the resolver never touches DB
+        // state from this branch — staleness is a READ, never a write.
+        //
+        // If every node is mastered/retained and the concept is stale, the
+        // scheduled retrieval date alone is not enough: a node past the last
+        // ladder rung has next_review_at === null forever, and a node still
+        // climbing the ladder may not be "due" yet even though its evidence
+        // is past the recency window. STALE_MASTERY surfaces the first such
+        // node for re-verification — never re-teach, never enrichment, never
+        // initial diagnosis, because mastery IS held.
+        $conceptStale = $this->isConceptStale($studentId, $nodes, $states);
+
         foreach ($nodes as $node) {
             $state = $states->get($node->id) ?? $this->stateFor($studentId, $node->id, $subInstituteId);
 
             if ($state->status === LearnerNodeState::STATUS_MISCONCEPTION_FLAGGED) {
+                // Stale does not bypass an active misconception: a stale-but-
+                // flagged node is still a misconception node, and D3 keeps its
+                // precedence (D3 interaction policy is unchanged for now).
                 return $this->reserveContrastPairAction($studentId, $conceptId, $node, $state, $subInstituteId, $silent);
             }
 
-            if ($state->status === LearnerNodeState::STATUS_MASTERED
+            // Retrieval eligibility, NOT a mastery test: a node that already
+            // survived a check is `retained`, and its NEXT rung is scheduled on
+            // the same field. Testing `=== STATUS_MASTERED` here meant a
+            // retained node never came due again, so the ladder
+            // [2, 7, 30, 60, 180] could only ever deliver its first rung —
+            // Day 7 onward were scheduled and silently never served.
+            //
+            // isMastered() is the right predicate because it means exactly
+            // "holds mastery, however it was last verified".
+            if ($state->isMastered()
                 && $state->next_review_at !== null
                 && $state->next_review_at->lte(now())) {
                 return $this->retrievalDueAction($studentId, $conceptId, $node, $state, $subInstituteId, $silent);
+            }
+
+            // Stale-mastery route (D2 §3): the concept is mastered but its
+            // newest evidence is older than EVIDENCE_RECENCY_DAYS, so this node
+            // must be re-verified. This wins over "skip past, concept mastered"
+            // because the next step is verification, not silence. It does not
+            // write anything — retrieval_due / content_unavailable routes are
+            // the same handlers the scheduled-due path uses, and the only DB
+            // effect comes from retrievalCheck() actually being called.
+            if ($conceptStale && $state->isMastered()) {
+                return $this->staleMasteryAction($studentId, $conceptId, $node, $state, $subInstituteId, $silent);
             }
 
             if ($state->isMastered() || $this->hasSatisfiedOwnThreshold($node, $state)) {
@@ -1310,15 +1413,97 @@ class EsoPolicyService
         $kNodes = $nodes->where('node_type', 'K');
         $aNodes = $nodes->where('node_type', 'A');
 
-        $kMastery = $this->averageMasteryOf($kNodes, $states);
-        $aMastery = $this->averageMasteryOf($aNodes, $states);
+        $kStats = $this->masteryAcross($kNodes, $states);
+        $aStats = $this->masteryAcross($aNodes, $states);
+        $kMastery = $kStats['mean'];
+        $aMastery = $aStats['mean'];
 
         $misconceptionActive = $states->contains(fn (LearnerNodeState $s) => $s->status === LearnerNodeState::STATUS_MISCONCEPTION_FLAGGED);
 
-        $knowledgeOk = $kNodes->isEmpty() || ($kMastery !== null && $kMastery >= self::KNOWLEDGE_MASTERY_THRESHOLD);
-        $applicationOk = $aNodes->isEmpty() || ($aMastery !== null && $aMastery >= self::APPLICATION_MASTERY_THRESHOLD);
+        // D1 evidence floor (ADR-001 §4.2). Thresholds say "accurate enough";
+        // the floor says "on enough separate demonstrations, at least one of
+        // them unaided". Both must hold.
+        $evidence = $this->evidenceByNode($studentId, $nodes);
+        $kFloor = $this->evidenceFloorFor($kNodes, $evidence, self::MIN_EVENTS_K);
+        $aFloor = $this->evidenceFloorFor($aNodes, $evidence, self::MIN_EVENTS_A);
 
-        $mastered = $knowledgeOk && $applicationOk && ! $misconceptionActive;
+        // A gated type with no authored node is NOT quietly passed. It is
+        // reported as not-applicable, so an authoring gap is visible instead of
+        // being read as a satisfied requirement. (Live today: 3 of 17 concepts
+        // in Chapter 1014 have no A node.)
+        $knowledgeApplicable = $kNodes->isNotEmpty();
+        $applicationApplicable = $aNodes->isNotEmpty();
+
+        $knowledgeOk = ! $knowledgeApplicable
+            || ($kMastery !== null && $kMastery >= self::KNOWLEDGE_MASTERY_THRESHOLD && $kFloor['meets_floor']);
+        $applicationOk = ! $applicationApplicable
+            || ($aMastery !== null && $aMastery >= self::APPLICATION_MASTERY_THRESHOLD && $aFloor['meets_floor']);
+
+        $meetsCurrentPolicy = $knowledgeOk && $applicationOk && ! $misconceptionActive;
+
+        // ── Legacy mastery: do not mass-invalidate on the day this ships ──
+        //
+        // Learners who reached mastery under the old rules already carry
+        // `status = mastered|retained` on every node. Recomputing them against
+        // the new floor would revoke mastery retroactively for everyone who
+        // earned it the old way — which the migration rule explicitly forbids,
+        // and which would also be untrue: they did meet the policy in force.
+        //
+        // No new column and no backfill: the existing node status IS the
+        // migration mechanism. Such a learner stays mastered and is flagged
+        // `legacy`, and the retention ladder brings them onto the new policy on
+        // their next retrieval check — pass and they keep it, fail and
+        // retrievalCheck() already drops them to `learning`, from where they
+        // must satisfy the new floor like anyone else.
+        $legacyMastery = false;
+        if (! $meetsCurrentPolicy && ! $misconceptionActive && $nodes->isNotEmpty()) {
+            $allNodesAlreadyMastered = $nodes->every(function (ConceptNode $node) use ($states) {
+                $state = $states->get($node->id);
+
+                return $state !== null && $state->isMastered();
+            });
+
+            if ($allNodesAlreadyMastered) {
+                $legacyMastery = true;
+            }
+        }
+
+        $mastered = $meetsCurrentPolicy || $legacyMastery;
+
+        // ── D2 recency: TWO WINDOWS (ADR-001 §6, Option C) ───────────────
+        //
+        // Reported, never self-revoking: flipping a learner out of mastery in
+        // a silent read would be a write hiding in a getter.
+        //
+        // The two windows exist because the ladder and the recency constant
+        // disagree by construction — rungs 4 and 5 are 60 and 180 days, both
+        // LONGER than EVIDENCE_RECENCY_DAYS (30). Applying recency to a node
+        // that is mid-ladder would mark it stale at day 31 and pull its
+        // Day-60 check forward, silently capping the ladder at 30 days and
+        // making rungs 4 and 5 unreachable. So:
+        //
+        //   ACTIVE SCHEDULE  (next_review_at set) -> the LADDER governs.
+        //                    Recency does not apply; the rung is the contract.
+        //   NO SCHEDULE      (legacy mastery, completed ladder, never
+        //                    scheduled) -> RECENCY governs, because nothing
+        //                    else will ever ask this learner to verify.
+        //
+        // NOTE: a completed ladder also lands in the second window. Whether a
+        // finished ladder should ever go stale is an OPEN policy decision
+        // (ADR-001 §13) — this code does not decide it, it reports `stale` and
+        // routes nothing, so the behaviour of a completed ladder is unchanged.
+        $stale = false;
+        if ($mastered) {
+            $hasActiveSchedule = $states->contains(fn (LearnerNodeState $s) => $s->next_review_at !== null);
+
+            if (! $hasActiveSchedule) {
+                $newest = collect($evidence)->pluck('last_at')->filter()->max();
+                $lastSeen = $states->pluck('last_seen_at')->filter()->max();
+                $newest = $newest ?: $lastSeen;
+                $stale = $newest !== null
+                    && $newest->lt(now()->subDays(self::EVIDENCE_RECENCY_DAYS));
+            }
+        }
 
         $rule = sprintf(
             'D4: knowledge=%.2f (need %.2f: %s), application=%.2f (need %.2f: %s), misconception_active=%s',
@@ -1414,6 +1599,25 @@ class EsoPolicyService
             'application_mastery' => $aMastery,
             'rule_fired' => 'D4',
             'llm_instruction' => null,
+            // ── Distance to mastery (ADR-001 §6) ──────────────────────────
+            //
+            // Structured evidence counts, not a percentage. Everything here is
+            // derived from valid evidence events, so a consumer can say "2
+            // demonstrations away" truthfully — or say nothing, when the type
+            // is NOT_ASSESSED. No presentation is implied; this is the data.
+            'evidence' => [
+                'knowledge' => $knowledgeApplicable
+                    ? $kFloor + ['applicable' => true, 'not_assessed' => $kStats['measured'] === 0, 'unassessed_nodes' => $kStats['unassessed']]
+                    : ['applicable' => false],
+                'application' => $applicationApplicable
+                    ? $aFloor + ['applicable' => true, 'not_assessed' => $aStats['measured'] === 0, 'unassessed_nodes' => $aStats['unassessed']]
+                    : ['applicable' => false],
+                'remaining_events' => ($knowledgeApplicable ? $kFloor['remaining_events'] : 0)
+                    + ($applicationApplicable ? $aFloor['remaining_events'] : 0),
+                'misconception_blocks' => $misconceptionActive,
+                'stale' => $stale,
+                'legacy_mastery' => $legacyMastery,
+            ],
             // Display-only. No existing D1-D5 rule makes exploratory content
             // evidence of anything, so this writes no state and is skippable.
             'enrichment' => $enrichment,
@@ -1422,19 +1626,160 @@ class EsoPolicyService
         ];
     }
 
-    protected function averageMasteryOf(Collection $nodes, Collection $statesByNodeId): ?float
+    /**
+     * Mean mastery across MEASURED nodes only, with the unmeasured ones counted
+     * separately rather than folded in as zeros.
+     *
+     * This used to sum `$state ? $state->mastery_estimate : 0.0`, so a node the
+     * learner had never touched contributed a hard 0.0 to the mean. The
+     * direction was safe — it made mastery harder, never falsely granted — but
+     * the number it produced was not a measurement: "Knowledge 40%" could mean
+     * one node at 0.80 and one never seen. That is the Principle 7 violation
+     * (no evidence reported as zero mastery) living inside the engine itself.
+     *
+     * `mean` is null when nothing has been measured — NOT_ASSESSED — and every
+     * caller must decide what that means rather than being handed a number.
+     *
+     * @return array{mean:?float, measured:int, unassessed:int, total:int}
+     */
+    protected function masteryAcross(Collection $nodes, Collection $statesByNodeId): array
     {
-        if ($nodes->isEmpty()) {
-            return null;
-        }
+        $measured = [];
+        $unassessed = 0;
 
-        $sum = 0.0;
         foreach ($nodes as $node) {
             $state = $statesByNodeId->get($node->id);
-            $sum += $state ? (float) $state->mastery_estimate : 0.0;
+            // A row that exists but records no attempt is still unassessed:
+            // stateFor() creates rows eagerly, so row-presence is not evidence.
+            if ($state === null || (int) $state->attempts === 0) {
+                $unassessed++;
+
+                continue;
+            }
+            $measured[] = (float) $state->mastery_estimate;
         }
 
-        return $sum / $nodes->count();
+        return [
+            'mean' => $measured === [] ? null : array_sum($measured) / count($measured),
+            'measured' => count($measured),
+            'unassessed' => $unassessed,
+            'total' => $nodes->count(),
+        ];
+    }
+
+    /**
+     * Backwards-compatible numeric mean for callers that still require a float.
+     *
+     * Kept so the API boundary does not change shape, but it no longer invents
+     * a zero: an entirely unassessed node type returns null, and null is what
+     * the payload carries.
+     */
+    protected function averageMasteryOf(Collection $nodes, Collection $statesByNodeId): ?float
+    {
+        return $this->masteryAcross($nodes, $statesByNodeId)['mean'];
+    }
+
+    /**
+     * Valid mastery evidence per node, per ADR-001 §4.1.
+     *
+     * A "valid evidence event" is deliberately NOT a question attempt:
+     *   - CFU responses are excluded — the engine promises the student they do
+     *     not count, and that promise holds all the way to the graph;
+     *   - diagnostic responses are excluded — they inform state and content
+     *     selection but must not be able to COMPLETE mastery (ADR-001 §4.2);
+     *   - retrieval responses are excluded — they verify retention of mastery
+     *     already granted, so counting them toward granting it is circular;
+     *   - the same `question_id` counts once — otherwise a learner reaches
+     *     mastery by re-answering one remembered item;
+     *   - only evidence inside the recency window counts.
+     *
+     * Independent evidence additionally requires `mode = independent` and
+     * `hint_used = false`, which is the recorded difference between "can do it
+     * with scaffolding" and "can do it".
+     *
+     * @param  Collection<int, ConceptNode>  $nodes
+     * @return array<int, array{events:int, independent:int, last_at:?\Illuminate\Support\Carbon}>
+     */
+    protected function evidenceByNode(int $studentId, Collection $nodes): array
+    {
+        $nodeIds = $nodes->pluck('id')->all();
+        if ($nodeIds === []) {
+            return [];
+        }
+
+        $rows = ResponseLog::forStudent($studentId)
+            ->whereIn('node_id', $nodeIds)
+            ->whereNotNull('mode')
+            ->whereNotIn('mode', [
+                self::RESPONSE_MODE_CFU,
+                self::RESPONSE_MODE_DIAGNOSTIC,
+                self::RESPONSE_MODE_RETRIEVAL,
+            ])
+            ->where('created_at', '>=', now()->subDays(self::EVIDENCE_RECENCY_DAYS))
+            ->get(['node_id', 'question_id', 'hint_used', 'mode', 'created_at']);
+
+        $profile = [];
+        foreach ($nodeIds as $id) {
+            $profile[$id] = ['events' => 0, 'independent' => 0, 'last_at' => null];
+        }
+
+        foreach ($rows->groupBy('node_id') as $nodeId => $nodeRows) {
+            // One event per distinct question. A null question_id cannot be
+            // de-duplicated, so it is counted once in total rather than
+            // silently inflating the count.
+            $distinct = $nodeRows->unique(fn ($r) => $r->question_id ?? 'unknown');
+
+            $profile[(int) $nodeId] = [
+                'events' => $distinct->count(),
+                'independent' => $distinct
+                    ->filter(fn ($r) => $r->mode === LearnerNodeState::MODE_INDEPENDENT && ! $r->hint_used)
+                    ->count(),
+                'last_at' => $nodeRows->max('created_at'),
+            ];
+        }
+
+        return $profile;
+    }
+
+    /**
+     * Roll node-level evidence up to one gated node type.
+     *
+     * The floor is per NODE, not per type: three events spread across three K
+     * nodes is one event each, which is not three demonstrations of any of
+     * them. `remaining` is the honest denominator distance-to-mastery needs.
+     *
+     * @param  Collection<int, ConceptNode>  $nodes
+     * @param  array<int, array{events:int, independent:int, last_at:?\Illuminate\Support\Carbon}>  $evidence
+     * @return array{required_per_node:int, nodes:int, valid_events:int, required_events:int, remaining_events:int, independent_events:int, independent_required:int, independent_remaining:int, meets_floor:bool}
+     */
+    protected function evidenceFloorFor(Collection $nodes, array $evidence, int $requiredPerNode): array
+    {
+        $nodeCount = $nodes->count();
+        $valid = 0;
+        $independent = 0;
+        $remaining = 0;
+
+        foreach ($nodes as $node) {
+            $e = $evidence[$node->id] ?? ['events' => 0, 'independent' => 0];
+            $counted = min($e['events'], $requiredPerNode);
+            $valid += $counted;
+            $remaining += max(0, $requiredPerNode - $e['events']);
+            $independent += $e['independent'];
+        }
+
+        $independentRequired = $nodeCount === 0 ? 0 : self::MIN_INDEPENDENT;
+
+        return [
+            'required_per_node' => $requiredPerNode,
+            'nodes' => $nodeCount,
+            'valid_events' => $valid,
+            'required_events' => $nodeCount * $requiredPerNode,
+            'remaining_events' => $remaining,
+            'independent_events' => $independent,
+            'independent_required' => $independentRequired,
+            'independent_remaining' => max(0, $independentRequired - $independent),
+            'meets_floor' => $nodeCount > 0 && $remaining === 0 && $independent >= $independentRequired,
+        ];
     }
 
     // ── D5: delayed retrieval ────────────────────────────────────────────
@@ -1449,6 +1794,39 @@ class EsoPolicyService
     protected function retrievalDueAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
     {
         [$recap, $recapFallback, $daysSince] = $this->retentionRecap($node, $state, $conceptId, $subInstituteId);
+
+        // A review with nothing to review is a dead end: the engine would say
+        // "quick review" and the item fetch would 404. Resolve availability
+        // here, where the decision is made, and say so honestly instead.
+        //
+        // Mastery is NOT revoked and the schedule is NOT advanced — the
+        // learner must never lose standing because WE have no content for
+        // them. The node stays due and will resolve the moment content exists.
+        if ($this->retrievalItems($node->id, $subInstituteId) === []) {
+            if (! $silent) {
+                $this->log(
+                    $studentId,
+                    $conceptId,
+                    $node->id,
+                    $subInstituteId,
+                    ['retention_stage' => (int) $state->retention_stage],
+                    'D5: retrieval check due but no servable item is authored for this node',
+                    'content_unavailable'
+                );
+            }
+
+            return [
+                'action' => 'content_unavailable',
+                'node_id' => $node->id,
+                'concept_id' => $conceptId,
+                'rule_fired' => 'D5',
+                'llm_instruction' => null,
+                'needed' => 'retrieval_item',
+                // Held, not lost — this is our gap, not the learner's.
+                'mastery_retained' => true,
+                'retention_stage' => (int) $state->retention_stage,
+            ];
+        }
 
         if (! $silent) {
             $this->log(
@@ -1475,6 +1853,136 @@ class EsoPolicyService
             'recap_fallback' => $recapFallback,
             'days_since_last_evidence' => $daysSince,
             'retention_stage' => (int) $state->retention_stage,
+        ];
+    }
+
+    /**
+     * Concept-level staleness, computed inline (no DB write).
+     *
+     * Concept is stale = every node is mastered/retained AND the newest
+     * supporting evidence is older than EVIDENCE_RECENCY_DAYS. A concept that
+     * is NOT fully mastered cannot be stale — it needs teaching, not
+     * verification.
+     *
+     * The staleness anchor matches masteryVerdict() exactly (D2 §2): the
+     * newest `eso_response_log` row within the recency window (its
+     * `created_at`); if none, fall back to `learner_node_state.last_seen_at`.
+     * Reading from the same data the verdict already reads means this branch
+     * and the verdict cannot disagree about whether a concept is stale, and
+     * the read is the only thing that happens here — masteryVerdict() is not
+     * called (it would side-effect `STATUS_MASTERED` writes even on silent,
+     * which would be a write hiding in a read).
+     */
+    protected function isConceptStale(int $studentId, Collection $nodes, Collection $states): bool
+    {
+        if ($nodes->isEmpty()) {
+            return false;
+        }
+
+        foreach ($nodes as $node) {
+            $state = $states->get($node->id);
+            if ($state === null || ! $state->isMastered()) {
+                return false;
+            }
+        }
+
+        $nodeIds = $nodes->pluck('id')->all();
+
+        // Mirror evidenceByNode()'s recency filter: only rows inside the
+        // recency window count as the "newest evidence" anchor, and the
+        // diagnostic / CFU / retrieval modes are excluded for the same reason
+        // they are excluded there (they inform state but cannot complete it).
+        $newestResponseAt = DB::table('eso_response_log')
+            ->where('student_id', $studentId)
+            ->whereIn('node_id', $nodeIds)
+            ->whereNotNull('mode')
+            ->whereNotIn('mode', [
+                self::RESPONSE_MODE_CFU,
+                self::RESPONSE_MODE_DIAGNOSTIC,
+                self::RESPONSE_MODE_RETRIEVAL,
+            ])
+            ->where('created_at', '>=', now()->subDays(self::EVIDENCE_RECENCY_DAYS))
+            ->max('created_at');
+
+        $newest = $newestResponseAt !== null
+            ? \Illuminate\Support\Carbon::parse($newestResponseAt)
+            : $states->pluck('last_seen_at')->filter()->max();
+
+        if ($newest === null) {
+            // Mastered with no recorded evidence anywhere = stale by
+            // definition — there is nothing fresh to point at.
+            return true;
+        }
+
+        return $newest->lt(now()->subDays(self::EVIDENCE_RECENCY_DAYS));
+    }
+
+    /**
+     * Stale-mastery action (D2 §3). Concept holds mastery but evidence is
+     * outside EVIDENCE_RECENCY_DAYS, so the next step is verification — not
+     * teaching, not remediation, not enrichment, not initial diagnosis.
+     *
+     * If retrieval content exists, route to the same `retrieval_due` payload
+     * the scheduled-due path produces; if it does not, route to
+     * `content_unavailable` with mastery_retained: true. Mastery is NOT
+     * revoked on the content gap — staleness is ours to fix, not the
+     * learner's standing to lose.
+     */
+    protected function staleMasteryAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
+    {
+        if ($this->retrievalItems($node->id, $subInstituteId) === []) {
+            if (! $silent) {
+                $this->log(
+                    $studentId,
+                    $conceptId,
+                    $node->id,
+                    $subInstituteId,
+                    ['retention_stage' => (int) $state->retention_stage],
+                    'D2: stale mastery, no retrieval item authored for this node',
+                    'content_unavailable'
+                );
+            }
+
+            return [
+                'action' => 'content_unavailable',
+                'node_id' => $node->id,
+                'concept_id' => $conceptId,
+                'rule_fired' => 'D2',
+                'llm_instruction' => null,
+                'needed' => 'retrieval_item',
+                'mastery_retained' => true,
+                'retention_stage' => (int) $state->retention_stage,
+                // Surfaced for dashboards/teacher surfaces; students see the
+                // ordinary "Time for a quick review" wording.
+                'derived_status' => self::CONCEPT_STATUS_STALE_MASTERY,
+            ];
+        }
+
+        if (! $silent) {
+            $this->log(
+                $studentId,
+                $conceptId,
+                $node->id,
+                $subInstituteId,
+                ['retention_stage' => (int) $state->retention_stage],
+                'D2: stale mastery, evidence outside recency window — retrieval due',
+                'retrieval_due',
+                null
+            );
+        }
+
+        return [
+            'action' => 'retrieval_due',
+            'node_id' => $node->id,
+            'concept_id' => $conceptId,
+            'rule_fired' => 'D2',
+            'llm_instruction' => null,
+            'recap_fallback' => null,
+            // 0 here is honest: the staleness clock is the recency window
+            // (>= EVIDENCE_RECENCY_DAYS), not the per-node last_seen_at.
+            'days_since_last_evidence' => 0,
+            'retention_stage' => (int) $state->retention_stage,
+            'derived_status' => self::CONCEPT_STATUS_STALE_MASTERY,
         ];
     }
 
@@ -1542,11 +2050,18 @@ class EsoPolicyService
         return $items;
     }
 
-    /** Nodes whose scheduled retrieval check is due now, for a student. */
+    /**
+     * Nodes whose scheduled retrieval check is due now, for a student.
+     *
+     * Both `mastered` and `retained` are eligible — see the matching check in
+     * nextAction(). A retained node is one that has already passed a rung and
+     * has the next one scheduled; excluding it stopped the ladder dead after
+     * its first check.
+     */
     public function dueForRetrieval(int $studentId, ?int $subInstituteId = null): Collection
     {
         return LearnerNodeState::forStudent($studentId)
-            ->where('status', LearnerNodeState::STATUS_MASTERED)
+            ->whereIn('status', [LearnerNodeState::STATUS_MASTERED, LearnerNodeState::STATUS_RETAINED])
             ->whereNotNull('next_review_at')
             ->where('next_review_at', '<=', now())
             ->when($subInstituteId !== null, fn ($q) => $q->where('sub_institute_id', $subInstituteId))
@@ -1567,7 +2082,7 @@ class EsoPolicyService
         $correctness = collect($responses)->map(function ($r) use ($studentId, $conceptId, $nodeId, $subInstituteId) {
             $answerMasterId = (int) $r['answer_master_id'];
             $correct = $this->isAnswerCorrect($answerMasterId);
-            $this->logResponse($studentId, $conceptId, $nodeId, $subInstituteId, $answerMasterId, $correct);
+            $this->logResponse($studentId, $conceptId, $nodeId, $subInstituteId, $answerMasterId, $correct, false, self::RESPONSE_MODE_RETRIEVAL);
 
             return $correct;
         });
@@ -1585,6 +2100,14 @@ class EsoPolicyService
             // scheduled at a longer interval. advanceRetentionLadder() clears
             // next_review_at itself once the last rung is passed.
             $this->advanceRetentionLadder($state);
+            // Refresh the recency anchor (D2 §4 retrieval PASS): the same
+            // column applyUpdate() touches when a practice attempt is recorded.
+            // Retrieval rows are excluded from the evidence-floor count (so
+            // they can't artificially satisfy it), but the verification event
+            // IS fresh evidence the staleness rule should see — otherwise a
+            // concept that just survived a check would still read as stale on
+            // the next render and re-route into verification forever.
+            $state->last_seen_at = now();
             $state->save();
 
             $rule = sprintf('D5: retrieval check passed, retention %s', $this->retentionStageLabel($state));
@@ -1750,6 +2273,11 @@ class EsoPolicyService
                 'concept_id' => $conceptId,
                 'name' => $concept->name,
                 'status' => $classification['status'],
+                // Carried separately so a teacher/admin surface can show
+                // "mastered, needs verifying" rather than having to infer it
+                // from the status label alone.
+                'mastered' => $classification['mastered'] ?? false,
+                'stale' => $classification['stale'] ?? false,
                 'knowledge_mastery' => $classification['knowledge_mastery'],
                 'application_mastery' => $classification['application_mastery'],
             ];
@@ -1902,8 +2430,30 @@ class EsoPolicyService
         $mastered = $verdict['mastered'] ?? false;
         $responses = $this->conceptAttemptCount($studentId, $conceptId, $subInstituteId);
 
+        // STALE_MASTERY is DERIVED, never stored (ADR-001 §6 / D2).
+        //
+        // The learner remains historically mastered — nothing is revoked, no
+        // status row is written, no evidence is touched. Staleness only says
+        // "this needs verifying before we keep claiming it", and the existing
+        // D5 retrieval path is what resolves it. Writing a status here would
+        // make a silent read mutate learner state, and would revoke mastery
+        // that was genuinely earned.
+        $stale = $mastered && ($verdict['evidence']['stale'] ?? false);
+
+        $status = match (true) {
+            $locked => 'locked',
+            $stale => self::CONCEPT_STATUS_STALE_MASTERY,
+            $mastered => 'mastered',
+            $responses > 0 => 'in_progress',
+            default => 'not_started',
+        };
+
         return [
-            'status' => $locked ? 'locked' : ($mastered ? 'mastered' : ($responses > 0 ? 'in_progress' : 'not_started')),
+            'status' => $status,
+            // Preserved separately so a consumer can still see that mastery was
+            // held, rather than inferring "not mastered" from the stale label.
+            'mastered' => $mastered,
+            'stale' => $stale,
             'knowledge_mastery' => $verdict['knowledge_mastery'] ?? null,
             'application_mastery' => $verdict['application_mastery'] ?? null,
             'responses' => $responses,
@@ -2114,7 +2664,16 @@ class EsoPolicyService
      */
     protected static function isConceptSettled(string $status): bool
     {
-        return in_array($status, ['locked', 'mastered'], true);
+        // `stale_mastery` counts as settled for PROGRESSION. The learner still
+        // holds mastery, so a concept awaiting verification must not become the
+        // "current concept" and pull them backwards through the chapter — that
+        // would turn a recency flag into a block on new learning, which D2
+        // explicitly does not do.
+        //
+        // Verification still reaches them: when the node's next rung is
+        // actually due, nextAction() serves the retrieval and the dashboard's
+        // reviews-due count surfaces it.
+        return in_array($status, ['locked', 'mastered', self::CONCEPT_STATUS_STALE_MASTERY], true);
     }
 
     /**
@@ -2389,6 +2948,19 @@ class EsoPolicyService
             'enrichment' => $mastered
                 ? $this->enrichment->forConcept($studentId, $conceptId, $subInstituteId)
                 : [],
+            // ── The plan: what remains, counted in evidence ───────────────
+            //
+            // Straight from the D1 verdict, so the plan a student sees and the
+            // rule that grants mastery are the same numbers. Null when the
+            // concept is locked and no verdict was computed.
+            'plan' => $verdict === null ? null : ($verdict['evidence'] ?? null),
+            // ── Suggested content, matched to where the learner actually is ─
+            //
+            // Bucket chosen from state, not guessed: nothing to practise yet
+            // when NOT_ASSESSED, remediation while below threshold, enrichment
+            // once cleared. Empty is a real and common answer — the caller
+            // says so rather than substituting content from elsewhere.
+            'suggested_content' => $this->suggestedContentFor($studentId, $conceptId, $subInstituteId, $status),
             'responses_on_concept' => $responses,
             'confidence_note' => $this->confidenceNote($responses),
             'mastery_signals' => $this->masterySignals($studentId, $conceptId, $subInstituteId),
@@ -2429,6 +3001,30 @@ class EsoPolicyService
             'next_review_at' => $earliest?->next_review_at?->toIso8601String(),
             'nodes_retained' => $states->where('status', LearnerNodeState::STATUS_RETAINED)->count(),
         ];
+    }
+
+    /**
+     * Which suggested-content bucket suits a learner in this concept state.
+     *
+     * NOT_ASSESSED deliberately gets nothing: the honest next step there is a
+     * diagnostic, and offering practice or enrichment before any evidence
+     * exists is the same fabrication Principle 7 rules out elsewhere.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function suggestedContentFor(int $studentId, int $conceptId, int $subInstituteId, string $status): array
+    {
+        $bucket = match ($status) {
+            'mastered', self::CONCEPT_STATUS_STALE_MASTERY => 'enrichment_content',
+            'in_progress' => 'practice_content',
+            default => null, // not_started / locked / not_ready — diagnose first
+        };
+
+        if ($bucket === null) {
+            return [];
+        }
+
+        return $this->enrichment->suggestionsFor($studentId, $conceptId, $subInstituteId, $bucket);
     }
 
     protected function confidenceNote(int $responses): string

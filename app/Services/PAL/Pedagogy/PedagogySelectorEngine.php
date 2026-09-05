@@ -189,8 +189,17 @@ class PedagogySelectorEngine
 
     protected function getLearnerState(int $learnerId): array
     {
-        $competency = \App\Models\PAL\Competency::where('learner_id', $learnerId)
-            ->avg('mastery_score') ?? 0;
+        // NOT_ASSESSED is not low mastery (ADR-001 §5).
+        //
+        // This used to coalesce to 0, which made every band below fire for a
+        // learner who had simply never been assessed: `low_mastery` and
+        // `low_confidence` both true, so remedial pedagogy was selected for
+        // someone who might already know the material. Absence of evidence is
+        // the signal to DIAGNOSE, not to remediate.
+        $measured = \App\Models\PAL\Competency::where('learner_id', $learnerId)
+            ->avg('mastery_score');
+        $notAssessed = $measured === null;
+        $competency = (float) ($measured ?? 0);
 
         $preference = LearnerPreference::where('learner_id', $learnerId)
             ->where('pref_key', 'learning_style')
@@ -210,11 +219,16 @@ class PedagogySelectorEngine
         $olderAvg = collect(array_slice($recentSessions, 3, 3))->avg() ?? 0;
 
         return [
-            'mastery_score' => $competency,
-            'high_mastery' => $competency > 75,
-            'medium_mastery' => $competency >= 50 && $competency <= 75,
-            'low_mastery' => $competency < 50,
-            'low_confidence' => $competency < 40,
+            // Null, not 0 — a consumer must not be able to read "no evidence"
+            // as a measured score.
+            'mastery_score' => $notAssessed ? null : $competency,
+            'not_assessed' => $notAssessed,
+            'needs_diagnosis' => $notAssessed,
+            // Every mastery band is false when there is nothing to band.
+            'high_mastery' => ! $notAssessed && $competency > 75,
+            'medium_mastery' => ! $notAssessed && $competency >= 50 && $competency <= 75,
+            'low_mastery' => ! $notAssessed && $competency < 50,
+            'low_confidence' => ! $notAssessed && $competency < 40,
             'low_self_efficacy' => $recentFails > 5,
             'has_gaps' => \App\Models\PAL\Competency::where('learner_id', $learnerId)
                 ->where('mastery_score', '<', 50)->exists(),
