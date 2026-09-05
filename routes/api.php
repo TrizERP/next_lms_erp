@@ -138,6 +138,10 @@ Route::post('/compliance/delete/{id}',[instituteDetailController::class,'destroy
 Route::post('/menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMenuRightsLevelWise']);
 Route::get('/master-menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMasterMenuApi']);
 
+// Fees-only: the seven category tabs on the dedicated Fees page. Presentation
+// grouping over the module's existing menus — see FeesMenuCategoryApiController.
+Route::match(['get', 'post'], 'fees/menu-categories', [App\Http\Controllers\api\FeesMenuCategoryApiController::class, 'index']);
+
 // GET is accepted alongside POST so these can be opened in a browser or curled without
 // a body — the handlers read their parameters through $request->input(), which covers
 // the query string as well. POST is unchanged, so existing callers are unaffected.
