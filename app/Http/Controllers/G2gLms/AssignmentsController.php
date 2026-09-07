@@ -52,10 +52,11 @@ use Illuminate\Support\Facades\Validator;
  *     so a small picker-scoped endpoint is added here instead, reading the
  *     same `sub_std_map` table Learning Catalog will eventually own more of.
  *   - `requestEnrollment` (`POST /lmsAssignment/request` in hp_erp — a
- *     learner self-requesting a course) is NOT ported: the ported frontend
- *     slice (`components/domain/lms/assignments/learning-assignments.tsx`)
- *     never calls it — there is no "request a course" UI in this screen —
- *     so it would be dead code. Noted in this package's final report.
+ *     learner self-requesting a course) IS ported, as `request()` below —
+ *     the Learning Catalog's "Request" action (added to g2gv0 after this
+ *     package's original port) now calls it, so the Approval Queue this
+ *     controller's `review()`/`bulkReview()` already serve can actually
+ *     receive a row.
  */
 class AssignmentsController extends Controller
 {
@@ -177,6 +178,18 @@ class AssignmentsController extends Controller
         $query = DB::table('lms_assignments as a')
             ->join('sub_std_map as c', 'a.course_id', '=', 'c.id')
             ->join('tbluser as u', 'a.user_id', '=', 'u.id')
+            /*
+             * The learner's department.
+             *
+             * LEFT joined because tbluser.department_id is nullable and an
+             * assignment for somebody with no department must still appear -
+             * an inner join here would silently drop those rows from the queue.
+             *
+             * Added because the Assignments screen has always had a Department
+             * filter and this payload has never carried a department, so the
+             * control could not have worked whatever it offered.
+             */
+            ->leftJoin('hrms_departments as d', 'd.id', '=', 'u.department_id')
             ->where('a.sub_institute_id', $subInstituteId)
             ->whereNull('a.deleted_at');
 
@@ -202,6 +215,7 @@ class AssignmentsController extends Controller
             DB::raw("TRIM(CONCAT_WS(' ', u.first_name, u.last_name)) as learner_name"),
             'c.display_name as course_name',
             'c.subject_type as type',
+            'd.department',
             'a.assignment_type',
             'a.due_date',
             'a.status',
@@ -349,6 +363,96 @@ class AssignmentsController extends Controller
             'assigned' => count($validUserIds),
             'skipped' => $skipped,
         ]);
+    }
+
+    /**
+     * POST api/g2g-lms/assignments/request — a learner asks to take a course.
+     *
+     * Ported from hp_erp's `assignmentController::requestEnrollment()`. Lands
+     * in the Approval Queue rather than becoming an active assignment, which
+     * is what distinguishes a self-request from an admin push (store()'s rows
+     * default to `approval_status = 'approved'`). Enrolment is only mirrored
+     * into `lms_course_enroll` once review() approves the request — matching
+     * hp_erp's own requestEnrollment(), which does not call EnrolmentWriter.
+     *
+     * The requester is always the token's own user_id (`actingUserId()`),
+     * never a client-supplied id — same rule review()/bulkReview() already
+     * follow, to close the spoofing hole hp_erp's own doc-comment describes.
+     */
+    public function request(Request $request)
+    {
+        $subInstituteId = $this->tenantId();
+        $userId = $this->actingUserId();
+
+        if (!$subInstituteId || !$userId) {
+            return response()->json(['status' => false, 'message' => 'Unable to resolve your session'], 401);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'course_id' => 'required|integer',
+            'due_date' => 'nullable|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->messages()->first(),
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        // The course has to belong to this tenant — a request against another
+        // organisation's course id would otherwise land in THIS tenant's
+        // queue (sub_institute_id comes from the token) naming a course this
+        // tenant's admin cannot see.
+        $courseIsOurs = DB::table('sub_std_map')
+            ->where('id', $request->course_id)
+            ->where('sub_institute_id', $subInstituteId)
+            ->whereNull('deleted_at')
+            ->exists();
+
+        if (!$courseIsOurs) {
+            return response()->json(['status' => false, 'message' => 'Course not found'], 404);
+        }
+
+        $existing = DB::table('lms_assignments')
+            ->where('user_id', $userId)
+            ->where('course_id', $request->course_id)
+            ->whereNull('deleted_at')
+            ->whereIn('approval_status', ['approved', 'pending'])
+            ->first(['approval_status']);
+
+        if ($existing) {
+            return response()->json([
+                'status' => false,
+                'message' => $existing->approval_status === 'pending'
+                    ? 'You already have a pending request for this course.'
+                    : 'You are already assigned to this course.',
+            ], 422);
+        }
+
+        $now = now();
+        $id = DB::table('lms_assignments')->insertGetId([
+            'user_id' => $userId,
+            'course_id' => $request->course_id,
+            'assignment_type' => 'Optional',
+            'due_date' => $request->due_date,
+            'status' => 'Not Started',
+            'progress' => 0,
+            'approval_status' => 'pending',
+            'requested_by' => $userId,
+            'assigned_by' => 'Self-requested',
+            'assigned_on' => $now,
+            'sub_institute_id' => $subInstituteId,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Request submitted for approval',
+            'data' => DB::table('lms_assignments')->find($id),
+        ], 201);
     }
 
     /** POST api/g2g-lms/assignments/{id}/status — update a single assignment. */
@@ -600,7 +704,7 @@ class AssignmentsController extends Controller
 
         $learners = DB::table('tbluser')
             ->where('sub_institute_id', $subInstituteId)
-            ->whereNull('deleted_at')
+            ->where('status', 1)
             ->when($request->input('search'), function ($query, $search) {
                 $query->where(function ($q) use ($search) {
                     $q->where('first_name', 'like', "%{$search}%")

@@ -983,6 +983,20 @@ class MyLearningController extends Controller
                 fn ($q) => $q->where('c.user_id', $userId)
             )
             ->when($request->input('course_id'), fn ($q, $id) => $q->where('c.course_id', $id))
+            /*
+             * ONE EMPLOYEE'S CERTIFICATES, for an administrator looking at
+             * their record.
+             *
+             * Only meaningful alongside scope=all, which is already gated on
+             * guardAuthoring - so this narrows a set the caller was entitled to
+             * see rather than widening one they were not. Without it, showing
+             * certificates on an employee's profile would mean fetching every
+             * certificate in the organisation and filtering in the browser.
+             */
+            ->when(
+                $wantsAll && $request->input('user_id'),
+                fn ($q) => $q->where('c.user_id', $request->input('user_id'))
+            )
             ->when($request->input('search'), function ($q, $search) {
                 $q->where(function ($inner) use ($search) {
                     $inner->where('c.course_title', 'like', "%{$search}%")
