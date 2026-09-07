@@ -63,11 +63,25 @@ class RecommendationEngine
             ->get();
 
         $learnerLevel = $this->getLearnerLevel($learnerId);
-        
+
+        // NOT_ASSESSED routes to diagnosis, never to a difficulty guess
+        // (ADR-001 §5.2). Matching content difficulty against a fabricated
+        // level is how an unassessed learner used to be handed remedial or
+        // mid-difficulty material on no evidence at all.
+        if ($learnerLevel === null) {
+            return [
+                'recommended' => null,
+                'alternatives' => [],
+                'not_assessed' => true,
+                'action' => 'diagnose',
+                'reason' => 'No mastery evidence for this learner yet — diagnose before recommending content.',
+            ];
+        }
+
         // Score content
         $scored = $contents->map(function ($content) use ($learnerId, $learnerLevel) {
             $score = 50;
-            
+
             // Level match
             $levelDiff = abs($content->difficulty_level - $learnerLevel);
             $score -= $levelDiff * 10;
@@ -188,10 +202,20 @@ class RecommendationEngine
      * @param int $learnerId
      * @return int
      */
-    protected function getLearnerLevel(int $learnerId): int
+    protected function getLearnerLevel(int $learnerId): ?int
     {
         $avg = \App\Models\PAL\Competency::where('learner_id', $learnerId)
-            ->avg('mastery_score') ?? 50;
+            ->avg('mastery_score');
+
+        // NOT_ASSESSED is not a level (ADR-001 §5).
+        //
+        // This used to coalesce to 50, and 50 >= 40, so a learner with no
+        // evidence at all was rated level 1 of 3 — a confident ability claim
+        // about someone the system has never seen. Null means "no level yet",
+        // and the caller routes to diagnosis instead of guessing difficulty.
+        if ($avg === null) {
+            return null;
+        }
 
         return match(true) {
             $avg >= 80 => 3,

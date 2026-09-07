@@ -747,7 +747,7 @@ SYSPROMPT;
         return implode("\n", array_map(fn($s) => '- ' . $s, $stems));
     }
 
-    protected function userPrompt(string $type, array $quota, array $slice, array $stems, string $semanticKey, bool $hasContent = true): string
+    protected function userPrompt(string $type, array $quota, array $slice, array $stems, string $semanticKey, bool $hasContent = true, ?string $diagnosticStage = null): string
     {
         $total = array_sum(array_column($quota, 'count'));
         $quotaTable = $this->quotaTableMarkdown($quota, $type);
@@ -763,6 +763,8 @@ SYSPROMPT;
                 . "set `underfilled` true with a clear reason. Do not use general knowledge to fill the batch.\n";
         }
 
+        $stageInstruction = $diagnosticStage === null ? '' : "\n## ESO DIAGNOSTIC STAGE\nEvery generated item in this batch is for the ESO stage `{$diagnosticStage}`. Keep every stem focused on the concept itself and make the item suitable for that diagnostic purpose.\n";
+
         $common = <<<PROMPT
 TASK: Write {$total} {$taskType} rows for the concept below.
 
@@ -777,6 +779,7 @@ SEMANTIC_CONCEPT_KEY (echo it back unchanged in your response): {$semanticKey}
 ## DEDUP CORPUS (do not reproduce or rephrase)
 {$dedup}
 {$bestEffortNote}
+{$stageInstruction}
 PROMPT;
 
         if ($type === 'mcq') {
@@ -1243,13 +1246,79 @@ SCHEMA;
             // Ensure PHP doesn't kill the script before the HTTP timeout fires.
             set_time_limit($this->timeout + 60);
 
-            $response = Http::withHeaders([
+            $headers = [
                 'Authorization' => 'Bearer ' . $apiKey,
                 'Content-Type'  => 'application/json',
-            ])
-            ->timeout($this->timeout)
-            ->connectTimeout(20)
-            ->post(rtrim(config('deepseek.base_url'), '/') . '/chat/completions', $body);
+            ];
+
+            $response = Http::withHeaders($headers)
+                ->timeout($this->timeout)
+                ->connectTimeout(20)
+                ->post(rtrim(config('deepseek.base_url'), '/') . '/chat/completions', $body);
+
+            if ($response->status() === 402 && filled(config('openrouter.api_key'))) {
+                $body['model'] = config('openrouter.model', 'openai/gpt-4o-mini');
+                $response = Http::withHeaders(config('openrouter.headers'))
+                    ->timeout($this->timeout)
+                    ->connectTimeout(20)
+                    ->post(rtrim(config('openrouter.base_url'), '/') . '/chat/completions', $body);
+            }
+
+            if ($response->status() === 402) {
+                $geminiKey = function_exists('getAIKey') ? getAIKey('gemini', 1)?->api_key : null;
+                $geminiKey = $geminiKey ?: DB::table('ai_api_keys')
+                    ->where('api_type', 'gemini')
+                    ->where('status', 1)
+                    ->value('api_key');
+
+                if (filled($geminiKey)) {
+                    $geminiResponse = Http::withHeaders([
+                        'Content-Type' => 'application/json',
+                        'x-goog-api-key' => $geminiKey,
+                    ])
+                        ->timeout($this->timeout)
+                        ->connectTimeout(20)
+                        ->post(
+                            'https://generativelanguage.googleapis.com/v1beta/models/'
+                            . env('GEMINI_MODEL', 'gemini-3.6-flash') . ':generateContent',
+                            [
+                                'contents' => [[
+                                    'role' => 'user',
+                                    'parts' => [[
+                                        'text' => $system . "\n\n" . $user,
+                                    ]],
+                                ]],
+                                'generationConfig' => [
+                                    'temperature' => (float) $temperature,
+                                    'maxOutputTokens' => $this->maxTokens > 0 ? $this->maxTokens : 8000,
+                                ],
+                            ]
+                        );
+
+                    if ($geminiResponse->successful()) {
+                        $geminiParts = $geminiResponse->json('candidates.0.content.parts', []);
+                        $content = collect($geminiParts)
+                            ->pluck('text')
+                            ->filter(fn ($text) => is_string($text))
+                            ->implode('');
+
+                        if (trim($content) !== '') {
+                            return [
+                                'ok' => true,
+                                'content' => $content,
+                                'model' => env('GEMINI_MODEL', 'gemini-3.6-flash'),
+                                'finish_reason' => $geminiResponse->json('candidates.0.finishReason'),
+                                'usage' => $geminiResponse->json('usageMetadata', []),
+                            ];
+                        }
+                    }
+
+                    return [
+                        'ok' => false,
+                        'error' => 'Gemini request failed: ' . $geminiResponse->status() . ' ' . $geminiResponse->body(),
+                    ];
+                }
+            }
 
             if (!$response->successful()) {
                 return [
@@ -1696,6 +1765,9 @@ SCHEMA;
                 'hint_text'        => $row['hint_text'],
                 'learning_outcome' => json_encode($row['learning_outcome'], JSON_UNESCAPED_UNICODE),
                 'answer'           => json_encode($answer, JSON_UNESCAPED_UNICODE),
+
+                // Derived, not LLM-owned: the Question Bank filters on this.
+                'category'         => $this->learningFlowCategory($answer, $row, $meta['diagnostic_stage'] ?? null),
             ]);
 
             if ($id) {
@@ -1787,9 +1859,76 @@ SCHEMA;
      * Public entry point
      * ---------------------------------------------------------------- */
 
+    /**
+     * PAL learning-flow category for a generated item.
+     *
+     * The prompt pack is quota-driven (Bloom x count) and says nothing about the
+     * learning journey, so the category is DERIVED from what the item turned out
+     * to be, and stored on the question so the Question Bank can filter on it.
+     *
+     * The two prerequisite categories are deliberately unreachable here. System
+     * prompt rule 4 forbids testing prerequisites ("The learner already knows the
+     * listed prerequisites. Do not test them."), so no item this service produces
+     * can honestly carry them.
+     */
+    protected function learningFlowCategory(array $answer, array $row, ?string $diagnosticStage = null): string
+    {
+        if ($diagnosticStage !== null) {
+            return $diagnosticStage;
+        }
+
+        $bloom   = (string) ($answer['bloom_level'] ?? 'Understand');
+        $subType = (string) ($answer['sub_type'] ?? '');
+        $options = (array) ($answer['options'] ?? []);
+
+        // How many distractors were actually built on a misconception. The count
+        // matters, not the presence: system prompt rule 6 asks EVERY item at
+        // Understand or above to target a misconception, so `misconception_refs`
+        // is non-empty on all of them and cannot separate anything. An option
+        // grid built around two or more RIVAL misconceptions is a genuine
+        // misconception probe; one built around a single one is a concept check.
+        $misconceptionDistractors = 0;
+        foreach ($options as $option) {
+            if (($option['distractor_type'] ?? null) === 'misconception') {
+                $misconceptionDistractors++;
+            }
+        }
+
+        // Bloom is the primary axis, because the quota ladder ties it to
+        // difficulty, DOK and marks — so it is the one field that reliably
+        // separates a placement item from a mastery task.
+        if (str_contains($subType, 'Case') || $bloom === 'Create') {
+            return 'mastery_reverification';
+        }
+        if ($bloom === 'Evaluate') {
+            return 'mastery_check';
+        }
+        if ($bloom === 'Analyze') {
+            return 'adaptive_test';
+        }
+        if ($bloom === 'Remember') {
+            return 'adaptive_diagnostic';
+        }
+        if (!empty($options)) {
+            return $misconceptionDistractors >= 2 ? 'misconception_detection' : 'concept_diagnostic';
+        }
+        if ($bloom === 'Apply') {
+            return 'adaptive_test';
+        }
+        return 'concept_understanding';
+    }
+
     public function generate(array $input): array
     {
         $type = strtolower((string) ($input['question_type'] ?? ''));
+        $diagnosticStage = $input['diagnostic_stage'] ?? null;
+        if ($diagnosticStage !== null && !in_array($diagnosticStage, [
+            'prerequisite_concept_check',
+            'adaptive_diagnostic',
+            'concept_diagnostic',
+        ], true)) {
+            return $this->fail('diagnostic_stage must be a supported ESO stage.');
+        }
         if (!in_array($type, ['mcq', 'narrative'], true)) {
             return $this->fail('question_type must be "mcq" or "narrative".');
         }
@@ -1888,7 +2027,15 @@ SCHEMA;
                 $batchOpts['seed'] = ((int) $input['seed']) + $batchIndex;
             }
 
-            $user = $this->userPrompt($type, $batchQuota, $builtSlice, $stems, $semanticKey, $sliceHasContent);
+            $user = $this->userPrompt(
+                $type,
+                $batchQuota,
+                $builtSlice,
+                $stems,
+                $semanticKey,
+                $sliceHasContent,
+                $input['diagnostic_stage'] ?? null
+            );
             $call = $this->callDeepSeek($system, $user, $batchOpts);
             if (!$call['ok']) {
                 return $this->fail("Batch {$batchNumber} failed: {$call['error']}");
@@ -1945,6 +2092,7 @@ SCHEMA;
             'batch_id'        => (string) \Illuminate\Support\Str::uuid(),
             'input_tokens'    => $inputTokens,
             'output_tokens'   => $outputTokens,
+            'diagnostic_stage' => $input['diagnostic_stage'] ?? null,
         ];
 
         $ctx = $this->buildPersistenceContext($slice, $input, $questionTypeId, $semanticKey);

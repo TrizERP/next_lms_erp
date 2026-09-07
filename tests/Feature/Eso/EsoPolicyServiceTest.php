@@ -24,6 +24,8 @@ use Tests\TestCase;
  */
 class EsoPolicyServiceTest extends TestCase
 {
+    /** Estimates at or above the lower gate imply the node was genuinely demonstrated. */
+    private const EVIDENCE_SEED_FROM = EsoPolicyService::APPLICATION_MASTERY_THRESHOLD;
     use DatabaseTransactions;
 
     private EsoPolicyService $policy;
@@ -156,8 +158,42 @@ class EsoPolicyServiceTest extends TestCase
         ]);
     }
 
+    /**
+     * Seed the valid evidence events ADR-001's floor requires, so a fixture
+     * that says "this node is at mastery level" is telling the truth.
+     *
+     * Before the D1 floor, setting `mastery_estimate` was enough to make a node
+     * masterable — which was exactly the defect: an estimate is a score, not a
+     * record of demonstrations. These rows are distinct `question_id`s in
+     * `independent` mode, hint-free, which is what the floor actually counts.
+     * Tests that exercise the floor itself seed evidence explicitly instead.
+     */
+    private function seedEvidence(int $nodeId, int $events = EsoPolicyService::MIN_EVENTS_K, string $mode = LearnerNodeState::MODE_INDEPENDENT, bool $hintUsed = false): void
+    {
+        for ($i = 0; $i < $events; $i++) {
+            DB::table('eso_response_log')->insert([
+                'student_id' => $this->studentId,
+                'concept_id' => $this->conceptId,
+                'node_id' => $nodeId,
+                'sub_institute_id' => $this->subInstituteId,
+                // Distinct per row: one event per distinct question is the rule.
+                'question_id' => (900000 + $nodeId * 100 + $i),
+                'correct' => true,
+                'hint_used' => $hintUsed,
+                'mode' => $mode,
+                'created_at' => now(),
+            ]);
+        }
+    }
+
     private function setMastery(int $nodeId, float $mastery, string $status = LearnerNodeState::STATUS_LEARNING): LearnerNodeState
     {
+        // A node held at a mastery-level estimate must also carry the evidence
+        // that estimate is supposed to summarise.
+        if ($mastery >= self::EVIDENCE_SEED_FROM) {
+            $this->seedEvidence($nodeId);
+        }
+
         return LearnerNodeState::updateOrCreate(
             ['student_id' => $this->studentId, 'node_id' => $nodeId],
             [
@@ -219,7 +255,7 @@ class EsoPolicyServiceTest extends TestCase
 
     // ── TEST 1: Known student → D1 skip ─────────────────────────────────
 
-    public function test_a_student_who_diagnoses_above_the_skip_threshold_is_marked_mastered_and_skipped(): void
+    public function test_a_student_who_diagnoses_above_the_skip_threshold_skips_teaching_without_being_marked_mastered(): void
     {
         $rightAnswer = $this->makeAnswer(true);
 
@@ -232,7 +268,18 @@ class EsoPolicyServiceTest extends TestCase
         $this->assertTrue($kResult['skip'], 'A node diagnosed at or above 0.80 must be skip-eligible.');
 
         $state = LearnerNodeState::where('student_id', $this->studentId)->where('node_id', $this->kNodeId)->first();
-        $this->assertSame(LearnerNodeState::STATUS_MASTERED, $state->status);
+
+        // The D1 skip means "do not teach this", not "this is mastered".
+        // Writing mastery state from a diagnostic outcome was the defect that
+        // let two correct answers master a node outright (ADR-001 §4.2).
+        $this->assertSame(LearnerNodeState::STATUS_LEARNING, $state->status);
+        $this->assertNull($state->next_review_at, 'Retention belongs to the D4 verdict, not to a diagnostic skip.');
+
+        // The skip still does its job: teaching and the CFU gate are passed
+        // over, so the learner goes straight to the practice that produces
+        // valid mastery evidence.
+        $this->assertNotNull($state->taught_at);
+        $this->assertNotNull($state->cfu_passed_at);
 
         $log = DecisionLog::forStudent($this->studentId)->where('node_id', $this->kNodeId)->latest()->first();
         $this->assertStringContainsString('D1', $log->rule_fired);
@@ -1227,6 +1274,12 @@ class EsoPolicyServiceTest extends TestCase
     /** A node whose scheduled spaced-review check has come due. */
     private function setRetrievalDue(int $nodeId, int $daysAgo = 7): LearnerNodeState
     {
+        // A due review needs something to review with. Without a servable item
+        // the engine now correctly resolves to `content_unavailable` instead of
+        // promising a check it cannot deliver, so a fixture that means "this
+        // node is due" has to supply the content that makes that true.
+        $this->makeServableQuestion($nodeId);
+
         return LearnerNodeState::updateOrCreate(
             ['student_id' => $this->studentId, 'node_id' => $nodeId],
             [
@@ -1610,6 +1663,790 @@ class EsoPolicyServiceTest extends TestCase
         $this->assertFalse($details['retention']['scheduled']);
     }
 
+    // ── D1: the canonical mastery evidence floor (ADR-001) ──────────────
+
+    /** Put both gated node types at threshold WITHOUT any evidence rows. */
+    private function setEstimatesOnly(float $k = 1.0, float $a = 0.9): void
+    {
+        foreach ([[$this->kNodeId, $k], [$this->aNodeId, $a]] as [$nodeId, $estimate]) {
+            LearnerNodeState::updateOrCreate(
+                ['student_id' => $this->studentId, 'node_id' => $nodeId],
+                [
+                    'sub_institute_id' => $this->subInstituteId,
+                    'mastery_estimate' => $estimate,
+                    'attempts' => 2,
+                    'consecutive_correct' => 2,
+                    'status' => LearnerNodeState::STATUS_LEARNING,
+                    'practice_mode' => LearnerNodeState::MODE_INDEPENDENT,
+                    'last_seen_at' => now(),
+                    'taught_at' => now(),
+                    'cfu_passed_at' => now(),
+                ]
+            );
+        }
+    }
+
+    public function test_one_correct_diagnostic_answer_cannot_master_a_node(): void
+    {
+        [, $correctId] = $this->makeCfuQuestion($this->kNodeId);
+
+        $this->policy->scoreDiagnostic($this->studentId, $this->conceptId, $this->subInstituteId, [
+            ['node_id' => $this->kNodeId, 'answer_master_id' => $correctId],
+        ]);
+
+        $state = LearnerNodeState::where('student_id', $this->studentId)->where('node_id', $this->kNodeId)->first();
+        $this->assertNotSame(LearnerNodeState::STATUS_MASTERED, $state->status);
+    }
+
+    public function test_two_correct_diagnostic_answers_cannot_master_the_concept(): void
+    {
+        [, $k] = $this->makeCfuQuestion($this->kNodeId);
+        [, $a] = $this->makeCfuQuestion($this->aNodeId);
+
+        // Two responses per node at diagnostic weight 2.0 drive the estimate
+        // from 0.000 to 1.000 — the exact shortcut ADR-001 §4.2 closes.
+        $this->policy->scoreDiagnostic($this->studentId, $this->conceptId, $this->subInstituteId, [
+            ['node_id' => $this->kNodeId, 'answer_master_id' => $k],
+            ['node_id' => $this->kNodeId, 'answer_master_id' => $k],
+            ['node_id' => $this->aNodeId, 'answer_master_id' => $a],
+            ['node_id' => $this->aNodeId, 'answer_master_id' => $a],
+        ]);
+
+        $verdict = $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+
+        $this->assertGreaterThanOrEqual(
+            EsoPolicyService::KNOWLEDGE_MASTERY_THRESHOLD,
+            $verdict['knowledge_mastery'],
+            'The estimate should still clear the threshold — the threshold was never the problem.'
+        );
+        $this->assertFalse($verdict['mastered'], 'Diagnostic answers alone must not complete mastery.');
+        $this->assertSame(0, $verdict['evidence']['knowledge']['valid_events'], 'Diagnostic responses are not valid mastery evidence.');
+    }
+
+    public function test_diagnostic_evidence_alone_cannot_satisfy_either_evidence_floor(): void
+    {
+        [, $k] = $this->makeCfuQuestion($this->kNodeId);
+        [, $a] = $this->makeCfuQuestion($this->aNodeId);
+
+        $responses = [];
+        for ($i = 0; $i < 5; $i++) {
+            $responses[] = ['node_id' => $this->kNodeId, 'answer_master_id' => $k];
+            $responses[] = ['node_id' => $this->aNodeId, 'answer_master_id' => $a];
+        }
+        $this->policy->scoreDiagnostic($this->studentId, $this->conceptId, $this->subInstituteId, $responses);
+
+        $verdict = $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+
+        $this->assertSame(0, $verdict['evidence']['knowledge']['valid_events']);
+        $this->assertSame(0, $verdict['evidence']['application']['valid_events']);
+        $this->assertFalse($verdict['mastered']);
+    }
+
+    public function test_three_valid_events_per_gated_node_satisfy_the_floor_and_reach_mastery(): void
+    {
+        $this->setEstimatesOnly();
+        $this->seedEvidence($this->kNodeId, EsoPolicyService::MIN_EVENTS_K);
+        $this->seedEvidence($this->aNodeId, EsoPolicyService::MIN_EVENTS_A);
+
+        $verdict = $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+
+        $this->assertTrue($verdict['evidence']['knowledge']['meets_floor']);
+        $this->assertTrue($verdict['evidence']['application']['meets_floor']);
+        $this->assertTrue($verdict['mastered']);
+        $this->assertSame(0, $verdict['evidence']['remaining_events']);
+    }
+
+    public function test_fewer_than_the_required_events_cannot_reach_mastery(): void
+    {
+        $this->setEstimatesOnly();
+        $this->seedEvidence($this->kNodeId, EsoPolicyService::MIN_EVENTS_K - 1);
+        $this->seedEvidence($this->aNodeId, EsoPolicyService::MIN_EVENTS_A);
+
+        $verdict = $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+
+        $this->assertFalse($verdict['mastered']);
+        $this->assertSame(1, $verdict['evidence']['knowledge']['remaining_events'], 'Exactly one demonstration short.');
+    }
+
+    public function test_the_same_question_answered_repeatedly_counts_once(): void
+    {
+        $this->setEstimatesOnly();
+        // Five responses, one question id — a learner re-answering a remembered item.
+        for ($i = 0; $i < 5; $i++) {
+            DB::table('eso_response_log')->insert([
+                'student_id' => $this->studentId, 'concept_id' => $this->conceptId,
+                'node_id' => $this->kNodeId, 'sub_institute_id' => $this->subInstituteId,
+                'question_id' => 777001, 'correct' => true, 'hint_used' => false,
+                'mode' => LearnerNodeState::MODE_INDEPENDENT, 'created_at' => now(),
+            ]);
+        }
+        $this->seedEvidence($this->aNodeId, EsoPolicyService::MIN_EVENTS_A);
+
+        $verdict = $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+
+        $this->assertSame(1, $verdict['evidence']['knowledge']['valid_events'], 'One distinct question is one demonstration.');
+        $this->assertFalse($verdict['mastered']);
+    }
+
+    public function test_check_of_understanding_responses_are_not_mastery_evidence(): void
+    {
+        $this->setEstimatesOnly();
+        $this->seedEvidence($this->kNodeId, 5, EsoPolicyService::RESPONSE_MODE_CFU);
+        $this->seedEvidence($this->aNodeId, 5, EsoPolicyService::RESPONSE_MODE_CFU);
+
+        $verdict = $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+
+        $this->assertSame(0, $verdict['evidence']['knowledge']['valid_events']);
+        $this->assertFalse($verdict['mastered'], 'The engine promises CFU does not count — including here.');
+    }
+
+    public function test_a_hinted_independent_attempt_does_not_satisfy_the_independent_requirement(): void
+    {
+        $this->setEstimatesOnly();
+        $this->seedEvidence($this->kNodeId, EsoPolicyService::MIN_EVENTS_K, LearnerNodeState::MODE_INDEPENDENT, hintUsed: true);
+        $this->seedEvidence($this->aNodeId, EsoPolicyService::MIN_EVENTS_A);
+
+        $verdict = $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+
+        $this->assertSame(EsoPolicyService::MIN_EVENTS_K, $verdict['evidence']['knowledge']['valid_events'], 'Hinted work is still evidence...');
+        $this->assertSame(0, $verdict['evidence']['knowledge']['independent_events'], '...but it is not INDEPENDENT evidence.');
+        $this->assertFalse($verdict['mastered']);
+    }
+
+    public function test_guided_attempts_alone_do_not_satisfy_the_independent_requirement(): void
+    {
+        $this->setEstimatesOnly();
+        $this->seedEvidence($this->kNodeId, 5, LearnerNodeState::MODE_GUIDED);
+        $this->seedEvidence($this->aNodeId, EsoPolicyService::MIN_EVENTS_A);
+
+        $verdict = $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+
+        $this->assertSame(0, $verdict['evidence']['knowledge']['independent_events']);
+        $this->assertSame(1, $verdict['evidence']['knowledge']['independent_remaining']);
+        $this->assertFalse($verdict['mastered'], 'Scaffolded success is not unaided capability.');
+    }
+
+    public function test_an_unseen_node_is_not_averaged_as_zero_mastery(): void
+    {
+        // One K node demonstrated; the concept's other K-type evidence absent.
+        $this->setMastery($this->kNodeId, 0.8);
+
+        $verdict = $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+
+        $this->assertEqualsWithDelta(0.8, $verdict['knowledge_mastery'], 0.001, 'The measured node must not be dragged down by an unmeasured one.');
+        $this->assertNull($verdict['application_mastery'], 'An entirely unassessed type is NOT_ASSESSED, not 0.0.');
+        $this->assertTrue($verdict['evidence']['application']['not_assessed']);
+        $this->assertFalse($verdict['mastered']);
+    }
+
+    public function test_a_misconception_vetoes_mastery_regardless_of_evidence_and_score(): void
+    {
+        $this->setEstimatesOnly();
+        $this->seedEvidence($this->kNodeId, 6);
+        $this->seedEvidence($this->aNodeId, 6);
+
+        LearnerNodeState::where('student_id', $this->studentId)->where('node_id', $this->aNodeId)
+            ->update(['status' => LearnerNodeState::STATUS_MISCONCEPTION_FLAGGED, 'active_misconception_id' => 4242]);
+
+        $verdict = $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+
+        $this->assertFalse($verdict['mastered']);
+        $this->assertTrue($verdict['evidence']['misconception_blocks']);
+    }
+
+    public function test_a_gated_type_with_no_authored_node_is_reported_not_applicable_not_passed(): void
+    {
+        // The S node exists but neither K nor A is gated for it here: remove A.
+        DB::table('pal_concept_nodes')->where('id', $this->aNodeId)->delete();
+        $this->setMastery($this->kNodeId, 0.9);
+        $this->seedEvidence($this->kNodeId, EsoPolicyService::MIN_EVENTS_K);
+
+        $verdict = $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+
+        $this->assertFalse($verdict['evidence']['application']['applicable'], 'An absent gate is declared, not silently satisfied.');
+        $this->assertArrayNotHasKey('meets_floor', $verdict['evidence']['application']);
+    }
+
+    public function test_evidence_within_the_recency_window_stays_fresh(): void
+    {
+        $this->setEstimatesOnly();
+        $this->seedEvidence($this->kNodeId, EsoPolicyService::MIN_EVENTS_K);
+        $this->seedEvidence($this->aNodeId, EsoPolicyService::MIN_EVENTS_A);
+        DB::table('eso_response_log')->where('student_id', $this->studentId)
+            ->update(['created_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS - 1)]);
+
+        $verdict = $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+
+        $this->assertTrue($verdict['mastered']);
+        $this->assertFalse($verdict['evidence']['stale']);
+    }
+
+    public function test_legacy_mastery_is_not_mass_invalidated_but_is_reported_as_legacy(): void
+    {
+        // A learner who reached mastery under the old rules: node status says
+        // mastered, but there is no evidence row that would satisfy the floor.
+        foreach ([$this->kNodeId, $this->aNodeId] as $nodeId) {
+            LearnerNodeState::updateOrCreate(
+                ['student_id' => $this->studentId, 'node_id' => $nodeId],
+                [
+                    'sub_institute_id' => $this->subInstituteId,
+                    'mastery_estimate' => 1.0,
+                    'attempts' => 2,
+                    'status' => LearnerNodeState::STATUS_MASTERED,
+                    'last_seen_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5),
+                    'taught_at' => now(), 'cfu_passed_at' => now(),
+                ]
+            );
+        }
+
+        $verdict = $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+
+        $this->assertTrue($verdict['mastered'], 'Shipping the floor must not retroactively revoke earned mastery.');
+        $this->assertTrue($verdict['evidence']['legacy_mastery'], 'But it is flagged, so the next check can bring it onto the new policy.');
+        $this->assertTrue($verdict['evidence']['stale'], 'And its evidence is past the recency window.');
+    }
+
+    /**
+     * The concept's derived status, read the way a real caller reads it.
+     *
+     * conceptStatusFor() is protected, so this goes through the chapter
+     * dashboard — which is exactly the surface STALE_MASTERY has to reach.
+     */
+    private function conceptStatus(): array
+    {
+        $dashboard = $this->policy->chapterDashboard($this->studentId, $this->chapterId, $this->subInstituteId);
+        $section = collect($dashboard['chapter_sections'])->firstWhere('concept_id', $this->conceptId);
+
+        $this->assertNotNull($section, 'The concept must appear in its own chapter dashboard.');
+
+        return $section;
+    }
+
+    // ── D2: the retention ladder actually advances past its first rung ──
+
+    /**
+     * Drive one full retrieval check on a node, answering every served item
+     * correctly or incorrectly. Returns the engine's own outcome.
+     */
+    private function runRetrieval(int $nodeId, bool $pass): array
+    {
+        $items = $this->policy->retrievalItems($nodeId, $this->subInstituteId);
+        $this->assertNotEmpty($items, 'The node must have servable retrieval items for this to be a real check.');
+
+        $responses = [];
+        foreach ($items as $item) {
+            $wanted = $pass;
+            $option = collect($item['options'])->first(function ($o) use ($wanted) {
+                $isCorrect = (int) DB::table('answer_master')->where('id', $o['id'])->value('correct_answer') === 1;
+
+                return $isCorrect === $wanted;
+            });
+            $responses[] = ['answer_master_id' => $option['id']];
+        }
+
+        return $this->policy->retrievalCheck($this->studentId, $nodeId, $this->conceptId, $this->subInstituteId, $responses);
+    }
+
+    public function test_a_retained_node_remains_eligible_for_its_next_scheduled_retrieval(): void
+    {
+        // Rung 1: mastered and due.
+        $state = $this->setRetrievalDue($this->kNodeId);
+        $this->setMastery($this->aNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+
+        $first = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+        $this->assertSame('retrieval_due', $first['action'], 'A mastered node must become due for its first retrieval.');
+
+        $pass = $this->runRetrieval($this->kNodeId, pass: true);
+        $this->assertSame('retained', $pass['action']);
+
+        $state->refresh();
+        $this->assertSame(LearnerNodeState::STATUS_RETAINED, $state->status, 'Passing a check retains the node.');
+        $this->assertSame(1, (int) $state->retention_stage, 'And advances the ladder.');
+        $this->assertNotNull($state->next_review_at, 'The next rung is scheduled...');
+
+        // The defect this test exists for: dueForRetrieval() and nextAction()
+        // both filtered on STATUS_MASTERED only, so a RETAINED node never came
+        // due again and rungs 2..5 were scheduled but never served.
+        $state->next_review_at = now()->subMinutes(5);
+        $state->save();
+
+        $this->assertTrue(
+            $this->policy->dueForRetrieval($this->studentId, $this->subInstituteId)->contains('node_id', $this->kNodeId),
+            'A RETAINED node whose next rung is due must be eligible for retrieval.'
+        );
+
+        $second = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+        $this->assertSame('retrieval_due', $second['action'], 'The second retrieval must actually be served.');
+        $this->assertSame($this->kNodeId, $second['node_id']);
+    }
+
+    public function test_passing_successive_retrievals_walks_the_ladder_upward(): void
+    {
+        $state = $this->setRetrievalDue($this->kNodeId);
+        $this->setMastery($this->aNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+
+        // Walk three rungs: stage 0 -> 1 -> 2 -> 3, scheduled at 7, 30 and 60 days.
+        foreach ([1, 2, 3] as $expectedStage) {
+            $state->next_review_at = now()->subMinutes(5);
+            $state->save();
+
+            $outcome = $this->runRetrieval($this->kNodeId, pass: true);
+            $this->assertSame('retained', $outcome['action']);
+
+            $state->refresh();
+            $this->assertSame($expectedStage, (int) $state->retention_stage);
+            $this->assertSame(
+                now()->addDays(EsoPolicyService::RETENTION_LADDER_DAYS[$expectedStage])->toDateString(),
+                $state->next_review_at->toDateString(),
+                'Each rung schedules the next interval from the ladder, unchanged.'
+            );
+        }
+    }
+
+    public function test_a_failed_retrieval_still_resets_to_learning_and_keeps_its_evidence(): void
+    {
+        $state = $this->setRetrievalDue($this->kNodeId);
+        $this->setMastery($this->aNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        $this->runRetrieval($this->kNodeId, pass: true);
+
+        $evidenceBefore = DB::table('eso_response_log')->where('student_id', $this->studentId)->count();
+
+        $state->refresh();
+        $state->next_review_at = now()->subMinutes(5);
+        $state->save();
+
+        $outcome = $this->runRetrieval($this->kNodeId, pass: false);
+        $this->assertSame('reloop_node', $outcome['action']);
+
+        $state->refresh();
+        $this->assertSame(LearnerNodeState::STATUS_LEARNING, $state->status);
+        $this->assertSame(0, (int) $state->retention_stage, 'Existing reset-on-failure behaviour is unchanged.');
+
+        $this->assertGreaterThan(
+            $evidenceBefore,
+            DB::table('eso_response_log')->where('student_id', $this->studentId)->count(),
+            'A failed check appends evidence; it never deletes or rewrites history.'
+        );
+    }
+
+    // ── D2: STALE_MASTERY as a derived read state ───────────────────────
+
+    /**
+     * A mastered concept with NO active retention schedule whose evidence is
+     * `$days` old — the second of D2's two windows (legacy mastery, completed
+     * ladder, never scheduled), where recency governs.
+     */
+    private function masterWithEvidenceAged(int $days): void
+    {
+        $this->setMastery($this->kNodeId, 1.0, LearnerNodeState::STATUS_MASTERED);
+        $this->setMastery($this->aNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        DB::table('eso_response_log')->where('student_id', $this->studentId)
+            ->update(['created_at' => now()->subDays($days)]);
+        LearnerNodeState::forStudent($this->studentId)
+            ->update(['last_seen_at' => now()->subDays($days), 'next_review_at' => null]);
+    }
+
+    /** A mastered concept sitting on an ACTIVE ladder rung, evidence `$days` old. */
+    private function masterOnActiveRung(int $stage, int $days): void
+    {
+        $this->setMastery($this->kNodeId, 1.0, LearnerNodeState::STATUS_MASTERED);
+        $this->setMastery($this->aNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        DB::table('eso_response_log')->where('student_id', $this->studentId)
+            ->update(['created_at' => now()->subDays($days)]);
+        LearnerNodeState::forStudent($this->studentId)->update([
+            'last_seen_at' => now()->subDays($days),
+            'retention_stage' => $stage,
+            // Still in the future: the rung has not come due yet.
+            'next_review_at' => now()->addDays(5),
+        ]);
+    }
+
+    public function test_mastery_inside_the_recency_window_is_not_stale(): void
+    {
+        $this->masterWithEvidenceAged(EsoPolicyService::EVIDENCE_RECENCY_DAYS - 1);
+
+        $status = $this->conceptStatus();
+
+        $this->assertSame('mastered', $status['status']);
+        $this->assertFalse($status['stale']);
+    }
+
+    public function test_mastery_beyond_the_recency_window_is_reported_as_stale_mastery(): void
+    {
+        $this->masterWithEvidenceAged(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5);
+
+        $status = $this->conceptStatus();
+
+        $this->assertSame(EsoPolicyService::CONCEPT_STATUS_STALE_MASTERY, $status['status']);
+        $this->assertTrue($status['stale']);
+        // Mastery is NOT revoked — the learner is still historically mastered.
+        $this->assertTrue($status['mastered'], 'Stale means "verify", not "you never learned this".');
+    }
+
+    public function test_detecting_staleness_writes_no_database_state_and_deletes_no_evidence(): void
+    {
+        $this->masterWithEvidenceAged(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5);
+
+        $statesBefore = LearnerNodeState::forStudent($this->studentId)->get()->map->only(['node_id', 'status', 'mastery_estimate', 'retention_stage'])->toArray();
+        $evidenceBefore = DB::table('eso_response_log')->where('student_id', $this->studentId)->count();
+        $decisionsBefore = DecisionLog::forStudent($this->studentId)->count();
+
+        // Read it several times — a read must never mutate.
+        $this->conceptStatus();
+        $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+        $this->conceptStatus();
+
+        $this->assertEquals($statesBefore, LearnerNodeState::forStudent($this->studentId)->get()->map->only(['node_id', 'status', 'mastery_estimate', 'retention_stage'])->toArray());
+        $this->assertSame($evidenceBefore, DB::table('eso_response_log')->where('student_id', $this->studentId)->count());
+        $this->assertSame($decisionsBefore, DecisionLog::forStudent($this->studentId)->count(), 'A silent read logs no decision.');
+    }
+
+    public function test_a_due_stale_concept_routes_to_retrieval_not_to_diagnosis_or_remediation(): void
+    {
+        $state = $this->setRetrievalDue($this->kNodeId, daysAgo: EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5);
+        $this->setMastery($this->aNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertSame('retrieval_due', $action['action']);
+        $this->assertSame('D5', $action['rule_fired'], 'Stale mastery verifies; it does not re-diagnose or re-teach.');
+        $this->assertNotSame('diagnostic', $action['action']);
+        $this->assertNotSame('teach', $action['action']);
+        $this->assertNotSame('mastered_stop_practice', $action['action']);
+        $this->assertSame($state->node_id, $action['node_id']);
+    }
+
+    public function test_a_due_retrieval_with_no_authored_item_reports_content_unavailable_and_keeps_mastery(): void
+    {
+        // Deliberately no makeServableQuestion() for this node.
+        $state = LearnerNodeState::updateOrCreate(
+            ['student_id' => $this->studentId, 'node_id' => $this->kNodeId],
+            [
+                'sub_institute_id' => $this->subInstituteId,
+                'mastery_estimate' => 1.0, 'attempts' => 4, 'status' => LearnerNodeState::STATUS_MASTERED,
+                'retention_stage' => 1, 'last_seen_at' => now(), 'next_review_at' => now()->subMinutes(5),
+                'taught_at' => now(), 'cfu_passed_at' => now(),
+            ]
+        );
+        $this->setMastery($this->aNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertSame('content_unavailable', $action['action']);
+        $this->assertSame('retrieval_item', $action['needed']);
+        $this->assertTrue($action['mastery_retained'], 'A learner must not lose mastery because WE have no content.');
+
+        $state->refresh();
+        $this->assertSame(LearnerNodeState::STATUS_MASTERED, $state->status, 'Nothing is revoked.');
+        $this->assertSame(1, (int) $state->retention_stage, 'And the ladder is not advanced past an unserved check.');
+    }
+
+    public function test_passing_a_retrieval_clears_stale_and_failing_returns_to_learning(): void
+    {
+        // Start stale in the no-schedule window, then let a check resolve it.
+        $this->masterWithEvidenceAged(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5);
+        $this->makeServableQuestion($this->kNodeId);
+        $state = LearnerNodeState::forStudent($this->studentId)->where('node_id', $this->kNodeId)->first();
+        $this->assertSame(EsoPolicyService::CONCEPT_STATUS_STALE_MASTERY, $this->conceptStatus()['status']);
+
+        $state->next_review_at = now()->subMinutes(5);
+        $state->save();
+
+        $this->runRetrieval($this->kNodeId, pass: true);
+        $this->assertFalse($this->conceptStatus()['stale'], 'A passed check refreshes the evidence and clears staleness.');
+
+        // And a failure follows the existing D5 path, unchanged.
+        $state->refresh();
+        $state->next_review_at = now()->subMinutes(5);
+        $state->save();
+        $this->runRetrieval($this->kNodeId, pass: false);
+
+        $state->refresh();
+        $this->assertSame(LearnerNodeState::STATUS_LEARNING, $state->status);
+    }
+
+    // ── D2 Option C: two windows ────────────────────────────────────────
+
+    /**
+     * @dataProvider activeLadderRungs
+     *
+     * The ladder governs a node with an active schedule. Rungs 4 and 5 are 60
+     * and 180 days — both LONGER than the 30-day recency window — so applying
+     * recency here would mark them stale at day 31, pull the check forward and
+     * make those rungs unreachable. This is the case Option C exists for.
+     */
+    public function test_an_actively_scheduled_rung_is_governed_by_the_ladder_not_by_recency(int $stage, int $evidenceAgeDays): void
+    {
+        $this->masterOnActiveRung($stage, $evidenceAgeDays);
+
+        $status = $this->conceptStatus();
+
+        $this->assertSame('mastered', $status['status'], "Rung {$stage} must not be reported stale while its schedule is active.");
+        $this->assertFalse($status['stale']);
+        $this->assertTrue($status['mastered']);
+    }
+
+    public static function activeLadderRungs(): array
+    {
+        return [
+            'rung 2 — Day 7'    => [1, 7],
+            'rung 3 — Day 30'   => [2, 30],
+            'rung 4 — Day 60'   => [3, 60],
+            'rung 5 — Day 180'  => [4, 180],
+        ];
+    }
+
+    public function test_later_ladder_rungs_remain_reachable_and_are_not_capped_at_the_recency_window(): void
+    {
+        $state = $this->setRetrievalDue($this->kNodeId);
+        $this->setMastery($this->aNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+
+        // Walk to rung 4 (Day 60) and rung 5 (Day 180) — the two the recency
+        // window would otherwise have made unreachable.
+        foreach ([1, 2, 3, 4] as $expectedStage) {
+            $state->next_review_at = now()->subMinutes(5);
+            $state->save();
+
+            $this->runRetrieval($this->kNodeId, pass: true);
+            $state->refresh();
+
+            $this->assertSame($expectedStage, (int) $state->retention_stage);
+            $this->assertSame(
+                now()->addDays(EsoPolicyService::RETENTION_LADDER_DAYS[$expectedStage])->toDateString(),
+                $state->next_review_at->toDateString()
+            );
+        }
+
+        $this->assertSame(180, EsoPolicyService::RETENTION_LADDER_DAYS[4], 'Rung 5 is the 180-day rung and was reached.');
+    }
+
+    public function test_mastery_with_no_active_schedule_becomes_stale_after_the_recency_window(): void
+    {
+        $this->masterWithEvidenceAged(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 1);
+
+        $this->assertSame(EsoPolicyService::CONCEPT_STATUS_STALE_MASTERY, $this->conceptStatus()['status']);
+    }
+
+    public function test_stale_mastery_stays_settled_for_chapter_progression(): void
+    {
+        $this->masterWithEvidenceAged(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5);
+        [$nextId] = $this->makeReadyConcept('A Later Concept');
+
+        $dashboard = $this->policy->chapterDashboard($this->studentId, $this->chapterId, $this->subInstituteId);
+
+        // A concept awaiting verification must not reopen chapter progression
+        // and drag the learner backwards through completed content.
+        $this->assertSame(
+            $nextId,
+            $dashboard['current_concept_id'],
+            'A stale concept is settled: the learner moves on, and verification reaches them separately.'
+        );
+    }
+
+    public function test_a_completed_ladder_keeps_its_existing_behaviour(): void
+    {
+        $lastStage = count(EsoPolicyService::RETENTION_LADDER_DAYS);
+        $this->setMastery($this->kNodeId, 1.0, LearnerNodeState::STATUS_RETAINED);
+        $this->setMastery($this->aNodeId, 0.9, LearnerNodeState::STATUS_RETAINED);
+        LearnerNodeState::forStudent($this->studentId)
+            ->update(['retention_stage' => $lastStage, 'next_review_at' => null]);
+
+        // Unchanged and deliberately not asserted as stale-or-not: whether a
+        // finished ladder should ever go stale is an OPEN policy decision
+        // (ADR-001 §13). What must hold is that nothing schedules, revokes or
+        // re-serves anything on its own.
+        $this->assertSame(
+            0,
+            $this->policy->dueForRetrieval($this->studentId, $this->subInstituteId)->count(),
+            'A completed ladder schedules nothing further.'
+        );
+
+        $states = LearnerNodeState::forStudent($this->studentId)->get();
+        $this->assertTrue($states->every(fn ($s) => $s->next_review_at === null));
+        $this->assertTrue($states->every(fn ($s) => $s->status === LearnerNodeState::STATUS_RETAINED), 'And revokes nothing.');
+    }
+
+    // ── D2/D3 interaction: stale must not bypass higher-priority rules ──
+
+    public function test_an_active_misconception_still_outranks_a_due_stale_retrieval(): void
+    {
+        $this->setRetrievalDue($this->kNodeId, daysAgo: EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5);
+        $flagged = $this->setMastery($this->aNodeId, 0.9);
+        $flagged->status = LearnerNodeState::STATUS_MISCONCEPTION_FLAGGED;
+        $flagged->active_misconception_id = 4242;
+        $flagged->save();
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertSame('serve_contrast_pair', $action['action'], 'D3 precedence is unchanged by D2.');
+    }
+
+    public function test_a_prerequisite_gap_still_outranks_a_due_stale_retrieval(): void
+    {
+        [$prereqConceptId, $prereqK, $prereqA] = $this->makePrerequisiteOfMainConcept();
+        $this->setMastery($prereqK, 0.1);
+        $this->setMastery($prereqA, 0.1);
+
+        $this->setRetrievalDue($this->kNodeId, daysAgo: EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5);
+        $this->setMastery($this->aNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertSame('remediate_prerequisite', $action['action'], 'D2 prerequisite precedence is unchanged.');
+        $this->assertSame($prereqConceptId, $action['prerequisite_concept_id']);
+    }
+
+    // ── D3: precedence, locked as regression (no production change) ─────
+    //
+    // These tests pin the CURRENT nextAction() ordering. They exist so a future
+    // refactor cannot silently reorder the rules, and so the reasoning behind
+    // "prerequisite above misconception" survives in executable form rather
+    // than only in a document. See ADR-002.
+
+    /** Flag a node as holding an active misconception. */
+    private function flagMisconception(int $nodeId, int $misconceptionId = 4242): LearnerNodeState
+    {
+        $state = $this->setMastery($nodeId, 0.9);
+        $state->status = LearnerNodeState::STATUS_MISCONCEPTION_FLAGGED;
+        $state->active_misconception_id = $misconceptionId;
+        $state->save();
+
+        return $state;
+    }
+
+    public function test_d3_scenario_a_not_assessed_outranks_both_prerequisite_gap_and_misconception(): void
+    {
+        // A weak prerequisite, and a misconception flagged on the PREREQUISITE's
+        // own node. The target concept itself has no learner state at all.
+        //
+        // Note the structural fact this encodes: a misconception cannot exist on
+        // a concept with no state, because flagging one requires an attempt,
+        // which requires the concept to have been served.
+        [, $prereqK, $prereqA] = $this->makePrerequisiteOfMainConcept();
+        $this->setMastery($prereqK, 0.1);
+        $this->setMastery($prereqA, 0.1);
+        $this->flagMisconception($prereqK);
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertSame('diagnostic', $action['action'], 'D1 entry runs before the D2 gate and before the node loop.');
+        $this->assertSame('D1', $action['rule_fired']);
+        $this->assertNotSame('practice', $action['action'], 'No practice is served before any evidence exists.');
+    }
+
+    public function test_d3_scenario_b_prerequisite_wins_while_misconception_and_stale_mastery_persist(): void
+    {
+        [$prereqConceptId, $prereqK, $prereqA] = $this->makePrerequisiteOfMainConcept();
+        $this->setMastery($prereqK, 0.1);
+        $this->setMastery($prereqA, 0.1);
+
+        // Concept under test: misconception on one node, and the concept's
+        // evidence is old with no active schedule (the stale window).
+        $flagged = $this->flagMisconception($this->aNodeId);
+        $this->setMastery($this->kNodeId, 1.0, LearnerNodeState::STATUS_MASTERED);
+        LearnerNodeState::forStudent($this->studentId)->whereIn('node_id', [$this->kNodeId, $this->aNodeId])
+            ->update(['last_seen_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5), 'next_review_at' => null]);
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertSame('remediate_prerequisite', $action['action']);
+        $this->assertSame($prereqConceptId, $action['prerequisite_concept_id']);
+
+        // Nothing cross-resolves: both other states survive untouched.
+        $flagged->refresh();
+        $this->assertSame(LearnerNodeState::STATUS_MISCONCEPTION_FLAGGED, $flagged->status, 'The misconception persists behind the gate.');
+        $this->assertSame(4242, (int) $flagged->active_misconception_id);
+
+        $verdict = $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+        $this->assertTrue($verdict['evidence']['misconception_blocks'], 'And still vetoes mastery independently.');
+    }
+
+    public function test_d3_scenario_c_misconception_wins_over_a_knowledge_gap_and_still_vetoes_a_met_threshold(): void
+    {
+        // Accuracy is at mastery level on both gated types, with the evidence
+        // floor satisfied — yet a misconception is active.
+        $this->setEstimatesOnly();
+        $this->seedEvidence($this->kNodeId, EsoPolicyService::MIN_EVENTS_K);
+        $this->seedEvidence($this->aNodeId, EsoPolicyService::MIN_EVENTS_A);
+        $flagged = LearnerNodeState::forStudent($this->studentId)->where('node_id', $this->aNodeId)->first();
+        $flagged->status = LearnerNodeState::STATUS_MISCONCEPTION_FLAGGED;
+        $flagged->active_misconception_id = 4242;
+        $flagged->save();
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+        $this->assertSame('serve_contrast_pair', $action['action'], 'The misconception is resolved before more practice is served.');
+
+        $verdict = $this->policy->masteryVerdict($this->studentId, $this->conceptId, $this->subInstituteId, silent: true);
+        $this->assertFalse($verdict['mastered'], 'Raw accuracy never clears a misconception.');
+        $this->assertGreaterThanOrEqual(EsoPolicyService::KNOWLEDGE_MASTERY_THRESHOLD, $verdict['knowledge_mastery']);
+    }
+
+    public function test_d3_scenario_d_prerequisite_gap_outranks_misconception_and_serves_no_practice(): void
+    {
+        [$prereqConceptId, $prereqK, $prereqA] = $this->makePrerequisiteOfMainConcept();
+        $this->setMastery($prereqK, 0.1);
+        $this->setMastery($prereqA, 0.1);
+
+        $flagged = $this->flagMisconception($this->aNodeId);
+        $this->setMastery($this->kNodeId, 0.5);
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertSame('remediate_prerequisite', $action['action']);
+        $this->assertSame($prereqConceptId, $action['prerequisite_concept_id']);
+        // The blocked concept is not practised, which is precisely why the
+        // waiting misconception cannot be reinforced while it waits.
+        $this->assertNotSame('practice', $action['action']);
+        $this->assertNotSame('teach', $action['action']);
+        $this->assertNotSame('serve_contrast_pair', $action['action']);
+
+        $flagged->refresh();
+        $this->assertSame(LearnerNodeState::STATUS_MISCONCEPTION_FLAGGED, $flagged->status, 'The flag is node-local and stays put.');
+    }
+
+    public function test_d3_scenario_e_misconception_correction_is_immediate_and_bypasses_precedence_entirely(): void
+    {
+        // A weak prerequisite is in place, so nextAction() precedence would
+        // route to prerequisite remediation...
+        [, $prereqK, $prereqA] = $this->makePrerequisiteOfMainConcept();
+        $this->setMastery($prereqK, 0.1);
+        $this->setMastery($prereqA, 0.1);
+
+        $misconceptionId = (int) DB::table('pal_misconception_library')->insertGetId([
+            'tag' => 'eso_d3_immediate_' . random_int(1000, 9999),
+            'concept_ref_id' => $this->conceptId,
+            'sub_institute_id' => $this->subInstituteId,
+            'description' => 'A mix-up corrected on the spot.',
+            'quality_status' => 'approved',
+            'priority_level' => 1,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+        [, , $wrongId] = $this->makeCfuQuestion($this->kNodeId, $misconceptionId);
+        $this->setMastery($this->kNodeId, 0.5);
+        $this->setMastery($this->aNodeId, 0.4);
+
+        // ...but recordAttempt() returns the corrective DIRECTLY.
+        $result = $this->policy->recordAttempt(
+            $this->studentId, $this->kNodeId, $this->conceptId, $this->subInstituteId,
+            ['answer_master_id' => $wrongId]
+        );
+
+        $this->assertSame('serve_contrast_pair', $result['action'], 'The correction is served at the moment of error.');
+        $this->assertSame('D3', $result['rule_fired']);
+        $this->assertSame($misconceptionId, $result['misconception_id']);
+
+        // Proof that precedence did not gate it: the very next resolution DOES
+        // route to the prerequisite. Same learner, same instant — the only
+        // difference is which path was taken.
+        $next = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+        $this->assertSame(
+            'remediate_prerequisite',
+            $next['action'],
+            'nextAction() precedence would have blocked it — recordAttempt() never consults it.'
+        );
+    }
+
     // ── Gamification: ESO outcomes feed the EXISTING badge system ───────
 
     public function test_reaching_d4_mastery_awards_the_adaptive_learning_badge_from_the_existing_gamification_system(): void
@@ -1879,6 +2716,9 @@ class EsoPolicyServiceTest extends TestCase
 
     public function test_next_action_surfaces_a_due_retrieval_check_instead_of_skipping_past_a_mastered_node(): void
     {
+        // The due node needs a servable item, or the engine correctly resolves
+        // to `content_unavailable` rather than promising an undeliverable check.
+        $this->makeServableQuestion($this->kNodeId);
         $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
         LearnerNodeState::where('student_id', $this->studentId)->where('node_id', $this->kNodeId)
             ->update(['next_review_at' => now()->subDay()]); // overdue
@@ -1921,6 +2761,484 @@ class EsoPolicyServiceTest extends TestCase
         $this->assertSame('retained', $result['action']);
         $this->assertSame(LearnerNodeState::STATUS_RETAINED, $result['status']);
     }
+
+    // ── D2 §1 — retention ladder bug regression (already fixed in D1) ─────
+
+    /**
+     * The bug as reported: a MASTERED node's first retrieval runs, the node
+     * moves to RETAINED, but because nextAction()/dueForRetrieval() only
+     * filtered on STATUS_MASTERED the next rung was scheduled and silently
+     * never served. This test exercises the second rung end-to-end — a
+     * RETAINED node whose next_review_at has come due must reach retrieval_due.
+     */
+    public function test_a_retained_node_with_a_due_next_review_is_served_again_so_the_ladder_can_advance(): void
+    {
+        $state = $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        // The retrieval check needs an MCQ to score, so provide one.
+        $this->makeServableQuestion($this->kNodeId);
+        // First retrieval: stage 0 -> 1, schedule next at the stage-1 rung (7 days).
+        $this->policy->retrievalCheck($this->studentId, $this->kNodeId, $this->conceptId, $this->subInstituteId, [
+            ['answer_master_id' => $this->makeAnswer(true)],
+        ]);
+
+        $state->refresh();
+        $this->assertSame(LearnerNodeState::STATUS_RETAINED, $state->status, 'PASS moves STATUS_MASTERED -> STATUS_RETAINED.');
+        $this->assertNotNull($state->next_review_at, 'The next rung is scheduled at this point.');
+
+        // Force the next review to be overdue, then assert the resolver surfaces it.
+        LearnerNodeState::where('student_id', $this->studentId)->where('node_id', $this->kNodeId)
+            ->update(['next_review_at' => now()->subDay()]);
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertSame('retrieval_due', $action['action'], 'A RETAINED node whose next rung is due must reach retrieval_due, not be silently skipped.');
+        $this->assertSame($this->kNodeId, $action['node_id']);
+        $this->assertSame('D5', $action['rule_fired']);
+    }
+
+    /**
+     * The full ladder traversal: stage 0 -> 1 -> 2, each rung reachable and
+     * each PASS climbing one rung. Before the fix only the first rung was
+     * reachable because retained nodes were excluded from dueForRetrieval().
+     */
+    public function test_subsequent_ladder_rungs_are_reachable_when_each_passed_check_advances_one_stage(): void
+    {
+        $state = $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        $this->makeServableQuestion($this->kNodeId);
+
+        $stages = [];
+        for ($i = 0; $i < 3; $i++) {
+            $this->policy->retrievalCheck($this->studentId, $this->kNodeId, $this->conceptId, $this->subInstituteId, [
+                ['answer_master_id' => $this->makeAnswer(true)],
+            ]);
+
+            $state->refresh();
+            $stages[] = (int) $state->retention_stage;
+
+            // Force the next review to be due so a follow-up nextAction() surfaces it.
+            LearnerNodeState::where('student_id', $this->studentId)->where('node_id', $this->kNodeId)
+                ->update(['next_review_at' => now()->subDay()]);
+
+            $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+            $this->assertSame('retrieval_due', $action['action'], "Rung {$i} must remain reachable.");
+        }
+
+        $this->assertSame([1, 2, 3], $stages, 'Each PASS climbs exactly one rung; the ladder stays reachable.');
+    }
+
+    /**
+     * After the first scheduled retrieval PASS, dueForRetrieval() must continue
+     * to include the node on its NEXT due date. The bug was an empty result
+     * set the moment a node entered RETAINED status.
+     */
+    public function test_due_for_retrieval_continues_to_include_a_retained_node_when_its_next_rung_is_due(): void
+    {
+        $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        $this->policy->retrievalCheck($this->studentId, $this->kNodeId, $this->conceptId, $this->subInstituteId, [
+            ['answer_master_id' => $this->makeAnswer(true)],
+        ]);
+
+        LearnerNodeState::where('student_id', $this->studentId)->where('node_id', $this->kNodeId)
+            ->update(['next_review_at' => now()->subDay()]);
+
+        $due = $this->policy->dueForRetrieval($this->studentId, $this->subInstituteId);
+
+        $this->assertTrue(
+            $due->contains(fn (LearnerNodeState $s) => (int) $s->node_id === $this->kNodeId),
+            'A RETAINED node with next_review_at <= now must be in the due-for-retrieval set.'
+        );
+    }
+
+    /**
+     * A failed retrieval check must continue to drop the node back to LEARNING
+     * and reset the ladder — the retention ladder bug fix does NOT change the
+     * existing failure behaviour (D2 §1 / 8).
+     */
+    public function test_a_failed_retrieval_check_after_a_retained_pass_still_resets_to_learning(): void
+    {
+        $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        $this->makeServableQuestion($this->kNodeId);
+        // First check: PASS -> RETAINED, stage 1.
+        $this->policy->retrievalCheck($this->studentId, $this->kNodeId, $this->conceptId, $this->subInstituteId, [
+            ['answer_master_id' => $this->makeAnswer(true)],
+        ]);
+
+        // Second check: FAIL -> re-loop.
+        $result = $this->policy->retrievalCheck($this->studentId, $this->kNodeId, $this->conceptId, $this->subInstituteId, [
+            ['answer_master_id' => $this->makeAnswer(false)],
+        ]);
+
+        $this->assertSame('reloop_node', $result['action']);
+        $state = LearnerNodeState::where('student_id', $this->studentId)->where('node_id', $this->kNodeId)->first();
+        $this->assertSame(LearnerNodeState::STATUS_LEARNING, $state->status);
+        $this->assertSame(0, (int) $state->retention_stage);
+    }
+
+    /**
+     * Existing evidence rows must never be deleted or rewritten by retrieval
+     * PASS or FAIL — historical mastery is append-only and the retention path
+     * only adds (or refreshes) state, never rewrites the ledger.
+     */
+    public function test_retrieval_pass_and_fail_do_not_delete_or_rewrite_historical_evidence(): void
+    {
+        $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        $evidenceBefore = DB::table('eso_response_log')
+            ->where('student_id', $this->studentId)
+            ->where('node_id', $this->kNodeId)
+            ->count();
+
+        $this->policy->retrievalCheck($this->studentId, $this->kNodeId, $this->conceptId, $this->subInstituteId, [
+            ['answer_master_id' => $this->makeAnswer(true)],
+        ]);
+
+        $afterPass = DB::table('eso_response_log')
+            ->where('student_id', $this->studentId)
+            ->where('node_id', $this->kNodeId)
+            ->count();
+        $this->assertGreaterThan($evidenceBefore, $afterPass, 'A retrieval check APPENDS response rows; it never deletes.');
+
+        $nowFail = DB::table('eso_response_log')
+            ->where('student_id', $this->studentId)
+            ->where('node_id', $this->kNodeId)
+            ->count();
+
+        $this->policy->retrievalCheck($this->studentId, $this->kNodeId, $this->conceptId, $this->subInstituteId, [
+            ['answer_master_id' => $this->makeAnswer(false)],
+        ]);
+
+        $afterFail = DB::table('eso_response_log')
+            ->where('student_id', $this->studentId)
+            ->where('node_id', $this->kNodeId)
+            ->count();
+        $this->assertGreaterThan($nowFail, $afterFail, 'A FAILED retrieval check also appends, not rewrites.');
+    }
+
+    // ── D2 §2 / §3 — STALE_MASTERY as a derived read state ───────────────
+
+    /**
+     * Mastered within the recency window = NOT stale. The D4 verdict already
+     * reports `evidence.stale = false`; nextAction() must respect that and
+     * fall through to the ordinary mastered path, not the stale route.
+     */
+    public function test_mastery_within_the_recency_window_is_not_stale_and_does_not_route_to_retrieval(): void
+    {
+        $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        $this->setMastery($this->aNodeId, 0.85, LearnerNodeState::STATUS_MASTERED);
+        // last_seen_at is "now" via setMastery(); no staleness.
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertNotSame(
+            'retrieval_due',
+            $action['action'],
+            'Fresh mastery must not be re-routed to retrieval just because the node is mastered.'
+        );
+        $this->assertNotSame(
+            'content_unavailable',
+            $action['action'],
+            'Fresh mastery must not be misreported as stale.'
+        );
+    }
+
+    /**
+     * Mastered + evidence outside the recency window = STALE_MASTERY. The
+     * derived state must show up on the next nextAction() call without ever
+     * having written the database — i.e. via the conceptStatusFor() / nextAction()
+     * read paths, not via a status mutation.
+     */
+    public function test_mastery_beyond_the_recency_window_is_stale_mastery_and_routes_to_retrieval_due(): void
+    {
+        $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        $this->setMastery($this->aNodeId, 0.85, LearnerNodeState::STATUS_MASTERED);
+
+        // Push the response-log evidence past the recency window. setMastery()
+        // seeds fresh rows for the floor; pushing them back is what actually
+        // makes the concept stale, since the staleness anchor is the response
+        // log's created_at (not last_seen_at) — see isConceptStale().
+        DB::table('eso_response_log')->where('student_id', $this->studentId)
+            ->update(['created_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 1)]);
+        LearnerNodeState::where('student_id', $this->studentId)
+            ->update(['last_seen_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 1)]);
+
+        // Provide retrieval content so we route to retrieval_due, not content_unavailable.
+        $this->makeServableQuestion($this->kNodeId);
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertSame('retrieval_due', $action['action'], 'Stale mastery must route to retrieval_due, not silence or verdict.');
+        $this->assertSame('D2', $action['rule_fired'], 'The stale route is a D2 action, not D5 (the schedule is not what fired).');
+        $this->assertSame(EsoPolicyService::CONCEPT_STATUS_STALE_MASTERY, $action['derived_status']);
+
+        // CRITICAL: nothing on learner_node_state was written by the read.
+        $kState = LearnerNodeState::where('student_id', $this->studentId)->where('node_id', $this->kNodeId)->first();
+        $this->assertSame(LearnerNodeState::STATUS_MASTERED, $kState->status, 'A read MUST NOT silently downgrade a mastered node.');
+        $this->assertFalse($kState->wasRecentlyCreated, 'A read MUST NOT create a new row either.');
+    }
+
+    /**
+     * STALE_MASTERY is reported on the concept status surface (teacher/admin)
+     * without affecting the underlying mastery: status='mastered' historically,
+     * status='stale_mastery' derived, mastered=true preserved.
+     */
+    public function test_stale_mastery_is_reported_on_the_concept_status_surface_without_replacing_mastered(): void
+    {
+        $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        $this->setMastery($this->aNodeId, 0.85, LearnerNodeState::STATUS_MASTERED);
+        DB::table('eso_response_log')->where('student_id', $this->studentId)
+            ->update(['created_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5)]);
+        LearnerNodeState::where('student_id', $this->studentId)
+            ->update(['last_seen_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5)]);
+
+        // The chapter dashboard reads conceptStatusFor() for every concept.
+        $dashboard = $this->policy->chapterDashboard($this->studentId, $this->chapterId, $this->subInstituteId);
+        $sections = collect($dashboard['chapter_sections']);
+        $row = $sections->firstWhere('concept_id', $this->conceptId);
+
+        $this->assertSame(EsoPolicyService::CONCEPT_STATUS_STALE_MASTERY, $row['status']);
+    }
+
+    /**
+     * Stale mastery must NOT route to initial diagnosis / teach / remediation.
+     * The next step is verification only. We force the situation and confirm
+     * no path is reached that would imply "they never learned this".
+     */
+    public function test_stale_mastery_does_not_route_to_initial_diagnosis_or_teach(): void
+    {
+        $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        $this->setMastery($this->aNodeId, 0.85, LearnerNodeState::STATUS_MASTERED);
+        DB::table('eso_response_log')->where('student_id', $this->studentId)
+            ->update(['created_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 1)]);
+        LearnerNodeState::where('student_id', $this->studentId)
+            ->update(['last_seen_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 1)]);
+        // Deliberately no servable retrieval items: must fall through to
+        // content_unavailable, NOT to teach/remediate/diagnostic.
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertNotSame('diagnostic', $action['action']);
+        $this->assertNotSame('teach', $action['action']);
+        $this->assertNotSame('remediate_prerequisite', $action['action']);
+        $this->assertNotSame('check_understanding', $action['action']);
+        $this->assertSame('content_unavailable', $action['action']);
+        $this->assertTrue($action['mastery_retained'], 'Content gap is ours to fix; mastery is NOT revoked.');
+    }
+
+    /**
+     * No servable retrieval content + stale mastery = content_unavailable,
+     * not revocation. Mastery_retained must be true.
+     */
+    public function test_stale_mastery_with_no_retrieval_content_routes_to_content_unavailable_and_keeps_mastery(): void
+    {
+        $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        $this->setMastery($this->aNodeId, 0.85, LearnerNodeState::STATUS_MASTERED);
+        DB::table('eso_response_log')->where('student_id', $this->studentId)
+            ->update(['created_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 1)]);
+        LearnerNodeState::where('student_id', $this->studentId)
+            ->update(['last_seen_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 1)]);
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertSame('content_unavailable', $action['action']);
+        $this->assertTrue($action['mastery_retained']);
+        $this->assertSame('D2', $action['rule_fired']);
+
+        // No revocation: status still mastered on the underlying row.
+        $kState = LearnerNodeState::where('student_id', $this->studentId)->where('node_id', $this->kNodeId)->first();
+        $this->assertSame(LearnerNodeState::STATUS_MASTERED, $kState->status);
+    }
+
+    /**
+     * Reading stale mastery must NOT delete evidence. Pre-stale evidence row
+     * count must equal post-stale evidence row count, regardless of the read
+     * path (nextAction or chapterDashboard).
+     */
+    public function test_stale_mastery_read_does_not_delete_evidence(): void
+    {
+        $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        $this->setMastery($this->aNodeId, 0.85, LearnerNodeState::STATUS_MASTERED);
+        DB::table('eso_response_log')->where('student_id', $this->studentId)
+            ->update(['created_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 1)]);
+        LearnerNodeState::where('student_id', $this->studentId)
+            ->update(['last_seen_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 1)]);
+
+        $before = DB::table('eso_response_log')->where('student_id', $this->studentId)->count();
+
+        $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+        $this->policy->chapterDashboard($this->studentId, $this->chapterId, $this->subInstituteId);
+
+        $after = DB::table('eso_response_log')->where('student_id', $this->studentId)->count();
+        $this->assertSame($before, $after, 'Reading staleness must leave evidence rows untouched.');
+    }
+
+    // ── D2 §4 — retrieval PASS / FAIL behaviour, including stale ──────────
+
+    /**
+     * A retrieval PASS clears stale: it refreshes last_seen_at and the next
+     * nextAction() call returns the concept to the ordinary mastered path
+     * (or a fresh ladder rung), NOT to retrieval_due again immediately.
+     */
+    public function test_a_passed_retrieval_check_clears_the_stale_state(): void
+    {
+        $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        $this->setMastery($this->aNodeId, 0.85, LearnerNodeState::STATUS_MASTERED);
+        DB::table('eso_response_log')->where('student_id', $this->studentId)
+            ->update(['created_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5)]);
+        LearnerNodeState::where('student_id', $this->studentId)
+            ->update(['last_seen_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5)]);
+        $this->makeServableQuestion($this->kNodeId);
+
+        // Confirm we're stale.
+        $staleAction = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+        $this->assertSame('retrieval_due', $staleAction['action']);
+
+        // Pass the retrieval. PASS refreshes last_seen_at to now (D2 §4) so
+        // the staleness-clearing happens via the recency anchor the
+        // isConceptStale() read uses as its fallback.
+        $this->policy->retrievalCheck($this->studentId, $this->kNodeId, $this->conceptId, $this->subInstituteId, [
+            ['answer_master_id' => $this->makeAnswer(true)],
+        ]);
+
+        // Now fresh: must NOT loop straight back into retrieval_due via the
+        // stale path (the schedule itself may still be far in the future).
+        $freshAction = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertNotSame(
+            'retrieval_due',
+            $freshAction['action'],
+            'A passed retrieval refreshes the recency anchor; the next call must not loop back into the stale route.'
+        );
+    }
+
+    /**
+     * A retrieval FAIL returns the concept to LEARNING and applies the
+     * existing fail behaviour. It must NOT silently delete history or leave
+     * the node in a stuck mastered state.
+     */
+    public function test_a_failed_retrieval_check_after_stale_returns_to_learning(): void
+    {
+        $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        $this->setMastery($this->aNodeId, 0.85, LearnerNodeState::STATUS_MASTERED);
+        DB::table('eso_response_log')->where('student_id', $this->studentId)
+            ->update(['created_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5)]);
+        LearnerNodeState::where('student_id', $this->studentId)
+            ->update(['last_seen_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5)]);
+        $this->makeServableQuestion($this->kNodeId);
+
+        $beforeEstimate = (float) LearnerNodeState::where('student_id', $this->studentId)
+            ->where('node_id', $this->kNodeId)->value('mastery_estimate');
+
+        $result = $this->policy->retrievalCheck($this->studentId, $this->kNodeId, $this->conceptId, $this->subInstituteId, [
+            ['answer_master_id' => $this->makeAnswer(false)],
+        ]);
+
+        $this->assertSame('reloop_node', $result['action']);
+        $state = LearnerNodeState::where('student_id', $this->studentId)->where('node_id', $this->kNodeId)->first();
+        $this->assertSame(LearnerNodeState::STATUS_LEARNING, $state->status);
+        $this->assertLessThan($beforeEstimate, (float) $state->mastery_estimate, 'Fail decrements the estimate per existing D5 behaviour.');
+        $this->assertSame(0, (int) $state->retention_stage, 'Ladder reset on fail, same as the existing rule.');
+    }
+
+    // ── D2 §7 — interaction with D3 / misconception / prerequisite ────────
+
+    /**
+     * Misconception interaction (D2 §7): an active misconception MUST keep
+     * precedence over the stale route — D3 is unchanged in this task.
+     */
+    public function test_a_stale_mastery_node_with_an_active_misconception_routes_to_d3_not_d2(): void
+    {
+        $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MISCONCEPTION_FLAGGED);
+        // active_misconception_id must be set for the contrast pair to route;
+        // otherwise reserveContrastPairAction() falls through to practice.
+        LearnerNodeState::where('student_id', $this->studentId)->where('node_id', $this->kNodeId)
+            ->update(['active_misconception_id' => 4242]);
+        $this->setMastery($this->aNodeId, 0.85, LearnerNodeState::STATUS_MASTERED);
+        DB::table('eso_response_log')->where('student_id', $this->studentId)
+            ->update(['created_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5)]);
+        LearnerNodeState::where('student_id', $this->studentId)
+            ->update(['last_seen_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5)]);
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertSame('serve_contrast_pair', $action['action']);
+        $this->assertSame('D3', $action['rule_fired']);
+    }
+
+    /**
+     * Prerequisite interaction (D2 §7): an unmet prerequisite MUST keep
+     * precedence over the stale route — D2 (the prereq gate) is unchanged
+     * in this task.
+     */
+    public function test_a_stale_mastery_concept_with_an_unmet_prerequisite_routes_to_remediation(): void
+    {
+        $prereqConceptId = $this->makeConcept('Unmet Prereq');
+        [$prereqK, $prereqA] = $this->makeKANodes($prereqConceptId);
+        DB::table('pal_concept_relations')->insert([
+            'from_concept_id' => $this->conceptId,
+            'to_concept_id' => $prereqConceptId,
+            'relation_type' => 'requires',
+            'sub_institute_id' => $this->subInstituteId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->setMastery($this->kNodeId, 0.9, LearnerNodeState::STATUS_MASTERED);
+        $this->setMastery($this->aNodeId, 0.85, LearnerNodeState::STATUS_MASTERED);
+        $this->setMastery($prereqK, 0.4);
+        $this->setMastery($prereqA, 0.4);
+        DB::table('eso_response_log')->where('student_id', $this->studentId)
+            ->whereIn('node_id', [$this->kNodeId, $this->aNodeId])
+            ->update(['created_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5)]);
+        LearnerNodeState::where('student_id', $this->studentId)
+            ->whereIn('node_id', [$this->kNodeId, $this->aNodeId])
+            ->update(['last_seen_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5)]);
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertSame('remediate_prerequisite', $action['action']);
+        $this->assertSame('D2', $action['rule_fired']);
+        $this->assertSame($prereqConceptId, $action['prerequisite_concept_id']);
+    }
+
+    /**
+     * Legacy mastery (mastered under pre-D1 rules) must not be mass-invalidated
+     * when STALE_MASTERY kicks in. Historical evidence stays intact.
+     */
+    public function test_legacy_mastered_learner_is_not_mass_invalidated_and_historical_evidence_remains_intact(): void
+    {
+        foreach ([$this->kNodeId, $this->aNodeId] as $nodeId) {
+            LearnerNodeState::updateOrCreate(
+                ['student_id' => $this->studentId, 'node_id' => $nodeId],
+                [
+                    'sub_institute_id' => $this->subInstituteId,
+                    'mastery_estimate' => 1.0,
+                    'attempts' => 2,
+                    'status' => LearnerNodeState::STATUS_MASTERED,
+                    'last_seen_at' => now()->subDays(EsoPolicyService::EVIDENCE_RECENCY_DAYS + 5),
+                    'taught_at' => now(), 'cfu_passed_at' => now(),
+                ]
+            );
+        }
+
+        // Provide retrieval items so we don't route to content_unavailable.
+        $this->makeServableQuestion($this->kNodeId);
+        $this->makeServableQuestion($this->aNodeId);
+
+        $evidenceBefore = DB::table('eso_response_log')->where('student_id', $this->studentId)->count();
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        // Legacy mastery is still mastered: stale route is the verification route, not revocation.
+        $this->assertSame('retrieval_due', $action['action']);
+        $this->assertSame('D2', $action['rule_fired']);
+
+        // No silent status write.
+        $kState = LearnerNodeState::where('student_id', $this->studentId)->where('node_id', $this->kNodeId)->first();
+        $this->assertSame(LearnerNodeState::STATUS_MASTERED, $kState->status);
+
+        // Evidence untouched.
+        $evidenceAfter = DB::table('eso_response_log')->where('student_id', $this->studentId)->count();
+        $this->assertSame($evidenceBefore, $evidenceAfter);
+    }
+
 
     // ── TEST 8: hint usage ────────────────────────────────────────────────
 
