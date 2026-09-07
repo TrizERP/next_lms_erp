@@ -91,9 +91,28 @@ class EsoEngineController extends Controller
             return $this->fail('Unknown learner.', 404);
         }
 
+        // `items` is the flat list that drives the diagnostic itself and is
+        // unchanged — every servable question on the concept's nodes, exactly
+        // as before, so the existing concept flow and scoring are untouched.
         $items = $this->policy->diagnosticItems($conceptId, $subInstituteId);
 
-        return $this->ok(['concept_id' => $conceptId, 'items' => $items]);
+        // `diagnostic` is the additive three-group view, filtered by the
+        // authored stage. Chapters whose questions carry no stage keep working
+        // through `items` and simply report three empty groups.
+        $groups = $this->policy->diagnosticGroups($conceptId, $subInstituteId);
+        $total = array_sum(array_column($groups, 'count'));
+
+        return $this->ok([
+            'concept_id' => $conceptId,
+            'items' => $items,
+            'diagnostic' => $groups + ['total' => $total],
+            // Only resolved when there is genuinely nothing to serve — it costs
+            // two extra queries and exists purely to explain the empty state
+            // truthfully rather than blaming "Phase 0 tagging".
+            'availability' => ($total === 0 && $items === [])
+                ? $this->policy->diagnosticAvailability($conceptId, $subInstituteId)
+                : null,
+        ]);
     }
 
     /**

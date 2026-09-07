@@ -141,6 +141,31 @@ class EsoPolicyService
 
     public const RESPONSE_MODE_CFU = 'cfu';
 
+    // ── Diagnostic stage vocabulary ──────────────────────────────────────
+    //
+    // NOT a new vocabulary. These are the values already written by
+    // QuestionGenerationService and already stored in BOTH
+    // `pal_question_metadata.stage` and `lms_question_master.category` — the
+    // migration that added `category` documents it as mirroring `stage`, and
+    // the row for question 701415 carries the identical value in both.
+    //
+    // `stage` is the one read here, because pal_question_metadata is the
+    // serving layer the whole diagnostic pipeline already runs through;
+    // reading `category` directly would bypass the approval and node gates.
+
+    public const STAGE_PREREQUISITE = 'prerequisite_concept_check';
+
+    public const STAGE_ADAPTIVE_DIAGNOSTIC = 'adaptive_diagnostic';
+
+    public const STAGE_CONCEPT_DIAGNOSTIC = 'concept_diagnostic';
+
+    /** Response group key => the stage value that fills it. */
+    public const DIAGNOSTIC_STAGE_GROUPS = [
+        'prerequisite' => self::STAGE_PREREQUISITE,
+        'adaptive' => self::STAGE_ADAPTIVE_DIAGNOSTIC,
+        'concept' => self::STAGE_CONCEPT_DIAGNOSTIC,
+    ];
+
     /**
      * Derived concept status: mastery is held, but its newest evidence is
      * outside EVIDENCE_RECENCY_DAYS and needs verifying.
@@ -232,6 +257,127 @@ class EsoPolicyService
      * pre-hydration sample can land entirely on narrative ids, silently
      * yielding fewer items than intended for that node, or none.
      */
+    /**
+     * The diagnostic's three authored groups — prerequisite, adaptive and
+     * concept — for one concept.
+     *
+     * Deliberately ADDITIVE to diagnosticItems(), not a replacement. Every
+     * servable row in the working pilot chapter carries `stage = NULL` (199 of
+     * them), so filtering the existing flat selection by stage would return
+     * nothing and break the concept flow outright. Grouping is therefore an
+     * extra view over the SAME servable set; the flat list still drives the
+     * diagnostic itself.
+     *
+     * The gates are the existing ones, unchanged and unbypassed:
+     *   - `whereIn('node_id', …)` — a row with `node_id = NULL` matches no
+     *     node and is excluded. Node assignment stays authoring work; nothing
+     *     here infers one from stage, category, item_type or concept.
+     *   - `servable()` — `quality_status = 'approved'`. Draft content never
+     *     reaches a student through this method.
+     *
+     * The consequence is intended: an approved, node-mapped question appears in
+     * its group automatically, with no further code change.
+     *
+     * @return array<string, array{questions:array<int, array<string, mixed>>, count:int}>
+     */
+    public function diagnosticGroups(int $conceptId, int $subInstituteId): array
+    {
+        $groups = [];
+        foreach (array_keys(self::DIAGNOSTIC_STAGE_GROUPS) as $key) {
+            $groups[$key] = ['questions' => [], 'count' => 0];
+        }
+
+        $nodes = $this->nodesForConcept($conceptId, $subInstituteId);
+        if ($nodes->isEmpty()) {
+            return $groups;
+        }
+
+        $rows = QuestionMetadata::query()
+            ->whereIn('node_id', $nodes->pluck('id'))
+            ->forTenant($subInstituteId)
+            ->servable()
+            ->whereIn('stage', array_values(self::DIAGNOSTIC_STAGE_GROUPS))
+            ->get(['question_id', 'node_id', 'stage', 'item_type']);
+
+        $nodeTypes = $nodes->pluck('node_type', 'id');
+        $stageToKey = array_flip(self::DIAGNOSTIC_STAGE_GROUPS);
+
+        foreach ($rows as $row) {
+            $key = $stageToKey[$row->stage] ?? null;
+            if ($key === null) {
+                continue;
+            }
+
+            // hydrateQuestion() enforces MCQ-only and strips the answer key.
+            $hydrated = $this->hydrateQuestion((int) $row->question_id);
+            if ($hydrated === null || $hydrated['options'] === []) {
+                continue;
+            }
+
+            $groups[$key]['questions'][] = array_merge($hydrated, [
+                'node_id' => (int) $row->node_id,
+                'node_type' => $nodeTypes[$row->node_id] ?? null,
+                'item_type' => $row->item_type,
+                'stage' => $row->stage,
+            ]);
+        }
+
+        foreach ($groups as $key => $group) {
+            $groups[$key]['count'] = count($group['questions']);
+        }
+
+        return $groups;
+    }
+
+    /**
+     * Why a concept has no servable diagnostic questions.
+     *
+     * Only worth computing when the groups came back empty — it exists so the
+     * screen can say something true instead of "Phase 0 tagging is still in
+     * progress", which was misleading whenever questions existed but were
+     * draft or unmapped.
+     *
+     * @return array{reason:string, authored:int, approved:int, node_mapped:int, servable:int}
+     */
+    public function diagnosticAvailability(int $conceptId, int $subInstituteId): array
+    {
+        $questionIds = DB::table('lms_question_master')
+            ->where('concept_id', $conceptId)
+            ->where('status', 1)
+            ->whereIn('category', array_values(self::DIAGNOSTIC_STAGE_GROUPS))
+            ->pluck('id');
+
+        if ($questionIds->isEmpty()) {
+            return ['reason' => 'none_authored', 'authored' => 0, 'approved' => 0, 'node_mapped' => 0, 'servable' => 0];
+        }
+
+        $meta = DB::table('pal_question_metadata')
+            ->whereIn('question_id', $questionIds)
+            ->where('sub_institute_id', $subInstituteId)
+            ->get(['node_id', 'quality_status']);
+
+        $approved = $meta->where('quality_status', 'approved')->count();
+        $nodeMapped = $meta->filter(fn ($r) => $r->node_id !== null)->count();
+        $servable = $meta->filter(fn ($r) => $r->node_id !== null && $r->quality_status === 'approved')->count();
+
+        // Ordered so the reason names the FIRST unmet requirement, which is the
+        // one an author has to act on next.
+        $reason = match (true) {
+            $servable > 0 => 'available',
+            $approved === 0 => 'awaiting_approval',
+            $nodeMapped === 0 => 'awaiting_node_mapping',
+            default => 'none_servable',
+        };
+
+        return [
+            'reason' => $reason,
+            'authored' => $questionIds->count(),
+            'approved' => $approved,
+            'node_mapped' => $nodeMapped,
+            'servable' => $servable,
+        ];
+    }
+
     public function diagnosticItems(int $conceptId, int $subInstituteId, int $totalItems = 8): array
     {
         $nodes = $this->nodesForConcept($conceptId, $subInstituteId);
