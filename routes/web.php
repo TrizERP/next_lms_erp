@@ -66,7 +66,6 @@ use App\Http\Controllers\leave\leave_summary_report\LeaveSummaryReportController
 use App\Http\Controllers\superAdminController;
 use App\Http\Controllers\WhatsappController;
 use App\Http\Controllers\oldDocumentTransfer;
-use App\Http\Controllers\BotManController;
 use App\Http\Controllers\reuirementController;
 use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\lms\chapterController as LmsChapterController;

@@ -93,6 +93,10 @@ class PeopleDirectoryService
                 });
         }
 
+        // `count` is the cohort size, not the size of this response page. A planner's
+        // chosen `limit` must not change the answer to a cohort-count question.
+        $total = (clone $query)->count();
+
         $students = $query
             ->selectRaw(
                 "s.id, s.enrollment_no, s.mobile, s.email,
@@ -122,7 +126,8 @@ class PeopleDirectoryService
 
         return [
             'academic_year' => $context->academicYear,
-            'count' => count($students),
+            'count' => $total,
+            'returned_count' => count($students),
             'limit' => $limit,
             'students' => $students,
             'unresolved_filters' => [],

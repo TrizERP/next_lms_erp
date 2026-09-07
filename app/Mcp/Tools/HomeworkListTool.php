@@ -12,12 +12,12 @@ class HomeworkListTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'homework.list';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'Homework assigned over a recent window, with whether each item has been handed in. '
             . 'Filter by student, subject, class or status. Only work whose due date has passed is '
@@ -45,7 +45,7 @@ class HomeworkListTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return ['risk' => 'read', 'required_permission' => 'lms.read'];
     }

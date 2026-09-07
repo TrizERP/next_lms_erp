@@ -4,6 +4,7 @@ namespace App\Domain\AI\Conversation;
 
 use App\Domain\AI\Lifecycle\LifecycleAskService;
 use App\Services\Mcp\McpRequestContext;
+use Throwable;
 
 /**
  * Which pipeline answers a question — decided once, for every caller.
@@ -30,6 +31,7 @@ class AskPipeline
     public function __construct(
         private readonly LifecycleAskService $lifecycle,
         private readonly AskService $legacy,
+        private readonly AskAuditor $audit,
     ) {
     }
 
@@ -54,18 +56,44 @@ class AskPipeline
      * @param  array<string, mixed>  $options
      * @return array<string, mixed>
      */
+    /**
+     * @param  (callable(\App\Domain\AI\Lifecycle\StageKey, \App\Domain\AI\Lifecycle\StageOutcome): void)|null  $onStage
+     * @param  (callable(string): void)|null  $onToken
+     */
     public function ask(
         string $question,
         McpRequestContext $scope,
         ?int $conversationId = null,
-        array $options = []
+        array $options = [],
+        ?callable $onStage = null,
+        ?callable $onToken = null
     ): array {
-        $result = $this->usesLifecycle()
-            ? $this->lifecycle->ask($question, $scope, $conversationId, $options)
-            : $this->legacy->ask($question, $scope, $conversationId, $options);
+        // The observers are lifecycle-only. The legacy pipeline has no stage ladder to
+        // report and no streamed answer to emit, so a streaming caller on that flag gets
+        // a correct turn delivered in one event rather than a broken one.
+        $startedAt = microtime(true);
+
+        try {
+            $result = $this->usesLifecycle()
+                ? $this->lifecycle->ask($question, $scope, $conversationId, $options, $onStage, $onToken)
+                : $this->legacy->ask($question, $scope, $conversationId, $options);
+        } catch (Throwable $exception) {
+            // A turn that failed is the one most worth having in the audit trail, and
+            // the one a `finally`-less happy path would silently drop.
+            $this->audit->turn($question, $scope, $options, null, $exception, $this->elapsed($startedAt));
+
+            throw $exception;
+        }
 
         $result['pipeline'] = $this->name();
 
+        $this->audit->turn($question, $scope, $options, $result, null, $this->elapsed($startedAt));
+
         return $result;
+    }
+
+    private function elapsed(float $startedAt): int
+    {
+        return (int) round((microtime(true) - $startedAt) * 1000);
     }
 }

@@ -237,6 +237,18 @@ class AgentContext
         );
 
         if ($result['id'] !== null) {
+            // A repeated risk scan may reach the same conclusion. Keep one current
+            // approval request instead of filling the teacher's queue with duplicates.
+            if ($result['status'] === 'pending_approval') {
+                $this->recommendations->supersedePrevious(
+                    (string) ($draft['subject_entity_key'] ?? 'student'),
+                    $draft['subject_id'] ?? 0,
+                    (string) ($draft['action_type'] ?? 'unspecified'),
+                    (int) $result['id'],
+                    $this->scope
+                );
+            }
+
             $this->recommendationsDrafted++;
         }
 

@@ -12,12 +12,12 @@ class StudentSearchTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'students.search';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'Search students within the authenticated institute scope.';
     }

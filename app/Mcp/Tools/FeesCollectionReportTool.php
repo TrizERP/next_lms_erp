@@ -12,12 +12,12 @@ class FeesCollectionReportTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'fees.collection_report';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'Return a read-only fees collection report for the authenticated institute.';
     }

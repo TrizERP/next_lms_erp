@@ -3,7 +3,7 @@
 namespace App\Domain\GenerativeAI;
 
 use App\Domain\AI\Support\AiAuditLogger;
-use App\Domain\AI\Support\OpenRouterClient;
+use App\Domain\AI\Support\ModelClient;
 use App\Domain\Templates\TemplateRegistry;
 use App\Services\Mcp\McpRequestContext;
 use Illuminate\Support\Facades\DB;
@@ -30,7 +30,7 @@ use Throwable;
  */
 class GenerationService
 {
-    private const DEFAULT_MODEL = 'deepseek/deepseek-chat';
+    // The model comes from the provider driver; see config/ai.php `provider`.
 
     public function __construct(
         private readonly TemplateRegistry $templates,
@@ -39,7 +39,7 @@ class GenerationService
         private readonly AiAuditLogger $audit,
         // The transport and the `ai_api_keys` rotation pool, shared with lifecycle
         // planning. This service used to carry its own copy of both.
-        private readonly OpenRouterClient $client,
+        private readonly ModelClient $client,
     ) {
     }
 
@@ -121,7 +121,7 @@ class GenerationService
         ]);
 
         $startedAt = microtime(true);
-        $model = $request->modelOverride ?? $template->model ?? self::DEFAULT_MODEL;
+        $model = $request->modelOverride ?? $template->model ?? $this->client->defaultModel();
 
         try {
             $content = $this->callModel($rendered, $template, $model);
@@ -227,7 +227,7 @@ class GenerationService
      * Send the rendered template to the model.
      *
      * The transport, the headers and the `ai_api_keys` rotation all live in
-     * OpenRouterClient now — this method's remaining job is to turn a rendered template
+     * the model client now — this method's remaining job is to turn a rendered template
      * into messages and to say what the template expects back. It still throws on
      * failure, because the caller records a failed request row from the exception.
      */
@@ -277,7 +277,7 @@ class GenerationService
             'resolved_prompt' => $resolved,
             'prompt_hash' => $resolved ? hash('sha256', $resolved) : null,
             'provider' => $template?->provider ?? 'openrouter',
-            'model' => $request->modelOverride ?? $template?->model ?? self::DEFAULT_MODEL,
+            'model' => $request->modelOverride ?? $template?->model ?? $this->client->defaultModel(),
             'subject_entity_key' => $request->subjectEntityKey,
             'subject_id' => is_numeric($request->subjectId) ? (int) $request->subjectId : null,
             'case_id' => $request->caseId,
