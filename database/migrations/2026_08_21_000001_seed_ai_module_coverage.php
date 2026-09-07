@@ -49,7 +49,7 @@ return new class extends Migration
     {
         return [
             // ---- Teaching and learning -------------------------------------
-            ['lms', 'Learning', 'Lessons, homework and learning activity.',
+            ['lms', 'Learning Experience', 'Lessons, homework and learning activity.',
                 ['/lms', '/lms/**'], 'graduation-cap', [
                     'Summarise learning activity for my classes this week.',
                     'Which homework is still outstanding?',
@@ -86,7 +86,7 @@ return new class extends Migration
                     'Summarise recent quiz performance.',
                     'Which questions are most often answered incorrectly?',
                 ]],
-            ['h5p', 'Interactive content', 'H5P interactive learning content.',
+            ['h5p', 'Interactive Learning', 'H5P interactive learning content.',
                 ['/h5p', '/h5p/**'], 'play-circle', [
                     'Which interactive activities are being used most?',
                     'Summarise engagement with this content.',
