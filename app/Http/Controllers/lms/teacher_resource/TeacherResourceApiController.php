@@ -424,7 +424,7 @@ class TeacherResourceApiController extends Controller
 
         return response()->json([
             'status' => 1,
-            'message' => 'Teacher Resource Added Successfully',
+            'message' => 'Teacher Workspace Added Successfully',
         ]);
     }
 
@@ -460,7 +460,7 @@ class TeacherResourceApiController extends Controller
 
         return response()->json([
             'status' => 1,
-            'message' => 'Teacher Resource Updated Successfully',
+            'message' => 'Teacher Workspace Updated Successfully',
         ]);
     }
 
@@ -488,7 +488,7 @@ class TeacherResourceApiController extends Controller
 
         return response()->json([
             'status' => 1,
-            'message' => 'Teacher Resource Deleted Successfully',
+            'message' => 'Teacher Workspace Deleted Successfully',
         ]);
     }
 }

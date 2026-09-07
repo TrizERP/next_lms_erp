@@ -5,8 +5,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
- * Registers "LMS" as a level-2 menu NESTED UNDER the existing "People &
- * Competency" level-1 menu (stakeholder direction: this LMS port must not
+ * Registers "Learning Experience" as a level-2 menu NESTED UNDER the existing "People &
+ * Competency" level-1 menu (stakeholder direction: this Learning Experience port must not
  * introduce a new top-level module), with its 9 level-3 screens — per
  * PACKAGE 0 of the G2G → LMS-K12 LMS migration. Mirrors
  * 2026_08_21_120000_add_competency_management_menu.php's structure and
@@ -77,9 +77,9 @@ return new class extends Migration
             $moduleSort = (int) DB::table('tblmenumaster')->where('parent_menu_id', $parent->id)->max('sort_order');
 
             $lmsModuleId = DB::table('tblmenumaster')->insertGetId([
-                'name' => 'LMS',
+                'name' => 'Learning Experience',
                 'menu_title' => 'People & Competency',
-                'description' => 'Learning management: courses, assignments, sessions, certifications and assessments',
+                'description' => 'Learning experience: courses, assignments, sessions, certifications and assessments',
                 'parent_menu_id' => $parent->id,
                 'level' => 2,
                 'status' => 1,
@@ -89,8 +89,8 @@ return new class extends Migration
                 'sub_institute_id' => $parent->sub_institute_id,
                 'client_id' => $parent->client_id,
                 'menu_type' => 'ENTRY',
-                'site_map_name' => 'LMS',
-                'menu_path' => 'LMS',
+                'site_map_name' => 'Learning Experience',
+                'menu_path' => 'Learning Experience',
                 'created_at' => now(),
             ]);
             $lmsModule = DB::table('tblmenumaster')->where('id', $lmsModuleId)->first();

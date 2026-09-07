@@ -878,7 +878,7 @@ class PedagogySuggestedContentService
         } elseif ($avgMastery >= 70) {
             $insights[] = [
                 'type' => 'status',
-                'title' => 'Ready for Enrichment',
+                'title' => 'Ready for Extension Activity',
                 'description' => 'Overall mastery is ' . round($avgMastery) . '%. Introduce advanced applications and deeper practice.',
                 'priority' => 'low',
             ];
