@@ -126,6 +126,7 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
             Route::post('/import', [\App\Http\Controllers\G2gLms\AssignmentsController::class, 'import']);
             Route::post('/bulk-status', [\App\Http\Controllers\G2gLms\AssignmentsController::class, 'bulkUpdateStatus']);
             Route::post('/bulk-review', [\App\Http\Controllers\G2gLms\AssignmentsController::class, 'bulkReview']);
+            Route::post('/request', [\App\Http\Controllers\G2gLms\AssignmentsController::class, 'request']);
             Route::post('/{id}/status', [\App\Http\Controllers\G2gLms\AssignmentsController::class, 'updateStatus']);
             Route::post('/{id}/review', [\App\Http\Controllers\G2gLms\AssignmentsController::class, 'review']);
             Route::get('/', [\App\Http\Controllers\G2gLms\AssignmentsController::class, 'index']);
@@ -186,6 +187,15 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
             Route::get('assessments', [\App\Http\Controllers\G2gLms\CourseBuilderController::class, 'assessments']);
             Route::post('assessments', [\App\Http\Controllers\G2gLms\CourseBuilderController::class, 'storeAssessment']);
             Route::delete('assessments/{id}', [\App\Http\Controllers\G2gLms\CourseBuilderController::class, 'destroyAssessment']);
+            Route::get('assessments/{id}/questions', [\App\Http\Controllers\G2gLms\CourseBuilderController::class, 'paperQuestions']);
+            Route::post('assessments/{id}/questions', [\App\Http\Controllers\G2gLms\CourseBuilderController::class, 'storeQuestion']);
+            Route::put('assessments/{id}/questions/{questionId}', [\App\Http\Controllers\G2gLms\CourseBuilderController::class, 'updateQuestion']);
+            Route::delete('assessments/{id}/questions/{questionId}', [\App\Http\Controllers\G2gLms\CourseBuilderController::class, 'destroyQuestion']);
+            Route::post('assessments/{id}/questions/generate', [\App\Http\Controllers\G2gLms\CourseBuilderController::class, 'generateQuestions']);
+
+            Route::get('courses/{courseId}/competencies', [\App\Http\Controllers\G2gLms\CourseBuilderController::class, 'courseCompetencies']);
+            Route::post('courses/{courseId}/competencies', [\App\Http\Controllers\G2gLms\CourseBuilderController::class, 'syncCourseCompetencies']);
+            Route::delete('competencies/{id}', [\App\Http\Controllers\G2gLms\CourseBuilderController::class, 'destroyCourseCompetency']);
 
             Route::get('ai/status', [\App\Http\Controllers\G2gLms\AiCourseController::class, 'status']);
             Route::post('ai/outline', [\App\Http\Controllers\G2gLms\AiCourseController::class, 'generateOutline']);

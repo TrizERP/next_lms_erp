@@ -72,6 +72,18 @@ class CertificationsRecordsController extends Controller
                 fn ($q) => $q->where('c.user_id', $context['user_id'])
             )
             ->when($request->input('course_id'), fn ($q, $id) => $q->where('c.course_id', $id))
+            /*
+             * ONE EMPLOYEE'S CERTIFICATES, for an administrator looking at
+             * their record.
+             *
+             * Only meaningful alongside scope=all, which is already gated on
+             * isLmsStaffAdmin - so this narrows a set the caller was entitled
+             * to see rather than widening one they were not.
+             */
+            ->when(
+                $wantsAll && $request->input('user_id'),
+                fn ($q) => $q->where('c.user_id', $request->input('user_id'))
+            )
             ->when($request->input('search'), function ($q, $search) {
                 $q->where(function ($inner) use ($search) {
                     $inner->where('c.course_title', 'like', "%{$search}%")
@@ -345,7 +357,7 @@ class CertificationsRecordsController extends Controller
             );
         }
 
-        $total = DB::table('content_master')->where('subject_id', $courseId)->whereNull('deleted_at')->count();
+        $total = DB::table('content_master')->where('subject_id', $courseId)->count();
         $done = DB::table('lms_content_progress')
             ->where('user_id', $userId)->where('course_id', $courseId)
             ->where('status', 'completed')->whereNull('deleted_at')->count();
@@ -470,7 +482,7 @@ class CertificationsRecordsController extends Controller
             $done = 0;
 
             if ($hasProgress) {
-                $total = DB::table('content_master')->where('subject_id', $row->course_id)->whereNull('deleted_at')->count();
+                $total = DB::table('content_master')->where('subject_id', $row->course_id)->count();
                 $done = DB::table('lms_content_progress')
                     ->where('user_id', $context['user_id'])->where('course_id', $row->course_id)
                     ->where('status', 'completed')->whereNull('deleted_at')->count();

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\G2gLms;
 
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\G2gLms\Concerns\ResolvesLmsIdentity;
+use App\Services\G2gLms\DeepSeekAssessmentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -71,6 +72,7 @@ class CourseBuilderController extends Controller
             'settings.issue_certificate' => 'nullable|boolean',
             'settings.certificate_template' => 'nullable|string|max:50',
             'settings.recert_alerts' => 'nullable|boolean',
+            'settings.auto_apply_rating' => 'nullable|boolean',
             'settings.enrollment_rule' => 'nullable|string|in:open,approval',
             'settings.restrict_departments' => 'nullable|array',
             'settings.restrict_departments.*' => 'integer',
@@ -121,6 +123,13 @@ class CourseBuilderController extends Controller
                 : true,
             'certificate_template' => $settings['certificate_template'] ?? null,
             'recert_alerts' => ! empty($settings['recert_alerts']),
+            /*
+             * Passing this course writes the mapped competency rating without
+             * a review step. Off by default. The write-on-pass runtime logic
+             * itself belongs to the quiz-scoring pipeline (not yet built in
+             * this package) — this only lets an author record the intent.
+             */
+            'auto_apply_rating' => ! empty($settings['auto_apply_rating']),
             'enrollment_rule' => $settings['enrollment_rule'] ?? 'open',
             'restrict_departments' => empty($settings['restrict_departments'])
                 ? null
@@ -187,7 +196,7 @@ class CourseBuilderController extends Controller
         $settings = DB::table('lms_course_settings')->where('course_id', $courseId)->first();
 
         if ($settings) {
-            foreach (['is_mandatory', 'discussion_enabled', 'issue_certificate', 'recert_alerts', 'sequential_unlock'] as $flag) {
+            foreach (['is_mandatory', 'discussion_enabled', 'issue_certificate', 'recert_alerts', 'auto_apply_rating', 'sequential_unlock'] as $flag) {
                 if (property_exists($settings, $flag)) {
                     $settings->$flag = (bool) $settings->$flag;
                 }
@@ -789,6 +798,649 @@ class CourseBuilderController extends Controller
         DB::table('question_paper')->where('id', $id)->update(['show_hide' => 0]);
 
         return $this->lmsOk(['id' => (int) $id], 'Assessment removed');
+    }
+
+    /* ================================================================== *
+     * Questions on a quiz — ported from hp_erp's LmsAssessmentController.
+     *
+     * `question_paper` store/update/destroy manage the PAPER; these manage
+     * what is ON it. `lms_question_master` and `answer_master` already exist
+     * in this schema (unlike `course_jobrole_map`, confirmed present) but had
+     * no writer anywhere in this package, so every quiz authored here had
+     * `total_ques = 0` and could never actually be sat.
+     *
+     * Schema adaptation: hp_erp's `answer_master` has `deleted_at`/
+     * `updated_at` and soft-deletes an option (a past attempt's
+     * `lms_quiz_response.answer_id` can point at one). This schema's
+     * `answer_master` has neither column, and the quiz-taking tables
+     * (`lms_quiz_attempt`/`lms_quiz_response`) do not exist yet in this
+     * package — nothing can reference an option row — so options here are
+     * hard-deleted and re-inserted on every update, and written with
+     * `created_on` (the column this table actually has) instead of
+     * `created_at`/`updated_at`.
+     * ================================================================== */
+
+    private function questionRules(): array
+    {
+        return [
+            'question_title' => 'required|string|max:2000',
+            'description' => 'nullable|string',
+            'points' => 'nullable|integer|min:1|max:100',
+            'hint_text' => 'nullable|string|max:1000',
+            // A written question has no options and is marked outside this package.
+            'options' => 'nullable|array|max:10',
+            'options.*.answer' => 'required|string|max:2000',
+            'options.*.correct' => 'nullable|boolean',
+        ];
+    }
+
+    /** The paper, if it belongs to the caller's organisation. */
+    private function findPaper($id, $subInstituteId)
+    {
+        return DB::table('question_paper')
+            ->where('id', $id)
+            ->where('sub_institute_id', $subInstituteId)
+            ->where('show_hide', 1)
+            ->first();
+    }
+
+    /** The paper's question_ids as an ordered array of ints. */
+    private function paperQuestionIds($paper): array
+    {
+        return collect(explode(',', (string) $paper->question_ids))
+            ->map(fn ($id) => (int) trim($id))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Recompute the paper's question list, count and total marks from what is
+     * actually attached to it — derived, not incremented, so a deleted
+     * question cannot leave the paper claiming marks it no longer has.
+     */
+    private function syncPaperTotals($paperId, array $orderedIds): void
+    {
+        $ids = collect($orderedIds)->map(fn ($id) => (int) $id)->filter()->unique()->values();
+
+        $marks = $ids->isEmpty() ? 0 : (int) DB::table('lms_question_master')
+            ->whereIn('id', $ids)
+            ->whereNull('deleted_at')
+            ->sum('points');
+
+        DB::table('question_paper')->where('id', $paperId)->update([
+            'question_ids' => $ids->isEmpty() ? null : $ids->implode(','),
+            'total_ques' => $ids->count(),
+            'total_marks' => $marks,
+        ]);
+    }
+
+    /** How many options this request marks correct. */
+    private function correctCount(Request $request): int
+    {
+        return collect((array) $request->input('options', []))
+            ->filter(fn ($o) => filter_var($o['correct'] ?? false, FILTER_VALIDATE_BOOLEAN))
+            ->count();
+    }
+
+    /**
+     * Refuse a multiple-choice question that nothing can mark. Zero options
+     * is allowed and means a written answer.
+     */
+    private function rejectUnmarkableOptions(Request $request)
+    {
+        $options = (array) $request->input('options', []);
+
+        if ($options === [] || $this->correctCount($request) > 0) {
+            return null;
+        }
+
+        return $this->lmsError(
+            'Mark at least one option correct, or remove all options to make this a written answer.',
+            422
+        );
+    }
+
+    /** Write a question's options, flagging the correct ones. */
+    private function writeOptions(Request $request, int $questionId, int $subInstituteId, int $userId): void
+    {
+        $options = (array) $request->input('options', []);
+
+        if ($options === []) {
+            return;
+        }
+
+        DB::table('answer_master')->insert(array_map(fn ($option) => [
+            'question_id' => $questionId,
+            'answer' => $option['answer'],
+            'correct_answer' => filter_var($option['correct'] ?? false, FILTER_VALIDATE_BOOLEAN) ? 1 : 0,
+            'sub_institute_id' => $subInstituteId,
+            'created_by' => $userId,
+            'created_on' => now(),
+        ], $options));
+    }
+
+    /**
+     * GET /api/g2g-lms/course-builder/assessments/{id}/questions
+     *
+     * The paper's OWN questions, with their options and which is correct —
+     * the authoring view. The learner-facing quiz path (not yet built in
+     * this package) must never select `correct_answer`.
+     */
+    public function paperQuestions(Request $request, $id)
+    {
+        $context = $this->lmsContext($request);
+        $paper = $this->findPaper($id, $context['sub_institute_id']);
+
+        if (! $paper) {
+            return $this->lmsError('Assessment not found', 404);
+        }
+
+        $ids = $this->paperQuestionIds($paper);
+
+        if ($ids === []) {
+            return $this->lmsOk([], 'Success', 200, ['total_marks' => 0]);
+        }
+
+        $questions = DB::table('lms_question_master')
+            ->whereIn('id', $ids)
+            ->whereNull('deleted_at')
+            ->get(['id', 'question_title', 'description', 'points', 'hint_text'])
+            ->keyBy('id');
+
+        $options = DB::table('answer_master')
+            ->whereIn('question_id', $ids)
+            ->orderBy('id')
+            ->get(['id', 'question_id', 'answer', 'correct_answer'])
+            ->groupBy('question_id');
+
+        // The paper's own order, not the database's — an author who sequenced
+        // their questions meant it.
+        $ordered = [];
+
+        foreach ($ids as $questionId) {
+            $question = $questions[$questionId] ?? null;
+            if (! $question) {
+                continue;
+            }
+
+            $ordered[] = [
+                'id' => (int) $question->id,
+                'question_title' => $question->question_title,
+                'description' => $question->description,
+                'points' => (int) ($question->points ?: 1),
+                'hint_text' => $question->hint_text,
+                'options' => ($options[$questionId] ?? collect())->map(fn ($o) => [
+                    'id' => (int) $o->id,
+                    'answer' => $o->answer,
+                    'correct' => (bool) $o->correct_answer,
+                ])->values(),
+            ];
+        }
+
+        return $this->lmsOk($ordered, 'Success', 200, [
+            'total_marks' => (int) DB::table('lms_question_master')
+                ->whereIn('id', $ids)->whereNull('deleted_at')->sum('points'),
+        ]);
+    }
+
+    /** POST /api/g2g-lms/course-builder/assessments/{id}/questions */
+    public function storeQuestion(Request $request, $id)
+    {
+        $context = $this->lmsContext($request);
+        $paper = $this->findPaper($id, $context['sub_institute_id']);
+
+        if (! $paper) {
+            return $this->lmsError('Assessment not found', 404);
+        }
+
+        $validator = Validator::make($request->all(), $this->questionRules());
+        if ($validator->fails()) {
+            return $this->lmsError($validator->messages()->first(), 422);
+        }
+
+        if ($refusal = $this->rejectUnmarkableOptions($request)) {
+            return $refusal;
+        }
+
+        $questionId = DB::transaction(function () use ($request, $paper, $context, $id) {
+            $now = now();
+
+            $questionId = DB::table('lms_question_master')->insertGetId([
+                // 1 = 'multiple' in question_type_master, the only type this
+                // installation defines.
+                'question_type_id' => 1,
+                'subject_id' => (int) $paper->subject_id,
+                'standard_id' => $paper->standard_id,
+                'question_title' => $request->input('question_title'),
+                'description' => $request->input('description'),
+                'points' => (int) $request->input('points', 1),
+                'hint_text' => $request->input('hint_text'),
+                'multiple_answer' => $this->correctCount($request) > 1 ? 1 : 0,
+                'sub_institute_id' => $context['sub_institute_id'],
+                'status' => 1,
+                'created_by' => $context['user_id'],
+                'created_on' => $now,
+            ]);
+
+            $this->writeOptions($request, $questionId, $context['sub_institute_id'], $context['user_id']);
+
+            // Appended, so an author adding a question does not reorder the
+            // ones already there.
+            $this->syncPaperTotals($id, [...$this->paperQuestionIds($paper), $questionId]);
+
+            return $questionId;
+        });
+
+        return $this->lmsOk(['id' => $questionId], 'Question added', 201);
+    }
+
+    /** PUT /api/g2g-lms/course-builder/assessments/{id}/questions/{questionId} */
+    public function updateQuestion(Request $request, $id, $questionId)
+    {
+        $context = $this->lmsContext($request);
+        $paper = $this->findPaper($id, $context['sub_institute_id']);
+
+        if (! $paper) {
+            return $this->lmsError('Assessment not found', 404);
+        }
+
+        $question = DB::table('lms_question_master')
+            ->where('id', $questionId)
+            ->where('sub_institute_id', $context['sub_institute_id'])
+            ->whereNull('deleted_at')
+            ->first();
+
+        if (! $question || ! in_array((int) $questionId, $this->paperQuestionIds($paper), true)) {
+            return $this->lmsError('Question not found', 404);
+        }
+
+        $validator = Validator::make($request->all(), $this->questionRules());
+        if ($validator->fails()) {
+            return $this->lmsError($validator->messages()->first(), 422);
+        }
+
+        if ($refusal = $this->rejectUnmarkableOptions($request)) {
+            return $refusal;
+        }
+
+        DB::transaction(function () use ($request, $id, $questionId, $context, $paper) {
+            DB::table('lms_question_master')->where('id', $questionId)->update([
+                'question_title' => $request->input('question_title'),
+                'description' => $request->input('description'),
+                'points' => (int) $request->input('points', 1),
+                'hint_text' => $request->input('hint_text'),
+                'multiple_answer' => $this->correctCount($request) > 1 ? 1 : 0,
+            ]);
+
+            // Options are replaced wholesale rather than diffed — hard-deleted,
+            // since nothing in this package can reference an option row yet
+            // (see this section's docblock).
+            if ($request->has('options')) {
+                DB::table('answer_master')->where('question_id', $questionId)->delete();
+                $this->writeOptions($request, (int) $questionId, $context['sub_institute_id'], $context['user_id']);
+            }
+
+            // Points may have changed, so the paper's total marks must follow.
+            $this->syncPaperTotals($id, $this->paperQuestionIds($paper));
+        });
+
+        return $this->lmsOk(null, 'Question updated');
+    }
+
+    /** DELETE /api/g2g-lms/course-builder/assessments/{id}/questions/{questionId} */
+    public function destroyQuestion(Request $request, $id, $questionId)
+    {
+        $context = $this->lmsContext($request);
+        $paper = $this->findPaper($id, $context['sub_institute_id']);
+
+        if (! $paper) {
+            return $this->lmsError('Assessment not found', 404);
+        }
+
+        $ids = $this->paperQuestionIds($paper);
+
+        if (! in_array((int) $questionId, $ids, true)) {
+            return $this->lmsError('Question not found', 404);
+        }
+
+        DB::transaction(function () use ($questionId, $ids, $context, $id) {
+            // No deleted_by column on this table (unlike hp_erp's copy).
+            DB::table('lms_question_master')
+                ->where('id', $questionId)
+                ->where('sub_institute_id', $context['sub_institute_id'])
+                ->update(['deleted_at' => now()]);
+
+            $this->syncPaperTotals(
+                $id,
+                array_values(array_filter($ids, fn ($x) => $x !== (int) $questionId))
+            );
+        });
+
+        return $this->lmsOk(null, 'Question removed');
+    }
+
+    /**
+     * POST /api/g2g-lms/course-builder/assessments/{id}/questions/generate
+     *
+     * Write MCQ questions for this quiz from the course's own modules and
+     * lessons, via `DeepSeekAssessmentService` (already used by
+     * `AiAssessmentController`). Adapted from hp_erp's `CourseQuizGenerator`:
+     * that service also cites the capability each question tests, sourced
+     * from `course_competency_map` — a table this package does not have yet
+     * (see the competency-mapping panel's own note), so the capability
+     * citation is dropped here rather than faked. Generated questions are
+     * APPENDED, never replacing what an author already wrote.
+     */
+    public function generateQuestions(Request $request, $id, DeepSeekAssessmentService $ai)
+    {
+        $context = $this->lmsContext($request);
+        $paper = $this->findPaper($id, $context['sub_institute_id']);
+
+        if (! $paper) {
+            return $this->lmsError('Assessment not found', 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'count' => 'nullable|integer|min:1|max:20',
+            'formats' => 'nullable|array',
+        ]);
+        if ($validator->fails()) {
+            return $this->lmsError($validator->messages()->first(), 422);
+        }
+
+        if (! $ai->isConfigured()) {
+            return $this->lmsError(
+                'AI question generation is not configured. Set DEEPSEEK_API_KEY.',
+                503
+            );
+        }
+
+        $count = (int) ($request->input('count') ?: 5);
+
+        $modules = DB::table('chapter_master as c')
+            ->leftJoin('content_master as m', function ($join) {
+                $join->on('m.chapter_id', '=', 'c.id')->where('m.show_hide', 1);
+            })
+            ->where('c.subject_id', $paper->subject_id)
+            ->where('c.show_hide', 1)
+            ->orderBy('c.sort_order')
+            ->get(['c.id as chapter_id', 'c.chapter_name', 'm.title as lesson_title', 'm.description as lesson_description'])
+            ->groupBy('chapter_id')
+            ->map(function ($rows) {
+                $first = $rows->first();
+
+                return [
+                    'chapter_id' => (int) $first->chapter_id,
+                    'chapter_name' => $first->chapter_name,
+                    'lessons' => $rows->filter(fn ($r) => $r->lesson_title)
+                        ->map(fn ($r) => ['title' => $r->lesson_title, 'description' => $r->lesson_description])
+                        ->values(),
+                ];
+            })
+            ->values();
+
+        if ($modules->isEmpty()) {
+            return $this->lmsError(
+                'This course has no modules or lessons yet, so there is nothing to write questions about. '
+                . 'Add content in step 2 first.',
+                422
+            );
+        }
+
+        $course = DB::table('sub_std_map')->where('id', $paper->subject_id)->value('display_name');
+        $content = json_encode($modules->all(), JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+
+        try {
+            $raw = $ai->chatJson([
+                ['role' => 'system', 'content' => 'You write assessment questions for workplace training courses. '
+                    . 'You are given a course\'s own teaching material and you write multiple-choice questions '
+                    . 'that test whether someone who studied that material understood it. '
+                    . 'You reply with a single valid JSON object.'],
+                ['role' => 'user', 'content' => <<<PROMPT
+                    You are writing the quiz for the course "{$course}".
+
+                    OUTPUT
+                    Reply with one JSON object of this shape:
+                    {
+                      "questions": [
+                        {
+                          "chapter_id": 45,
+                          "question_text": "...",
+                          "options": ["...", "...", "...", "..."],
+                          "correct_option": "the exact text of the right option",
+                          "points": 1
+                        }
+                      ]
+                    }
+
+                    RULES
+                    - Write exactly {$count} question(s).
+                    - Base every question on the COURSE CONTENT below. Do not test anything the course does not cover.
+                    - Carry the "chapter_id" of the module the question comes from.
+                    - Every question needs 3 to 4 "options" and a "correct_option" repeating one option's text EXACTLY.
+                    - No option may exceed 240 characters.
+                    - Ask about applying the material, not about recalling its wording.
+                    - "points" reflects how much work the question is. Whole numbers, 1-5.
+
+                    COURSE CONTENT (JSON array of modules, each with its lessons)
+                    {$content}
+
+                    Write the {$count} question(s) now and reply with that JSON object.
+                    PROMPT],
+            ]);
+        } catch (\Throwable $e) {
+            return $this->lmsError('The questions could not be generated: ' . $e->getMessage(), 502);
+        }
+
+        $validChapters = $modules->pluck('chapter_id')->flip();
+        $firstChapter = $modules->first()['chapter_id'] ?? null;
+        $accepted = [];
+
+        foreach ((array) ($raw['questions'] ?? []) as $q) {
+            $text = trim((string) ($q['question_text'] ?? ''));
+            if ($text === '') {
+                continue;
+            }
+
+            $options = is_array($q['options'] ?? null)
+                ? array_values(array_filter(array_map(fn ($o) => trim((string) $o), $q['options']), fn ($o) => $o !== ''))
+                : [];
+            $correct = isset($q['correct_option']) ? trim((string) $q['correct_option']) : null;
+
+            // An MCQ whose key is not among its own options cannot be marked
+            // by comparison, and storing it unscorable is worse than losing it.
+            if (count($options) < 2 || $correct === null || ! in_array($correct, $options, true)) {
+                continue;
+            }
+            if (max(array_map('mb_strlen', $options)) > 240) {
+                continue;
+            }
+
+            $chapterId = (int) ($q['chapter_id'] ?? 0);
+
+            $accepted[] = [
+                'chapter_id' => $validChapters->has($chapterId) ? $chapterId : $firstChapter,
+                'question_title' => $text,
+                'options' => $options,
+                'correct_option' => $correct,
+                'points' => max(1, min(100, (int) ($q['points'] ?? 1))),
+            ];
+        }
+
+        if ($accepted === []) {
+            return $this->lmsError('The generator returned no usable questions.', 502);
+        }
+
+        $created = DB::transaction(function () use ($accepted, $paper, $context, $id) {
+            $newIds = [];
+
+            foreach ($accepted as $q) {
+                $questionId = DB::table('lms_question_master')->insertGetId([
+                    'question_type_id' => 1,
+                    'subject_id' => (int) $paper->subject_id,
+                    'standard_id' => $paper->standard_id,
+                    'chapter_id' => $q['chapter_id'],
+                    'question_title' => $q['question_title'],
+                    'points' => $q['points'],
+                    'multiple_answer' => 0,
+                    'sub_institute_id' => $context['sub_institute_id'],
+                    'status' => 1,
+                    'created_by' => $context['user_id'],
+                    'created_on' => now(),
+                ]);
+
+                DB::table('answer_master')->insert(array_map(fn ($option) => [
+                    'question_id' => $questionId,
+                    'answer' => $option,
+                    'correct_answer' => $option === $q['correct_option'] ? 1 : 0,
+                    'sub_institute_id' => $context['sub_institute_id'],
+                    'created_by' => $context['user_id'],
+                    'created_on' => now(),
+                ], $q['options']));
+
+                $newIds[] = $questionId;
+            }
+
+            $this->syncPaperTotals($id, [...$this->paperQuestionIds($paper), ...$newIds]);
+
+            return count($newIds);
+        });
+
+        $dropped = count((array) ($raw['questions'] ?? [])) - $created;
+
+        return $this->lmsOk([
+            'created' => $created,
+            'dropped' => max(0, $dropped),
+        ], $dropped > 0
+            ? "Wrote {$created} question(s); {$dropped} could not be used."
+            : "Wrote {$created} question(s).");
+    }
+
+    /* ================================================================== *
+     * Competencies this course develops (course_competency_map)
+     *
+     * Ported from hp_erp's `Api\Competency\CourseCompetencyMapController`.
+     * `lms_course_competency_effectiveness` (the measured-vs-declared
+     * comparison hp_erp's `index()` LEFT joins) does not exist in this
+     * package, so `achieved_level`/`mean_percent`/etc. are omitted — this
+     * only serves the declared mapping the Course Builder panel needs.
+     * ================================================================== */
+
+    /** GET /api/g2g-lms/course-builder/courses/{courseId}/competencies */
+    public function courseCompetencies(Request $request, $courseId)
+    {
+        $context = $this->lmsContext($request);
+
+        $rows = DB::table('course_competency_map as m')
+            ->join('competency as c', 'c.id', '=', 'm.competency_id')
+            ->where('m.sub_institute_id', $context['sub_institute_id'])
+            ->where('m.course_id', $courseId)
+            ->orderByDesc('m.is_primary')
+            ->orderBy('c.name')
+            ->get(['m.id', 'm.competency_id', 'm.proficiency_level', 'm.is_primary', 'c.name as competency_name', 'c.code as competency_code']);
+
+        return $this->lmsOk($rows->map(fn ($r) => [
+            'id' => (int) $r->id,
+            'competency_id' => (int) $r->competency_id,
+            'competency_name' => $r->competency_name,
+            'competency_code' => $r->competency_code,
+            'proficiency_level' => $r->proficiency_level === null ? null : (int) $r->proficiency_level,
+            'is_primary' => (bool) $r->is_primary,
+        ])->values());
+    }
+
+    /**
+     * POST /api/g2g-lms/course-builder/courses/{courseId}/competencies
+     *
+     * SYNC, not append — rows absent from `items` are deleted for this
+     * course, matching the reference exactly (a competency dropped from a
+     * course's list must stop being recommended for it).
+     */
+    public function syncCourseCompetencies(Request $request, $courseId)
+    {
+        $context = $this->lmsContext($request);
+
+        $validator = Validator::make($request->all(), [
+            'items' => 'required|array|min:1',
+            'items.*.competency_id' => 'required|integer',
+            'items.*.proficiency_level' => 'nullable|integer|min:1|max:5',
+            'items.*.is_primary' => 'nullable|boolean',
+        ]);
+        if ($validator->fails()) {
+            return $this->lmsError($validator->messages()->first(), 422);
+        }
+
+        $course = DB::table('sub_std_map')
+            ->where('id', $courseId)
+            ->where('sub_institute_id', $context['sub_institute_id'])
+            ->whereNull('deleted_at')
+            ->exists();
+        if (! $course) {
+            return $this->lmsError('Course not found', 404);
+        }
+
+        $seen = [];
+        foreach ($request->input('items') as $i => $item) {
+            $cid = (int) $item['competency_id'];
+            if (isset($seen[$cid])) {
+                return $this->lmsError('Item ' . ($i + 1) . ' repeats a competency already in this list.', 422);
+            }
+            $seen[$cid] = true;
+        }
+
+        $valid = DB::table('competency')
+            ->where('sub_institute_id', $context['sub_institute_id'])
+            ->whereNull('deleted_at')
+            ->whereIn('id', array_keys($seen))
+            ->pluck('id')->all();
+        $unknown = array_diff(array_keys($seen), $valid);
+        if ($unknown) {
+            return $this->lmsError('These competencies do not exist in this organisation: ' . implode(', ', $unknown), 422);
+        }
+
+        $result = DB::transaction(function () use ($request, $context, $courseId, $seen) {
+            $removed = DB::table('course_competency_map')
+                ->where('sub_institute_id', $context['sub_institute_id'])
+                ->where('course_id', $courseId)
+                ->whereNotIn('competency_id', array_keys($seen))
+                ->delete();
+
+            $n = 0;
+            foreach ($request->input('items') as $item) {
+                DB::table('course_competency_map')->updateOrInsert(
+                    [
+                        'sub_institute_id' => $context['sub_institute_id'],
+                        'course_id' => $courseId,
+                        'competency_id' => (int) $item['competency_id'],
+                    ],
+                    [
+                        'proficiency_level' => isset($item['proficiency_level']) ? (int) $item['proficiency_level'] : null,
+                        'is_primary' => ! empty($item['is_primary']),
+                        'updated_at' => now(),
+                    ]
+                );
+                $n++;
+            }
+
+            return ['written' => $n, 'removed' => $removed];
+        });
+
+        return $this->lmsOk(['course_id' => (int) $courseId] + $result, 'Course competencies saved.', 201);
+    }
+
+    /** DELETE /api/g2g-lms/course-builder/competencies/{id} — drop one mapping row. */
+    public function destroyCourseCompetency(Request $request, $id)
+    {
+        $context = $this->lmsContext($request);
+
+        $deleted = DB::table('course_competency_map')
+            ->where('sub_institute_id', $context['sub_institute_id'])
+            ->where('id', $id)
+            ->delete();
+
+        return $this->lmsOk(['removed' => (bool) $deleted], $deleted ? 'Mapping removed.' : 'No mapping to remove.');
     }
 
     /* ================================================================== *
