@@ -4,7 +4,25 @@ namespace App\Http\Controllers;
 
 use App\Services\Neo4jService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
+
+/**
+ * The two read endpoints behind /graph-data and /graph-data-learning-path, which the
+ * welcomenew and newD3recommendnew views fetch to draw their D3 graphs.
+ *
+ * REWRITTEN 2026-09-04 against the schema the graph actually has. Both queries were
+ * written for the pre-migration graph — they matched `[:OFFERS]` edges and read
+ * `standard.standard` / `subject.subject` / `chapter.chapter` properties. That graph was
+ * deleted in 2026-08-10's rebuild, so both returned an empty payload even once the routes
+ * pointed here. The live curriculum spine is
+ *
+ *     (:Standard)-[:HAS_SUBJECT]->(:Subject)-[:HAS_CHAPTER]->(:Chapter)-[:HAS_CONCEPT]->(:Concept)
+ *
+ * and every node carries `displayLabel`, so the label falls back through
+ * displayLabel -> name -> title rather than a property that no longer exists.
+ *
+ * `getLearningPath()` additionally read an undefined `$student` variable, which was a
+ * fatal error on every call regardless of the data; that block is gone.
+ */
 class GraphController extends Controller
 {
     protected $neo4jService;
@@ -14,237 +32,94 @@ class GraphController extends Controller
         $this->neo4jService = $neo4jService;
     }
 
-    // Fetch LMS Content (Same as before)
+    /** Standard -> Subject -> Chapter, the top of the curriculum spine. */
     public function getGraphData(): JsonResponse
     {
-        // Cypher query to fetch academic_section -> standard -> subject -> chapter relationships
         $query = '
-            MATCH (section:AcademicSection)-[r1:OFFERS]->(standard:Standard)-[r2:OFFERS]->(subject:Subject)-[r3:OFFERS]->(chapter:Chapter)
-            RETURN section, r1, standard, r2, subject, r3, chapter
+            MATCH (st:Standard)-[r1:HAS_SUBJECT]->(sub:Subject)-[r2:HAS_CHAPTER]->(ch:Chapter)
+            RETURN st, r1, sub, r2, ch
             LIMIT 50';
-        
-        $result = $this->neo4jService->getClient()->run($query);
-        // Initialize arrays for nodes and edges
+
         $nodes = [];
         $edges = [];
-        $nodeIds = [];
+        $seen  = [];
 
-        // Process the result
-        foreach ($result as $record) {
-            $section = $record->get('section');
-            $standard = $record->get('standard');
-            $subject = $record->get('subject');
-            $chapter = $record->get('chapter');
+        foreach ($this->neo4jService->getClient()->run($query) as $record) {
+            $st  = $record->get('st');
+            $sub = $record->get('sub');
+            $ch  = $record->get('ch');
 
-            $relationship1 = $record->get('r1');
-            $relationship2 = $record->get('r2');
-            $relationship3 = $record->get('r3');
+            $this->addNode($nodes, $seen, $st,  '#FF5733');
+            $this->addNode($nodes, $seen, $sub, '#33FF57');
+            $this->addNode($nodes, $seen, $ch,  '#3357FF');
 
-            // Get the properties of each node
-            $sectionProperties = $section->getProperties();
-            $standardProperties = $standard->getProperties();
-            $subjectProperties = $subject->getProperties();
-            $chapterProperties = $chapter->getProperties();
-
-            // Use Neo4j internal IDs for unique identification
-            $sectionId = $section->getId();
-            $standardId = $standard->getId();
-            $subjectId = $subject->getId();
-            $chapterId = $chapter->getId();
-
-            // Add AcademicSection node
-            if (!in_array($sectionId, $nodeIds)) {
-                $sectionName = $sectionProperties['acedemic_section'] ?? 'Unknown Section';
-                $nodes[] = [
-                    'id' => $sectionId,
-                    'label' => $sectionName,
-                    'color' => [
-                        'background' => '#FF5733',
-                        'border' => '#333333'
-                    ]
-                ];
-                $nodeIds[] = $sectionId;
-            }
-
-            // Add Standard node
-            if (!in_array($standardId, $nodeIds)) {
-                $standardName = $standardProperties['standard'] ?? 'Unknown Standard';
-                $nodes[] = [
-                    'id' => $standardId,
-                    'label' => $standardName
-                ];
-                $nodeIds[] = $standardId;
-            }
-            if (!in_array($subjectId, $nodeIds)) {
-                $subjectName = $subjectProperties['subject'] ?? 'Unknown Subject';
-                $nodes[] = [
-                    'id' => $subjectId,
-                    'label' => $subjectName
-                ];
-                $nodeIds[] = $subjectId;
-            }
-
-            // Add Chapter node
-            if (!in_array($chapterId, $nodeIds)) {
-                $chapterName = $chapterProperties['chapter'] ?? 'Unknown Chapter';
-                $nodes[] = [
-                    'id' => $chapterId,
-                    'label' => $chapterName
-                ];
-                $nodeIds[] = $chapterId;
-            }
-
-            // Add the edges (relationships)
-            $edges[] = [
-                'from' => $sectionId,
-                'to' => $standardId,
-                'label' => $relationship1->getType()
-            ];
-            $edges[] = [
-                'from' => $standardId,
-                'to' => $subjectId,
-                'label' => $relationship2->getType()
-            ];
-            $edges[] = [
-                'from' => $subjectId,
-                'to' => $chapterId,
-                'label' => $relationship3->getType()
-            ];
+            $edges[] = ['from' => $st->getId(),  'to' => $sub->getId(), 'label' => $record->get('r1')->getType()];
+            $edges[] = ['from' => $sub->getId(), 'to' => $ch->getId(),  'label' => $record->get('r2')->getType()];
         }
 
-        // Return the nodes and edges as JSON response
-        return response()->json([
-            'nodes' => $nodes,
-            'edges' => $edges
-        ]);
+        return response()->json(['nodes' => $nodes, 'edges' => $edges]);
     }
 
+    /**
+     * A chapter's concepts and the prerequisites between them — the closure a SQL join
+     * cannot express, which is the reason this path is in the graph at all.
+     */
     public function getLearningPath(): JsonResponse
     {
-        $studentId = 1;  // Example student
-
-        // Cypher query to fetch the student's learning path
         $query = '
-    MATCH (standard:Standard)-[:OFFERS]->(subject:Subject)-[:OFFERS]->(chapter:Chapter)
-    WHERE standard.standard = "8"
-    OPTIONAL MATCH (student)-[:HAS_COMPLETED]->(chapter)
-    OPTIONAL MATCH (chapter)-[:REQUIRES]->(prerequisite:Chapter)
-    RETURN standard, subject, chapter, prerequisite
-    LIMIT 50
-';
+            MATCH (ch:Chapter)-[r1:HAS_CONCEPT]->(con:Concept)
+            OPTIONAL MATCH (pre:Concept)-[r2:PREREQUISITE_OF]->(con)
+            RETURN ch, r1, con, pre
+            LIMIT 50';
 
-        $result = $this->neo4jService->getClient()->run($query, ['studentId' => $studentId]);
-
-        // Initialize arrays for nodes and edges
         $nodes = [];
         $edges = [];
-        $nodeIds = [];
+        $seen  = [];
 
-        foreach ($result as $record) {
-            //$student = $record->get('student');
-            $standard = $record->get('standard');
-            $subject = $record->get('subject');
-            $chapter = $record->get('chapter');
-            $prerequisite = $record->get('prerequisite');
+        foreach ($this->neo4jService->getClient()->run($query) as $record) {
+            $ch  = $record->get('ch');
+            $con = $record->get('con');
+            $pre = $record->get('pre');
 
-            // Get the properties of each node
-            //$studentProperties = $student->getProperties();
-            $standardProperties = $standard->getProperties();
-            $subjectProperties = $subject->getProperties();
-            $chapterProperties = $chapter->getProperties();
-            $prerequisiteProperties = ($prerequisite) ? $prerequisite->getProperties() : null;
-            // Use Neo4j internal IDs for unique identification
-            $studentId = $student->getId();
-            $standardId = $standard->getId();
-            $subjectId = $subject->getId();
-            $chapterId = $chapter->getId();
-            $prerequisiteId = ($prerequisite) ? $prerequisite->getId() : null;
+            $this->addNode($nodes, $seen, $ch,  '#3357FF');
+            $this->addNode($nodes, $seen, $con, '#00FF00');
 
-            // Add Student node
-            if (!in_array($studentId, $nodeIds)) {
-                $studentName = 'Alice';
-                $nodes[] = [
-                    'id' => $studentId,
-                    'label' => $studentName,
-                    'color' => '#FFD700'  // Gold for student node
-                ];
-                $nodeIds[] = $studentId;
-            }
+            $edges[] = ['from' => $ch->getId(), 'to' => $con->getId(), 'label' => $record->get('r1')->getType()];
 
-            // Add Standard node (numeric standard label)
-            if (!in_array($standardId, $nodeIds)) {
-                $standardName = $standardProperties['standard'] ?? 'Unknown Standard';
-                $nodes[] = [
-                    'id' => $standardId,
-                    'label' => 'Standard ' . $standardName,  // Use the numeric standard from LMS content
-                    'color' => '#FFE333'  // Yellow for standard
-                ];
-                $nodeIds[] = $standardId;
-            }
-
-            // Add Subject node
-            if (!in_array($subjectId, $nodeIds)) {
-                $subjectName = $subjectProperties['subject'] ?? 'Unknown Subject';
-                $nodes[] = [
-                    'id' => $subjectId,
-                    'label' => $subjectName,
-                    'color' => '#33FF57'  // Green for subject
-                ];
-                $nodeIds[] = $subjectId;
-            }
-
-            // Add Chapter node (different color if completed)
-            if (!in_array($chapterId, $nodeIds)) {
-                $chapterName = $chapterProperties['chapter'] ?? 'Unknown Chapter';
-                $color =  '#00FF00';  // Green if completed, Red if not completed
-                $nodes[] = [
-                    'id' => $chapterId,
-                    'label' => $chapterName,
-                    'color' => $color
-                ];
-                $nodeIds[] = $chapterId;
-            }
-
-            // Add Prerequisite node if it exists
-            if ($prerequisite && !in_array($prerequisiteId, $nodeIds)) {
-                $prerequisiteName = $prerequisiteProperties['chapter'] ?? 'Unknown Chapter';
-                $nodes[] = [
-                    'id' => $prerequisiteId,
-                    'label' => $prerequisiteName,
-                    'color' => '#CCCCFF'  // Blue for prerequisite
-                ];
-                $nodeIds[] = $prerequisiteId;
-            }
-
-            // Add the edges (relationships)
-            $edges[] = [
-                'from' => $studentId,
-                'to' => $standardId,
-                'label' => 'ENROLLED_IN'
-            ];
-            $edges[] = [
-                'from' => $standardId,
-                'to' => $subjectId,
-                'label' => 'OFFERS'
-            ];
-            $edges[] = [
-                'from' => $subjectId,
-                'to' => $chapterId,
-                'label' => 'OFFERS'
-            ];
-
-            if ($prerequisite) {
-                $edges[] = [
-                    'from' => $prerequisiteId,
-                    'to' => $chapterId,
-                    'label' => 'REQUIRES'
-                ];
+            if ($pre !== null) {
+                $this->addNode($nodes, $seen, $pre, '#CCCCFF');
+                $edges[] = ['from' => $pre->getId(), 'to' => $con->getId(), 'label' => 'PREREQUISITE_OF'];
             }
         }
 
-        return response()->json([
-            'nodes' => $nodes,
-            'edges' => $edges
-        ]);
+        return response()->json(['nodes' => $nodes, 'edges' => $edges]);
+    }
+
+    /**
+     * Add a node once. The label falls back displayLabel -> name -> title -> chapter_name:
+     * the reference ingest sets displayLabel on everything it creates, but the uid-keyed
+     * nodes loaded by the batch pipeline do not all have one.
+     */
+    private function addNode(array &$nodes, array &$seen, $node, string $colour): void
+    {
+        $id = $node->getId();
+        if (isset($seen[$id])) {
+            return;
+        }
+        $seen[$id] = true;
+
+        $props = $node->getProperties();
+        $label = $props['displayLabel']
+            ?? $props['name']
+            ?? $props['title']
+            ?? $props['chapter_name']
+            ?? $props['display_name']
+            ?? ('#' . $id);
+
+        $nodes[] = [
+            'id'    => $id,
+            'label' => (string) $label,
+            'color' => ['background' => $colour, 'border' => '#333333'],
+        ];
     }
 }

@@ -33,6 +33,25 @@ class studentHomeworkModel extends Model {
         'submission_image_type',
         'created_by',
         'created_ip',
-        'created_on'
+        'created_on',
+        'updated_by',
+        'updated_on',
+        'prompt',
+        'student_level',
+        'ai_generated_file',
+        'reviewed_pdf_path',
+        'ai_result_json',
+        'ai_score',
+        'ai_total_questions',
+        'ai_percentage',
+        'ai_status',
+        'ai_failure_reason',
+        'evaluated_at',
+    ];
+
+    protected $casts = [
+        'ai_result_json' => 'array',
+        'evaluated_at' => 'datetime',
+        'ai_percentage' => 'float',
     ];
 }

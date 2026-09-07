@@ -148,9 +148,9 @@ class IntelligenceService
      * @param int $misconceptionId
      * @return array
      */
-    public function getRemediation(int $learnerId, int $misconceptionId): array
+    public function getRemediation(int $learnerId, int $misconceptionId, string $source = 'runtime'): array
     {
-        return $this->misconception->getRemediation($learnerId, $misconceptionId);
+        return $this->misconception->getRemediation($learnerId, $misconceptionId, $source);
     }
 
     /**

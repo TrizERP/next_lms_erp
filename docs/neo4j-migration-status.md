@@ -4,10 +4,42 @@
 > Every session starts by reading it and ends by updating it. If a session dies, this file — not the
 > conversation — is what tells the next session where to resume. Never delete it; never let it drift.
 
-**Last updated:** 2026-08-12 (Phase 5 **GREEN — 11/11**; 2 pipeline defects fixed, 3 decisions settled)
-**Current phase:** 6 — Question bank · **not started**
-**Graph state:** **FOUNDATION + CURRICULUM VERIFIED** — 138,689 nodes / 161,044 rels / 138 constraints.
+**Last updated:** 2026-09-04 — **all eight remaining modules loaded** through a new, additive
+k12-style path (`database/neo4j/cypher/`), which is separate from the uid pipeline this file tracks.
+**Current phase:** the uid pipeline is still at 5; the module scripts cover phases 6-14 by another route.
+**Graph state:** **881,734 nodes / 2,912,957 rels · 170 labels · 169 relationship types** (measured
+2026-09-04). Was 470,776 / 931,049 before this session.
 The pre-migration graph (261,828 nodes / 618,991 rels) was deleted 2026-08-10 and is gone.
+
+> ### 2026-09-04 — the remaining modules were loaded WITHOUT this pipeline
+>
+> The owner's instruction was to extend the graph in the style of `k12_cypher.txt` /
+> `reference_code.txt` — native integer keys, `MERGE ... ON CREATE SET`, `displayLabel` — and to leave
+> the existing nodes and their 24 relationship types untouched. That is a different key convention
+> from the `uid` one this document tracks, so it was built as a separate, additive path rather than
+> by extending `neo4j:export`/`load`:
+>
+> * `database/neo4j/cypher/10_people … 80_platform.cypher` — one script per module.
+> * `database/neo4j/modules.php` — the manifest (script, allowed protected-type growth, per-CSV SQL).
+> * `neo4j:csv-export` and `neo4j:cypher` — export from MariaDB, then run the same `.cypher` file
+>   either here over Bolt or on the server via `cypher-shell`.
+> * `00_k12_reference.cypher` / `01_graph_repair_reference.cypher` — the two reference documents,
+>   verbatim. The repo had no copy of them before; the runner refuses to execute either.
+>
+> **The uid pipeline is unchanged and still works.** `neo4j:export`, `load`, `verify`,
+> `registry-check`, `reset-graph`, `seed-rescue`, `config/neo4j_graph.php` and the `database/neo4j/`
+> generators were not touched. Nor was the live sync (`App\Services\Graph`, `neo4j:drain`).
+>
+> **Verified after the load:** 22 of the 24 protected relationship types are byte-identical;
+> `HAS_STUDENT` (+170,906) and `ENROLLED_IN` (+165,560) grew because those two statements are the
+> reference script's own, re-run over the full 176,458-row table instead of the 5,409-row subset it
+> was given. No pre-existing label lost a node. Re-running a module creates nothing.
+>
+> Full detail: [`neo4j-graph-modules.md`](./neo4j-graph-modules.md).
+>
+> ⚠️ **`neo4j:verify` G6 will now fail.** Its node budget is 700,000 and the graph is 881,734. That
+> gate belongs to the uid pipeline, not to this layer; raise the constant deliberately rather than
+> shrinking the load to fit it.
 **Authoritative source DB:** `vivek_erp` @ `202.47.117.220` (user `vivek_user`) — **decided**
 **PII scope:** full projection on Community, risk accepted — **decided**, owner to be named
 **Blocking decisions outstanding:** TENANT-SCOPE and PREREQ-SOURCE (Phase 5), ONET-WANTED (Phase 13),

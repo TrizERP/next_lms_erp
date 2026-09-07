@@ -67,6 +67,138 @@ class GraphSchema
         'CompetencyStandards' => ['key' => 'competencystandardsId','uid_syear' => null, 'uid_tenant' => null],
         'ChapterStandardMap'  => ['key' => 'chapterstandardmapId', 'uid_syear' => null, 'uid_tenant' => null],
         'AssessmentTypology'  => ['key' => 'assessmenttypologyId', 'uid_syear' => null, 'uid_tenant' => null],
+
+        // ------------------------------------------------------------------
+        // Added 2026-09-04 with the eight module scripts. See
+        // docs/neo4j-graph-modules.md.
+        // ------------------------------------------------------------------
+
+        // -- uid-only parents ------------------------------------------------
+        // These have NO native key: the batch pipeline created them and every
+        // one is keyed `Label:<tenant>:0:<id>`. The `key` below therefore never
+        // matches anything, which is deliberate — the legacy MATCH finds
+        // nothing and the uid fallback resolves the node. Naming a key anyway
+        // keeps one code path for every label instead of a special case.
+        'Institute'           => ['key' => 'instituteId',          'uid_syear' => 0,    'uid_tenant' => 'node'],
+        'Division'            => ['key' => 'divisionId',           'uid_syear' => 0,    'uid_tenant' => 'node'],
+        'Department'          => ['key' => 'departmentId',         'uid_syear' => 0,    'uid_tenant' => 'node'],
+        'Role'                => ['key' => 'roleId',               'uid_syear' => 0,    'uid_tenant' => 'node'],
+        'GradeScheme'         => ['key' => 'gradeschemeId',        'uid_syear' => 0,    'uid_tenant' => 'node'],
+        'Content'             => ['key' => 'contentNodeId',        'uid_syear' => 0,    'uid_tenant' => 'node'],
+        'Topic'               => ['key' => 'topicId',              'uid_syear' => 0,    'uid_tenant' => 'node'],
+        'MappingType'         => ['key' => 'mappingtypeId',        'uid_syear' => 0,    'uid_tenant' => 'global'],
+        // AcademicYear and Period are YEAR-scoped (`AcademicYear:1:2024:5`), and
+        // neither outbox table carries a syear — the same reason :Lesson has no
+        // fallback. Every edge this work builds onto them is an aggregate, which
+        // is recomputed by `neo4j:refresh-aggregates` rather than trigger-synced.
+        'AcademicYear'        => ['key' => 'academicyearId',       'uid_syear' => null, 'uid_tenant' => null],
+        'Period'              => ['key' => 'periodId',             'uid_syear' => null, 'uid_tenant' => null],
+
+        // -- hr ---------------------------------------------------------------
+        // :Staff falls back to :Teacher. `tbluser` is one table and a person is
+        // one node, but the reference script had already claimed 118 of those
+        // rows as :Teacher, so :Staff holds the other 4,653. An HR edge naming
+        // tbluser.id must reach whichever label actually holds that person —
+        // without the sibling it would silently drop every edge for those 118.
+        'Staff'               => ['key' => 'staffId',              'uid_syear' => null, 'uid_tenant' => null, 'sibling' => 'Teacher'],
+        'Holiday'             => ['key' => 'holidayId',            'uid_syear' => null, 'uid_tenant' => null],
+        'LeaveType'           => ['key' => 'leavetypeId',          'uid_syear' => null, 'uid_tenant' => null],
+        'PayrollType'         => ['key' => 'payrolltypeId',        'uid_syear' => null, 'uid_tenant' => null],
+        'StaffShift'          => ['key' => 'staffshiftId',         'uid_syear' => null, 'uid_tenant' => null],
+        'SalaryStructure'     => ['key' => 'salarystructureId',    'uid_syear' => null, 'uid_tenant' => null],
+        'SalaryCertificate'   => ['key' => 'salarycertificateId',  'uid_syear' => null, 'uid_tenant' => null],
+
+        // -- result -----------------------------------------------------------
+        'Examination'         => ['key' => 'examinationId',        'uid_syear' => null, 'uid_tenant' => null],
+        'ExamType'            => ['key' => 'examtypeId',           'uid_syear' => null, 'uid_tenant' => null],
+        'ExamTypeCategory'    => ['key' => 'examtypecategoryId',   'uid_syear' => null, 'uid_tenant' => null],
+        'Grade'               => ['key' => 'gradeId',              'uid_syear' => null, 'uid_tenant' => null],
+        'CoScholasticArea'    => ['key' => 'coscholasticareaId',   'uid_syear' => null, 'uid_tenant' => null],
+        'CoScholasticParent'  => ['key' => 'coscholasticparentId', 'uid_syear' => null, 'uid_tenant' => null],
+        'CoScholasticGradeBand' => ['key' => 'coscholasticgradebandId', 'uid_syear' => null, 'uid_tenant' => null],
+        'Skillset'            => ['key' => 'skillsetId',           'uid_syear' => null, 'uid_tenant' => null],
+        'Activity'            => ['key' => 'activityId',           'uid_syear' => null, 'uid_tenant' => null],
+        'ActivityGroup'       => ['key' => 'activitygroupId',      'uid_syear' => null, 'uid_tenant' => null],
+        'RemarkTemplate'      => ['key' => 'remarktemplateId',     'uid_syear' => null, 'uid_tenant' => null],
+        'ExamSchedule'        => ['key' => 'examscheduleId',       'uid_syear' => null, 'uid_tenant' => null],
+
+        // -- assessment -------------------------------------------------------
+        'QuestionType'        => ['key' => 'questiontypeId',       'uid_syear' => null, 'uid_tenant' => null],
+        'CounsellingCourse'   => ['key' => 'counsellingcourseId',  'uid_syear' => null, 'uid_tenant' => null],
+        'CounsellingQuestion' => ['key' => 'counsellingquestionId','uid_syear' => null, 'uid_tenant' => null],
+        'CounsellingResult'   => ['key' => 'counsellingresultId',  'uid_syear' => null, 'uid_tenant' => null],
+        'OfflineExam'         => ['key' => 'offlineexamId',        'uid_syear' => null, 'uid_tenant' => null],
+        'MbtiPaper'           => ['key' => 'mbtipaperId',          'uid_syear' => null, 'uid_tenant' => null],
+
+        // -- operations -------------------------------------------------------
+        'Book'                => ['key' => 'bookId',               'uid_syear' => null, 'uid_tenant' => null],
+        'BookCopy'            => ['key' => 'bookcopyId',           'uid_syear' => null, 'uid_tenant' => null],
+        'Route'               => ['key' => 'routeId',              'uid_syear' => null, 'uid_tenant' => null],
+        'Stop'                => ['key' => 'stopId',               'uid_syear' => null, 'uid_tenant' => null],
+        'Vehicle'             => ['key' => 'vehicleId',            'uid_syear' => null, 'uid_tenant' => null],
+        'VehicleType'         => ['key' => 'vehicletypeId',        'uid_syear' => null, 'uid_tenant' => null],
+        'Driver'              => ['key' => 'driverId',             'uid_syear' => null, 'uid_tenant' => null],
+        'TransportShift'      => ['key' => 'transportshiftId',     'uid_syear' => null, 'uid_tenant' => null],
+        'Hostel'              => ['key' => 'hostelId',             'uid_syear' => null, 'uid_tenant' => null],
+        'HostelBuilding'      => ['key' => 'hostelbuildingId',     'uid_syear' => null, 'uid_tenant' => null],
+        'HostelFloor'         => ['key' => 'hostelfloorId',        'uid_syear' => null, 'uid_tenant' => null],
+        'HostelRoom'          => ['key' => 'hostelroomId',         'uid_syear' => null, 'uid_tenant' => null],
+        'HostelType'          => ['key' => 'hosteltypeId',         'uid_syear' => null, 'uid_tenant' => null],
+        'RoomType'            => ['key' => 'roomtypeId',           'uid_syear' => null, 'uid_tenant' => null],
+        'HostelVisitor'       => ['key' => 'hostelvisitorId',      'uid_syear' => null, 'uid_tenant' => null],
+        'InventoryItem'       => ['key' => 'inventoryitemId',      'uid_syear' => null, 'uid_tenant' => null],
+        'ItemCategory'        => ['key' => 'itemcategoryId',       'uid_syear' => null, 'uid_tenant' => null],
+        'ItemSubCategory'     => ['key' => 'itemsubcategoryId',    'uid_syear' => null, 'uid_tenant' => null],
+        'ItemType'            => ['key' => 'itemtypeId',           'uid_syear' => null, 'uid_tenant' => null],
+        'Vendor'              => ['key' => 'vendorId',             'uid_syear' => null, 'uid_tenant' => null],
+        'FileLocation'        => ['key' => 'filelocationId',       'uid_syear' => null, 'uid_tenant' => null],
+        'Visitor'             => ['key' => 'visitorId',            'uid_syear' => null, 'uid_tenant' => null],
+        'VisitorType'         => ['key' => 'visitortypeId',        'uid_syear' => null, 'uid_tenant' => null],
+        'InwardDocument'      => ['key' => 'inwarddocumentId',     'uid_syear' => null, 'uid_tenant' => null],
+        'OutwardDocument'     => ['key' => 'outwarddocumentId',    'uid_syear' => null, 'uid_tenant' => null],
+        'FrontDeskEntry'      => ['key' => 'frontdeskentryId',     'uid_syear' => null, 'uid_tenant' => null],
+        'Complaint'           => ['key' => 'complaintId',          'uid_syear' => null, 'uid_tenant' => null],
+        'Circular'            => ['key' => 'circularId',           'uid_syear' => null, 'uid_tenant' => null],
+        'CircularType'        => ['key' => 'circulartypeId',       'uid_syear' => null, 'uid_tenant' => null],
+        'Announcement'        => ['key' => 'announcementId',       'uid_syear' => null, 'uid_tenant' => null],
+
+        // -- finance (every node also carries authoritative:false) -------------
+        'FeeHead'             => ['key' => 'feeheadId',            'uid_syear' => null, 'uid_tenant' => null],
+        'FeeTitle'            => ['key' => 'feetitleId',           'uid_syear' => null, 'uid_tenant' => null],
+        'FeeTitleMaster'      => ['key' => 'feetitlemasterId',     'uid_syear' => null, 'uid_tenant' => null],
+        'FeeOtherHead'        => ['key' => 'feeotherheadId',       'uid_syear' => null, 'uid_tenant' => null],
+        'FeeConfig'           => ['key' => 'feeconfigId',          'uid_syear' => null, 'uid_tenant' => null],
+        'LateFeeRule'         => ['key' => 'latefeeruleId',        'uid_syear' => null, 'uid_tenant' => null],
+        'FeeMonth'            => ['key' => 'feemonthId',           'uid_syear' => null, 'uid_tenant' => null],
+        'FeeCircular'         => ['key' => 'feecircularId',        'uid_syear' => null, 'uid_tenant' => null],
+        'FeeCancelType'       => ['key' => 'feecanceltypeId',      'uid_syear' => null, 'uid_tenant' => null],
+        'Bank'                => ['key' => 'bankId',               'uid_syear' => null, 'uid_tenant' => null],
+        'ReceiptBook'         => ['key' => 'receiptbookId',        'uid_syear' => null, 'uid_tenant' => null],
+        'PettyCashHead'       => ['key' => 'pettycashheadId',      'uid_syear' => null, 'uid_tenant' => null],
+        'Donation'            => ['key' => 'donationId',           'uid_syear' => null, 'uid_tenant' => null],
+
+        // -- skills / SQAA / O*NET --------------------------------------------
+        'Skill'               => ['key' => 'skillId',              'uid_syear' => null, 'uid_tenant' => null],
+        'JobRole'             => ['key' => 'jobroleId',            'uid_syear' => null, 'uid_tenant' => null],
+        'JobTask'             => ['key' => 'jobtaskKey',           'uid_syear' => null, 'uid_tenant' => null],
+        'Industry'            => ['key' => 'industryId',           'uid_syear' => null, 'uid_tenant' => null],
+        'SkillAssessment'     => ['key' => 'skillassessmentId',    'uid_syear' => null, 'uid_tenant' => null],
+        'SQAAStandard'        => ['key' => 'sqaastandardId',       'uid_syear' => null, 'uid_tenant' => null],
+        'SQAADocument'        => ['key' => 'sqaadocumentId',       'uid_syear' => null, 'uid_tenant' => null],
+        'OnetOccupation'      => ['key' => 'onetsocCode',          'uid_syear' => null, 'uid_tenant' => null],
+        'OnetElement'         => ['key' => 'elementId',            'uid_syear' => null, 'uid_tenant' => null],
+        'OnetScale'           => ['key' => 'scaleId',              'uid_syear' => null, 'uid_tenant' => null],
+        'OnetTask'            => ['key' => 'taskId',               'uid_syear' => null, 'uid_tenant' => null],
+        'JobZone'             => ['key' => 'jobzoneId',            'uid_syear' => null, 'uid_tenant' => null],
+        'UnspscCategory'      => ['key' => 'commodityCode',        'uid_syear' => null, 'uid_tenant' => null],
+        'CareerCluster'       => ['key' => 'careerclusterId',      'uid_syear' => null, 'uid_tenant' => null],
+        'WorkContextCategory' => ['key' => 'workcontextcategoryKey','uid_syear' => null, 'uid_tenant' => null],
+
+        // -- platform ----------------------------------------------------------
+        'CalendarEvent'       => ['key' => 'calendareventId',      'uid_syear' => null, 'uid_tenant' => null],
+        'Task'                => ['key' => 'taskId',               'uid_syear' => null, 'uid_tenant' => null],
+        'TimeSlot'            => ['key' => 'timeslotId',           'uid_syear' => null, 'uid_tenant' => null],
+        'LeaderboardRule'     => ['key' => 'leaderboardruleId',    'uid_syear' => null, 'uid_tenant' => null],
     ];
 
     /**
@@ -88,6 +220,64 @@ class GraphSchema
         'ATTEMPTED', 'ATTENDED', 'MASTERS', 'HAS_MISCONCEPTION',
         'INCLUDES', 'BELONGS_TO_CURRICULUM', 'PREREQUISITE_OF',
         'HAS_CONCEPT',
+
+        // ------------------------------------------------------------------
+        // Added 2026-09-04 with the eight module scripts. Every one of these is
+        // a NEW type — none overloads a type the reference layer already uses,
+        // which is what lets the drain write them without the protected counts
+        // moving. See docs/neo4j-graph-modules.md §3.
+        // ------------------------------------------------------------------
+
+        // people
+        'IN_DIVISION', 'STUDIES', 'SIBLING_OF', 'GUARDIAN_OF', 'HAS_INCIDENT',
+
+        // hr
+        'HAS_ROLE', 'IN_DEPARTMENT', 'WORKS_AT', 'REPORTS_TO', 'HAS_HOLIDAY',
+        'TOOK_LEAVE', 'ALLOCATED_LEAVE', 'APPLIED_FOR_LEAVE',
+        'HAS_SALARY_STRUCTURE', 'HAS_SALARY_CERTIFICATE', 'MAPPED_TO',
+        'CLASS_TEACHER_OF', 'TEACHES_SUBJECT', 'TEACHES_CLASS', 'SCHEDULED',
+        'TEACHES_SUBJECT_DECLARED', 'SUBSTITUTED_FOR', 'ATTENDANCE_MONTH',
+        'DEDUCTION', 'PAYROLL_YEAR',
+
+        // result
+        'OF_EXAM_TYPE', 'HAS_EXAMINATION', 'EXAMINES_SUBJECT', 'IN_PART',
+        'HAS_GRADE_BAND', 'IN_SKILLSET', 'HAS_GRADE', 'USES_GRADE_SCHEME',
+        'HAS_EXAM_SCHEDULE', 'SCORED', 'REPORTCARD',
+
+        // assessment
+        'TAGGED_AS', 'OF_QUESTION_TYPE', 'HAS_COUNSELLING_QUESTION',
+        'FOR_COURSE', 'TOOK_COUNSELLING_TEST', 'HAS_OFFLINE_EXAM',
+        'FOR_OFFLINE_ASSESSMENT', 'ASSIGNED_EXAM', 'MASTERS_CHAPTER',
+
+        // operations
+        'COPY_OF', 'BORROWED', 'HAS_STOP', 'SERVES', 'DRIVEN_BY',
+        'OF_VEHICLE_TYPE', 'RUNS_IN_SHIFT', 'BOARDS_AT', 'OF_HOSTEL_TYPE',
+        'HAS_BUILDING', 'HAS_FLOOR', 'HAS_ROOM', 'ALLOCATED_ROOM',
+        'IN_CATEGORY', 'IN_SUB_CATEGORY', 'OF_ITEM_TYPE', 'UNDER_CATEGORY',
+        'REQUISITIONED', 'ALLOCATED_ITEM', 'SUPPLIED', 'PURCHASE_ORDER',
+        'QUOTED', 'FILED_AT', 'OF_VISITOR_TYPE', 'OF_CIRCULAR_TYPE',
+        'HAS_INWARD', 'HAS_OUTWARD', 'HAS_VISITOR', 'HAS_COMPLAINT',
+        'HAS_CIRCULAR', 'HAS_ANNOUNCEMENT', 'HAS_HOSTEL', 'HAS_ROUTE',
+        'CIRCULATED_TO',
+
+        // finance
+        'OF_TITLE_MASTER', 'APPLIES_TO_STANDARD', 'FOR_STANDARD', 'FEE_YEAR',
+        'RECEIVED_DONATION', 'APPLIES_TO', 'LIABLE_FOR', 'PAID', 'PAID_FEES',
+        'PETTY_CASH',
+
+        // skills / SQAA / O*NET
+        'REQUIRES_SKILL', 'INVOLVES_TASK', 'HAS_SKILL', 'PARENT_OF_STANDARD',
+        'REQUIRES_DOCUMENT', 'SUBMITTED', 'SCORED_SQAA', 'IN_JOB_ZONE',
+        'CLUSTERS_OCCUPATION', 'HAS_TASK', 'FOR_ELEMENT',
+        'REQUIRES_SKILL_ELEMENT', 'REQUIRES_ABILITY', 'REQUIRES_KNOWLEDGE',
+        'INVOLVES_ACTIVITY', 'HAS_WORK_STYLE', 'HAS_INTEREST',
+        'HAS_WORK_VALUE', 'HAS_WORK_CONTEXT', 'PERFORMS_TASK',
+        'USES_TECHNOLOGY', 'USES_TOOL',
+
+        // platform
+        'HAS_CALENDAR_EVENT', 'ASSIGNED_TASK', 'CREATED_BY', 'BOOKED_PTM',
+        'IN_SLOT', 'VIEWED', 'COMMUNICATION', 'SENT_COMMUNICATION',
+        'EARNED_POINTS',
     ];
 
     public static function knowsLabel(string $label): bool
@@ -114,6 +304,27 @@ class GraphSchema
         self::assertLabel($label);
 
         return self::LABELS[$label]['uid_syear'] !== null;
+    }
+
+    /**
+     * The other label that may hold the same real-world entity, or null.
+     *
+     * Only :Staff has one. `tbluser` is a single table and a person should be a
+     * single node, but the reference ingest had already claimed 118 of those
+     * rows as :Teacher before :Staff existed, so :Staff deliberately holds only
+     * the other 4,653. An HR edge carries `tbluser.id` and cannot know which of
+     * the two labels that person landed in; without this the drain would look
+     * only under :Staff and silently drop every edge belonging to those 118.
+     *
+     * This is NOT a uid fallback — both labels are natively keyed, on different
+     * property names — so it is resolved by picking the label before the Cypher
+     * is built, rather than by a coalesce inside it.
+     */
+    public static function siblingOf(string $label): ?string
+    {
+        self::assertLabel($label);
+
+        return self::LABELS[$label]['sibling'] ?? null;
     }
 
     /**

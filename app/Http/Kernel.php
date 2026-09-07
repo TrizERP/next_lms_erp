@@ -76,7 +76,12 @@ class Kernel extends HttpKernel
         'check_permissions' =>\App\Http\Middleware\checkPermission::class,
         'api.session' => \App\Http\Middleware\ApiSessionHydrator::class,
         'pal.auth' => \App\Http\Middleware\PalApiAuth::class,
+        'eso.student' => \App\Http\Middleware\EsoStudentOnlyAuth::class,
         'staff.only' => \App\Http\Middleware\RequireStaffRole::class,
+        'throttle.qgen' => \App\Http\Middleware\ThrottleQuestionGeneration::class,
         'task.permission' => \App\Http\Middleware\TaskPermissionMiddleware::class,
+        'brain.auth' => \App\Http\Middleware\Brain\BrainAuthenticate::class,
+        'brain.tenant' => \App\Http\Middleware\Brain\BrainTenantScope::class,
+        'brain.permission' => \App\Http\Middleware\Brain\BrainRequirePermission::class,
     ];
 }

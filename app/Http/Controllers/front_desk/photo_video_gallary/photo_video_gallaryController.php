@@ -255,7 +255,11 @@ class photo_video_gallaryController extends Controller
         if ($_REQUEST['type'] == 'Photo') {
             // return "photo";exit;
             if ($request->hasFile('attachment')) {
+                $allStudents = [];
+                $totalPhotos = 0;
+
                 foreach ($request->file('attachment') as $key => $file_data) {
+                    $totalPhotos++;
                     $file_name = $file_size = $ext = "";
                     $originalname = $file_data->getClientOriginalName();
                     $file_size = $file_data->getSize();
@@ -285,7 +289,6 @@ class photo_video_gallaryController extends Controller
                                 
                                 DB::table('photo_video_gallary')->insert($values);
 
-                                //START Send Notification Code
                                 $student_data = DB::table("tblstudent_enrollment as se")
                                     ->join('tblstudent as s', function ($join) {
                                         $join->whereRaw("s.id = se.student_id AND s.sub_institute_id = se.sub_institute_id");
@@ -298,79 +301,82 @@ class photo_video_gallaryController extends Controller
                                     ->where("se.sub_institute_id", "=", $sub_institute_id)
                                     ->get()->toArray();
 
-                                $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
-                                $schoolName = $schoolData[0]['SchoolName'];
-                                $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
-
                                 if (count($student_data) > 0) {
-                                    foreach ($student_data as $key => $val) {
-                                        $student_id = $val->student_id;
-                                        $mobile_no = $val->mobile;
-                                        $student_name = $val->student_name;
-
-                                        if ($_REQUEST['type'] == 'Photo') {
-                                            $screen_name = 'photos_gallery';
-                                            $noti_type = 'Photo Gallery';
-                                        } else {
-                                            $screen_name = 'video_gallery';
-                                            $noti_type = 'Video Gallery';
-                                        }
-
-
-                                        $pushMessage = $_REQUEST['title']." has been added in Photo Video Gallary for date : ".date('d-m-Y',
-                                                strtotime($_REQUEST['date_']));//$student_name . " - ".
-
-                                        $app_notification_content = [
-                                            'NOTIFICATION_TYPE'        => $noti_type,
-                                            'NOTIFICATION_DATE'        => $_REQUEST['date_'],
-                                            'STUDENT_ID'               => $student_id,
-                                            'NOTIFICATION_DESCRIPTION' => $pushMessage,
-                                            'STATUS'                   => 0,
-                                            'SUB_INSTITUTE_ID'         => $sub_institute_id,
-                                            'SYEAR'                    => $syear,
-                                            'SCREEN_NAME'              => $screen_name,
-                                            'CREATED_BY'               => $user_id,
-                                            'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+                                    foreach ($student_data as $val) {
+                                        $allStudents[$val->student_id] = [
+                                            'student_id' => $val->student_id,
+                                            'mobile_no' => $val->mobile,
+                                            'student_name' => $val->student_name,
                                         ];
-
-                                        $gcm_data = DB::table("gcm_users")
-                                            ->where("mobile_no", "=", $mobile_no)
-                                            ->where("sub_institute_id", "=", $sub_institute_id)
-                                            ->groupBy("gcm_regid")
-                                            ->get()->toArray();
-
-                                        $gcmRegIds = [];
-                                        if (count($gcm_data) > 0) {
-                                            foreach ($gcm_data as $key1 => $val1) {
-                                                array_push($gcmRegIds, $val1->gcm_regid);
-                                            }
-                                        }
-                                        sendNotification($app_notification_content);
-
-                                        $bunch_arr = array_chunk($gcmRegIds, 1000);
-                                        if (! empty($bunch_arr)) {
-                                            foreach ($bunch_arr as $val) {
-                                                if (isset($val, $pushMessage)) {
-                                                    $type = $noti_type;
-                                                    $message = [
-                                                        'body'    => $pushMessage, 'TYPE' => $type,
-                                                        'USER_ID' => $student_id, 'title' => $schoolName.' - '.$type,
-                                                        'image'   => $schoolLogo,
-                                                    ];
-                                                    /*
-                                                    Rajesh: stop push notification for photo-video gallery
-                                                    $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
-                                                    */
-                                                    // sendNotification($app_notification_content);
-                                                }
-                                            }
-                                        }
-
                                     }
                                 }
-                                //END Send Notification Code 
                             }
                         }
+                    }
+                }
+
+                if (!empty($allStudents)) {
+                    $schoolData = SchoolModel::where(['id' => $sub_institute_id])->get()->toArray();
+                    $schoolName = $schoolData[0]['SchoolName'];
+                    $schoolLogo = $_SERVER['APP_URL'].'/admin_dep/images/'.$schoolData[0]['Logo'];
+
+                    foreach ($allStudents as $val) {
+                        $student_id = $val['student_id'];
+                        $mobile_no = $val['mobile_no'];
+                        $student_name = $val['student_name'];
+
+                        $screen_name = 'photos_gallery';
+                        $noti_type = 'Photo Gallery';
+
+                        $pushMessage = $totalPhotos." new photos have been added in Photo Video Gallary for date : ".date('d-m-Y',
+                                strtotime($_REQUEST['date_']));
+
+                        $app_notification_content = [
+                            'NOTIFICATION_TYPE'        => $noti_type,
+                            'NOTIFICATION_DATE'        => $_REQUEST['date_'],
+                            'STUDENT_ID'               => $student_id,
+                            'NOTIFICATION_DESCRIPTION' => $pushMessage,
+                            'STATUS'                   => 0,
+                            'SUB_INSTITUTE_ID'         => $sub_institute_id,
+                            'SYEAR'                    => $syear,
+                            'SCREEN_NAME'              => $screen_name,
+                            'CREATED_BY'               => $user_id,
+                            'CREATED_IP'               => $_SERVER['REMOTE_ADDR'],
+                        ];
+
+                        $gcm_data = DB::table("gcm_users")
+                            ->where("mobile_no", "=", $mobile_no)
+                            ->where("sub_institute_id", "=", $sub_institute_id)
+                            ->groupBy("gcm_regid")
+                            ->get()->toArray();
+
+                        $gcmRegIds = [];
+                        if (count($gcm_data) > 0) {
+                            foreach ($gcm_data as $key1 => $val1) {
+                                array_push($gcmRegIds, $val1->gcm_regid);
+                            }
+                        }
+                        sendNotification($app_notification_content);
+
+                        $bunch_arr = array_chunk($gcmRegIds, 1000);
+                        if (! empty($bunch_arr)) {
+                            foreach ($bunch_arr as $val) {
+                                if (isset($val, $pushMessage)) {
+                                    $type = $noti_type;
+                                    $message = [
+                                        'body'    => $pushMessage, 'TYPE' => $type,
+                                        'USER_ID' => $student_id, 'title' => $schoolName.' - '.$type,
+                                        'image'   => $schoolLogo,
+                                    ];
+                                    /*
+                                    Rajesh: stop push notification for photo-video gallery
+                                    $pushStatus = send_FCM_Notification($val, $message, $sub_institute_id);
+                                    */
+                                    // sendNotification($app_notification_content);
+                                }
+                            }
+                        }
+
                     }
                 }
             }else{

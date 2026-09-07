@@ -192,6 +192,25 @@ return new class extends Migration
                 'hints' => ['student_id'],
                 'watch' => ['student_id', 'question_paper_id', 'total_right', 'total_wrong', 'obtain_marks'],
             ],
+            // Bespoke for the same reason: `tbluser` maps to :Teacher for the 118
+            // the reference ingest claimed and :Staff for the other 4,653, so
+            // StaffGraphProjection owns it and there is no column-map spec to
+            // derive the watch list from.
+            //
+            // The watch list deliberately EXCLUDES `last_login`, which every
+            // login updates — this is the hottest table in the schema and
+            // queueing a graph event per sign-in would swamp the drain with
+            // events that change nothing in the graph.
+            'tbluser' => [
+                'hints' => ['sub_institute_id'],
+                'watch' => [
+                    'user_name', 'first_name', 'middle_name', 'last_name', 'email', 'mobile',
+                    'gender', 'user_profile_id', 'department_id', 'jobtitle_id', 'employee_no',
+                    'qualification', 'occupation', 'joined_date', 'relieving_date',
+                    'reporting_manager_id', 'subject_ids', 'allocated_standards',
+                    'total_lecture', 'status', 'is_admin', 'sub_institute_id',
+                ],
+            ],
         ];
 
         foreach ((array) config('neo4j.projections.triggered', []) as $table) {
@@ -205,14 +224,24 @@ return new class extends Migration
                 continue;
             }
 
-            $watch = array_values($spec['properties']);
+            // An edge-only spec (a join table) has no `properties` at all.
+            $watch = array_values($spec['properties'] ?? []);
+
+            $hints = [];
 
             foreach ($spec['relationships'] ?? [] as $rel) {
                 $watch[] = $rel['from'][1];
                 $watch[] = $rel['to'][1];
-            }
 
-            $hints = [];
+                // For an edge-only row the endpoints must ride along in the
+                // event: once the row is deleted there is nothing left to
+                // re-read, and `delete()` rebuilds the edge from the hints in
+                // order to remove it.
+                if (($spec['edges_only'] ?? false) === true) {
+                    $hints[] = $rel['from'][1];
+                    $hints[] = $rel['to'][1];
+                }
+            }
 
             // A column-keyed node (:Subject) needs its key in the event: after
             // the mapping row is deleted there is no way to look it up.

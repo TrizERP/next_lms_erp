@@ -36,6 +36,10 @@ class ProjectionRegistry
     private const BESPOKE = [
         StudentGraphProjection::class,
         ResultGraphProjection::class,
+        // `tbluser` maps to TWO labels — :Teacher for the 118 the reference
+        // ingest claimed, :Staff for the other 4,653 — and which one a row
+        // belongs to is a fact about the graph, not about the row.
+        StaffGraphProjection::class,
     ];
 
     /** @var array<string, GraphProjection>|null  table => projection */

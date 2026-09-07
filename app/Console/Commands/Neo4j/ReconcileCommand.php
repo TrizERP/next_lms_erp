@@ -361,6 +361,14 @@ class ReconcileCommand extends Command
                 continue;
             }
 
+            // An edge-only spec (a join table such as `hrms_emp_leaves`) owns no
+            // label, so there is no node population to count rows against. Its
+            // edges are still audited by --relationships, which reads
+            // `producedEdges()` rather than this map.
+            if (($spec['edges_only'] ?? false) === true || ! isset($spec['label'])) {
+                continue;
+            }
+
             $targets[$table] = [$spec['label'], $spec['key_column'] ?? 'id'];
         }
 

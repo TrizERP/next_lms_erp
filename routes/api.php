@@ -38,7 +38,6 @@ use App\Http\Controllers\api\TeacherTimetableApiController;
 use App\Http\Controllers\api\TeacherFeeDuesApiController;
 use App\Http\Controllers\api\TeacherIcardApiController;
 
-
 // Student Assessment API - Get student assessment data with scores and levels
 Route::get('/student-assessment', [StudentGraphController::class, 'getStudentAssessment']);
 Route::middleware('api.session')->group(function () { Route::post('teacher/assignments/standards', [TeacherAssignmentMobileApiController::class, 'standards']); Route::post('teacher/assignments/divisions', [TeacherAssignmentMobileApiController::class, 'divisions']); });
@@ -138,6 +137,10 @@ Route::post('/compliance/delete/{id}',[instituteDetailController::class,'destroy
 Route::post('/menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMenuRightsLevelWise']);
 Route::get('/master-menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMasterMenuApi']);
 
+// Fees-only: the seven category tabs on the dedicated Fees page. Presentation
+// grouping over the module's existing menus — see FeesMenuCategoryApiController.
+Route::match(['get', 'post'], 'fees/menu-categories', [App\Http\Controllers\api\FeesMenuCategoryApiController::class, 'index']);
+
 // GET is accepted alongside POST so these can be opened in a browser or curled without
 // a body — the handlers read their parameters through $request->input(), which covers
 // the query string as well. POST is unchanged, so existing callers are unaffected.
@@ -178,12 +181,28 @@ Route::post('lms-homework/homework-subjects', [\App\Http\Controllers\api\lms\Stu
 Route::post('lms-homework/submission-list', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionList']);
 Route::post('lms-homework/submission-store', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionStore']);
 Route::post('lms-homework/submission-report', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionReport']);
+Route::post('lms-homework/ai-status/{id}', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'aiEvaluationStatus']);
 
 // ------------------------------------------------------------------
 // LMS Assignment / Assignment Submission / Annotate Assignment
 // (dedicated LmsAssignmentApiController - token-auth counterparts of the
 //  session/blade controllers under App\Http\Controllers\lms\assignment)
 // ------------------------------------------------------------------
+// Module 1 - Assignment (teacher create)
+Route::post('lms-assignment/subjects', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'subjects']);
+Route::post('lms-assignment/students', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'students']);
+Route::post('lms-assignment/exam-papers', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'examPapers']);
+Route::post('lms-assignment/store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'store']);
+Route::post('lms-assignment/list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'index']);
+Route::post('lms-assignment/bulk-delete', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'bulkDelete']);
+// Module 2 - Assignment Submission (student upload)
+Route::post('lms-assignment/submission-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionList']);
+Route::post('lms-assignment/submission-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionStore']);
+Route::post('lms-assignment/ai-status/{id}', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'aiEvaluationStatus']);
+// Module 3 - Annotate Assignment (teacher review / grade)
+Route::post('lms-assignment/annotate-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateList']);
+Route::post('lms-assignment/annotate-questions', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateQuestions']);
+Route::post('lms-assignment/annotate-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateStore']);
 // Student side of the Assignment module is deliberately narrow: a student may
 // VIEW the assignments given to them and SUBMIT a file against them, nothing
 // else. Every other screen -- creating assignments, picking students, reading
@@ -211,6 +230,53 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
 Route::middleware('api.session')->group(function () {
     Route::post('lms-assignment/submission-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionList']);
     Route::post('lms-assignment/submission-store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'submissionStore']);
+});
+
+// ------------------------------------------------------------------
+// LMS Engagement - Leader Board + Social & Collaborative
+// (K12 rebuild of the legacy Blade modules lms/lmsLeaderboard and
+//  lms/lmsSocialCollabrotive. Both are reimplemented as stateless REST APIs in
+//  App\Http\Controllers\api\lms; the legacy web controllers and routes are
+//  untouched and keep serving the old ERP.)
+//
+// `api.session` validates the bearer JWT and hydrates the session from the
+// verified payload, so tenant (sub_institute_id), user and academic year come
+// from the token - never from the request body. Both modules are open to
+// students AND staff (that is the legacy behaviour: a student raises a doubt,
+// a teacher or a classmate replies), so neither sits behind `staff.only`;
+// per-role visibility is enforced inside the services.
+// ------------------------------------------------------------------
+Route::middleware('api.session')->prefix('lms')->group(function () {
+    // Leader Board (read-only - nothing in the ERP writes lb_points).
+    Route::get('leaderboard', [\App\Http\Controllers\api\lms\LmsLeaderboardApiController::class, 'index']);
+    Route::get('leaderboard/filters', [\App\Http\Controllers\api\lms\LmsLeaderboardApiController::class, 'filters']);
+    Route::get('leaderboard/rankings', [\App\Http\Controllers\api\lms\LmsLeaderboardApiController::class, 'rankings']);
+    Route::get('leaderboard/{userId}', [\App\Http\Controllers\api\lms\LmsLeaderboardApiController::class, 'show'])
+        ->where('userId', '[0-9]+');
+
+    // Leader Board Master - the admin points configuration (lb_master).
+    // Staff-only: students and parents must not reach the configuration screen.
+    Route::middleware('staff.only')->group(function () {
+        Route::get('leaderboard-master', [\App\Http\Controllers\api\lms\LmsLeaderboardMasterApiController::class, 'index']);
+        Route::post('leaderboard-master', [\App\Http\Controllers\api\lms\LmsLeaderboardMasterApiController::class, 'store']);
+        Route::get('leaderboard-master/{id}', [\App\Http\Controllers\api\lms\LmsLeaderboardMasterApiController::class, 'show'])
+            ->where('id', '[0-9]+');
+        Route::put('leaderboard-master/{id}', [\App\Http\Controllers\api\lms\LmsLeaderboardMasterApiController::class, 'update'])
+            ->where('id', '[0-9]+');
+        Route::delete('leaderboard-master/{id}', [\App\Http\Controllers\api\lms\LmsLeaderboardMasterApiController::class, 'destroy'])
+            ->where('id', '[0-9]+');
+    });
+
+    // Social & Collaborative (doubt feed + conversations).
+    Route::get('social-collaborative', [\App\Http\Controllers\api\lms\LmsSocialCollaborativeApiController::class, 'index']);
+    Route::get('social-collaborative/lookups/subjects', [\App\Http\Controllers\api\lms\LmsSocialCollaborativeApiController::class, 'subjects']);
+    Route::get('social-collaborative/lookups/chapters', [\App\Http\Controllers\api\lms\LmsSocialCollaborativeApiController::class, 'chapters']);
+    Route::get('social-collaborative/lookups/topics', [\App\Http\Controllers\api\lms\LmsSocialCollaborativeApiController::class, 'topics']);
+    Route::get('social-collaborative/{id}', [\App\Http\Controllers\api\lms\LmsSocialCollaborativeApiController::class, 'show'])
+        ->where('id', '[0-9]+');
+    Route::post('social-collaborative', [\App\Http\Controllers\api\lms\LmsSocialCollaborativeApiController::class, 'store']);
+    Route::post('social-collaborative/{id}/comments', [\App\Http\Controllers\api\lms\LmsSocialCollaborativeApiController::class, 'storeComment'])
+        ->where('id', '[0-9]+');
 });
 
 // ------------------------------------------------------------------
@@ -327,12 +393,58 @@ Route::post('intelligence/lesson-plan-periods/{id}/delete', [\App\Http\Controlle
 Route::match(['GET', 'POST'], 'intelligence/lesson-plan-lookup/chapters', [\App\Http\Controllers\api\lms\LessonPlanLookupApiController::class, 'chapters']);
 Route::match(['GET', 'POST'], 'intelligence/lesson-plan-lookup/periods', [\App\Http\Controllers\api\lms\LessonPlanLookupApiController::class, 'periods']);
 
+/*
+| Lesson Intelligence - the four-phase lesson-plan generator.
+|   Phase 0  capacity     how much teaching time the term actually has
+|   Phase 1  macro-plan   chapters spread across the term's weeks
+|   Phase 2  meso-plan    concepts placed into dated period slots
+|   Phase 3  micro-plan   the LLM-written 5E content for a period
+| Phases 0-2 are pure arithmetic and free to re-run; phase 3 costs one DeepSeek
+| call per period, so it is only ever triggered explicitly.
+*/
+Route::prefix('lesson-intelligence')->group(function () {
+    // Cascading selection - only combinations that have a real timetable.
+    Route::match(['GET', 'POST'], 'dropdowns', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'dropdowns']);
+    Route::match(['GET', 'POST'], 'dropdowns/filter', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'dropdownFilter']);
+
+    // Phase 0 - read-only.
+    Route::match(['GET', 'POST'], 'capacity', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'capacity']);
+    Route::match(['GET', 'POST'], 'calendar-events', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'calendarEvents']);
+
+    // Phase 1.
+    Route::match(['GET', 'POST'], 'macro-plan/show', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'showMacroPlan']);
+    Route::post('macro-plan', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'storeMacroPlan']);
+
+    // Phase 2.
+    Route::match(['GET', 'POST'], 'meso-plan/{planId}/teachers', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'mesoPlanTeachers']);
+    Route::match(['GET', 'POST'], 'meso-plan/{planId}/periods', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'mesoPlanPeriods']);
+    Route::post('meso-plan/{planId}', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'storeMesoPlan']);
+
+    // Phase 3 - billable.
+    Route::post('micro-plan/period/{periodId}', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'storeMicroPlan']);
+    Route::post('micro-plan/plan/{planId}/batch', [\App\Http\Controllers\api\lms\LessonIntelligenceApiController::class, 'storeMicroPlanBatch']);
+});
+
 // Intelligence Question Generation - MCQ / narrative items via DeepSeek LLM -> lms_question_master
-Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);
+//
+// Teacher-side and billable: one call can be ~17 sequential DeepSeek calls that
+// write rows into lms_question_master. It therefore runs the full gate:
+//   api.session   verifies the bearer JWT and hydrates the session. The tenant
+//                 (sub_institute_id) and author (created_by) are read from that
+//                 hydrated session, NOT from the request body, so a caller can
+//                 no longer write AI questions into another school attributed
+//                 to another user.
+//   staff.only    rejects Student/Parent tokens.
+//   throttle.qgen per-user spend cap (see config/deepseek.php), replacing the
+//                 group's throttle:1000,1 which was no limit at all here.
+Route::middleware(['api.session', 'staff.only', 'throttle.qgen'])->group(function () {
+    Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);
+});
 
 // Semantic Intelligence - read-only chapter intelligence for presentation generators
 Route::get('semantic-intelligence', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'index']);
 Route::get('semantic-intelligence/{extraction_id}/result', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'show']);
+Route::get('semantic-intelligence/rows', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'rows']);
 
 // Concept Intelligence tab names - renamed per institute, defaults in
 // config/lms_concept_intelligence_tabs.php

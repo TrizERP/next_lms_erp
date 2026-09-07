@@ -332,6 +332,22 @@ Route::get('matchProfile', [lmsCounsellingController::class, 'matchProfile']);
 Route::middleware(['session'])->group(function () {
     Route::get('studentAspiration', [lmsCounsellingController::class, 'studentAspiration']);
     Route::post('studentAspiration', [lmsCounsellingController::class, 'saveStudentAspiration']);
+    // Career ambition (CI-GUIDE-DEV-001, Career Awareness Level-3) — free-text
+    // ambition capture, mirrors career certainty's pattern.
+    Route::get('studentAmbition', [lmsCounsellingController::class, 'studentAmbition']);
+    Route::post('studentAmbition', [lmsCounsellingController::class, 'saveStudentAmbition']);
+    // Career alignment (CI-GUIDE-DEV-001 Group D1) — GET only, so no CSRF
+    // exemption needed (VerifyCsrfToken never checks GET/HEAD/OPTIONS).
+    Route::get('careerAlignment', [lmsCounsellingController::class, 'careerAlignment']);
+    // Career originality (CI-GUIDE-DEV-001, Career Awareness Level-3) —
+    // free-text originality capture, mirrors career ambition's pattern.
+    Route::get('studentOriginality', [lmsCounsellingController::class, 'studentOriginality']);
+    Route::post('studentOriginality', [lmsCounsellingController::class, 'saveStudentOriginality']);
+    // Phase-1 Career Intelligence (evidence-first UI). GET only, same reasoning.
+    Route::get('studentCareerEvidence', [lmsCounsellingController::class, 'studentCareerEvidence']);
+    // Knowledge-Based Career Recommendation Engine — additive, dynamic
+    // knowledge-vs-occupation matching. GET only, same reasoning.
+    Route::get('careerRecommendation', [\App\Http\Controllers\lms\counselling\CareerRecommendationController::class, 'recommend']);
 });
 Route::post('/ai/processData',[contentController::class,'processAIData'])->name('ai.processData');
 Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan');
@@ -365,7 +381,6 @@ Route::resource('lms/new_chapter_master',chapterMasterController::class);
 Route::resource('lms/new_curriculum',newCurricuumController::class);
 
 
-// use App\Http\Controllers\lms\Neo4jSyncController;
 // use App\Http\Controllers\lms\GraphController;
 // use App\Http\Controllers\lms\RecommendationController;
 // use App\Http\Controllers\lms\GraphControllerNew;
@@ -385,7 +400,6 @@ Route::resource('lms/new_curriculum',newCurricuumController::class);
 // Route::get('/dashboard', function () {
 //     return view('recommend');
 // });
-// Route::get('/sync-neo4j', [Neo4jSyncController::class, 'sync']);
 Route::prefix('lms/api/teacher_resource')->group(function () {
     Route::get('/', [\App\Http\Controllers\lms\teacher_resource\TeacherResourceApiController::class, 'index']);
     Route::get('{id}', [\App\Http\Controllers\lms\teacher_resource\TeacherResourceApiController::class, 'show']);

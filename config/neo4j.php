@@ -158,6 +158,53 @@ return [
             'question_paper',
             'lms_question_master',
             'lms_online_exam',
+
+            // ---------------------------------------------------------------
+            // Added 2026-09-04. `tbluser` is now here after all: the note above
+            // kept it out because its only spec projected all 4,771 users into
+            // :Teacher, and because every login writes `last_login`. Both are
+            // handled now — StaffGraphProjection picks :Teacher or :Staff per
+            // person, and the trigger's watch list excludes `last_login`, so a
+            // sign-in queues nothing.
+            // ---------------------------------------------------------------
+            'tbluser',
+
+            // hr
+            'hrms_holidays',
+            'hrms_leave_types',
+            'payroll_types',
+            'tbluser_shift_master',
+            'employee_salary_structures',
+            'hrms_salary_certificate',
+            'hrms_emp_leaves',
+            'hrms_leave_allocation',
+            'mapped_teachers',
+            'class_teacher',
+
+            // result
+            'result_create_exam',
+            'result_exam_master',
+            'result_exam_type_master',
+            'grade_master_data',
+            'result_co_scholastic',
+            'result_co_scholastic_parent',
+            'result_co_scholastic_grades',
+            'result_skillset',
+            'result_activity_master',
+            'result_activity_group',
+            'result_remark_masters',
+            'exam_schedule',
+            'result_std_grd_maping',
+
+            // assessment
+            'question_type_master',
+            'counselling_course',
+            'counselling_question_master',
+            'counselling_online_exam',
+            'counselling_question_mapping',
+            'lms_offline_exam',
+            'lms_online_exam_student',
+            'lms_question_mapping',
         ],
 
         'entities' => [
@@ -408,6 +455,486 @@ return [
                 ],
                 'casts' => ['subject_ids' => 'string'],
                 'display_label' => ['prefix' => 'Teacher:', 'column' => 'user_profile_id'],
+            ],
+
+            /*
+            |--------------------------------------------------------------------
+            | Added 2026-09-04 — live sync for the eight module scripts
+            |--------------------------------------------------------------------
+            |
+            | Everything below follows the same contract as the K12 entities above:
+            | one table, one label, a column map, and the edges that table's own
+            | foreign keys support. Adding one is a spec plus a name in `triggered`.
+            |
+            | `edges_only => true` marks a join table — a row that IS a link and is
+            | not a node. Without it every such row would also MERGE a node keyed on
+            | a row id that means nothing in the graph.
+            |
+            | WHAT IS DELIBERATELY NOT HERE
+            |
+            |  * `tbluser` — bespoke (StaffGraphProjection): it maps to :Teacher for
+            |    the 118 the reference ingest claimed and :Staff for the other 4,653.
+            |
+            |  * Aggregate sources — `hrms_attendances`, `result_personalize_marks`,
+            |    `lms_online_exam_answer`, `library_book_circulations`,
+            |    `transport_map_student`, `fees_breackoff`, the sms/whatsapp logs and
+            |    their kin. One edge there summarises thousands of rows (2.4M answers
+            |    become 24k MASTERS_CHAPTER edges), so a per-row trigger cannot
+            |    produce a correct value — it would have to re-aggregate the whole
+            |    group on every insert. Those are refreshed by
+            |    `neo4j:refresh-aggregates`, which re-runs the aggregate sections of
+            |    the module scripts on a schedule.
+            |
+            |  * The 30 `onet_*` tables — static US reference data, replaced by a
+            |    bulk import once a year, never edited by a user. Triggers there
+            |    would be pure overhead.
+            */
+
+            // ================= hr =================
+
+            'hrms_holidays' => [
+                'label' => 'Holiday',
+                'properties' => [
+                    'holiday_name'     => 'holiday_name',
+                    'description'      => 'description',
+                    'day_type'         => 'day_type',
+                    'department'       => 'department',
+                    'from_date'        => 'from_date',
+                    'to_date'          => 'to_date',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['from_date' => 'string', 'to_date' => 'string'],
+                'display_label' => ['prefix' => 'Holiday:', 'column' => 'holiday_name'],
+                'relationships' => [
+                    // :Institute is keyed `Institute:<tenant>:0:<tenant>` — the
+                    // institute id IS the tenant, which is why the endpoint column
+                    // is sub_institute_id.
+                    ['type' => 'HAS_HOLIDAY', 'from' => ['Institute', 'sub_institute_id'], 'to' => ['Holiday', 'id']],
+                ],
+            ],
+
+            'hrms_leave_types' => [
+                'label' => 'LeaveType',
+                'properties' => [
+                    'leave_type'       => 'leave_type',
+                    'carry_forward'    => 'carry_forward',
+                    'sort_order'       => 'sort_order',
+                    'status'           => 'status',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['sort_order' => 'int'],
+                'display_label' => ['prefix' => 'LeaveType:', 'column' => 'leave_type'],
+            ],
+
+            'payroll_types' => [
+                'label' => 'PayrollType',
+                'properties' => [
+                    'payroll_type'     => 'payroll_type',
+                    'payroll_name'     => 'payroll_name',
+                    'amount_type'      => 'amount_type',
+                    'sort_order'       => 'sort_order',
+                    'status'           => 'status',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['sort_order' => 'int'],
+                'display_label' => ['prefix' => 'PayrollType:', 'column' => 'payroll_name'],
+            ],
+
+            'tbluser_shift_master' => [
+                'label' => 'StaffShift',
+                'properties' => [
+                    'shift_name'       => 'shift_name',
+                    'start_time'       => 'start_time',
+                    'end_time'         => 'end_time',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['start_time' => 'string', 'end_time' => 'string'],
+                'display_label' => ['prefix' => 'StaffShift:', 'column' => 'shift_name'],
+            ],
+
+            // No amounts: `employee_salary_data` is a JSON blob of pay figures and
+            // the ledger stays in MariaDB.
+            'employee_salary_structures' => [
+                'label' => 'SalaryStructure',
+                'properties' => [
+                    'employee_id'      => 'employee_id',
+                    'year'             => 'year',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['year' => 'int'],
+                'display_label' => ['prefix' => 'SalaryStructure:', 'column' => 'year'],
+                'relationships' => [
+                    ['type' => 'HAS_SALARY_STRUCTURE', 'from' => ['Staff', 'employee_id'], 'to' => ['SalaryStructure', 'id']],
+                ],
+            ],
+
+            'hrms_salary_certificate' => [
+                'label' => 'SalaryCertificate',
+                'properties' => [
+                    'employee_id'      => 'employee_id',
+                    'department_id'    => 'departement_id',
+                    'payroll_type_id'  => 'payroll_type_id',
+                    'year'             => 'year',
+                    'month'            => 'month',
+                    'reason'           => 'reason',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['year' => 'int', 'month' => 'string'],
+                'display_label' => ['prefix' => 'SalaryCertificate:', 'column' => 'year'],
+                'relationships' => [
+                    ['type' => 'HAS_SALARY_CERTIFICATE', 'from' => ['Staff', 'employee_id'], 'to' => ['SalaryCertificate', 'id']],
+                ],
+            ],
+
+            // Join tables: a leave IS the edge. The Staff endpoint falls back to
+            // :Teacher through GraphSchema's sibling rule when the person is one
+            // of the 118.
+            'hrms_emp_leaves' => [
+                'edges_only' => true,
+                'relationships' => [
+                    ['type' => 'TOOK_LEAVE', 'from' => ['Staff', 'user_id'], 'to' => ['LeaveType', 'leave_type_id'],
+                     'key' => ['leaveId' => 'id']],
+                ],
+            ],
+
+            'hrms_leave_allocation' => [
+                'edges_only' => true,
+                'relationships' => [
+                    ['type' => 'ALLOCATED_LEAVE', 'from' => ['Staff', 'employee_id'], 'to' => ['LeaveType', 'leave_type_id'],
+                     'key' => ['year' => 'year']],
+                ],
+            ],
+
+            'mapped_teachers' => [
+                'edges_only' => true,
+                'relationships' => [
+                    ['type' => 'MAPPED_TO', 'from' => ['Staff', 'teacher_id'], 'to' => ['Subject', 'subject_id'],
+                     'key' => ['syear' => 'syear']],
+                ],
+            ],
+
+            'class_teacher' => [
+                'edges_only' => true,
+                'relationships' => [
+                    ['type' => 'CLASS_TEACHER_OF', 'from' => ['Staff', 'teacher_id'], 'to' => ['Division', 'division_id'],
+                     'key' => ['syear' => 'syear']],
+                ],
+            ],
+
+            // ================= result =================
+
+            'result_create_exam' => [
+                'label' => 'Examination',
+                'properties' => [
+                    'title'              => 'title',
+                    'exam_type_id'       => 'exam_id',
+                    'standard_id'        => 'standard_id',
+                    'subject_id'         => 'subject_id',
+                    'term_id'            => 'term_id',
+                    'syear'              => 'syear',
+                    'points'             => 'points',
+                    'con_point'          => 'con_point',
+                    'marks_type'         => 'marks_type',
+                    'medium'             => 'medium',
+                    'report_card_status' => 'report_card_status',
+                    'exam_date'          => 'exam_date',
+                    'sort_order'         => 'sort_order',
+                    'sub_institute_id'   => 'sub_institute_id',
+                ],
+                'casts' => [
+                    'syear' => 'int', 'term_id' => 'int', 'sort_order' => 'int',
+                    'points' => 'float', 'con_point' => 'float', 'exam_date' => 'string',
+                ],
+                'display_label' => ['prefix' => 'Examination:', 'column' => 'title'],
+                'relationships' => [
+                    ['type' => 'OF_EXAM_TYPE',     'from' => ['Examination', 'id'],        'to' => ['ExamType', 'exam_id']],
+                    ['type' => 'HAS_EXAMINATION',  'from' => ['Standard', 'standard_id'],  'to' => ['Examination', 'id']],
+                    ['type' => 'EXAMINES_SUBJECT', 'from' => ['Examination', 'id'],        'to' => ['Subject', 'subject_id']],
+                ],
+            ],
+
+            // PascalCase columns. `pk` stays `id` because the trigger and the
+            // projection both read the row by primary key, and MariaDB column
+            // names are case-insensitive on this server.
+            'result_exam_master' => [
+                'label' => 'ExamType',
+                'properties' => [
+                    'code'             => 'Code',
+                    'exam_type'        => 'ExamType',
+                    'exam_title'       => 'ExamTitle',
+                    'standard_id'      => 'standard_id',
+                    'term_id'          => 'term_id',
+                    'weightage'        => 'weightage',
+                    'sort_order'       => 'SortOrder',
+                    'sub_institute_id' => 'SubInstituteId',
+                ],
+                'casts' => ['sort_order' => 'int', 'term_id' => 'int', 'weightage' => 'float'],
+                'display_label' => ['prefix' => 'ExamType:', 'column' => 'ExamTitle'],
+            ],
+
+            'result_exam_type_master' => [
+                'label' => 'ExamTypeCategory',
+                'properties' => [
+                    'code'             => 'Code',
+                    'exam_type'        => 'ExamType',
+                    'short_name'       => 'ShortName',
+                    'sort_order'       => 'SortOrder',
+                    'sub_institute_id' => 'SubInstituteId',
+                ],
+                'casts' => ['sort_order' => 'int'],
+                'display_label' => ['prefix' => 'ExamTypeCategory:', 'column' => 'ExamType'],
+            ],
+
+            'grade_master_data' => [
+                'label' => 'Grade',
+                'properties' => [
+                    'title'            => 'title',
+                    'grade_scheme_id'  => 'grade_id',
+                    'breakoff'         => 'breakoff',
+                    'gp'               => 'gp',
+                    'comment'          => 'comment',
+                    'syear'            => 'syear',
+                    'sort_order'       => 'sort_order',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['syear' => 'int', 'sort_order' => 'int', 'breakoff' => 'float', 'gp' => 'float'],
+                'display_label' => ['prefix' => 'Grade:', 'column' => 'title'],
+                'relationships' => [
+                    ['type' => 'HAS_GRADE', 'from' => ['GradeScheme', 'grade_id'], 'to' => ['Grade', 'id']],
+                ],
+            ],
+
+            'result_co_scholastic' => [
+                'label' => 'CoScholasticArea',
+                'properties' => [
+                    'title'            => 'title',
+                    'parent_id'        => 'parent_id',
+                    'mark_type'        => 'mark_type',
+                    'max_mark'         => 'max_mark',
+                    'co_grade'         => 'co_grade',
+                    'standard_id'      => 'standard_id',
+                    'term_id'          => 'term_id',
+                    'sort_order'       => 'sort_order',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['term_id' => 'int', 'sort_order' => 'int', 'max_mark' => 'float'],
+                'display_label' => ['prefix' => 'CoScholasticArea:', 'column' => 'title'],
+                'relationships' => [
+                    ['type' => 'IN_PART', 'from' => ['CoScholasticArea', 'id'], 'to' => ['CoScholasticParent', 'parent_id']],
+                ],
+            ],
+
+            'result_co_scholastic_parent' => [
+                'label' => 'CoScholasticParent',
+                'properties' => [
+                    'title'            => 'title',
+                    'part_no'          => 'part_no',
+                    'part_name'        => 'part_name',
+                    'status'           => 'status',
+                    'sort_order'       => 'sort_order',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['sort_order' => 'int', 'part_no' => 'string'],
+                'display_label' => ['prefix' => 'CoScholasticParent:', 'column' => 'title'],
+            ],
+
+            'result_co_scholastic_grades' => [
+                'label' => 'CoScholasticGradeBand',
+                'properties' => [
+                    'title'            => 'title',
+                    'break_off'        => 'break_off',
+                    'area_id'          => 'map_id',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['break_off' => 'float'],
+                'display_label' => ['prefix' => 'CoScholasticGradeBand:', 'column' => 'title'],
+                'relationships' => [
+                    ['type' => 'HAS_GRADE_BAND', 'from' => ['CoScholasticArea', 'map_id'], 'to' => ['CoScholasticGradeBand', 'id']],
+                ],
+            ],
+
+            'result_skillset' => [
+                'label' => 'Skillset',
+                'properties' => [
+                    'title'            => 'title',
+                    'main_title'       => 'main_title',
+                    'standard'         => 'standard',
+                    'sort_order'       => 'sort_order',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['sort_order' => 'int', 'standard' => 'string'],
+                'display_label' => ['prefix' => 'Skillset:', 'column' => 'title'],
+            ],
+
+            'result_activity_master' => [
+                'label' => 'Activity',
+                'properties' => [
+                    'title'            => 'title',
+                    'skillset_id'      => 'skill_id',
+                    'standard'         => 'standard',
+                    'term_id'          => 'term_id',
+                    'sort_order'       => 'sort_order',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['term_id' => 'int', 'sort_order' => 'int', 'standard' => 'string'],
+                'display_label' => ['prefix' => 'Activity:', 'column' => 'title'],
+                'relationships' => [
+                    ['type' => 'IN_SKILLSET', 'from' => ['Activity', 'id'], 'to' => ['Skillset', 'skill_id']],
+                ],
+            ],
+
+            'result_activity_group' => [
+                'label' => 'ActivityGroup',
+                'properties' => [
+                    'title'            => 'title',
+                    'sort_order'       => 'sort_order',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['sort_order' => 'int'],
+                'display_label' => ['prefix' => 'ActivityGroup:', 'column' => 'title'],
+            ],
+
+            'result_remark_masters' => [
+                'label' => 'RemarkTemplate',
+                'properties' => [
+                    'title'              => 'title',
+                    'remark_status'      => 'remark_status',
+                    'marking_period_id'  => 'marking_period_id',
+                    'syear'              => 'syear',
+                    'sort_order'         => 'sort_order',
+                    'sub_institute_id'   => 'sub_institute_id',
+                ],
+                'casts' => ['syear' => 'int', 'sort_order' => 'int'],
+                'display_label' => ['prefix' => 'RemarkTemplate:', 'column' => 'title'],
+            ],
+
+            'exam_schedule' => [
+                'label' => 'ExamSchedule',
+                'properties' => [
+                    'title'            => 'title',
+                    'standard_id'      => 'standard_id',
+                    'division_id'      => 'division_id',
+                    'exam_date'        => 'date_',
+                    'syear'            => 'syear',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['syear' => 'int', 'exam_date' => 'string'],
+                'display_label' => ['prefix' => 'ExamSchedule:', 'column' => 'title'],
+                'relationships' => [
+                    ['type' => 'HAS_EXAM_SCHEDULE', 'from' => ['Standard', 'standard_id'], 'to' => ['ExamSchedule', 'id']],
+                ],
+            ],
+
+            'result_std_grd_maping' => [
+                'edges_only' => true,
+                'relationships' => [
+                    ['type' => 'USES_GRADE_SCHEME', 'from' => ['Standard', 'standard'], 'to' => ['GradeScheme', 'grade_scale']],
+                ],
+            ],
+
+            // ================= assessment =================
+
+            'question_type_master' => [
+                'label' => 'QuestionType',
+                'properties' => [
+                    'question_type'    => 'question_type',
+                    'status'           => 'status',
+                    'syear'            => 'syear',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['syear' => 'int'],
+                'display_label' => ['prefix' => 'QuestionType:', 'column' => 'question_type'],
+            ],
+
+            'counselling_course' => [
+                'label' => 'CounsellingCourse',
+                'properties' => [
+                    'title'            => 'title',
+                    'description'      => 'description',
+                    'sort_order'       => 'sort_order',
+                    'status'           => 'status',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['sort_order' => 'int'],
+                'display_label' => ['prefix' => 'CounsellingCourse:', 'column' => 'title'],
+            ],
+
+            'counselling_question_master' => [
+                'label' => 'CounsellingQuestion',
+                'properties' => [
+                    'question_title'   => 'question_title',
+                    'description'      => 'description',
+                    'course_id'        => 'counselling_course_id',
+                    'question_type_id' => 'question_type_id',
+                    'points'           => 'points',
+                    'multiple_answer'  => 'multiple_answer',
+                    'status'           => 'status',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['points' => 'int'],
+                'display_label' => ['prefix' => 'CounsellingQuestion:', 'column' => 'question_title'],
+                'relationships' => [
+                    ['type' => 'HAS_COUNSELLING_QUESTION', 'from' => ['CounsellingCourse', 'counselling_course_id'], 'to' => ['CounsellingQuestion', 'id']],
+                ],
+            ],
+
+            'counselling_online_exam' => [
+                'label' => 'CounsellingResult',
+                'properties' => [
+                    'user_id'          => 'user_id',
+                    'course_id'        => 'course_id',
+                    'total_right'      => 'total_right',
+                    'total_wrong'      => 'total_wrong',
+                    'obtain_marks'     => 'obtain_marks',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['total_right' => 'int', 'total_wrong' => 'int', 'obtain_marks' => 'int'],
+                'display_label' => ['prefix' => 'CounsellingResult:', 'column' => 'obtain_marks'],
+                'relationships' => [
+                    ['type' => 'FOR_COURSE', 'from' => ['CounsellingResult', 'id'], 'to' => ['CounsellingCourse', 'course_id']],
+                ],
+            ],
+
+            'lms_offline_exam' => [
+                'label' => 'OfflineExam',
+                'properties' => [
+                    'student_id'        => 'student_id',
+                    'question_paper_id' => 'question_paper_id',
+                    'assignment_id'     => 'assignment_id',
+                    'total_right'       => 'total_right',
+                    'total_wrong'       => 'total_wrong',
+                    'obtain_marks'      => 'obtain_marks',
+                    'syear'             => 'syear',
+                    'sub_institute_id'  => 'sub_institute_id',
+                ],
+                'casts' => ['syear' => 'int', 'total_right' => 'int', 'total_wrong' => 'int', 'obtain_marks' => 'int'],
+                'display_label' => ['prefix' => 'OfflineExam:', 'column' => 'obtain_marks'],
+                'relationships' => [
+                    ['type' => 'HAS_OFFLINE_EXAM',        'from' => ['StuDetail', 'student_id'], 'to' => ['OfflineExam', 'id']],
+                    ['type' => 'FOR_OFFLINE_ASSESSMENT',  'from' => ['OfflineExam', 'id'],       'to' => ['Assessment', 'question_paper_id']],
+                ],
+            ],
+
+            'lms_online_exam_student' => [
+                'edges_only' => true,
+                'relationships' => [
+                    ['type' => 'ASSIGNED_EXAM', 'from' => ['StuDetail', 'student_id'], 'to' => ['Assessment', 'question_paper_id'],
+                     'key' => ['assignmentId' => 'id']],
+                ],
+            ],
+
+            'counselling_question_mapping' => [
+                'edges_only' => true,
+                'relationships' => [
+                    ['type' => 'TAGGED_AS', 'from' => ['CounsellingQuestion', 'questionmaster_id'], 'to' => ['MappingType', 'mapping_value_id']],
+                ],
+            ],
+
+            'lms_question_mapping' => [
+                'edges_only' => true,
+                'relationships' => [
+                    ['type' => 'TAGGED_AS', 'from' => ['Question', 'questionmaster_id'], 'to' => ['MappingType', 'mapping_value_id']],
+                ],
             ],
         ],
     ],

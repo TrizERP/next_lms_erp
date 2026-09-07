@@ -4,6 +4,8 @@ namespace App\Services\PAL\Intelligence;
 
 use App\Models\PAL\LearnerMisconception;
 use App\Models\PAL\Misconception;
+use App\Models\PAL\MisconceptionCorrective;
+use App\Models\PAL\MisconceptionLibrary;
 use App\Models\PAL\Remediation;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -76,17 +78,66 @@ class MisconceptionIntelligenceEngine
      */
     public function cluster(int $conceptId): array
     {
-        $misconceptions = Misconception::where('concept_id', $conceptId)->get();
-        
-        return $misconceptions->map(function ($m) {
-            return [
+        // TWO REGISTRIES, and this used to read only the smaller one.
+        //
+        //   pal_misconception_library  3,659 rows -- the curated set, keyed by
+        //                              chapter_ref_id / concept_ref_id
+        //   pal_misconceptions             2 rows -- only what analyze() has
+        //                              detected at runtime
+        //
+        // Querying pal_misconceptions alone meant "Misconception analysis by
+        // concept" was empty for every concept in the estate bar two, which is
+        // why the panel looked inert.
+        //
+        // IDS ARE UNIQUE ONLY WITHIN A REGISTRY, so every row carries `source`
+        // and getRemediation() must be given it back -- library id 19 and
+        // runtime id 19 are different misconceptions.
+        $runtime = Misconception::where('concept_id', $conceptId)
+            ->get()
+            ->map(fn ($m) => [
+                'source' => 'runtime',
                 'id' => $m->id,
                 'pattern' => $m->pattern,
                 'category' => $m->category,
                 'root_cause' => $m->root_cause,
-                'frequency' => $m->frequency,
-            ];
-        })->toArray();
+                'frequency' => (int) $m->frequency,
+                'severity' => null,
+                'quality_status' => null,
+            ]);
+
+        // The library is tagged against chapter ids in this estate; a caller
+        // passing a concept id should still match, so both keys are tried.
+        // Deliberately NOT filtered by scopeServable(): only 1 of the 3,659
+        // rows is `approved`, so a servable filter would empty this panel
+        // again. quality_status is returned instead so the UI can mark drafts
+        // rather than silently hide them.
+        $library = MisconceptionLibrary::query()
+            ->where(function ($q) use ($conceptId) {
+                $q->where('chapter_ref_id', $conceptId)
+                  ->orWhere('concept_ref_id', $conceptId);
+            })
+            ->orderByDesc('prevalence_rate')
+            ->orderByDesc('detection_count')
+            ->limit(200)
+            ->get()
+            ->map(fn ($m) => [
+                'source' => 'library',
+                'id' => $m->id,
+                'tag' => $m->tag,
+                'pattern' => $m->error_pattern,
+                'category' => $m->subject,
+                'root_cause' => $m->description,
+                'corrective_action' => $m->corrective_action,
+                // detection_count is how often this library entry has actually
+                // fired, which is the library's analogue of frequency.
+                'frequency' => (int) ($m->detection_count ?? 0),
+                'prevalence_rate' => $m->prevalence_rate,
+                'severity' => $m->severity,
+                'teacher_confirmed' => (bool) $m->teacher_confirmed,
+                'quality_status' => $m->quality_status,
+            ]);
+
+        return $runtime->concat($library)->values()->all();
     }
 
     /**
@@ -95,10 +146,18 @@ class MisconceptionIntelligenceEngine
      * @param int $misconceptionId
      * @return array
      */
-    public function getRemediation(int $learnerId, int $misconceptionId): array
+    public function getRemediation(int $learnerId, int $misconceptionId, string $source = 'runtime'): array
     {
+        // cluster() returns rows from two registries whose ids overlap, so the
+        // caller has to say which one this id came from. Defaulting to
+        // 'runtime' preserves the old single-registry behaviour for existing
+        // callers.
+        if ($source === 'library') {
+            return $this->getLibraryRemediation($learnerId, $misconceptionId);
+        }
+
         $misconception = Misconception::find($misconceptionId);
-        
+
         if (!$misconception) {
             return ['error' => 'Misconception not found'];
         }
@@ -126,9 +185,67 @@ class MisconceptionIntelligenceEngine
         }
 
         return [
+            'source' => 'runtime',
             'pre_defined_remediations' => $remediations,
             'alternative_pedagogies' => $this->getAlternativePedagogies($misconception),
             'recommended_sequence' => $this->getRemediationSequence($remediations),
+        ];
+    }
+
+    /**
+     * Remediation for a curated library entry, served from
+     * pal_misconception_corrective (7,304 rows) -- the CORRECTS_WITH content
+     * the library was built to carry.
+     *
+     * Like cluster(), this does not apply scopeServable(): 2 of the 7,304
+     * corrective rows are `approved`, so filtering would return nothing for
+     * essentially every misconception. quality_status rides along on each row
+     * instead so the caller can label drafts.
+     */
+    protected function getLibraryRemediation(int $learnerId, int $misconceptionId): array
+    {
+        $entry = MisconceptionLibrary::find($misconceptionId);
+
+        if (!$entry) {
+            return ['error' => 'Misconception not found'];
+        }
+
+        $correctives = MisconceptionCorrective::where('misconception_id', $misconceptionId)
+            ->orderByDesc('resolution_rate')
+            ->orderBy('priority_level')
+            ->limit(20)
+            ->get()
+            ->map(fn ($c) => [
+                'id' => $c->id,
+                'title' => $c->title,
+                'body' => $c->body,
+                'format' => $c->format,
+                'h5p_type' => $c->h5p_type,
+                'media_url' => $c->media_url,
+                'language' => $c->language,
+                'estimated_duration_minutes' => $c->estimated_duration_minutes,
+                // Effectiveness is measured, not assumed: null until this
+                // corrective has actually been served to someone.
+                'resolution_rate' => $c->served_count > 0 ? $c->resolution_rate : null,
+                'served_count' => (int) $c->served_count,
+                'quality_status' => $c->quality_status,
+            ]);
+
+        return [
+            'source' => 'library',
+            'misconception' => [
+                'id' => $entry->id,
+                'tag' => $entry->tag,
+                'pattern' => $entry->error_pattern,
+                'description' => $entry->description,
+                'corrective_action' => $entry->corrective_action,
+                'severity' => $entry->severity,
+                'quality_status' => $entry->quality_status,
+            ],
+            'pre_defined_remediations' => $correctives,
+            'attempts_by_learner' => LearnerMisconception::where('learner_id', $learnerId)
+                ->where('misconception_id', $misconceptionId)
+                ->count(),
         ];
     }
 

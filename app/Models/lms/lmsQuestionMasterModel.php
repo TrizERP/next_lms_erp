@@ -31,6 +31,8 @@ class lmsQuestionMasterModel extends Model
         'multiple_answer',
         'concept',
         'subconcept',
+        // PAL learning-flow category the Question Bank dropdown filters on.
+        'category',
         'pre_grade_topic',
         'post_grade_topic',
         'cross_curriculum_grade_topic',

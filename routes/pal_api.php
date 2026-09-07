@@ -280,6 +280,8 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
             ->where('subsystem', $subsystem);
         Route::post('/{subsystem}/reset', [PalArchitectureController::class, 'reset'])
             ->where('subsystem', $subsystem);
+    });
+
     // ==================== H5P MODEL ====================
     //
     // The backend for LMS+PAL → Tech/Learn → Subject → Chapter → H5P Content:
@@ -401,6 +403,5 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
         Route::get('/session-summary', [NewPalGamificationController::class, 'sessionSummary']);
         Route::post('/notifications/read', [NewPalGamificationController::class, 'readNotifications']);
         Route::get('/notifications', [NewPalGamificationController::class, 'notifications']);
-});
-});
+    });
 });

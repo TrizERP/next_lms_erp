@@ -1,0 +1,30 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php artisan *)",
+      "Bash(./vendor/bin/phpunit --filter EsoPolicyServiceTest)",
+      "Bash(pkill -f \"artisan serve --port=8811\")",
+      "Bash(npm run *)",
+      "Bash(chromium-cli --help)",
+      "Bash(node -e \"require.resolve\\('playwright'\\)\")",
+      "Bash(npm ls *)",
+      "Bash(npx --yes playwright --version)",
+      "Bash(SP=\"/c/Users/Asus/AppData/Local/Temp/claude/d--next-lms-erp/519e8996-acad-4eca-ae0b-9c46cc1e4701/scratchpad\" *)",
+      "Bash(NODE_PATH=/c/Users/Asus/AppData/Local/npm-cache/_npx/e41f203b7505f1fb/node_modules node /c/Users/Asus/AppData/Local/Temp/claude/d--next-lms-erp/519e8996-acad-4eca-ae0b-9c46cc1e4701/scratchpad/pw/walkthrough.js)",
+      "Bash(curl -s -o /dev/null -w \"root=%{http_code}\\\\n\" http://localhost:3000/)",
+      "Bash(curl -s -o /dev/null -w \"login=%{http_code}\\\\n\" http://localhost:3000/login)",
+      "Read(//tmp/**)",
+      "Bash(netstat -ano)",
+      "Bash(SP=\"/c/Users/Asus/AppData/Local/Temp/claude/d--next-lms-erp/519e8996-acad-4eca-ae0b-9c46cc1e4701/scratchpad/pw\" *)",
+      "Bash(php artisan tinker '--execute= *)",
+      "Bash(rm -f /c/Users/Asus/AppData/Local/Temp/claude/d--next-lms-erp/519e8996-acad-4eca-ae0b-9c46cc1e4701/scratchpad/pw/*.png)",
+      "Bash(NODE_PATH=/c/Users/Asus/AppData/Local/npm-cache/_npx/e41f203b7505f1fb/node_modules node /c/Users/Asus/AppData/Local/Temp/claude/d--next-lms-erp/519e8996-acad-4eca-ae0b-9c46cc1e4701/scratchpad/pw/walkthrough2.js)",
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"ProcessId=13824 or ProcessId=23288 or ProcessId=19208\")",
+      "Bash(php -l app/Services/Eso/EsoPolicyService.php)"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\Asus\\AppData\\Local\\Temp\\claude\\d--next-lms-erp\\519e8996-acad-4eca-ae0b-9c46cc1e4701\\scratchpad",
+      "C:\\Users\\Asus\\AppData\\Local\\Temp\\claude\\d--next-lms-erp\\519e8996-acad-4eca-ae0b-9c46cc1e4701\\scratchpad\\pw"
+    ]
+  }
+}

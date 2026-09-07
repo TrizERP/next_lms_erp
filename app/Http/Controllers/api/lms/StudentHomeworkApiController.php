@@ -3,11 +3,13 @@
 namespace App\Http\Controllers\api\lms;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\EvaluateHomeworkSubmissionJob;
 use App\Models\student\studentHomeworkModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use function App\Helpers\getStudents;
 use App\Models\school_setup\subjectModel;
@@ -762,7 +764,7 @@ class StudentHomeworkApiController extends Controller
             }
 
             $arr = [
-                'submission_remarks' => '',
+                'submission_remarks' => is_array($submission_remarks) ? ($submission_remarks[$hw_id] ?? '') : '',
                 'completion_status' => 'Y',
                 'submission_image' => $file_name,
                 'submission_image_size' => $file_size,
@@ -770,58 +772,59 @@ class StudentHomeworkApiController extends Controller
                 'updated_by' => $user_id,
                 'updated_on' => date('Y-m-d H:i:s'),
             ];
-
-            $aiJsonResponse = null;
-            if ($uploadedFile) {
-                try {
-                    $client = new \GuzzleHttp\Client(['verify' => false]);
-                    $response = $client->request('POST', 'https://moncey10-homework-validation-system.hf.space/homework/validate', [
-                        'multipart' => [
-                            ['name' => 'student_id', 'contents' => $homeworkRow->student_id],
-                            ['name' => 'homework_id', 'contents' => $hw_id],
-                            [
-                                'name' => 'student_file',
-                                'contents' => fopen($uploadedFile->getPathname(), 'r'),
-                                'filename' => $uploadedFile->getClientOriginalName(),
-                            ],
-                        ],
-                    ]);
-                    $aiJsonResponse = $response->getBody()->getContents();
-                    $body = json_decode($aiJsonResponse, true);
-                    $arr['submission_remarks'] = $body['submission_remarks']
-                        ?? 'Dear Student, your homework submission has been received. You will be notified with feedback soon.';
-                    $arr['ai_generated_file'] = !empty($body['annotated_pdf'])
-                        ? 'https://moncey10-homework-validation-system.hf.space/storage/' . $body['annotated_pdf']
-                        : null;
-                } catch (\Exception $e) {
-                    $arr['submission_remarks'] = (is_array($submission_remarks) ? ($submission_remarks[$hw_id] ?? null) : null)
-                        ?? 'Dear Student, your homework submission has been received. You will be notified with feedback soon.';
-                    $arr['ai_generated_file'] = null;
-                }
-            } else {
-                $arr['submission_remarks'] = is_array($submission_remarks) ? ($submission_remarks[$hw_id] ?? '') : '';
-            }
-
-            DB::table('ai_interaction_logs')->insert([
-                'menu_type' => 'homework',
-                'student_level' => $homeworkRow->student_level,
-                'student_id' => $homeworkRow->student_id,
-                'prompt_by_user' => $homeworkRow->prompt,
-                'response_ai' => $aiJsonResponse,
-                'sub_institute_id' => $sub_institute_id,
-                'syear' => $syear,
-                'created_by' => $user_id,
-                'created_at' => date('Y-m-d H:i:s'),
-            ]);
-
-            $ok = studentHomeworkModel::where([
+            $whereRow = [
                 'id' => $hw_id,
                 'syear' => $syear,
                 'sub_institute_id' => $sub_institute_id,
-            ])->update($arr);
+            ];
+
+            // Recording the submission must succeed even if the AI evaluation
+            // columns aren't there yet (e.g. migration not run in this env) —
+            // fall back to the core submission fields rather than 500 the
+            // student's upload over a missing 'ai_status' column.
+            if ($uploadedFile) {
+                try {
+                    $ok = studentHomeworkModel::where($whereRow)->update(array_merge($arr, [
+                        'ai_status' => 'Checking',
+                        'ai_failure_reason' => null,
+                    ]));
+                } catch (\Throwable $exception) {
+                    Log::warning('Could not set ai_status on homework submission — falling back without AI columns', [
+                        'homework_id' => $hw_id,
+                        'message' => $exception->getMessage(),
+                    ]);
+                    $ok = studentHomeworkModel::where($whereRow)->update($arr);
+                }
+            } else {
+                $ok = studentHomeworkModel::where($whereRow)->update($arr);
+            }
 
             if ($ok) {
                 $updated++;
+
+                if ($uploadedFile) {
+                    // AI evaluation is best-effort and must never break the upload
+                    // response: dispatch() re-throws job exceptions synchronously
+                    // when QUEUE_CONNECTION=sync, so this call itself needs a guard
+                    // even though the job's own handle() already catches its
+                    // internal OCR/Gemini/PDF failures.
+                    try {
+                        EvaluateHomeworkSubmissionJob::dispatch((int) $hw_id, (int) $sub_institute_id, (int) $syear);
+                    } catch (\Throwable $exception) {
+                        Log::error('AI evaluation failed for homework submission', [
+                            'homework_id' => $hw_id,
+                            'message' => $exception->getMessage(),
+                        ]);
+                        try {
+                            studentHomeworkModel::where($whereRow)->update([
+                                'ai_status' => 'Failed',
+                                'ai_failure_reason' => mb_substr($exception->getMessage(), 0, 250),
+                            ]);
+                        } catch (\Throwable $updateException) {
+                            // AI columns may not exist in this environment — the submission itself is already saved.
+                        }
+                    }
+                }
             }
         }
 
@@ -882,6 +885,7 @@ class StudentHomeworkApiController extends Controller
                 if(ah.image IS NULL OR ah.image = '', '', concat('$server/storage/student/', ah.image)) AS image,
                 if(ah.submission_image IS NULL OR ah.submission_image = '', '', concat('$server/storage/student/', ah.submission_image)) AS submission_file,
                 DATE_FORMAT(ah.submission_date, '%d-%m-%Y') AS submission_date_fmt, ah.submission_remarks, ah.ai_generated_file,
+                ah.reviewed_pdf_path, ah.ai_score, ah.ai_total_questions, ah.ai_percentage, ah.ai_status, ah.ai_failure_reason, ah.evaluated_at,
                 CONCAT_WS(' ', tu.first_name, tu.last_name) AS submission_taken_by")
             ->where('se.syear', $syear)
             ->where('ah.sub_institute_id', $sub_institute_id)
@@ -915,6 +919,44 @@ class StudentHomeworkApiController extends Controller
             'status_code' => 1,
             'message' => 'SUCCESS',
             'data' => $data,
+        ], 200);
+    }
+
+    /**
+     * Poll AI evaluation status/result for a single homework submission
+     * (used by the submission report UI to refresh "Checking..." rows).
+     */
+    public function aiEvaluationStatus(Request $request, $id): JsonResponse
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+
+        $homework = studentHomeworkModel::where('id', $id)
+            ->when($sub_institute_id, fn ($q) => $q->where('sub_institute_id', $sub_institute_id))
+            ->when($syear, fn ($q) => $q->where('syear', $syear))
+            ->first();
+
+        if (!$homework) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Homework not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'SUCCESS',
+            'data' => [
+                'id' => $homework->id,
+                'ai_status' => $homework->ai_status,
+                'ai_failure_reason' => $homework->ai_failure_reason,
+                'ai_score' => $homework->ai_score,
+                'ai_total_questions' => $homework->ai_total_questions,
+                'ai_percentage' => $homework->ai_percentage,
+                'reviewed_pdf_path' => $homework->reviewed_pdf_path,
+                'submission_remarks' => $homework->submission_remarks,
+                'evaluated_at' => optional($homework->evaluated_at)->toDateTimeString(),
+            ],
         ], 200);
     }
 

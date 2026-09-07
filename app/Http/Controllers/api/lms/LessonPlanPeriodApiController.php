@@ -73,6 +73,9 @@ class LessonPlanPeriodApiController extends Controller
                 ->where('standard_id', $data['standard_id'])
                 ->where('subject_id', $data['subject_id'])
                 ->where('division_id', $data['division_id'])
+                // Scope to the term when the caller sends one, so the lesson
+                // lands on the same plan the calendar reads back.
+                ->when(!empty($data['term_id']), fn ($q) => $q->where('term_id', $data['term_id']))
                 ->first();
 
             if ($plan) {
@@ -86,7 +89,7 @@ class LessonPlanPeriodApiController extends Controller
                 $planId = DB::table('lms_intelligence_lesson_plans')->insertGetId([
                     'sub_institute_id'    => $data['sub_institute_id'],
                     'syear'               => $data['syear'],
-                    'term_id'             => $termId ?? 1,
+                    'term_id'             => $data['term_id'] ?? 1,
                     'standard_id'         => $data['standard_id'],
                     'subject_id'          => $data['subject_id'],
                     'division_id'         => $data['division_id'],
@@ -133,6 +136,9 @@ class LessonPlanPeriodApiController extends Controller
 
             $periodId = DB::table('lms_lesson_plan_periods')->insertGetId([
                 'lms_intelligence_lesson_plans_id' => $planId,
+                // Denormalised from the plan so institute-scoped reads can filter
+                // this row directly instead of joining back up to the plan.
+                'sub_institute_id'     => $data['sub_institute_id'],
                 'scheduled_date'       => $scheduledDate->toDateString(),
                 'week_day'             => $weekDay,
                 'week_number'          => max(1, $weekNumber),
@@ -159,6 +165,7 @@ class LessonPlanPeriodApiController extends Controller
             if ($conceptId && $conceptName) {
                 DB::table('lms_lesson_plan_concepts')->insert([
                     'lms_lesson_plan_periods_id' => $periodId,
+                    'sub_institute_id'           => $data['sub_institute_id'],
                     'concept_id'                 => $conceptId,
                     'concept_name'               => $conceptName,
                     'is_primary'                 => 1,

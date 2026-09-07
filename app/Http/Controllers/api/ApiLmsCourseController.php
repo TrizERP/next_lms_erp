@@ -1622,6 +1622,10 @@ $restrict_date = $request->input('restrict_date');
         $chapterId = $request->input('chapter_id');
         $topicId = $request->input('topic_id');
         $questionType = $request->input('question_type');
+        // PAL learning-flow category (prerequisite, misconception_detection, ...).
+        // Stored on the question itself so the bank can filter without joining
+        // pal_question_metadata, which is a PAL-side table the bank never reads.
+        $category = $request->input('category');
 
         if (!$chapterId) {
             return response()->json([
@@ -1646,6 +1650,7 @@ $restrict_date = $request->input('restrict_date');
                 'lms_question_master.concept',
                 'lms_question_master.question_title',
                 'question_type_master.question_type',
+                'lms_question_master.category',
                 'lms_question_master.points as marks',
                 'lms_question_master.answer as model_answer'
             );
@@ -1660,6 +1665,11 @@ $restrict_date = $request->input('restrict_date');
             } else {
                 $query->where('question_type_master.question_type', trim($questionType));
             }
+        }
+
+        // 'all' is the dropdown's unset value, not a category anyone stored.
+        if ($category && strtolower(trim($category)) !== 'all') {
+            $query->where('lms_question_master.category', trim($category));
         }
 
         $questions = $query->orderByDesc('lms_question_master.id')->get()->toArray();
@@ -1706,6 +1716,7 @@ $restrict_date = $request->input('restrict_date');
                 'topic_id' => $question['topic_id'] !== null ? (int) $question['topic_id'] : null,
                 'concept_id' => $question['concept_id'] !== null ? (int) $question['concept_id'] : null,
                 'concept' => $question['concept'] !== null ? (string) $question['concept'] : null,
+                'category' => $question['category'] !== null ? (string) $question['category'] : null,
                 'question' => (string) ($question['question_title'] ?? ''),
                 'question_type' => $questionTypeLabel,
                 'options' => $optionsByQuestion[$qid] ?? [],

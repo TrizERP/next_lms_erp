@@ -816,6 +816,52 @@ class LearnerActivitySource
         });
     }
 
+    /**
+     * Concepts this learner has mastered through the Adaptive Learning Engine
+     * (D4's `mastered_stop_practice` verdict in eso_decision_log).
+     *
+     * The ESO engine keeps its own state/audit tables (learner_node_state,
+     * eso_decision_log) which nothing else in this read layer touches — this
+     * is a genuinely new evidence source rather than an overlap with the PAL
+     * quiz stream above, so mastery earned here cannot double-count against
+     * any existing signal. Guarded on table existence like every other source
+     * here, since an estate may not have run the ESO migrations.
+     */
+    public function esoConceptsMastered(int $learnerId): int
+    {
+        return $this->once("esoMastered:{$learnerId}", function () use ($learnerId) {
+            if (! Schema::hasTable('eso_decision_log')) {
+                return 0;
+            }
+
+            return (int) DB::table('eso_decision_log')
+                ->where('student_id', $learnerId)
+                ->where('action', 'mastered_stop_practice')
+                ->distinct()
+                ->count('concept_id');
+        });
+    }
+
+    /**
+     * Spaced-retention checks this learner has PASSED in the Adaptive Learning
+     * Engine (D5's `retained` outcome) — evidence that something stuck days or
+     * weeks later, which is a different and stronger claim than mastering it
+     * once.
+     */
+    public function esoRetentionChecksPassed(int $learnerId): int
+    {
+        return $this->once("esoRetained:{$learnerId}", function () use ($learnerId) {
+            if (! Schema::hasTable('eso_decision_log')) {
+                return 0;
+            }
+
+            return (int) DB::table('eso_decision_log')
+                ->where('student_id', $learnerId)
+                ->where('action', 'retained')
+                ->count();
+        });
+    }
+
     /** @return array<int,array<string,mixed>> */
     public function collaborationActivities(int $learnerId): array
     {

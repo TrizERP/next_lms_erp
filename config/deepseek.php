@@ -40,6 +40,12 @@ return [
     'batch_size_mcq' => (int) env('DEEPSEEK_BATCH_SIZE_MCQ', 10),
     'batch_size_narrative' => (int) env('DEEPSEEK_BATCH_SIZE_NARRATIVE', 3),
 
+    // Per-user rate limit on the billable generation endpoint, applied by
+    // App\Http\Middleware\ThrottleQuestionGeneration. One generation run can be
+    // ~17 sequential LLM calls, so this is a spend control, not a DoS control.
+    'rate_limit_attempts' => (int) env('DEEPSEEK_RATE_LIMIT_ATTEMPTS', 5),
+    'rate_limit_decay_minutes' => (int) env('DEEPSEEK_RATE_LIMIT_DECAY_MINUTES', 1),
+
     // DeepSeek "pro/thinking" style flags. Left off for deepseek-chat; enable
     // for reasoner-class models that accept them.
     'thinking' => env('DEEPSEEK_THINKING', false),

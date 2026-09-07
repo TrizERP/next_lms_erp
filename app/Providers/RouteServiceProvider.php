@@ -118,6 +118,10 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapTaskManagementRoutes();
 
         $this->mapCompetencyManagementRoutes();
+
+        $this->mapG2gLmsRoutes();
+
+        $this->mapBrainRoutes();
     }
 
     /**
@@ -200,6 +204,22 @@ class RouteServiceProvider extends ServiceProvider
             ->middleware('api')
             ->namespace($this->namespace)
             ->group(base_path('routes/competency_management.php'));
+    }
+
+    /**
+     * Stateless REST APIs for the LMS module (Next.js frontend, People &
+     * Competency > LMS), migrated as-is from G2G. See routes/g2g_lms.php.
+     * Mirrors mapTalentManagementRoutes() / mapCompetencyManagementRoutes().
+     * Namespaced App\Http\Controllers\G2gLms\* to stay clearly separate from
+     * the existing, untouched native LMS (App\Http\Controllers\lms,
+     * routes/lms.php — see maplmsRoutes() below).
+     */
+    protected function mapG2gLmsRoutes()
+    {
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/g2g_lms.php'));
     }
 
     /**
@@ -385,6 +405,13 @@ class RouteServiceProvider extends ServiceProvider
         Route::namespace($this->namespace)
             ->middleware('web')
             ->group(base_path('routes/skill.php'));
+    }
+
+    protected function mapBrainRoutes()
+    {
+        Route::prefix('api/brain')
+            ->middleware('api')
+            ->group(base_path('routes/brain.php'));
     }
     
     /**

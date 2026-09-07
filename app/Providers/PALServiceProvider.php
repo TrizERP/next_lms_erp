@@ -203,5 +203,6 @@ class PALServiceProvider extends ServiceProvider
     {
         // Load routes
         $this->loadRoutesFrom(base_path('routes/pal_api.php'));
+        $this->loadRoutesFrom(base_path('routes/pal_eso_api.php'));
     }
 }

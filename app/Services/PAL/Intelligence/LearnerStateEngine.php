@@ -46,7 +46,14 @@ class LearnerStateEngine
         // separate, correct query), and Competency::misconceptions() has no
         // real foreign key to eager-load against (pal_learner_misconceptions
         // has no competency_id column -- see Competency::misconceptions()).
-        $competencies = Competency::where('learner_id', $learnerId)
+        // atFinestGrain, not a bare learner_id filter: pal_competencies holds
+        // two grains of the SAME evidence (learner x subject, written live by
+        // the quiz path; learner x chapter, written by pal:derive-competencies).
+        // Averaging across both double-counts -- learner 282260 read as 85.72%,
+        // the meaningless midpoint of a 100% subject row and a 71.43% chapter
+        // row. See Competency::scopeAtFinestGrain().
+        $competencies = Competency::query()
+            ->atFinestGrain($learnerId)
             ->with('concept')
             ->get();
 
@@ -178,7 +185,11 @@ class LearnerStateEngine
             'classroom_participation' => $this->getClassroomParticipation($learnerId),
             'discussion_interactions' => $this->getDiscussionInteractions($learnerId),
             'group_activity_performance' => $this->getGroupPerformance($learnerId),
-            'social_learning_engagement' => $collaboration->avg('engagement_score') ?? 0,
+            // pal_collaboration_activities / _classroom_activities / _discussions
+            // / _group_activities are all empty with no writer anywhere. These
+            // stay null rather than 0 -- "no peer collaboration recorded" is
+            // not "this learner does not collaborate".
+            'social_learning_engagement' => $collaboration->avg('engagement_score'),
         ];
     }
 
@@ -197,7 +208,9 @@ class LearnerStateEngine
 
         return [
             'has_data' => $sessions->isNotEmpty(),
-            'preferred_device' => $sessions->mode('device_type') ?? 'desktop',
+            // No 'desktop' fallback: pal_learning_sessions is empty estate-wide,
+            // so that default was reporting a device nobody was measured on.
+            'preferred_device' => $sessions->mode('device_type'),
             'bandwidth_quality' => $this->calculateBandwidthQuality($sessions),
             'time_of_day_pattern' => $this->getTimeOfDayPattern($sessions),
             'language_preference' => $this->getLanguagePreference($learnerId),
@@ -218,7 +231,7 @@ class LearnerStateEngine
         return [
             'has_data' => $reflections->isNotEmpty(),
             'reflection_count' => $reflections->count(),
-            'reflection_quality' => $reflections->avg('quality_score') ?? 0,
+            'reflection_quality' => $reflections->avg('quality_score'),
             'self_correction_ability' => $this->calculateSelfCorrection($learnerId),
             'planning_behavior' => $this->getPlanningBehavior($learnerId),
             'strategy_awareness' => $this->getStrategyAwareness($learnerId),
@@ -297,7 +310,11 @@ class LearnerStateEngine
      */
     public function getMasteryMap(int $learnerId, ?int $subjectId = null): array
     {
-        $query = Competency::where('learner_id', $learnerId)
+        // Same grain rule as inferCompetency(): mixing the subject-grain and
+        // chapter-grain rows would list the same evidence twice and skew
+        // overall_mastery.
+        $query = Competency::query()
+            ->atFinestGrain($learnerId)
             ->with('concept');
 
         if ($subjectId) {
@@ -328,18 +345,32 @@ class LearnerStateEngine
     }
 
     // Helper methods
-    protected function calculateBloomLevel($competencies): int
+    /**
+     * Mastery-weighted mean Bloom level, or null when nothing in the set
+     * carries a Bloom tag.
+     *
+     * bloom_level is nullable and 6,043 of 24,003 rows are untagged. Summing
+     * them as-is coerced NULL to 0 and dragged the weighted mean below
+     * "Remember" for a quarter of the estate; the old `?: 1` floor then made
+     * an untagged learner indistinguishable from a genuine Level-1 learner.
+     * Untagged rows are skipped entirely instead.
+     */
+    protected function calculateBloomLevel($competencies): ?int
     {
-        $weightedSum = 0;
-        $weightSum = 0;
-        
+        $weightedSum = 0.0;
+        $weightSum = 0.0;
+
         foreach ($competencies as $comp) {
+            if ($comp->bloom_level === null) {
+                continue;
+            }
+
             $weight = $comp->mastery_score / 100;
             $weightedSum += $comp->bloom_level * $weight;
             $weightSum += $weight;
         }
-        
-        return $weightSum > 0 ? round($weightedSum / $weightSum) : 1;
+
+        return $weightSum > 0 ? (int) round($weightedSum / $weightSum) : null;
     }
 
     protected function identifyKnowledgeGaps($competencies): array
@@ -364,38 +395,112 @@ class LearnerStateEngine
             ->toArray();
     }
 
+    /**
+     * Prerequisite edges for the concepts this learner is actually weak on,
+     * read from pal_concept_relations.
+     *
+     * Caveat worth knowing before trusting an empty result: the relations
+     * graph and the learner's competency rows currently live in two different
+     * concept-id spaces. pal_concept_relations was tagged against the
+     * tenant-1 concept set (ids 31-1467, 725 concepts) while
+     * pal:derive-competencies seeded its own chapter-grain rows into
+     * pal_concepts (ids 26-8677, 547 concepts) -- only 3 ids overlap. So this
+     * returns real edges where the graph covers the learner and an empty list
+     * otherwise; empty means "no mapped prerequisite", not "no prerequisite".
+     * Aligning the two id spaces is a content-tagging job, not a code fix.
+     */
     protected function getConceptDependencies(int $learnerId): array
     {
-        // Get from Neo4j or cache - placeholder
-        return [];
+        $weakConceptIds = Competency::query()
+            ->atFinestGrain($learnerId)
+            ->where('mastery_score', '<', 50)
+            ->whereNotNull('concept_id')
+            ->pluck('concept_id')
+            ->unique()
+            ->all();
+
+        if (empty($weakConceptIds)) {
+            return [];
+        }
+
+        return DB::table('pal_concept_relations as r')
+            ->leftJoin('pal_concepts as c', 'c.id', '=', 'r.to_concept_id')
+            ->whereIn('r.from_concept_id', $weakConceptIds)
+            ->where('r.link_type', 'depends_on')
+            ->select([
+                'r.from_concept_id as concept_id',
+                'r.to_concept_id as depends_on_concept_id',
+                'c.name as depends_on_name',
+                'r.relation_type',
+                'r.mastery_gate',
+            ])
+            ->limit(50)
+            ->get()
+            ->map(fn ($row) => (array) $row)
+            ->all();
     }
 
-    protected function calculateCompetencyVelocity(int $learnerId): float
+    /**
+     * Both of these compare the learner's most recent evidence week against
+     * the week before it. The windows are anchored to the learner's OWN latest
+     * evidence, not to now(): competency rows are backdated to the answers
+     * that produced them, so a now()-relative window is empty for ~99.9% of
+     * this estate and would report a flat 0 / 'stable' for everyone. See the
+     * class docblock on LearningVelocityEngine.
+     */
+    protected function calculateCompetencyVelocity(int $learnerId): ?float
     {
-        $recent = Competency::where('learner_id', $learnerId)
-            ->where('updated_at', '>=', now()->subDays(7))
-            ->avg('mastery_score') ?? 0;
-        
-        $older = Competency::where('learner_id', $learnerId)
-            ->whereBetween('updated_at', [now()->subDays(14), now()->subDays(7)])
-            ->avg('mastery_score') ?? 0;
-        
-        return $older > 0 ? (($recent - $older) / $older) * 100 : 0;
+        [$recent, $older] = $this->masteryWindows($learnerId);
+
+        if ($recent === null || $older === null || $older <= 0) {
+            return null;
+        }
+
+        return (($recent - $older) / $older) * 100;
     }
 
-    protected function getProficiencyTrend(int $learnerId): string
+    protected function getProficiencyTrend(int $learnerId): ?string
     {
-        $current = Competency::where('learner_id', $learnerId)
-            ->where('updated_at', '>=', now()->subDays(7))
-            ->avg('mastery_score') ?? 0;
-        
-        $previous = Competency::where('learner_id', $learnerId)
-            ->whereBetween('updated_at', [now()->subDays(14), now()->subDays(7)])
-            ->avg('mastery_score') ?? 0;
-        
+        [$current, $previous] = $this->masteryWindows($learnerId);
+
+        // 'stable' is a claim about two measured windows. With only one window
+        // (or none) the trend is unknown, and saying 'stable' there is exactly
+        // the kind of confident-looking default that made this screen read as
+        // static.
+        if ($current === null || $previous === null) {
+            return null;
+        }
+
         if ($current > $previous + 5) return 'improving';
         if ($current < $previous - 5) return 'declining';
         return 'stable';
+    }
+
+    /**
+     * @return array{0: ?float, 1: ?float} [most recent week, preceding week]
+     */
+    protected function masteryWindows(int $learnerId): array
+    {
+        $anchor = Competency::evidenceAnchor($learnerId);
+
+        if (!$anchor) {
+            return [null, null];
+        }
+
+        $recent = Competency::query()
+            ->atFinestGrain($learnerId)
+            ->whereBetween('updated_at', [$anchor->copy()->subDays(7), $anchor])
+            ->avg('mastery_score');
+
+        $older = Competency::query()
+            ->atFinestGrain($learnerId)
+            ->whereBetween('updated_at', [$anchor->copy()->subDays(14), $anchor->copy()->subDays(7)])
+            ->avg('mastery_score');
+
+        return [
+            $recent === null ? null : (float) $recent,
+            $older === null ? null : (float) $older,
+        ];
     }
 
     protected function getSessionFrequency(int $learnerId): int
@@ -418,17 +523,21 @@ class LearnerStateEngine
         return min($uniqueTypes * 10, 100);
     }
 
-    protected function calculateConsistency(int $learnerId): float
+    /**
+     * Day-to-day stability of session mastery. Needs at least two distinct
+     * days to mean anything -- the old `return 100` reported *perfect*
+     * consistency for every learner with fewer, i.e. for the entire estate.
+     */
+    protected function calculateConsistency(int $learnerId): ?float
     {
         $dailyMasteries = \App\Models\PAL\LearningSession::where('learner_id', $learnerId)
-            ->where('created_at', '>=', now()->subDays(14))
             ->selectRaw('DATE(created_at) as date, AVG(mastery_score) as avg')
             ->groupBy('date')
             ->pluck('avg')
             ->toArray();
-        
-        if (count($dailyMasteries) < 2) return 100;
-        
+
+        if (count($dailyMasteries) < 2) return null;
+
         $mean = array_sum($dailyMasteries) / count($dailyMasteries);
         $variance = array_sum(array_map(fn($v) => pow($v - $mean, 2), $dailyMasteries)) / count($dailyMasteries);
         $stdDev = sqrt($variance);
@@ -436,54 +545,83 @@ class LearnerStateEngine
         return max(0, 100 - ($stdDev * 2));
     }
 
-    protected function getAvgSessionDuration(int $learnerId): int
+    protected function getAvgSessionDuration(int $learnerId): ?int
     {
-        return \App\Models\PAL\LearningSession::where('learner_id', $learnerId)
-            ->where('created_at', '>=', now()->subDays(7))
-            ->avg('duration_minutes') ?? 0;
+        $avg = \App\Models\PAL\LearningSession::where('learner_id', $learnerId)
+            ->avg('duration_minutes');
+
+        return $avg === null ? null : (int) round($avg);
     }
 
-    protected function calculateConfidence(int $learnerId): float
+    /**
+     * Accuracy over the learner's most recent week of ANSWERED assessments.
+     *
+     * Anchored to their own last answer rather than now(): pal_assessment_results
+     * runs 2021 -> current term and only ~100 rows estate-wide fall inside a
+     * now()-relative week, so the old query returned the `50` fallback for
+     * practically every learner. A flat 50 on a confidence gauge is
+     * indistinguishable from a real mid-range reading, which is precisely the
+     * failure mode this screen had.
+     */
+    protected function calculateConfidence(int $learnerId): ?float
     {
-        $correct = \App\Models\PAL\AssessmentResult::where('learner_id', $learnerId)
-            ->where('is_correct', true)
-            ->where('created_at', '>=', now()->subDays(7))
-            ->count();
-        
-        $total = \App\Models\PAL\AssessmentResult::where('learner_id', $learnerId)
-            ->where('created_at', '>=', now()->subDays(7))
-            ->count();
-        
-        return $total > 0 ? ($correct / $total) * 100 : 50;
+        $anchor = \App\Models\PAL\AssessmentResult::where('learner_id', $learnerId)
+            ->max('created_at');
+
+        if (!$anchor) {
+            return null;
+        }
+
+        $from = \Carbon\Carbon::parse($anchor)->subDays(7);
+
+        $rows = \App\Models\PAL\AssessmentResult::where('learner_id', $learnerId)
+            ->whereBetween('created_at', [$from, $anchor])
+            ->selectRaw('COUNT(*) AS total, SUM(is_correct = 1) AS correct')
+            ->first();
+
+        $total = (int) ($rows->total ?? 0);
+
+        return $total > 0 ? ((int) $rows->correct / $total) * 100 : null;
     }
 
-    protected function calculatePersistence(int $learnerId): float
+    /**
+     * Needs pal_session_events, which has 18 rows estate-wide and no
+     * production writer on the paths learners actually use -- so this is null
+     * for everyone until interaction capture is wired up. Returning the old
+     * `50` invented a mid-range persistence score for every learner in the
+     * estate.
+     */
+    protected function calculatePersistence(int $learnerId): ?float
     {
-        $retryCount = \App\Models\PAL\SessionEvent::where('learner_id', $learnerId)
-            ->where('event_type', 'retry')
-            ->where('created_at', '>=', now()->subDays(7))
-            ->count();
-        
-        $abandonCount = \App\Models\PAL\SessionEvent::where('learner_id', $learnerId)
-            ->where('event_type', 'session_abandon')
-            ->where('created_at', '>=', now()->subDays(7))
-            ->count();
-        
-        return $retryCount > 0 ? min(100, ($retryCount / ($retryCount + $abandonCount + 1)) * 100) : 50;
+        $counts = \App\Models\PAL\SessionEvent::where('learner_id', $learnerId)
+            ->whereIn('event_type', ['retry', 'session_abandon'])
+            ->selectRaw("SUM(event_type = 'retry') AS retries, SUM(event_type = 'session_abandon') AS abandons")
+            ->first();
+
+        $retryCount = (int) ($counts->retries ?? 0);
+        $abandonCount = (int) ($counts->abandons ?? 0);
+
+        if ($retryCount === 0 && $abandonCount === 0) {
+            return null;
+        }
+
+        return min(100, ($retryCount / ($retryCount + $abandonCount + 1)) * 100);
     }
 
-    protected function calculateSelfEfficacy(int $learnerId): float
+    /**
+     * Session completion ratio. pal_learning_sessions holds 1 row estate-wide
+     * (IntelligenceService::processEvent is its only writer and no route calls
+     * it), so this is null until session capture exists.
+     */
+    protected function calculateSelfEfficacy(int $learnerId): ?float
     {
-        $completed = \App\Models\PAL\LearningSession::where('learner_id', $learnerId)
-            ->where('status', 'completed')
-            ->where('created_at', '>=', now()->subDays(14))
-            ->count();
-        
-        $started = \App\Models\PAL\LearningSession::where('learner_id', $learnerId)
-            ->where('created_at', '>=', now()->subDays(14))
-            ->count();
-        
-        return $started > 0 ? ($completed / $started) * 100 : 50;
+        $sessions = \App\Models\PAL\LearningSession::where('learner_id', $learnerId)
+            ->selectRaw("COUNT(*) AS started, SUM(status = 'completed') AS completed")
+            ->first();
+
+        $started = (int) ($sessions->started ?? 0);
+
+        return $started > 0 ? ((int) $sessions->completed / $started) * 100 : null;
     }
 
     protected function detectFrustrationIndicators($events): array
@@ -505,56 +643,56 @@ class LearnerStateEngine
         return $indicators;
     }
 
-    protected function calculateEngagementDecay(int $learnerId): float
+    /**
+     * Compares the learner's most recent 7 sessions against the 7 before
+     * them. Split by session ordinal rather than by calendar week: sessions
+     * are sparse and the now()-relative windows this used made both halves
+     * empty, which returned a flat 0 ("no decay") for every learner.
+     */
+    protected function calculateEngagementDecay(int $learnerId): ?float
     {
-        $recentSessions = \App\Models\PAL\LearningSession::where('learner_id', $learnerId)
-            ->where('created_at', '>=', now()->subDays(14))
-            ->orderBy('created_at')
-            ->limit(7)
+        $sessions = \App\Models\PAL\LearningSession::where('learner_id', $learnerId)
+            ->orderByDesc('created_at')
+            ->limit(14)
             ->get();
-        
-        $olderSessions = \App\Models\PAL\LearningSession::where('learner_id', $learnerId)
-            ->where('created_at', '<', now()->subDays(7))
-            ->where('created_at', '>=', now()->subDays(14))
-            ->orderBy('created_at')
-            ->limit(7)
-            ->get();
-        
-        if ($recentSessions->isEmpty() || $olderSessions->isEmpty()) return 0;
-        
-        $recentEngagement = $recentSessions->avg('engagement_score') ?? 0;
-        $olderEngagement = $olderSessions->avg('engagement_score') ?? 0;
-        
-        return $olderEngagement > 0 ? (($olderEngagement - $recentEngagement) / $olderEngagement) * 100 : 0;
+
+        if ($sessions->count() < 2) {
+            return null;
+        }
+
+        $recentEngagement = $sessions->take(7)->avg('engagement_score');
+        $olderEngagement = $sessions->slice(7)->avg('engagement_score');
+
+        if ($recentEngagement === null || $olderEngagement === null || $olderEngagement <= 0) {
+            return null;
+        }
+
+        return (($olderEngagement - $recentEngagement) / $olderEngagement) * 100;
     }
 
-    protected function getClassroomParticipation(int $learnerId): float
+    protected function getClassroomParticipation(int $learnerId): ?float
     {
         return \App\Models\PAL\ClassroomActivity::where('learner_id', $learnerId)
-            ->where('created_at', '>=', now()->subDays(7))
-            ->avg('participation_score') ?? 0;
+            ->avg('participation_score');
     }
 
     protected function getDiscussionInteractions(int $learnerId): int
     {
-        return \App\Models\PAL\Discussion::where('learner_id', $learnerId)
-            ->where('created_at', '>=', now()->subDays(7))
-            ->count();
+        return \App\Models\PAL\Discussion::where('learner_id', $learnerId)->count();
     }
 
-    protected function getGroupPerformance(int $learnerId): float
+    protected function getGroupPerformance(int $learnerId): ?float
     {
         return \App\Models\PAL\GroupActivity::where('learner_id', $learnerId)
-            ->where('created_at', '>=', now()->subDays(14))
-            ->avg('performance_score') ?? 0;
+            ->avg('performance_score');
     }
 
-    protected function calculateBandwidthQuality($sessions): string
+    protected function calculateBandwidthQuality($sessions): ?string
     {
         $slowCount = $sessions->where('load_time_ms', '>', 3000)->count();
         $total = $sessions->count();
         
-        if ($total === 0) return 'unknown';
+        if ($total === 0) return null;
         $ratio = $slowCount / $total;
         
         if ($ratio > 0.5) return 'poor';
@@ -569,50 +707,67 @@ class LearnerStateEngine
             ->toArray();
     }
 
-    protected function getLanguagePreference(int $learnerId): string
+    /**
+     * pal_learner_preferences is empty estate-wide. 'en' was being reported as
+     * this learner's *chosen* language for everyone, including learners whose
+     * content is delivered in another language.
+     */
+    protected function getLanguagePreference(int $learnerId): ?string
     {
         $pref = \App\Models\PAL\LearnerPreference::where('learner_id', $learnerId)
             ->where('pref_key', 'language')
             ->first();
-        
-        return $pref?->pref_value ?? 'en';
+
+        return $pref?->pref_value;
     }
 
-    protected function getRuralUrbanContext(int $learnerId): string
+    /**
+     * There is no rural/urban signal anywhere in this schema -- no locality,
+     * region or settlement-type column on any user/profile table. This
+     * returned the literal string 'urban' for every learner in the estate,
+     * which rendered on the dashboard identically to a measured value and is
+     * the single most misleading field this screen had. It stays null until a
+     * real source exists.
+     */
+    protected function getRuralUrbanContext(int $learnerId): ?string
     {
-        return 'urban'; // Placeholder - would come from user profile
+        return null;
     }
 
-    protected function calculateSelfCorrection(int $learnerId): float
+    protected function calculateSelfCorrection(int $learnerId): ?float
     {
-        $corrections = \App\Models\PAL\SelfCorrection::where('learner_id', $learnerId)
-            ->where('created_at', '>=', now()->subDays(14))
-            ->get();
-        
-        if ($corrections->isEmpty()) return 0;
-        
+        $corrections = \App\Models\PAL\SelfCorrection::where('learner_id', $learnerId)->get();
+
+        if ($corrections->isEmpty()) return null;
+
         return ($corrections->where('successful', true)->count() / $corrections->count()) * 100;
     }
 
-    protected function getPlanningBehavior(int $learnerId): float
+    /**
+     * pal_learning_plans and pal_strategy_selections are both empty estate-wide
+     * with no writer anywhere in the codebase. The old versions returned a
+     * two-valued constant (70/30 and 80/40) that looked like a score on a
+     * 0-100 gauge -- every learner in the estate scored the "absent" arm, 30
+     * and 40, which reads as a measured weakness rather than as no data.
+     */
+    protected function getPlanningBehavior(int $learnerId): ?float
     {
-        return \App\Models\PAL\LearningPlan::where('learner_id', $learnerId)
-            ->where('created_at', '>=', now()->subDays(7))
-            ->count() > 0 ? 70 : 30;
+        $plans = \App\Models\PAL\LearningPlan::where('learner_id', $learnerId)->count();
+
+        return $plans > 0 ? min(100, $plans * 20) : null;
     }
 
-    protected function getStrategyAwareness(int $learnerId): float
+    protected function getStrategyAwareness(int $learnerId): ?float
     {
-        return \App\Models\PAL\StrategySelection::where('learner_id', $learnerId)
-            ->where('created_at', '>=', now()->subDays(14))
+        $distinct = \App\Models\PAL\StrategySelection::where('learner_id', $learnerId)
             ->distinct()
-            ->count('strategy_type') > 2 ? 80 : 40;
+            ->count('strategy_type');
+
+        return $distinct > 0 ? min(100, $distinct * 20) : null;
     }
 
     protected function getJournalEngagement(int $learnerId): int
     {
-        return \App\Models\PAL\LearningJournal::where('learner_id', $learnerId)
-            ->where('created_at', '>=', now()->subDays(7))
-            ->count();
+        return \App\Models\PAL\LearningJournal::where('learner_id', $learnerId)->count();
     }
 }

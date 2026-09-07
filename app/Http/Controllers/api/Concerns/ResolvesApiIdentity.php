@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\Concerns;
+namespace App\Http\Controllers\api\Concerns;
 
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;

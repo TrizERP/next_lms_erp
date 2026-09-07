@@ -287,6 +287,17 @@ class BadgeService
                 ['recoveries' => $signals['misconception_recoveries']]
             ),
 
+            // Adaptive Learning Engine evidence (D4 mastery / D5 retention).
+            'eso_concepts_mastered' => $this->once(
+                ($signals['eso_concepts_mastered'] ?? 0) >= (int) ($trigger['count'] ?? 1),
+                ['concepts_mastered' => $signals['eso_concepts_mastered'] ?? 0]
+            ),
+
+            'eso_retention_verified' => $this->once(
+                ($signals['eso_retention_checks_passed'] ?? 0) >= (int) ($trigger['count'] ?? 1),
+                ['retention_checks_passed' => $signals['eso_retention_checks_passed'] ?? 0]
+            ),
+
             'persisted_after_errors' => $this->once($signals['persisted_after_errors'], []),
 
             'self_directed_content' => $this->once(
@@ -454,6 +465,8 @@ class BadgeService
             'longest_streak' => $this->streaks->longestStreak($learnerId),
             'longest_return_gap' => $this->streaks->longestReturnGap($learnerId),
             'misconception_recoveries' => $this->activity->misconceptionRecoveries($learnerId),
+            'eso_concepts_mastered' => $this->activity->esoConceptsMastered($learnerId),
+            'eso_retention_checks_passed' => $this->activity->esoRetentionChecksPassed($learnerId),
             'persisted_after_errors' => $this->activity->persistedAfterEarlyErrors($learnerId, 2, 5),
             'self_directed_opens' => $this->activity->selfDirectedOpens($learnerId),
             'longest_single_concept_minutes' => $this->activity->longestSingleConceptMinutes($learnerId),

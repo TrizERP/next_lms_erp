@@ -13,8 +13,8 @@ class QuestionMetadata extends Model
 
     protected $fillable = [
         'question_id', 'sub_institute_id', 'scope',
-        'content_id_ref', 'concept_ref_id', 'chapter_ref_id', 'topic_ref_id', 'sub_concept_ref', 'grade_band', 'stage', 'board',
-        'bloom_level', 'practice_level', 'knowledge_type', 'difficulty_1_to_5',
+        'content_id_ref', 'concept_ref_id', 'node_id', 'chapter_ref_id', 'topic_ref_id', 'sub_concept_ref', 'grade_band', 'stage', 'board',
+        'bloom_level', 'practice_level', 'knowledge_type', 'item_type', 'difficulty_1_to_5',
         'irt_a', 'irt_b', 'irt_c', 'discrimination_index', 'avg_time_seconds',
         'first_attempt_correct_rate', 'response_count', 'guessing_vulnerability',
         'psychometrics_derived_at',
@@ -97,6 +97,12 @@ class QuestionMetadata extends Model
         // Neither key given: match nothing rather than everything. Returning the
         // whole estate here would serve one tenant's items to another learner.
         return $query->whereRaw('1 = 0');
+    }
+
+    /** Items tagged against one specific K/A/S node. */
+    public function scopeForNode($query, int $nodeId)
+    {
+        return $query->where('node_id', $nodeId);
     }
 
     /**
