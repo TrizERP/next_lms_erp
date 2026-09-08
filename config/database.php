@@ -63,13 +63,24 @@ return [
             ]) : [],
         ],
 
-        "information_schema" => [
+                /*
+        | Tracker Decision #10, 2026-09-08. These four values were hardcoded literals.
+        |
+        | They are env()-backed WITH the current values as fallbacks, deliberately: this
+        | connection IS live (DB::connection("information_schema") at
+        | apiController.php:324 (check_otp) and :730 (testkey)), and a fallback-free move would break those
+        | call sites the moment this deploys to a server without the variables set.
+        |
+        | Set LMS_INSPECT_DB_* in the environment, then delete the fallbacks. The
+        | password remains in git history either way and must be rotated.
+        */
+"information_schema" => [
             'driver' => 'mysql',
-#            'host'      =>  '202.47.117.131',
-            'host' => '127.0.0.1',
-            'database' => 'triz_lms',
-            'username' => 'dev_db',
-            'password' => 'Triz@2020',
+#            'host' => env('LMS_INSPECT_DB_HOST', '202.47.117.131'),
+            'host' => env('LMS_INSPECT_DB_HOST', '127.0.0.1'),
+            'database' => env('LMS_INSPECT_DB_DATABASE', 'triz_lms'),
+            'username' => env('LMS_INSPECT_DB_USERNAME', 'dev_db'),
+            'password' => env('LMS_INSPECT_DB_PASSWORD', 'Triz@2020'),
             'charset' => 'utf8',
             'collation' => 'utf8_unicode_ci',
             'prefix' => '',

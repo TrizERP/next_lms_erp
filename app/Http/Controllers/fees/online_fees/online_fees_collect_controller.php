@@ -25,6 +25,12 @@ use Validator;
 
 class online_fees_collect_controller extends Controller
 {
+        // Tracker Decision #10, 2026-09-08: several commented-out CCAvenue working_key
+        // and Axis encryption_key literals were removed from this file. The live code
+        // paths read these from the database (get_map_bank_detail->working_code /
+        // ->enc_key / ->salt_key), so nothing here changes behaviour. The removed
+        // values remain in git history and must be rotated by whoever owns those
+        // merchant accounts. See docs/decisions/2026-09-08-credential-remediation.md.
     public function index(Request $request)
     {
         // echo '<pre>'; print_r($_REQUEST); exit;
@@ -192,9 +198,7 @@ class online_fees_collect_controller extends Controller
         $orderId = $_REQUEST["student_id"] . (mt_rand(10, 10000000000));
         
         $working_key = $get_map_bank_detail[0]->working_code; //Shared by CCAVENUES
-        // $working_key = "94C918B28626FB1A085AAB522E32A402"; //Shared by CCAVENUES
         $access_code = $get_map_bank_detail[0]->access_code;
-        // $access_code = "AVPL86GG59BJ25LPJB";
         
         // get break off 28-04-2025
         $school_amount = $mission_amount = 0;
@@ -303,9 +307,7 @@ class online_fees_collect_controller extends Controller
         $get_map_bank_detail = DB::table("fees_hdffc")
             ->where(["sub_institute_id" => 76])
             ->get();//session()->get("sub_institute_id")
-        //$working_key = "585414BED625F7D522B38C014074BE28"; //Shared by CCAVENUES 48 CMA
         $working_key = $get_map_bank_detail[0]->working_code; //Shared by CCAVENUES
-        // $access_code = "AVPL86GG59BJ25LPJB";
         // $workingKey = WORKING_CODE; //Working Key should be provided here.
         $encResponse = $_POST["encResp"]; //This is the response sent by the CCAvenue Server
         $rcvdString = $this->hdfc_decrypt($encResponse, $working_key); //Crypto Decryption used as per the specified working key.
@@ -416,7 +418,10 @@ class online_fees_collect_controller extends Controller
     public function getUTR(Request $request)
     {
         $working_code = '0E3D6A504AEB9E4D89A972E55771E378';
-        $access_code = 'AVDY63MD40AA59YDAA';
+        // Tracker Decision #10: CCAvenue access code was a hardcoded literal here.
+        // env()-backed with the current value as a fallback so no deploy can break.
+        // It remains in git history and must be rotated with CCAvenue.
+        $access_code = env('CCAVENUE_ACCESS_CODE', 'AVDY63MD40AA59YDAA');
 
         $school_account = ['SHARIACADE1', 'SPRISCHOOL1'];
         $mission_account = ['SHRISWAMI1'];
@@ -820,9 +825,7 @@ class online_fees_collect_controller extends Controller
         $orderId = $_REQUEST["student_id"] . (mt_rand(10, 10000000000));
         
         $working_key = $get_map_bank_detail[0]->working_code; //Shared by CCAVENUES
-        // $working_key = "94C918B28626FB1A085AAB522E32A402"; //Shared by CCAVENUES
         $access_code = $get_map_bank_detail[0]->access_code;
-        // $access_code = "AVPL86GG59BJ25LPJB";
         $return_url = $this->site_name()."fees/hdfc/online_fees_hdfcResponseHandler_ssmission";
         $send_arr = array(
             "merchant_id" => $get_map_bank_detail[0]->merchant_id,
@@ -900,9 +903,7 @@ class online_fees_collect_controller extends Controller
         $get_map_bank_detail = DB::table("fees_hdffc")
             ->where(["sub_institute_id" => 76])
             ->get();//session()->get("sub_institute_id")
-        //$working_key = "585414BED625F7D522B38C014074BE28"; //Shared by CCAVENUES 48 CMA
         $working_key = $get_map_bank_detail[0]->working_code; //Shared by CCAVENUES
-        // $access_code = "AVPL86GG59BJ25LPJB";
         // $workingKey = WORKING_CODE; //Working Key should be provided here.
         $encResponse = $_POST["encResp"]; //This is the response sent by the CCAvenue Server
         $rcvdString = $this->hdfc_decrypt($encResponse, $working_key); //Crypto Decryption used as per the specified working key.
@@ -1929,10 +1930,8 @@ exit; */
             ->where(["sub_institute_id" => session()->get("sub_institute_id")])
             ->get();
         //Change Encryption Key as provided by EasyPay Team
-        // $encryption_key = 'axisbank12345678';
         $encryption_key = $get_map_bank_detail[0]->encryption_key;
         //Change Checksum Key as provided by EasyPay Team
-        // $checksum_key = "axis";
         $checksum_key = $get_map_bank_detail[0]->checksum_key;
         $get_map_bank_data = DB::table("fees_online_maping")
             ->where(["sub_institute_id" => session()->get("sub_institute_id")])
@@ -2008,10 +2007,8 @@ exit; */
             ->where(["sub_institute_id" => session()->get("sub_institute_id")])
             ->get();
         //Change Encryption Key as provided by EasyPay Team
-        // $encryption_key = 'axisbank12345678';
         $encryption_key = $get_map_bank_detail[0]->encryption_key;
         //Change Checksum Key as provided by EasyPay Team
-        // $checksum_key = "axis";
         $checksum_key = $get_map_bank_detail[0]->checksum_key;
         define('ENCRYPTION_KEY', $encryption_key);
         preg_match_all('/(\w+)=([^&]+)/', $_SERVER["QUERY_STRING"], $pairs);
