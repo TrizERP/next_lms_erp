@@ -43,7 +43,7 @@ class AskPipeline
 
     public function usesLifecycle(): bool
     {
-        return (bool) config('ai.lifecycle.enabled', false);
+        return (bool) config('ai.lifecycle.enabled', true);
     }
 
     /**

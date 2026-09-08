@@ -54,6 +54,15 @@ class QuestionRoutingTest extends TestCase
         );
     }
 
+    public function test_student_profiles_thread_context_keeps_risk_follow_ups_on_the_student_module(): void
+    {
+        $resolved = $this->resolveModule('Why is Abhi D. Raval at risk?', [
+            'conversation_module' => 'student_profiles',
+        ]);
+
+        $this->assertSame('student', $resolved->key);
+    }
+
     /**
      * @return array<string, array{0:string, 1:string}>
      */

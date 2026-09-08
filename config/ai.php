@@ -249,9 +249,21 @@ return [
     | returns the same wire shape. Both write turns to the same tables, so it can be
     | turned on and off without stranding history.
     |
+    | It defaults to **true** — Phase 2 of docs/lifecycle-cutover-plan.md — because the
+    | two pipelines answer the same question with visibly different products, and a
+    | deployment that simply never set the variable was silently serving the old one.
+    | That is not a subtle difference a reader would attribute to configuration: the
+    | lifecycle ranks the cohort and offers a per-student "View details", while the
+    | previous service returns a severity breakdown and jumps straight to an approval
+    | for whichever case happened to rank first. Two environments running the same
+    | commit looked like two different applications.
+    |
+    | Set it to false to fall back deliberately. The flag itself stays until Phase 3,
+    | when the previous service is deleted and there is nothing left to choose between.
+    |
     */
     'lifecycle' => [
-        'enabled' => (bool) env('AI_LIFECYCLE_ENABLED', false),
+        'enabled' => (bool) env('AI_LIFECYCLE_ENABLED', true),
 
         /*
         | Module depth bindings.

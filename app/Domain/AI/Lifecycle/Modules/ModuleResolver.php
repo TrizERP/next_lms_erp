@@ -52,7 +52,7 @@ class ModuleResolver
         $modules = $this->registry->all($subInstituteId);
 
         // 1. Named outright.
-        $explicit = $options['module'] ?? null;
+        $explicit = $this->canonicalModuleKey($options['module'] ?? null, $modules);
 
         if (is_string($explicit) && isset($modules[$explicit])) {
             return [
@@ -63,7 +63,7 @@ class ModuleResolver
         }
 
         // 2. Inherited from the conversation the follow-up belongs to.
-        $thread = $options['conversation_module'] ?? null;
+        $thread = $this->canonicalModuleKey($options['conversation_module'] ?? null, $modules);
 
         if (is_string($thread) && $thread !== 'general' && isset($modules[$thread])) {
             return [
@@ -130,6 +130,30 @@ class ModuleResolver
     }
 
     // ---------------------------------------------------------------- internals
+
+    /**
+     * Frontend page context and older conversation rows use `student_profiles`,
+     * while the lifecycle registry binds the same capability as `student`.
+     * Keep that compatibility at the resolver boundary so an elliptical follow-up
+     * such as "Why is Abhi D. Raval at risk?" stays on the academic-risk module.
+     *
+     * @param  array<string, ModuleCapability>  $modules
+     */
+    private function canonicalModuleKey(mixed $key, array $modules): ?string
+    {
+        if (! is_string($key) || $key === '') {
+            return null;
+        }
+
+        if (isset($modules[$key])) {
+            return $key;
+        }
+
+        return match ($key) {
+            'student_profiles' => isset($modules['student']) ? 'student' : (isset($modules['students']) ? 'students' : null),
+            default => null,
+        };
+    }
 
     /**
      * @param  array<string, ModuleCapability>  $modules
