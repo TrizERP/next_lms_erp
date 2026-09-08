@@ -13,6 +13,7 @@ class InitializeController extends McpController
                 'name' => config('mcp.server.name'),
                 'version' => config('mcp.server.version'),
                 'protocol_version' => config('mcp.server.protocol_version'),
+                'protocol_versions' => config('mcp.server.protocol_versions'),
             ],
             'capabilities' => [
                 'tools' => true,

@@ -81,6 +81,18 @@ class ModuleResolutionTest extends TestCase
         $this->assertSame('declared_by_caller', $result['source']);
     }
 
+    public function test_a_follow_up_inherits_the_conversation_module_before_keyword_guessing(): void
+    {
+        $result = $this->resolve('Approve the recommendation.', ['conversation_module' => 'student']);
+
+        $this->assertSame('student', $result['module']->key);
+        $this->assertSame('conversation_thread', $result['source']);
+        $this->assertTrue(
+            $result['module']->hasWorkflow(),
+            'Approval follow-ups must stay on the module that can start the governed workflow.'
+        );
+    }
+
     public function test_money_words_beat_student_words_when_both_appear(): void
     {
         $result = $this->resolve('Which students have pending fees?');

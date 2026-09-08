@@ -112,9 +112,11 @@ class SignalStore
         }
 
         if ($context->academicYear !== null) {
-            $query->where(function ($inner) use ($context) {
-                $inner->whereNull('academic_year')->orWhere('academic_year', $context->academicYear);
-            });
+            $query->where('academic_year', $context->academicYear);
+        }
+
+        if ($context->termId !== null) {
+            $query->where('term_id', $context->termId);
         }
 
         if ($minSeverity !== null) {
@@ -205,9 +207,11 @@ class SignalStore
             ->whereIn('status', ['open', 'cased']);
 
         if ($context->academicYear !== null) {
-            $query->where(function ($inner) use ($context) {
-                $inner->whereNull('academic_year')->orWhere('academic_year', $context->academicYear);
-            });
+            $query->where('academic_year', $context->academicYear);
+        }
+
+        if ($context->termId !== null) {
+            $query->where('term_id', $context->termId);
         }
 
         $id = $query->orderByDesc('id')->value('id');

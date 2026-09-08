@@ -59,17 +59,21 @@ class HumanApprovalStage implements LifecycleStage
             return $this->admissionsGate($admissions);
         }
 
+        $decision = $this->decisionFrom($context);
+
+        if ($decision !== null) {
+            return $this->resolveDecision($context, $decision);
+        }
+
         if (! $context->module->hasAgent()) {
             return StageOutcome::notReached($context->module->whyNoDepth());
         }
 
-        $decision = $this->decisionFrom($context);
+        return $this->waiting($context);
+    }
 
-        if ($decision === null) {
-            return $this->waiting($context);
-        }
-
-        // A workflow step gate is resolved through the engine, not through DecisionGate.
+    private function resolveDecision(StageContext $context, string $decision): StageOutcome
+    {
         $approvalId = $context->intent?->slot('workflow_approval_id');
 
         if ($approvalId !== null) {
@@ -320,7 +324,7 @@ class HumanApprovalStage implements LifecycleStage
             'Next',
             'Run a risk scan first — that is what drafts a recommendation.'
         ));
-        $context->suggestFollowUp('Which students are at academic risk?');
+        $context->suggestRiskJourney('Which students are at academic risk?');
 
         return StageOutcome::skipped(
             'Nothing is waiting for a decision.',

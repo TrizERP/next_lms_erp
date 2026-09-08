@@ -213,7 +213,7 @@ class AiServiceProvider extends ServiceProvider
             $app->make(OutputValidator::class),
             $app->make(SafetyChecker::class),
             $app->make(AiAuditLogger::class),
-            $app->make(\App\Domain\AI\Support\OpenRouterClient::class)
+            $app->make(\App\Domain\AI\Support\ModelClient::class)
         ));
     }
 
@@ -364,6 +364,17 @@ class AiServiceProvider extends ServiceProvider
     private function registerLifecycle(): void
     {
         $this->app->singleton(\App\Domain\AI\Support\OpenRouterClient::class);
+        $this->app->singleton(\App\Domain\AI\Support\GeminiClient::class);
+
+        // The one place the model provider is chosen. Every caller depends on
+        // ModelClient, so switching provider — or rolling back to OpenRouter after a
+        // Gemini incident — is AI_PROVIDER in the environment, not a code change.
+        $this->app->singleton(\App\Domain\AI\Support\ModelClient::class, function ($app) {
+            return match ((string) config('ai.provider.driver', 'gemini')) {
+                'openrouter' => $app->make(\App\Domain\AI\Support\OpenRouterClient::class),
+                default => $app->make(\App\Domain\AI\Support\GeminiClient::class),
+            };
+        });
 
         $this->app->singleton(
             \App\Domain\AI\Lifecycle\Modules\ModuleRegistry::class,
@@ -383,7 +394,8 @@ class AiServiceProvider extends ServiceProvider
         $this->app->singleton(
             \App\Domain\AI\Lifecycle\Support\McpToolCaller::class,
             fn ($app) => new \App\Domain\AI\Lifecycle\Support\McpToolCaller(
-                $app->make(\App\Mcp\ToolRegistry::class)
+                $app->make(\App\Mcp\ToolRegistry::class),
+                $app->make(\App\Services\Mcp\McpAuditService::class)
             )
         );
 
@@ -402,7 +414,7 @@ class AiServiceProvider extends ServiceProvider
         $this->app->singleton(
             \App\Domain\AI\Lifecycle\Plan\LlmPlanner::class,
             fn ($app) => new \App\Domain\AI\Lifecycle\Plan\LlmPlanner(
-                $app->make(\App\Domain\AI\Support\OpenRouterClient::class),
+                $app->make(\App\Domain\AI\Support\ModelClient::class),
                 $app->make(\App\Mcp\ToolRegistry::class)
             )
         );
@@ -445,7 +457,9 @@ class AiServiceProvider extends ServiceProvider
                 $app->make(\App\Domain\AI\Lifecycle\Modules\ModuleResolver::class),
                 $app->make(\App\Domain\AI\Lifecycle\LifecyclePipeline::class),
                 $app->make(\App\Domain\AI\Conversation\ConversationStore::class),
-                $app->make(\App\Domain\AI\Conversation\AnswerComposer::class)
+                $app->make(\App\Domain\AI\Conversation\AnswerComposer::class),
+                $app->make(\App\Domain\AI\Conversation\GeneralAnswerService::class),
+                $app->make(\App\Domain\AI\Workspace\ModuleSuggestions::class)
             )
         );
 
@@ -456,7 +470,8 @@ class AiServiceProvider extends ServiceProvider
             \App\Domain\AI\Conversation\AskPipeline::class,
             fn ($app) => new \App\Domain\AI\Conversation\AskPipeline(
                 $app->make(\App\Domain\AI\Lifecycle\LifecycleAskService::class),
-                $app->make(\App\Domain\AI\Conversation\AskService::class)
+                $app->make(\App\Domain\AI\Conversation\AskService::class),
+                $app->make(\App\Domain\AI\Conversation\AskAuditor::class)
             )
         );
     }

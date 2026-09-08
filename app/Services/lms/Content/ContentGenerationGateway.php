@@ -126,7 +126,11 @@ class ContentGenerationGateway
             throw new RuntimeException('The document generator is not configured (missing Gemini API key).');
         }
 
-        $model = config('gemini.model', 'gemini-2.0-flash');
+        $model = config('gemini.model', 'gemini-2.5-flash');
+        // 2.5, not 2.0: config/gemini.php is now development's shim over config/ai.php and
+        // always resolves a model, so this in-code fallback is unreachable today. It is kept
+        // correct anyway - every other call site in this repo defaults to 2.5, and a 2.0 here
+        // would silently call a different model than the legacy path it claims parity with.
         $baseUrl = rtrim((string) config('gemini.base_url'), '/');
 
         $response = Http::timeout((int) config('gemini.request_timeout', 120))

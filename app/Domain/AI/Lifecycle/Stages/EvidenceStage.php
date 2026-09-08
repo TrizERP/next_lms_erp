@@ -9,6 +9,7 @@ use App\Domain\AI\Lifecycle\StageContext;
 use App\Domain\AI\Lifecycle\StageKey;
 use App\Domain\AI\Lifecycle\StageOutcome;
 use App\Domain\AI\Lifecycle\Support\CaseResolver;
+use App\Domain\AI\Lifecycle\Support\RiskScanLimit;
 
 /**
  * Stage 8 — the rows a claim is allowed to rest on.
@@ -38,6 +39,10 @@ class EvidenceStage implements LifecycleStage
 
     public function run(StageContext $context): StageOutcome
     {
+        if ($context->intent?->key === 'student_risk_scan' && count($context->cases) > 1) {
+            return $this->forRankedRiskScan($context);
+        }
+
         $resolved = $this->caseResolver->resolve($context);
 
         if ($resolved === null) {
@@ -71,10 +76,12 @@ class EvidenceStage implements LifecycleStage
         // so nothing is hidden — this is a display decision, not a filter on the record.
         $distinct = $this->distinctBySummary($rows);
 
-        $context->addSection($this->compose->evidence(
-            'Evidence behind this',
-            array_slice($distinct, 0, 8)
-        ));
+        if (! $this->isWorkflowRead($context)) {
+            $context->addSection($this->compose->evidence(
+                'Evidence behind this',
+                array_slice($distinct, 0, 8)
+            ));
+        }
 
         $repeats = count($rows) - count($distinct);
 
@@ -110,6 +117,31 @@ class EvidenceStage implements LifecycleStage
                 'sql' => 'select e.* from ai_evidence e join ai_case_evidence ce on ce.evidence_id = e.id '
                     . 'where ce.case_id = ' . $caseId,
             ]
+        );
+    }
+
+    private function forRankedRiskScan(StageContext $context): StageOutcome
+    {
+        $count = RiskScanLimit::fromQuestion($context->question, count($context->cases));
+        $cases = array_slice($context->cases, 0, $count);
+        $allRows = [];
+
+        foreach ($cases as $case) {
+            $caseId = (int) ($case['case_id'] ?? $case['id'] ?? 0);
+            $rows = $caseId > 0 ? $this->evidence->forCase($caseId, $context->scope) : [];
+            $allRows = [...$allRows, ...$rows];
+        }
+
+        $context->evidence = $allRows;
+
+        return StageOutcome::ran(
+            sprintf('Read %d evidence row%s for the top %d ranked cases.', count($allRows), count($allRows) === 1 ? '' : 's', count($cases)),
+            [
+                'ranked_case_ids' => array_column($cases, 'case_id'),
+                'evidence_ids' => array_column($allRows, 'id'),
+                'rule' => 'Each displayed observation is linked to the case selected from this run\'s ranked results.',
+            ],
+            ['table' => 'ai_evidence', 'ids' => array_column($allRows, 'id')]
         );
     }
 
@@ -159,10 +191,15 @@ class EvidenceStage implements LifecycleStage
         $seen = [];
 
         foreach ($rows as $row) {
-            $key = ($row['summary'] ?? '') . '|' . ($row['source']['table'] ?? $row['source']['service'] ?? '');
+            $source = $row['source']['table'] ?? $row['source']['service'] ?? '';
+            $sourceId = $row['source']['id'] ?? '';
+            $key = ($row['kind'] ?? '') . '|' . $source . '|' . $sourceId;
 
-            // Later rows win, so the id shown is the freshest copy of the observation.
-            $seen[$key] = $row;
+            // Rows arrive newest first. Keep the first current measurement rather than
+            // allowing an older scan to replace it later in this loop.
+            if (! isset($seen[$key])) {
+                $seen[$key] = $row;
+            }
         }
 
         return array_values($seen);
@@ -183,5 +220,10 @@ class EvidenceStage implements LifecycleStage
     private function prefix(): string
     {
         return '/' . trim((string) config('ai.route_prefix', 'api/ai'), '/');
+    }
+
+    private function isWorkflowRead(StageContext $context): bool
+    {
+        return in_array($context->intent?->key, ['workflow_status', 'outcome_status'], true);
     }
 }

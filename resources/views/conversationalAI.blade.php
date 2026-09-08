@@ -604,6 +604,7 @@
 
         var messages = [];
         var sessionId = 'session_' + Date.now();
+        var lifecycleConversationId = null;
         var pendingEnrollmentAction = null;
         var isExpanded = false;
         var currentEnrollmentInputId = null;
@@ -637,6 +638,7 @@
             $chatMessages.empty();
             pendingEnrollmentAction = null;
             currentEnrollmentInputId = null;
+            lifecycleConversationId = null;
             
             var welcomeHtml = `
                 <div class="flex flex-col items-center justify-center py-4 space-y-4">
@@ -790,117 +792,117 @@
             addMessageToDOM(userMessage);
             $chatInput.val('').css('height', 'auto');
             scrollToBottom();
-
-            if (pendingEnrollmentAction && isValidEnrollmentNumber(content)) {
-                var action = pendingEnrollmentAction;
-                var enrollmentNumber = content;
-                pendingEnrollmentAction = null;
-                $loadingIndicator.show();
-                
-                fetchStudentData(enrollmentNumber, action, function(err, result) {
+            $loadingIndicator.show();
+            $.ajax({
+                url: '/chatbot',
+                method: 'POST',
+                contentType: 'application/json',
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                data: JSON.stringify({ message: content, conversation_id: lifecycleConversationId }),
+                success: function(response) {
                     $loadingIndicator.hide();
-                    var botHtml = err ? '<div class="text-danger p-2">Sorry, unable to retrieve data. Please try again later.</div>' : (result.html || '<div class="text-muted p-2">No data available.</div>');
-                    
+                    var data = response.data || {};
+                    lifecycleConversationId = data.conversation && data.conversation.id ? data.conversation.id : lifecycleConversationId;
                     var botMessage = {
-                        id: generateUUID(),
-                        type: 'bot',
-                        content: botHtml,
-                        timestamp: new Date(),
-                        metadata: { canEscalate: true },
-                        isHtml: true
+                        id: generateUUID(), type: 'bot', timestamp: new Date(), isHtml: true,
+                        content: lifecycleHtml(data), metadata: { lifecycle: data }
                     };
                     messages.push(botMessage);
                     addMessageToDOM(botMessage);
                     scrollToBottom();
-                });
-                return;
-            } 
-            else if (pendingEnrollmentAction && !isValidEnrollmentNumber(content)) {
-                var errorBot = {
-                    id: generateUUID(),
-                    type: 'bot',
-                    content: "Please enter a valid enrollment number (e.g., HN-25-379, 12345, or STUDENT-001).",
-                    timestamp: new Date(),
-                    metadata: { canEscalate: false },
-                    isHtml: false
-                };
-                messages.push(errorBot);
-                addMessageToDOM(errorBot);
-                scrollToBottom();
-                return;
-            }
-
-            var studentKeywords = ["student detail", "student details", "fees details", "fees detail", "fee details", "fee detail", "admission details", "admission detail","remain fees","fees remain","pending fees","paid fees","fees paid"];
-            var matchedKeyword = studentKeywords.find(kw => content.toLowerCase().includes(kw));
-            
-            if (matchedKeyword) {
-                var detectedAction = "student_details";
-                if ((content.toLowerCase().includes("remain") && content.toLowerCase().includes("fees")) || content.toLowerCase().includes("pending") && content.toLowerCase().includes("fees")) {
-                    detectedAction = "remain_fees";
-                } else if (content.toLowerCase().includes("paid") && content.toLowerCase().includes("fees")) {
-                    detectedAction = "paid_fees";
-                } else if (content.toLowerCase().includes("fees") || content.toLowerCase().includes("fee") && (content.toLowerCase().includes("detail") || content.toLowerCase().includes("details"))) {
-                    detectedAction = "fees_details";
-                } else if (content.toLowerCase().includes("admission") || content.toLowerCase().includes("admissions") && (content.toLowerCase().includes("detail") || content.toLowerCase().includes("details"))) {
-                    detectedAction = "admission_details";
+                },
+                error: function(xhr) {
+                    $loadingIndicator.hide();
+                    var message = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'The Agentic AI workflow could not be completed.';
+                    addLifecycleMessage('<div class="text-danger p-2">' + escapeHtml(message) + '</div>');
                 }
-                
-                pendingEnrollmentAction = detectedAction;
-                var uniqueId = 'enrollmentInput_' + Date.now();
-                currentEnrollmentInputId = uniqueId;
-                
-                var inputHtml = `
-                    <div>
-                        <span class="mb-2 d-block">Please provide the student enrollment number:</span>
-                        <div class="enrollment-input-group">
-                            <input type="text" id="${uniqueId}" class="form-control form-control-sm" placeholder="Enter enrollment no. (e.g., HN-25-379)" style="max-width:200px;" />
-                            <button type="button" class="submit-enrollment-btn btn btn-primary btn-sm rounded-pill" data-input-id="${uniqueId}"><i class="fas fa-check"></i></button>
-                        </div>
-                    </div>
-                `;
-                
-                var botAskMessage = {
-                    id: generateUUID(),
-                    type: 'bot',
-                    content: inputHtml,
-                    timestamp: new Date(),
-                    metadata: { canEscalate: false },
-                    isHtml: true
-                };
-                messages.push(botAskMessage);
-                addMessageToDOM(botAskMessage);
-                
-                setTimeout(function() {
-                    $(document).off('click', '.submit-enrollment-btn').on('click', '.submit-enrollment-btn', function() {
-                        var inputId = $(this).data('input-id');
-                        var enrollmentVal = $('#' + inputId).val().trim();
-                        if (enrollmentVal && isValidEnrollmentNumber(enrollmentVal)) {
-                            sendMessage(enrollmentVal);
-                        } else {
-                            var errorBot = {
-                                id: generateUUID(),
-                                type: 'bot',
-                                content: "Please enter a valid enrollment number (e.g., HN-25-379, 12345, or STUDENT-001).",
-                                timestamp: new Date(),
-                                metadata: { canEscalate: false },
-                                isHtml: false
-                            };
-                            messages.push(errorBot);
-                            addMessageToDOM(errorBot);
-                        }
-                    });
-                    
-                    $(document).off('keypress', '#' + uniqueId).on('keypress', '#' + uniqueId, function(e) {
-                        if (e.key === 'Enter') {
-                            $(this).closest('.enrollment-input-group').find('.submit-enrollment-btn').click();
-                        }
-                    });
-                }, 100);
-                return;
+            });
+        }
+
+        function addLifecycleMessage(html) {
+            var botMessage = { id: generateUUID(), type: 'bot', content: html, timestamp: new Date(), metadata: {}, isHtml: true };
+            messages.push(botMessage);
+            addMessageToDOM(botMessage);
+            scrollToBottom();
+        }
+
+        function lifecycleHtml(data) {
+            var answer = data.answer || {};
+            var html = '<div class="ai-lifecycle-response"><strong>' + escapeHtml(answer.headline || 'Workflow completed.') + '</strong>';
+            (answer.sections || []).forEach(function(section) {
+                html += '<div class="mt-2"><small class="text-muted fw-bold">' + escapeHtml(section.title || 'Evidence') + '</small>';
+                if (section.body) html += '<div>' + escapeHtml(section.body) + '</div>';
+                (section.items || []).forEach(function(item) {
+                    html += '<div class="border rounded p-2 mt-1 small">' + escapeHtml(item.summary || item.label || item.title || item.name || 'Record');
+                    if (item.badge) html += ' <span class="badge bg-secondary">' + escapeHtml(item.badge) + '</span>';
+                    if (item.value) html += ': ' + escapeHtml(item.value);
+                    if (item.source) html += '<div class="text-muted">Source: ' + escapeHtml(item.source) + '</div>';
+                    (item.lines || []).forEach(function(line) { html += '<div>' + escapeHtml(line) + '</div>'; });
+                    Object.keys(item.meta || {}).forEach(function(key) { html += '<div class="text-muted">' + escapeHtml(key) + ': ' + escapeHtml(item.meta[key]) + '</div>'; });
+                    html += '</div>';
+                });
+                html += '</div>';
+            });
+            var trace = data.lifecycle_trace || data.trace || [];
+            if (trace.length) {
+                html += '<details class="mt-2"><summary class="small fw-bold">Agentic lifecycle (' + trace.length + ' stages)</summary>';
+                trace.forEach(function(stage) {
+                    html += '<div class="border rounded p-2 mt-1 small"><b>' + escapeHtml(stage.key || 'stage') + '</b>: ' + escapeHtml(stage.status || 'unknown');
+                    if (stage.summary) html += '<div>' + escapeHtml(stage.summary) + '</div>';
+                    if (stage.note) html += '<div class="text-muted">' + escapeHtml(stage.note) + '</div>';
+                    if (stage.component) html += '<div class="text-muted">Component: ' + escapeHtml(stage.component) + '</div>';
+                    if (stage.records && stage.records.table) html += '<div class="text-muted">Database: ' + escapeHtml(stage.records.table) + ' #' + escapeHtml((stage.records.ids || []).join(', ')) + '</div>';
+                    if (stage.verify && (stage.verify.api || stage.verify.sql)) html += '<div class="text-muted">Verified: ' + escapeHtml(stage.verify.api || stage.verify.sql) + '</div>';
+                    html += '</div>';
+                });
+                html += '</details>';
             }
-            
+            var links = data.links || {};
+            var linkLabels = Object.keys(links).filter(function(key) { return links[key] !== null && links[key] !== ''; })
+                .map(function(key) { return key + ': ' + links[key]; });
+            if (linkLabels.length) html += '<div class="small text-muted mt-2">Workflow records: ' + escapeHtml(linkLabels.join(' | ')) + '</div>';
+            (answer.actions || []).forEach(function(action) {
+                html += '<button type="button" class="btn btn-sm mt-2 me-1 ' + (action.style === 'danger' ? 'btn-outline-danger' : 'btn-primary') + ' lifecycle-action" data-utterance="' + escapeAttribute(action.utterance || action.label) + '" data-payload="' + escapeAttribute(JSON.stringify(action.payload || {})) + '">' + escapeHtml(action.label || 'Continue') + '</button>';
+            });
+            html += '</div>';
+            return html;
+        }
+
+        function escapeHtml(value) { return $('<div>').text(value == null ? '' : String(value)).html(); }
+        function escapeAttribute(value) { return escapeHtml(value).replace(/"/g, '&quot;'); }
+
+        $(document).on('click', '.lifecycle-action', function() {
+            var $button = $(this);
+            var utterance = $button.data('utterance');
+            var payload = $button.data('payload');
+            try { payload = typeof payload === 'string' ? JSON.parse(payload) : payload; } catch (e) { payload = {}; }
+            sendLifecycleAction(utterance, payload || {});
+        });
+
+        function sendLifecycleAction(utterance, payload) {
             $loadingIndicator.show();
-            
+            $.ajax({
+                url: '/chatbot', method: 'POST', contentType: 'application/json',
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}', 'Accept': 'application/json' },
+                data: JSON.stringify({ message: utterance, conversation_id: lifecycleConversationId, payload: payload }),
+                success: function(response) {
+                    $loadingIndicator.hide();
+                    var data = response.data || {};
+                    lifecycleConversationId = data.conversation && data.conversation.id ? data.conversation.id : lifecycleConversationId;
+                    addLifecycleMessage(lifecycleHtml(data));
+                },
+                error: function(xhr) {
+                    $loadingIndicator.hide();
+                    addLifecycleMessage('<div class="text-danger p-2">' + escapeHtml((xhr.responseJSON || {}).message || 'The action could not be completed.') + '</div>');
+                }
+            });
+        }
+
+        /*
+         * The legacy enrollment and mock-query helpers remain below for the standalone
+         * settings page, but the visible Chatbot Panel now always uses the lifecycle.
+         */
+        function legacyMockResponse(content) {
             fetchMockQueries(content, function(err, htmlContent) {
                 $loadingIndicator.hide();
                 

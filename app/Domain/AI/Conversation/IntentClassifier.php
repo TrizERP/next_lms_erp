@@ -173,18 +173,20 @@ class IntentClassifier
         'workflow_status' => [
             'label' => 'What happened after approval',
             'description' => 'Reads the workflow run: every step, in order, with its state.',
-            'anchors' => ['workflow', 'process', 'status', 'happened', 'progress', 'step'],
+            'anchors' => ['workflow', 'process', 'status', 'happened', 'progress', 'step', 'activity', 'activities'],
             'signals' => [
                 'workflow' => 5.0, 'process' => 3.5, 'status' => 3.5, 'progress' => 4.0,
                 'what happened' => 4.5, 'steps' => 4.0, 'step' => 3.0,
                 'after approval' => 4.5, 'after i approved' => 4.5, 'running' => 2.5,
-                'stage' => 2.5, 'where are we' => 3.5,
+                'stage' => 2.5, 'where are we' => 3.5, 'activity' => 3.5,
+                'activities' => 3.5, 'assigned activities' => 5.0,
             ],
             'patterns' => [
                 '/\b(workflow|process)\b.{0,20}\b(status|progress|steps?|state)\b/i',
                 '/\bwhat happened\b/i',
                 '/\bwhat (is|was) (created|done|assigned)\b/i',
                 '/\bshow (me )?(the )?(steps|progress)\b/i',
+                '/\b(show|list|what are)\b.{0,25}\bactivities?\b.{0,25}\b(assign|given|set)\b/i',
             ],
             'slots' => ['case'],
         ],
@@ -468,6 +470,11 @@ class IntentClassifier
             // name stays case-sensitive so the match stops at the first lowercase word.
             // Without that split, "Why is Ravi Kumar at risk?" yields "Ravi Kumar at risk".
             && preg_match('/(?i:why is|why was|about|for|of)\s+([A-Z][\w.\-]*(?:\s+[A-Z][\w.\-]*){0,3})/', $raw, $m)) {
+            $slots['student_name'] = trim($m[1]);
+        } elseif (! isset($slots['student_label'])
+            // A ranked result is a picker, so permit a bare displayed name as its
+            // next message. ConversationStore still requires an exact list match.
+            && preg_match('/^\s*([A-Z][\w.\-]*(?:\s+[A-Z][\w.\-]*){1,3})\s*$/', $raw, $m)) {
             $slots['student_name'] = trim($m[1]);
         }
 

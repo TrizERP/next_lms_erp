@@ -218,6 +218,28 @@ final class StageContext
         }
     }
 
+    /**
+     * Offer the academic-risk journey as a next step — but only where it exists.
+     *
+     * Several stages want to say "start with the risk scan and then follow up", because
+     * on the Student Profiles screen that is genuinely the way in: the scan is what puts
+     * a student in the conversation so later questions know who you mean.
+     *
+     * It is nonsense anywhere else. A user reading unpaid invoices was being told to go
+     * and ask about struggling students, which is not a follow-up to their question and
+     * misrepresents what the assistant does on that screen. The suggestion is only
+     * truthful in a module that binds the agent, so the check lives here rather than in
+     * five stages that would each have to remember it.
+     */
+    public function suggestRiskJourney(string ...$questions): void
+    {
+        if (! $this->module->hasAgent()) {
+            return;
+        }
+
+        $this->suggestFollowUp(...$questions);
+    }
+
     /** @return array<int, string> */
     public function followUps(): array
     {

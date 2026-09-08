@@ -4,6 +4,7 @@ namespace App\Domain\K12\AcademicRisk\Metrics;
 
 use App\Domain\AI\Outcomes\MetricResolver;
 use App\Domain\K12\AcademicRisk\AcademicRiskMetrics;
+use App\Domain\K12\AcademicRisk\AssessmentScore;
 use App\Domain\K12\AcademicRisk\StudentScope;
 use App\Services\Mcp\McpRequestContext;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,8 @@ use Illuminate\Support\Facades\Schema;
 class AssessmentAverageResolver implements MetricResolver
 {
     private const WINDOW = 3;
+
+    private const LOOKBACK_DAYS = 180;
 
     public function __construct(private readonly StudentScope $scope)
     {
@@ -48,6 +51,7 @@ class AssessmentAverageResolver implements MetricResolver
 
         $attempts = DB::table('lms_online_exam')
             ->where('student_id', (int) $subjectId)
+            ->where('created_at', '>=', now()->subDays(self::LOOKBACK_DAYS))
             ->orderByDesc('created_at')
             ->orderByDesc('id')
             ->limit(self::WINDOW)
@@ -62,18 +66,10 @@ class AssessmentAverageResolver implements MetricResolver
         $ratios = [];
 
         foreach ($attempts as $attempt) {
-            $right = (int) ($attempt->total_right ?? 0);
-            $wrong = (int) ($attempt->total_wrong ?? 0);
-            $answered = $right + $wrong;
+            $ratio = AssessmentScore::ratio($attempt);
 
-            if ($answered > 0) {
-                $ratios[] = $right / $answered;
-
-                continue;
-            }
-
-            if (is_numeric($attempt->obtain_marks ?? null)) {
-                $ratios[] = max(0.0, min(1.0, (float) $attempt->obtain_marks / 100));
+            if ($ratio !== null) {
+                $ratios[] = $ratio;
             }
         }
 

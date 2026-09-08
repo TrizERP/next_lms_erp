@@ -4,7 +4,7 @@ namespace App\Domain\AI\Lifecycle\Flows;
 
 use App\Domain\AI\Lifecycle\StageContext;
 use App\Domain\AI\Lifecycle\Support\McpToolCaller;
-use App\Domain\AI\Support\OpenRouterClient;
+use App\Domain\AI\Support\ModelClient;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -38,7 +38,7 @@ class AdmissionsFlow
 {
     public const KIND = 'admissions_confirm';
 
-    private const MODEL = 'deepseek/deepseek-chat';
+    // The model comes from the provider driver; see config/ai.php `provider`.
 
     /** Fields the flow may collect, with the words a person is likely to use. */
     private const FIELD_LABELS = [
@@ -53,7 +53,7 @@ class AdmissionsFlow
 
     public function __construct(
         private readonly McpToolCaller $mcp,
-        private readonly OpenRouterClient $llm,
+        private readonly ModelClient $llm,
     ) {
     }
 
@@ -318,6 +318,52 @@ class AdmissionsFlow
             return null;
         }
 
+        // The record itself, alongside what it still needs.
+        //
+        // `validateConfirmation` answers "is this ready" and nothing else — it returns
+        // missing fields and permissions, never the enquiry. So a user who picked a name
+        // off a list was shown four field labels and no indication of *whose* admission
+        // they were looking at. Reading the details here keeps the flow's own MCP call
+        // path (same scoping, same audit) rather than querying around it.
+        $data['enquiry'] = $this->enquiryDetails($context, $enquiryId);
+
+        return $data;
+    }
+
+    /**
+     * The enquiry as the admissions module knows it, or null when it cannot be read.
+     *
+     * Null is survivable: the flow's decisions all come from `missing_fields`, so a
+     * failed detail lookup costs the user a summary, not the ability to proceed.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function enquiryDetails(StageContext $context, int $enquiryId): ?array
+    {
+        $result = $this->mcp->call(
+            $context,
+            'admissions.getEnquiryDetails',
+            ['enquiry_id' => $enquiryId],
+            'Read the enquiry so the person can see whose admission this is.'
+        );
+
+        if (! is_array($result) || ($result['success'] ?? false) !== true) {
+            return null;
+        }
+
+        $data = is_array($result['data'] ?? null) ? $result['data'] : null;
+
+        if ($data === null) {
+            return null;
+        }
+
+        // Payload shapes vary by tool; the enquiry may be nested or at the top level.
+        foreach (['enquiry', 'details', 'record'] as $key) {
+            if (isset($data[$key]) && is_array($data[$key])) {
+                return $data[$key];
+            }
+        }
+
         return $data;
     }
 
@@ -372,7 +418,7 @@ class AdmissionsFlow
                 ],
                 ['role' => 'user', 'content' => $question],
             ],
-            self::MODEL,
+            null,
             maxTokens: 300,
         );
 
