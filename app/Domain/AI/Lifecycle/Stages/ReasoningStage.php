@@ -334,6 +334,48 @@ class ReasoningStage implements LifecycleStage
         return in_array($context->intent?->key, ['workflow_status', 'outcome_status'], true);
     }
 
+    /**
+     * The evidence and the narrative behind whoever ranked first.
+     *
+     * A ranked list answers "who", and leaves "why" one question away for every name on
+     * it — including the one the reader will almost always ask about first. Showing the
+     * top case's evidence closes that gap without spending a turn, and it is the case
+     * the ranking has already argued is the most urgent.
+     *
+     * It deliberately stops short of the recommendation's approval binding. Displaying
+     * why a student is at risk is a read; deciding to intervene is not, and
+     * `RecommendationStage` keeps that decision behind an explicit selection.
+     *
+     * @param  array<string, mixed>|null  $case
+     */
+    private function highestPriorityDetail(StageContext $context, ?array $case): void
+    {
+        if ($case === null) {
+            return;
+        }
+
+        $student = (string) ($case['student_name'] ?? 'this student');
+        $caseId = (int) ($case['case_id'] ?? $case['id'] ?? 0);
+
+        // Read by EvidenceStage a stage earlier, kept per case because these rows carry
+        // no case id once they are merged.
+        $rows = (array) ($context->get('evidence_by_case', [])[$caseId] ?? []);
+
+        $context->addSection($this->compose->evidence(
+            sprintf('Evidence behind the highest-priority case (%s)', $student),
+            array_slice($rows, 0, 5)
+        ));
+
+        $narrative = (string) ($case['explanation']['narrative'] ?? '');
+
+        if ($narrative !== '') {
+            $context->addSection($this->compose->text(
+                sprintf('Why %s is flagged', $student),
+                $narrative
+            ));
+        }
+    }
+
     private function rankedRiskScan(StageContext $context): StageOutcome
     {
         $count = RiskScanLimit::fromQuestion($context->question, count($context->cases));
@@ -351,24 +393,55 @@ class ReasoningStage implements LifecycleStage
         ]);
 
         $context->setHeadline(sprintf(
-            'Top %d student%s at academic risk.',
+            '%d student%s currently showing academic risk signals.',
             count($cases),
-            count($cases) === 1 ? '' : 's'
+            count($cases) === 1 ? ' is' : 's are'
         ));
 
+        // Who is at risk, grouped by how badly. This is the shape of the cohort in one
+        // line, and it is what a head of year reads before reading anything else.
+        $bySeverity = [];
+
+        foreach ($cases as $case) {
+            $bySeverity[$this->compose->severityLabel($case['severity'] ?? null)][] = $case['student_name'] ?? 'Student';
+        }
+
+        $context->addSection($this->compose->keyValues(
+            'Breakdown',
+            array_map(static fn (array $names) => implode(', ', $names), $bySeverity)
+        ));
+
+        // The list, with the numbers behind each place in it.
+        //
+        // These were once withheld until a student was selected, on the reasoning that a
+        // ranked answer should not imply a verdict. In use that read as the assistant
+        // knowing something it would not say: the ranking is *derived* from the priority
+        // score and the signals, so showing the order while hiding what produced it left
+        // the reader unable to check the one claim the answer was making.
         $context->addSection($this->compose->records(
-            'Ranked by current risk priority',
+            'Students',
             array_map(function (array $case, int $index) {
                 return [
+                    'id' => $case['case_id'] ?? null,
                     'title' => sprintf('%d. %s', $index + 1, $case['student_name'] ?? 'Student'),
                     'badge' => $this->compose->severityLabel($case['severity'] ?? null),
-                    'badge_tone' => $case['severity'] ?? 'warning',
-                    // Evidence and priority are intentionally withheld until selection.
-                    'lines' => [],
-                    'meta' => [],
+                    'badge_tone' => in_array($case['severity'] ?? null, ['critical', 'high'], true) ? 'danger' : 'warning',
+                    'lines' => array_map(
+                        static fn (array $signal) => $signal['summary'] ?? ($signal['signal_key'] ?? 'signal'),
+                        array_values($case['signals'] ?? [])
+                    ),
+                    'meta' => array_filter([
+                        'Case' => isset($case['case_id']) ? '#' . $case['case_id'] : null,
+                        'Class' => $case['placement']['standard_name'] ?? null,
+                        'Priority' => number_format((float) ($case['priority_score'] ?? 0), 2),
+                    ]),
+                    'case_id' => $case['case_id'] ?? null,
+                    'student_id' => $case['student_id'] ?? null,
                 ];
             }, $cases, array_keys($cases))
         ));
+
+        $this->highestPriorityDetail($context, $cases[0] ?? null);
 
         foreach ($cases as $case) {
             $caseId = (int) ($case['case_id'] ?? $case['id'] ?? 0);
@@ -392,7 +465,14 @@ class ReasoningStage implements LifecycleStage
             ));
         }
 
-        $context->suggestFollowUp('Select a student above to view the complete evidence and recommendation.');
+        $top = $cases[0]['student_name'] ?? null;
+
+        $context->suggestFollowUp(...array_filter([
+            $top === null ? null : sprintf('Why is %s at risk?', $top),
+            'What evidence supports this?',
+            'What should the teacher do?',
+            'Select a student above to view the complete evidence and recommendation.',
+        ]));
 
         return StageOutcome::ran(
             sprintf('Ranked and returned %d of %d cases from this agent run.', count($cases), count($context->cases)),

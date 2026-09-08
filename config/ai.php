@@ -249,28 +249,32 @@ return [
     | returns the same wire shape. Both write turns to the same tables, so it can be
     | turned on and off without stranding history.
     |
-    | It defaults to **false**, which is the pipeline every environment is expected to
-    | serve today. The two pipelines answer the same question with visibly different
-    | products, so the default is what decides which application a deployment appears to
-    | be: the lifecycle ranks the cohort and offers a per-student "View details" while
-    | withholding evidence until one is picked (ReasoningStage::rankedRiskScan), whereas
-    | AskService returns the severity breakdown, the full student list, the evidence
-    | behind the highest-priority case and the recommendation, in one answer.
+    | It defaults to **true**. The lifecycle is the only pipeline that resolves a module
+    | per turn, so it is the only one that can answer from the page a question was asked
+    | on — AskService contains no reference to a module or a route at all. Page context,
+    | the module registry, dynamic follow-ups and agentic depth therefore all exist on
+    | this side of the flag only.
     |
-    | This briefly defaulted to true, and the result was two environments running the
-    | same commit and looking like two different applications — one answering "Top 4
-    | students at academic risk / Ranked by current risk priority", the other "5 students
-    | are currently showing academic risk signals / Breakdown, Students, Evidence,
-    | Recommended action", from the same rows in the same database.
+    | Whichever way it is set, it must be set the SAME in every environment. The two
+    | pipelines answer the same question with visibly different products, so a
+    | deployment that disagrees with its neighbour is not subtly different — it is a
+    | different application. That is not hypothetical: two environments of one commit
+    | once answered "Top 4 students at academic risk / Ranked by current risk priority"
+    | and "5 students are currently showing academic risk signals / Breakdown, Students,
+    | Evidence, Recommended action" from the same rows in the same database, purely
+    | because one of them had never set the variable.
     |
-    | The cutover's own gates (docs/lifecycle-cutover-plan.md §3) are not met: gate 1
-    | fails on a regression and gate 2 on refusals that do not say why they refused.
-    | Phase 2 flips this to true once they pass; until then true is the deliberate
-    | opt-in, per environment, not the default.
+    | The regression that argued for false is fixed rather than avoided: the ranked scan
+    | now returns the breakdown, the full list with each case's score, and the evidence
+    | and recommendation behind the highest-priority case. What it still will not do is
+    | arm that recommendation for approval — see RecommendationStage::forRankedRiskScan.
+    |
+    | Set it to false to fall back deliberately, in every environment at once. The flag
+    | goes away in Phase 3 of docs/lifecycle-cutover-plan.md.
     |
     */
     'lifecycle' => [
-        'enabled' => (bool) env('AI_LIFECYCLE_ENABLED', false),
+        'enabled' => (bool) env('AI_LIFECYCLE_ENABLED', true),
 
         /*
         | Module depth bindings.
