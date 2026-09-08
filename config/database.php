@@ -65,11 +65,10 @@ return [
 
         "information_schema" => [
             'driver' => 'mysql',
-#            'host'      =>  '202.47.117.131',
-            'host' => '127.0.0.1',
+            'host' => env('DB_HOST', '127.0.0.1'),
             'database' => 'triz_lms',
-            'username' => 'dev_db',
-            'password' => 'Triz@2020',
+            'username' => env('DB_USERNAME', 'dev_db'),
+            'password' => env('DB_PASSWORD'),
             'charset' => 'utf8',
             'collation' => 'utf8_unicode_ci',
             'prefix' => '',

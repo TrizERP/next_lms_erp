@@ -113,6 +113,10 @@ Route::group(['prefix' => 'fees', 'middleware' => ['session', 'menu', 'logRoute'
     Route::resource('fees_breackoff', fees_breackoff_controller::class);
     Route::resource('bank_master', bank_master_controller::class);
     Route::resource('fees_collect', fees_collect_controller::class);
+    // Track A / Day 11 - basic student fee ledger: demand, payment, running
+    // balance for this flow only, not the full discount/refund ledger
+    // (see fees_collect_controller::ledger()).
+    Route::get('fees_collect/{id}/ledger', [fees_collect_controller::class, 'ledger'])->name('fees_collect.ledger');
     Route::resource('college_fees_collect', college_fees_collect_controller::class);
     Route::resource('online_fees', online_fees_settigs_controller::class);
     Route::resource('online_fees_settings_api', online_fees_settings_api_controller::class)->middleware('api.session');
@@ -238,73 +242,84 @@ Route::get('payphi', function ($id = null) {
     Route::get('fees_donation_records', [feesReportController::class, 'fees_donation_records'])->name('fees_donation_records.index');
 });
 
-Route::post('api/', [AJAXController::class, 'getOnlineFees'])->name('get-online-fees-list');
-Route::post('fees/PaidUnpaid', [fees_collect_controller::class, 'PaidUnpaid']);
-Route::post('fees/PaidUnpaidTeacher', [fees_collect_controller::class, 'PaidUnpaidTeacher']);
+// User-facing endpoints (called directly by the frontend, type=API) need
+// `session` in front of check_permissions so it sees a real, JWT-hydrated
+// identity instead of an anonymous one - see routes/api.php for the same fix.
+Route::post('api/', [AJAXController::class, 'getOnlineFees'])->name('get-online-fees-list')->middleware(['session', 'check_permissions']);
+Route::post('fees/PaidUnpaid', [fees_collect_controller::class, 'PaidUnpaid'])->middleware(['session', 'check_permissions']);
+Route::post('fees/PaidUnpaidTeacher', [fees_collect_controller::class, 'PaidUnpaidTeacher'])->middleware(['session', 'check_permissions']);
 Route::group(['prefix' => 'report', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('report_module', 'report\report_module\report_module_controller');
 });
 //online routes
-Route::get('/fees/feesDetails/getDetails/{id}/{stud}', [fees_collect_controller::class, 'retrieveDataByUserId']);
+Route::get('/fees/feesDetails/getDetails/{id}/{stud}', [fees_collect_controller::class, 'retrieveDataByUserId'])->middleware(['session', 'check_permissions']);
 Route::controller(online_fees_collect_controller::class)->group(function () {
-    Route::get('fees/online_fees_collect', 'index')->name('online_fees_collect.index');
+    // Frontend-initiated: opens the online-payment flow for a logged-in user.
+    Route::get('fees/online_fees_collect', 'index')->name('online_fees_collect.index')->middleware(['session', 'check_permissions']);
 
-    Route::post('fees/hdfc/online_fees_collect', 'hdfc')->name("hdfc_fees_collect");
-    Route::post('fees/hdfc/online_fees_hdfcRequestHandler', 'hdfc_request_handler')->name("hdfc_request_handler");
-    Route::post('fees/hdfc/online_fees_hdfcResponseHandler', 'hdfc_response_handler')->name("hdfc_response_handler");
-    Route::get('fees/hdfc/createSplitPayout', 'createSplitPayout')->name("createSplitPayout");
-    Route::get('fees/hdfc/getUTR', 'getUTR')->name("getUTR");
+    // Everything below this point (*RequestHandler / *ResponseHandler /
+    // createSplitPayout / getUTR / get_online_receipt) is a server-to-server
+    // callback from the payment gateway itself, not a user-driven request -
+    // there is no browser session or JWT to hydrate, so `session` is
+    // deliberately not added here; check_permissions still runs but has no
+    // matching menu entry for these routes and is effectively a no-op.
+
+    Route::post('fees/hdfc/online_fees_collect', 'hdfc')->name("hdfc_fees_collect")->middleware('check_permissions');
+    Route::post('fees/hdfc/online_fees_hdfcRequestHandler', 'hdfc_request_handler')->name("hdfc_request_handler")->middleware('check_permissions');
+    Route::post('fees/hdfc/online_fees_hdfcResponseHandler', 'hdfc_response_handler')->name("hdfc_response_handler")->middleware('check_permissions');
+    Route::get('fees/hdfc/createSplitPayout', 'createSplitPayout')->name("createSplitPayout")->middleware('check_permissions');
+    Route::get('fees/hdfc/getUTR', 'getUTR')->name("getUTR")->middleware('check_permissions');
     // for ssmission
-    Route::post('fees/hdfc/hdfc_request_handler_ssmission', 'hdfc_request_handler_ssmission')->name("hdfc_request_handler_ssmission");
-    Route::post('fees/hdfc/online_fees_hdfcResponseHandler_ssmission', 'hdfc_response_handler_ssmission')->name("hdfc_response_handler_ssmission");
+    Route::post('fees/hdfc/hdfc_request_handler_ssmission', 'hdfc_request_handler_ssmission')->name("hdfc_request_handler_ssmission")->middleware('check_permissions');
+    Route::post('fees/hdfc/online_fees_hdfcResponseHandler_ssmission', 'hdfc_response_handler_ssmission')->name("hdfc_response_handler_ssmission")->middleware('check_permissions');
 
-    Route::post('fees/axis/online_fees_collect', 'axis')->name("axis_fees_collect");
-    Route::post('fees/axis/online_fees_axisRequestHandler', 'axis_request_handler')->name("axis_request_handler");
-    Route::get('fees/axis/online_fees_axisResponseHandler', 'axis_response_handler')->name("axis_response_handler");
+    Route::post('fees/axis/online_fees_collect', 'axis')->name("axis_fees_collect")->middleware('check_permissions');
+    Route::post('fees/axis/online_fees_axisRequestHandler', 'axis_request_handler')->name("axis_request_handler")->middleware('check_permissions');
+    Route::get('fees/axis/online_fees_axisResponseHandler', 'axis_response_handler')->name("axis_response_handler")->middleware('check_permissions');
 
-    Route::post('fees/aggre_pay/online_fees_collect', 'aggre_pay')->name("aggre_pay_fees_collect");
-    Route::post('fees/aggre_pay/online_fees_aggre_payRequestHandler', 'aggre_pay_request_handler')->name("aggre_pay_request_handler");
-    Route::post('fees/aggre_pay/online_fees_aggre_payResponseHandler', 'aggre_pay_response_handler')->name("aggre_pay_response_handler");
+    Route::post('fees/aggre_pay/online_fees_collect', 'aggre_pay')->name("aggre_pay_fees_collect")->middleware('check_permissions');
+    Route::post('fees/aggre_pay/online_fees_aggre_payRequestHandler', 'aggre_pay_request_handler')->name("aggre_pay_request_handler")->middleware('check_permissions');
+    Route::post('fees/aggre_pay/online_fees_aggre_payResponseHandler', 'aggre_pay_response_handler')->name("aggre_pay_response_handler")->middleware('check_permissions');
 
-    Route::post('fees/icici/online_fees_collect', 'icici')->name("icici_fees_collect");
-    Route::post('fees/icici/online_fees_iciciRequestHandler', 'icici_request_handler')->name("icici_request_handler");
-    Route::post('fees/online_fees_iciciresponsehandler', 'icici_response_handler')->name("icici_response_handler");
+    Route::post('fees/icici/online_fees_collect', 'icici')->name("icici_fees_collect")->middleware('check_permissions');
+    Route::post('fees/icici/online_fees_iciciRequestHandler', 'icici_request_handler')->name("icici_request_handler")->middleware('check_permissions');
+    Route::get('fees/online_fees_iciciresponsehandler', 'icici_response_handler')->name("icici_response_handler")->middleware('check_permissions');
 
-    Route::post('fees/icici_orange/online_fees_collect','icici_orange')->name("icici_orange_fees_collect");
-    Route::post('fees/icici_orange/online_fees_iciciorangeRequestHandler', 'icici_orange_request_handler')->name("icici_orange_request_handler");
-    Route::post('fees/online_fees_orange_pg_response_handler', 'icici_orange_response_handler')->name("icici_orange_response_handler");
+    Route::post('fees/icici_orange/online_fees_collect','icici_orange')->name("icici_orange_fees_collect")->middleware('check_permissions');
+    Route::post('fees/icici_orange/online_fees_iciciorangeRequestHandler', 'icici_orange_request_handler')->name("icici_orange_request_handler")->middleware('check_permissions');
+    Route::get('fees/online_fees_orange_pg_response_handler', 'icici_orange_response_handler')->name("icici_orange_response_handler")->middleware('check_permissions');
 
-    Route::post('fees/razorpay/online_fees_collect', 'razorpay')->name("razorpay_fees_collect");
-    Route::post('fees/razorpay/online_fees_razorpayRequestHandler', 'razorpay_request_handler')->name("razorpay_request_handler");
-    Route::post('fees/razorpay/online_fees_razorpayResponseHandler', 'razorpay_response_handler')->name("razorpay_response_handler");
+    Route::post('fees/razorpay/online_fees_collect', 'razorpay')->name("razorpay_fees_collect")->middleware('check_permissions');
+    Route::post('fees/razorpay/online_fees_razorpayRequestHandler', 'razorpay_request_handler')->name("razorpay_request_handler")->middleware('check_permissions');
+    Route::post('fees/razorpay/online_fees_razorpayResponseHandler', 'razorpay_response_handler')->name("razorpay_response_handler")->middleware('check_permissions');
 
-    Route::post('fees/hdfcrazorpay/online_fees_collect', 'hdfcrazorpay')->name("hdfcrazorpay");
-    Route::post('fees/hdfcrazorpay/online_fees_hdfcrazorpayRequestHandler', 'hdfcrazorpay_request_handler')->name("hdfcrazorpay_request_handler");
-    Route::post('fees/hdfcrazorpay/online_fees_hdfcrazorpayResponseHandler', 'hdfcrazorpay_response_handler')->name("hdfcrazorpay_response_handler");
+    Route::post('fees/hdfcrazorpay/online_fees_collect', 'hdfcrazorpay')->name("hdfcrazorpay")->middleware('check_permissions');
+    Route::post('fees/hdfcrazorpay/online_fees_hdfcrazorpayRequestHandler', 'hdfcrazorpay_request_handler')->name("hdfcrazorpay_request_handler")->middleware('check_permissions');
+    Route::post('fees/hdfcrazorpay/online_fees_hdfcrazorpayResponseHandler', 'hdfcrazorpay_response_handler')->name("hdfcrazorpay_response_handler")->middleware('check_permissions');
 
-    Route::post('fees/payphi/online_fees_collect', 'payphi')->name("payphi_fees_collect");
-    Route::post('fees/payphi/online_fees_payphiRequestHandler', 'payphi_request_handler')->name("payphi_request_handler");
-    Route::post('fees/payphi/online_fees_handleInitiateSaleResponse', 'handle_initiatesale_response')->name("handle_initiatesale_response");
-    Route::post('fees/payphi/online_fees_payphiResponseHandler', 'payphi_response_handler')->name("payphi_response_handler");
+    Route::post('fees/payphi/online_fees_collect', 'payphi')->name("payphi_fees_collect")->middleware('check_permissions');
+    Route::post('fees/payphi/online_fees_payphiRequestHandler', 'payphi_request_handler')->name("payphi_request_handler")->middleware('check_permissions');
+    Route::post('fees/payphi/online_fees_handleInitiateSaleResponse', 'handle_initiatesale_response')->name("handle_initiatesale_response")->middleware('check_permissions');
+    Route::post('fees/payphi/online_fees_payphiResponseHandler', 'payphi_response_handler')->name("payphi_response_handler")->middleware('check_permissions');
 
-    Route::post('fees/abcmapp/online_fees_abcmappResponseHandler', 'abcmapp_response_handler')->name("abcmapp_response_handler");
+    Route::post('fees/abcmapp/online_fees_abcmappResponseHandler', 'abcmapp_response_handler')->name("abcmapp_response_handler")->middleware('check_permissions');
 
-    Route::post('fees/get_online_receipt', 'OnlineReceipt')->name("get_online_receipt");
+    Route::post('fees/get_online_receipt', 'OnlineReceipt')->name("get_online_receipt")->middleware('check_permissions');
 
 });
 
 Route::controller(AJAXController::class)->group(function () {
-    Route::get('fees/get-student', 'getStudentFromMobile')->name('get-student');
-    Route::get('ajax_PDF_FeesReceipt', 'ajax_PDF_FeesReceipt')->name('ajax_PDF_FeesReceipt');
-    Route::get('ajax_PDF_Bulk_OtherFeesReceipt', 'ajax_PDF_Bulk_OtherFeesReceipt')->name('ajax_PDF_Bulk_OtherFeesReceipt');
-    Route::get('ajax_checkFeesBreakoff', 'ajax_checkFeesBreakoff')->name('ajax_checkFeesBreakoff');
+    Route::get('fees/get-student', 'getStudentFromMobile')->name('get-student')->middleware(['session', 'check_permissions']);
+    Route::get('ajax_PDF_FeesReceipt', 'ajax_PDF_FeesReceipt')->name('ajax_PDF_FeesReceipt')->middleware(['session', 'check_permissions']);
+    Route::get('ajax_PDF_Bulk_OtherFeesReceipt', 'ajax_PDF_Bulk_OtherFeesReceipt')->name('ajax_PDF_Bulk_OtherFeesReceipt')->middleware(['session', 'check_permissions']);
+    Route::get('ajax_checkFeesBreakoff', 'ajax_checkFeesBreakoff')->name('ajax_checkFeesBreakoff')->middleware(['session', 'check_permissions']);
 });
 
-Route::post('/studentFeesDetailAPI', [fees_collect_controller::class, 'studentFeesDetailAPI']);
+Route::post('/studentFeesDetailAPI', [fees_collect_controller::class, 'studentFeesDetailAPI'])->middleware(['session', 'check_permissions']);
 
 Route::get('ajax_checkFeesStructure',
-    [fees_breackoff_controller::class, 'ajax_checkFeesStructure'])->name('ajax_checkFeesStructure');
+    [fees_breackoff_controller::class, 'ajax_checkFeesStructure'])->name('ajax_checkFeesStructure')->middleware(['session', 'check_permissions']);
 
 // hills monthwise pending fees feesStatusController
 
-Route::get('pending_fees',[fees_collect_controller::class, 'tillMonthPendingFees'])->name('pending_fees');
+Route::get('pending_fees',[fees_collect_controller::class, 'tillMonthPendingFees'])->name('pending_fees')->middleware(['session', 'check_permissions']);

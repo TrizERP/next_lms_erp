@@ -644,7 +644,7 @@ class lms_lessonplanController extends Controller
 
         $prompt = array($main_prompt);
 
-        $apiKey ='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';
+        $apiKey = env('OPENAI_API_KEY');
       
         $endpoint = "https://api.openai.com/v1/chat/completions";
 

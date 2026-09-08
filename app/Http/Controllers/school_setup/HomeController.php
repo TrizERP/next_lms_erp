@@ -935,7 +935,7 @@ class HomeController extends Controller
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_URL,
-            "https://www.googleapis.com/analytics/v3/data/realtime?ids=ga:206728908&metrics=rt:activeUsers&key=AIzaSyC17j5QD63HR34kVzTyEuyMKgDyF8YaRUY");
+            "https://www.googleapis.com/analytics/v3/data/realtime?ids=ga:206728908&metrics=rt:activeUsers&key=" . env('GOOGLE_ANALYTICS_API_KEY'));
         curl_setopt($ch, CURLOPT_HEADER, 0);
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 

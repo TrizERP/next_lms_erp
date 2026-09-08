@@ -460,7 +460,7 @@ class tblstudentController extends Controller
         $finalArray['marking_period_id']=session()->get('term_id');
 		$studentUserProfile = tbluserprofilemasterModel::where(['sub_institute_id' => $sub_institute_id, 'name' => 'Student'])->get()->toArray();
 
-		$finalArray['password'] = md5('student');
+		$finalArray['password'] = md5(env('DEFAULT_STUDENT_PASSWORD', 'student'));
 		$finalArray['user_profile_id'] = $studentUserProfile[0]['id'];
 		$finalArray['status'] = 1;
 
@@ -1315,7 +1315,7 @@ die; */
             return 0; // or any default value you prefer
         }
 
-        $apiKey = 'AIzaSyBR3wG6BAtSxwwstbYXnbLCXDxR8WX94iE';
+        $apiKey = env('GOOGLE_API_KEY');
 
         // Get the school address
         $schoolData = DB::table('school_setup')->where('id', session()->get('sub_institute_id'))->first();

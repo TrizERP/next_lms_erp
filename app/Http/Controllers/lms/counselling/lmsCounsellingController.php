@@ -152,8 +152,8 @@ class lmsCounsellingController extends Controller
         $type = $request->input('type');
 
         try {
-            $username = Constants::ONET_USERNAME;
-            $password = Constants::ONET_PASSWORD;
+            $username = env('ONET_USERNAME');
+            $password = env('ONET_PASSWORD');
 
             $credentials = base64_encode($username . ':' . $password);
 
@@ -181,8 +181,8 @@ class lmsCounsellingController extends Controller
         $allCareers = [];
 
         try {
-            $username = Constants::ONET_USERNAME;
-            $password = Constants::ONET_PASSWORD;
+            $username = env('ONET_USERNAME');
+            $password = env('ONET_PASSWORD');
 
             $credentials = base64_encode($username . ':' . $password);
 
@@ -220,8 +220,8 @@ class lmsCounsellingController extends Controller
         $type = $request->input('type');
 
         try {
-            $username = Constants::ONET_USERNAME;
-            $password = Constants::ONET_PASSWORD;
+            $username = env('ONET_USERNAME');
+            $password = env('ONET_PASSWORD');
 
             $credentials = base64_encode($username . ':' . $password);
 
@@ -249,8 +249,8 @@ class lmsCounsellingController extends Controller
         $type = $request->input('type');
 
         try {
-            $username = Constants::ONET_USERNAME;
-            $password = Constants::ONET_PASSWORD;
+            $username = env('ONET_USERNAME');
+            $password = env('ONET_PASSWORD');
 
             $credentials = base64_encode($username . ':' . $password);
 
@@ -1163,8 +1163,8 @@ class lmsCounsellingController extends Controller
         $end = $request->input('end') ?? 60;
 
         try {
-            $username = Constants::ONET_USERNAME;
-            $password = Constants::ONET_PASSWORD;
+            $username = env('ONET_USERNAME');
+            $password = env('ONET_PASSWORD');
 
             $credentials = base64_encode($username . ':' . $password);
 
@@ -1195,8 +1195,8 @@ class lmsCounsellingController extends Controller
 
         try {
             // Fetch credentials from app\Traits\Constants.php
-            $username = Constants::ONET_USERNAME;
-            $password = Constants::ONET_PASSWORD;
+            $username = env('ONET_USERNAME');
+            $password = env('ONET_PASSWORD');
 
             // Encode credentials for Basic Auth
             $credentials = base64_encode($username . ':' . $password);
@@ -1226,8 +1226,8 @@ class lmsCounsellingController extends Controller
     {
         try {
             // Fetch credentials from app\Traits\Constants.php
-            $username = Constants::ONET_USERNAME;
-            $password = Constants::ONET_PASSWORD;
+            $username = env('ONET_USERNAME');
+            $password = env('ONET_PASSWORD');
 
             // Encode credentials for Basic Auth
             $credentials = base64_encode($username . ':' . $password);
@@ -1258,8 +1258,8 @@ class lmsCounsellingController extends Controller
 
         try {
             // Fetch credentials from app\Traits\Constants.php
-            $username = Constants::ONET_USERNAME;
-            $password = Constants::ONET_PASSWORD;
+            $username = env('ONET_USERNAME');
+            $password = env('ONET_PASSWORD');
 
             // Encode credentials for Basic Auth
             $credentials = base64_encode($username . ':' . $password);
@@ -1299,8 +1299,8 @@ class lmsCounsellingController extends Controller
         
         try {
             // Fetch credentials from app\Traits\Constants.php
-            $username = Constants::ONET_USERNAME;
-            $password = Constants::ONET_PASSWORD;
+            $username = env('ONET_USERNAME');
+            $password = env('ONET_PASSWORD');
 
             // Encode credentials for Basic Auth
             $credentials = base64_encode($username . ':' . $password);
@@ -1341,8 +1341,8 @@ class lmsCounsellingController extends Controller
 
         try {
             // Fetch credentials from app\Traits\Constants.php
-            $username = Constants::ONET_USERNAME;
-            $password = Constants::ONET_PASSWORD;
+            $username = env('ONET_USERNAME');
+            $password = env('ONET_PASSWORD');
 
             // Encode credentials for Basic Auth
             $credentials = base64_encode($username . ':' . $password);

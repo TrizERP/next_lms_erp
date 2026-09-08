@@ -34,7 +34,9 @@ use Throwable;
  *
  * Column reuse on `lms_assignment` (see the 2026_09_04_130000 migration for
  * the handful of genuinely new columns):
- *   - exam_pdf          -> assignment questions PDF
+ *   - exam_pdf          -> assignment questions PDF (exam_paper assignments)
+ *   - homework_file     -> reference/worksheet PDF (uploaded_homework assignments,
+ *                          stands in for exam_pdf — see handle())
  *   - submission_image  -> student's uploaded answer file
  *   - json_annotation   -> full Gemini evaluation JSON
  *   - teacher_remarks   -> auto-filled with the AI summary (left alone once
@@ -70,12 +72,23 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
             return;
         }
 
-        if (empty($assignment->exam_pdf)) {
-            $this->markFailed($assignment, 'Evaluation Failed', 'No assignment question paper is attached to this assignment.');
+        // Uploaded-homework assignments have no question paper — the
+        // teacher's homework_file (the worksheet/instructions the student
+        // completed) stands in for exam_pdf as the "reference" document,
+        // same as EvaluateHomeworkSubmissionJob does for the older Homework
+        // module. This keeps AI auto-evaluation (score, reviewed PDF,
+        // AI-drafted remarks) running identically for both assignment types.
+        $isHomework = $assignment->assignment_source_type === 'uploaded_homework';
+        $referenceFile = $isHomework ? $assignment->homework_file : $assignment->exam_pdf;
+
+        if (empty($referenceFile)) {
+            $this->markFailed($assignment, 'Evaluation Failed', $isHomework
+                ? 'No homework file is attached to this assignment.'
+                : 'No assignment question paper is attached to this assignment.');
             return;
         }
 
-        $assignmentPath = $this->localPath('public/' . ltrim($assignment->exam_pdf, '/'));
+        $assignmentPath = $this->localPath('public/' . ltrim($referenceFile, '/'));
         $submissionPath = $this->localPath('public/lms_assignment_submission/' . $assignment->submission_image);
 
         if (!$assignmentPath || !$submissionPath) {
@@ -85,12 +98,13 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
 
         $questionsText = '';
         $submissionMime = $this->mimeFromExtension($assignment->submission_image);
+        $referenceMime = $isHomework ? $this->mimeFromExtension($referenceFile) : 'application/pdf';
         $located = null;
 
         try {
             $questionsText = $extractor->extractText(
                 $assignmentPath,
-                'application/pdf',
+                $referenceMime,
                 'assignment questions'
             );
             $located = $locator->locateAnswers($submissionPath, $submissionMime);

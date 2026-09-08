@@ -2549,7 +2549,7 @@ foreach ($previous_standard as $item) {
         }else{
             $message = array($request->message);            
         }
-        $apiKey ='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'; //'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';
+        $apiKey = env('OPENAI_API_KEY');
         // echo "<pre>";print_r('API');exit;
         $endpoint = "https://api.openai.com/v1/chat/completions";
 
