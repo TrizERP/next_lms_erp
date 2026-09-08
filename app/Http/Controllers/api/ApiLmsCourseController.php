@@ -10,6 +10,8 @@ use App\Models\lms\lmsQuestionMasterModel;
 use App\Models\lms\answermasterModel;
 use App\Models\lms\topicModel;
 use App\Models\student\tblstudentEnrollmentModel;
+use App\Services\lms\Content\ContentOwnershipDecorator;
+use App\Services\lms\Content\H5PContentAdapter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -570,7 +572,7 @@ class ApiLmsCourseController extends Controller
             ->get()
             ->toArray();
 
-        $content_by_category = [];
+        $assets = [];
         foreach ($content_data as $content) {
             $contentArray = (array)$content;
             $contentArray['url'] = $this->resolveContentUrl($contentArray);
@@ -582,6 +584,18 @@ class ApiLmsCourseController extends Controller
                     $contentArray['description'] ?? null
                 );
             }
+            $assets[] = $contentArray;
+        }
+
+        // Tracker "Content & LMS Architecture" row 4 / Decision #37. Stamps
+        // ownership + layer onto each row so a teacher can tell platform content
+        // from their school's own additions. ADDS FIELDS ONLY - it never filters,
+        // reorders or replaces a row, which is what keeps the overlay from becoming
+        // a fork. See App\Services\lms\Content\ContentOwnershipDecorator.
+        $assets = app(ContentOwnershipDecorator::class)->apply($assets, $sub_institute_id);
+
+        $content_by_category = [];
+        foreach ($assets as $contentArray) {
             $cat = $contentArray['content_category'] ?? 'General';
             $content_by_category[$cat][] = $contentArray;
         }
@@ -600,6 +614,18 @@ class ApiLmsCourseController extends Controller
         }, $flash);
         $content_by_category['Mindmap'] = [];
         $content_by_category['Virtual Lab'] = [];
+
+        // Tracker "Content & LMS Architecture" row 2 / Decision #35: H5P is a FORMAT,
+        // not a 4th destination alongside Classroom / Teacher / Question Bank. The
+        // h5p_* tables are merged in here as a filterable bucket rather than copied
+        // into content_master, exactly as Flash Cards already are above. Nothing is
+        // duplicated, so there is no second source of truth to keep in sync.
+        // Reversible without a deploy via config lms_content.h5p.surface_in_content_list.
+        $h5pAssets = app(H5PContentAdapter::class)->forChapter($chapter_id, $sub_institute_id);
+        if ($h5pAssets !== []) {
+            $content_by_category[H5PContentAdapter::CATEGORY] = app(ContentOwnershipDecorator::class)
+                ->apply($h5pAssets, $sub_institute_id, 'h5p');
+        }
 
         return $content_by_category;
     }
@@ -1575,6 +1601,42 @@ $restrict_date = $request->input('restrict_date');
                 'message' => 'Database error: ' . $e->getMessage(),
                 'debug_data' => $content,
             ], 500);
+        }
+
+        // Phase A3 - provenance parity with POST /api/lms/content/author.
+        //
+        // This legacy endpoint stays the system of record for the Blade UI, so its
+        // observable behaviour must not change. The provenance write is therefore
+        // best-effort: a failure here must NOT turn a working upload into a 500 for 56
+        // tenants. An unclassified row is a state the read path already handles by
+        // design - ContentOwnershipDecorator renders it as layer='unclassified', which is
+        // diagnosable rather than silently wrong.
+        //
+        // Ownership is DERIVED from the tenant, never taken from input. (The XOR this
+        // comment originally cited was deliberately relaxed on 2026-09-08: ownership says
+        // WHO AUTHORED, tenancy says WHO OWNS. Only one direction is still enforced -
+        // 'platform' ownership requires the platform tenant.)
+        try {
+            $lmsVocabulary = app(\App\Services\lms\Content\LmsContentVocabulary::class);
+            $isPlatform = $lmsVocabulary->isPlatformTenant($sub_institute_id);
+            app(\App\Services\lms\Content\ContentProvenanceService::class)->record(
+                'content',
+                (int) $last_id,
+                (int) $sub_institute_id,
+                [
+                    'ownership' => $isPlatform ? 'platform' : 'school',
+                    'authored_by_user_id' => is_numeric($user_id) ? (int) $user_id : null,
+                    'authored_by_profile' => $user_profile_name ?: null,
+                    'authoring_mode' => 'upload',
+                    'generation_source' => $content['source'] ?? 'Uploaded',
+                    'visibility' => $isPlatform ? 'global' : 'tenant',
+                ]
+            );
+        } catch (\Throwable $provenanceError) {
+            Log::channel('daily')->warning('lms.provenance: legacy upload provenance write failed', [
+                'entity_id' => $last_id,
+                'error' => $provenanceError->getMessage(),
+            ]);
         }
 
         $mapping_type = $request->input('mapping_type', []);

@@ -27,6 +27,18 @@ return [
     'base_url' => env('GEMINI_BASE_URL'),
 
     /*
+    | The model id. Added 2026-09-08: contentController::storeGammaContent reads this via
+    | env('GEMINI_MODEL') at request time (:1696), which returns null under `config:cache`.
+    | Declared here so the content-authoring gateway resolves it through config() instead.
+    */
+    'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+    // Default corrected 2026-09-08: it was 'gemini-2.0-flash', while every other call
+    // site in this repo defaults to 2.5 (contentController.php:1696,
+    // AiSopGenerationController.php:136, Homework/GeminiClient.php:23). GEMINI_MODEL is
+    // not set in .env, so the wrong default meant the content-authoring gateway would
+    // have called a DIFFERENT model than the legacy path it claims parity with.
+
+    /*
     |--------------------------------------------------------------------------
     | Request Timeout
     |--------------------------------------------------------------------------
