@@ -14,12 +14,12 @@ class AdmissionsConfirmTool extends AbstractMcpTool implements ConfirmableMcpToo
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'admissions.confirm';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'Confirm an admission using the existing ERP admission workflow after explicit confirmation.';
     }
@@ -41,7 +41,7 @@ class AdmissionsConfirmTool extends AbstractMcpTool implements ConfirmableMcpToo
         return false;
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return [
             'risk' => 'approval',

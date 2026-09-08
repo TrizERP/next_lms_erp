@@ -75,6 +75,14 @@ class AcademicRiskAgent implements Agent
         }
 
         // ---- Group by student: a case is about a person, not a metric -------
+        //
+        // Every student with a signal gets a case built, whether the sweep was aimed at
+        // one person or at the whole school. A cohort-wide scan that stopped at a ranked
+        // name list looked cheaper, but it left the rest of the journey with nothing to
+        // stand on: no case means no evidence to cite, no recommendation to draft and no
+        // approval to ask for, so selecting a student from the list had nowhere to go.
+        // Repeated sweeps no longer pile up duplicate approval requests either — a new
+        // recommendation supersedes the previous one for the same student and action.
         $byStudent = [];
 
         foreach ($detected as $signal) {
@@ -101,6 +109,7 @@ class AcademicRiskAgent implements Agent
             'cohort' => $cohort,
             'detector_coverage' => $this->coverage,
             'confidence' => $this->overallConfidence($detected),
+            'mode' => 'deep_analysis',
         ];
     }
 

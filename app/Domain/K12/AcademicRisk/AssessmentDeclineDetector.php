@@ -99,7 +99,7 @@ class AssessmentDeclineDetector implements SignalDetector
     {
         $requirement = sprintf(
             'needs at least 2 assessment attempts of %d or more questions within the last %d days.',
-            self::MIN_ANSWERED_QUESTIONS,
+            AssessmentScore::MIN_ANSWERED_QUESTIONS,
             self::LOOKBACK_DAYS
         );
 
@@ -334,13 +334,7 @@ class AssessmentDeclineDetector implements SignalDetector
         }
 
         // No question counts recorded — fall back to marks, treating 100 as the scale.
-        $marks = $attempt->obtain_marks ?? null;
-
-        if ($marks === null || ! is_numeric($marks)) {
-            return null;
-        }
-
-        return max(0.0, min(1.0, (float) $marks / 100));
+        return null;
     }
 
     private function formatPercent(float $ratio): string

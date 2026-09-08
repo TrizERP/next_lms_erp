@@ -7,6 +7,7 @@ use App\Http\Controllers\AI\GenerationController;
 use App\Http\Controllers\AI\OntologyController;
 use App\Http\Controllers\AI\OutcomeController;
 use App\Http\Controllers\AI\RecommendationController;
+use App\Http\Controllers\AI\ReportController;
 use App\Http\Controllers\AI\WorkflowController;
 use App\Http\Controllers\AI\WorkspaceController;
 use App\Http\Middleware\McpAuth;
@@ -66,6 +67,10 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             | still lands on the intent you expect without running anything.
             */
             Route::post('/ask', [AskController::class, 'ask']);
+            // Same question, same result shape, delivered as it happens. A separate
+            // route rather than a flag on /ask so the JSON contract stays exactly what
+            // it was for tests, the interpret route and any existing caller.
+            Route::post('/ask/stream', [AskController::class, 'stream']);
             Route::post('/ask/interpret', [AskController::class, 'interpret']);
             Route::get('/ask/intents', [AskController::class, 'intents']);
             // Which modules the lifecycle serves and how deep each one reaches — the
@@ -143,6 +148,27 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             Route::post('/generate', [GenerationController::class, 'generate']);
             Route::post('/generated-outputs/{output}/review', [GenerationController::class, 'review'])
                 ->whereNumber('output');
+
+            /*
+            | Saved reports — the documents `ai.templates.generate` writes.
+            |
+            | These back one page, `/ai-reports/{id}`, which is where the link the
+            | generate tool returns actually goes. `regenerate` re-reads the live rows
+            | and replaces only the generated table, so it is a write and behaves like
+            | one; the rest are the read and the save behind that page's editor.
+            */
+            Route::get('/reports/{report}', [ReportController::class, 'show'])->whereNumber('report');
+            Route::post('/reports/{report}', [ReportController::class, 'save'])->whereNumber('report');
+            Route::post('/reports/{report}/regenerate', [ReportController::class, 'regenerate'])
+                ->whereNumber('report');
+            // Sending is two calls on purpose. `recipients` is a read that names every
+            // person a send would reach and shows one of their notices; `send` acts only
+            // on the count that read returned. Approving one list and dispatching a
+            // different one is the failure this shape exists to make impossible.
+            Route::get('/reports/{report}/recipients', [ReportController::class, 'recipients'])
+                ->whereNumber('report');
+            Route::post('/reports/{report}/send', [ReportController::class, 'send'])
+                ->whereNumber('report');
 
             /*
             | Outcomes, effectiveness and audit.

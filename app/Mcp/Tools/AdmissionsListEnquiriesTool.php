@@ -12,12 +12,12 @@ class AdmissionsListEnquiriesTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'admissions.listEnquiries';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'List real admission enquiries for the authenticated institute and academic year.';
     }
@@ -35,7 +35,7 @@ class AdmissionsListEnquiriesTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return [
             'risk' => 'read',

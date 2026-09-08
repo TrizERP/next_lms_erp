@@ -12,12 +12,12 @@ class AdmissionsGetEnquiryDetailsTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'admissions.getEnquiryDetails';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'Load the complete admission enquiry and registration details for a selected candidate.';
     }
@@ -34,7 +34,7 @@ class AdmissionsGetEnquiryDetailsTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return [
             'risk' => 'read',

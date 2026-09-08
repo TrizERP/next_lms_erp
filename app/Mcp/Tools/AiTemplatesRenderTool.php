@@ -19,12 +19,12 @@ class AiTemplatesRenderTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'ai.templates.render';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'Render an AI-category template from template_master using a real admission enquiry record.';
     }
@@ -43,7 +43,7 @@ class AiTemplatesRenderTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return [
             'risk' => 'read',

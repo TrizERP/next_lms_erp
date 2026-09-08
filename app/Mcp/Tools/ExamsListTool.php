@@ -12,12 +12,12 @@ class ExamsListTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'exams.list';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'The exams defined for this institute, with their titles, terms and weightings. '
             . 'Use it to resolve an exam named in a question into the id exams.results needs.';
@@ -35,7 +35,7 @@ class ExamsListTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return ['risk' => 'read', 'required_permission' => 'result.read'];
     }

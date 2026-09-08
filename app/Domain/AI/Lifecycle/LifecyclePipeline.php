@@ -44,7 +44,22 @@ final class LifecyclePipeline
         $this->stages = array_values($ordered);
     }
 
-    public function run(StageContext $context): LifecycleTrace
+    /**
+     * Run the twelve stages.
+     *
+     * `$onStage` is called once per stage, immediately after it settles, with the key
+     * and the recorded outcome. It exists so a streaming caller can send a stage down
+     * the wire as it happens rather than after the whole ladder finishes — twelve stages
+     * take seconds, and a user watching a spinner for all of them has no idea whether
+     * anything is happening.
+     *
+     * It is a notification, not a hook: the pipeline ignores what it returns and a
+     * throwing observer must not take the turn down with it, because a broken client
+     * connection is the ordinary way this fails.
+     *
+     * @param  (callable(StageKey, StageOutcome): void)|null  $onStage
+     */
+    public function run(StageContext $context, ?callable $onStage = null): LifecycleTrace
     {
         $trace = new LifecycleTrace();
         $halted = null;
@@ -54,6 +69,7 @@ final class LifecyclePipeline
 
             if ($halted !== null) {
                 $trace->markNotReached($key, $halted);
+                $this->notify($onStage, $key, $trace->outcomeOf($key));
 
                 continue;
             }
@@ -98,11 +114,30 @@ final class LifecyclePipeline
                 $outcome->withDuration((int) round((microtime(true) - $startedAt) * 1000))
             );
 
+            $this->notify($onStage, $key, $trace->outcomeOf($key));
+
             if ($outcome->halts()) {
                 $halted = $outcome->halt;
             }
         }
 
         return $trace;
+    }
+
+    /**
+     * @param  (callable(StageKey, StageOutcome): void)|null  $onStage
+     */
+    private function notify(?callable $onStage, StageKey $key, StageOutcome $outcome): void
+    {
+        if ($onStage === null) {
+            return;
+        }
+
+        try {
+            $onStage($key, $outcome);
+        } catch (Throwable) {
+            // A client that hung up mid-stream must not turn into a failed turn: the
+            // work is still worth finishing and recording, and the trace is the record.
+        }
     }
 }

@@ -12,12 +12,12 @@ class AttendanceOverviewTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'attendance.overview';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'Attendance rates across a cohort over a recent window, worst first. Answers '
             . '"who has low attendance?" and "how is 8B attending?". Students with too few coded '
@@ -39,7 +39,7 @@ class AttendanceOverviewTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return ['risk' => 'read', 'required_permission' => 'attendance.read'];
     }

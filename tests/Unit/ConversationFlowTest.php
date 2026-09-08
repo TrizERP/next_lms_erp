@@ -208,6 +208,32 @@ class ConversationFlowTest extends TestCase
         $this->assertSame('Second', $resolved->slot('student_name'));
     }
 
+    /**
+     * The ranked list is also a picker by name. A bare name has no verb for the
+     * classifier, but it is unambiguous when it exactly matches the list this thread
+     * just displayed.
+     */
+    public function test_a_bare_ranked_student_name_selects_that_exact_case(): void
+    {
+        $store = new ConversationStore();
+        $intent = $this->classifier->classify('Abhi Raval');
+
+        $this->assertTrue($intent->isUnknown());
+        $this->assertSame('Abhi Raval', $intent->slot('student_name'));
+
+        [$resolved, $inherited] = $store->resolveReferents($intent, [
+            'last_case_list' => [
+                ['case_id' => 18, 'student_id' => 81, 'student_name' => 'Abhi Raval'],
+                ['case_id' => 19, 'student_id' => 82, 'student_name' => 'Abhi Raval Patel'],
+            ],
+        ]);
+
+        $this->assertSame('student_risk_explain', $resolved->key);
+        $this->assertSame(81, $resolved->slot('student_id'));
+        $this->assertSame(18, $resolved->slot('case_id'));
+        $this->assertArrayHasKey('selected_from_ranked_list', $inherited);
+    }
+
     // ------------------------------------------------------------------- trace
 
     /**

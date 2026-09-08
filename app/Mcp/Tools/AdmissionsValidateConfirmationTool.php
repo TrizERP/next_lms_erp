@@ -12,12 +12,12 @@ class AdmissionsValidateConfirmationTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'admissions.validateConfirmation';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'Validate whether a selected admission can be confirmed and return any missing required fields.';
     }
@@ -34,7 +34,7 @@ class AdmissionsValidateConfirmationTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return [
             'risk' => 'read',
