@@ -249,21 +249,28 @@ return [
     | returns the same wire shape. Both write turns to the same tables, so it can be
     | turned on and off without stranding history.
     |
-    | It defaults to **true** — Phase 2 of docs/lifecycle-cutover-plan.md — because the
-    | two pipelines answer the same question with visibly different products, and a
-    | deployment that simply never set the variable was silently serving the old one.
-    | That is not a subtle difference a reader would attribute to configuration: the
-    | lifecycle ranks the cohort and offers a per-student "View details", while the
-    | previous service returns a severity breakdown and jumps straight to an approval
-    | for whichever case happened to rank first. Two environments running the same
-    | commit looked like two different applications.
+    | It defaults to **false**, which is the pipeline every environment is expected to
+    | serve today. The two pipelines answer the same question with visibly different
+    | products, so the default is what decides which application a deployment appears to
+    | be: the lifecycle ranks the cohort and offers a per-student "View details" while
+    | withholding evidence until one is picked (ReasoningStage::rankedRiskScan), whereas
+    | AskService returns the severity breakdown, the full student list, the evidence
+    | behind the highest-priority case and the recommendation, in one answer.
     |
-    | Set it to false to fall back deliberately. The flag itself stays until Phase 3,
-    | when the previous service is deleted and there is nothing left to choose between.
+    | This briefly defaulted to true, and the result was two environments running the
+    | same commit and looking like two different applications — one answering "Top 4
+    | students at academic risk / Ranked by current risk priority", the other "5 students
+    | are currently showing academic risk signals / Breakdown, Students, Evidence,
+    | Recommended action", from the same rows in the same database.
+    |
+    | The cutover's own gates (docs/lifecycle-cutover-plan.md §3) are not met: gate 1
+    | fails on a regression and gate 2 on refusals that do not say why they refused.
+    | Phase 2 flips this to true once they pass; until then true is the deliberate
+    | opt-in, per environment, not the default.
     |
     */
     'lifecycle' => [
-        'enabled' => (bool) env('AI_LIFECYCLE_ENABLED', true),
+        'enabled' => (bool) env('AI_LIFECYCLE_ENABLED', false),
 
         /*
         | Module depth bindings.
