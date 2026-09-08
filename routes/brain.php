@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Brain\BrainController;
+use App\Http\Controllers\Brain\BrainIntelligenceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -46,6 +47,36 @@ Route::middleware(['brain.auth', 'brain.tenant'])->group(function () {
         // Account.
         Route::get('settings', [BrainController::class, 'settings'])->middleware('brain.permission:read');
         Route::put('settings', [BrainController::class, 'settingsUpdate'])->middleware('brain.permission:settings.manage');
+
+        // Intelligence loop — the real pipeline over vivek_erp.
+        Route::get('intelligence', [BrainIntelligenceController::class, 'intelligence'])->middleware('brain.permission:read');
+        Route::post('intelligence/run', [BrainIntelligenceController::class, 'intelligenceRun'])->middleware('brain.permission:create');
+        Route::get('signals', [BrainIntelligenceController::class, 'signals'])->middleware('brain.permission:read');
+        Route::get('signals/{id}', [BrainIntelligenceController::class, 'signalShow'])->middleware('brain.permission:read');
+        Route::get('recommendations', [BrainIntelligenceController::class, 'recommendations'])->middleware('brain.permission:read');
+
+        // The one path that creates a decision, and the report-back that closes
+        // the loop into an outcome. Both require a named LMS user.
+        Route::post('recommendations/{id}/decide', [BrainIntelligenceController::class, 'decide'])->middleware('brain.permission:update');
+        Route::post('executions/{id}/complete', [BrainIntelligenceController::class, 'executionComplete'])->middleware('brain.permission:update');
+
+        // Executive intelligence: health, what changed, what is at risk, what to do.
+        Route::get('executive', [BrainIntelligenceController::class, 'executive'])->middleware('brain.permission:read');
+
+        // Intelligence about one kind of thing, in the school's own language.
+        Route::get('intelligence/classes', [BrainIntelligenceController::class, 'classIntelligence'])->middleware('brain.permission:read');
+        Route::get('intelligence/departments', [BrainIntelligenceController::class, 'departmentIntelligence'])->middleware('brain.permission:read');
+        Route::get('intelligence/teachers', [BrainIntelligenceController::class, 'teacherIntelligence'])->middleware('brain.permission:read');
+        Route::get('intelligence/students/{id}', [BrainIntelligenceController::class, 'studentIntelligence'])->middleware('brain.permission:read');
+
+        // Graph explorer over the LMS's own relationships.
+        Route::get('graph', [BrainIntelligenceController::class, 'graph'])->middleware('brain.permission:read');
+
+        // Analytics, knowledge and automation, each computed from live LMS rows.
+        Route::get('analytics', [BrainIntelligenceController::class, 'analytics'])->middleware('brain.permission:read');
+        Route::get('knowledge', [BrainIntelligenceController::class, 'knowledge'])->middleware('brain.permission:read');
+        Route::get('automation', [BrainIntelligenceController::class, 'automation'])->middleware('brain.permission:read');
+        Route::get('students', [BrainIntelligenceController::class, 'students'])->middleware('brain.permission:read');
 
         // Section landing pages and the registry-driven screens.
         Route::get('sections/{section}', [BrainController::class, 'section'])->middleware('brain.permission:read');
