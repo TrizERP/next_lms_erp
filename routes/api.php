@@ -90,10 +90,12 @@ Route::middleware('api.session')->prefix('hrms')->group(function () {
     Route::get('attendance', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'attendance']);
     Route::get('leaves', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'leaves']);
 });
-Route::post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
-// Module dashboards (Admissions/Students) — same stateless pattern as
-// fees-dashboard/summary above: tenant/year travel in the request body, so
-// no session middleware is required.
+// check_permissions reads session()->get('user_profile_id'/'sub_institute_id'/'user_id'),
+// so api.session (JWT-hydrated session) must run first for type=API requests.
+Route::middleware(['api.session', 'check_permissions'])->post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
+// Module dashboards (Admissions/Students) — stateless: tenant/year travel in
+// the request body and there's no permission check, so no session middleware
+// is required.
 Route::post('admissions-dashboard/summary', [AdmissionsDashboardApiController::class, 'summary']);
 Route::post('students-dashboard/summary', [StudentsDashboardApiController::class, 'summary']);
 Route::post('library-dashboard/summary', [LibraryDashboardApiController::class, 'summary']);
@@ -146,7 +148,9 @@ Route::middleware('lms.auth')->get('/permissions', [App\Http\Controllers\api\Per
 
 // Fees-only: the seven category tabs on the dedicated Fees page. Presentation
 // grouping over the module's existing menus — see FeesMenuCategoryApiController.
-Route::match(['get', 'post'], 'fees/menu-categories', [App\Http\Controllers\api\FeesMenuCategoryApiController::class, 'index']);
+// check_permissions reads session()->get('user_profile_id'/'sub_institute_id'/'user_id'),
+// so api.session (JWT-hydrated session) must run first for type=API requests.
+Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 'fees/menu-categories', [App\Http\Controllers\api\FeesMenuCategoryApiController::class, 'index']);
 
 // GET is accepted alongside POST so these can be opened in a browser or curled without
 // a body — the handlers read their parameters through $request->input(), which covers
@@ -240,6 +244,7 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     Route::post('lms-assignment/students', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'students']);
     Route::post('lms-assignment/exam-papers', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'examPapers']);
     Route::post('lms-assignment/store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'store']);
+    Route::post('lms-assignment/upload-homework', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'uploadHomework']);
     Route::post('lms-assignment/list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'index']);
     Route::post('lms-assignment/annotate-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateList']);
     Route::post('lms-assignment/annotate-questions', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateQuestions']);
@@ -369,7 +374,9 @@ Route::post('inventory/receivables/multiple', [InventoryApiController::class, 's
 Route::match(['put', 'patch'], 'inventory/{module}/{id}', [InventoryApiController::class, 'update'])->where('module', '^(?!reports$).+');
 Route::delete('inventory/{module}/{id}', [InventoryApiController::class, 'destroy'])->where('module', '^(?!reports$).+');
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
-Route::post('fees-cancel/search', [feesCancelController::class, 'search']);
+// check_permissions reads session()->get('user_profile_id'/'sub_institute_id'/'user_id'),
+// so api.session (JWT-hydrated session) must run first for type=API requests.
+Route::middleware(['api.session', 'check_permissions'])->post('fees-cancel/search', [feesCancelController::class, 'search']);
 
 // Import Data API - stateless JSON entry points for the Next.js frontend.
 // These mirror the legacy web import routes but return JSON instead of HTML.
@@ -383,14 +390,16 @@ Route::middleware('api.session')->prefix('import')->group(function () {
 // Fees Circular - stateless JSON entry points for the Next.js frontend.
 // Callers must send type=JSON (is_mobile then returns response()->json) plus
 // syear/sub_institute_id/user_id, which the controllers seed into session()
-// for the downstream fee helpers. api.php does not run StartSession.
-Route::post('fees-circular/filters', [feesCircularController::class, 'index']);
-Route::post('fees-circular/students', [feesCircularController::class, 'showStudent']);
-Route::post('fees-circular/generate', [feesCircularController::class, 'showCircular']);
-Route::post('fees-circular-master', [feesCircularMasterController::class, 'index']);
-Route::post('fees-circular-master/store', [feesCircularMasterController::class, 'store']);
-Route::post('fees-circular-master/{id}/update', [feesCircularMasterController::class, 'update']);
-Route::post('fees-circular-master/{id}/delete', [feesCircularMasterController::class, 'destroy']);
+// for the downstream fee helpers. api.php does not run StartSession, so
+// check_permissions (which reads session()->get('user_profile_id'/etc.))
+// needs api.session in front of it to hydrate a session from the JWT first.
+Route::middleware(['api.session', 'check_permissions'])->post('fees-circular/filters', [feesCircularController::class, 'index']);
+Route::middleware(['api.session', 'check_permissions'])->post('fees-circular/students', [feesCircularController::class, 'showStudent']);
+Route::middleware(['api.session', 'check_permissions'])->post('fees-circular/generate', [feesCircularController::class, 'showCircular']);
+Route::middleware(['api.session', 'check_permissions'])->post('fees-circular-master', [feesCircularMasterController::class, 'index']);
+Route::middleware(['api.session', 'check_permissions'])->post('fees-circular-master/store', [feesCircularMasterController::class, 'store']);
+Route::middleware(['api.session', 'check_permissions'])->post('fees-circular-master/{id}/update', [feesCircularMasterController::class, 'update']);
+Route::middleware(['api.session', 'check_permissions'])->post('fees-circular-master/{id}/delete', [feesCircularMasterController::class, 'destroy']);
 
 // Intelligence Lesson Plan - Lesson Plan -> Period -> Concepts hierarchy
 Route::match(['GET', 'POST'], 'intelligence/lesson-plans', [\App\Http\Controllers\api\lms\IntelligenceLessonPlanApiController::class, 'index']);

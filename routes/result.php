@@ -153,8 +153,8 @@ Route::get('api/get-co-scholastic-parent-list', [AJAXController::class, 'getCoSc
 Route::get('api/get-co-scholastic-list', [AJAXController::class, 'getCoScholasticList']);
 Route::get('api/get-activity-master-list', [AJAXController::class, 'getActivityMasterList']);
 
-Route::GET('ajax_sendEmailFeesReceipt', [AJAXController::class, 'ajax_sendEmailFeesReceipt'])->name('ajax_sendEmailFeesReceipt');
-Route::GET('ajax_sendBulkEmailFeesReceipt', [AJAXController::class, 'ajax_sendBulkEmailFeesReceipt'])->name('ajax_sendBulkEmailFeesReceipt');
+Route::GET('ajax_sendEmailFeesReceipt', [AJAXController::class, 'ajax_sendEmailFeesReceipt'])->name('ajax_sendEmailFeesReceipt')->middleware(['session', 'check_permissions']);
+Route::GET('ajax_sendBulkEmailFeesReceipt', [AJAXController::class, 'ajax_sendBulkEmailFeesReceipt'])->name('ajax_sendBulkEmailFeesReceipt')->middleware(['session', 'check_permissions']);
 
 // Route::group(['prefix' => 'easy_com', 'middleware' => ['session', 'mastersetup_menu']], function () {
 Route::group(['prefix' => 'easy_com', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {

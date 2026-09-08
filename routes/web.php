@@ -530,11 +530,13 @@ Route::get('download_create_result', 'result\MarkUploadController@index');
 Route::post('generate_create_result_excel', 'result\MarkUploadController@create')->name('create-excel');
 Route::get('upload_create_result', 'result\MarkUploadController@store')->name('upload_create_result');
 
-Route::get('fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@razorpay_fetch_payment_status');
-Route::get('icici_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@icici_fetch_payment_status');
-Route::get('hdfc_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@hdfc_fetch_payment_status');
-Route::get('payphi_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@payphi_fetch_payment_status');
-Route::get('orange_pg_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@orange_pg_fetch_payment_status');
+// Frontend-polled (user checks their own payment's status) - needs `session`
+// so check_permissions sees a real, JWT-hydrated identity for type=API calls.
+Route::get('fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@razorpay_fetch_payment_status')->middleware(['session', 'check_permissions']);
+Route::get('icici_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@icici_fetch_payment_status')->middleware(['session', 'check_permissions']);
+Route::get('hdfc_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@hdfc_fetch_payment_status')->middleware(['session', 'check_permissions']);
+Route::get('payphi_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@payphi_fetch_payment_status')->middleware(['session', 'check_permissions']);
+Route::get('orange_pg_fetch_payment_status', 'fees\online_fees\online_fees_collect_controller@orange_pg_fetch_payment_status')->middleware(['session', 'check_permissions']);
 Route::group(['middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('leave-type', LeaveTypeController::class);
     Route::resource('holiday', HolidayController::class);
@@ -705,14 +707,14 @@ Route::view('real-time-chart', 'reportsnew.charts.realTime-Chart');
 Route::view('scatter-line-chart', 'reportsnew.charts.scatterLineChart');
 
 use App\Http\Controllers\FeesReportController;
-Route::get('/fees-report', [FeesReportController::class, 'showReport']);
-Route::get('/fees-collect-data-hb', [FeesReportController::class, 'gethorizontalBarChartData']);
-Route::get('/fees-collect-data-b', [FeesReportController::class, 'getBarChartData']);
-Route::get('/fees-collect-vs-breackoff', [FeesReportController::class, 'getBubbleChartData']);
-Route::get('/doughnut-chart-data', [FeesReportController::class, 'getDoughnutChartData']);
-Route::get('/real-time-chart-data', [FeesReportController::class, 'getRealTimeChartData']);
-Route::get('/scatter-line-chart-data', [FeesReportController::class, 'getScatterChartData']);
-Route::get('/polar-area-chart-data', [FeesReportController::class, 'getPolarAreaChartData']);
+Route::get('/fees-report', [FeesReportController::class, 'showReport'])->middleware('check_permissions');
+Route::get('/fees-collect-data-hb', [FeesReportController::class, 'gethorizontalBarChartData'])->middleware('check_permissions');
+Route::get('/fees-collect-data-b', [FeesReportController::class, 'getBarChartData'])->middleware('check_permissions');
+Route::get('/fees-collect-vs-breackoff', [FeesReportController::class, 'getBubbleChartData'])->middleware('check_permissions');
+Route::get('/doughnut-chart-data', [FeesReportController::class, 'getDoughnutChartData'])->middleware('check_permissions');
+Route::get('/real-time-chart-data', [FeesReportController::class, 'getRealTimeChartData'])->middleware('check_permissions');
+Route::get('/scatter-line-chart-data', [FeesReportController::class, 'getScatterLineChartData'])->middleware('check_permissions');
+Route::get('/polar-area-chart-data', [FeesReportController::class, 'getPolarAreaChartData'])->middleware('check_permissions');
 
 // MIS Daily Summary Dashboard for Principal / Trustee / Management
 use App\Http\Controllers\MIS\MisSummaryController;
