@@ -66,6 +66,19 @@ class EvidenceStore
         $existing = $this->findDuplicate($item, $context);
 
         if ($existing !== null) {
+            // A detector has just re-read the source records. Keep the stable evidence
+            // id and its case links, but replace the observation with the current value.
+            // Returning the old row unchanged made a fresh risk score appear beside an
+            // older trend summary in the same answer.
+            $row = $item->toRow(
+                $context->selectedInstituteId,
+                $context->clientId,
+                $context->academicYear
+            );
+            unset($row['created_at']);
+
+            DB::table('ai_evidence')->where('id', $existing)->update($row);
+
             return $existing;
         }
 
@@ -204,9 +217,11 @@ class EvidenceStore
         if ($item->sourceTable !== null && $item->sourceId !== null) {
             $query->where('source_table', $item->sourceTable)
                 ->where('source_id', $item->sourceId);
-        } elseif ($item->observedAt !== null) {
-            $query->where('observed_at', $item->observedAt)
-                ->where('source_service', $item->sourceService);
+        } elseif ($item->sourceService !== null) {
+            // A computed observation represents this service's current measurement for
+            // this student and kind. `observed_at` is the measurement time, not its
+            // identity: using it here inserted a new average/rate row on every scan.
+            $query->where('source_service', $item->sourceService);
         } else {
             // Nothing distinctive enough to dedupe on — store it.
             return null;

@@ -18,12 +18,12 @@ class AcademicsStructureTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'academics.structure';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'List the grades, standards (classes) and divisions (sections) defined for this '
             . 'institute. Use this to turn a class named in a question — "8B", "Grade 5" — into the '
@@ -42,7 +42,7 @@ class AcademicsStructureTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return ['risk' => 'read', 'required_permission' => 'academics.read'];
     }

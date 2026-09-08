@@ -21,12 +21,12 @@ class HrDepartmentsTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'hr.departments';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'List the departments at this institute, each with its head and how many active '
             . 'staff are assigned to it. Reports headcount only — it holds no training, competency, '
@@ -38,7 +38,7 @@ class HrDepartmentsTool extends AbstractMcpTool
         return ['type' => 'object', 'properties' => (object) [], 'additionalProperties' => false];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return ['risk' => 'read', 'required_permission' => 'hrms.read'];
     }

@@ -109,7 +109,7 @@ enum StageKey: string
             self::Agent => 'App\\Domain\\AI\\Agents\\AgentRunner',
             self::Planning => 'App\\Domain\\AI\\Lifecycle\\Plan\\HybridPlanner',
             self::McpToolSelection => 'App\\Domain\\AI\\Lifecycle\\Plan\\ToolSelector',
-            self::LaravelMcp => 'App\\Mcp\\ToolRegistry -> App\\Http\\Controllers\\Mcp\\ToolsCallController',
+            self::LaravelMcp => 'App\\Mcp\\Servers\\LmsMcpServer -> App\\Mcp\\ToolRegistry -> Laravel\\Mcp\\Server\\Tool',
             self::RealData => 'App\\Domain\\AI\\Signals\\SignalDetector implementations',
             self::Evidence => 'App\\Domain\\AI\\Evidence\\EvidenceStore',
             self::Reasoning => 'EntityResolver + CaseBuilder + ExplanationBuilder + GovernanceValidator',

@@ -12,12 +12,12 @@ class LmsActivitiesTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'lms.activities';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'What is on for a class: virtual classroom sessions and homework, on one timeline '
             . 'across a window around today. Answers "what is happening this week" and "what is due". '
@@ -44,7 +44,7 @@ class LmsActivitiesTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return ['risk' => 'read', 'required_permission' => 'lms.read'];
     }

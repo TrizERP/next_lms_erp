@@ -66,7 +66,7 @@ return new class extends Migration
                 'route_patterns' => ['/students', '/students/**', '/student', '/student/**'],
                 'entity_key' => null,
                 'entity_param' => null,
-                'capabilities' => ['conversational' => true, 'generative' => false, 'agent' => true, 'workflow' => false, 'ontology' => false],
+                'capabilities' => ['conversational' => true, 'generative' => false, 'agent' => true, 'workflow' => true, 'ontology' => false],
                 'icon' => 'users',
                 'sort_order' => 30,
                 'match_priority' => 60,

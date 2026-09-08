@@ -19,12 +19,12 @@ class StudentsDirectoryTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'students.directory';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'List students enrolled in a given grade, standard (class) or division (section) '
             . 'for the current academic year. Use this for cohort questions such as "students in 8B" '
@@ -48,7 +48,7 @@ class StudentsDirectoryTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return ['risk' => 'read', 'required_permission' => 'student.read'];
     }

@@ -63,7 +63,7 @@ class AdmissionsFlowTest extends TestCase
                 return true;
             }
 
-            public function json(array $messages, string $model, int $maxTokens = 900, float $temperature = 0.0): ?array
+            public function json(array $messages, ?string $model = null, int $maxTokens = 900, float $temperature = 0.0): ?array
             {
                 return ['fields' => $this->extracted];
             }

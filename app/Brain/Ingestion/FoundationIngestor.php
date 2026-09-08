@@ -2,6 +2,7 @@
 
 namespace App\Brain\Ingestion;
 
+use App\Brain\Support\LmsQueryScope;
 use Illuminate\Support\Facades\DB;
 use App\Brain\Support\SchemaCache;
 use Illuminate\Support\Facades\Schema;
@@ -26,16 +27,38 @@ use Illuminate\Support\Facades\Schema;
  */
 class FoundationIngestor
 {
+    use LmsQueryScope;
+
     public const SCOPES = ['organization', 'departments', 'people', 'capabilities'];
+
+    /**
+     * The staff columns the projection needs, table-qualified: lmsPeople() joins
+     * tbluserprofilemaster, which carries its own id / name / status / client_id.
+     */
+    private const PERSON_COLUMNS = [
+        'tbluser.id', 'tbluser.user_name', 'tbluser.first_name', 'tbluser.last_name',
+        'tbluser.email', 'tbluser.mobile', 'tbluser.gender', 'tbluser.status',
+        'tbluser.employee_no', 'tbluser.department_id', 'tbluser.reporting_manager_id',
+        'tbluser.occupation', 'tbluser.city',
+    ];
 
     public function __construct(private string $tenantId, private string $actorId)
     {
     }
 
-    /** What is in the LMS versus what has been projected, per scope. */
+    /**
+     * What is in the LMS, what has been projected, and when that last happened.
+     *
+     * `status` is derived from the two counts and the audit trail rather than
+     * stored, so this screen can never claim a scope was "processed" because a
+     * flag says so: it says so only when rows are actually there, and names the
+     * last run that put them there.
+     */
     public function inventory(): array
     {
-        return [
+        $lastRuns = $this->lastRunPerScope();
+
+        $rows = [
             [
                 'scope' => 'organization',
                 'label' => 'Organization',
@@ -56,7 +79,7 @@ class FoundationIngestor
                 'scope' => 'people',
                 'label' => 'People',
                 'source' => 'tbluser',
-                'sourceCount' => $this->lmsCount('tbluser'),
+                'sourceCount' => $this->countWithProfile('tbluser'),
                 'target' => 'hpbrain_people',
                 'targetCount' => $this->brainCount('hpbrain_people'),
             ],
@@ -69,6 +92,85 @@ class FoundationIngestor
                 'targetCount' => $this->brainCount('hpbrain_capabilities'),
             ],
         ];
+
+        return array_map(function (array $row) use ($lastRuns) {
+            $last = $lastRuns[$row['scope']] ?? null;
+            $storeExists = SchemaCache::hasTable($row['target']);
+
+            if (! $storeExists) {
+                $status = 'unavailable';
+                $note = 'The Brain store for this scope is not present in this database.';
+            } elseif ($row['sourceCount'] === 0) {
+                $status = 'no_source';
+                $note = 'This institute has no records of this kind in the LMS.';
+            } elseif ($row['targetCount'] === 0) {
+                $status = 'not_processed';
+                $note = 'Nothing has been brought in yet.';
+            } elseif ($row['targetCount'] < $row['sourceCount']) {
+                $status = 'partial';
+                $note = sprintf(
+                    '%s of %s records are in the Brain; run again to bring in the rest.',
+                    number_format($row['targetCount']),
+                    number_format($row['sourceCount'])
+                );
+            } else {
+                $status = 'processed';
+                $note = 'Every LMS record of this kind is in the Brain.';
+            }
+
+            $row['status'] = $status;
+            $row['note'] = $note;
+            $row['pending'] = max(0, $row['sourceCount'] - $row['targetCount']);
+            $row['lastRunAt'] = $last['at'] ?? null;
+            $row['lastRunBy'] = $last['by'] ?? null;
+            $row['lastRunWrote'] = $last['written'] ?? null;
+            $row['error'] = $last['error'] ?? null;
+
+            return $row;
+        }, $rows);
+    }
+
+    /**
+     * The most recent ingestion run that touched each scope, read back out of
+     * the audit trail the run itself wrote.
+     *
+     * @return array<string, array{at: string, by: ?string, written: ?int, error: ?string}>
+     */
+    private function lastRunPerScope(): array
+    {
+        if (! SchemaCache::hasTable('hpbrain_audit_logs')) {
+            return [];
+        }
+
+        $rows = DB::table('hpbrain_audit_logs')
+            ->where('tenant_id', $this->tenantId)
+            ->where('action', 'ingestion.run')
+            ->orderByDesc('created_at')
+            ->limit(50)
+            ->get(['created_at', 'actor_id', 'changes']);
+
+        $out = [];
+        foreach ($rows as $row) {
+            $changes = json_decode((string) ($row->changes ?? ''), true);
+            if (! is_array($changes) || ! is_array($changes['result'] ?? null)) {
+                continue;
+            }
+
+            foreach ($changes['result'] as $scope => $outcome) {
+                if (isset($out[$scope])) {
+                    continue; // rows are newest-first, so the first hit wins
+                }
+
+                $out[$scope] = [
+                    'at' => (string) $row->created_at,
+                    'by' => $row->actor_id !== null ? (string) $row->actor_id : null,
+                    'written' => is_array($outcome) && isset($outcome['written']) ? (int) $outcome['written'] : null,
+                    'error' => is_array($outcome) ? ($outcome['error'] ?? null) : null,
+                ];
+            }
+        }
+
+        return $out;
     }
 
     public function run(array $scopes, int $limit = 2000): array
@@ -122,11 +224,7 @@ class FoundationIngestor
             return ['written' => 0, 'available' => false];
         }
 
-        $rows = DB::table('hrms_departments')
-            ->where('sub_institute_id', $this->tenantId)
-            ->when(SchemaCache::hasColumn('hrms_departments', 'deleted_at'), fn ($q) => $q->whereNull('deleted_at'))
-            ->limit($limit)
-            ->get();
+        $rows = $this->lmsDepartments()->limit($limit)->get();
 
         $batch = [];
         foreach ($rows as $row) {
@@ -156,10 +254,14 @@ class FoundationIngestor
             return ['written' => 0, 'available' => false];
         }
 
-        $rows = DB::table('tbluser')
-            ->where('sub_institute_id', $this->tenantId)
-            ->limit($limit)
-            ->get();
+        // The projected roster must be the SAME population the People screen
+        // shows. This block previously added `status = 1` on top of the
+        // profile-master join, which (a) projected fewer people than Foundation
+        // counted and (b) left `status` / `sub_institute_id` ambiguous once the
+        // join applied. It also selected `*` across the join, so `$row->id` was
+        // the PROFILE's id, not the user's — every projected person got the
+        // wrong stable id.
+        $rows = $this->lmsPeople()->limit($limit)->get(self::PERSON_COLUMNS);
 
         $batch = [];
         foreach ($rows as $row) {
@@ -433,13 +535,13 @@ class FoundationIngestor
         return array_filter($row, fn ($value, $column) => SchemaCache::hasColumn($table, $column), ARRAY_FILTER_USE_BOTH);
     }
 
-    private function lmsCount(string $table): int
+    /**
+     * Kept as a named alias so callers read as "the LMS's own count"; the
+     * profile-master join now lives in one place, LmsQueryScope::lmsCount().
+     */
+    private function countWithProfile(string $table): int
     {
-        if (! SchemaCache::hasTable($table) || ! SchemaCache::hasColumn($table, 'sub_institute_id')) {
-            return 0;
-        }
-
-        return (int) DB::table($table)->where('sub_institute_id', $this->tenantId)->count();
+        return $this->lmsCount($table);
     }
 
     private function brainCount(string $table): int

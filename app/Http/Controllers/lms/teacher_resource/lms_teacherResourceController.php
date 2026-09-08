@@ -219,7 +219,7 @@ class lms_teacherResourceController extends Controller
 
         $res = array(
             "status_code" => 1,
-            "message"     => "Teacher Resource Added Successfully",
+            "message"     => "Teacher Workspace Added Successfully",
         );
         $type = $request->input('type');
 
@@ -348,7 +348,7 @@ class lms_teacherResourceController extends Controller
 
         $res = array(
             "status_code" => 1,
-            "message"     => "Teacher Resource Added Successfully",
+            "message"     => "Teacher Workspace Updated Successfully",
         );
         return redirect()->back()->with($res);
     }
@@ -376,7 +376,7 @@ class lms_teacherResourceController extends Controller
 
         teacherResourceModel::where(["id" => $id])->delete();
         $res['status_code'] = "1";
-        $res['message'] = "Teacher Resource Deleted Successfully";
+        $res['message'] = "Teacher Workspace Deleted Successfully";
 
 
         return redirect()->route('lms_teacherResource.index', [

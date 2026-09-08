@@ -719,17 +719,12 @@ public function studentData($is_exist,$request,$student_id, $sub_institute_id){
 
         $token = $jwt->createToken($payload);
 
-        $connection = [
-            'driver'    => 'mysql',
-            'host'      => '202.47.117.131',
-            'database'  => 'triz_lms',
-            'username'  => 'dev_db',
-            'password'  => 'Triz@2020',
-            'charset'   => 'utf8',
-            'collation' => 'utf8_unicode_ci',
-            'prefix'    => '',
-            'strict'    => false,
-        ];
+        // Tracker Decision #10, 2026-09-08: a hardcoded DB host/username/password
+        // array lived here. It was assigned and never read (verified: exactly one
+        // occurrence of the variable in this file), so it is deleted outright rather
+        // than moved to env. The query below uses the configured
+        // 'information_schema' connection, which is unaffected.
+        // NOTE: the deleted literal remains in git history and must still be rotated.
 
 
         $data = DB::connection("information_schema")

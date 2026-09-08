@@ -21,12 +21,12 @@ class TeachersDailyReportTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'teachers.daily_report';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'For a given date, which teachers recorded each daily task: marked attendance, '
             . 'assigned homework, checked homework, answered a parent, handled a leave request. '
@@ -55,7 +55,7 @@ class TeachersDailyReportTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return ['risk' => 'read', 'required_permission' => 'teacher_daily_report.index'];
     }

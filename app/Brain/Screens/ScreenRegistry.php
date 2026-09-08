@@ -70,8 +70,8 @@ class ScreenRegistry
                 'description' => 'What the data has flagged, and who it concerns.',
                 'metrics' => [
                     ['key' => 'total', 'label' => 'Signals', 'table' => 'hpbrain_signals'],
-                    ['key' => 'open', 'label' => 'Open', 'table' => 'hpbrain_signals', 'where' => ['status' => 'open']],
-                    ['key' => 'critical', 'label' => 'Critical', 'table' => 'hpbrain_signals', 'where' => ['severity' => 'critical']],
+                    ['key' => 'open', 'label' => 'Open', 'table' => 'hpbrain_signals', 'where' => ['status' => ['new', 'open', 'reasoned', 'investigating']]],
+                    ['key' => 'critical', 'label' => 'High or critical', 'table' => 'hpbrain_signals', 'where' => ['severity' => ['critical', 'high']]],
                     ['key' => 'evidence', 'label' => 'Evidence linked', 'table' => 'hpbrain_evidence'],
                 ],
                 'panels' => [
@@ -98,7 +98,7 @@ class ScreenRegistry
                 'description' => 'What supports each signal, and how firmly it is held.',
                 'metrics' => [
                     ['key' => 'total', 'label' => 'Evidence records', 'table' => 'hpbrain_evidence'],
-                    ['key' => 'verified', 'label' => 'Verified', 'table' => 'hpbrain_evidence', 'where' => ['status' => 'verified']],
+                    ['key' => 'verified', 'label' => 'Active', 'table' => 'hpbrain_evidence', 'where' => ['status' => ['active', 'verified']]],
                     ['key' => 'case_links', 'label' => 'Case links', 'table' => 'hpbrain_case_evidence'],
                 ],
                 'panels' => [

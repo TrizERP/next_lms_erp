@@ -12,6 +12,64 @@ return [
     */
     'route_prefix' => env('AI_ROUTE_PREFIX', 'api/ai'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Model provider — the single source of truth
+    |--------------------------------------------------------------------------
+    |
+    | Everything that talks to a model reads its credentials, endpoint, model name
+    | and timeout from here. config/gemini.php and config/openrouter.php now derive
+    | from this block rather than owning their own copies of the same env vars, so a
+    | provider change is one edit instead of a hunt through three files that had
+    | drifted into disagreeing about the default model.
+    |
+    | `driver` selects the client the AI brain uses: `gemini` (default) or
+    | `openrouter` for a rollback. Both implement App\Domain\AI\Support\ModelClient.
+    |
+    | Not everything here is on the brain's path. PAL keeps its own OpenRouter
+    | subsystem and question generation keeps its DeepSeek prompt pack; both now read
+    | their keys from this block while keeping their own domain settings where they
+    | belong. See config/deepseek.php.
+    |
+    */
+    'provider' => [
+        'driver' => env('AI_PROVIDER', 'gemini'),
+
+        'gemini' => [
+            'api_key' => env('GEMINI_API_KEY'),
+            // Left without a version segment on purpose: the client appends
+            // /models/{model}:generateContent, which is how Google's REST API is shaped.
+            'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
+            'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+            'timeout' => (int) env('GEMINI_REQUEST_TIMEOUT', 45),
+            'max_output_tokens' => (int) env('GEMINI_MAX_OUTPUT_TOKENS', 1466),
+            // The api_type used to look the key up in the ai_api_keys pool, which
+            // takes precedence over the env value above. Lowercase `gemini` is not a
+            // typo — it is what the rows in that table are actually tagged with, and
+            // guessing 'GEMINI_API_KEY' by symmetry with OpenRouter finds nothing and
+            // silently degrades the brain to its deterministic fallback.
+            'api_type' => env('GEMINI_API_TYPE', 'gemini'),
+        ],
+
+        'openrouter' => [
+            'api_key' => env('OPENROUTER_API_KEY'),
+            'base_url' => env('OPENROUTER_BASE_URL', 'https://openrouter.ai/api/v1'),
+            'model' => env('OPENROUTER_MODEL', 'deepseek/deepseek-chat'),
+            'timeout' => (int) env('OPENROUTER_TIMEOUT', 45),
+            'max_output_tokens' => (int) env('OPENROUTER_MAX_OUTPUT_TOKENS', 1466),
+            'api_type' => env('OPENROUTER_API_TYPE', 'OPENROUTER_API_KEY'),
+        ],
+
+        'deepseek' => [
+            'api_key' => env('DEEPSEEK_API_KEY'),
+            'base_url' => env('DEEPSEEK_BASE_URL', 'https://api.deepseek.com'),
+            'model' => env('DEEPSEEK_MODEL', 'deepseek-v4-pro'),
+            'timeout' => (int) env('DEEPSEEK_TIMEOUT_SECONDS', 600),
+            'max_output_tokens' => (int) env('DEEPSEEK_MAX_OUTPUT_TOKENS', 0),
+            'api_type' => env('DEEPSEEK_API_TYPE', 'DEEPSEEK_API_KEY'),
+        ],
+    ],
+
     'rate_limit' => [
         'per_minute' => (int) env('AI_RATE_LIMIT_PER_MINUTE', 60),
     ],
@@ -191,6 +249,25 @@ return [
     | returns the same wire shape. Both write turns to the same tables, so it can be
     | turned on and off without stranding history.
     |
+    | It defaults to **false**, which is the pipeline every environment is expected to
+    | serve today. The two pipelines answer the same question with visibly different
+    | products, so the default is what decides which application a deployment appears to
+    | be: the lifecycle ranks the cohort and offers a per-student "View details" while
+    | withholding evidence until one is picked (ReasoningStage::rankedRiskScan), whereas
+    | AskService returns the severity breakdown, the full student list, the evidence
+    | behind the highest-priority case and the recommendation, in one answer.
+    |
+    | This briefly defaulted to true, and the result was two environments running the
+    | same commit and looking like two different applications — one answering "Top 4
+    | students at academic risk / Ranked by current risk priority", the other "5 students
+    | are currently showing academic risk signals / Breakdown, Students, Evidence,
+    | Recommended action", from the same rows in the same database.
+    |
+    | The cutover's own gates (docs/lifecycle-cutover-plan.md §3) are not met: gate 1
+    | fails on a regression and gate 2 on refusals that do not say why they refused.
+    | Phase 2 flips this to true once they pass; until then true is the deliberate
+    | opt-in, per environment, not the default.
+    |
     */
     'lifecycle' => [
         'enabled' => (bool) env('AI_LIFECYCLE_ENABLED', false),
@@ -248,6 +325,7 @@ return [
                     'fees.getPending',
                     'fees.arrears',
                     'fees.collection_report',
+                    'ai.templates.generate',
                     'students.search',
                     'students.directory',
                     'academics.structure',
@@ -265,6 +343,7 @@ return [
                     'admissions.validateConfirmation',
                     'admissions.updateEnquiry',
                     'admissions.confirm',
+                    'ai.templates.generate',
                     'academics.structure',
                 ],
                 'depth_reason' => 'Admissions has read tools and a confirmation flow of its own, but no '
@@ -277,6 +356,7 @@ return [
                 'mcp_tools' => [
                     'attendance.overview',
                     'attendance.student',
+                    'ai.templates.generate',
                     'students.search',
                     'students.directory',
                     'academics.structure',
@@ -299,7 +379,7 @@ return [
             ],
 
             'course' => [
-                'mcp_tools' => ['academics.subjects', 'ai.templates.list', 'ai.templates.render'],
+                'mcp_tools' => ['academics.subjects', 'lms.courses', 'ai.templates.list', 'ai.templates.render'],
                 'depth_reason' => 'The course module can generate from templates but has no agent, so '
                     . 'nothing here opens a case or requires an approval.',
             ],
@@ -307,7 +387,7 @@ return [
             'hr' => [
                 'label' => 'Staff & departments',
                 'description' => 'Teachers, staff and the departments they sit in.',
-                'mcp_tools' => ['teachers.directory', 'teachers.daily_report', 'hr.departments'],
+                'mcp_tools' => ['teachers.directory', 'teachers.daily_report', 'hr.departments', 'academics.class_teachers'],
                 'depth_reason' => 'Staff questions are answered from the directory and department '
                     . 'records. The estate holds no training, competency or appraisal data, so this '
                     . 'module can report who and how many but cannot judge capability or need.',
@@ -325,6 +405,7 @@ return [
                 'mcp_tools' => [
                     'homework.list',
                     'lms.activities',
+                    'lms.courses',
                     'students.directory',
                     'academics.structure',
                     'academics.subjects',
@@ -336,17 +417,18 @@ return [
             ],
 
             'chapters' => [
-                'mcp_tools' => ['academics.subjects'],
+                'mcp_tools' => ['academics.subjects', 'lms.courses'],
             ],
 
             'course-master' => [
-                'mcp_tools' => ['academics.subjects', 'academics.structure'],
+                'mcp_tools' => ['academics.subjects', 'academics.structure', 'lms.courses'],
             ],
 
             'classteacher' => [
                 'mcp_tools' => [
                     'teachers.daily_report',
                     'teachers.directory',
+                    'academics.class_teachers',
                     'students.directory',
                     'academics.structure',
                 ],
@@ -361,7 +443,7 @@ return [
             ],
 
             'proxy' => [
-                'mcp_tools' => ['teachers.directory', 'academics.structure'],
+                'mcp_tools' => ['teachers.directory', 'academics.structure', 'academics.class_teachers'],
             ],
 
             'user' => [

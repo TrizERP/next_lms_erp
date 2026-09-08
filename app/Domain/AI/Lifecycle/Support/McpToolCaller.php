@@ -4,6 +4,7 @@ namespace App\Domain\AI\Lifecycle\Support;
 
 use App\Domain\AI\Lifecycle\StageContext;
 use App\Mcp\ToolRegistry;
+use App\Services\Mcp\McpAuditService;
 use Throwable;
 
 /**
@@ -23,8 +24,57 @@ use Throwable;
  */
 class McpToolCaller
 {
-    public function __construct(private readonly ToolRegistry $tools)
+    public function __construct(
+        private readonly ToolRegistry $tools,
+        private readonly McpAuditService $audit,
+    ) {
+    }
+
+    /**
+     * Record a tool call on the turn's trace **and** in the audit table.
+     *
+     * Both, deliberately, and through one method so a seventh call site cannot get only
+     * half of it. The trace is what a reader of this conversation sees; the audit table
+     * is where a compliance query looks, and until now a lifecycle tool call appeared in
+     * the first and not the second — the REST façade wrote `mcp_audit_logs` rows, and
+     * the in-process path that replaced it wrote none. Two transports calling the same
+     * registry left different evidence behind.
+     *
+     * @param  array<string, mixed>  $call
+     */
+    private function record(StageContext $context, array $call): void
     {
+        $context->recordToolCall($call);
+
+        $status = (string) ($call['status'] ?? 'unknown');
+
+        $this->audit->log([
+            'endpoint' => 'lifecycle:mcp_tool_caller',
+            'tool_name' => $call['tool'] ?? null,
+            'user_id' => $context->scope->userId,
+            'sub_institute_id' => $context->scope->selectedInstituteId,
+            // A refused or unavailable tool is not an HTTP failure — nothing was
+            // served over HTTP at all — so the code reflects what the caller got.
+            'status_code' => match ($status) {
+                'completed', 'awaiting_confirmation' => 200,
+                'blocked' => 403,
+                'unavailable' => 404,
+                default => 200,
+            },
+            'outcome' => in_array($status, ['completed', 'awaiting_confirmation'], true) ? 'success' : 'error',
+            'input_payload' => [
+                'arguments' => $call['arguments'] ?? [],
+                'why' => $call['note'] ?? null,
+                'module' => $context->module->key,
+            ],
+            'response_payload' => [
+                'status' => $status,
+                'rows' => $call['count'] ?? 0,
+                'duration_ms' => $call['duration_ms'] ?? null,
+            ],
+            'error_code' => isset($call['error']) ? $status : null,
+            'error_message' => $call['error'] ?? null,
+        ]);
     }
 
     /**
@@ -45,7 +95,7 @@ class McpToolCaller
         // never reached. Recording it as a blocked call would blame the role gate for a
         // configuration decision made here.
         if (! in_array($tool, $context->module->mcpTools, true)) {
-            $context->recordToolCall([
+            $this->record($context, [
                 'tool' => $tool,
                 'status' => 'unavailable',
                 'note' => $why,
@@ -66,7 +116,7 @@ class McpToolCaller
         try {
             $result = $this->tools->execute($tool, $arguments, $context->scope, $confirmationToken);
         } catch (Throwable $exception) {
-            $context->recordToolCall([
+            $this->record($context, [
                 'tool' => $tool,
                 'status' => 'blocked',
                 'duration_ms' => $this->elapsed($startedAt),
@@ -86,7 +136,7 @@ class McpToolCaller
         // round trip that deliberately changed nothing, and it must not be reported as
         // either a completed action or a refusal.
         if ($mode === 'preview') {
-            $context->recordToolCall([
+            $this->record($context, [
                 'tool' => $tool,
                 'status' => 'awaiting_confirmation',
                 'duration_ms' => $this->elapsed($startedAt),
@@ -99,7 +149,7 @@ class McpToolCaller
             return null;
         }
 
-        $context->recordToolCall([
+        $this->record($context, [
             'tool' => $tool,
             'status' => $mode === 'execute' ? 'completed' : $mode,
             'duration_ms' => $this->elapsed($startedAt),
@@ -142,7 +192,7 @@ class McpToolCaller
         try {
             $result = $this->tools->execute($tool, $arguments, $context->scope);
         } catch (Throwable $exception) {
-            $context->recordToolCall([
+            $this->record($context, [
                 'tool' => $tool,
                 'status' => 'blocked',
                 'duration_ms' => $this->elapsed($startedAt),
@@ -158,7 +208,7 @@ class McpToolCaller
         $token = $result['confirmation']['token'] ?? null;
         $preview = is_array($result['preview'] ?? null) ? $result['preview'] : [];
 
-        $context->recordToolCall([
+        $this->record($context, [
             'tool' => $tool,
             'status' => $token === null ? 'no_confirmation_offered' : 'awaiting_confirmation',
             'duration_ms' => $this->elapsed($startedAt),

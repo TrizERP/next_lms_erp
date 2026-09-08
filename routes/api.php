@@ -139,6 +139,13 @@ Route::post('/compliance/delete/{id}',[instituteDetailController::class,'destroy
 Route::post('/menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMenuRightsLevelWise']);
 Route::get('/master-menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMasterMenuApi']);
 
+// Per-action permission flags (tracker "Content & LMS Architecture" row 5 / Decision #37).
+// Separate from /menu-rights on purpose: that endpoint returns WHICH MENUS EXIST
+// (a GROUP_CONCAT of menu ids) and is consumed by every module's sidebar, so it cannot
+// answer "may this user create content?" and must not change shape.
+// Advisory only - the authoritative check is the `perm:` middleware on the write route.
+Route::middleware('lms.auth')->get('/permissions', [App\Http\Controllers\api\PermissionsController::class, 'index']);
+
 // Fees-only: the seven category tabs on the dedicated Fees page. Presentation
 // grouping over the module's existing menus — see FeesMenuCategoryApiController.
 // check_permissions reads session()->get('user_profile_id'/'sub_institute_id'/'user_id'),
@@ -159,9 +166,22 @@ Route::post('lms-question-bank/update', [ApiLmsCourseController::class, 'updateQ
 Route::post('lms-question-bank/delete', [ApiLmsCourseController::class, 'deleteQuestionBank']);
 Route::get('question-mapping-levels', [ApiLmsCourseController::class, 'getQuestionMappingLevels']);
 Route::post('lms-chapters/store', [ApiLmsCourseController::class, 'storeChapter']);
-Route::post('lms-create-content', [ApiLmsCourseController::class, 'createContent']);
-Route::post('lms-store-content', [ApiLmsCourseController::class, 'storeContent']);
-Route::post('lms-chapter-content/upload', [ApiLmsCourseController::class, 'uploadContent']);
+Route::post('lms-create-content', [ApiLmsCourseController::class, 'createContent'])->middleware(['lms.auth', 'perm:lms.content,create']);
+Route::post('lms-store-content', [ApiLmsCourseController::class, 'storeContent'])->middleware(['lms.auth', 'perm:lms.content,create']);
+Route::post('lms-chapter-content/upload', [ApiLmsCourseController::class, 'uploadContent'])->middleware(['lms.auth', 'perm:lms.content,create']);
+
+// ONE shared content-authoring capability (tracker row 3 / Decision #36): Generate + Upload,
+// reused across Classroom Resource, Teacher Workspace and Question Bank via a content-type
+// parameter, instead of three separately-built creation flows.
+//
+// The three legacy authoring routes stay LIVE - the Blade UI and shipped mobile clients
+// depend on them. This is an additional front door (strangler step 1), not a replacement.
+// Note: the three content-write routes above did gain ['lms.auth','perm:...'] in the same
+// change; their URLs, request fields and response bodies are unchanged, but they are no
+// longer anonymous once LMS_API_AUTH_ENFORCE is turned on.
+// See docs/decisions/2026-09-08-consolidated-content-authoring.md.
+Route::middleware(['lms.auth'])->get('lms/content/authoring-vocabulary', [\App\Http\Controllers\api\lms\ContentAuthoringController::class, 'vocabulary']);
+Route::middleware(['lms.auth', 'perm:lms.content,create'])->post('lms/content/author', [\App\Http\Controllers\api\lms\ContentAuthoringController::class, 'store']);
 Route::post('lms-content-mapping-values', [ApiLmsCourseController::class, 'getContentMappingValues']);
 Route::post('lms-store-subject', [ApiLmsCourseController::class, 'storeSubject']);
 Route::post('lms/gamma-content-master', [\App\Http\Controllers\lms\contentController::class, 'storeGammaContent']);
@@ -454,6 +474,14 @@ Route::middleware(['api.session', 'staff.only', 'throttle.qgen'])->group(functio
 Route::get('semantic-intelligence', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'index']);
 Route::get('semantic-intelligence/{extraction_id}/result', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'show']);
 Route::get('semantic-intelligence/rows', [\App\Http\Controllers\api\lms\SemanticIntelligenceApiController::class, 'rows']);
+
+// Concept Intelligence index (tracker "Content & LMS Architecture" row 6 follow-on).
+// Read-only projection of the semantic_intelligence blobs, so consumers query a stable
+// contract instead of parsing full_intelegance_json themselves. Rebuilt by
+// `php artisan lms:project-concept-intelligence`. See
+// docs/decisions/2026-09-07-concept-intelligence-evidence-store.md.
+Route::get('lms/concept-intelligence/lookup', [\App\Http\Controllers\api\lms\ConceptIntelligenceIndexController::class, 'lookup']);
+Route::get('lms/concept-intelligence/{chapterId}/index', [\App\Http\Controllers\api\lms\ConceptIntelligenceIndexController::class, 'show'])->where('chapterId', '[0-9]+');
 
 // Concept Intelligence tab names - renamed per institute, defaults in
 // config/lms_concept_intelligence_tabs.php

@@ -12,12 +12,12 @@ class TeachersDirectoryTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'teachers.directory';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'List active teachers and other staff at this institute, with their profile and '
             . 'department. Filter by profile name to reach non-teaching staff.';
@@ -40,7 +40,7 @@ class TeachersDirectoryTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return ['risk' => 'read', 'required_permission' => 'staff.read'];
     }

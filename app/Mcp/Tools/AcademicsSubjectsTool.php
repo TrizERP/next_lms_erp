@@ -12,12 +12,12 @@ class AcademicsSubjectsTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'academics.subjects';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'List the subjects taught at this institute, optionally matching a search term. '
             . 'Use it to resolve a subject named in a question into the id other tools need.';
@@ -36,7 +36,7 @@ class AcademicsSubjectsTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return ['risk' => 'read', 'required_permission' => 'academics.read'];
     }

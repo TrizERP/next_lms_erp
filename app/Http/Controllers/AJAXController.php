@@ -2549,7 +2549,26 @@ foreach ($previous_standard as $item) {
         }else{
             $message = array($request->message);            
         }
+        // Tracker Decision #10 (credential rotation), 2026-09-08.
+        //
+        // This line previously held a live OpenAI key as a literal, plus a second,
+        // older key in a trailing comment. Both are in git history, so removing them
+        // from the file does NOT revoke them - only rotation at the OpenAI account
+        // does. See docs/decisions/2026-09-08-credential-remediation.md.
+        //
+        // Verified before the swap: env('OPENAI_API_KEY') already resolved to the
+        // byte-identical value, so this is a no-op at runtime here. It is NOT a no-op
+        // on a server where the variable is unset - hence the explicit guard below
+        // rather than sending an unauthenticated request and surfacing a confusing
+        // provider error.
         $apiKey = env('OPENAI_API_KEY');
+
+        if (empty($apiKey)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'OPENAI_API_KEY is not configured on this server.',
+            ], 500);
+        }
         // echo "<pre>";print_r('API');exit;
         $endpoint = "https://api.openai.com/v1/chat/completions";
 
