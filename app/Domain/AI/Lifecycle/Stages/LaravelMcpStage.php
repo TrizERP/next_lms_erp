@@ -61,7 +61,11 @@ class LaravelMcpStage implements LifecycleStage
         // silently took the student-resolution path and never made them.
         match ($plan->route) {
             'admissions_flow' => $this->runAdmissionsFlow($context),
-            'mcp_tools' => $this->runPlannedSteps($context),
+            // The selection route names its own call and its own argument — the id came
+            // from a row the previous answer printed, so there is no subject left to
+            // resolve and running the student resolver here would search for a name
+            // nobody typed.
+            'mcp_tools', 'selected_record' => $this->runPlannedSteps($context),
             default => $plan->source === Plan::SOURCE_LLM
                 ? $this->runPlannedSteps($context)
                 : $this->resolveSubject($context),
@@ -179,10 +183,62 @@ class LaravelMcpStage implements LifecycleStage
         }
 
         if (count($matches) > 1) {
+            $narrowed = $this->narrowToPreviousList($context, $matches);
+
+            if (count($narrowed) === 1) {
+                $context->set('resolved_student', $narrowed[0]);
+
+                return;
+            }
+
             // Ambiguity is a real finding, not an error. The reasoning stage turns this
             // into a question back to the user rather than picking one at random.
             $context->set('ambiguous_students', $matches);
         }
+    }
+
+    /**
+     * Prefer the student this conversation has already named.
+     *
+     * A directory can hold several people with one name — two students called "Abhi" is
+     * not a data problem, it is a school. But when the previous answer listed one of
+     * them and the user replies "why is Abhi D. Raval at risk?", they are not asking an
+     * ambiguous question: they are pointing at a row that is on their screen. Treating
+     * that as a collision asks them to disambiguate a name the assistant itself chose
+     * to print, which reads as the assistant forgetting its own last sentence.
+     *
+     * Only the ids from that list are used, so this narrows the answer without widening
+     * the search: a student who was never listed cannot be selected by it. If narrowing
+     * leaves nothing, or still leaves more than one, the collision is real and the
+     * question goes back to the user unchanged.
+     *
+     * @param  array<int, array<string, mixed>>  $matches
+     * @return array<int, array<string, mixed>>
+     */
+    private function narrowToPreviousList(StageContext $context, array $matches): array
+    {
+        $listed = $context->thread['memory']['last_case_list'] ?? null;
+
+        if (! is_array($listed) || $listed === []) {
+            return $matches;
+        }
+
+        $ids = array_values(array_filter(array_map(
+            static fn ($row) => is_array($row) ? (int) ($row['student_id'] ?? 0) : 0,
+            $listed
+        )));
+
+        if ($ids === []) {
+            return $matches;
+        }
+
+        $narrowed = array_values(array_filter($matches, static function (array $match) use ($ids) {
+            $id = (int) ($match['student_id'] ?? $match['id'] ?? 0);
+
+            return $id > 0 && in_array($id, $ids, true);
+        }));
+
+        return $narrowed === [] ? $matches : $narrowed;
     }
 
     // ---------------------------------------------------------------- report

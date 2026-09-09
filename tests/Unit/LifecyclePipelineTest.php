@@ -15,6 +15,7 @@ use App\Domain\AI\Lifecycle\StageContext;
 use App\Domain\AI\Lifecycle\StageKey;
 use App\Domain\AI\Lifecycle\StageOutcome;
 use App\Domain\AI\Lifecycle\StageStatus;
+use App\Domain\AI\Lifecycle\Support\RecordDetail;
 use App\Services\Mcp\McpRequestContext;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
@@ -240,7 +241,7 @@ class LifecyclePipelineTest extends TestCase
         $context = $this->context();
         $context->intent = new Intent('student_risk_scan', 'Find students at risk', 0.91);
 
-        $plan = (new DeterministicPlanner())->plan($context);
+        $plan = (new DeterministicPlanner($this->recordDetail()))->plan($context);
 
         $this->assertInstanceOf(Plan::class, $plan);
         $this->assertSame(Plan::SOURCE_DETERMINISTIC, $plan->source);
@@ -254,7 +255,7 @@ class LifecyclePipelineTest extends TestCase
         $context = $this->context();
         $context->intent = Intent::unknown();
 
-        $this->assertNull((new DeterministicPlanner())->plan($context));
+        $this->assertNull((new DeterministicPlanner($this->recordDetail()))->plan($context));
     }
 
     public function test_a_plan_only_proposes_tools_the_module_is_bound_to(): void
@@ -271,7 +272,7 @@ class LifecyclePipelineTest extends TestCase
 
         $context->intent = new Intent('student_risk_explain', 'Explain', 0.9, ['student_name' => 'Ravi']);
 
-        $plan = (new DeterministicPlanner())->plan($context);
+        $plan = (new DeterministicPlanner($this->recordDetail()))->plan($context);
 
         $this->assertSame([], $plan->candidateTools);
         $this->assertSame('domain_services_only', $plan->toolSelectionStrategy);
@@ -297,7 +298,7 @@ class LifecyclePipelineTest extends TestCase
             }
         };
 
-        $planner = new HybridPlanner(new DeterministicPlanner(), $llm);
+        $planner = new HybridPlanner(new DeterministicPlanner($this->recordDetail()), $llm);
 
         $context = $this->context();
         $context->intent = Intent::unknown();
@@ -324,7 +325,7 @@ class LifecyclePipelineTest extends TestCase
             }
         };
 
-        $planner = new HybridPlanner(new DeterministicPlanner(), $llm);
+        $planner = new HybridPlanner(new DeterministicPlanner($this->recordDetail()), $llm);
         $planner->plan($this->contextAsking('Which students have the lowest attendance this term?'));
 
         $this->assertTrue($llm->called);
@@ -412,6 +413,20 @@ class LifecyclePipelineTest extends TestCase
                 return $this->outcome ?? StageOutcome::ran('ran');
             }
         };
+    }
+
+    /**
+     * A record lookup that finds nothing.
+     *
+     * Doubled rather than resolved: this case extends PHPUnit's TestCase, so there is no
+     * container to build a ToolRegistry from — and none of the plans asserted below are
+     * selections, so the only thing that matters is that the planner has a collaborator
+     * to hold. A lookup returning null is also the honest default: a module that binds no
+     * detail tool answers a selection from the row it already showed.
+     */
+    private function recordDetail(): RecordDetail
+    {
+        return $this->createMock(RecordDetail::class);
     }
 
     private function throwingStage(StageKey $key): LifecycleStage
