@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Brain;
 
 use App\Brain\Ingestion\FoundationIngestor;
 use App\Brain\Screens\ScreenRegistry;
+use App\Brain\Support\LmsQueryScope;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,6 +15,32 @@ use Illuminate\Support\Facades\Validator;
 
 class BrainController extends Controller
 {
+    /**
+     * The one definition of "an active department / person / student".
+     *
+     * This controller used to re-derive those filters inline, and drifted: the
+     * departments screen counted staff with `status = 1` while the people screen
+     * counted every joined user, so the same institute reported two different
+     * headcounts on two adjacent screens. Everything LMS-shaped now goes through
+     * the trait, which is also what the intelligence pipeline uses.
+     */
+    use LmsQueryScope;
+
+    /** Set by tenant(); the trait reads it. */
+    protected string $tenantId = '';
+
+    /**
+     * The staff columns every People-shaped payload returns.
+     *
+     * Table-qualified because lmsPeople() joins tbluserprofilemaster, which also
+     * carries id / name / status / sub_institute_id.
+     */
+    private const PEOPLE_COLUMNS = [
+        'tbluser.id', 'tbluser.first_name', 'tbluser.last_name', 'tbluser.email',
+        'tbluser.mobile', 'tbluser.gender', 'tbluser.employee_no', 'tbluser.department_id',
+        'tbluser.occupation', 'tbluser.status', 'tbluser.user_profile_id',
+    ];
+
     /* --------------------------------------------------------------- session */
 
     public function access(Request $request): JsonResponse
@@ -54,9 +81,9 @@ class BrainController extends Controller
             'tenantId' => $tenant,
             'organization' => $this->organization($tenant),
             'foundation' => [
-                'departments' => $this->countLms('hrms_departments', $tenant),
-                'people' => $this->countLms('tbluser', $tenant),
-                'students' => $this->countLms('tblstudent', $tenant),
+                'departments' => $this->lmsCount('hrms_departments'),
+                'people' => $this->lmsCount('tbluser'),
+                'students' => $this->lmsCount('tblstudent'),
                 'skills' => $this->countLms('s_users_skills', $tenant),
                 'competencies' => $this->countLms('competency', $tenant),
             ],
@@ -109,11 +136,29 @@ class BrainController extends Controller
     {
         $tenant = $this->tenant($request);
 
+        $peopleRows = [];
+        if (SchemaCache::hasTable('tbluser')) {
+            $peopleRows = $this->lmsPeople()
+                ->limit(100)
+                ->get(self::PEOPLE_COLUMNS)
+                ->map(fn ($row) => (array) $row)
+                ->all();
+        }
+
         return response()->json([
             'organization' => $this->organization($tenant),
-            'departments' => $this->lmsRows('hrms_departments', $tenant, 100),
-            'people' => $this->lmsRows('tbluser', $tenant, 100),
-            'students' => $this->lmsRows('tblstudent', $tenant, 100),
+            'departments' => SchemaCache::hasTable('hrms_departments')
+                ? $this->lmsDepartments()->limit(100)->get()->map(fn ($row) => (array) $row)->all()
+                : [],
+            'people' => $peopleRows,
+            'students' => SchemaCache::hasTable('tblstudent')
+                ? $this->lmsStudents()->limit(100)->get()->map(fn ($row) => (array) $row)->all()
+                : [],
+            'counts' => [
+                'departments' => $this->lmsCount('hrms_departments'),
+                'people' => $this->lmsCount('tbluser'),
+                'students' => $this->lmsCount('tblstudent'),
+            ],
         ]);
     }
 
@@ -130,15 +175,12 @@ class BrainController extends Controller
         $rows = [];
         $total = 0;
         if (SchemaCache::hasTable('hrms_departments')) {
-            $query = DB::table('hrms_departments')->where('sub_institute_id', $tenant);
-            if (SchemaCache::hasColumn('hrms_departments', 'deleted_at')) {
-                $query->whereNull('deleted_at');
-            }
+            $query = $this->lmsDepartments();
             if ($search !== '') {
-                $query->where('department', 'like', '%'.$search.'%');
+                $query->where('hrms_departments.department', 'like', '%'.$search.'%');
             }
             $total = (int) (clone $query)->count();
-            $rows = $query->orderBy('department')->limit(300)->get()->map(fn ($r) => (array) $r)->all();
+            $rows = $query->orderBy('hrms_departments.department')->limit(300)->get()->map(fn ($r) => (array) $r)->all();
         }
 
         $headIds = array_values(array_filter(array_map(fn ($r) => $r['head_user_id'] ?? null, $rows)));
@@ -149,12 +191,16 @@ class BrainController extends Controller
             }
         }
 
+        // Headcount per department must be the SAME population the People screen
+        // shows, or a department's staff_count will not add up to the roster.
+        // This block previously added an unqualified `status = 1` on top of the
+        // profile-master join, which both narrowed the population and left
+        // `status` / `sub_institute_id` ambiguous once the join was applied.
         $staffByDepartment = [];
         if (SchemaCache::hasTable('tbluser') && SchemaCache::hasColumn('tbluser', 'department_id')) {
-            $staffByDepartment = DB::table('tbluser')
-                ->where('sub_institute_id', $tenant)
-                ->select('department_id', DB::raw('COUNT(*) as aggregate'))
-                ->groupBy('department_id')
+            $staffByDepartment = $this->lmsPeople()
+                ->select('tbluser.department_id', DB::raw('COUNT(*) as aggregate'))
+                ->groupBy('tbluser.department_id')
                 ->pluck('aggregate', 'department_id')
                 ->all();
         }
@@ -180,30 +226,27 @@ class BrainController extends Controller
             return response()->json(['total' => 0, 'data' => [], 'available' => false]);
         }
 
-        $query = DB::table('tbluser')->where('sub_institute_id', $tenant);
+        $query = $this->lmsPeople();
         if ($search !== '') {
             $like = '%'.$search.'%';
             $query->where(function ($inner) use ($like) {
-                $inner->where('first_name', 'like', $like)
-                    ->orWhere('last_name', 'like', $like)
-                    ->orWhere('email', 'like', $like)
-                    ->orWhere('employee_no', 'like', $like);
+                $inner->where('tbluser.first_name', 'like', $like)
+                    ->orWhere('tbluser.last_name', 'like', $like)
+                    ->orWhere('tbluser.email', 'like', $like)
+                    ->orWhere('tbluser.employee_no', 'like', $like);
             });
         }
 
         $total = (int) (clone $query)->count();
-        $rows = $query->orderBy('first_name')
+        $rows = $query->orderBy('tbluser.first_name')
             ->limit(300)
-            ->get(['id', 'first_name', 'last_name', 'email', 'mobile', 'gender', 'employee_no', 'department_id', 'occupation', 'status', 'user_profile_id'])
+            ->get(self::PEOPLE_COLUMNS)
             ->map(fn ($r) => (array) $r)
             ->all();
 
         $departments = [];
         if (SchemaCache::hasTable('hrms_departments')) {
-            $departments = DB::table('hrms_departments')
-                ->where('sub_institute_id', $tenant)
-                ->pluck('department', 'id')
-                ->all();
+            $departments = $this->lmsDepartments()->pluck('department', 'id')->all();
         }
 
         $incomplete = 0;
@@ -447,20 +490,27 @@ class BrainController extends Controller
     }
 
     /** Who a capability can be assigned to: this tenant's own departments and people. */
-    private function assignableTargets(string $tenant): array
+     private function assignableTargets(string $tenant): array
     {
         $departments = SchemaCache::hasTable('hrms_departments')
             ? DB::table('hrms_departments')->where('sub_institute_id', $tenant)
-                ->when(SchemaCache::hasColumn('hrms_departments', 'deleted_at'), fn ($q) => $q->whereNull('deleted_at'))
+                ->when(SchemaCache::hasColumn('hrms_departments', 'status'), fn ($q) => $q->where('status', 1))
                 ->orderBy('department')->limit(500)->get(['id', 'department'])
                 ->map(fn ($r) => ['id' => (string) $r->id, 'label' => (string) $r->department])->all()
             : [];
 
-        $people = SchemaCache::hasTable('tbluser')
-            ? DB::table('tbluser')->where('sub_institute_id', $tenant)->orderBy('first_name')->limit(500)
+        $people = [];
+        if (SchemaCache::hasTable('tbluser') && SchemaCache::hasTable('tbluserprofilemaster')) {
+            $people = DB::table('tbluser')
+                ->join('tbluserprofilemaster', 'tbluser.user_profile_id', '=', 'tbluserprofilemaster.id')
+                ->where('tbluser.sub_institute_id', $tenant)->orderBy('tbluser.first_name')->limit(500)
+                ->get(['tbluser.id', 'tbluser.first_name', 'tbluser.last_name'])
+                ->map(fn ($r) => ['id' => (string) $r->id, 'label' => trim($r->first_name.' '.$r->last_name) ?: 'User '.$r->id])->all();
+        } elseif (SchemaCache::hasTable('tbluser')) {
+            $people = DB::table('tbluser')->where('sub_institute_id', $tenant)->orderBy('first_name')->limit(500)
                 ->get(['id', 'first_name', 'last_name'])
-                ->map(fn ($r) => ['id' => (string) $r->id, 'label' => trim($r->first_name.' '.$r->last_name) ?: 'User '.$r->id])->all()
-            : [];
+                ->map(fn ($r) => ['id' => (string) $r->id, 'label' => trim($r->first_name.' '.$r->last_name) ?: 'User '.$r->id])->all();
+        }
 
         return ['department' => $departments, 'person' => $people];
     }
@@ -468,12 +518,21 @@ class BrainController extends Controller
     private function labelTargets(string $tenant, array $assignments): array
     {
         $departments = SchemaCache::hasTable('hrms_departments')
-            ? DB::table('hrms_departments')->where('sub_institute_id', $tenant)->pluck('department', 'id')->all()
+            ? DB::table('hrms_departments')->where('sub_institute_id', $tenant)
+                ->when(SchemaCache::hasColumn('hrms_departments', 'status'), fn ($q) => $q->where('status', 1))
+                ->pluck('department', 'id')->all()
             : [];
-        $people = SchemaCache::hasTable('tbluser')
-            ? DB::table('tbluser')->where('sub_institute_id', $tenant)->select('id', 'first_name', 'last_name')->get()
-                ->mapWithKeys(fn ($r) => [(string) $r->id => trim($r->first_name.' '.$r->last_name)])->all()
-            : [];
+        $people = [];
+        if (SchemaCache::hasTable('tbluser') && SchemaCache::hasTable('tbluserprofilemaster')) {
+            $people = DB::table('tbluser')
+                ->join('tbluserprofilemaster', 'tbluser.user_profile_id', '=', 'tbluserprofilemaster.id')
+                ->where('tbluser.sub_institute_id', $tenant)
+                ->select('tbluser.id', 'tbluser.first_name', 'tbluser.last_name')->get()
+                ->mapWithKeys(fn ($r) => [(string) $r->id => trim($r->first_name.' '.$r->last_name)])->all();
+        } elseif (SchemaCache::hasTable('tbluser')) {
+            $people = DB::table('tbluser')->where('sub_institute_id', $tenant)->select('id', 'first_name', 'last_name')->get()
+                ->mapWithKeys(fn ($r) => [(string) $r->id => trim($r->first_name.' '.$r->last_name)])->all();
+        }
 
         return array_map(function ($assignment) use ($departments, $people) {
             $type = strtolower((string) ($assignment['target_type'] ?? ''));
@@ -631,9 +690,16 @@ class BrainController extends Controller
             if ($available) {
                 $query = DB::table($table)->where('tenant_id', $tenant);
                 foreach ($metric['where'] ?? [] as $column => $expected) {
-                    if (SchemaCache::hasColumn($table, $column)) {
-                        $query->where($column, $expected);
+                    if (! SchemaCache::hasColumn($table, $column)) {
+                        continue;
                     }
+                    // A metric like "open signals" spans several stored statuses
+                    // ('new' before reasoning, 'reasoned' after), so an array
+                    // means whereIn. Collapsing that to a single equality is what
+                    // made these tiles read 0 while the table plainly had rows.
+                    is_array($expected)
+                        ? $query->whereIn($column, $expected)
+                        : $query->where($column, $expected);
                 }
                 $value = (int) $query->count();
             }
@@ -926,7 +992,10 @@ class BrainController extends Controller
 
     private function tenant(Request $request): string
     {
-        return (string) $request->attributes->get('tenantId', $request->attributes->get('auth.tenantId'));
+        return $this->tenantId = (string) $request->attributes->get(
+            'tenantId',
+            $request->attributes->get('auth.tenantId')
+        );
     }
 
     private function listInput(Request $request, string $field): array
@@ -968,13 +1037,18 @@ class BrainController extends Controller
         return (int) DB::table($table)->where('tenant_id', $tenant)->count();
     }
 
-    private function countLms(string $table, string $tenant): int
+    private function countLms(string $table, string $tenant, ?int $status = null): int
     {
         if (! SchemaCache::hasTable($table) || ! SchemaCache::hasColumn($table, 'sub_institute_id')) {
             return 0;
         }
 
-        return (int) DB::table($table)->where('sub_institute_id', $tenant)->count();
+        $query = DB::table($table)->where('sub_institute_id', $tenant);
+        if ($status !== null && SchemaCache::hasColumn($table, 'status')) {
+            $query->where('status', $status);
+        }
+
+        return (int) $query->count();
     }
 
     private function organization(string $tenant): array
@@ -1004,13 +1078,18 @@ class BrainController extends Controller
         ];
     }
 
-    private function lmsRows(string $table, string $tenant, int $limit): array
+    private function lmsRows(string $table, string $tenant, int $limit, ?int $status = null): array
     {
         if (! SchemaCache::hasTable($table) || ! SchemaCache::hasColumn($table, 'sub_institute_id')) {
             return [];
         }
 
-        return DB::table($table)->where('sub_institute_id', $tenant)->limit($limit)->get()->map(fn ($row) => (array) $row)->all();
+        $query = DB::table($table)->where('sub_institute_id', $tenant);
+        if ($status !== null && SchemaCache::hasColumn($table, 'status')) {
+            $query->where('status', $status);
+        }
+
+        return $query->limit($limit)->get()->map(fn ($row) => (array) $row)->all();
     }
 
     private function rows(string $table, string $tenant, array $where, int $limit): array

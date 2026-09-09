@@ -4,8 +4,10 @@ namespace App\Domain\AI\Lifecycle;
 
 use App\Domain\AI\Conversation\AnswerComposer;
 use App\Domain\AI\Conversation\ConversationStore;
+use App\Domain\AI\Conversation\GeneralAnswerService;
 use App\Domain\AI\Conversation\Intent;
 use App\Domain\AI\Lifecycle\Modules\ModuleResolver;
+use App\Domain\AI\Workspace\ModuleSuggestions;
 use App\Services\Mcp\McpRequestContext;
 
 /**
@@ -34,6 +36,8 @@ class LifecycleAskService
         private readonly LifecyclePipeline $pipeline,
         private readonly ConversationStore $conversations,
         private readonly AnswerComposer $compose,
+        private readonly GeneralAnswerService $general,
+        private readonly ModuleSuggestions $suggestions,
     ) {
     }
 
@@ -49,9 +53,17 @@ class LifecycleAskService
         string $question,
         McpRequestContext $scope,
         ?int $conversationId = null,
-        array $options = []
+        array $options = [],
+        ?callable $onStage = null,
+        ?callable $onToken = null
     ): array {
         $startedAt = microtime(true);
+
+        $threadModule = $this->conversations->moduleHint($conversationId, $scope);
+
+        if ($threadModule !== null && ! isset($options['conversation_module'])) {
+            $options['conversation_module'] = $threadModule;
+        }
 
         $resolution = $this->modules->resolve($question, $options, $scope->selectedInstituteId);
 
@@ -66,9 +78,9 @@ class LifecycleAskService
         $context->set('module_source', $resolution['source']);
         $context->set('modules_considered', $resolution['considered']);
 
-        $trace = $this->pipeline->run($context);
+        $trace = $this->pipeline->run($context, $onStage);
 
-        $answer = $this->composeAnswer($context, $trace);
+        $answer = $this->composeAnswer($context, $trace, $onToken);
         $intent = $context->intent ?? Intent::unknown();
         $durationMs = (int) round((microtime(true) - $startedAt) * 1000);
 
@@ -116,6 +128,9 @@ class LifecycleAskService
             'lifecycle_stage_counts' => $counts,
             'module' => $resolution['module']->toArray() + ['resolved_by' => $resolution['source']],
             'depth_reached' => $trace->depthReached(),
+            // stages | general | fallback — see composeAnswer(). The audit reads this to
+            // tell an answer from a refusal, which stage counts alone cannot.
+            'answer_source' => $context->get('answer_source', 'stages'),
             'links' => $links,
             'duration_ms' => $durationMs,
         ];
@@ -164,12 +179,38 @@ class LifecycleAskService
      *
      * @return array<string, mixed>
      */
-    private function composeAnswer(StageContext $context, LifecycleTrace $trace): array
+    private function composeAnswer(StageContext $context, LifecycleTrace $trace, ?callable $onToken = null): array
     {
         $headline = $context->headline();
         $sections = $context->sections();
+        $followUps = $context->followUps();
+
+        // Where the answer came from, recorded rather than inferred. The audit trail has
+        // to tell a refusal from a general answer, and both leave planning blocked —
+        // guessing from stage counts marks "what is the capital of Australia" as refused
+        // when it was answered perfectly well.
+        $context->set('answer_source', 'stages');
 
         if ($headline === null) {
+            // Before falling back to "nothing to report", see whether this was simply
+            // not an ERP question. general() returns null for anything that was refused
+            // or that the estate should have answered, so a real refusal keeps its own
+            // message rather than being smoothed over by a model.
+            $general = $this->general($context, $trace, $onToken);
+
+            if ($general !== null) {
+                $context->set('answer_source', 'general');
+
+                return $this->compose->make(
+                    $general['answer'],
+                    array_merge($sections, array_filter([$this->generalProvenance()])),
+                    $context->actions(),
+                    $followUps === [] ? $general['follow_ups'] : $followUps
+                );
+            }
+
+            $context->set('answer_source', 'fallback');
+
             [$headline, $fallbackSection] = $this->fallback($context, $trace);
 
             if ($fallbackSection !== null) {
@@ -177,13 +218,126 @@ class LifecycleAskService
             }
         }
 
-        $followUps = $context->followUps();
-
         if ($followUps === []) {
-            $followUps = ['Which students are at academic risk?', 'What has the system learned?'];
+            // What to ask next comes from the module the turn was answered in, read from
+            // `ai_suggestions`. This used to be two sentences about academic risk offered
+            // after every turn in the estate, which on a fees screen invited someone
+            // looking at unpaid invoices to go and read about struggling students.
+            //
+            // No suggestion is better than a wrong one: a module nobody has curated
+            // returns nothing, and the answer simply carries no chips.
+            $followUps = $this->suggestions->forModule(
+                $context->module->key,
+                $context->scope,
+                array_map(static fn (array $action) => (string) ($action['utterance'] ?? ''), $context->actions())
+            );
         }
 
         return $this->compose->make($headline, $sections, $context->actions(), $followUps);
+    }
+
+    /**
+     * A general answer, when and only when this was not an ERP question.
+     *
+     * The dangerous version of this feature answers "how many students are in 8B?" from a
+     * language model. Three conditions keep that from happening, and all three must hold:
+     *
+     *   1. **The module binds no tools.** A question that reached `general` had no lookup
+     *      available to it in the first place, so there is no ERP answer being displaced.
+     *      A fees question routes to the fees module, which binds tools, and never gets
+     *      here however badly it went.
+     *   2. **Only planning blocked.** Planning refusing with "not scoped to a module and
+     *      matched no registered intent" *is* the signature of a non-ERP question. A
+     *      block anywhere else — no permission, tool not bound, provider down — has a
+     *      reason the user is owed, and hiding it behind a plausible sentence would turn
+     *      a permissions failure into a wrong answer.
+     *   3. **No tool returned data.** A completed call means the estate answered; if that
+     *      answer was "no rows", saying so is correct and a model must not improve on it.
+     *   4. **No case, no records, no sections.** Anything the lifecycle actually built is
+     *      a real answer, whether or not a stage set a headline.
+     *
+     * What survives all four is a turn that had nothing to look up and refused nothing —
+     * which is what small talk, arithmetic and general knowledge look like from in here.
+     * The service's own prompt is the second line of defence: asked a school question
+     * that simply failed to classify, it says it cannot see the records rather than
+     * inventing a number.
+     *
+     * @return array{answer:string, follow_ups:array<int, string>}|null
+     */
+    private function general(StageContext $context, LifecycleTrace $trace, ?callable $onToken = null): ?array
+    {
+        if (! $this->general->isAvailable() || $context->module->mcpTools !== []) {
+            return null;
+        }
+
+        foreach (StageKey::inExecutionOrder() as $key) {
+            if ($key === StageKey::Planning) {
+                continue;
+            }
+
+            if ($trace->outcomeOf($key)->status === StageStatus::Blocked) {
+                return null;
+            }
+        }
+
+        foreach ($context->toolCalls() as $call) {
+            if (($call['status'] ?? null) === 'completed' || ($call['count'] ?? 0) > 0) {
+                return null;
+            }
+        }
+
+        if ($context->cases !== [] || $context->sections() !== []) {
+            return null;
+        }
+
+        return $this->general->answer($context->question, $this->historyFor($context), $onToken);
+    }
+
+    /**
+     * Prior turns of this thread, so a general follow-up keeps its subject.
+     *
+     * @return array<int, array{role:string, content:string}>
+     */
+    private function historyFor(StageContext $context): array
+    {
+        $turns = $context->thread['recent_turns'] ?? null;
+
+        if (! is_array($turns)) {
+            return [];
+        }
+
+        $history = [];
+
+        foreach ($turns as $turn) {
+            if (is_array($turn) && isset($turn['question'])) {
+                $history[] = ['role' => 'user', 'content' => (string) $turn['question']];
+            }
+
+            if (is_array($turn) && isset($turn['answer'])) {
+                $history[] = ['role' => 'assistant', 'content' => (string) $turn['answer']];
+            }
+        }
+
+        return $history;
+    }
+
+    /**
+     * Say where a general answer came from.
+     *
+     * Without this the reply is indistinguishable from one built out of the institute's
+     * records, and the whole point of the trace beside it is that a reader can tell those
+     * apart. The frontend derives citations from the trace, which for this turn correctly
+     * shows no data stage produced anything — this section is what explains why.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function generalProvenance(): ?array
+    {
+        return $this->compose->text(
+            'Source',
+            'Answered from general knowledge, not from this institute\'s records. No student, '
+            . 'staff, fee or attendance data was read for this question.'
+        );
     }
 
     /**

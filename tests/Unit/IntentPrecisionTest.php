@@ -76,6 +76,7 @@ class IntentPrecisionTest extends TestCase
             ['Approve the recommendation.', 'approve_recommendation'],
             ['Reject it.', 'reject_recommendation'],
             ['What happened after approval?', 'workflow_status'],
+            ['Show me the activities assigned to him.', 'workflow_status'],
             ['Did the intervention work?', 'outcome_status'],
             ['What has the system learned?', 'learning_effectiveness'],
             ['Confirm the admission for enquiry 21', 'admission_confirm'],

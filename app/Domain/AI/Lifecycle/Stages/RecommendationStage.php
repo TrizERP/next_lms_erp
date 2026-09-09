@@ -44,6 +44,23 @@ class RecommendationStage implements LifecycleStage
             return StageOutcome::notReached($module->whyNoDepth());
         }
 
+        // A scan can return several students. A recommendation is consequential, so it
+        // must be bound to the student the user explicitly selected rather than to the
+        // agent's first ranked row. The per-student action from ReasoningStage starts
+        // the existing single-case path on the next turn.
+        if ($context->intent?->key === 'student_risk_scan' && count($context->cases) > 1) {
+            return StageOutcome::skipped(
+                'The scan returned multiple cases, so no single recommendation was selected for approval.',
+                [
+                    'case_ids' => array_values(array_filter(array_map(
+                        static fn (array $case) => $case['case_id'] ?? $case['id'] ?? null,
+                        $context->cases
+                    ))),
+                    'rule' => 'A recommendation is shown only after a person selects one student from the ranked result.',
+                ]
+            );
+        }
+
         $resolved = $this->caseResolver->resolve($context);
 
         if ($resolved === null) {
@@ -66,17 +83,31 @@ class RecommendationStage implements LifecycleStage
             );
         }
 
-        $pending = $this->firstPending($drafted);
+        $active = array_values(array_filter(
+            $drafted,
+            static fn (array $row) => in_array(($row['status'] ?? ''), ['approved', 'executed'], true)
+        ));
+        $pending = $active === [] ? $this->firstPending($drafted) : null;
         $context->pendingRecommendation = $pending;
-        $target = $pending ?? $drafted[0];
+        $target = $active[0] ?? $pending ?? $drafted[0];
 
         // The action stage needs this to tell two very different silences apart: a case
         // with nothing approved has simply not reached stage 12, while a case with an
         // approval and no workflow run behind it is a genuine fault worth alarming about.
         $context->set('approved_recommendations', array_values(array_filter(
             $drafted,
-            static fn (array $row) => ($row['status'] ?? '') === 'approved'
+            static fn (array $row) => in_array(($row['status'] ?? ''), ['approved', 'executed'], true)
         )));
+
+        if (in_array($context->intent?->key, ['workflow_status', 'outcome_status'], true)) {
+            $context->link(['recommendation_id' => $target['id'] ?? null]);
+
+            return StageOutcome::ran(
+                'Read the recommendation state needed to verify the existing workflow; no new recommendation was drafted.',
+                ['recommendation_id' => $target['id'] ?? null, 'status' => $target['status'] ?? null],
+                ['table' => 'ai_recommendations', 'ids' => array_filter([$target['id'] ?? null])]
+            );
+        }
 
         $this->describe($context, $target, $pending !== null);
 
@@ -147,6 +178,25 @@ class RecommendationStage implements LifecycleStage
         ])));
 
         if (! $isPending) {
+            $status = (string) ($target['status'] ?? '');
+
+            if (in_array($status, ['approved', 'executed'], true)) {
+                $context->addSection($this->compose->text(
+                    'Action status',
+                    'This recommendation has already been approved and is no longer eligible for a second approval.'
+                ));
+                $context->addAction($this->compose->action(
+                    'view_intervention_progress',
+                    'View intervention progress',
+                    'workflow_status',
+                    [
+                        'case_id' => $target['case_id'] ?? null,
+                        'student_id' => $target['subject_id'] ?? null,
+                        'utterance' => 'What happened after approval?',
+                    ]
+                ));
+            }
+
             return;
         }
 

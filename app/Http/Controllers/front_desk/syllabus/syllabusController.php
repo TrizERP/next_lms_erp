@@ -303,7 +303,19 @@ class syllabusController extends Controller
             }
         }
         // echo "<pre>";print_r($prompt);exit;
-        $apiKey ='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'; //'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';
+        // Tracker Decision #10 (credential rotation), 2026-09-08. A live OpenAI key
+        // was hardcoded here. It is in git history, so removing it does NOT revoke it
+        // - rotation at the OpenAI account is the only fix. Verified before the swap:
+        // env('OPENAI_API_KEY') resolves to the byte-identical value.
+        // See docs/decisions/2026-09-08-credential-remediation.md.
+        $apiKey = env('OPENAI_API_KEY');
+
+        if (empty($apiKey)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'OPENAI_API_KEY is not configured on this server.',
+            ], 500);
+        }
         $endpoint = "https://api.openai.com/v1/chat/completions";
 
         $data = [

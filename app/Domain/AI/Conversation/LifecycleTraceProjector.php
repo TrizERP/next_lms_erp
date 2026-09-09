@@ -423,10 +423,10 @@ final class LifecycleTraceProjector
             'key' => 'laravel_mcp',
             'order' => 6,
             'layer' => 'Laravel MCP',
-            'component' => 'App\\Mcp\\ToolRegistry -> App\\Http\\Controllers\\Mcp\\ToolsCallController',
+            'component' => 'App\\Mcp\\Servers\\LmsMcpServer -> App\\Mcp\\ToolRegistry -> Laravel\\Mcp\\Server\\Tool',
             'surface' => 'MCP tool audit and resulting data-backed answer',
             'records' => [],
-            'verify' => ['api' => 'POST /api/mcp/tools/call'],
+            'verify' => ['api' => 'POST /api/mcp (JSON-RPC tools/call)'],
             'duration_ms' => null,
         ];
 

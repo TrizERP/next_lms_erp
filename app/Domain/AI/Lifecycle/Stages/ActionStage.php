@@ -7,6 +7,8 @@ use App\Domain\AI\Lifecycle\LifecycleStage;
 use App\Domain\AI\Lifecycle\StageContext;
 use App\Domain\AI\Lifecycle\StageKey;
 use App\Domain\AI\Lifecycle\StageOutcome;
+use App\Domain\AI\Outcomes\OutcomeTracker;
+use App\Domain\K12\AcademicRisk\AcademicRiskAgent;
 use App\Domain\Workflow\WorkflowEngine;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -34,6 +36,7 @@ class ActionStage implements LifecycleStage
     public function __construct(
         private readonly WorkflowEngine $workflows,
         private readonly AnswerComposer $compose,
+        private readonly OutcomeTracker $outcomes,
     ) {
     }
 
@@ -50,10 +53,14 @@ class ActionStage implements LifecycleStage
         $admissions = $context->get('admissions_flow');
 
         if (is_array($admissions)) {
-            return $this->admissionsAction($admissions);
+            return $this->admissionsAction($admissions, $context);
         }
 
         $module = $context->module;
+
+        if ($context->intent?->key === 'learning_effectiveness') {
+            return $this->readLearning($context);
+        }
 
         if (! $module->hasWorkflow()) {
             return StageOutcome::notReached($module->whyNoDepth());
@@ -82,6 +89,14 @@ class ActionStage implements LifecycleStage
             return $this->readStatus($context);
         }
 
+        if ($context->intent?->key === 'outcome_status') {
+            return $this->readOutcome($context);
+        }
+
+        if ($context->intent?->key === 'learning_effectiveness') {
+            return $this->readLearning($context);
+        }
+
         if ($context->pendingRecommendation !== null) {
             return StageOutcome::notReached(
                 'Waiting on the human decision above. This is the gate, not a gap — the agent is '
@@ -100,7 +115,7 @@ class ActionStage implements LifecycleStage
     /**
      * @param  array<string, mixed>  $flow
      */
-    private function admissionsAction(array $flow): StageOutcome
+    private function admissionsAction(array $flow, StageContext $context): StageOutcome
     {
         if ((string) ($flow['state'] ?? '') !== 'confirmed') {
             return StageOutcome::notReached(match ((string) ($flow['state'] ?? '')) {
@@ -116,6 +131,16 @@ class ActionStage implements LifecycleStage
 
         $data = is_array($flow['data'] ?? null) ? $flow['data'] : [];
         $studentId = $data['student_id'] ?? null;
+
+        // Linked, not merely reported, because a confirmed admission is the one turn that
+        // leaves the user somewhere to go next: the enrolment now exists and the module
+        // that owns it can open on that exact record. The outcome below describes what
+        // happened; these are the handles the panel needs to act on it, and only `links`
+        // travels with the answer.
+        $context->link([
+            'enquiry_id' => $flow['enquiry_id'] ?? null,
+            'student_id' => $studentId,
+        ]);
 
         return StageOutcome::ran(
             sprintf(
@@ -216,6 +241,177 @@ class ActionStage implements LifecycleStage
         return $this->reportRun($context, $runId);
     }
 
+    private function readOutcome(StageContext $context): StageOutcome
+    {
+        $resolved = $this->resolvedCase($context);
+
+        if ($resolved === null) {
+            return StageOutcome::notReached(
+                'I need a student or case before I can read the measured outcome.'
+            );
+        }
+
+        $caseId = (int) ($resolved['case']['case_id'] ?? $resolved['case']['id'] ?? 0);
+        $studentId = (int) $resolved['student_id'];
+        $studentName = (string) $resolved['student_name'];
+        $runId = $this->latestRunFor($context, $caseId);
+        $outcomes = $this->outcomes->forSubject('student', $studentId, $context->scope, 10);
+        $forCase = array_values(array_filter(
+            $outcomes,
+            static fn (array $row) => (int) ($row['case_id'] ?? 0) === $caseId
+        ));
+        $outcomes = $forCase !== [] ? $forCase : $outcomes;
+
+        if ($runId !== null) {
+            $status = $this->workflows->status($runId, $context->scope);
+
+            if ($status !== null) {
+                $context->addSection($this->compose->steps('Workflow progress', $this->plannedSteps($status)));
+                $this->reportCreatedIntervention($context, $runId, $status);
+                $context->link(['workflow_run_id' => $runId]);
+            }
+        }
+
+        if ($outcomes === []) {
+            $context->setHeadline('Nothing is being measured for ' . $studentName . ' yet.');
+            $context->addSection($this->compose->text(
+                'Why',
+                'An outcome is registered when a recommendation is approved: the recommendation names the '
+                . 'metric, the direction, and how long to wait before measuring.'
+            ));
+            $context->suggestFollowUp('What should the teacher do?');
+
+            return StageOutcome::notReached(
+                sprintf('No outcome row exists yet for case #%d.', $caseId),
+                ['case_id' => $caseId, 'student_id' => $studentId]
+            );
+        }
+
+        $rows = array_map(fn (array $row) => [
+            'label' => $row['metric_label'],
+            'before' => $row['baseline_value'],
+            'after' => $row['observed_value'],
+            'delta' => $row['delta'],
+            'target' => $row['target_value'],
+            'status' => $row['status'],
+            'measured_at' => $row['observed_at'],
+            'measure_after' => $row['measure_after'],
+        ], $outcomes);
+
+        $measured = array_values(array_filter($rows, static fn (array $row) => $row['after'] !== null));
+        $headline = $measured === []
+            ? sprintf('Too early to tell - the first measurement for %s is due %s.', $studentName, $rows[0]['measure_after'] ?? 'soon')
+            : sprintf(
+                '%s: %s went from %s to %s (%s).',
+                $studentName,
+                $measured[0]['label'],
+                $this->number($measured[0]['before']),
+                $this->number($measured[0]['after']),
+                $measured[0]['status']
+            );
+
+        $context->setHeadline($headline);
+        $context->addSection($this->compose->comparison('Before and after', $rows));
+        $context->addSection($this->compose->text(
+            'How this is measured',
+            'The baseline was captured at approval by the same resolver that reads the value now, '
+            . 'so the comparison is like-for-like rather than two different calculations.'
+        ));
+        $context->suggestFollowUp('What has the system learned?');
+        $context->link([
+            'case_id' => $caseId,
+            'student_id' => $studentId,
+            'outcome_id' => $outcomes[0]['id'] ?? null,
+            'workflow_run_id' => $runId,
+        ]);
+
+        return StageOutcome::ran(
+            sprintf(
+                '%d outcome%s tracked for case #%d; %s.',
+                count($outcomes),
+                count($outcomes) === 1 ? '' : 's',
+                $caseId,
+                implode(', ', array_map(
+                    static fn (array $row) => $row['metric_label'] . ' is ' . $row['status'],
+                    $outcomes
+                ))
+            ),
+            [
+                'case_id' => $caseId,
+                'student_id' => $studentId,
+                'outcomes' => $outcomes,
+                'workflow_run_id' => $runId,
+            ],
+            ['table' => 'ai_outcomes', 'ids' => array_column($outcomes, 'id')],
+            [
+                'api' => $this->prefix() . '/outcomes?subject_entity_key=student&subject_id=' . $studentId,
+                'sql' => 'select metric_label, baseline_value, observed_value, delta, status from ai_outcomes where subject_id = ' . $studentId,
+            ]
+        );
+    }
+
+    private function readLearning(StageContext $context): StageOutcome
+    {
+        $effectiveness = $this->outcomes->effectivenessByActionType($context->scope, AcademicRiskAgent::CASE_TYPE);
+
+        if ($effectiveness === []) {
+            $context->setHeadline('Nothing has been measured yet, so there is nothing learned yet.');
+            $context->addSection($this->compose->text(
+                'How the loop closes',
+                'Each approved intervention registers an outcome with a metric and a horizon. When that '
+                . 'horizon passes and the outcome is measured, it counts towards the effectiveness of its '
+                . 'action type.'
+            ));
+            $context->suggestRiskJourney('Which students are at academic risk?');
+
+            return StageOutcome::pending(
+                'No academic intervention has been measured yet, so there is no effectiveness signal to feed back.',
+                ['closes_when' => 'an approved intervention passes its measurement horizon and is measured'],
+                ['table' => 'ai_outcomes', 'ids' => []],
+                ['api' => 'GET ' . $this->prefix() . '/outcomes/effectiveness']
+            );
+        }
+
+        $context->setHeadline('Effectiveness of academic interventions so far.');
+        $context->addSection($this->compose->records('By action type', array_map(
+            static fn (string $actionType, array $row) => [
+                'title' => $actionType,
+                'lines' => [sprintf(
+                    'improved %d, unchanged %d, worsened %d',
+                    $row['counts']['improved'] ?? 0,
+                    $row['counts']['unchanged'] ?? 0,
+                    $row['counts']['worsened'] ?? 0
+                )],
+                'meta' => array_filter([
+                    'Measured' => $row['total'] ?? null,
+                    'Improvement rate' => array_key_exists('improvement_rate', $row) && $row['improvement_rate'] !== null
+                        ? round(((float) $row['improvement_rate']) * 100) . '%'
+                        : null,
+                ]),
+            ],
+            array_keys($effectiveness),
+            $effectiveness
+        )));
+        $context->addSection($this->compose->text(
+            'What the system does with this',
+            'This is the feedback signal: an action type that keeps failing to move its metric is '
+            . 'evidence against recommending it again, and the same measurement is what justifies '
+            . 'recommending one that works.'
+        ));
+        $context->suggestRiskJourney('Which students are at academic risk?');
+
+        return StageOutcome::ran(
+            sprintf('Effectiveness known for %d action type(s).', count($effectiveness)),
+            [
+                'effectiveness' => $effectiveness,
+                'how_it_feeds_back' => 'Measured outcomes are grouped by action type. That distribution is the '
+                    . 'evidence for or against recommending the same action next time.',
+            ],
+            ['table' => 'ai_outcomes', 'ids' => []],
+            ['api' => 'GET ' . $this->prefix() . '/outcomes/effectiveness']
+        );
+    }
+
     private function latestRunFor(StageContext $context, int $caseId): ?int
     {
         $pinned = $context->payload('workflow_run_id');
@@ -235,6 +431,35 @@ class ActionStage implements LifecycleStage
             ->first();
 
         return $run ? (int) $run->id : null;
+    }
+
+    /**
+     * @return array{case:array<string, mixed>, student_id:int, student_name:string}|null
+     */
+    private function resolvedCase(StageContext $context): ?array
+    {
+        $resolved = $context->get('resolved_case');
+
+        if (is_array($resolved) && isset($resolved['case'], $resolved['student_id'], $resolved['student_name'])) {
+            return $resolved;
+        }
+
+        if ($context->focusCase === null) {
+            return null;
+        }
+
+        $case = $context->focusCase;
+        $studentId = (int) ($case['student_id'] ?? $case['subject_id'] ?? 0);
+
+        if ($studentId <= 0) {
+            return null;
+        }
+
+        return [
+            'case' => $case,
+            'student_id' => $studentId,
+            'student_name' => (string) ($case['student_name'] ?? $case['subject_label'] ?? ('Student #' . $studentId)),
+        ];
     }
 
     /**
@@ -265,9 +490,12 @@ class ActionStage implements LifecycleStage
         $current = $status['current_step_key'] ?? null;
         $records = ['table' => 'workflow_runs', 'ids' => [$runId]];
         $verify = ['api' => $this->prefix() . '/workflow-runs/' . $runId];
+        $intervention = $this->reportCreatedIntervention($context, $runId, $status);
 
         if ($changed !== []) {
-            $context->setHeadline($context->headline() ?? 'The intervention has been created.');
+            $context->setHeadline($context->headline() ?? ($intervention !== null
+                ? 'The intervention is active.'
+                : 'The workflow completed a recorded action.'));
 
             return StageOutcome::ran(
                 sprintf(
@@ -361,6 +589,128 @@ class ActionStage implements LifecycleStage
         }
 
         return $changed;
+    }
+
+    /**
+     * Render the business records the action actually wrote. Workflow step labels say
+     * what was attempted; these scoped read-backs are what allow the answer to say an
+     * intervention or activity exists without inventing a success message.
+     *
+     * @param  array<string, mixed>|null  $status
+     * @return array<string, mixed>|null
+     */
+    private function reportCreatedIntervention(StageContext $context, int $runId, ?array $status): ?array
+    {
+        if (! Schema::hasTable('academic_interventions')) {
+            return null;
+        }
+
+        $row = DB::table('academic_interventions')
+            ->where('workflow_run_id', $runId)
+            ->where('sub_institute_id', $context->scope->selectedInstituteId)
+            ->orderByDesc('id')
+            ->first();
+
+        if (! $row) {
+            return null;
+        }
+
+        $intervention = (array) $row;
+        $interventionId = (int) ($intervention['id'] ?? 0);
+
+        $context->link([
+            'student_id' => $intervention['student_id'] ?? null,
+            'student_name' => $intervention['student_name'] ?? null,
+            'case_id' => $intervention['case_id'] ?? null,
+            'recommendation_id' => $intervention['recommendation_id'] ?? null,
+            'intervention_id' => $interventionId ?: null,
+        ]);
+
+        $context->addSection($this->compose->keyValues('Intervention record', array_filter([
+            'Intervention' => ! empty($intervention['intervention_reference'])
+                ? $intervention['intervention_reference']
+                : ($interventionId > 0 ? '#' . $interventionId : null),
+            'Student' => $intervention['student_name'] ?? null,
+            'Status' => $intervention['status'] ?? null,
+            'Subject ID' => isset($intervention['subject_id']) ? (string) $intervention['subject_id'] : null,
+            'Starts' => $intervention['start_date'] ?? null,
+            'Due' => $intervention['due_date'] ?? null,
+            'Progress' => isset($intervention['progress_percent']) ? $intervention['progress_percent'] . '%' : null,
+        ])));
+
+        if ($interventionId > 0 && Schema::hasTable('academic_intervention_activities')) {
+            $activities = DB::table('academic_intervention_activities')
+                ->where('intervention_id', $interventionId)
+                ->where('sub_institute_id', $context->scope->selectedInstituteId)
+                ->orderBy('id')
+                ->get()
+                ->map(static fn ($activity) => [
+                    'title' => $activity->title,
+                    'badge' => ucfirst((string) $activity->status),
+                    'lines' => array_values(array_filter([
+                        $activity->due_date ? 'Due: ' . $activity->due_date : null,
+                        $activity->is_generated ? 'Generated activity content' : 'Configured practice activity',
+                    ])),
+                    'meta' => ['Activity' => '#' . $activity->id],
+                ])
+                ->all();
+
+            $context->addSection($this->compose->records('Assigned activities', $activities));
+        }
+
+        $notification = $this->notificationOutput($status);
+
+        if ($notification !== null) {
+            $context->addSection($this->compose->keyValues('Notification', [
+                'Channel' => $notification['channel'] ?? null,
+                'Audience' => $notification['audience'] ?? null,
+                'Notification record' => isset($notification['notification_id']) && $notification['notification_id'] !== null
+                    ? '#' . $notification['notification_id']
+                    : null,
+                'Delivered' => array_key_exists('delivered', $notification)
+                    ? ($notification['delivered'] ? 'Yes' : 'No')
+                    : null,
+            ]));
+        }
+
+        $context->addSection($this->compose->keyValues('Database verification', [
+            'Read-back query' => 'Successful',
+            'Intervention ID' => $interventionId > 0 ? '#' . $interventionId : null,
+            'Linked workflow run' => '#' . $runId,
+            'Student link' => ! empty($intervention['student_id']) ? '#' . $intervention['student_id'] : null,
+        ]));
+
+        return $intervention;
+    }
+
+    /**
+     * The notification handler records its exact output on the workflow step. This is
+     * deliberately not inferred from the workflow definition: a configured channel is
+     * not evidence that a notification row was written.
+     *
+     * @param  array<string, mixed>|null  $status
+     * @return array<string, mixed>|null
+     */
+    private function notificationOutput(?array $status): ?array
+    {
+        foreach ((array) ($status['steps'] ?? []) as $step) {
+            if (($step['step_key'] ?? null) !== 'notify_student' || ($step['status'] ?? null) !== 'completed') {
+                continue;
+            }
+
+            return is_array($step['output'] ?? null) ? $step['output'] : null;
+        }
+
+        return null;
+    }
+
+    private function number(mixed $value): string
+    {
+        if ($value === null) {
+            return '-';
+        }
+
+        return rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
     }
 
     private function prefix(): string

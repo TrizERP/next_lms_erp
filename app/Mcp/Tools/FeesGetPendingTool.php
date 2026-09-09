@@ -12,12 +12,12 @@ class FeesGetPendingTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'fees.getPending';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'Load real pending fee details for a selected student within the authenticated ERP scope.';
     }
@@ -34,7 +34,7 @@ class FeesGetPendingTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return [
             'risk' => 'read',

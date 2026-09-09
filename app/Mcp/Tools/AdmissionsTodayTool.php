@@ -12,12 +12,12 @@ class AdmissionsTodayTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'admissions.today';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'Return today admission registrations for the authenticated institute.';
     }

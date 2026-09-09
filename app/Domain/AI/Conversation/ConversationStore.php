@@ -128,6 +128,34 @@ class ConversationStore
     }
 
     /**
+     * The module a readable thread is pinned to, if any.
+     *
+     * Follow-up turns are often too short to re-state their module in words:
+     * "approve it", "what happened after approval?", "did it work?". The thread
+     * already knows which module those referents came from, so exposing that hint lets
+     * module resolution stay on the same governed path instead of reclassifying a
+     * follow-up into General or some keyword-adjacent module.
+     */
+    public function moduleHint(?int $conversationId, McpRequestContext $scope): ?string
+    {
+        if ($conversationId === null || ! $this->hasConversations()) {
+            return null;
+        }
+
+        $row = DB::table('ai_conversations')
+            ->where('id', $conversationId)
+            ->where('sub_institute_id', $scope->selectedInstituteId)
+            ->where('user_id', $scope->userId)
+            ->first();
+
+        if (! $row || ! is_string($row->module_key) || $row->module_key === '') {
+            return null;
+        }
+
+        return $row->module_key;
+    }
+
+    /**
      * Insert a new thread, tolerating a reference collision.
      *
      * `conversation_reference` is unique and its sequence is read-then-written, so two
@@ -235,6 +263,27 @@ class ConversationStore
      */
     public function resolveReferents(Intent $intent, array $memory): array
     {
+        // A teacher can select a ranked student by typing the displayed name. This is
+        // an exact match only, so similarly named students are never silently merged.
+        if ($intent->isUnknown() && isset($memory['last_case_list']) && is_array($memory['last_case_list'])) {
+            $selected = $this->selectedRankedCase($intent, $memory['last_case_list']);
+
+            if ($selected !== null) {
+                return [new Intent(
+                    'student_risk_explain',
+                    'Explain why one student is at risk',
+                    1.0,
+                    [
+                        'student_id' => (int) ($selected['student_id'] ?? 0),
+                        'student_name' => $selected['student_name'] ?? null,
+                        'case_id' => (int) ($selected['case_id'] ?? 0),
+                    ],
+                    ['exact_ranked_student_name'],
+                    ['selected_from_ranked_list' => $selected]
+                ), ['selected_from_ranked_list' => $selected]];
+            }
+        }
+
         if ($intent->isUnknown()) {
             return [$intent, []];
         }
@@ -261,6 +310,24 @@ class ConversationStore
         // A referent already pinned above — by the sentence, or by a "Student A" position —
         // is never overwritten by what the thread happens to remember.
         $known = fn (string $slot) => $intent->slot($slot) !== null || isset($slots[$slot]);
+
+        // A bare student_name that exactly matches an entry in the ranked list the
+        // previous turn showed should be resolved to that entry even when the intent
+        // is already known. Without this, "Why is Ravi at risk?" classifies as
+        // student_risk_explain and the bare name is passed through to the MCP search,
+        // which may find multiple matches and block the turn.
+        if (! $known('student_id') && $intent->slot('student_name') !== null && isset($memory['last_case_list']) && is_array($memory['last_case_list'])) {
+            $needle = $this->normaliseName((string) $intent->slot('student_name'));
+            foreach ($memory['last_case_list'] as $listed) {
+                if ($needle !== '' && $needle === $this->normaliseName((string) ($listed['student_name'] ?? ''))) {
+                    $slots['student_id'] = (int) ($listed['student_id'] ?? 0);
+                    $slots['case_id'] = (int) ($listed['case_id'] ?? 0);
+                    $slots['student_name'] = $listed['student_name'] ?? null;
+                    $inherited['ranked_student_name_resolved_to'] = $listed;
+                    break;
+                }
+            }
+        }
 
         foreach ($required as $need) {
             switch ($need) {
@@ -300,6 +367,31 @@ class ConversationStore
         }
 
         return [$intent->with($slots, $inherited), $inherited];
+    }
+
+    /** @param array<int, array<string, mixed>> $cases */
+    private function selectedRankedCase(Intent $intent, array $cases): ?array
+    {
+        $typed = $intent->slot('student_name');
+
+        if (! is_string($typed) || trim($typed) === '') {
+            return null;
+        }
+
+        $needle = $this->normaliseName($typed);
+
+        foreach ($cases as $case) {
+            if ($needle !== '' && $needle === $this->normaliseName((string) ($case['student_name'] ?? ''))) {
+                return $case;
+            }
+        }
+
+        return null;
+    }
+
+    private function normaliseName(string $name): string
+    {
+        return preg_replace('/\s+/', ' ', strtolower(trim($name))) ?? '';
     }
 
     /**

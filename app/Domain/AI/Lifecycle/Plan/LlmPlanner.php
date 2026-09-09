@@ -3,7 +3,7 @@
 namespace App\Domain\AI\Lifecycle\Plan;
 
 use App\Domain\AI\Lifecycle\StageContext;
-use App\Domain\AI\Support\OpenRouterClient;
+use App\Domain\AI\Support\ModelClient;
 use App\Mcp\ToolRegistry;
 
 /**
@@ -30,10 +30,10 @@ class LlmPlanner implements Planner
 {
     private const MAX_STEPS = 6;
 
-    private const MODEL = 'deepseek/deepseek-chat';
+    // The model comes from the provider driver; see config/ai.php `provider`.
 
     public function __construct(
-        private readonly OpenRouterClient $client,
+        private readonly ModelClient $client,
         private readonly ToolRegistry $tools,
     ) {
     }
@@ -51,7 +51,7 @@ class LlmPlanner implements Planner
                 ['role' => 'system', 'content' => $this->systemPrompt($available)],
                 ['role' => 'user', 'content' => $this->userPrompt($context)],
             ],
-            self::MODEL,
+            null,
             maxTokens: 800,
         );
 
@@ -238,7 +238,7 @@ class LlmPlanner implements Planner
             refusals: $this->refusals($response),
             context: [
                 'module' => $context->module->key,
-                'model' => self::MODEL,
+                'model' => $this->client->defaultModel(),
                 'matched_by' => 'model plan, validated against the module tool bindings',
             ],
         );

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Mcp\ToolRegistry;
+use App\Mcp\Tools\AcademicsClassTeachersTool;
 use App\Mcp\Tools\AcademicsStructureTool;
 use App\Mcp\Tools\AcademicsSubjectsTool;
 use App\Mcp\Tools\AdmissionsConfirmTool;
@@ -11,6 +12,7 @@ use App\Mcp\Tools\AdmissionsListEnquiriesTool;
 use App\Mcp\Tools\AdmissionsValidateConfirmationTool;
 use App\Mcp\Tools\AdmissionsTodayTool;
 use App\Mcp\Tools\AdmissionsUpdateEnquiryTool;
+use App\Mcp\Tools\AiTemplatesGenerateTool;
 use App\Mcp\Tools\AiTemplatesListTool;
 use App\Mcp\Tools\AiTemplatesRenderTool;
 use App\Mcp\Tools\AttendanceOverviewTool;
@@ -23,6 +25,7 @@ use App\Mcp\Tools\FeesGetPendingTool;
 use App\Mcp\Tools\HomeworkListTool;
 use App\Mcp\Tools\HrDepartmentsTool;
 use App\Mcp\Tools\LmsActivitiesTool;
+use App\Mcp\Tools\LmsCoursesTool;
 use App\Mcp\Tools\StudentSearchTool;
 use App\Mcp\Tools\StudentsDirectoryTool;
 use App\Mcp\Tools\StudentsHistoryTool;
@@ -43,10 +46,11 @@ class McpServiceProvider extends ServiceProvider
      * here is unreachable, however a question is worded — which is the property that
      * makes the module tool bindings in config/ai.php meaningful.
      *
-     * @var array<int, class-string<\App\Mcp\McpToolInterface>>
+     * @var array<int, class-string<\App\Mcp\AbstractMcpTool>>
      */
     private const TOOLS = [
         // Generation
+        AiTemplatesGenerateTool::class,
         AiTemplatesListTool::class,
         AiTemplatesRenderTool::class,
 
@@ -61,12 +65,14 @@ class McpServiceProvider extends ServiceProvider
         // The shape of the school
         AcademicsStructureTool::class,
         AcademicsSubjectsTool::class,
+        AcademicsClassTeachersTool::class,
 
         // Academic records
         AttendanceOverviewTool::class,
         AttendanceStudentTool::class,
         HomeworkListTool::class,
         LmsActivitiesTool::class,
+        LmsCoursesTool::class,
         ExamsListTool::class,
         ExamsResultsTool::class,
 

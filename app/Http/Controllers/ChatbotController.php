@@ -1,67 +1,69 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Domain\AI\Conversation\AskPipeline;
+use App\Services\Mcp\McpRequestContext;
 use Illuminate\Http\Request;
-use BotMan\BotMan\BotMan;
-use BotMan\BotMan\BotManFactory;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
-use BotMan\BotMan\Drivers\DriverManager;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Session; 
-use App\Services\OpenAIService;
+
 class ChatbotController extends Controller
 {
-    protected $openAIService;
-
-    public function __construct(OpenAIService $openAIService)
+    public function __construct(private readonly AskPipeline $pipeline)
     {
-        $this->openAIService = $openAIService;
     }
 
     public function handle(Request $request)
-{
-    // Capture the user input message
-    $message = $request->input('message');
-
-
-    // Handle user input and get the bot response
-    $response = $this->openAIService->handleUserInput($message);
-
-    // Return the response as JSON
-    return response()->json(['message' => $response]);
-}
-    
-    
-    
-    
-    public function firsthandle(Request $request)
     {
-        // Create BotMan instance
-        $botman = BotManFactory::create([]);
-        $message = $request->input('message');
-        
-        // Define an array of replies
-        $replies = [
-            "Hi there! How can I help you today?",
-            "Hello! What can I do for you?",
-            "Greetings! How can I assist you?",
-            "Hi! Let me know how I can help.",
-            "Hello! What would you like to know?"
-        ];
-        
-        // Randomly select a reply from the array
-        $randomReply = $replies[array_rand($replies)];
-        
-        // Respond to the message
-        $botman->hears($message, function (BotMan $bot) use ($randomReply) {
-            $bot->reply($randomReply);
-        });
-        
-        $botman->listen();
-        
-        // Return a response (modify as per your implementation)
-        return response($randomReply, 200)
-                  ->header('Content-Type', 'text/plain');
+        $validated = $request->validate([
+            'message' => 'required|string|max:1000',
+            'conversation_id' => 'nullable|integer|min:1',
+            'payload' => 'nullable|array',
+            'payload.case_id' => 'nullable|integer|min:1',
+            'payload.student_id' => 'nullable|integer|min:1',
+            'payload.recommendation_id' => 'nullable|integer|min:1',
+            'payload.workflow_approval_id' => 'nullable|integer|min:1',
+        ]);
+
+        $scope = $this->scope($request);
+        $result = $this->pipeline->ask(
+            $validated['message'],
+            $scope,
+            $validated['conversation_id'] ?? null,
+            ['payload' => $validated['payload'] ?? [], 'route' => '/chatbot']
+        );
+
+        // Keep `message` for older panel integrations while exposing the complete
+        // lifecycle payload to the current Chatbot Panel.
+        return response()->json([
+            'success' => true,
+            'message' => $result['answer']['headline'],
+            'data' => $result,
+        ]);
+    }
+
+    /**
+     * The panel is authenticated by the ERP web session rather than an MCP JWT. Scope
+     * is still server-derived, so a browser cannot choose another institute or user.
+     */
+    private function scope(Request $request): McpRequestContext
+    {
+        $userId = (int) $request->session()->get('user_id', 0);
+        $instituteId = (int) $request->session()->get('sub_institute_id', 0);
+
+        abort_unless($userId > 0 && $instituteId > 0, 403, 'Sign in with an institute selected to use Conversational AI.');
+
+        $isAdmin = (int) $request->session()->get('is_admin', 0) >= 1;
+
+        return new McpRequestContext(
+            userId: $userId,
+            role: $isAdmin ? 'admin' : 'staff',
+            selectedInstituteId: $instituteId,
+            allowedInstituteIds: [$instituteId],
+            userProfileId: $request->session()->get('user_profile_id') !== null ? (int) $request->session()->get('user_profile_id') : null,
+            clientId: $request->session()->get('client_id') !== null ? (int) $request->session()->get('client_id') : null,
+            academicYear: $request->session()->get('syear') !== null ? (int) $request->session()->get('syear') : null,
+            termId: $request->session()->get('term_id') !== null ? (int) $request->session()->get('term_id') : null,
+            isAdmin: $isAdmin,
+            isStudent: false,
+        );
     }
 }

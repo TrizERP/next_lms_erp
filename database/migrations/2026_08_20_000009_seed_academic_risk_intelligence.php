@@ -214,7 +214,7 @@ return new class extends Migration
             'name' => 'Academic intervention',
             'domain' => 'k12',
             'module' => 'academic_intervention',
-            'description' => 'Runs after a teacher approves an academic risk recommendation: generate the activity, confirm with the teacher, create the intervention, notify, and capture the baseline to measure against.',
+            'description' => 'Runs after a teacher approves an academic risk recommendation: generate the activity, create the intervention, notify, and capture the baseline to measure against.',
             'trigger_type' => 'recommendation_approved',
             'trigger_config' => json_encode(['recommendation_action_type' => 'create_academic_intervention']),
             'conditions' => json_encode([
@@ -245,10 +245,9 @@ return new class extends Migration
         /*
          * The step graph.
          *
-         * Note the ordering: generation happens BEFORE the approval step, so the
-         * teacher approves a concrete activity rather than a promise. The action step
-         * that actually creates the intervention sits after the approval, and the
-         * engine independently re-checks the decision record before running it.
+         * Recommendation approval is the single teacher decision for this workflow.
+         * The action step independently re-checks that recorded decision before it can
+         * write an intervention, so a second internal approval gate is unnecessary.
          */
         $steps = [
             [
@@ -268,25 +267,13 @@ return new class extends Migration
                         'severity' => 'input.severity',
                     ],
                 ],
-                'next' => 'teacher_approval',
-            ],
-            [
-                'key' => 'teacher_approval',
-                'type' => 'approval',
-                'label' => 'Teacher confirms the intervention',
-                'sequence' => 1,
-                'config' => [
-                    'step_key' => 'teacher_approval',
-                    'approver_role' => 'staff',
-                    'expires_in_hours' => 168,
-                ],
                 'next' => 'create_intervention',
             ],
             [
                 'key' => 'create_intervention',
                 'type' => 'action',
                 'label' => 'Create the intervention and assign activities',
-                'sequence' => 2,
+                'sequence' => 1,
                 'config' => [
                     'action' => 'create_academic_intervention',
                     'intervention_type' => 'academic_support',
@@ -298,7 +285,7 @@ return new class extends Migration
                 'key' => 'notify_student',
                 'type' => 'notify',
                 'label' => 'Tell the student what has been assigned',
-                'sequence' => 3,
+                'sequence' => 2,
                 'config' => [
                     'channel' => 'in_app',
                     'audience' => 'student',
@@ -312,7 +299,7 @@ return new class extends Migration
                 'key' => 'capture_baseline',
                 'type' => 'measure',
                 'label' => 'Record the starting point',
-                'sequence' => 4,
+                'sequence' => 3,
                 'config' => [],
                 'next' => null,
             ],

@@ -104,6 +104,10 @@ class MissedAssignmentDetector implements SignalDetector
             $query->where('syear', $context->academicYear);
         }
 
+        if ($context->termId !== null && Schema::hasColumn('homework', 'term_id')) {
+            $query->where('term_id', $context->termId);
+        }
+
         $assignments = $query
             ->orderBy('student_id')
             ->orderByDesc('date')

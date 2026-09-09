@@ -110,6 +110,10 @@ class AttendanceRiskDetector implements SignalDetector
             $query->where('syear', $context->academicYear);
         }
 
+        if ($context->termId !== null && Schema::hasColumn('attendance_student', 'term_id')) {
+            $query->where('term_id', $context->termId);
+        }
+
         $records = $query
             ->orderBy('student_id')
             ->orderByDesc('attendance_date')
@@ -122,13 +126,17 @@ class AttendanceRiskDetector implements SignalDetector
         foreach ($students as $studentId => $studentName) {
             $studentRecords = $records->get($studentId);
 
-            if (! $studentRecords || $studentRecords->count() < self::MIN_RECORDS) {
+            $countedRecords = $studentRecords
+                ? $studentRecords->filter(fn ($record) => AttendanceCode::isCounted($record->attendance_code))
+                : collect();
+
+            if ($countedRecords->count() < self::MIN_RECORDS) {
                 continue;
             }
 
             $evaluated++;
 
-            $signal = $this->evaluate($studentId, $studentName, $studentRecords->all(), $context);
+            $signal = $this->evaluate($studentId, $studentName, $countedRecords->all(), $context);
 
             if ($signal !== null) {
                 $signals[] = $signal;
@@ -165,7 +173,7 @@ class AttendanceRiskDetector implements SignalDetector
         $streakBroken = false;
 
         foreach ($records as $record) {
-            $isAbsent = strtoupper((string) $record->attendance_code) === 'A';
+            $isAbsent = AttendanceCode::isAbsent($record->attendance_code);
 
             if ($isAbsent) {
                 $absentDates[] = $record->attendance_date;
@@ -178,7 +186,7 @@ class AttendanceRiskDetector implements SignalDetector
             }
 
             // Records are newest first, so the first present day ends the current streak.
-            if (strtoupper((string) $record->attendance_code) === 'P') {
+            if (AttendanceCode::isPresent($record->attendance_code)) {
                 $streakBroken = true;
             }
         }
@@ -245,7 +253,7 @@ class AttendanceRiskDetector implements SignalDetector
 
         // Individual absence rows, so the explanation can cite specific days.
         foreach (array_slice($records, 0, 10) as $record) {
-            if (strtoupper((string) $record->attendance_code) !== 'A') {
+            if (! AttendanceCode::isAbsent($record->attendance_code)) {
                 continue;
             }
 

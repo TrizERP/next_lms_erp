@@ -258,7 +258,7 @@ class fees_breackoff_controller extends Controller
                                 ])->get()->toArray();
 
                                 if (count($checkNewfeesBreakoff) == 0) {
-                                    DB::table('fees_breackoff')->insert([
+                                    $fees_breackoff_row = [
                                         'syear'            => $context['syear'],
                                         'admission_year'   => $context['syear'],
                                         'fee_type_id'      => $title_id,
@@ -269,6 +269,17 @@ class fees_breackoff_controller extends Controller
                                         'amount'           => $amount,
                                         'sub_institute_id' => $context['sub_institute_id'],
                                         'created_at'       => date('Y-m-d H:i:s'),
+                                    ];
+                                    $fees_breackoff_id = DB::table('fees_breackoff')->insertGetId($fees_breackoff_row);
+
+                                    // no prior row existed for this grade/standard/quota/title/month combination
+                                    \App\Models\AuditLog::record([
+                                        'module' => 'fees',
+                                        'action' => 'FEE_ASSIGNED',
+                                        'entity_type' => 'fees_breackoff',
+                                        'entity_id' => $fees_breackoff_id,
+                                        'old_values' => null,
+                                        'new_values' => $fees_breackoff_row,
                                     ]);
                                 }
 
@@ -326,7 +337,7 @@ class fees_breackoff_controller extends Controller
                                     ])->get()->toArray();
 
                                     if (count($checkOldfeesBreakoff) == 0) {
-                                        DB::table('fees_breackoff')->insert([
+                                        $fees_breackoff_row = [
                                             'syear'            => $context['syear'],
                                             'admission_year'   => $year_arr->admission_year,
                                             'fee_type_id'      => $title_id,
@@ -337,6 +348,17 @@ class fees_breackoff_controller extends Controller
                                             'amount'           => $amount,
                                             'sub_institute_id' => $context['sub_institute_id'],
                                             'created_at'       => date('Y-m-d H:i:s'),
+                                        ];
+                                        $fees_breackoff_id = DB::table('fees_breackoff')->insertGetId($fees_breackoff_row);
+
+                                        // no prior row existed for this grade/standard/quota/title/month/admission-year combination
+                                        \App\Models\AuditLog::record([
+                                            'module' => 'fees',
+                                            'action' => 'FEE_ASSIGNED',
+                                            'entity_type' => 'fees_breackoff',
+                                            'entity_id' => $fees_breackoff_id,
+                                            'old_values' => null,
+                                            'new_values' => $fees_breackoff_row,
                                         ]);
                                     }
                                 }

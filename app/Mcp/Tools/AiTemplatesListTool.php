@@ -12,12 +12,12 @@ class AiTemplatesListTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'ai.templates.list';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'List the AI-category templates in the existing template_master library.';
     }
@@ -33,7 +33,7 @@ class AiTemplatesListTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return [
             'risk' => 'read',
