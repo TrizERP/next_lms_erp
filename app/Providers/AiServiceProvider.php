@@ -459,7 +459,8 @@ class AiServiceProvider extends ServiceProvider
                 $app->make(\App\Domain\AI\Conversation\ConversationStore::class),
                 $app->make(\App\Domain\AI\Conversation\AnswerComposer::class),
                 $app->make(\App\Domain\AI\Conversation\GeneralAnswerService::class),
-                $app->make(\App\Domain\AI\Workspace\ModuleSuggestions::class)
+                $app->make(\App\Domain\AI\Workspace\ModuleSuggestions::class),
+                $app->make(\App\Domain\AI\Conversation\FollowUpComposer::class)
             )
         );
 

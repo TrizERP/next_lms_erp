@@ -72,12 +72,100 @@ class ModuleResolutionTest extends TestCase
         $this->assertContains($result['source'], ['no_module_matched', 'ambiguous_between_modules']);
     }
 
-    public function test_a_declared_module_beats_the_words(): void
+    public function test_a_declared_module_beats_the_words_it_shares_them_with(): void
     {
-        // The panel knows which screen it opened on; the words often do not.
-        $result = $this->resolve('Which students are at academic risk?', ['module' => 'fees']);
+        // The panel knows which screen it opened on, and for any question that screen
+        // could plausibly be about, that is the best evidence there is.
+        $result = $this->resolve('Which students have pending fees?', ['module' => 'fees']);
 
         $this->assertSame('fees', $result['module']->key);
+        $this->assertSame('declared_by_caller', $result['source']);
+        $this->assertNull($result['stood_down']);
+    }
+
+    public function test_a_declared_module_keeps_a_question_no_other_module_claims(): void
+    {
+        // Nothing scores for anything here, so there is no stronger signal to prefer and
+        // the screen stands. This is the common case and it must not move.
+        $result = $this->resolve('Show me the arrears report for this month', ['module' => 'fees']);
+
+        $this->assertSame('fees', $result['module']->key);
+        $this->assertSame('declared_by_caller', $result['source']);
+    }
+
+    /**
+     * The bug this rule exists for.
+     *
+     * A user on the dashboard asked the platform's flagship question and got twelve tidy
+     * stages reporting that the dashboard module has no agent. The risk agent never ran,
+     * no case opened, no referents were recorded — so the follow-up that depended on them
+     * had nothing to resolve either, and the whole conversation died on turn two. The
+     * declared module was not adding context; it was removing the answer.
+     *
+     * @dataProvider screensWithNoClaimOnTheQuestion
+     */
+    public function test_a_screen_with_no_claim_on_the_question_is_stood_down(string $screen): void
+    {
+        $result = $this->resolve('Which Grade 8 students have slipped into academic risk this term?', [
+            'module' => $screen,
+        ]);
+
+        $this->assertTrue(
+            $result['module']->hasAgent(),
+            sprintf('Asked on %s, the risk question reached %s, which binds no agent.', $screen, $result['module']->key)
+        );
+        $this->assertSame($screen, $result['stood_down']);
+        $this->assertSame('question_overrode_declared_by_caller', $result['source']);
+    }
+
+    /** @return array<string, array{0:string}> */
+    public static function screensWithNoClaimOnTheQuestion(): array
+    {
+        return [
+            'dashboard' => ['dashboard'],
+            'fees' => ['fees'],
+            'admissions' => ['admissions'],
+            'exam' => ['exam'],
+        ];
+    }
+
+    public function test_a_module_with_no_vocabulary_is_never_stood_down(): void
+    {
+        // Such a module scores zero for every question ever asked, so zero says nothing
+        // about it. Reading that as "no claim" would re-route every question asked on
+        // half the estate's screens to whichever module happened to score.
+        $result = $this->resolve('Which students have not submitted homework?', ['module' => 'lms']);
+
+        $this->assertSame('lms', $result['module']->key);
+        $this->assertNull($result['stood_down']);
+    }
+
+    public function test_an_elliptical_follow_up_belongs_to_the_thread_not_the_screen(): void
+    {
+        // "Which one is worst?" is about the answer above it. A panel that stays mounted
+        // across a whole conversation would otherwise re-assert its own page on every
+        // follow-up and strand the thread on turn two.
+        foreach (['Which one is worst?', 'Why?', 'Show the details of the first candidate'] as $question) {
+            $result = $this->resolve($question, [
+                'module' => 'dashboard',
+                'conversation_module' => 'student',
+            ]);
+
+            $this->assertSame('student', $result['module']->key, $question);
+            $this->assertSame('conversation_thread_over_declared', $result['source'], $question);
+        }
+    }
+
+    public function test_a_screen_that_scores_still_wins_an_elliptical_follow_up(): void
+    {
+        // The exception is narrow on purpose: it applies only when the question scores
+        // for nothing at all. A question that names the screen is not elliptical.
+        $result = $this->resolve('Summarise the KPIs on this dashboard', [
+            'module' => 'dashboard',
+            'conversation_module' => 'student',
+        ]);
+
+        $this->assertSame('dashboard', $result['module']->key);
         $this->assertSame('declared_by_caller', $result['source']);
     }
 

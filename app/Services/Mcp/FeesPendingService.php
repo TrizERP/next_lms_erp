@@ -15,9 +15,22 @@ class FeesPendingService
         }
 
         $controller = app(fees_collect_controller::class);
+
+        // `type` is deliberately not sent, and that single parameter was the whole bug.
+        //
+        // `studentFeesDetailAPI` branches on it: with a `type` (or a `month_id`) it
+        // answers with the *paid receipts* array and nothing else, and only without one
+        // does it return the {STU_DATA, PENDING, PAID} structure this service reads. So
+        // sending `type => JSON` meant every call came back holding receipts, `PENDING`
+        // was never present, and the filter below found nothing to report.
+        //
+        // The result was a tool that could not fail and could not be right: every student
+        // in every institute came back "no pending fees were found", and `fees.arrears`,
+        // which asks this service once per student, therefore swept whole cohorts and
+        // announced zero defaulters. Verified against a live tenant, one of the students
+        // it had just cleared was carrying ₹50,700 outstanding.
         $request = Request::create('/studentFeesDetailAPI', 'POST', [
             'student_id' => $studentId,
-            'type' => 'JSON',
             'sub_institute_id' => $context->selectedInstituteId,
             'syear' => $context->academicYear,
         ]);

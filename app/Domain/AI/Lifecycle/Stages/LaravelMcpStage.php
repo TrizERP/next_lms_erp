@@ -61,7 +61,11 @@ class LaravelMcpStage implements LifecycleStage
         // silently took the student-resolution path and never made them.
         match ($plan->route) {
             'admissions_flow' => $this->runAdmissionsFlow($context),
-            'mcp_tools' => $this->runPlannedSteps($context),
+            // The selection route names its own call and its own argument — the id came
+            // from a row the previous answer printed, so there is no subject left to
+            // resolve and running the student resolver here would search for a name
+            // nobody typed.
+            'mcp_tools', 'selected_record' => $this->runPlannedSteps($context),
             default => $plan->source === Plan::SOURCE_LLM
                 ? $this->runPlannedSteps($context)
                 : $this->resolveSubject($context),

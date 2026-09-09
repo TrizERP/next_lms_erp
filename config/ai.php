@@ -289,11 +289,30 @@ return [
         | `depth_reason` as the explanation. That is the honest state for most modules
         | today, and the ladder stays twelve rungs long either way.
         */
+        /*
+        | `detail_tools` — how a module opens one row of a list it just showed.
+        |
+        | Selecting a record off an answer ("show the details of the first candidate") is
+        | resolved deterministically against the rows the previous turn returned, and the
+        | id it lands on then needs a lookup that reads that record in full. Which tool
+        | that is differs per module, and several tools usually accept the same id: half a
+        | dozen tools take a student_id, and only one of them is "who is this person".
+        |
+        | RecordDetail derives an answer when nothing is configured — a read-only tool
+        | that takes this id and requires nothing else is, by construction, the lookup for
+        | it — so a module left out of this block still gets selection working. The entries
+        | here exist where derivation would be ambiguous or would pick the wrong one, and
+        | a configured tool is still ignored unless the module is bound to it.
+        |
+        | A module with no lookup at all is not broken: the turn answers from the fields
+        | the previous answer already showed, and says that is what it did.
+        */
         'modules' => [
             'student' => [
                 'agent_key' => 'k12_academic_risk',
                 'workflow_key' => 'k12_academic_intervention',
                 'case_type' => 'academic_risk',
+                'detail_tools' => ['student_id' => 'students.search'],
                 'mcp_tools' => [
                     'students.search',
                     'students.directory',
@@ -314,6 +333,7 @@ return [
                 'agent_key' => 'k12_academic_risk',
                 'workflow_key' => 'k12_academic_intervention',
                 'case_type' => 'academic_risk',
+                'detail_tools' => ['student_id' => 'students.search'],
                 'mcp_tools' => [
                     'students.search',
                     'students.directory',
@@ -325,6 +345,7 @@ return [
             ],
 
             'fees' => [
+                'detail_tools' => ['student_id' => 'fees.getPending'],
                 'mcp_tools' => [
                     'fees.getPending',
                     'fees.arrears',
@@ -340,6 +361,7 @@ return [
             ],
 
             'admissions' => [
+                'detail_tools' => ['enquiry_id' => 'admissions.getEnquiryDetails'],
                 'mcp_tools' => [
                     'admissions.today',
                     'admissions.listEnquiries',
@@ -357,6 +379,7 @@ return [
             ],
 
             'attendance' => [
+                'detail_tools' => ['student_id' => 'attendance.student'],
                 'mcp_tools' => [
                     'attendance.overview',
                     'attendance.student',
@@ -371,6 +394,7 @@ return [
             ],
 
             'exam' => [
+                'detail_tools' => ['student_id' => 'exams.results'],
                 'mcp_tools' => [
                     'exams.list',
                     'exams.results',
@@ -406,6 +430,7 @@ return [
             | exists answers the questions the screen invites.
             */
             'lms' => [
+                'detail_tools' => ['student_id' => 'homework.list'],
                 'mcp_tools' => [
                     'homework.list',
                     'lms.activities',
@@ -517,10 +542,32 @@ return [
                 'attendance' => 3.5, 'absent' => 3.0, 'absence' => 3.0, 'present' => 2.0,
                 'leave' => 1.5, 'late' => 1.5, 'punctuality' => 2.5,
             ],
+            /*
+            | The compound phrases below are not decoration, and the fees block above is
+            | why they are here. "How many students have pending fees?" routes to fees
+            | because `pending fees` scores 4.0 on top of the individual words; the same
+            | sentence about admissions scored 3.5 for `admission` against 4.0 for the
+            | word "students" — which every module's records are about — and so resolved
+            | to the general module, where nothing is bound and the question died at
+            | planning. Fees was only ever surviving that collision because somebody had
+            | already written its phrase down.
+            |
+            | A domain noun has to outweigh the population noun that inevitably shares
+            | the sentence with it, so the phrase that names the domain outright carries
+            | the weight that says so.
+            */
             'admissions' => [
                 'admission' => 3.5, 'admissions' => 3.5, 'enquiry' => 3.0, 'enquiries' => 3.0,
                 'enrol' => 2.5, 'enroll' => 2.5, 'registration' => 2.5, 'applicant' => 3.0,
                 'prospective' => 2.5,
+                // "candidate" is deliberately absent. It is the word people use to point
+                // at a row of a list — "show the details of the first candidate" — and an
+                // elliptical follow-up like that has to score for nothing at all, or the
+                // resolver stops treating it as elliptical and the panel's own screen
+                // re-asserts itself over the thread the question belongs to.
+                'pending admission' => 4.0, 'admission enquiry' => 4.0,
+                'new admission' => 4.0, 'admission confirmation' => 4.0,
+                'confirm admission' => 4.0, 'admission list' => 4.0,
             ],
             'exam' => [
                 'exam' => 3.0, 'exams' => 3.0, 'result' => 2.5, 'results' => 2.5, 'marks' => 3.0,
