@@ -160,7 +160,17 @@ Route::post('lms-store-content', [ApiLmsCourseController::class, 'storeContent']
 Route::post('lms-chapter-content/upload', [ApiLmsCourseController::class, 'uploadContent']);
 Route::post('lms-content-mapping-values', [ApiLmsCourseController::class, 'getContentMappingValues']);
 Route::post('lms-store-subject', [ApiLmsCourseController::class, 'storeSubject']);
-Route::post('lms/gamma-content-master', [\App\Http\Controllers\lms\contentController::class, 'storeGammaContent']);
+// Chapter content generation. Historically Gamma (presentations) + Gemini
+// (documents); for chapters listed in config('claude.chapter_ids') it is now
+// Claude, via App\Services\ContentGenerationService.
+//
+// This route is unauthenticated and reads sub_institute_id / user_id from the
+// request body - it predates api.session and the drawer sends no bearer token.
+// throttle.contentgen is a spend cap on top of that, not a substitute for auth.
+// The authenticated door is intelligence/content/generate, below.
+Route::middleware('throttle.contentgen')->group(function () {
+    Route::post('lms/gamma-content-master', [\App\Http\Controllers\lms\contentController::class, 'storeGammaContent']);
+});
 Route::get('ai-sop', [AiSopGenerationController::class, 'index']);
 Route::get('ai-platforms', [AiPlatformController::class, 'index']);
 Route::get('ai-sop/department-job-roles', [AiSopGenerationController::class, 'departmentJobRoles']);
@@ -439,6 +449,17 @@ Route::prefix('lesson-intelligence')->group(function () {
 //                 group's throttle:1000,1 which was no limit at all here.
 Route::middleware(['api.session', 'staff.only', 'throttle.qgen'])->group(function () {
     Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);
+});
+
+// Intelligence Content Generation - chapter content via Claude -> content_master
+//
+// The authenticated sibling of lms/gamma-content-master. Same service, same
+// prompt-from-the-caller contract, but the tenant (sub_institute_id) and author
+// (created_by) come from the verified JWT session instead of the request body,
+// so a caller cannot write content into another school attributed to another
+// user. Point the drawer here once it sends a bearer token.
+Route::middleware(['api.session', 'staff.only', 'throttle.contentgen'])->group(function () {
+    Route::post('intelligence/content/generate', [\App\Http\Controllers\api\lms\IntelligenceContentGenerationApiController::class, 'generate']);
 });
 
 // Semantic Intelligence - read-only chapter intelligence for presentation generators

@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 use function App\Helpers\is_mobile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Schema;
+use App\Services\ContentGenerationService;
+use App\Services\Content\RendersGeneratedContent;
 use App\Services\OpenAIService;
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -22,6 +24,15 @@ use Illuminate\Support\Facades\Log;
 
 class contentController extends Controller
 {
+    // The HTML -> PDF pipeline below is shared with ContentGenerationService,
+    // so Claude-generated and Gemini-generated documents render identically.
+    use RendersGeneratedContent;
+
+    public function __construct(
+        private ContentGenerationService $contentGeneration = new ContentGenerationService(),
+    ) {
+    }
+
     public function index(Request $request){         
         $data = $this->getData($request); 		
         $type = $request->input('type');
@@ -1683,6 +1694,33 @@ public function generateGammaPDF(Request $request)
             }
         }
 
+        // Chapters listed in config('claude.chapter_ids') are written by Claude
+        // instead of Gamma/Gemini - for every content type, presentations
+        // included. The prompt has already been assembled by the caller, so the
+        // service only chooses the model and stores the result. Any other
+        // chapter falls through to the two provider branches below unchanged.
+        if ($this->contentGeneration->handles($chapterData->id)) {
+            $result = $this->contentGeneration->generate([
+                'prompt' => $prompt,
+                'content_type' => $contentType,
+                'is_presentation' => $isPresentation,
+                'chapter' => $chapterData,
+                'chapter_name' => $chapterName,
+                'grade_id' => $gradeId,
+                'concept_id' => $this->resolveContentConceptId(
+                    $chapterData->id,
+                    $requestConceptId,
+                    $requestConceptName
+                ),
+                'sub_institute_id' => $sub_institute_id,
+                'syear' => $syear,
+                'created_by' => $user_id,
+                'user_profile_name' => $request->user_profile_name,
+            ]);
+
+            return response()->json($result['body'], $result['http']);
+        }
+
         if (!$isPresentation) {
             $apiKey = env('GEMINI_API_KEY');
             if (!$apiKey) {
@@ -2116,66 +2154,6 @@ public function generateGammaPDF(Request $request)
         }
 
         return null;
-    }
-
-    private function renderGeneratedContentPdf($content, $chapterName, $contentType)
-    {
-        $options = new Options();
-        $options->set('isHtml5ParserEnabled', true);
-        $options->set('isFontSubsettingEnabled', true);
-        $options->set('isRemoteEnabled', true);
-
-        $dompdf = new Dompdf($options);
-        $html = $this->generatedContentHtml($content, $chapterName, $contentType);
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
-
-        return $dompdf->output();
-    }
-
-    private function generatedContentHtml($content, $chapterName, $contentType)
-    {
-        $body = $this->formatGeneratedPdfBody($content);
-        $title = e($chapterName . ' ' . $contentType);
-
-        return <<<HTML
-<!doctype html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>
-    body { font-family: DejaVu Sans, sans-serif; color: #0f172a; font-size: 13px; line-height: 1.55; margin: 32px; }
-    h1 { color: #1e3a8a; font-size: 24px; margin: 0 0 18px; }
-    h2 { color: #1e40af; font-size: 18px; margin: 22px 0 8px; }
-    h3 { color: #334155; font-size: 15px; margin: 16px 0 6px; }
-    p { margin: 0 0 10px; }
-    ul, ol { margin: 0 0 12px 22px; padding: 0; }
-    li { margin: 0 0 6px; }
-    table { width: 100%; border-collapse: collapse; margin: 12px 0; }
-    th, td { border: 1px solid #cbd5e1; padding: 7px 8px; vertical-align: top; }
-    th { background: #eff6ff; font-weight: bold; }
-    .content { white-space: normal; }
-  </style>
-</head>
-<body>
-  <h1>{$title}</h1>
-  <div class="content">{$body}</div>
-</body>
-</html>
-HTML;
-    }
-
-    private function formatGeneratedPdfBody($content)
-    {
-        $content = trim((string) $content);
-        $content = preg_replace('/^```(?:html)?\s*|\s*```$/i', '', $content);
-
-        if ($content !== strip_tags($content)) {
-            return strip_tags($content, '<h1><h2><h3><h4><p><br><strong><b><em><i><ul><ol><li><table><thead><tbody><tr><th><td>');
-        }
-
-        return nl2br(e($content));
     }
 
     private function classroomActivityPrompt($chapterName, $boardName, $standardName, $subjectName)
