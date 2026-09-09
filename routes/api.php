@@ -388,6 +388,11 @@ Route::match(['GET', 'POST'], 'intelligence/lesson-plans', [\App\Http\Controller
 // Curriculum Planning - yearly syllabus overview (stats, subject x month grid, upcoming lessons, subject progress)
 Route::match(['GET', 'POST'], 'intelligence/curriculum-planning', [\App\Http\Controllers\api\lms\CurriculumPlanningApiController::class, 'index']);
 
+// Curriculum Planning - one chapter's topics, concepts and key concepts. Kept off the
+// roll-up above because inlining them for every chapter costs ~0.5MB, nearly all of it
+// for chapters nobody opens. Scoped by sub_institute_id inside the controller.
+Route::match(['GET', 'POST'], 'intelligence/curriculum-planning/chapter', [\App\Http\Controllers\api\lms\CurriculumPlanningApiController::class, 'chapter']);
+
 // Monthly Plan - calendar view of scheduled periods for a given month
 Route::match(['GET', 'POST'], 'intelligence/monthly-plan', [\App\Http\Controllers\api\lms\MonthlyPlanApiController::class, 'index']);
 

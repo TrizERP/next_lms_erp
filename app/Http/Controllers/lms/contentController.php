@@ -1731,7 +1731,7 @@ public function generateGammaPDF(Request $request)
             }
 
             try {
-                $model = env('GEMINI_MODEL', 'gemini-2.5-flash');
+                $model = config('gemini.model');
                 $baseUrl = rtrim(env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'), '/');
 
                 Log::info('Gemini content generation request', [

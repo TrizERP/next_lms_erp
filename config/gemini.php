@@ -18,6 +18,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Gemini Model
+    |--------------------------------------------------------------------------
+    |
+    | Model id used for :generateContent calls. Google retires ids and then
+    | answers them with 404 NOT_FOUND, which surfaces to the user as a failed
+    | generation. Retired ids are mapped forward here so a server whose .env
+    | still pins an old one keeps working after this deploy - drop GEMINI_MODEL
+    | from .env entirely to just track the default.
+    */
+
+    'model' => (static function () {
+        $model = trim((string) env('GEMINI_MODEL', ''));
+
+        $retired = [
+            'gemini-2.5-flash' => 'gemini-3.6-flash',
+            'gemini-1.5-flash' => 'gemini-3.6-flash',
+            'gemini-1.5-pro'   => 'gemini-3.6-pro',
+        ];
+
+        return $retired[$model] ?? ($model !== '' ? $model : 'gemini-3.6-flash');
+    })(),
+
+    /*
+    |--------------------------------------------------------------------------
     | Gemini Base URL
     |--------------------------------------------------------------------------
     |
