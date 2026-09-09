@@ -2512,6 +2512,88 @@ class AskService
      *
      * @return array{0:array, 1:int, 2:string}|null
      */
+    /**
+     * The one case whose subject is named in this sentence, or null.
+     *
+     * Names are compared on their word set rather than as strings, because the two
+     * sides are written by different systems: "Abhi D. Raval" in the question against
+     * "Abhi Raval" on the case. One being a subset of the other is a match — a middle
+     * initial or a dropped surname should not lose the person — while sharing a single
+     * forename is not, or every "Abhi" in the school would answer to the same question.
+     *
+     * Ambiguity is reported, never resolved by picking one. Two students who genuinely
+     * share a name are a question the user has to settle; guessing would attach an
+     * intervention to the wrong child.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function caseBySubjectLabel(McpRequestContext $scope, string $name, FlowTrace $trace): ?array
+    {
+        $wanted = $this->nameTokens($name);
+
+        if (count($wanted) < 2) {
+            return null;
+        }
+
+        $matches = [];
+
+        foreach ($this->cases->list($scope, AcademicRiskAgent::CASE_TYPE, CaseBuilder::ANY_STATUS, null, 100) as $candidate) {
+            $label = $this->nameTokens((string) ($candidate['subject_label'] ?? ''));
+
+            if ($label === [] || array_diff($label, $wanted) !== []) {
+                continue;
+            }
+
+            $matches[(int) ($candidate['subject_id'] ?? 0)][] = $candidate;
+        }
+
+        if ($matches === []) {
+            return null;
+        }
+
+        if (count($matches) > 1) {
+            $trace->blocked('gen_ai', sprintf(
+                '"%s" matches %d students on their open cases — the question needs to be more specific.',
+                $name,
+                count($matches)
+            ));
+
+            return null;
+        }
+
+        // One student, possibly several cases: prefer the live one, then the newest,
+        // matching how the lifecycle's CaseResolver orders the same situation.
+        $cases = reset($matches);
+
+        usort($cases, static function (array $a, array $b) {
+            $rank = static fn (array $case) => match ($case['status'] ?? '') {
+                'open', 'in_progress' => 0,
+                'resolved' => 1,
+                default => 2,
+            };
+
+            return [$rank($a), -(int) ($b['id'] ?? 0)] <=> [$rank($b), -(int) ($a['id'] ?? 0)];
+        });
+
+        return $cases[0];
+    }
+
+    /**
+     * A name reduced to comparable words: lowercased, punctuation dropped, initials
+     * discarded because "D." carries no identity of its own.
+     *
+     * @return array<int, string>
+     */
+    private function nameTokens(string $name): array
+    {
+        $words = preg_split('/[^\p{L}\p{N}]+/u', mb_strtolower(trim($name)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+
+        return array_values(array_unique(array_filter(
+            $words,
+            static fn (string $word) => mb_strlen($word) > 1
+        )));
+    }
+
     private function resolveCase(Intent $intent, McpRequestContext $scope, FlowTrace $trace): ?array
     {
         $caseId = $intent->slot('case_id');
@@ -2547,6 +2629,22 @@ class AskService
                     count($matches)
                 ));
             }
+
+            // Last resort: the name as it appears on the case itself.
+            //
+            // The directory and the case do not always agree on a person's name. A case
+            // carries the label it was opened with — "Abhi Raval" — while the student
+            // record behind it may hold only "Abhi", so a search for the full name finds
+            // nobody and the turn answers "I need to know which student you mean" about
+            // a student the previous answer had just listed by that exact name.
+            //
+            // Matching the case label closes that gap, and it is the right place to
+            // look: the user is repeating a name this assistant printed, and that name
+            // came from `subject_label`. Only cases already in scope are considered, so
+            // this widens the vocabulary, never the data.
+            if ($studentId === null) {
+                $case = $this->caseBySubjectLabel($scope, (string) $intent->slot('student_name'), $trace);
+            }
         }
 
         // "Student A" / "Student B" refer to positions in the last answer's list.
@@ -2555,9 +2653,15 @@ class AskService
         }
 
         if ($case === null && $studentId !== null) {
-            $open = $this->cases->list($scope, AcademicRiskAgent::CASE_TYPE, 'open', null, 100);
+            // Every status, not just open: a case moves to `in_progress` the moment
+            // anyone acts on it, which is exactly when someone asks "why is X at risk?".
+            // Filtering to open here meant a named follow-up about a student whose
+            // intervention had already started resolved to nothing and answered "I need
+            // to know which student you mean" — about a student the previous answer had
+            // just named. The lifecycle's CaseResolver already reads it this way.
+            $candidates = $this->cases->list($scope, AcademicRiskAgent::CASE_TYPE, CaseBuilder::ANY_STATUS, null, 100);
 
-            foreach ($open as $candidate) {
+            foreach ($candidates as $candidate) {
                 if ((int) ($candidate['subject_id'] ?? 0) === (int) $studentId) {
                     $case = $candidate;
                     break;

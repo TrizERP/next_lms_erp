@@ -583,6 +583,8 @@ class WorkflowEngine
             'updated_at' => now(),
         ]);
 
+        $this->linkPendingOutcomes($runId, $links, $scope);
+
         $this->audit->record(AiAuditLogger::WORKFLOW_TRANSITION, $scope, [
             'related_type' => 'workflow_runs',
             'related_id' => $runId,
@@ -640,6 +642,42 @@ class WorkflowEngine
             'max_retries' => (int) ($step['max_retries'] ?? 0),
             'started_at' => now(),
             'created_at' => now(),
+        ]);
+    }
+
+    /**
+     * Outcome rows are registered at recommendation approval time, before the workflow
+     * run exists. Once the run opens, backfill that foreign key so the action and
+     * outcome stages can read one continuous chain rather than reconstructing it.
+     *
+     * @param  array<string, mixed>  $links
+     */
+    private function linkPendingOutcomes(int $runId, array $links, McpRequestContext $scope): void
+    {
+        if (! Schema::hasTable('ai_outcomes')) {
+            return;
+        }
+
+        $query = DB::table('ai_outcomes')
+            ->where('sub_institute_id', $scope->selectedInstituteId)
+            ->whereNull('workflow_run_id');
+
+        if (! empty($links['recommendation_id'])) {
+            $query->where('recommendation_id', (int) $links['recommendation_id']);
+        } elseif (! empty($links['case_id'])) {
+            $query->where('case_id', (int) $links['case_id']);
+        } else {
+            if (empty($links['subject_entity_key']) || ! array_key_exists('subject_id', $links)) {
+                return;
+            }
+
+            $query->where('subject_entity_key', (string) $links['subject_entity_key'])
+                ->where('subject_id', $links['subject_id']);
+        }
+
+        $query->update([
+            'workflow_run_id' => $runId,
+            'updated_at' => now(),
         ]);
     }
 

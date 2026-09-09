@@ -76,6 +76,8 @@ class Kernel extends HttpKernel
         'check_permissions' =>\App\Http\Middleware\checkPermission::class,
         'api.session' => \App\Http\Middleware\ApiSessionHydrator::class,
         'pal.auth' => \App\Http\Middleware\PalApiAuth::class,
+        'lms.auth' => \App\Http\Middleware\LmsApiAuth::class,
+        'perm' => \App\Http\Middleware\RequirePermission::class,
         'eso.student' => \App\Http\Middleware\EsoStudentOnlyAuth::class,
         'staff.only' => \App\Http\Middleware\RequireStaffRole::class,
         'throttle.qgen' => \App\Http\Middleware\ThrottleQuestionGeneration::class,

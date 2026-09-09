@@ -12,12 +12,12 @@ class AttendanceStudentTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'attendance.student';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'One student\'s attendance over a recent window: present and absent day counts, '
             . 'the rate, and the dates they were absent. Returns no rate when too few days are '
@@ -37,7 +37,7 @@ class AttendanceStudentTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return ['risk' => 'read', 'required_permission' => 'attendance.read'];
     }

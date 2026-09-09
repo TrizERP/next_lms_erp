@@ -12,12 +12,12 @@ class StudentsHistoryTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'students.history';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'One student\'s enrolment history across academic years — which class they were in '
             . 'each year, how long they have been at the school, and whether a year appears twice. '
@@ -37,7 +37,7 @@ class StudentsHistoryTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return ['risk' => 'read', 'required_permission' => 'student.read'];
     }

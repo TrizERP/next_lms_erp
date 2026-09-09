@@ -60,7 +60,7 @@ class ToolAnswerComposer
      */
     public function hasResults(StageContext $context): bool
     {
-        return $this->lists($context) !== [];
+        return $this->artifact($context) !== null || $this->lists($context) !== [];
     }
 
     /**
@@ -68,6 +68,19 @@ class ToolAnswerComposer
      */
     public function compose(StageContext $context): void
     {
+        // A turn that produced a document is answered by naming it, not by tabulating
+        // it. Without this the report's `columns` list — the only list in the payload —
+        // became "the answer", and a successfully saved report was reported to the user
+        // as "No columns matched": the one turn in the system whose whole point is the
+        // artifact it created, described as having found nothing.
+        $artifact = $this->artifact($context);
+
+        if ($artifact !== null) {
+            $this->composeArtifact($context, $artifact);
+
+            return;
+        }
+
         $lists = $this->lists($context);
 
         if ($lists === []) {
@@ -157,6 +170,87 @@ class ToolAnswerComposer
     }
 
     /**
+     * The document a turn saved, if it saved one.
+     *
+     * Recognised by the shape of the payload rather than by tool name: a saved report
+     * carries the id it was filed under and the link to open it. Keying off
+     * `ai.templates.generate` would mean the next tool that saves something reproduces
+     * the "No columns matched" bug on its first day.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function artifact(StageContext $context): ?array
+    {
+        foreach ((array) $context->get('mcp_step_results', []) as $payload) {
+            if (! is_array($payload)) {
+                continue;
+            }
+
+            if (array_key_exists('success', $payload) && is_array($payload['data'] ?? null)) {
+                // A refusal is not an artifact. A generate step that declined — no rows
+                // matched, an unsupported module — must fall through to the normal
+                // paths, which know how to report an empty result honestly.
+                if ($payload['success'] !== true) {
+                    continue;
+                }
+
+                $payload = $payload['data'];
+            }
+
+            if (isset($payload['template_link']) && ! empty($payload['template_id'])) {
+                return $payload;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Write the answer for a turn that saved a document.
+     *
+     * @param  array<string, mixed>  $artifact
+     */
+    private function composeArtifact(StageContext $context, array $artifact): void
+    {
+        $rows = (int) ($artifact['row_count'] ?? 0);
+        $title = trim((string) ($artifact['title'] ?? 'Report'));
+        $link = (string) $artifact['template_link'];
+
+        $context->setHeadline(sprintf(
+            'Report saved — %d row%s.',
+            $rows,
+            $rows === 1 ? '' : 's'
+        ));
+
+        $context->addSection($this->compose->keyValues('Report', array_filter([
+            'Title' => $title,
+            'Rows' => $rows > 0 ? (string) $rows : null,
+            'Filed under' => 'AI templates',
+            'Open' => $link,
+        ])));
+
+        $context->addSection($this->compose->text(
+            'What this is',
+            sprintf(
+                'The figures were composed from %d live %s record%s read through %s — not written by a '
+                . 'model. Open the report to view, edit, refresh, print or share it.',
+                $rows,
+                (string) ($artifact['module'] ?? 'school'),
+                $rows === 1 ? '' : 's',
+                (string) ($artifact['source_tool'] ?? 'the module\'s own service')
+            )
+        ));
+
+        // Structured as well as written, so the panel can offer it as a link rather
+        // than leaving the reader to copy a path out of a sentence.
+        $context->link([
+            'report_link' => $link,
+            'report_id' => (int) $artifact['template_id'],
+            'report_title' => $title,
+        ]);
+    }
+
+    /**
      * @param  array<int, array<string, mixed>>  $lists
      */
     private function provenance(StageContext $context, array $lists): void
@@ -217,6 +311,14 @@ class ToolAnswerComposer
                 // "the answer" — which is how an attendance question came back as a
                 // list of grades.
                 if (! is_array($value) || ! array_is_list($value)) {
+                    continue;
+                }
+
+                // A non-empty list holding no records describes the shape of an answer
+                // — column names, ids, labels — and is not the answer. An *empty* list
+                // is still kept, per the note above: a final step that found nothing
+                // must not vanish and let an earlier step become the result.
+                if ($value !== [] && array_filter($value, 'is_array') === []) {
                     continue;
                 }
 
@@ -325,7 +427,42 @@ class ToolAnswerComposer
             'title' => $title ?? 'Record',
             'lines' => [],
             'meta' => array_slice($meta, 0, 5, true),
+            // The row's own identifier, carried separately from the meta a reader sees.
+            //
+            // Without it the panel can only address a row by the words in its title,
+            // which is how a "View" button on an admission enquiry ended up asking why
+            // that person was at academic risk: the only thing it had was a name, so the
+            // only question it could form was about a name. An id lets the row offer the
+            // action that actually belongs to it.
+            'id' => $this->identifier($item),
         ];
+    }
+
+    /**
+     * The row's primary key, when the payload carries one.
+     *
+     * Tries the plain `id` first and then a single `*_id` column, which is what a
+     * scoped list returns — `enquiry_id`, `student_id`. Returns null rather than
+     * guessing when a row has several, because addressing the wrong record is worse
+     * than offering no action.
+     *
+     * @param  array<string, mixed>  $item
+     */
+    private function identifier(array $item): int|string|null
+    {
+        if (isset($item['id']) && is_scalar($item['id']) && (string) $item['id'] !== '') {
+            return is_numeric($item['id']) ? (int) $item['id'] : (string) $item['id'];
+        }
+
+        $candidates = [];
+
+        foreach ($item as $key => $value) {
+            if (str_ends_with((string) $key, '_id') && is_scalar($value) && (string) $value !== '') {
+                $candidates[] = $value;
+            }
+        }
+
+        return count($candidates) === 1 && is_numeric($candidates[0]) ? (int) $candidates[0] : null;
     }
 
     /**

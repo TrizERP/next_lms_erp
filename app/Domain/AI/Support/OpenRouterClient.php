@@ -22,7 +22,7 @@ use Throwable;
  *     that threw would turn a degraded model into a failed turn — which is exactly the
  *     outcome the fallback exists to prevent.
  */
-class OpenRouterClient
+class OpenRouterClient implements ModelClient
 {
     private const ENDPOINT = 'https://openrouter.ai/api/v1/chat/completions';
 
@@ -43,9 +43,14 @@ class OpenRouterClient
      *
      * @throws RuntimeException when no key is configured or the provider refuses.
      */
+    public function defaultModel(): string
+    {
+        return (string) config('ai.provider.openrouter.model', 'deepseek/deepseek-chat');
+    }
+
     public function chat(
         array $messages,
-        string $model,
+        ?string $model = null,
         ?int $maxTokens = null,
         ?float $temperature = null,
         bool $expectJson = false,
@@ -65,7 +70,7 @@ class OpenRouterClient
         ])
             ->timeout($timeout ?? self::DEFAULT_TIMEOUT)
             ->post(self::ENDPOINT, array_filter([
-                'model' => $model,
+                'model' => $model ?? $this->defaultModel(),
                 'messages' => $messages,
                 'max_tokens' => $maxTokens ?? $key['api_limit'] ?? self::DEFAULT_MAX_TOKENS,
                 'temperature' => $temperature,
@@ -94,7 +99,102 @@ class OpenRouterClient
      * @param  array<int, array{role:string, content:string}>  $messages
      * @return array<string, mixed>|null
      */
-    public function json(array $messages, string $model, int $maxTokens = 900, float $temperature = 0.0): ?array
+    /**
+     * Stream a completion, calling `$onDelta` with each fragment.
+     *
+     * OpenAI-shaped SSE: `data: {json}` with the text at `choices.0.delta.content`, and
+     * a literal `data: [DONE]` to finish. Kept in step with GeminiClient so the rollback
+     * driver streams too — a provider switch that silently stopped streaming would look
+     * like a frontend bug.
+     *
+     * @param  array<int, array{role:string, content:string}>  $messages
+     * @param  callable(string): void  $onDelta
+     */
+    public function stream(
+        array $messages,
+        callable $onDelta,
+        ?string $model = null,
+        ?int $maxTokens = null,
+        ?float $temperature = null,
+    ): ?string {
+        $key = $this->resolveApiKey();
+
+        if ($key === null) {
+            throw new RuntimeException('No usable AI API key is configured.');
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $key['api_key'],
+                'Content-Type' => 'application/json',
+                'HTTP-Referer' => config('app.url', 'https://nextlms.in'),
+                'X-Title' => config('app.name', 'Next LMS ERP'),
+            ])
+                ->timeout(self::DEFAULT_TIMEOUT)
+                ->withOptions(['stream' => true])
+                ->post(self::ENDPOINT, array_filter([
+                    'model' => $model ?? $this->defaultModel(),
+                    'messages' => $messages,
+                    'max_tokens' => $maxTokens ?? $key['api_limit'] ?? self::DEFAULT_MAX_TOKENS,
+                    'temperature' => $temperature,
+                    'stream' => true,
+                ], static fn ($value) => $value !== null));
+
+            if (! $response->successful()) {
+                throw new RuntimeException(sprintf(
+                    'The AI provider returned %d: %s',
+                    $response->status(),
+                    mb_substr($response->body(), 0, 300)
+                ));
+            }
+
+            $body = $response->toPsrResponse()->getBody();
+            $buffer = '';
+            $full = '';
+
+            while (! $body->eof()) {
+                $buffer .= $body->read(8192);
+
+                // Only whole lines are consumed; a partial event carries forward.
+                while (($newline = strpos($buffer, "\n")) !== false) {
+                    $line = trim(substr($buffer, 0, $newline));
+                    $buffer = substr($buffer, $newline + 1);
+
+                    if ($line === '' || ! str_starts_with($line, 'data:')) {
+                        continue;
+                    }
+
+                    $payload = trim(substr($line, 5));
+
+                    if ($payload === '' || $payload === '[DONE]') {
+                        continue;
+                    }
+
+                    $decoded = json_decode($payload, true);
+                    $text = $decoded['choices'][0]['delta']['content'] ?? null;
+
+                    if (is_string($text) && $text !== '') {
+                        $full .= $text;
+                        $onDelta($text);
+                    }
+                }
+            }
+
+            return $full;
+        } catch (RuntimeException $exception) {
+            throw $exception;
+        } catch (Throwable) {
+            $text = $this->chat($messages, $model, $maxTokens, $temperature);
+
+            if (is_string($text) && $text !== '') {
+                $onDelta($text);
+            }
+
+            return $text;
+        }
+    }
+
+    public function json(array $messages, ?string $model = null, int $maxTokens = 900, float $temperature = 0.0): ?array
     {
         try {
             $content = $this->chat(

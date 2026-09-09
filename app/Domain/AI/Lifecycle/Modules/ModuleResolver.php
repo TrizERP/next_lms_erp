@@ -15,13 +15,15 @@ use Illuminate\Support\Facades\Schema;
  *
  * Three sources, most trusted first, because they differ in how much they actually know:
  *
- *   1. **An explicit module.** A caller that names one has more context than any
- *      inference — the workspace panel knows exactly which screen it opened on.
- *   2. **The route.** A person asking "who has low attendance?" while looking at the
- *      attendance screen means attendance, and the route says so without ambiguity.
- *   3. **The words.** Last, and deliberately conservative: it needs a clear winner
- *      before it will claim one, because guessing the module wrong sends the question to
- *      the wrong tools and the wrong agent.
+     *   1. **An explicit module.** A caller that names one has more context than any
+     *      inference — the workspace panel knows exactly which screen it opened on.
+     *   2. **The thread.** A follow-up like "approve it" inherits the governed module
+     *      the conversation already belongs to unless the caller explicitly changes it.
+     *   3. **The route.** A person asking "who has low attendance?" while looking at the
+     *      attendance screen means attendance, and the route says so without ambiguity.
+     *   4. **The words.** Last, and deliberately conservative: it needs a clear winner
+     *      before it will claim one, because guessing the module wrong sends the question to
+     *      the wrong tools and the wrong agent.
  *
  * When none of the three is decisive the answer is the general module, which is honest
  * about having no depth rather than picking a plausible-looking one.
@@ -50,7 +52,7 @@ class ModuleResolver
         $modules = $this->registry->all($subInstituteId);
 
         // 1. Named outright.
-        $explicit = $options['module'] ?? null;
+        $explicit = $this->canonicalModuleKey($options['module'] ?? null, $modules);
 
         if (is_string($explicit) && isset($modules[$explicit])) {
             return [
@@ -60,7 +62,18 @@ class ModuleResolver
             ];
         }
 
-        // 2. Inferred from the screen the question was asked on.
+        // 2. Inherited from the conversation the follow-up belongs to.
+        $thread = $this->canonicalModuleKey($options['conversation_module'] ?? null, $modules);
+
+        if (is_string($thread) && $thread !== 'general' && isset($modules[$thread])) {
+            return [
+                'module' => $modules[$thread],
+                'source' => 'conversation_thread',
+                'considered' => [],
+            ];
+        }
+
+        // 3. Inferred from the screen the question was asked on.
         $route = $options['route'] ?? null;
 
         if (is_string($route) && $route !== '') {
@@ -75,7 +88,7 @@ class ModuleResolver
             }
         }
 
-        // 3. Inferred from the words, if and only if one module clearly wins.
+        // 4. Inferred from the words, if and only if one module clearly wins.
         $scores = $this->score($question, $modules);
         arsort($scores);
 
@@ -117,6 +130,30 @@ class ModuleResolver
     }
 
     // ---------------------------------------------------------------- internals
+
+    /**
+     * Frontend page context and older conversation rows use `student_profiles`,
+     * while the lifecycle registry binds the same capability as `student`.
+     * Keep that compatibility at the resolver boundary so an elliptical follow-up
+     * such as "Why is Abhi D. Raval at risk?" stays on the academic-risk module.
+     *
+     * @param  array<string, ModuleCapability>  $modules
+     */
+    private function canonicalModuleKey(mixed $key, array $modules): ?string
+    {
+        if (! is_string($key) || $key === '') {
+            return null;
+        }
+
+        if (isset($modules[$key])) {
+            return $key;
+        }
+
+        return match ($key) {
+            'student_profiles' => isset($modules['student']) ? 'student' : (isset($modules['students']) ? 'students' : null),
+            default => null,
+        };
+    }
 
     /**
      * @param  array<string, ModuleCapability>  $modules

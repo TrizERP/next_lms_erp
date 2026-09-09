@@ -28,12 +28,12 @@ class AdmissionsUpdateEnquiryTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'admissions.updateEnquiry';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'Set the fields an admission needs before it can be confirmed — first name, last '
             . 'name, standard, division, quota, admission date, enrollment number. Only those '
@@ -72,7 +72,7 @@ class AdmissionsUpdateEnquiryTool extends AbstractMcpTool
         return false;
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return [
             'risk' => 'write',

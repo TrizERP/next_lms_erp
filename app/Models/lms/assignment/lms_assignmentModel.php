@@ -42,6 +42,8 @@ class lms_assignmentModel extends Model
         'ai_status',
         'ai_failure_reason',
         'evaluated_at',
+        'assignment_source_type',
+        'homework_file',
     ];
 
     protected $casts = [

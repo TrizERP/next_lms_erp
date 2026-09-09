@@ -104,7 +104,7 @@ class StudentRegistrationApiController extends Controller
                 'father_name' => trim((string) $request->father_name), 'mother_name' => trim((string) $request->mother_name),
                 'gender' => $request->gender, 'dob' => $request->dob ?: null, 'mobile' => $request->mobile,
                 'email' => $request->email, 'address' => $request->address, 'bloodgroup' => $request->bloodgroup,
-                'password' => md5('student'), 'user_profile_id' => $profile, 'status' => 1,
+                'password' => md5(env('DEFAULT_STUDENT_PASSWORD', 'student')), 'user_profile_id' => $profile, 'status' => 1,
                 'sub_institute_id' => $request->sub_institute_id, 'marking_period_id' => $request->term_id,
                 'admission_year' => $request->syear,
             ]);

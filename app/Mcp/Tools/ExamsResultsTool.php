@@ -12,12 +12,12 @@ class ExamsResultsTool extends AbstractMcpTool
     {
     }
 
-    protected function name(): string
+    public function name(): string
     {
         return 'exams.results';
     }
 
-    protected function description(): string
+    public function description(): string
     {
         return 'Recorded exam marks, filtered by student, exam, subject or class. Returns the '
             . 'average across scored entries; absences carry no score and are counted separately '
@@ -40,7 +40,7 @@ class ExamsResultsTool extends AbstractMcpTool
         ];
     }
 
-    protected function annotations(): array
+    protected function toolAnnotations(): array
     {
         return ['risk' => 'read', 'required_permission' => 'result.read'];
     }

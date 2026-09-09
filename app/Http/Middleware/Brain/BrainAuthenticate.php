@@ -3,8 +3,10 @@
 namespace App\Http\Middleware\Brain;
 
 use App\Brain\Authorization\Role;
+use App\Brain\Support\SchemaCache;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class BrainAuthenticate
 {
@@ -94,9 +96,28 @@ class BrainAuthenticate
         return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
     }
 
+    /**
+     * The LMS profile a token carries, expressed as a Brain role.
+     *
+     * Tried in order of how specific the statement is:
+     *
+     *  1. An explicit user_profile_id -> role entry, for a deployment that wants
+     *     to pin one institute's profile to one role.
+     *  2. tbluser.is_admin, when the LMS sets it.
+     *  3. The PROFILE NAME from tbluserprofilemaster, scoped to the token's own
+     *     institute. This is the branch that actually fires in vivek_erp: every
+     *     row there has is_admin NULL, and profile ids are per-institute, so
+     *     without it an institute's own administrator resolved to `viewer` and
+     *     could not run ingestion, refresh intelligence or record a decision.
+     *  4. default_role — read-only.
+     *
+     * The lookup is by (id, sub_institute_id) so a token cannot borrow another
+     * institute's profile row to claim a role it was not granted.
+     */
     private function roleFor(array $payload): string
     {
         $profileId = isset($payload['user_profile_id']) ? (string) $payload['user_profile_id'] : '';
+
         $mapped = config('brain.profile_roles.'.$profileId);
         if ($mapped && Role::tryFromName((string) $mapped)) {
             return (string) $mapped;
@@ -107,7 +128,41 @@ class BrainAuthenticate
             return Role::TENANT_ADMIN;
         }
 
+        $named = $this->roleForProfileName($profileId, (string) ($payload['sub_institute_id'] ?? ''));
+        if ($named !== null) {
+            return $named;
+        }
+
         $default = (string) config('brain.default_role', Role::VIEWER);
+
         return Role::tryFromName($default) ?: Role::VIEWER;
     }
+
+    /** The configured role for this institute's profile name, or null. */
+    private function roleForProfileName(string $profileId, string $tenantId): ?string
+    {
+        $map = (array) config('brain.profile_name_roles', []);
+        if ($profileId === '' || $map === [] || ! SchemaCache::hasTable('tbluserprofilemaster')) {
+            return null;
+        }
+
+        $key = $profileId.'@'.$tenantId;
+        if (! array_key_exists($key, self::$profileNames)) {
+            $query = DB::table('tbluserprofilemaster')->where('id', $profileId);
+            if ($tenantId !== '' && SchemaCache::hasColumn('tbluserprofilemaster', 'sub_institute_id')) {
+                $query->where('sub_institute_id', $tenantId);
+            }
+            self::$profileNames[$key] = (string) ($query->value('name') ?? '');
+        }
+
+        $name = strtolower(trim(self::$profileNames[$key]));
+        if ($name === '' || ! isset($map[$name])) {
+            return null;
+        }
+
+        return Role::tryFromName((string) $map[$name]);
+    }
+
+    /** Memo so a burst of Brain calls in one page load costs one profile lookup. */
+    private static array $profileNames = [];
 }

@@ -6,7 +6,10 @@ use App\Domain\AI\Conversation\AskPipeline;
 use App\Domain\AI\Conversation\AskService;
 use App\Domain\AI\Conversation\ConversationStore;
 use App\Domain\AI\Lifecycle\Modules\ModuleRegistry;
+use App\Domain\AI\Lifecycle\StageKey;
+use App\Domain\AI\Lifecycle\StageOutcome;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
 
 /**
@@ -53,6 +56,8 @@ class AskController extends AiController
      */
     public function ask(Request $request)
     {
+        $this->allowTimeForACohortSweep();
+
         try {
             $scope = $this->scope($request);
 
@@ -93,6 +98,149 @@ class AskController extends AiController
         } catch (Throwable $exception) {
             return $this->handle($exception);
         }
+    }
+
+    /**
+     * The same question, streamed.
+     *
+     * A lifecycle turn runs twelve stages and takes seconds. Non-streaming, the user
+     * watches a spinner with no idea whether anything is happening; the stages are
+     * already the most informative thing the platform knows, and they were being
+     * withheld until the end purely as an artefact of returning one JSON body.
+     *
+     * Four event types, in this order:
+     *
+     *   - `stage`   — one per stage, as it settles. The payload is exactly one element
+     *                 of the `trace` array the JSON route returns, so LifecycleTrace.tsx
+     *                 renders a streamed stage and a stored one with the same code.
+     *   - `token`   — a text fragment, where the answer is written by a model. ERP
+     *                 answers are composed from rows rather than generated, so those
+     *                 turns emit no tokens and their text arrives with `done`.
+     *   - `done`    — the complete result, byte-identical to the JSON route's `data`.
+     *                 A client can ignore every earlier event and still be correct.
+     *   - `error`   — a failure, in the same envelope shape as the JSON route.
+     *
+     * `done` carrying the whole payload is deliberate. It means streaming is an
+     * enhancement rather than a second contract: a client that cannot parse SSE
+     * incrementally, or that drops events, can wait for `done` and be exactly as
+     * correct as a caller of the JSON route.
+     */
+    public function stream(Request $request)
+    {
+        $this->allowTimeForACohortSweep();
+
+        try {
+            $scope = $this->scope($request);
+
+            $validated = $request->validate([
+                'question' => 'required|string|max:1000',
+                'conversation_id' => 'nullable|integer|min:1',
+                'payload' => 'nullable|array',
+                'payload.case_id' => 'nullable|integer|min:1',
+                'payload.student_id' => 'nullable|integer|min:1',
+                'payload.recommendation_id' => 'nullable|integer|min:1',
+                'payload.workflow_approval_id' => 'nullable|integer|min:1',
+                'limit' => 'nullable|integer|min:1|max:200',
+                'module' => 'nullable|string|max:64',
+                'route' => 'nullable|string|max:512',
+            ]);
+        } catch (Throwable $exception) {
+            // Validation and scope failures happen before a byte is streamed, so they
+            // answer as ordinary JSON with a real status code rather than as a 200 with
+            // an error event a client would have to dig out of the stream.
+            return $this->handle($exception);
+        }
+
+        $options = [
+            'payload' => $validated['payload'] ?? [],
+            'limit' => $validated['limit'] ?? null,
+            'module' => $validated['module'] ?? null,
+            'route' => $validated['route'] ?? null,
+        ];
+
+        $response = new StreamedResponse(function () use ($validated, $scope, $options): void {
+            $emit = $this->emitter();
+
+            try {
+                $result = $this->pipeline->ask(
+                    $validated['question'],
+                    $scope,
+                    $validated['conversation_id'] ?? null,
+                    $options,
+                    onStage: function (StageKey $key, StageOutcome $outcome) use ($emit): void {
+                        $emit('stage', $outcome->toArray($key));
+                    },
+                    onToken: function (string $delta) use ($emit): void {
+                        $emit('token', ['delta' => $delta]);
+                    },
+                );
+
+                $emit('done', $result);
+            } catch (Throwable $exception) {
+                report($exception);
+
+                $emit('error', [
+                    'message' => 'The question could not be answered.',
+                    // The trace is the diagnostic surface; the message stays generic so
+                    // a provider or query detail never reaches a browser.
+                    'code' => 'ask_failed',
+                ]);
+            }
+        });
+
+        $response->headers->set('Content-Type', 'text/event-stream');
+        $response->headers->set('Cache-Control', 'no-cache, no-transform');
+        // Nginx buffers proxied responses by default, which turns a stream back into one
+        // delivery at the end — the exact failure this endpoint exists to avoid.
+        $response->headers->set('X-Accel-Buffering', 'no');
+        $response->headers->set('Connection', 'keep-alive');
+
+        return $response;
+    }
+
+    /**
+     * Give a turn long enough to finish the work it was asked to do.
+     *
+     * A cohort risk scan reads every student in the tenant through three detectors —
+     * measured at 57–61s against a 140-student school. The web SAPI's default 60s
+     * `max_execution_time` killed it mid-sweep, and because this endpoint streams, PHP's
+     * fatal error was written *into* the SSE frames: the client received a half-drawn
+     * stage ladder followed by an HTML error page, which reads as an agent that quietly
+     * gave up rather than a request that ran out of time.
+     *
+     * Raised here rather than in php.ini so the limit travels with the code that needs
+     * it, matching what the LMS generation controller already does. It is a ceiling, not
+     * a target — nothing here is expected to take three minutes, and a turn that does is
+     * a performance bug this does not excuse.
+     */
+    private function allowTimeForACohortSweep(): void
+    {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(180);
+        }
+    }
+
+    /**
+     * Write one SSE event and push it out.
+     *
+     * The flush pair is the whole trick: without it PHP holds output in its own buffer
+     * and every event lands at once, which looks exactly like a working stream in tests
+     * and like a broken one to a user.
+     *
+     * @return callable(string, array<string, mixed>): void
+     */
+    private function emitter(): callable
+    {
+        return static function (string $event, array $data): void {
+            echo 'event: ' . $event . "\n";
+            echo 'data: ' . json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n\n";
+
+            if (ob_get_level() > 0) {
+                @ob_flush();
+            }
+
+            flush();
+        };
     }
 
     /**

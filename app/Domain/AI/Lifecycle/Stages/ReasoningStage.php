@@ -10,6 +10,7 @@ use App\Domain\AI\Lifecycle\StageContext;
 use App\Domain\AI\Lifecycle\StageKey;
 use App\Domain\AI\Lifecycle\StageOutcome;
 use App\Domain\AI\Lifecycle\Support\CaseResolver;
+use App\Domain\AI\Lifecycle\Support\RiskScanLimit;
 use App\Domain\AI\Lifecycle\Support\ToolAnswerComposer;
 use App\Domain\KnowledgeGraph\GraphQueryService;
 
@@ -30,6 +31,26 @@ use App\Domain\KnowledgeGraph\GraphQueryService;
  */
 class ReasoningStage implements LifecycleStage
 {
+    /**
+     * The enquiry fields worth showing when someone selects a name off the list.
+     *
+     * A summary, not the record: enough to confirm the assistant understood who was
+     * meant, without reprinting a form the Admission module renders properly.
+     */
+    private const ENQUIRY_SUMMARY_FIELDS = [
+        'enquiry_no' => 'Enquiry no',
+        'student_name' => 'Student',
+        'first_name' => 'First name',
+        'last_name' => 'Last name',
+        'mobile' => 'Mobile',
+        'email' => 'Email',
+        'date_of_birth' => 'Date of birth',
+        'admission_standard' => 'Standard',
+        'standard_name' => 'Standard',
+        'father_name' => 'Father',
+        'status' => 'Status',
+    ];
+
     public function __construct(
         private readonly CaseResolver $caseResolver,
         private readonly ExplanationBuilder $explanations,
@@ -59,6 +80,24 @@ class ReasoningStage implements LifecycleStage
 
         if (is_array($ambiguous) && count($ambiguous) > 1) {
             return $this->ambiguous($context, $ambiguous);
+        }
+
+        if ($context->intent?->key === 'student_risk_scan' && count($context->cases) > 1) {
+            return $this->rankedRiskScan($context);
+        }
+
+        if ($context->intent?->key === 'learning_effectiveness') {
+            return StageOutcome::skipped(
+                'Effectiveness is an aggregate across all interventions and needs no case.',
+                []
+            );
+        }
+
+        if (in_array($context->intent?->key, ['approve_recommendation', 'reject_recommendation'], true)) {
+            return StageOutcome::skipped(
+                'This turn records a decision and does not need a case.',
+                []
+            );
         }
 
         $resolved = $this->caseResolver->resolve($context);
@@ -121,30 +160,32 @@ class ReasoningStage implements LifecycleStage
             count($context->evidence)
         ));
 
-        $context->addSection($this->compose->text(
-            'Why',
-            (string) ($explanation['narrative'] ?? $case['summary'] ?? '')
-        ));
-
-        if ($claims !== []) {
-            $context->addSection($this->compose->records(
-                'Each claim, and what it rests on',
-                array_map(static fn ($claim) => [
-                    'title' => is_array($claim) ? ($claim['claim'] ?? '') : (string) $claim,
-                    'lines' => is_array($claim) && ! empty($claim['evidence_ids'])
-                        ? ['Cites evidence #' . implode(', #', $claim['evidence_ids'])]
-                        : ['No evidence cited'],
-                    'meta' => is_array($claim) && isset($claim['confidence'])
-                        ? ['Confidence' => number_format((float) $claim['confidence'], 2)]
-                        : [],
-                ], $claims)
+        if (! $this->isWorkflowRead($context)) {
+            $context->addSection($this->compose->text(
+                'Why',
+                (string) ($explanation['narrative'] ?? $case['summary'] ?? '')
             ));
-        }
 
-        $context->suggestFollowUp(
-            'What evidence supports this?',
-            'What should the teacher do?'
-        );
+            if ($claims !== []) {
+                $context->addSection($this->compose->records(
+                    'Each claim, and what it rests on',
+                    array_map(static fn ($claim) => [
+                        'title' => is_array($claim) ? ($claim['claim'] ?? '') : (string) $claim,
+                        'lines' => is_array($claim) && ! empty($claim['evidence_ids'])
+                            ? ['Cites evidence #' . implode(', #', $claim['evidence_ids'])]
+                            : ['No evidence cited'],
+                        'meta' => is_array($claim) && isset($claim['confidence'])
+                            ? ['Confidence' => number_format((float) $claim['confidence'], 2)]
+                            : [],
+                    ], $claims)
+                ));
+            }
+
+            $context->suggestFollowUp(
+                'What evidence supports this?',
+                'What should the teacher do?'
+            );
+        }
 
         // The reference is not always populated. Printing "Case #3 (), severity critical"
         // reads as a missing value the reader should worry about, when it is simply a
@@ -191,9 +232,19 @@ class ReasoningStage implements LifecycleStage
     {
         $this->toolAnswers->compose($context);
 
+        // A tool answer that is about exactly one person names that person, so the
+        // module can pick up where the conversation left off.
+        //
+        // Nothing linked a student outside the academic-risk case path, which is why the
+        // Fees hand-off could never appear: the assistant would identify who owed money
+        // and then have no way to say *which* record the Fees module should open. Only a
+        // single-row result qualifies — a list of forty defaulters identifies a cohort,
+        // not a student, and guessing the first row would open the wrong ledger.
+        $this->linkSingleSubject($context);
+
         $tools = $context->executedTools();
 
-        $context->suggestFollowUp('Which students are at academic risk?');
+        $context->suggestRiskJourney('Which students are at academic risk?');
 
         return StageOutcome::ran(
             sprintf(
@@ -208,6 +259,50 @@ class ReasoningStage implements LifecycleStage
             [],
             ['api' => 'POST /api/mcp/tools/call']
         );
+    }
+
+    /**
+     * Link the one student a tool answer is about, when there is exactly one.
+     *
+     * Reads the same payloads the answer was composed from, so the link can never point
+     * at a record the reader was not shown.
+     */
+    private function linkSingleSubject(StageContext $context): void
+    {
+        $subjects = [];
+
+        foreach ((array) $context->get('mcp_step_results', []) as $payload) {
+            $data = is_array($payload['data'] ?? null) ? $payload['data'] : (is_array($payload) ? $payload : []);
+
+            foreach ($data as $value) {
+                if (! is_array($value) || $value === [] || ! array_is_list($value)) {
+                    continue;
+                }
+
+                foreach ($value as $row) {
+                    if (! is_array($row)) {
+                        continue;
+                    }
+
+                    $id = $row['student_id'] ?? $row['id'] ?? null;
+
+                    if (is_numeric($id) && (int) $id > 0) {
+                        $subjects[(int) $id] = $row['student_name'] ?? $row['name'] ?? null;
+                    }
+                }
+            }
+        }
+
+        if (count($subjects) !== 1) {
+            return;
+        }
+
+        $studentId = (int) array_key_first($subjects);
+
+        $context->link(array_filter([
+            'student_id' => $studentId,
+            'student_name' => $subjects[$studentId],
+        ], static fn ($value) => $value !== null));
     }
 
     /**
@@ -234,6 +329,89 @@ class ReasoningStage implements LifecycleStage
         };
     }
 
+    private function isWorkflowRead(StageContext $context): bool
+    {
+        return in_array($context->intent?->key, ['workflow_status', 'outcome_status'], true);
+    }
+
+    private function rankedRiskScan(StageContext $context): StageOutcome
+    {
+        $count = RiskScanLimit::fromQuestion($context->question, count($context->cases));
+        $cases = array_slice($context->cases, 0, $count);
+
+        // A ranked answer names several valid subjects. Remember the exact order, but
+        // do not make the first one the conversation's active student: that would make
+        // an approval below this result silently target a student the user did not pick.
+        $context->link([
+            'last_case_list' => array_values(array_map(static fn (array $case) => [
+                'student_id' => (int) ($case['student_id'] ?? $case['subject_id'] ?? 0),
+                'student_name' => $case['student_name'] ?? null,
+                'case_id' => (int) ($case['case_id'] ?? $case['id'] ?? 0),
+            ], $cases)),
+        ]);
+
+        $context->setHeadline(sprintf(
+            'Top %d student%s at academic risk.',
+            count($cases),
+            count($cases) === 1 ? '' : 's'
+        ));
+
+        $context->addSection($this->compose->records(
+            'Ranked by current risk priority',
+            array_map(function (array $case, int $index) {
+                return [
+                    'title' => sprintf('%d. %s', $index + 1, $case['student_name'] ?? 'Student'),
+                    'badge' => $this->compose->severityLabel($case['severity'] ?? null),
+                    'badge_tone' => $case['severity'] ?? 'warning',
+                    // Evidence and priority are intentionally withheld until selection.
+                    'lines' => [],
+                    'meta' => [],
+                ];
+            }, $cases, array_keys($cases))
+        ));
+
+        foreach ($cases as $case) {
+            $caseId = (int) ($case['case_id'] ?? $case['id'] ?? 0);
+            $studentId = (int) ($case['student_id'] ?? $case['subject_id'] ?? 0);
+
+            if ($caseId <= 0 || $studentId <= 0) {
+                continue;
+            }
+
+            $student = (string) ($case['student_name'] ?? ('Student #' . $studentId));
+
+            $context->addAction($this->compose->action(
+                'view_risk_case_' . $caseId,
+                'View details: ' . $student,
+                'student_risk_explain',
+                [
+                    'case_id' => $caseId,
+                    'student_id' => $studentId,
+                    'utterance' => 'Why is this student at academic risk?',
+                ]
+            ));
+        }
+
+        $context->suggestFollowUp('Select a student above to view the complete evidence and recommendation.');
+
+        return StageOutcome::ran(
+            sprintf('Ranked and returned %d of %d cases from this agent run.', count($cases), count($context->cases)),
+            [
+                'requested_count' => $count,
+                'available_cases' => count($context->cases),
+                'ranked_case_ids' => array_values(array_filter(array_map(
+                    static fn (array $case) => $case['case_id'] ?? null,
+                    $cases
+                ))),
+                'rule' => 'Cases are ordered by the priority score calculated from this run\'s detected signals.',
+            ],
+            ['table' => 'ai_cases', 'ids' => array_values(array_filter(array_map(
+                static fn (array $case) => $case['case_id'] ?? null,
+                $cases
+            )))]
+        );
+    }
+
     // ---------------------------------------------------------------- branches
 
     /**
@@ -253,7 +431,49 @@ class ReasoningStage implements LifecycleStage
         // Whatever the flow decided should be remembered — or forgotten — is carried out
         // by the orchestrator after the pipeline finishes.
         $context->set('pending_action_next', $flow['pending'] ?? null);
-        $context->link(['enquiry_id' => $enquiryId]);
+        // The state travels too, because the panel's next step depends on it: an enquiry
+        // that still needs confirming should hand off to the Admission module with that
+        // record open, while one already confirmed should open the enrolment it became.
+        // Without the state the panel can only see "there is an enquiry" and has to guess
+        // which of those two the user is in the middle of.
+        $validation = is_array($flow['data'] ?? null) ? $flow['data'] : [];
+        $allowed = is_array($validation['allowed_actions'] ?? null) ? $validation['allowed_actions'] : [];
+
+        // The state travels too, because the panel's next step depends on it: an enquiry
+        // that still needs confirming should hand off to the Admission module with that
+        // record open, while one already confirmed should open the enrolment it became.
+        //
+        // `open_confirmation_page` is the backend's own answer to "may this person be
+        // sent to the confirmation screen", and it is deliberately separate from
+        // `confirm` — an admission missing four fields cannot be confirmed here but can
+        // absolutely be finished there. That distinction is the whole reason the module
+        // hand-off exists, so it is carried rather than re-derived.
+        $context->link([
+            'enquiry_id' => $enquiryId,
+            'admission_state' => $state,
+            'can_open_confirmation_page' => ($allowed['open_confirmation_page'] ?? null) === true ? 1 : null,
+        ]);
+
+        // Whose admission this is. Shown before anything is asked for, because a user who
+        // picked a name off a list and was handed four field labels had no way to tell
+        // whether the assistant had even understood which person they meant.
+        $enquiry = is_array($validation['enquiry'] ?? null) ? $validation['enquiry'] : [];
+
+        if ($enquiry !== []) {
+            $details = [];
+
+            foreach (self::ENQUIRY_SUMMARY_FIELDS as $field => $label) {
+                $value = $enquiry[$field] ?? null;
+
+                if (is_scalar($value) && trim((string) $value) !== '') {
+                    $details[$label] = (string) $value;
+                }
+            }
+
+            if ($details !== []) {
+                $context->addSection($this->compose->keyValues('Admission enquiry details', $details));
+            }
+        }
 
         $supplied = is_array($flow['supplied'] ?? null) ? $flow['supplied'] : [];
 
@@ -493,17 +713,12 @@ class ReasoningStage implements LifecycleStage
             );
         }
 
-        $context->setHeadline('I need to know which student or case you mean.');
-        $context->addSection($this->compose->text(
-            'Try',
-            'Ask "which students are at academic risk?" first — then follow-up questions know who you mean.'
-        ));
-        $context->suggestFollowUp('Which students are at academic risk?');
-
-        return StageOutcome::skipped(
+        return StageOutcome::blocked(
             'The question did not identify a student or a case, so there was nothing to reason about.',
             []
-        )->halting('No subject was identified, so no recommendation, approval or action could apply.');
+        )->withNote(
+            'No subject was identified, so no recommendation, approval or action could apply.'
+        );
     }
 
     /**
