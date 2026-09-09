@@ -4,8 +4,72 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
+    "content-hash": "01a3abd97a48126b46e1258f84be526e",
     "content-hash": "b861ccea8d2f75c3beffb85ebe44dee7",
     "packages": [
+        {
+            "name": "anthropic-ai/sdk",
+            "version": "v0.47.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/anthropics/anthropic-sdk-php.git",
+                "reference": "2b74c06eb3a305d63d90772aca82415fc088d9c7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/anthropics/anthropic-sdk-php/zipball/2b74c06eb3a305d63d90772aca82415fc088d9c7",
+                "reference": "2b74c06eb3a305d63d90772aca82415fc088d9c7",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.1",
+                "php-http/discovery": "^1",
+                "psr/http-client": "^1",
+                "psr/http-client-implementation": "^1",
+                "psr/http-factory-implementation": "^1",
+                "psr/http-message": "^1|^2",
+                "standard-webhooks/standard-webhooks": "^1"
+            },
+            "require-dev": {
+                "aws/aws-sdk-php": "^3.368",
+                "friendsofphp/php-cs-fixer": "^3",
+                "google/auth": "^1.49",
+                "guzzlehttp/guzzle": "^7",
+                "mcp/sdk": "^0.7.1",
+                "nyholm/psr7": "^1",
+                "pestphp/pest": "^3",
+                "php-http/mock-client": "^1",
+                "phpstan/extension-installer": "^1",
+                "phpstan/phpstan": "2.2.1",
+                "phpstan/phpstan-phpunit": "^2",
+                "phpunit/phpunit": "^11",
+                "symfony/http-client": "^7"
+            },
+            "suggest": {
+                "aws/aws-sdk-php": "Allows using the AWS Bedrock, AWS gateway, and Bedrock Mantle SDKs",
+                "google/auth": "Allows using the Google Vertex and Google Cloud gateway SDKs",
+                "mcp/sdk": "Required to use the BetaMcp helpers for integrating MCP servers with the Anthropic SDK"
+            },
+            "type": "library",
+            "autoload": {
+                "files": [
+                    "src/Version.php"
+                ],
+                "psr-4": {
+                    "Anthropic\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Anthropic PHP SDK",
+            "support": {
+                "issues": "https://github.com/anthropics/anthropic-sdk-php/issues",
+                "source": "https://github.com/anthropics/anthropic-sdk-php/tree/v0.47.0"
+            },
+            "time": "2026-09-04T22:41:56+00:00"
+        },
         {
             "name": "aws/aws-crt-php",
             "version": "v1.2.7",
@@ -6594,6 +6658,101 @@
                 }
             ],
             "time": "2023-12-14T13:21:46+00:00"
+        },
+        {
+            "name": "spatie/macroable",
+            "version": "2.0.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/spatie/macroable.git",
+                "reference": "ec2c320f932e730607aff8052c44183cf3ecb072"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/spatie/macroable/zipball/ec2c320f932e730607aff8052c44183cf3ecb072",
+                "reference": "ec2c320f932e730607aff8052c44183cf3ecb072",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^8.0|^9.3"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Spatie\\Macroable\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Freek Van der Herten",
+                    "email": "freek@spatie.be",
+                    "homepage": "https://spatie.be",
+                    "role": "Developer"
+                }
+            ],
+            "description": "A trait to dynamically add methods to a class",
+            "homepage": "https://github.com/spatie/macroable",
+            "keywords": [
+                "macroable",
+                "spatie"
+            ],
+            "support": {
+                "issues": "https://github.com/spatie/macroable/issues",
+                "source": "https://github.com/spatie/macroable/tree/2.0.0"
+            },
+            "time": "2021-03-26T22:39:02+00:00"
+        },
+        {
+            "name": "standard-webhooks/standard-webhooks",
+            "version": "v1.0.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/standard-webhooks/standard-webhooks.git",
+                "reference": "a1773d7ffc577d730e2bf4d4bd740a82a42aa904"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/standard-webhooks/standard-webhooks/zipball/a1773d7ffc577d730e2bf4d4bd740a82a42aa904",
+                "reference": "a1773d7ffc577d730e2bf4d4bd740a82a42aa904",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^8.0"
+            },
+            "require-dev": {
+                "phpunit/phpunit": "^9.0 || ^10.0"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "StandardWebhooks\\": "libraries/php/src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "Standard Webhooks - Open source tools and guidelines for sending webhooks easily, securely, and reliably",
+            "homepage": "https://www.standardwebhooks.com",
+            "keywords": [
+                "hmac",
+                "signature",
+                "standard-webhooks",
+                "verification",
+                "webhooks"
+            ],
+            "support": {
+                "issues": "https://github.com/standard-webhooks/standard-webhooks/issues",
+                "source": "https://github.com/standard-webhooks/standard-webhooks/tree/v1.0.2"
+            },
+            "time": "2026-02-18T19:02:27+00:00"
         },
         {
             "name": "stefanak-michal/bolt",

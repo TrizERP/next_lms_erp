@@ -483,7 +483,11 @@ class ApiLmsCourseController extends Controller
      * than uploaded by a person. Kept as a list because the generator has written
      * more than one marker over time.
      */
-    private const GENERATED_CONTENT_SOURCES = ['Gamma AI', 'aiGenerated'];
+    // Every marker the generate-content flow has written to
+    // content_master.source. 'Claude AI' is config('claude.source_label');
+    // the frontend keeps a matching lower-cased copy in chapters/page.tsx,
+    // so the two must be changed together.
+    private const GENERATED_CONTENT_SOURCES = ['Gamma AI', 'aiGenerated', 'Claude AI'];
 
     /**
      * Restrict a content_master query to uploaded or generated rows.
