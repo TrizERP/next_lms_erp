@@ -97,9 +97,15 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
         }
 
         $questionsText = '';
-        $submissionMime = $this->mimeFromExtension($assignment->submission_image);
-        $referenceMime = $isHomework ? $this->mimeFromExtension($referenceFile) : 'application/pdf';
+        $submissionMime = $this->detectMime($submissionPath, $assignment->submission_image);
+        $referenceMime = $isHomework ? $this->detectMime($assignmentPath, $referenceFile) : 'application/pdf';
         $located = null;
+
+        // A Word submission has no page images for the locator's spatial
+        // box_2d lookup to make sense of, so its own text layer (already
+        // clean, never scanned) is read directly and there is nothing to
+        // annotate — see the annotation step below.
+        $submissionIsWord = in_array($submissionMime, HomeworkDocumentExtractionService::WORD_MIME_TYPES, true);
 
         try {
             $questionsText = $extractor->extractText(
@@ -107,7 +113,9 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
                 $referenceMime,
                 'assignment questions'
             );
-            $located = $locator->locateAnswers($submissionPath, $submissionMime);
+            $located = $submissionIsWord
+                ? ['answers' => [], 'combined_text' => $extractor->extractText($submissionPath, $submissionMime, 'student answers')]
+                : $locator->locateAnswers($submissionPath, $submissionMime);
         } catch (DocumentExtractionException $exception) {
             Log::warning('Assignment OCR/extraction failed', [
                 'assignment_id' => $this->assignmentId,
@@ -131,18 +139,24 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
         }
 
         $evaluatedSubmissionUrl = null;
-        try {
-            $annotations = $this->mergeAnnotations($evaluation['results'], $located['answers']);
-            $pdfBinary = $annotatedPdfService->annotate($submissionPath, $submissionMime, $annotations);
-            $filePath = 'public/assignment_evaluated_submissions/evaluated-' . $this->assignmentId . '-' . now()->format('YmdHis') . '.pdf';
-            Storage::disk('digitalocean')->put($filePath, $pdfBinary, 'public');
-            $evaluatedSubmissionUrl = Storage::disk('digitalocean')->url($filePath);
-        } catch (Throwable $exception) {
-            Log::warning('Assignment annotated-submission generation/storage failed', [
+        if ($submissionIsWord) {
+            Log::info('Skipping annotated-submission generation for a Word document submission (no page images to mark up)', [
                 'assignment_id' => $this->assignmentId,
-                'message' => $exception->getMessage(),
             ]);
-            // Non-fatal: the structured result is still saved even if the annotated PDF could not be produced.
+        } else {
+            try {
+                $annotations = $this->mergeAnnotations($evaluation['results'], $located['answers']);
+                $pdfBinary = $annotatedPdfService->annotate($submissionPath, $submissionMime, $annotations);
+                $filePath = 'public/assignment_evaluated_submissions/evaluated-' . $this->assignmentId . '-' . now()->format('YmdHis') . '.pdf';
+                Storage::disk('digitalocean')->put($filePath, $pdfBinary, 'public');
+                $evaluatedSubmissionUrl = Storage::disk('digitalocean')->url($filePath);
+            } catch (Throwable $exception) {
+                Log::warning('Assignment annotated-submission generation/storage failed', [
+                    'assignment_id' => $this->assignmentId,
+                    'message' => $exception->getMessage(),
+                ]);
+                // Non-fatal: the structured result is still saved even if the annotated PDF could not be produced.
+            }
         }
 
         $summary = $this->buildTeacherRemarks($evaluation);
@@ -257,6 +271,44 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
         return is_file($path) ? $path : null;
     }
 
+    /**
+     * Trusts the file's actual bytes over its extension: Gemini's "inline_data"
+     * call declares a mime type, and a mislabeled file (e.g. an image saved
+     * with a .pdf name, or an extension-less/renamed upload) sent as
+     * "application/pdf" is exactly what produces its "document has no pages"
+     * rejection. Falls back to the old extension-based guess only if the file
+     * can't be inspected on disk.
+     *
+     * .docx is itself a zip archive, and fileinfo commonly reports it as the
+     * generic "application/zip"/"application/octet-stream" rather than
+     * recognising the Word-specific content types inside — so a recognised
+     * .docx extension wins over that generic sniff result.
+     */
+    private function detectMime(?string $absolutePath, ?string $fileName): string
+    {
+        $extension = strtolower((string) pathinfo((string) $fileName, PATHINFO_EXTENSION));
+
+        if ($absolutePath && is_file($absolutePath)) {
+            $detected = @mime_content_type($absolutePath);
+            if (in_array($detected, self::RECOGNISED_MIME_TYPES, true)) {
+                return $detected;
+            }
+            if ($extension === 'docx' && in_array($detected, ['application/zip', 'application/octet-stream'], true)) {
+                return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            }
+        }
+
+        return $this->mimeFromExtension($fileName);
+    }
+
+    private const RECOGNISED_MIME_TYPES = [
+        'image/png',
+        'image/jpeg',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+
     private function mimeFromExtension(?string $fileName): string
     {
         $extension = strtolower((string) pathinfo((string) $fileName, PATHINFO_EXTENSION));
@@ -264,6 +316,8 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
         return match ($extension) {
             'png' => 'image/png',
             'jpg', 'jpeg' => 'image/jpeg',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             default => 'application/pdf',
         };
     }
