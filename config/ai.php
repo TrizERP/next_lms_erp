@@ -1,5 +1,21 @@
 <?php
 
+// Google retires model ids and then answers them with 404 NOT_FOUND, which reaches
+// the user as a failed generation rather than as a config error. Any retired id
+// still pinned in a deployed .env is mapped forward to its replacement here, so a
+// stale environment keeps working without an .env edit on every server.
+$geminiModel = (static function (): string {
+    $model = trim((string) env('GEMINI_MODEL', ''));
+
+    $retired = [
+        'gemini-2.5-flash' => 'gemini-3.6-flash',
+        'gemini-1.5-flash' => 'gemini-3.6-flash',
+        'gemini-1.5-pro'   => 'gemini-3.6-pro',
+    ];
+
+    return $retired[$model] ?? ($model !== '' ? $model : 'gemini-3.6-flash');
+})();
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -40,7 +56,7 @@ return [
             // Left without a version segment on purpose: the client appends
             // /models/{model}:generateContent, which is how Google's REST API is shaped.
             'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
-            'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+            'model' => $geminiModel,
             'timeout' => (int) env('GEMINI_REQUEST_TIMEOUT', 45),
             'max_output_tokens' => (int) env('GEMINI_MAX_OUTPUT_TOKENS', 1466),
             // The api_type used to look the key up in the ai_api_keys pool, which

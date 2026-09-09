@@ -1280,7 +1280,7 @@ SCHEMA;
                         ->connectTimeout(20)
                         ->post(
                             'https://generativelanguage.googleapis.com/v1beta/models/'
-                            . env('GEMINI_MODEL', 'gemini-3.6-flash') . ':generateContent',
+                            . config('gemini.model') . ':generateContent',
                             [
                                 'contents' => [[
                                     'role' => 'user',
@@ -1306,7 +1306,7 @@ SCHEMA;
                             return [
                                 'ok' => true,
                                 'content' => $content,
-                                'model' => env('GEMINI_MODEL', 'gemini-3.6-flash'),
+                                'model' => config('gemini.model'),
                                 'finish_reason' => $geminiResponse->json('candidates.0.finishReason'),
                                 'usage' => $geminiResponse->json('usageMetadata', []),
                             ];
