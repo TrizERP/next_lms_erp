@@ -79,7 +79,11 @@ class checkPermission
                     {
                         throw new AuthorizationException('You do not have permission to delete this resource.');
                     }
-                    elseif ((str_contains(request()->path(), 'update'))  && $can_edit != 1 && !in_array($menu_id,[31,82,386]))
+                    // menu_id 31 (/fees/update-fees-breakoff) was removed from this allowlist:
+                    // it is a Fees endpoint, and tblgroupwise_rights/tblindividual_rights already
+                    // carry real can_edit=0 rows for it that this bypass was silently overriding
+                    // (Day-11 Issue 2 — RBAC must not be bypassable on Fees endpoints).
+                    elseif ((str_contains(request()->path(), 'update'))  && $can_edit != 1 && !in_array($menu_id,[82,386]))
                     {
                         throw new AuthorizationException('You do not have permission to edit this resource.');
                     }

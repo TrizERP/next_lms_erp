@@ -8,6 +8,7 @@ use App\Models\lms\assignment\lms_assignmentModel;
 use App\Models\lms\lmsOfflineExamModel;
 use App\Models\lms\lmsOfflineExamAnswerModel;
 use App\Models\lms\questionpaperModel;
+use App\Services\Homework\HomeworkDocumentExtractionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -226,6 +227,12 @@ class LmsAssignmentApiController extends Controller
      * Upload a homework file for a teacher-created assignment.
      * Stores under storage/app/public/QuestionPaper alongside exam paper PDFs
      * and returns the relative path.
+     *
+     * Validated up front because this file is later handed to
+     * EvaluateAssignmentSubmissionJob as the "reference document" for every
+     * student's AI evaluation: an empty/corrupt/mislabeled upload here used
+     * to surface only much later, as a cryptic "OCR via Gemini failed: The
+     * document has no pages" on every single student's submission.
      */
     public function uploadHomework(Request $request): JsonResponse
     {
@@ -241,9 +248,52 @@ class LmsAssignmentApiController extends Controller
             return $this->fail('Please choose a file to upload.');
         }
 
-        $originalname = $file->getClientOriginalName();
-        $ext = File::extension($originalname);
-        $file_name = 'homework_' . time() . '-' . uniqid() . '.' . $ext;
+        if (!$file->isValid()) {
+            return $this->fail('The upload was incomplete or corrupted. Please try again.');
+        }
+
+        $detectedMime = $file->getMimeType();
+        $clientExt = strtolower((string) File::extension($file->getClientOriginalName()));
+        // .docx is itself a zip archive, and fileinfo commonly reports it as
+        // the generic application/zip/octet-stream rather than recognising
+        // the Word-specific content types inside — trust a .docx extension
+        // over that generic sniff result.
+        if ($clientExt === 'docx' && in_array($detectedMime, ['application/zip', 'application/octet-stream'], true)) {
+            $detectedMime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        }
+
+        $allowedMimes = [
+            'application/pdf',
+            'image/png',
+            'image/jpeg',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ];
+        if (!in_array($detectedMime, $allowedMimes, true)) {
+            return $this->fail('Only PDF, PNG, JPEG, DOC or DOCX files are supported for a homework file.');
+        }
+
+        if ($detectedMime === 'application/pdf') {
+            $pageCount = $this->pdfPageCount($file->getRealPath());
+            if ($pageCount === null || $pageCount < 1) {
+                return $this->fail('The PDF could not be read or has no pages. Please re-export it and try again.');
+            }
+        }
+
+        if (in_array($detectedMime, HomeworkDocumentExtractionService::WORD_MIME_TYPES, true)) {
+            if (!$this->wordDocumentHasText($file->getRealPath(), $detectedMime)) {
+                return $this->fail('The Word document could not be read or has no readable text. Please re-save it and try again.');
+            }
+        }
+
+        $extensionByMime = [
+            'application/pdf' => 'pdf',
+            'image/png' => 'png',
+            'image/jpeg' => 'jpg',
+            'application/msword' => 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+        ];
+        $file_name = 'homework_' . time() . '-' . uniqid() . '.' . $extensionByMime[$detectedMime];
         $file->storeAs('public/QuestionPaper', $file_name);
 
         return response()->json([
@@ -251,6 +301,45 @@ class LmsAssignmentApiController extends Controller
             'message' => 'Homework uploaded successfully',
             'file_path' => 'QuestionPaper/' . $file_name,
         ], 200);
+    }
+
+    /** Returns the page count of a PDF, or null if it cannot be parsed at all. */
+    private function pdfPageCount(string $absolutePath): ?int
+    {
+        try {
+            $parser = new \Smalot\PdfParser\Parser();
+            $pdf = $parser->parseFile($absolutePath);
+
+            return count($pdf->getPages());
+        } catch (\Throwable $exception) {
+            return null;
+        }
+    }
+
+    private function wordDocumentHasText(string $absolutePath, string $mimeType): bool
+    {
+        try {
+            $readerType = $mimeType === 'application/msword' ? 'MsDoc' : 'Word2007';
+            $phpWord = \PhpOffice\PhpWord\IOFactory::load($absolutePath, $readerType);
+
+            foreach ($phpWord->getSections() as $section) {
+                foreach ($section->getElements() as $element) {
+                    if (method_exists($element, 'getText') && trim((string) $element->getText()) !== '') {
+                        return true;
+                    }
+                    if (method_exists($element, 'getElements') && !empty($element->getElements())) {
+                        return true;
+                    }
+                    if (method_exists($element, 'getRows') && !empty($element->getRows())) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        } catch (\Throwable $exception) {
+            return false;
+        }
     }
 
     /**

@@ -26,6 +26,7 @@
         "opcodesio/log-viewer": "^3.0",
         "phpmailer/phpmailer": "^6.7",
         "phpoffice/phppresentation": "^1.1",
+        "phpoffice/phpword": "^1.4",
         "picqer/php-barcode-generator": "^2.2",
         "razorpay/razorpay": "^2.8",
         "setasign/fpdf": "^1.8",
