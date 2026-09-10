@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\AI;
 
 use App\Domain\AI\Conversation\AskPipeline;
+use App\Services\AI\AiPolicyResolver;
 use App\Domain\AI\Conversation\AskService;
 use App\Domain\AI\Conversation\ConversationStore;
 use App\Domain\AI\Lifecycle\Modules\ModuleRegistry;
@@ -42,6 +43,7 @@ class AskController extends AiController
         private readonly AskService $ask,
         private readonly ModuleRegistry $modules,
         private readonly ConversationStore $conversations,
+        private readonly AiPolicyResolver $policyResolver,
     ) {
     }
 
@@ -86,6 +88,16 @@ class AskController extends AiController
                 'module' => $validated['module'] ?? null,
                 'route' => $validated['route'] ?? null,
             ];
+
+            $policy = $this->policyResolver->resolve($scope->selectedInstituteId, $this->policyContext($validated, $options));
+
+            if (! $policy['allowed']) {
+                return $this->failure(
+                    $policy['message'] ?? 'AI request blocked by policy.',
+                    403,
+                    ['policy' => $policy]
+                );
+            }
 
             $result = $this->pipeline->ask(
                 $validated['question'],
@@ -162,6 +174,18 @@ class AskController extends AiController
             $emit = $this->emitter();
 
             try {
+                $policy = $this->policyResolver->resolve($scope->selectedInstituteId, $this->policyContext($validated, $options));
+
+                if (! $policy['allowed']) {
+                    $emit('error', [
+                        'message' => $policy['message'] ?? 'AI request blocked by policy.',
+                        'code' => 'policy_denied',
+                        'policy' => $policy,
+                    ]);
+
+                    return;
+                }
+
                 $result = $this->pipeline->ask(
                     $validated['question'],
                     $scope,
@@ -218,6 +242,26 @@ class AskController extends AiController
         if (function_exists('set_time_limit')) {
             @set_time_limit(180);
         }
+    }
+
+    private function policyContext(array $validated, array $options): array
+    {
+        $payload = $options['payload'] ?? [];
+
+        return [
+            'operation' => 'ai_request',
+            'scope_type' => $validated['scope_type'] ?? null,
+            'scope_id' => $validated['scope_id'] ?? null,
+            'assignment_id' => $payload['assignment_id'] ?? $payload['assignment'] ?? null,
+            'assessment_id' => $payload['assessment_id'] ?? null,
+            'activity_id' => $payload['activity_id'] ?? null,
+            'class_id' => $payload['class_id'] ?? null,
+            'course_id' => $payload['course_id'] ?? null,
+            'grade_id' => $payload['grade_id'] ?? null,
+            'academic_year' => $payload['academic_year'] ?? null,
+            'module' => $options['module'] ?? $validated['module'] ?? null,
+            'route' => $options['route'] ?? $validated['route'] ?? null,
+        ];
     }
 
     /**

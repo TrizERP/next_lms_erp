@@ -359,7 +359,13 @@ class LifecycleAskService
             return null;
         }
 
-        return $this->general->answer($context->question, $this->historyFor($context), $onToken);
+        return $this->general->answer(
+            $context->question,
+            $this->historyFor($context),
+            $onToken,
+            // So a school with its own conversational configuration uses it.
+            $context->scope,
+        );
     }
 
     /**

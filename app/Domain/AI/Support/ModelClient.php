@@ -2,6 +2,7 @@
 
 namespace App\Domain\AI\Support;
 
+use App\Domain\AI\Configuration\ResolvedAiConfiguration;
 use RuntimeException;
 
 /**
@@ -23,6 +24,39 @@ use RuntimeException;
 interface ModelClient
 {
     public function isConfigured(): bool;
+
+    /**
+     * A copy of this client scoped to one school.
+     *
+     * Credential lookup is tenant-aware — a school's own `ai_api_keys` row beats the
+     * platform key — but nothing in `chat()`'s signature carries who is asking, and a
+     * client resolved from the container is shared. So the scope is applied by taking
+     * an immutable copy rather than by setting state on the shared instance, which
+     * would leak one request's tenant into the next.
+     *
+     * Callers that hold a McpRequestContext should pass `$scope->selectedInstituteId`.
+     * Passing null (or not calling this at all) resolves platform keys only, which is
+     * the behaviour every existing call site already had.
+     */
+    public function forInstitute(int|string|null $subInstituteId): static;
+
+    /**
+     * A copy of this client bound to an already-resolved configuration.
+     *
+     * `forInstitute()` says *who* is asking and lets the client find its own key.
+     * This says *what was decided* — provider, model and credential, resolved once by
+     * `AiConfigurationResolver` from the module's saved row. It exists because the
+     * per-module bindings an administrator saves cannot be discovered by a client that
+     * only knows a provider: two modules can be on the same provider with different
+     * keys and different models, and only the resolver can tell them apart.
+     *
+     * Immutable copy for the same reason `forInstitute()` is: the container's client is
+     * shared, and setting state on it would leak one module's key into the next call.
+     *
+     * Not calling this is the behaviour every pre-existing call site has — the client
+     * resolves its own key from the pool exactly as before.
+     */
+    public function withConfiguration(ResolvedAiConfiguration $configuration): static;
 
     /**
      * The provider-native model this client uses when a caller does not name one.

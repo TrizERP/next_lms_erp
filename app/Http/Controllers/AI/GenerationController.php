@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\AI;
 
 use App\Domain\GenerativeAI\GenerationRequest;
+use App\Services\AI\AiPolicyResolver;
 use App\Domain\GenerativeAI\GenerationService;
 use App\Domain\Templates\PromptTemplate;
 use App\Domain\Templates\TemplateRegistry;
@@ -23,6 +24,7 @@ class GenerationController extends AiController
     public function __construct(
         private readonly GenerationService $generation,
         private readonly TemplateRegistry $templates,
+        private readonly AiPolicyResolver $policyResolver,
     ) {
     }
 
@@ -66,6 +68,27 @@ class GenerationController extends AiController
                 subjectId: $validated['subject_id'] ?? null,
                 caseId: $validated['case_id'] ?? null,
             );
+
+            $policy = $this->policyResolver->resolve($scope->selectedInstituteId, [
+                'operation' => 'generate_answers',
+                'scope_type' => $validated['scope_type'] ?? null,
+                'scope_id' => $validated['scope_id'] ?? null,
+                'assignment_id' => $validated['assignment_id'] ?? null,
+                'assessment_id' => $validated['assessment_id'] ?? null,
+                'activity_id' => $validated['activity_id'] ?? null,
+                'class_id' => $validated['class_id'] ?? null,
+                'course_id' => $validated['course_id'] ?? null,
+                'grade_id' => $validated['grade_id'] ?? null,
+                'academic_year' => $validated['academic_year'] ?? $scope->academicYear,
+            ]);
+
+            if (! $policy['allowed']) {
+                return $this->failure(
+                    $policy['message'] ?? 'AI generation blocked by policy.',
+                    403,
+                    ['policy' => $policy]
+                );
+            }
 
             $result = $this->generation->generate($generationRequest, $scope);
 

@@ -2,6 +2,8 @@
 
 namespace App\Domain\GenerativeAI;
 
+use App\Domain\AI\Configuration\AiModelClientFactory;
+use App\Domain\AI\Configuration\ResolvedAiConfiguration;
 use App\Domain\AI\Support\AiAuditLogger;
 use App\Domain\AI\Support\ModelClient;
 use App\Domain\Templates\TemplateRegistry;
@@ -39,9 +41,25 @@ class GenerationService
         private readonly AiAuditLogger $audit,
         // The transport and the `ai_api_keys` rotation pool, shared with lifecycle
         // planning. This service used to carry its own copy of both.
+        //
+        // Kept as the fallback, and as what `defaultModel()` reports when no school is
+        // in scope. Live calls go through the factory below instead, which resolves the
+        // provider, model and key an administrator configured for this module.
         private readonly ModelClient $client,
+        private readonly AiModelClientFactory $clients,
     ) {
     }
+
+    /**
+     * The module key this service's calls are configured under.
+     *
+     * Generation serves both the "generate this" actions and the analyse-this-screen
+     * ones, and the AI module registry lists those separately. They share a key here
+     * because they share this service: a single prompt-driven call path with one set of
+     * credentials. Splitting them would mean promising a configuration split that this
+     * code does not make.
+     */
+    private const MODULE = 'generative_ai';
 
     public function generate(GenerationRequest $request, McpRequestContext $scope): GenerationResult
     {
@@ -121,10 +139,20 @@ class GenerationService
         ]);
 
         $startedAt = microtime(true);
-        $model = $request->modelOverride ?? $template->model ?? $this->client->defaultModel();
+
+        // Resolved once and passed down, so the row recorded against this request names
+        // the same provider and model the call actually used. Resolving twice would let
+        // a configuration saved mid-request produce an audit row that disagrees with
+        // what happened.
+        $configuration = $this->clients->configurationFor(self::MODULE, $scope->selectedInstituteId);
+
+        // A template that pins a model still wins. Prompts are written against a
+        // specific model's behaviour, and a settings screen should not silently
+        // overrule the prompt that was tested against it.
+        $model = $request->modelOverride ?? $template->model ?? $configuration->model ?? $this->client->defaultModel();
 
         try {
-            $content = $this->callModel($rendered, $template, $model);
+            $content = $this->callModel($rendered, $template, $model, $scope, $configuration);
         } catch (Throwable $exception) {
             $this->updateRequest($requestId, 'failed', $exception->getMessage());
 
@@ -231,7 +259,13 @@ class GenerationService
      * into messages and to say what the template expects back. It still throws on
      * failure, because the caller records a failed request row from the exception.
      */
-    private function callModel(array $rendered, $template, string $model): ?string
+    private function callModel(
+        array $rendered,
+        $template,
+        string $model,
+        McpRequestContext $scope,
+        ResolvedAiConfiguration $configuration
+    ): ?string
     {
         $messages = [];
 
@@ -241,7 +275,10 @@ class GenerationService
 
         $messages[] = ['role' => 'user', 'content' => $rendered['user']];
 
-        return $this->client->chat(
+        // The client this module is configured to use, already carrying the resolved
+        // key and scoped to the signed-in school. With nothing configured this returns
+        // the same driver, model and key the container binding always did.
+        return $this->clients->fromConfiguration($configuration, $scope->selectedInstituteId)->chat(
             $messages,
             $model,
             maxTokens: $template->maxTokens ?? null,
@@ -276,7 +313,9 @@ class GenerationService
             'context' => json_encode($request->context),
             'resolved_prompt' => $resolved,
             'prompt_hash' => $resolved ? hash('sha256', $resolved) : null,
-            'provider' => $template?->provider ?? 'openrouter',
+            // Was hard-coded to 'openrouter', which mislabelled every row once the
+            // estate moved to Gemini. The resolved provider is what was actually called.
+            'provider' => $template?->provider ?? $configuration->provider,
             'model' => $request->modelOverride ?? $template?->model ?? $this->client->defaultModel(),
             'subject_entity_key' => $request->subjectEntityKey,
             'subject_id' => is_numeric($request->subjectId) ? (int) $request->subjectId : null,

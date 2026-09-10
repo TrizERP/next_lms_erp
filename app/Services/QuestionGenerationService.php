@@ -75,27 +75,48 @@ class QuestionGenerationService
      * Key resolution
      * ---------------------------------------------------------------- */
 
+    /**
+     * The school this service resolves credentials for.
+     *
+     * Set by the caller from the request's own context — never defaulted to a literal
+     * institute id. Null keeps the previous behaviour, platform keys only.
+     */
+    protected int|string|null $subInstituteId = null;
+
+    /**
+     * Scope this service to the signed-in school.
+     *
+     * Returns $this rather than a clone because callers construct this service per
+     * request; there is no shared instance for a tenant to leak out of.
+     */
+    public function forInstitute(int|string|null $subInstituteId): static
+    {
+        $this->subInstituteId = $subInstituteId;
+
+        return $this;
+    }
+
+    /**
+     * The provider credential, from the platform's shared pool.
+     *
+     * Was two private copies of the same lookup — `getAIKey($type, 1)` with an
+     * unordered `first()` and no tenant filter, plus an inline DB fallback that did
+     * the same thing. Both meant question generation used whichever key the database
+     * happened to return, regardless of which school was generating.
+     *
+     * `ProviderKeyResolver` is the one lookup the Gemini and OpenRouter clients also
+     * use: a school's own key first, the platform key next, newest active row within
+     * either, env last.
+     */
     protected function resolveApiKey(): ?string
     {
-        // 1. ai_api_keys table (matches existing getAIKey() pattern).
-        if (function_exists('getAIKey')) {
-            $row = getAIKey(config('deepseek.api_type', 'DEEPSEEK_API_KEY'), 1);
-            if (!empty($row) && !empty($row->api_key) && $row->api_key !== '-') {
-                return $row->api_key;
-            }
-        } elseif (class_exists(\Illuminate\Support\Facades\DB::class)) {
-            $row = DB::table('ai_api_keys')
-                ->where('api_type', config('deepseek.api_type', 'DEEPSEEK_API_KEY'))
-                ->where('status', 1)
-                ->first();
-            if (!empty($row) && !empty($row->api_key) && $row->api_key !== '-') {
-                return $row->api_key;
-            }
-        }
+        $key = app(\App\Domain\AI\Support\ProviderKeyResolver::class)->resolve(
+            (string) config('deepseek.api_type', 'DEEPSEEK_API_KEY'),
+            $this->subInstituteId,
+            config('deepseek.api_key'),
+        );
 
-        // 2. Environment variable.
-        $envKey = config('deepseek.api_key');
-        return !empty($envKey) ? $envKey : null;
+        return $key['api_key'] ?? null;
     }
 
     /* ----------------------------------------------------------------
@@ -1265,11 +1286,15 @@ SCHEMA;
             }
 
             if ($response->status() === 402) {
-                $geminiKey = function_exists('getAIKey') ? getAIKey('gemini', 1)?->api_key : null;
-                $geminiKey = $geminiKey ?: DB::table('ai_api_keys')
-                    ->where('api_type', 'gemini')
-                    ->where('status', 1)
-                    ->value('api_key');
+                // Same shared resolver as the primary key above, so the last-resort
+                // provider is scoped to the same school rather than picking whichever
+                // gemini row the table returned first — this pool holds two active
+                // gemini rows, one of which answers 400 API_KEY_INVALID.
+                $geminiKey = app(\App\Domain\AI\Support\ProviderKeyResolver::class)->resolve(
+                    'gemini',
+                    $this->subInstituteId,
+                    config('ai.provider.gemini.api_key'),
+                )['api_key'] ?? null;
 
                 if (filled($geminiKey)) {
                     $geminiResponse = Http::withHeaders([

@@ -2,6 +2,7 @@
 
 namespace App\Domain\AI\Lifecycle\Plan;
 
+use App\Domain\AI\Configuration\AiModelClientFactory;
 use App\Domain\AI\Lifecycle\StageContext;
 use App\Domain\AI\Support\ModelClient;
 use App\Mcp\ToolRegistry;
@@ -33,16 +34,25 @@ class LlmPlanner implements Planner
     // The model comes from the provider driver; see config/ai.php `provider`.
 
     public function __construct(
+        // Kept for `defaultModel()` in the trace below, which has no school in scope.
         private readonly ModelClient $client,
         private readonly ToolRegistry $tools,
+        private readonly AiModelClientFactory $clients,
     ) {
     }
+
+    /** The AI module planning is configured under. */
+    private const MODULE = 'agent_reasoning';
 
     public function plan(StageContext $context): ?Plan
     {
         $available = $this->availableTools($context);
 
-        if ($available === [] || ! $this->client->isConfigured()) {
+        // The client this module is configured to use, scoped to the asking school.
+        // Unconfigured, this is the same client the container has always injected.
+        $client = $this->clients->for(self::MODULE, $context->scope->selectedInstituteId);
+
+        if ($available === [] || ! $client->isConfigured()) {
             return null;
         }
 

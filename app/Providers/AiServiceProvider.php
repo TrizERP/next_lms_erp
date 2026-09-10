@@ -213,7 +213,8 @@ class AiServiceProvider extends ServiceProvider
             $app->make(OutputValidator::class),
             $app->make(SafetyChecker::class),
             $app->make(AiAuditLogger::class),
-            $app->make(\App\Domain\AI\Support\ModelClient::class)
+            $app->make(\App\Domain\AI\Support\ModelClient::class),
+            $app->make(\App\Domain\AI\Configuration\AiModelClientFactory::class)
         ));
     }
 
@@ -365,10 +366,23 @@ class AiServiceProvider extends ServiceProvider
     {
         $this->app->singleton(\App\Domain\AI\Support\OpenRouterClient::class);
         $this->app->singleton(\App\Domain\AI\Support\GeminiClient::class);
+        $this->app->singleton(\App\Domain\AI\Support\OpenAiCompatibleClient::class);
 
-        // The one place the model provider is chosen. Every caller depends on
-        // ModelClient, so switching provider — or rolling back to OpenRouter after a
-        // Gemini incident — is AI_PROVIDER in the environment, not a code change.
+        // Centralised AI configuration: which module calls which provider, on which
+        // model, with whose key. Registries are stateless lookups, so singletons.
+        $this->app->singleton(\App\Domain\AI\Configuration\AiModuleRegistry::class);
+        $this->app->singleton(\App\Domain\AI\Configuration\ProviderCatalog::class);
+        $this->app->singleton(\App\Domain\AI\Configuration\ModelCatalog::class);
+        $this->app->singleton(\App\Domain\AI\Configuration\AiConfigurationResolver::class);
+        $this->app->singleton(\App\Domain\AI\Configuration\AiModelClientFactory::class);
+
+        // The default when nobody asks for a module's client.
+        //
+        // Unchanged on purpose: every existing caller resolves ModelClient and gets
+        // the driver `AI_PROVIDER` names, exactly as before. Per-module configuration
+        // is opt-in through AiModelClientFactory::for(), so a module that has not been
+        // migrated to it cannot have its provider changed underneath it by a row
+        // somebody saved on the admin screen.
         $this->app->singleton(\App\Domain\AI\Support\ModelClient::class, function ($app) {
             return match ((string) config('ai.provider.driver', 'gemini')) {
                 'openrouter' => $app->make(\App\Domain\AI\Support\OpenRouterClient::class),
@@ -415,7 +429,8 @@ class AiServiceProvider extends ServiceProvider
             \App\Domain\AI\Lifecycle\Plan\LlmPlanner::class,
             fn ($app) => new \App\Domain\AI\Lifecycle\Plan\LlmPlanner(
                 $app->make(\App\Domain\AI\Support\ModelClient::class),
-                $app->make(\App\Mcp\ToolRegistry::class)
+                $app->make(\App\Mcp\ToolRegistry::class),
+                $app->make(\App\Domain\AI\Configuration\AiModelClientFactory::class)
             )
         );
 
