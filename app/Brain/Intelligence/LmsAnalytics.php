@@ -28,8 +28,9 @@ final class LmsAnalytics
 {
     use LmsQueryScope;
 
-    public function __construct(private readonly string $tenantId)
+    public function __construct(private readonly string $tenantId, ?string $syear = null)
     {
+        $this->syear = $syear;
     }
 
     /** @return array<string, mixed> */
@@ -207,8 +208,7 @@ final class LmsAnalytics
             // Monthly trend, computed in SQL. The 24-month window keeps the
             // series readable and bounds the scan on an institute with years of
             // history.
-            $out['studentMonthlyTrend'] = DB::table('attendance_student')
-                ->where('sub_institute_id', $this->tenantId)
+            $out['studentMonthlyTrend'] = $this->lmsAttendance()
                 ->whereNotNull('attendance_date')
                 ->select(
                     DB::raw('DATE_FORMAT(attendance_date, "%Y-%m") as label'),
@@ -256,8 +256,7 @@ final class LmsAnalytics
         $out = [];
 
         if ($this->has('result_marks')) {
-            $out['bySubject'] = DB::table('result_marks')
-                ->where('sub_institute_id', $this->tenantId)
+            $out['bySubject'] = $this->lmsMarks()
                 ->whereNotNull('subject_name')->where('subject_name', '!=', '')
                 ->select('subject_name as label', DB::raw('ROUND(AVG(per), 2) as value'), DB::raw('COUNT(*) as records'))
                 ->groupBy('subject_name')->orderByDesc('value')->limit(20)->get()
@@ -270,8 +269,7 @@ final class LmsAnalytics
             // quartile split, so the "below pass" band means what the school
             // means by it.
             $pass = (float) config('brain.thresholds.pass_percentage', 40.0);
-            $out['attainmentBands'] = DB::table('result_marks')
-                ->where('sub_institute_id', $this->tenantId)
+            $out['attainmentBands'] = $this->lmsMarks()
                 ->select(DB::raw(sprintf(
                     'CASE WHEN per < %1$f THEN "Below pass" WHEN per < 60 THEN "Pass" WHEN per < 75 THEN "Merit" ELSE "Distinction" END as label',
                     $pass
@@ -297,7 +295,7 @@ final class LmsAnalytics
             return [];
         }
 
-        $live = fn () => DB::table('fees_collect')->where('sub_institute_id', $this->tenantId)
+        $live = fn () => $this->lmsFees()
             ->where(fn ($q) => $q->whereNull('is_deleted')->orWhere('is_deleted', '!=', 'Y'));
 
         $totals = $live()->selectRaw('COUNT(*) as receipts, COALESCE(SUM(amount),0) as collected, COALESCE(SUM(fine),0) as fines, COALESCE(SUM(fees_discount),0) as discounts')->first();
