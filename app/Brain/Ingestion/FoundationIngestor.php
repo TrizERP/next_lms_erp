@@ -2,6 +2,7 @@
 
 namespace App\Brain\Ingestion;
 
+use App\Brain\Support\LmsOrganization;
 use App\Brain\Support\LmsQueryScope;
 use Illuminate\Support\Facades\DB;
 use App\Brain\Support\SchemaCache;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\Schema;
  * The LMS remains the system of record. Nothing is invented here: every Brain
  * row traces back to a row this tenant already owns —
  *
- *   school_detail / institute_detail   -> hpbrain_organizations
+ *   school_setup.SchoolName            -> hpbrain_organizations
  *   hrms_departments                   -> hpbrain_departments
  *   tbluser                            -> hpbrain_people
  *   s_users_skills + competency        -> hpbrain_capabilities
@@ -62,8 +63,8 @@ class FoundationIngestor
             [
                 'scope' => 'organization',
                 'label' => 'Organization',
-                'source' => 'school_detail / institute_detail',
-                'sourceCount' => $this->lmsCount('institute_detail'),
+                'source' => 'school_setup.SchoolName',
+                'sourceCount' => $this->instituteRecordCount(),
                 'target' => 'hpbrain_organizations',
                 'targetCount' => $this->brainCount('hpbrain_organizations'),
             ],
@@ -462,21 +463,27 @@ class FoundationIngestor
 
     private function organizationName(): string
     {
-        if (SchemaCache::hasTable('school_detail')) {
-            $row = DB::table('school_detail')
-                ->where('sub_institute_id', $this->tenantId)
-                ->orderBy('id')
-                ->first();
-            if ($row && $row->title) {
-                $name = trim(preg_replace('/\s+/', ' ', strip_tags((string) $row->title)));
-                $name = trim(explode(' - ', $name)[0]);
-                if ($name !== '') {
-                    return $name;
-                }
-            }
+        // The INSTITUTE name, deliberately not the actor's user_name: this row
+        // is shared by every user in the tenant, so naming it after whoever
+        // happened to run the ingest would rename the school for everyone.
+        return LmsOrganization::instituteNameFor($this->tenantId);
+    }
+
+    /**
+     * How many institute records the LMS holds for this tenant — 1 or 0.
+     *
+     * The Ingestion screen compares source rows against projected rows, so this
+     * has to count the table the name is actually READ from. It used to count
+     * `institute_detail`, which the ingest never touches, so the screen could
+     * report "0 source rows" beside a projected organization.
+     */
+    private function instituteRecordCount(): int
+    {
+        if (! SchemaCache::hasTable('school_setup')) {
+            return 0;
         }
 
-        return 'Organization '.$this->tenantId;
+        return (int) DB::table('school_setup')->where('Id', $this->tenantId)->count();
     }
 
     private function orgId(): string

@@ -28,7 +28,7 @@ final class IntelligencePipeline
 {
     private const ACTOR = 'brain.pipeline';
 
-    public function __construct(private readonly string $tenantId)
+    public function __construct(private readonly string $tenantId, private readonly ?string $syear = null)
     {
     }
 
@@ -40,7 +40,7 @@ final class IntelligencePipeline
         $started = microtime(true);
 
         $writer = new SignalWriter($this->tenantId);
-        $rules = new LmsSignalRules($this->tenantId, $writer);
+        $rules = new LmsSignalRules($this->tenantId, $writer, $this->syear);
 
         $outcomes = [];
         $created = 0;

@@ -12,6 +12,8 @@ use App\Brain\Intelligence\LmsAnalytics;
 use App\Brain\Intelligence\RuleCatalogue;
 use App\Brain\Intelligence\Uuid;
 use App\Brain\Ingestion\FoundationIngestor;
+use App\Brain\Support\AcademicYear;
+use App\Brain\Support\LmsOrganization;
 use App\Brain\Support\LmsQueryScope;
 use App\Brain\Support\SchemaCache;
 use App\Http\Controllers\Controller;
@@ -40,6 +42,12 @@ class BrainIntelligenceController extends Controller
 
     /** Set by tenant(); the trait reads it. */
     protected string $tenantId = '';
+
+    /** Set by tenant(); the signed-in user, used for the display name only. */
+    private string $actorId = '';
+
+    /** Set by tenant(); whether that id is a student rather than staff. */
+    private bool $actorIsStudent = false;
 
     /* ---------------------------------------------------------------- loop */
 
@@ -74,7 +82,7 @@ class BrainIntelligenceController extends Controller
         // remote database legitimately outruns the default request time limit.
         @set_time_limit(600);
 
-        $result = (new IntelligencePipeline($tenant))->run();
+        $result = (new IntelligencePipeline($tenant, $this->syear))->run();
 
         $this->audit($request, 'intelligence.run', 'Intelligence', $tenant, [
             'signalsCreated' => $result['rules']['signalsCreated'],
@@ -379,7 +387,7 @@ class BrainIntelligenceController extends Controller
 
     public function analytics(Request $request): JsonResponse
     {
-        return response()->json((new LmsAnalytics($this->tenant($request)))->all());
+        return response()->json((new LmsAnalytics($this->tenant($request), $this->syear))->all());
     }
 
     /* ----------------------------------------------------------- knowledge */
@@ -489,7 +497,7 @@ class BrainIntelligenceController extends Controller
     public function executive(Request $request): JsonResponse
     {
         $tenant = $this->tenant($request);
-        $trends = new TrendAnalyzer($tenant);
+        $trends = new TrendAnalyzer($tenant, $this->syear);
         $signals = $this->signalList($tenant, 60);
 
         $ranked = $signals;
@@ -499,7 +507,7 @@ class BrainIntelligenceController extends Controller
                 <=> [$order[$b['severity']] ?? 4, -($b['confidence']['value'] ?? 0)];
         });
 
-        $health = (new HealthScores($tenant))->all();
+        $health = (new HealthScores($tenant, $this->syear))->all();
         $actions = $this->prioritisedActions($tenant, $ranked);
         $loop = $this->loopStages($tenant);
         $intelligence = $this->intelligenceSummary($health, $ranked, $trends, $actions);
@@ -518,6 +526,11 @@ class BrainIntelligenceController extends Controller
             // below them are only as current as the last pipeline run.
             'findingsRefreshedAt' => $this->findingsRefreshedAt($tenant),
             'academicYear' => $academicYear,
+            // The year these figures were actually read for, and the years this
+            // institute has. The screen can then state its own scope rather than
+            // the reader having to trust that the header switcher got through.
+            'syear' => $this->syear,
+            'availableYears' => AcademicYear::availableFor($tenant),
             'summary' => $summary,
             'health' => $health,
             'topFindings' => array_slice($ranked, 0, 6),
@@ -697,7 +710,7 @@ class BrainIntelligenceController extends Controller
             return ['available' => false, 'roots' => [], 'organization' => null];
         }
 
-        $explorer = new GraphExplorer($tenant);
+        $explorer = new GraphExplorer($tenant, $this->syear, $this->organizationName($tenant));
 
         return [
             'available' => true,
@@ -738,22 +751,23 @@ class BrainIntelligenceController extends Controller
 
         $today = now()->toDateString();
 
-        $row = DB::table('academic_year')
+        // THE LABEL FOLLOWS THE SELECTED YEAR. The header names the year the
+        // figures beneath it were read for, so when the LMS switcher is on 2021
+        // this must describe 2021 — not whichever year today happens to fall in.
+        $scoped = fn () => DB::table('academic_year')
             ->where('sub_institute_id', $tenant)
+            ->when($this->syear !== null, fn ($q) => $q->where('syear', $this->syear));
+
+        $row = $scoped()
             ->where('start_date', '<=', $today)
             ->where('end_date', '>=', $today)
             ->orderByDesc('sort_order')
             ->first();
 
-        if (! $row) {
-            $row = DB::table('academic_year')
-                ->where('sub_institute_id', $tenant)
-                ->orderByDesc('sort_order')
-                ->first();
-        }
+        $row ??= $scoped()->orderByDesc('sort_order')->first();
 
         if (! $row) {
-            return ['label' => 'Academic year', 'title' => null, 'syear' => null];
+            return ['label' => 'Academic year', 'title' => null, 'syear' => $this->syear];
         }
 
         return [
@@ -866,7 +880,7 @@ class BrainIntelligenceController extends Controller
             fn ($c) => $c['gapPoints'] <= -(float) config('brain.thresholds.class_attendance_gap_points', 4.0)
         ));
 
-        $intelligence = new EntityIntelligence($tenant);
+        $intelligence = new EntityIntelligence($tenant, $this->syear);
         $departments = array_values(array_filter(
             $intelligence->departments(20),
             fn ($d) => $d['risks'] !== []
@@ -944,7 +958,7 @@ class BrainIntelligenceController extends Controller
     /** Intelligence about one student. */
     public function studentIntelligence(Request $request, string $tenantId, string $id): JsonResponse
     {
-        $profile = (new EntityIntelligence($this->tenant($request)))->student($id);
+        $profile = (new EntityIntelligence($this->tenant($request), $this->syear))->student($id);
 
         return response()->json($profile, ($profile['available'] ?? false) ? 200 : 404);
     }
@@ -953,8 +967,8 @@ class BrainIntelligenceController extends Controller
     public function classIntelligence(Request $request): JsonResponse
     {
         $tenant = $this->tenant($request);
-        $classes = (new EntityIntelligence($tenant))->classes();
-        $byClass = (new TrendAnalyzer($tenant))->attendanceByClass();
+        $classes = (new EntityIntelligence($tenant, $this->syear))->classes();
+        $byClass = (new TrendAnalyzer($tenant, $this->syear))->attendanceByClass();
 
         return response()->json([
             'available' => $classes !== [],
@@ -969,7 +983,7 @@ class BrainIntelligenceController extends Controller
     public function departmentIntelligence(Request $request): JsonResponse
     {
         $tenant = $this->tenant($request);
-        $departments = (new EntityIntelligence($tenant))->departments();
+        $departments = (new EntityIntelligence($tenant, $this->syear))->departments();
 
         return response()->json([
             'available' => $departments !== [],
@@ -982,7 +996,7 @@ class BrainIntelligenceController extends Controller
     /** Teaching activity, with an honest statement of how much is attributable. */
     public function teacherIntelligence(Request $request): JsonResponse
     {
-        return response()->json((new EntityIntelligence($this->tenant($request)))->teachers());
+        return response()->json((new EntityIntelligence($this->tenant($request), $this->syear))->teachers());
     }
 
     /* ------------------------------------------------------------------ graph */
@@ -990,7 +1004,7 @@ class BrainIntelligenceController extends Controller
     public function graph(Request $request): JsonResponse
     {
         $tenant = $this->tenant($request);
-        $explorer = new GraphExplorer($tenant);
+        $explorer = new GraphExplorer($tenant, $this->syear, $this->organizationName($tenant));
         $type = (string) $request->query('type', '');
         $id = (string) $request->query('id', '');
 
@@ -1053,7 +1067,7 @@ class BrainIntelligenceController extends Controller
             'total' => $total,
             'available' => true,
             'signals' => $this->signalList($tenant, 50, ['Student']),
-            'analytics' => (new LmsAnalytics($tenant))->all()['students'] ?? [],
+            'analytics' => (new LmsAnalytics($tenant, $this->syear))->all()['students'] ?? [],
             'data' => array_map(function ($row) use ($absences) {
                 $row['absences'] = (int) ($absences[$row['id']] ?? 0);
                 $row['record_complete'] = ! empty($row['enrollment_no']) && ! empty($row['dob'])
@@ -1237,21 +1251,42 @@ class BrainIntelligenceController extends Controller
         }, $rows);
     }
 
+    /**
+     * The tenant this request is answered for — and, with it, the academic year.
+     *
+     * The two are resolved together because they are never independent: a year
+     * is only meaningful as one of THIS institute's years, and AcademicYear
+     * validates the requested `syear` against exactly that. Every action calls
+     * this before it reads anything, so setting $this->syear here is what puts
+     * the whole controller (and the trait's query builders) on the right year.
+     */
     private function tenant(Request $request): string
     {
-        return $this->tenantId = (string) $request->attributes->get(
+        $this->tenantId = (string) $request->attributes->get(
             'tenantId',
             $request->attributes->get('auth.tenantId')
         );
+
+        $this->syear = AcademicYear::resolve($this->tenantId, $request->query('syear'));
+        // The signed-in user, for the DISPLAY name only. Data scope stays
+        // $this->tenantId; the two are resolved together but never mixed.
+        // `is_student` says which table that id belongs to — staff and student
+        // ids are both integers and would otherwise be looked up in the wrong one.
+        $this->actorId = (string) $request->attributes->get('auth.userId', '');
+        $payload = (array) $request->attributes->get('brain.payload', []);
+        $this->actorIsStudent = (bool) ($payload['is_student'] ?? false);
+
+        return $this->tenantId;
     }
 
+    /**
+     * The name over the Organization screen: the signed-in user's
+     * `tbluser.user_name`. A label, not a scope — every figure beneath it is
+     * still scoped to $tenant.
+     */
     private function organizationName(string $tenant): string
     {
-        $name = SchemaCache::hasTable('hpbrain_organizations')
-            ? DB::table('hpbrain_organizations')->where('tenant_id', $tenant)->value('name')
-            : null;
-
-        return (string) ($name ?: 'This organization');
+        return LmsOrganization::displayNameFor($tenant, $this->actorId, $this->actorIsStudent);
     }
 
     private function pct($value): string
