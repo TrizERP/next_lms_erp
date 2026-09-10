@@ -122,6 +122,8 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapG2gLmsRoutes();
 
         $this->mapBrainRoutes();
+
+        $this->mapPlatformRoutes();
     }
 
     /**
@@ -412,6 +414,21 @@ class RouteServiceProvider extends ServiceProvider
         Route::prefix('api/brain')
             ->middleware('api')
             ->group(base_path('routes/brain.php'));
+    }
+
+    /**
+     * Platform services — Communication, Scheduler and Workflow.
+     *
+     * Mounted the same way as the Brain routes: its own prefix and its own file,
+     * so routes/api.php and its 170-odd existing endpoints are untouched. Auth
+     * (lms.auth) and per-action rights (perm:) are declared inside the file, next
+     * to the verbs they gate, rather than here.
+     */
+    protected function mapPlatformRoutes()
+    {
+        Route::prefix('api/platform')
+            ->middleware('api')
+            ->group(base_path('routes/platform.php'));
     }
     
     /**
