@@ -208,6 +208,35 @@ Route::post('lms-homework/submission-report', [\App\Http\Controllers\api\lms\Stu
 Route::post('lms-homework/ai-status/{id}', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'aiEvaluationStatus']);
 
 // ------------------------------------------------------------------
+// Homework Submissions v2 - multi-file student submission + teacher review
+// workflow, built directly on the `homework` table's own submission/review
+// columns (status, submission_files, teacher_remarks, ai_*, etc. — see the
+// 2026_09_11 migration; no separate submission/file tables). One submission
+// per student per homework, overwritable while not yet under review, since
+// this row is the same row StudentHomeworkApiController above operates on.
+// ------------------------------------------------------------------
+Route::middleware('api.session')->group(function () {
+    Route::post('lms-homework/detail/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'detail']);
+    Route::post('lms-homework/submission/store', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'submit']);
+    Route::post('lms-homework/submission/ai-status/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'submissionAiStatus']);
+    Route::post('lms-homework/submission-file/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'downloadFile']);
+    Route::post('lms-homework/my-submissions', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'mySubmissions']);
+});
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::post('lms-homework/review-list', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewList']);
+    Route::post('lms-homework/review-detail/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewDetail']);
+    Route::post('lms-homework/review-store', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewStore']);
+});
+
+// Generate homework from the question bank (teacher-only lookups feeding
+// StudentHomeworkApiController::store()'s source_type = 'question_bank' path).
+// Additive; does not touch ApiLmsCourseController or the Exam module.
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::post('lms-homework/question-bank/types', [\App\Http\Controllers\api\lms\HomeworkQuestionBankApiController::class, 'questionTypes']);
+    Route::post('lms-homework/question-bank/questions', [\App\Http\Controllers\api\lms\HomeworkQuestionBankApiController::class, 'questions']);
+});
+
+// ------------------------------------------------------------------
 // LMS Assignment / Assignment Submission / Annotate Assignment
 // (dedicated LmsAssignmentApiController - token-auth counterparts of the
 //  session/blade controllers under App\Http\Controllers\lms\assignment)
