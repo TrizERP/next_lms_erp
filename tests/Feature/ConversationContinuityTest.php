@@ -334,11 +334,40 @@ class ConversationContinuityTest extends TestCase
                 $followUp
             );
 
-            $this->assertContains(
-                $resolved->key,
-                ['record_detail', 'record_filter'],
-                sprintf('"%s" is offered but resolves to "%s", which cannot answer it.', $followUp, $resolved->key)
+            /*
+             * Two ways to be answerable, and the second is not a loosening.
+             *
+             * A selection or a filter answers from the rows already in memory. A
+             * registered intent answers through its own route — which is what lets the
+             * composer offer "Confirm the admission for Ravi Sharma." off an enquiry
+             * list, the step the admissions conversation exists to reach.
+             *
+             * The referent check is what keeps that honest, and it is stricter than the
+             * key list it replaces. An intent that classifies but whose required record
+             * never resolves is exactly the broken chip this test exists to catch: it
+             * used to be impossible to express, because a selection needs no slots.
+             */
+            if (in_array($resolved->key, ['record_detail', 'record_filter'], true)) {
+                continue;
+            }
+
+            $this->assertFalse(
+                $resolved->isUnknown(),
+                sprintf('"%s" is offered but classifies as nothing the estate understands.', $followUp)
             );
+
+            foreach (IntentClassifier::requiredSlots($resolved->key) as $slot) {
+                $this->assertNotNull(
+                    $resolved->slot($slot . '_id'),
+                    sprintf(
+                        '"%s" is offered and resolves to "%s", but its %s was never identified — '
+                        . 'so answering it would act on no record.',
+                        $followUp,
+                        $resolved->key,
+                        $slot
+                    )
+                );
+            }
         }
     }
 
