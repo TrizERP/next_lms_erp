@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AI\AgentController;
+use App\Http\Controllers\AI\AiConfigurationController;
 use App\Http\Controllers\AI\AskController;
+use App\Http\Controllers\AI\CapabilityController;
 use App\Http\Controllers\AI\CaseController;
 use App\Http\Controllers\AI\GenerationController;
 use App\Http\Controllers\AI\OntologyController;
@@ -47,6 +49,53 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             // GET is the shape §23 documents and is handy to inspect by hand; POST is
             // what the panel uses, because selected records and page data do not
             // belong in a query string. Same handler either way.
+            /*
+            | AI & Intelligence console.
+            |
+            | The twelve capabilities behind the AI & Intelligence menu, each reported
+            | for the school in the caller's own token. Read-only: this is where an
+            | administrator sees what is configured and what the AI has done, and the
+            | screens that change any of it are the existing per-capability routes
+            | below (agents, recommendations, workflows, generation).
+            */
+            Route::get('/capabilities', [CapabilityController::class, 'index']);
+            Route::get('/capabilities/{capability}', [CapabilityController::class, 'show'])
+                ->where('capability', '[a-z0-9\-]+');
+
+            /*
+            | AI Provider & Model Management — the write half of the console.
+            |
+            | The capability routes above report what is configured; these change it.
+            | `configuration/options` is the one call the Add/Edit form makes to
+            | populate its three dropdowns (module → provider → model), and the rest
+            | are the CRUD behind them. Writes are stamped with the institute from the
+            | caller's token, never from input.
+            |
+            | Model Management writes to the same catalogue the provider screen's model
+            | dropdown reads, so a model added here is immediately selectable there —
+            | one list, not two.
+            */
+            Route::get('/configuration/options', [AiConfigurationController::class, 'options']);
+            Route::get('/configuration', [AiConfigurationController::class, 'index']);
+            Route::post('/configuration', [AiConfigurationController::class, 'store']);
+            Route::put('/configuration/{id}', [AiConfigurationController::class, 'update'])
+                ->where('id', '[0-9]+');
+            Route::delete('/configuration/{id}', [AiConfigurationController::class, 'destroy'])
+                ->where('id', '[0-9]+');
+
+            Route::get('/configuration-models', [AiConfigurationController::class, 'models']);
+            Route::post('/configuration-models', [AiConfigurationController::class, 'storeModel']);
+            Route::put('/configuration-models/{id}', [AiConfigurationController::class, 'updateModel'])
+                ->where('id', '[0-9]+');
+
+            Route::get('/policies/options', [\App\Http\Controllers\AI\AiPolicyController::class, 'options']);
+            Route::get('/policies', [\App\Http\Controllers\AI\AiPolicyController::class, 'index']);
+            Route::post('/policies', [\App\Http\Controllers\AI\AiPolicyController::class, 'store']);
+            Route::put('/policies/{id}', [\App\Http\Controllers\AI\AiPolicyController::class, 'update'])
+                ->where('id', '[0-9]+');
+            Route::delete('/policies/{id}', [\App\Http\Controllers\AI\AiPolicyController::class, 'destroy'])
+                ->where('id', '[0-9]+');
+
             Route::match(['get', 'post'], '/workspace/context', [WorkspaceController::class, 'context']);
             Route::match(['get', 'post'], '/workspace/flow', [WorkspaceController::class, 'flowState']);
             Route::post('/workspace/workflow-status', [WorkspaceController::class, 'workflowStatus']);

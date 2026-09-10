@@ -2,6 +2,7 @@
 
 namespace App\Domain\AI\Support;
 
+use App\Domain\AI\Configuration\ResolvedAiConfiguration;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use JsonException;
@@ -29,6 +30,34 @@ use Throwable;
  */
 class GeminiClient implements ModelClient
 {
+    /** The school this client resolves credentials for. Null means platform keys only. */
+    private int|string|null $subInstituteId = null;
+
+    public function forInstitute(int|string|null $subInstituteId): static
+    {
+        $clone = clone $this;
+        $clone->subInstituteId = $subInstituteId;
+
+        return $clone;
+    }
+
+    /**
+     * The configuration a module resolved to, when one was resolved.
+     *
+     * Null for every call site that predates centralised configuration, and both
+     * methods that read it fall back to exactly what they did before — so an
+     * unconfigured caller cannot tell this field exists.
+     */
+    private ?ResolvedAiConfiguration $configuration = null;
+
+    public function withConfiguration(ResolvedAiConfiguration $configuration): static
+    {
+        $clone = clone $this;
+        $clone->configuration = $configuration;
+
+        return $clone;
+    }
+
     private const DEFAULT_MAX_TOKENS = 1466;
 
     private const DEFAULT_TIMEOUT = 45;
@@ -40,7 +69,8 @@ class GeminiClient implements ModelClient
 
     public function defaultModel(): string
     {
-        return (string) config('ai.provider.gemini.model', 'gemini-2.5-flash');
+        return $this->configuration?->model
+            ?? (string) config('ai.provider.gemini.model', 'gemini-2.5-flash');
     }
 
     public function chat(
@@ -397,31 +427,24 @@ class GeminiClient implements ModelClient
      */
     private function resolveApiKey(): ?array
     {
-        $apiType = (string) config('ai.provider.gemini.api_type', 'gemini');
-
-        try {
-            $row = DB::table('ai_api_keys')
-                ->where('api_type', $apiType)
-                ->where('status', 1)
-                ->orderByDesc('id')
-                ->first();
-
-            if ($row !== null && ! empty($row->api_key)) {
-                return ['api_key' => trim((string) $row->api_key), 'id' => $row->id ?? null];
-            }
-        } catch (Throwable) {
-            // Fall through to env — a key-table outage should not stop generation.
+        // A module's saved configuration has already been through the full precedence
+        // chain — including this pool — so it is taken as decided rather than looked up
+        // a second time and possibly disagreed with.
+        if ($this->configuration?->hasKey()) {
+            return [
+                'api_key' => $this->configuration->apiKey,
+                'id' => $this->configuration->keyId,
+            ];
         }
 
-        $envKey = config('ai.provider.gemini.api_key');
-
-        if (empty($envKey)) {
-            return null;
-        }
-
-        return [
-            'api_key' => trim((string) $envKey, " \t\n\r\0\x0B'\""),
-            'id' => null,
-        ];
+        // The ordering and env fallback described above now live in
+        // ProviderKeyResolver, which adds the tenant branch this lookup was missing
+        // and is shared with the OpenRouter client and question generation — three
+        // copies of one rule was how they came to disagree.
+        return app(ProviderKeyResolver::class)->resolve(
+            (string) config('ai.provider.gemini.api_type', 'gemini'),
+            $this->subInstituteId,
+            config('ai.provider.gemini.api_key'),
+        );
     }
 }

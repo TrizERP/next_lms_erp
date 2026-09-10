@@ -79,7 +79,13 @@ class IntelligenceQuestionGenerationApiController extends Controller
         $payload['sub_institute_id'] = (int) $request->session()->get('sub_institute_id');
         $payload['created_by']       = (int) $request->session()->get('user_id');
 
-        $result = $this->service->generate($payload);
+        // The same verified institute also scopes the provider credential. Without
+        // this the service resolved whichever `ai_api_keys` row the table returned
+        // first, so one school's generation could run on another school's key and
+        // against another school's daily limit.
+        $result = $this->service
+            ->forInstitute($payload['sub_institute_id'])
+            ->generate($payload);
 
         // 403 for a tenant-ownership rejection so it is distinguishable from an
         // ordinary generation failure; everything else stays 422.
