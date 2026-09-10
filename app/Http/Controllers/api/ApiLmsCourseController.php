@@ -701,7 +701,14 @@ class ApiLmsCourseController extends Controller
         $standard_id = $request->input('standard_id');
         $user_profile_name = $request->input('user_profile_name') ?? session()->get('user_profile_name');
 
-        if (!in_array(strtoupper($user_profile_name), ['TEACHER', 'ADMIN'])) {
+        // Deny-list, not allow-list: matches the same "block only
+        // Student/Parent" convention as App\Http\Middleware\RequireStaffRole
+        // (used by the staff.only route group). An allow-list of exact role
+        // strings (e.g. just 'TEACHER'/'ADMIN') is brittle against the real
+        // profile names in this system (Principal, Clerk, School Admin,
+        // Assistant Admin, Counsellor, ...), all of which are legitimate
+        // staff and must not be rejected here.
+        if (in_array(strtolower((string) $user_profile_name), ['student', 'parent'], true)) {
             return response()->json([
                 'status_code' => 0,
                 'message' => 'Unauthorized. Admin or Teacher access required.',
