@@ -67,9 +67,16 @@ class ConversationalAiStage implements LifecycleStage
                 'module' => $context->module->key,
                 'module_resolved_by' => $context->get('module_source'),
                 'thread_module' => $thread['module_key'] ?? null,
+                'module_stood_down' => $context->get('module_stood_down'),
                 'asked_by' => [
                     'user_id' => $context->scope->userId,
                     'role' => $context->scope->role,
+                    // Report-only, and deliberately so. The scope is derived from the JWT
+                    // by McpContextHydrator and is never read from request input, so this
+                    // cannot be used to choose an institute — it is here so a reader can
+                    // confirm which one answered without inferring it from the rows.
+                    'sub_institute_id' => $context->scope->selectedInstituteId,
+                    'allowed_institute_ids' => $context->scope->allowedInstituteIds,
                 ],
             ],
             ['table' => 'ai_conversations', 'ids' => array_filter([$thread['id'] ?? null])],
@@ -85,6 +92,24 @@ class ConversationalAiStage implements LifecycleStage
         // — turn 1 on a follow-up, empty memory, a subject the answer cannot resolve —
         // points somewhere else. Say it here, where the decision was made.
         $note = $this->noteFor($thread, $turn);
+
+        // The same argument applies to routing. A turn that ran in a different module
+        // from the screen it was typed on is doing the right thing, but a reader
+        // comparing the answer against the page they are looking at needs to be told,
+        // or correct routing is indistinguishable from a bug.
+        $stoodDown = $context->get('module_stood_down');
+
+        if (is_string($stoodDown) && $stoodDown !== '') {
+            $routing = sprintf(
+                'Asked on the %s screen, but the question has no words in common with that module '
+                . 'and names the %s domain outright, so it ran there instead — which is where the '
+                . 'tools and the agent that can answer it are bound.',
+                $stoodDown,
+                $context->module->key
+            );
+
+            $note = $note === null ? $routing : $routing . ' ' . $note;
+        }
 
         return $note === null ? $outcome : $outcome->withNote($note);
     }

@@ -125,8 +125,21 @@ class CaseResolver
 
         $resolved = $context->get('resolved_student');
 
-        if (is_array($resolved) && isset($resolved['student_id'])) {
-            return (int) $resolved['student_id'];
+        if (! is_array($resolved)) {
+            return null;
+        }
+
+        // `student_id` or `id`, because the row can come from either side of the same
+        // fact. `students.search` returns the student's own record, where the key is
+        // `id`; rows that travel with a case carry `student_id` to say whose case it
+        // is. Reading only the second meant a student resolved *by name* was found and
+        // then silently dropped — the trace read "Read 2 rows from live records"
+        // immediately above "the question did not identify a student", which is the
+        // kind of contradiction that sends a reader looking at the database.
+        foreach (['student_id', 'id'] as $key) {
+            if (isset($resolved[$key]) && (int) $resolved[$key] > 0) {
+                return (int) $resolved[$key];
+            }
         }
 
         return null;

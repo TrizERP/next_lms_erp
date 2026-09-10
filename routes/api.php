@@ -184,7 +184,17 @@ Route::middleware(['lms.auth'])->get('lms/content/authoring-vocabulary', [\App\H
 Route::middleware(['lms.auth', 'perm:lms.content,create'])->post('lms/content/author', [\App\Http\Controllers\api\lms\ContentAuthoringController::class, 'store']);
 Route::post('lms-content-mapping-values', [ApiLmsCourseController::class, 'getContentMappingValues']);
 Route::post('lms-store-subject', [ApiLmsCourseController::class, 'storeSubject']);
-Route::post('lms/gamma-content-master', [\App\Http\Controllers\lms\contentController::class, 'storeGammaContent']);
+// Chapter content generation. Historically Gamma (presentations) + Gemini
+// (documents); for chapters listed in config('claude.chapter_ids') it is now
+// Claude, via App\Services\ContentGenerationService.
+//
+// This route is unauthenticated and reads sub_institute_id / user_id from the
+// request body - it predates api.session and the drawer sends no bearer token.
+// throttle.contentgen is a spend cap on top of that, not a substitute for auth.
+// The authenticated door is intelligence/content/generate, below.
+Route::middleware('throttle.contentgen')->group(function () {
+    Route::post('lms/gamma-content-master', [\App\Http\Controllers\lms\contentController::class, 'storeGammaContent']);
+});
 Route::get('ai-sop', [AiSopGenerationController::class, 'index']);
 Route::get('ai-platforms', [AiPlatformController::class, 'index']);
 Route::get('ai-sop/department-job-roles', [AiSopGenerationController::class, 'departmentJobRoles']);
@@ -206,6 +216,35 @@ Route::post('lms-homework/submission-list', [\App\Http\Controllers\api\lms\Stude
 Route::post('lms-homework/submission-store', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionStore']);
 Route::post('lms-homework/submission-report', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionReport']);
 Route::post('lms-homework/ai-status/{id}', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'aiEvaluationStatus']);
+
+// ------------------------------------------------------------------
+// Homework Submissions v2 - multi-file student submission + teacher review
+// workflow, built directly on the `homework` table's own submission/review
+// columns (status, submission_files, teacher_remarks, ai_*, etc. — see the
+// 2026_09_11 migration; no separate submission/file tables). One submission
+// per student per homework, overwritable while not yet under review, since
+// this row is the same row StudentHomeworkApiController above operates on.
+// ------------------------------------------------------------------
+Route::middleware('api.session')->group(function () {
+    Route::post('lms-homework/detail/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'detail']);
+    Route::post('lms-homework/submission/store', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'submit']);
+    Route::post('lms-homework/submission/ai-status/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'submissionAiStatus']);
+    Route::post('lms-homework/submission-file/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'downloadFile']);
+    Route::post('lms-homework/my-submissions', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'mySubmissions']);
+});
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::post('lms-homework/review-list', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewList']);
+    Route::post('lms-homework/review-detail/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewDetail']);
+    Route::post('lms-homework/review-store', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewStore']);
+});
+
+// Generate homework from the question bank (teacher-only lookups feeding
+// StudentHomeworkApiController::store()'s source_type = 'question_bank' path).
+// Additive; does not touch ApiLmsCourseController or the Exam module.
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::post('lms-homework/question-bank/types', [\App\Http\Controllers\api\lms\HomeworkQuestionBankApiController::class, 'questionTypes']);
+    Route::post('lms-homework/question-bank/questions', [\App\Http\Controllers\api\lms\HomeworkQuestionBankApiController::class, 'questions']);
+});
 
 // ------------------------------------------------------------------
 // LMS Assignment / Assignment Submission / Annotate Assignment
@@ -407,6 +446,11 @@ Route::match(['GET', 'POST'], 'intelligence/lesson-plans', [\App\Http\Controller
 // Curriculum Planning - yearly syllabus overview (stats, subject x month grid, upcoming lessons, subject progress)
 Route::match(['GET', 'POST'], 'intelligence/curriculum-planning', [\App\Http\Controllers\api\lms\CurriculumPlanningApiController::class, 'index']);
 
+// Curriculum Planning - one chapter's topics, concepts and key concepts. Kept off the
+// roll-up above because inlining them for every chapter costs ~0.5MB, nearly all of it
+// for chapters nobody opens. Scoped by sub_institute_id inside the controller.
+Route::match(['GET', 'POST'], 'intelligence/curriculum-planning/chapter', [\App\Http\Controllers\api\lms\CurriculumPlanningApiController::class, 'chapter']);
+
 // Monthly Plan - calendar view of scheduled periods for a given month
 Route::match(['GET', 'POST'], 'intelligence/monthly-plan', [\App\Http\Controllers\api\lms\MonthlyPlanApiController::class, 'index']);
 
@@ -468,6 +512,17 @@ Route::prefix('lesson-intelligence')->group(function () {
 //                 group's throttle:1000,1 which was no limit at all here.
 Route::middleware(['api.session', 'staff.only', 'throttle.qgen'])->group(function () {
     Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);
+});
+
+// Intelligence Content Generation - chapter content via Claude -> content_master
+//
+// The authenticated sibling of lms/gamma-content-master. Same service, same
+// prompt-from-the-caller contract, but the tenant (sub_institute_id) and author
+// (created_by) come from the verified JWT session instead of the request body,
+// so a caller cannot write content into another school attributed to another
+// user. Point the drawer here once it sends a bearer token.
+Route::middleware(['api.session', 'staff.only', 'throttle.contentgen'])->group(function () {
+    Route::post('intelligence/content/generate', [\App\Http\Controllers\api\lms\IntelligenceContentGenerationApiController::class, 'generate']);
 });
 
 // Semantic Intelligence - read-only chapter intelligence for presentation generators

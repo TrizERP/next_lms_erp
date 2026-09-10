@@ -4,6 +4,7 @@ namespace App\Domain\AI\Lifecycle;
 
 use App\Domain\AI\Conversation\AnswerComposer;
 use App\Domain\AI\Conversation\ConversationStore;
+use App\Domain\AI\Conversation\FollowUpComposer;
 use App\Domain\AI\Conversation\GeneralAnswerService;
 use App\Domain\AI\Conversation\Intent;
 use App\Domain\AI\Lifecycle\Modules\ModuleResolver;
@@ -38,6 +39,7 @@ class LifecycleAskService
         private readonly AnswerComposer $compose,
         private readonly GeneralAnswerService $general,
         private readonly ModuleSuggestions $suggestions,
+        private readonly FollowUpComposer $followUps,
     ) {
     }
 
@@ -59,11 +61,15 @@ class LifecycleAskService
     ): array {
         $startedAt = microtime(true);
 
-        $threadModule = $this->conversations->moduleHint($conversationId, $scope);
+        $threadHint = $this->conversations->threadHint($conversationId, $scope, $question);
 
-        if ($threadModule !== null && ! isset($options['conversation_module'])) {
-            $options['conversation_module'] = $threadModule;
+        if ($threadHint['module'] !== null && ! isset($options['conversation_module'])) {
+            $options['conversation_module'] = $threadHint['module'];
         }
+
+        // A question that points at the rows the thread just printed belongs to the
+        // module that printed them, whatever domain nouns it happens to contain.
+        $options['points_at_previous_answer'] = $threadHint['points_at_previous_answer'];
 
         $resolution = $this->modules->resolve($question, $options, $scope->selectedInstituteId);
 
@@ -77,6 +83,9 @@ class LifecycleAskService
 
         $context->set('module_source', $resolution['source']);
         $context->set('modules_considered', $resolution['considered']);
+        // Named on the context so the trace can say the turn ran somewhere other than
+        // the screen it was asked on. Silent re-routing would be worse than none.
+        $context->set('module_stood_down', $resolution['stood_down'] ?? null);
 
         $trace = $this->pipeline->run($context, $onStage);
 
@@ -88,6 +97,14 @@ class LifecycleAskService
 
         if ($context->agentRun !== null) {
             $links['agent_run_id'] = $context->agentRun['run_id'] ?? null;
+        }
+
+        // Where this turn actually ran, carried forward so the next elliptical follow-up
+        // inherits the conversation rather than whichever screen the panel is sitting on.
+        // 'general' is deliberately not recorded: a turn that belonged to no module has
+        // nothing to teach the next one, and writing it would erase a real module.
+        if ($resolution['module']->key !== 'general') {
+            $links['module'] = $resolution['module']->key;
         }
 
         $turnId = $this->conversations->recordTurn(
@@ -183,7 +200,20 @@ class LifecycleAskService
     {
         $headline = $context->headline();
         $sections = $context->sections();
-        $followUps = $context->followUps();
+
+        // What to ask next, derived from what this turn actually produced, ahead of
+        // whatever the stages asked for.
+        //
+        // The order is the point. A stage suggests a follow-up from where it sits in the
+        // ladder — reasonable, and blind to the rows the answer ended up carrying. The
+        // composer reads those rows, the record the turn opened and the task it is
+        // part-way through, so its suggestions are the ones tied to what is on screen.
+        // Stage suggestions follow rather than being replaced: "what evidence supports
+        // this?" is still the right second question after an explanation.
+        $followUps = $this->mergeFollowUps(
+            $this->followUps->forTurn($context),
+            $context->followUps()
+        );
 
         // Where the answer came from, recorded rather than inferred. The audit trail has
         // to tell a refusal from a general answer, and both leave planning blocked —
@@ -234,6 +264,45 @@ class LifecycleAskService
         }
 
         return $this->compose->make($headline, $sections, $context->actions(), $followUps);
+    }
+
+    /**
+     * Merge two sources of follow-up, keeping the first occurrence of each.
+     *
+     * Capped, because a menu is not a suggestion: past half a dozen chips a reader stops
+     * reading them and the answer above starts to look like the smaller half of the reply.
+     *
+     * @param  array<int, string>  $derived
+     * @param  array<int, string>  $suggested
+     * @return array<int, string>
+     */
+    private function mergeFollowUps(array $derived, array $suggested): array
+    {
+        $seen = [];
+        $merged = [];
+
+        foreach ([...$derived, ...$suggested] as $followUp) {
+            $followUp = trim((string) $followUp);
+
+            if ($followUp === '') {
+                continue;
+            }
+
+            $key = mb_strtolower(preg_replace('/\s+/u', ' ', $followUp) ?? $followUp);
+
+            if (isset($seen[$key])) {
+                continue;
+            }
+
+            $seen[$key] = true;
+            $merged[] = $followUp;
+
+            if (count($merged) >= 6) {
+                break;
+            }
+        }
+
+        return $merged;
     }
 
     /**

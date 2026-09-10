@@ -44,21 +44,16 @@ class RecommendationStage implements LifecycleStage
             return StageOutcome::notReached($module->whyNoDepth());
         }
 
-        // A scan can return several students. A recommendation is consequential, so it
-        // must be bound to the student the user explicitly selected rather than to the
-        // agent's first ranked row. The per-student action from ReasoningStage starts
-        // the existing single-case path on the next turn.
+        // A scan can return several students, and a recommendation is consequential, so
+        // the agent's first ranked row must not become the thing a bare "approve the
+        // recommendation" acts on. What follows shows that recommendation without
+        // arming it: the section names the student, and the buttons carry the
+        // recommendation id explicitly, so a decision is only ever taken against a
+        // record the user could see they were choosing. `pendingRecommendation` stays
+        // null, which is what HumanApprovalStage reads, so an unqualified approval
+        // still asks which student is meant.
         if ($context->intent?->key === 'student_risk_scan' && count($context->cases) > 1) {
-            return StageOutcome::skipped(
-                'The scan returned multiple cases, so no single recommendation was selected for approval.',
-                [
-                    'case_ids' => array_values(array_filter(array_map(
-                        static fn (array $case) => $case['case_id'] ?? $case['id'] ?? null,
-                        $context->cases
-                    ))),
-                    'rule' => 'A recommendation is shown only after a person selects one student from the ranked result.',
-                ]
-            );
+            return $this->forRankedRiskScan($context);
         }
 
         $resolved = $this->caseResolver->resolve($context);
@@ -217,6 +212,94 @@ class RecommendationStage implements LifecycleStage
             ['recommendation_id' => $recommendationId, 'utterance' => 'Reject the recommendation.'],
             'danger'
         ));
+    }
+
+    /**
+     * The proposal for whoever ranked first, shown but not armed.
+     *
+     * The scan has already argued which case is most urgent, and withholding what it
+     * proposes for that case made the answer stop one step short of being useful: the
+     * reader could see who needed help and not what the system would do about it.
+     *
+     * What is *not* done here is the point. `pendingRecommendation` is left null, so
+     * HumanApprovalStage still has nothing to act on and an unqualified "approve the
+     * recommendation" asks which student is meant. The buttons name the student and
+     * carry the recommendation id, so a decision taken from this answer is taken
+     * against a record the user could see they were choosing — which is the distinction
+     * that matters. Reading a proposal is not deciding on it.
+     */
+    private function forRankedRiskScan(StageContext $context): StageOutcome
+    {
+        $top = $context->cases[0] ?? null;
+        $target = is_array($top['recommendation'] ?? null) ? $top['recommendation'] : null;
+
+        $caseIds = array_values(array_filter(array_map(
+            static fn (array $case) => $case['case_id'] ?? $case['id'] ?? null,
+            $context->cases
+        )));
+
+        if ($target === null || ($target['id'] ?? null) === null) {
+            return StageOutcome::skipped(
+                'The scan returned multiple cases and the highest-priority one has no drafted recommendation.',
+                ['case_ids' => $caseIds]
+            );
+        }
+
+        $student = (string) ($top['student_name'] ?? 'this student');
+        $isPending = ($target['status'] ?? '') === 'pending_approval';
+
+        $context->addSection($this->compose->text(
+            'Recommended action',
+            sprintf(
+                '%s for %s%s',
+                (string) ($target['title'] ?? ''),
+                $student,
+                $isPending ? ' — waiting for your approval.' : '.'
+            )
+        ));
+
+        if ($isPending) {
+            $context->addAction($this->compose->action(
+                'approve',
+                'Approve: ' . ($target['title'] ?? 'this action') . ' (' . $student . ')',
+                'approve_recommendation',
+                [
+                    'recommendation_id' => $target['id'],
+                    'case_id' => $top['case_id'] ?? null,
+                    'student_id' => $top['student_id'] ?? null,
+                    'utterance' => sprintf('Approve the recommendation for %s.', $student),
+                ],
+                'primary'
+            ));
+
+            $context->addAction($this->compose->action(
+                'reject',
+                'Reject (' . $student . ')',
+                'reject_recommendation',
+                [
+                    'recommendation_id' => $target['id'],
+                    'case_id' => $top['case_id'] ?? null,
+                    'student_id' => $top['student_id'] ?? null,
+                    'utterance' => sprintf('Reject the recommendation for %s.', $student),
+                ],
+                'danger'
+            ));
+        }
+
+        return StageOutcome::ran(
+            sprintf(
+                'Showed the recommendation drafted for the highest-priority case of %d, without binding it for approval.',
+                count($caseIds)
+            ),
+            [
+                'case_ids' => $caseIds,
+                'shown_recommendation_id' => $target['id'],
+                'armed_for_approval' => false,
+                'rule' => 'A recommendation is displayed for the top case, but only a person selecting one '
+                    . 'student binds it for approval.',
+            ],
+            ['table' => 'ai_recommendations', 'ids' => [$target['id']]]
+        );
     }
 
     /**

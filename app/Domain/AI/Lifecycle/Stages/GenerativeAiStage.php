@@ -54,9 +54,22 @@ class GenerativeAiStage implements LifecycleStage
             $intent = $intent->with($pinned);
         }
 
-        [$intent, $inherited] = $this->conversations->resolveReferents($intent, $memory);
+        [$intent, $inherited] = $this->conversations->resolveReferents($intent, $memory, $context->question);
         $context->intent = $intent;
         $context->set('inherited_referents', $inherited);
+
+        if (isset($inherited['selected_record'])) {
+            $context->link(['selected_record' => $inherited['selected_record']]);
+        }
+
+        if (isset($inherited['selected_from_previous_answer'])) {
+            $context->link(['last_result_set' => $inherited['selected_from_previous_answer']['set'] ?? null]);
+        }
+
+        if (isset($inherited['filtered_previous_answer'])) {
+            $context->set('filtered_items', $inherited['filtered_previous_answer']['items'] ?? []);
+            $context->link(['last_result_set' => null]);
+        }
 
         $data = $intent->toArray() + [
             'inherited_from_earlier_turns' => $inherited,

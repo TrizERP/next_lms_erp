@@ -120,6 +120,8 @@ class StudentHomeworkApiController extends Controller
         $subject_id = $request->input('subject_id');
         $submission_date = $request->input('submission_date');
         $teacher_id = $request->input('teacher_id');
+        $sourceType = $request->input('source_type', 'attachment');
+        $questionIds = $request->input('question_ids', []);
 
         $student_details = getStudents($students, $sub_institute_id, $syear);
 
@@ -139,6 +141,30 @@ class StudentHomeworkApiController extends Controller
             $ext = File::extension($originalname);
             $file_name = $name . '.' . $ext;
             $file->storeAs('public/student/', $file_name);
+        }
+
+        // Question-bank-sourced homework has no teacher-uploaded attachment
+        // -- generate one PDF rendering of the selected questions and reuse
+        // the exact same `image`/storeAs('public/student/', ...) convention
+        // manual attachment uploads use above, so every downstream reader of
+        // `image` (this row's own show()/aiEvaluationStatus() and the new
+        // EvaluateHomeworkSubmissionV2Job's reference-file resolution) keeps
+        // working unchanged. Generated once for the whole batch since the
+        // same question set applies to every selected student.
+        if ($sourceType === 'question_bank' && !empty($questionIds) && $file_name === '') {
+            try {
+                $generated = $this->generateQuestionBankPdf($questionIds);
+                if ($generated !== null) {
+                    $file_name = $generated['file_name'];
+                    $file_size = $generated['file_size'];
+                    $ext = 'pdf';
+                }
+            } catch (\Throwable $exception) {
+                Log::warning('Question-bank homework PDF generation failed — leaving image empty', [
+                    'question_ids' => $questionIds,
+                    'message' => $exception->getMessage(),
+                ]);
+            }
         }
 
         $inserted_ids = [];
@@ -187,6 +213,8 @@ class StudentHomeworkApiController extends Controller
                 'created_by' => $teacher_id ?? ($request->header('X-User-Id') ?? null),
                 'prompt' => $request->input('prompt'),
                 'student_level' => $student_level,
+                'source_type' => $sourceType,
+                'question_ids' => !empty($questionIds) ? implode(',', $questionIds) : null,
             ];
 
             $insertedId = studentHomeworkModel::insertGetId($addhomeworkArray);
@@ -913,7 +941,42 @@ class StudentHomeworkApiController extends Controller
             $query->whereRaw("DATE_FORMAT(ah.submission_date, '%Y-%m-%d') BETWEEN ? AND ?", [$from_date, $to_date]);
         }
 
-        $data = $query->orderBy('ah.id', 'DESC')->get()->toArray();
+        // `ah.submission_image` (legacy single-file column) is only ever set
+        // by the OLD `submission-store` flow. Homework submitted through the
+        // newer, session-scoped `HomeworkSubmissionApiController::submit()`
+        // (used by /lms/homework/[id] and the student table at
+        // /lms/homework/submission) writes multiple files into the JSON
+        // `submission_files` column instead, which this report never read --
+        // so a student's attachment silently didn't show up here. Prefer the
+        // new column when present, falling back to the legacy single file.
+        $data = $query->orderBy('ah.id', 'DESC')->get()->map(function ($row) use ($server) {
+            $files = [];
+            if (!empty($row->submission_files)) {
+                $decoded = json_decode($row->submission_files, true);
+                if (is_array($decoded)) {
+                    foreach ($decoded as $index => $file) {
+                        $path = $file['path'] ?? '';
+                        if ($path === '') {
+                            continue;
+                        }
+                        $files[] = [
+                            'id' => $row->id . '_' . $index,
+                            'file_url' => $server . '/storage/' . ltrim($path, '/'),
+                            'original_name' => $file['original_name'] ?? '',
+                            'mime_type' => $file['mime_type'] ?? '',
+                            'file_size' => $file['file_size'] ?? null,
+                        ];
+                    }
+                }
+            }
+
+            $row->submission_files_urls = $files;
+            if (!empty($files)) {
+                $row->submission_file = $files[0]['file_url'];
+            }
+
+            return $row;
+        })->toArray();
 
         return response()->json([
             'status_code' => 1,
@@ -981,6 +1044,87 @@ class StudentHomeworkApiController extends Controller
             'message' => 'SUCCESS',
             'subjects' => $subjects,
         ], 200);
+    }
+
+    /**
+     * Render the selected question-bank questions to a PDF and store it the
+     * same way a manual homework attachment is stored (public/student/,
+     * bare filename in `image`). Returns null (never throws out of here --
+     * callers wrap this in try/catch) on any failure so a PDF-rendering
+     * problem never blocks homework creation.
+     *
+     * MCQ options live in `answer_master` (question_id, answer,
+     * correct_answer), not on `lms_question_master` itself --
+     * `multiple_answer` there is only a 0/1 single-vs-multiple-correct flag.
+     * A question renders as a lettered A/B/C/D list when it has any
+     * answer_master rows, otherwise as plain descriptive text.
+     */
+    private function generateQuestionBankPdf(array $questionIds): ?array
+    {
+        $questions = \App\Models\lms\lmsQuestionMasterModel::whereIn('id', $questionIds)
+            ->get(['id', 'question_title', 'description']);
+
+        if ($questions->isEmpty()) {
+            return null;
+        }
+
+        $optionsByQuestion = DB::table('answer_master')
+            ->whereIn('question_id', $questionIds)
+            ->orderBy('id')
+            ->get(['question_id', 'answer'])
+            ->groupBy('question_id');
+
+        $letters = range('A', 'Z');
+        $html = '<html><head><style>'
+            . 'body{font-family:DejaVu Sans,sans-serif;font-size:12px;color:#111;}'
+            . '.q{margin-bottom:14px;}'
+            . '.q-title{font-weight:bold;margin-bottom:4px;}'
+            . '.options{margin:4px 0 0 18px;padding:0;list-style:none;}'
+            . '.options li{margin-bottom:2px;}'
+            . '</style></head><body>'
+            . '<h3>Homework Questions</h3>';
+
+        foreach ($questions as $index => $question) {
+            $number = $index + 1;
+            $title = e($question->question_title ?? '');
+            $description = e($question->description ?? '');
+
+            $html .= '<div class="q"><div class="q-title">Q' . $number . '. ' . $title . '</div>';
+            if ($description !== '') {
+                $html .= '<div>' . $description . '</div>';
+            }
+
+            $options = $optionsByQuestion->get($question->id, collect());
+            if ($options->isNotEmpty()) {
+                $html .= '<ul class="options">';
+                foreach ($options as $optionIndex => $option) {
+                    $letter = $letters[$optionIndex] ?? ($optionIndex + 1);
+                    $html .= '<li>' . $letter . '. ' . e($option->answer ?? '') . '</li>';
+                }
+                $html .= '</ul>';
+            }
+
+            $html .= '</div>';
+        }
+
+        $html .= '</body></html>';
+
+        // `homework.image` is varchar(50) — the original
+        // 'homework_generated/homework_{time}-{uniqid}.pdf' pattern (57
+        // chars) silently overflowed it (MySQL truncates on overflow),
+        // which chopped off the '.pdf' extension and produced a 404 when
+        // the frontend built a URL from the stored value. Keep this well
+        // under 50 chars.
+        $file_name = 'hwgen/hw' . time() . substr(md5(uniqid('', true)), 0, 6) . '.pdf';
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html);
+        $binary = $pdf->output();
+
+        \Illuminate\Support\Facades\Storage::disk('public')->put('student/' . $file_name, $binary);
+
+        return [
+            'file_name' => $file_name,
+            'file_size' => strlen($binary),
+        ];
     }
 
     private function parseCsvIds($value): array

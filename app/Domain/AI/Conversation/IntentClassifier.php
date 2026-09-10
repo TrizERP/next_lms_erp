@@ -246,6 +246,39 @@ class IntentClassifier
             'slots' => ['enquiry'],
         ],
 
+        /*
+        | The two intents below carry no anchors, signals or patterns, and that is not an
+        | oversight — it is what makes them safe.
+        |
+        | "Show the details of the first candidate" and "show enquiries with new status"
+        | cannot be read from the words alone. There is no such thing as "the first
+        | candidate" until a previous answer has listed candidates, and a classifier that
+        | tried to match them on wording would fire on a thread that never showed a list
+        | and route to a record nobody chose. So they score zero and are unreachable from
+        | `classify()`; the only thing that can produce them is `ConversationStore`
+        | resolving the sentence against the rows the previous turn actually returned.
+        |
+        | They are declared here rather than invented in the store so that the catalogue
+        | the console publishes stays the complete list of what the system understands.
+        */
+        'record_detail' => [
+            'label' => 'Show one record from the previous answer',
+            'description' => 'Opens a row the last answer listed, selected by position or by the name shown.',
+            'anchors' => [],
+            'signals' => [],
+            'patterns' => [],
+            'slots' => [],
+        ],
+
+        'record_filter' => [
+            'label' => 'Narrow the previous answer',
+            'description' => 'Filters the rows the last answer returned by a value those rows hold.',
+            'anchors' => [],
+            'signals' => [],
+            'patterns' => [],
+            'slots' => [],
+        ],
+
         'learning_effectiveness' => [
             'label' => 'What the system has learned',
             'description' => 'Aggregate effectiveness of each action type, from measured outcomes.',

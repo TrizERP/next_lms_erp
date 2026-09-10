@@ -1689,7 +1689,7 @@ class AskService
         $trace->skipped('explanation', 'Not re-read for a status question.');
 
         $recommendations = $this->recommendations->forCase((int) $case['id'], $scope);
-        $approved = array_values(array_filter($recommendations, fn ($row) => ($row['status'] ?? '') === 'approved'));
+        $approved = array_values(array_filter($recommendations, $this->wasApproved(...)));
 
         $this->recommendationStages($trace, $recommendations, $this->firstPending($recommendations));
 
@@ -1824,7 +1824,7 @@ class AskService
         $recommendations = $this->recommendations->forCase((int) $case['id'], $scope);
         $this->recommendationStages($trace, $recommendations, $this->firstPending($recommendations));
 
-        $approved = array_values(array_filter($recommendations, fn ($row) => ($row['status'] ?? '') === 'approved'));
+        $approved = array_values(array_filter($recommendations, $this->wasApproved(...)));
         $approved === []
             ? $trace->notReached('approval', 'Nothing approved on this case.')
             : $trace->ran('approval', 'Approved earlier — that decision is what registered the outcome to track.', [
@@ -2512,6 +2512,25 @@ class AskService
      *
      * @return array{0:array, 1:int, 2:string}|null
      */
+    /**
+     * Did a human approve this recommendation?
+     *
+     * `executed` counts. A recommendation is `approved` only between the decision and
+     * the workflow starting; once the intervention actually runs it becomes `executed`,
+     * so testing for `approved` alone meant "what happened after approval?" answered
+     * "nothing has run yet — this case is still waiting for an approval" precisely
+     * *because* the workflow had run. The further the case progressed, the more
+     * confidently the status read denied it.
+     *
+     * `RecommendationStage` in the lifecycle already treats the pair as one state.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    private function wasApproved(array $row): bool
+    {
+        return in_array($row['status'] ?? '', ['approved', 'executed'], true);
+    }
+
     /**
      * The one case whose subject is named in this sentence, or null.
      *
