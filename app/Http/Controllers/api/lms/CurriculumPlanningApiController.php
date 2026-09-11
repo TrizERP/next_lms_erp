@@ -143,6 +143,9 @@ class CurriculumPlanningApiController extends Controller
                 // this legitimately comes back empty here.
                 $outcomesByChapter = DB::table('lms_learning_outcomes')
                     ->whereIn('chapter_id', $chapterIds)
+                    ->whereNotNull('parent_id')
+                    ->whereNotNull('code')
+                    ->where('code', '<>', '')
                     ->orderBy('code')
                     ->get(['id', 'chapter_id', 'code', 'type', 'description'])
                     ->groupBy('chapter_id');
@@ -558,23 +561,32 @@ class CurriculumPlanningApiController extends Controller
                     ->first(['id', 'document_type', 'document_tittle', 'chapter_number', 'board', 'page_count', 'pdf_url'])
                 : null;
 
+            $learningOutcomes = DB::table('lms_learning_outcomes')
+                ->where('chapter_id', $chapter->id)
+                ->whereNotNull('parent_id')
+                ->whereNotNull('code')
+                ->where('code', '<>', '')
+                ->orderBy('code')
+                ->get(['id', 'chapter_id', 'code', 'type', 'description']);
+
             return response()->json([
                 'status'  => true,
                 'message' => 'Chapter detail found',
                 'data'    => [
-                    'chapter_id'    => (int) $chapter->id,
-                    'chapter_name'  => $chapter->chapter_name,
-                    'chapter_desc'  => $this->blankToNull($chapter->chapter_desc ?? null),
-                    'sort_order'    => $chapter->sort_order,
-                    'availability'  => $chapter->availability,
-                    'show_hide'     => $chapter->show_hide,
-                    'unit_id'       => $chapter->unit_id,
-                    'extraction_id' => $chapter->extraction_id,
-                    'topics'        => $topics,
-                    'concepts'      => $concepts,
-                    'key_concepts'  => $this->decodeJsonArray($chapter->key_concepts ?? null),
-                    'semantic'      => $semantic,
-                    'source'        => $source,
+                    'chapter_id'        => (int) $chapter->id,
+                    'chapter_name'      => $chapter->chapter_name,
+                    'chapter_desc'      => $this->blankToNull($chapter->chapter_desc ?? null),
+                    'sort_order'        => $chapter->sort_order,
+                    'availability'      => $chapter->availability,
+                    'show_hide'         => $chapter->show_hide,
+                    'unit_id'           => $chapter->unit_id,
+                    'extraction_id'     => $chapter->extraction_id,
+                    'topics'            => $topics,
+                    'concepts'          => $concepts,
+                    'learning_outcomes' => $learningOutcomes,
+                    'key_concepts'      => $this->decodeJsonArray($chapter->key_concepts ?? null),
+                    'semantic'          => $semantic,
+                    'source'            => $source,
                 ],
             ], 200);
         } catch (Throwable $e) {
