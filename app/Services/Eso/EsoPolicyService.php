@@ -295,7 +295,7 @@ class EsoPolicyService
         $rows = QuestionMetadata::query()
             ->whereIn('node_id', $nodes->pluck('id'))
             ->forTenant($subInstituteId)
-            ->servable()
+            ->forPal()
             ->whereIn('stage', array_values(self::DIAGNOSTIC_STAGE_GROUPS))
             ->get(['question_id', 'node_id', 'stage', 'item_type']);
 
@@ -387,13 +387,45 @@ class EsoPolicyService
 
         $perNode = max(1, intdiv($totalItems, $nodes->count()));
         $items = [];
+        $requireCalibrated = (bool) config('pal_content.diagnostic.require_calibrated', false);
 
         foreach ($nodes as $node) {
-            $candidates = QuestionMetadata::forNode($node->id)
+            $base = fn () => QuestionMetadata::forNode($node->id)
                 ->forTenant($subInstituteId)
-                ->servable()
-                ->get(['question_id', 'item_type'])
-                ->shuffle();
+                ->forPal();
+
+            // Calibrated items first, spread ACROSS the difficulty range rather
+            // than shuffled: a diagnostic is trying to locate where a learner
+            // stops being able to answer, and a random draw measures that far
+            // less precisely than a spread does.
+            //
+            // Ordering alone was not enough — taking the first N of a
+            // difficulty-ordered list serves the N EASIEST items, which locates
+            // nothing. spreadByDifficulty() picks evenly across the ordered
+            // list so the sample covers the range the learner might stop in.
+            //
+            // Uncalibrated items have no trustworthy difficulty to order by, so
+            // they keep the original shuffle.
+            $calibrated = $base()->calibrated()
+                ->orderBy('difficulty_1_to_5')
+                ->get(['question_id', 'item_type', 'difficulty_1_to_5']);
+
+            $candidates = $this->spreadByDifficulty($calibrated, $perNode);
+
+            if ($calibrated->count() < $perNode && ! $requireCalibrated) {
+                // Top up with approved-but-uncalibrated items rather than
+                // serving a short diagnostic. Each item still reports its own
+                // calibration state, and diagnosticCalibration() reports the
+                // mix, so a weaker signal is visible instead of silent.
+                $topUp = $base()
+                    ->whereNotIn('question_id', $calibrated->pluck('question_id'))
+                    ->get(['question_id', 'item_type', 'difficulty_1_to_5'])
+                    ->shuffle();
+
+                $candidates = $calibrated->concat($topUp);
+            }
+
+            $calibratedIds = $calibrated->pluck('question_id')->flip();
 
             $collected = 0;
             foreach ($candidates as $q) {
@@ -410,12 +442,127 @@ class EsoPolicyService
                     'node_id' => (int) $node->id,
                     'node_type' => $node->node_type,
                     'item_type' => $q->item_type,
+                    // Carried per item so a caller scoring the diagnostic can
+                    // weight, or discard, evidence from an uncalibrated item.
+                    'calibrated' => $calibratedIds->has($q->question_id),
                 ]);
                 $collected++;
             }
         }
 
         return $items;
+    }
+
+    /**
+     * Pick `$wanted` items evenly across a difficulty-ordered collection.
+     *
+     * Taking the first N of a sorted list gives the N easiest items, which
+     * tells you nothing about where a learner stops. Sampling at even
+     * intervals keeps the ends and the middle of the range represented, so a
+     * short diagnostic still covers the span it is trying to locate within.
+     *
+     * The remaining items are appended in order, so a caller that needs more
+     * than `$wanted` (because some fail to hydrate) still has the rest
+     * available rather than a truncated pool.
+     *
+     * @param  \Illuminate\Support\Collection<int, mixed>  $ordered
+     * @return \Illuminate\Support\Collection<int, mixed>
+     */
+    protected function spreadByDifficulty(Collection $ordered, int $wanted): Collection
+    {
+        $total = $ordered->count();
+
+        if ($wanted < 1 || $total <= $wanted) {
+            return $ordered;
+        }
+
+        $picked = collect();
+        $seen = [];
+
+        for ($i = 0; $i < $wanted; $i++) {
+            // Even intervals across the whole list, first and last included.
+            $index = (int) round($i * ($total - 1) / max(1, $wanted - 1));
+
+            if (isset($seen[$index])) {
+                continue;
+            }
+
+            $seen[$index] = true;
+            $picked->push($ordered[$index]);
+        }
+
+        // Everything not sampled, still in difficulty order, as the fallback
+        // pool behind the spread.
+        foreach ($ordered as $index => $item) {
+            if (! isset($seen[$index])) {
+                $picked->push($item);
+            }
+        }
+
+        return $picked->values();
+    }
+
+    /**
+     * How much of what the diagnostic can serve for this concept is actually
+     * calibrated — i.e. how far the resulting mastery signal can be trusted.
+     *
+     * This exists because the failure it describes is otherwise invisible. A
+     * diagnostic built entirely from approved-but-uncalibrated items returns a
+     * full set of questions and a confident-looking score, and nothing in the
+     * response distinguishes that from a measured one. Reported alongside every
+     * diagnostic for the same reason diagnosticAvailability() explains an empty
+     * one: the screen should be able to say something true.
+     *
+     * @return array{servable:int, calibrated:int, calibrated_pct:float, signal:string, require_calibrated:bool}
+     */
+    public function diagnosticCalibration(int $conceptId, int $subInstituteId): array
+    {
+        $nodes = $this->nodesForConcept($conceptId, $subInstituteId);
+
+        if ($nodes->isEmpty()) {
+            return [
+                'servable' => 0,
+                'calibrated' => 0,
+                'calibrated_pct' => 0.0,
+                'signal' => 'none',
+                'require_calibrated' => (bool) config('pal_content.diagnostic.require_calibrated', false),
+            ];
+        }
+
+        $nodeIds = $nodes->pluck('id');
+
+        $servable = QuestionMetadata::query()
+            ->whereIn('node_id', $nodeIds)
+            ->forTenant($subInstituteId)
+            ->forPal()
+            ->count();
+
+        $calibrated = QuestionMetadata::query()
+            ->whereIn('node_id', $nodeIds)
+            ->forTenant($subInstituteId)
+            ->forPal()
+            ->calibrated()
+            ->count();
+
+        $pct = $servable === 0 ? 0.0 : round(($calibrated / $servable) * 100, 1);
+
+        // Deliberately coarse. The point is to separate "this score measured
+        // something" from "this score is a number", not to imply a precision
+        // the underlying item count does not support.
+        $signal = match (true) {
+            $servable === 0 => 'none',
+            $calibrated === 0 => 'uncalibrated',
+            $pct < 50.0 => 'partial',
+            default => 'calibrated',
+        };
+
+        return [
+            'servable' => $servable,
+            'calibrated' => $calibrated,
+            'calibrated_pct' => $pct,
+            'signal' => $signal,
+            'require_calibrated' => (bool) config('pal_content.diagnostic.require_calibrated', false),
+        ];
     }
 
     /**
@@ -435,7 +582,7 @@ class EsoPolicyService
         // orderCandidatesByDifficulty()); random otherwise.
         $candidates = QuestionMetadata::forNode($nodeId)
             ->forTenant($subInstituteId)
-            ->servable()
+            ->forPal()
             ->get(['question_id', 'difficulty_1_to_5']);
 
         foreach ($this->orderCandidatesByDifficulty($candidates, $state) as $questionId) {
@@ -700,15 +847,28 @@ class EsoPolicyService
         // initial diagnosis, because mastery IS held.
         $conceptStale = $this->isConceptStale($studentId, $nodes, $states);
 
+        // D3 precedence is CONCEPT-WIDE, not per node.
+        //
+        // This scan used to live inside the node loop below, which made
+        // precedence depend on sort_order: a node with a due retrieval sitting
+        // before a flagged node returned `retrieval_due` and the misconception
+        // was never reached. That tested retention while a confirmed error
+        // stood uncorrected — and contradicted this branch's own comment, which
+        // has always claimed D3 keeps its precedence.
+        //
+        // Hoisted so any flagged node outranks any other node's retrieval,
+        // matching how masteryVerdict() already evaluates `$misconceptionActive`
+        // across the whole concept rather than one node at a time.
         foreach ($nodes as $node) {
             $state = $states->get($node->id) ?? $this->stateFor($studentId, $node->id, $subInstituteId);
 
             if ($state->status === LearnerNodeState::STATUS_MISCONCEPTION_FLAGGED) {
-                // Stale does not bypass an active misconception: a stale-but-
-                // flagged node is still a misconception node, and D3 keeps its
-                // precedence (D3 interaction policy is unchanged for now).
                 return $this->reserveContrastPairAction($studentId, $conceptId, $node, $state, $subInstituteId, $silent);
             }
+        }
+
+        foreach ($nodes as $node) {
+            $state = $states->get($node->id) ?? $this->stateFor($studentId, $node->id, $subInstituteId);
 
             // Retrieval eligibility, NOT a mastery test: a node that already
             // survived a check is `retained`, and its NEXT rung is scheduled on
@@ -1421,7 +1581,7 @@ class EsoPolicyService
     {
         $candidates = QuestionMetadata::forNode($nodeId)
             ->forTenant($subInstituteId)
-            ->servable()
+            ->forPal()
             ->pluck('question_id')
             ->shuffle();
 
@@ -2177,7 +2337,7 @@ class EsoPolicyService
     {
         $candidates = QuestionMetadata::forNode($nodeId)
             ->forTenant($subInstituteId)
-            ->servable()
+            ->forPal()
             ->pluck('question_id')
             ->shuffle();
 
@@ -2318,48 +2478,11 @@ class EsoPolicyService
      */
     public function studentDashboard(int $studentId, int $subInstituteId, string $syear): ?array
     {
-        $standardId = DB::table('tblstudent_enrollment')
-            ->where('student_id', $studentId)
-            ->where('syear', $syear)
-            ->whereNull('end_date')
-            ->value('standard_id');
+        $orderedReadyChapterIds = $this->orderedReadyChapterIds($studentId, $subInstituteId, $syear);
 
-        if ($standardId === null) {
+        if ($orderedReadyChapterIds === null) {
             return null;
         }
-
-        $subjectIds = DB::table('sub_std_map')
-            ->where('sub_institute_id', $subInstituteId)
-            ->where('standard_id', $standardId)
-            ->orderBy('sort_order')
-            ->pluck('subject_id')
-            ->all();
-
-        if ($subjectIds === []) {
-            return ['no_content' => true];
-        }
-
-        // Preserve subject order (sub_std_map.sort_order), then chapter
-        // sort_order within each subject — matches PalWorkspaceController::
-        // workspace()'s subject/chapter resolution so "current chapter" here
-        // agrees with how the student's own /pal subject list is ordered.
-        $chapterIds = DB::table('chapter_master')
-            ->where('sub_institute_id', $subInstituteId)
-            ->where('standard_id', $standardId)
-            ->whereIn('subject_id', $subjectIds)
-            ->orderByRaw('FIELD(subject_id, ' . implode(',', $subjectIds) . ')')
-            ->orderBy('sort_order')
-            ->pluck('id')
-            ->all();
-
-        if ($chapterIds === []) {
-            return ['no_content' => true];
-        }
-
-        $readyChapterIds = array_flip(
-            $this->esoReadyConceptsForChapters($chapterIds, $subInstituteId)->pluck('chapter_id')->unique()->all()
-        );
-        $orderedReadyChapterIds = array_values(array_filter($chapterIds, fn ($id) => isset($readyChapterIds[$id])));
 
         if ($orderedReadyChapterIds === []) {
             return ['no_content' => true];
@@ -2380,6 +2503,210 @@ class EsoPolicyService
         }
 
         return $fallback ?? ['no_content' => true];
+    }
+
+    /**
+     * The student's ESO-ready chapters, in the order they are meant to be
+     * worked through.
+     *
+     * Subject order comes from sub_std_map.sort_order, then chapter sort_order
+     * within each subject — matching PalWorkspaceController::workspace()'s
+     * resolution, so "current chapter" here agrees with the student's own /pal
+     * subject list. Chapters with no ESO-ready concept are dropped: they cannot
+     * be worked through, so putting them in a sequence would promise something
+     * the loop cannot deliver.
+     *
+     * Returns null when the student has no enrolment for the year (no sequence
+     * can exist), and [] when they are enrolled but nothing is ESO-ready yet —
+     * two different states the callers report differently.
+     *
+     * @return array<int, int>|null
+     */
+    private function orderedReadyChapterIds(int $studentId, int $subInstituteId, string $syear): ?array
+    {
+        $standardId = DB::table('tblstudent_enrollment')
+            ->where('student_id', $studentId)
+            ->where('syear', $syear)
+            ->whereNull('end_date')
+            ->value('standard_id');
+
+        if ($standardId === null) {
+            return null;
+        }
+
+        $subjectIds = DB::table('sub_std_map')
+            ->where('sub_institute_id', $subInstituteId)
+            ->where('standard_id', $standardId)
+            ->orderBy('sort_order')
+            ->pluck('subject_id')
+            ->all();
+
+        if ($subjectIds === []) {
+            return [];
+        }
+
+        $chapterIds = DB::table('chapter_master')
+            ->where('sub_institute_id', $subInstituteId)
+            ->where('standard_id', $standardId)
+            ->whereIn('subject_id', $subjectIds)
+            ->orderByRaw('FIELD(subject_id, ' . implode(',', $subjectIds) . ')')
+            ->orderBy('sort_order')
+            ->pluck('id')
+            ->all();
+
+        if ($chapterIds === []) {
+            return [];
+        }
+
+        $readyChapterIds = array_flip(
+            $this->esoReadyConceptsForChapters($chapterIds, $subInstituteId)->pluck('chapter_id')->unique()->all()
+        );
+
+        return array_values(array_filter($chapterIds, fn ($id) => isset($readyChapterIds[$id])));
+    }
+
+    // ── Learning path — PAL loop step 4, the Personal Learning Plan ──────────
+
+    /**
+     * The whole sequence this student is working through, not just where they
+     * are in it.
+     *
+     * studentDashboard() already computes this ordering and then throws all of
+     * it away except the current chapter, so the plan the loop is following has
+     * never been visible anywhere. This returns it: every ESO-ready chapter in
+     * order, each concept in each chapter with its status, and a pointer to
+     * where the student currently sits.
+     *
+     * Deliberately lighter than calling chapterDashboard() per chapter. That
+     * would run nextAction() and masterySignals() for every chapter in the
+     * year to render a list — the next action only matters for the chapter the
+     * student is actually on, so it is resolved once, for that one.
+     *
+     * Read-only: nextAction() is called with silent: true, so viewing a plan
+     * writes no decision-log row.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function learningPath(int $studentId, int $subInstituteId, string $syear): ?array
+    {
+        $chapterIds = $this->orderedReadyChapterIds($studentId, $subInstituteId, $syear);
+
+        if ($chapterIds === null) {
+            return null;
+        }
+
+        if ($chapterIds === []) {
+            return ['no_content' => true, 'chapters' => [], 'current' => null];
+        }
+
+        $chapterRows = DB::table('chapter_master')
+            ->whereIn('id', $chapterIds)
+            ->get(['id', 'chapter_name', 'subject_id'])
+            ->keyBy('id');
+
+        $subjectNames = DB::table('subject')
+            ->whereIn('id', $chapterRows->pluck('subject_id')->unique()->all())
+            ->pluck('subject_name', 'id');
+
+        $readyConcepts = $this->esoReadyConceptsForChapters($chapterIds, $subInstituteId)->groupBy('chapter_id');
+
+        // One warm-up for every concept in the plan rather than per chapter.
+        $this->primeConceptContent(
+            $readyConcepts->flatten(1)->pluck('id')->map(fn ($id) => (int) $id)->all(),
+            $subInstituteId
+        );
+
+        $chapters = [];
+        $currentChapterId = null;
+        $currentConceptId = null;
+
+        foreach ($chapterIds as $chapterId) {
+            $row = $chapterRows->get($chapterId);
+            if ($row === null) {
+                continue;
+            }
+
+            $concepts = [];
+            $firstUnsettled = null;
+
+            foreach ($readyConcepts->get($chapterId, collect()) as $concept) {
+                $conceptId = (int) $concept->id;
+                $classification = $this->conceptStatusFor($studentId, $conceptId, $subInstituteId);
+
+                $concepts[] = [
+                    'concept_id' => $conceptId,
+                    'name' => $concept->name,
+                    'status' => $classification['status'],
+                    'mastered' => $classification['mastered'] ?? false,
+                    'stale' => $classification['stale'] ?? false,
+                ];
+
+                if ($firstUnsettled === null && ! self::isConceptSettled($classification['status'])) {
+                    $firstUnsettled = $conceptId;
+                }
+            }
+
+            $complete = $concepts !== [] && collect($concepts)->every(fn (array $c) => $c['status'] === 'mastered');
+
+            // "Not started" has to mean no evidence anywhere in the chapter,
+            // not merely "first concept unsettled" — a student mid-way through
+            // also has an unsettled concept, and calling that not-started would
+            // erase the work behind it.
+            $touched = collect($concepts)->contains(
+                fn (array $c) => ! in_array($c['status'], ['not_started', 'locked', 'not_ready'], true)
+            );
+
+            $chapters[] = [
+                'chapter_id' => (int) $chapterId,
+                'chapter_name' => $row->chapter_name,
+                'subject_id' => (int) $row->subject_id,
+                'subject_name' => $subjectNames[$row->subject_id] ?? null,
+                'status' => $complete ? 'complete' : ($touched ? 'in_progress' : 'not_started'),
+                'concept_count' => count($concepts),
+                'mastered_count' => collect($concepts)->where('status', 'mastered')->count(),
+                'concepts' => $concepts,
+            ];
+
+            // Only claim a chapter as "where the student is" if it actually has
+            // somewhere to go. `$complete` requires every concept mastered,
+            // but isConceptSettled() also counts locked and stale_mastery — so
+            // a chapter that is entirely locked or stale is not complete and
+            // yet yields no next concept. Pinning `current` there stranded the
+            // whole plan: no next step, and every later chapter skipped.
+            if ($currentChapterId === null && ! $complete && $firstUnsettled !== null) {
+                $currentChapterId = (int) $chapterId;
+                $currentConceptId = $firstUnsettled;
+            }
+        }
+
+        $next = null;
+
+        if ($currentChapterId !== null && $currentConceptId !== null) {
+            $action = $this->nextAction($studentId, $currentConceptId, $subInstituteId, silent: true);
+
+            $next = [
+                'chapter_id' => $currentChapterId,
+                'concept_id' => $currentConceptId,
+                'action' => $action['action'],
+                // The rule that chose it. A plan that shows the sequence without
+                // saying why the next step is next is a list, not a plan.
+                'rule_fired' => $action['rule_fired'] ?? null,
+            ];
+        }
+
+        return [
+            'chapters' => $chapters,
+            'chapter_count' => count($chapters),
+            'completed_chapters' => collect($chapters)->where('status', 'complete')->count(),
+            'current' => $next,
+            // Every chapter actually finished — NOT merely "no current chapter
+            // found". Those differ when a plan is blocked rather than done: a
+            // student whose remaining chapters are all locked has no current
+            // chapter and has completed nothing, and reporting that as complete
+            // would tell them they had finished the year.
+            'path_complete' => $chapters !== []
+                && collect($chapters)->every(fn (array $c) => $c['status'] === 'complete'),
+        ];
     }
 
     // ── Chapter dashboard — read-only aggregate for the "where am I" screen ──
@@ -2981,6 +3308,28 @@ class EsoPolicyService
         return $states->filter(fn (LearnerNodeState $s) => $s->attempts >= self::MIN_ATTEMPTS_FOR_EVIDENCE);
     }
 
+    /**
+     * This learner's BKT mastery estimate for one concept, 0.0-1.0.
+     *
+     * Exposed because the Pedagogy Engine's Tier 1 rules band on
+     * `bkt_mastery`, and that number has to come from the service that owns
+     * it rather than being recomputed alongside. Same evidence rule the
+     * mastery card uses: nodes with fewer than MIN_ATTEMPTS_FOR_EVIDENCE
+     * attempts do not count toward the average.
+     *
+     * NULL means "no evidence yet", which per ADR-001 §5 is a signal to
+     * DIAGNOSE, not a low score. Callers must not coalesce it to 0.
+     */
+    public function conceptMasteryEstimate(int $studentId, int $conceptId, int $subInstituteId): ?float
+    {
+        $nodes = $this->nodesForConcept($conceptId, $subInstituteId);
+        if ($nodes->isEmpty()) {
+            return null;
+        }
+
+        return $this->averageEstimate($this->statesForNodes($studentId, $nodes->pluck('id')));
+    }
+
     protected function averageEstimate(Collection $states): ?float
     {
         $evidenced = $this->evidencedStates($states);
@@ -3482,6 +3831,22 @@ class EsoPolicyService
             $this->requestMemo["prereq:{$conceptId}:{$subInstituteId}"] =
                 $relationsByConcept->get($conceptId, collect())->pluck('to_concept_id');
         }
+    }
+
+    /**
+     * The K/A/S nodes for one concept, for callers outside this service.
+     *
+     * Exposed for AiTutorContextService, which has to walk the same nodes to
+     * assemble the tutor's grounding. Querying ConceptNode directly there
+     * would duplicate the tenant scoping and ordering, and an empty result is
+     * also how "this concept is not ESO-ready" is detected — a distinction
+     * worth having in exactly one place.
+     *
+     * @return \Illuminate\Support\Collection<int, ConceptNode>
+     */
+    public function esoNodesForConcept(int $conceptId, int $subInstituteId): Collection
+    {
+        return $this->nodesForConcept($conceptId, $subInstituteId);
     }
 
     protected function nodesForConcept(int $conceptId, int $subInstituteId): Collection

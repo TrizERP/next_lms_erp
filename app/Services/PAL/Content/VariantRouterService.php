@@ -53,7 +53,7 @@ class VariantRouterService
         $query = ContentMetadata::query()
             ->forCurriculum($conceptId ?: null, $chapterId)
             ->where('content_type', $contentType)
-            ->servable()                       // C4 — approved only
+            ->forPal()
             ->forTenant($subInstituteId);
 
         if ($excluded !== []) {
@@ -77,17 +77,63 @@ class VariantRouterService
             $query->where('bloom_level_served', $context['bloom_level']);
         }
 
-        $candidates = $query->get();
+        // C7 rule 2b — a different PURPOSE, not merely a different modality.
+        //
+        // Format alone is not enough for the Corrective Micro-Lesson step. A
+        // learner who has just failed needs content whose job is to re-explain
+        // or remediate; re-serving the same practice item as a video is a
+        // different modality of the same wrong thing, and serving the
+        // assessment item is worse. `learning_purpose` (config
+        // pal_content.learning_purposes) is what makes that distinction
+        // expressible, and this is where it is applied.
+        // Two callers with two different needs, so two different strengths:
+        //
+        //  - `purpose` names one exactly. Treated as a HARD filter: a caller
+        //    that asked for 'remediate' and is handed a practice item has been
+        //    given the wrong thing, and an empty result is the honest answer.
+        //    An unregistered name is a hard miss too, so a typo cannot widen
+        //    the search back to the whole concept.
+        //  - `corrective` asks for the corrective SET. Treated as a
+        //    PREFERENCE, because learning_purpose is nullable and unbackfilled
+        //    across the live estate — a hard filter here would empty the
+        //    reroute ladder for practically every concept today.
+        //
+        // Either way the outcome is reported rather than left to be inferred.
+        [$purposes, $strict] = $this->purposeFilter($context);
+        $purposeApplied = false;
+        $candidates = null;
+
+        if ($strict) {
+            // An explicitly named purpose binds. An unregistered name yields no
+            // purposes at all, and therefore no content — never the whole
+            // concept.
+            $candidates = $purposes === []
+                ? $query->whereRaw('1 = 0')->get()
+                : (clone $query)->whereIn('learning_purpose', $purposes)->get();
+            $purposeApplied = true;
+        } elseif ($purposes !== []) {
+            $narrowed = (clone $query)->whereIn('learning_purpose', $purposes)->get();
+
+            if ($narrowed->isNotEmpty()) {
+                $candidates = $narrowed;
+                $purposeApplied = true;
+            }
+        }
+
+        $candidates ??= $query->get();
 
         // Nothing left in a different format. Widen once to "not yet shown", still
         // never re-serving a content id — then, if that is empty too, escalate.
+        // Not relaxed when a purpose was named explicitly: widening here would
+        // drop the purpose constraint the caller asked for, which is the one
+        // thing a strict filter must never do.
         $relaxed = false;
-        if ($candidates->isEmpty()) {
+        if ($candidates->isEmpty() && ! $strict) {
             $relaxed = true;
             $wide = ContentMetadata::query()
                 ->forCurriculum($conceptId ?: null, $chapterId)
                 ->where('content_type', $contentType)
-                ->servable()
+                ->forPal()
                 ->forTenant($subInstituteId);
 
             if ($excluded !== []) {
@@ -97,12 +143,39 @@ class VariantRouterService
         }
 
         if ($candidates->isEmpty()) {
+            // "Nothing authored for THIS purpose" is not "everything has been
+            // served". Reported separately and WITHOUT a teacher alert:
+            // learning_purpose is deliberately unbackfilled, so treating a
+            // strict miss as exhaustion would raise a false escalation on
+            // essentially every strict request made today — the teacher would
+            // be told a learner had run out of content that was never
+            // classified in the first place.
+            if ($strict) {
+                return [
+                    'content' => null,
+                    'exhausted' => false,
+                    'teacher_alert' => false,
+                    'reason' => 'no_content_for_purpose',
+                    'purpose_filtered' => true,
+                    'purposes_requested' => $purposes,
+                    'variants_shown' => count($shown),
+                    'formats_shown' => $shownFormats,
+                    'concept_id' => $conceptId,
+                    'message' => $purposes === []
+                        ? 'The requested learning purpose is not a registered one, so no content matches it.'
+                        : 'No approved content on this concept carries the requested learning purpose ('
+                            . implode(', ', $purposes) . '). Content may simply not be classified yet.',
+                ];
+            }
+
             // C7 rule 3 — exhausted. Escalate instead of looping.
             return [
                 'content' => null,
                 'exhausted' => true,
                 'teacher_alert' => true,
                 'reason' => 'all_variants_exhausted',
+                'purpose_filtered' => $purposeApplied,
+                'purposes_requested' => $purposes,
                 'variants_shown' => count($shown),
                 'formats_shown' => $shownFormats,
                 'concept_id' => $conceptId,
@@ -120,11 +193,50 @@ class VariantRouterService
             'exhausted' => false,
             'teacher_alert' => false,
             'relaxed_format_rule' => $relaxed,
+            // Whether the choice was actually narrowed by learning purpose, or
+            // fell back to "any content of this type". Reported rather than
+            // inferred: with the estate unclassified these look identical in
+            // the payload, and a caller cannot otherwise tell a corrective
+            // micro-lesson from any other content on the concept.
+            'purpose_filtered' => $purposeApplied,
+            'purposes_requested' => $purposes,
             'reason' => $failedFormat !== null ? 'variant_reroute' : 'first_delivery',
             'variants_shown' => count($shown),
             'formats_shown' => $shownFormats,
             'concept_id' => $conceptId,
         ];
+    }
+
+    /**
+     * Which learning purposes this request may be served from, and whether
+     * that constraint is binding.
+     *
+     * `corrective` exists so the micro-lesson step does not have to know which
+     * purposes count as corrective — that membership rule belongs in the
+     * vocabulary (config pal_content.learning_purposes), not in every caller.
+     *
+     * @param  array<string, mixed>  $context
+     * @return array{0: array<int, string>, 1: bool} [purposes, strict]
+     */
+    private function purposeFilter(array $context): array
+    {
+        if (! empty($context['purpose'])) {
+            $purpose = (string) $context['purpose'];
+
+            // An unregistered name matches nothing and stays strict, so a typo
+            // returns "no content" rather than quietly serving anything on the
+            // concept.
+            return [
+                PalVocabulary::isLearningPurpose($purpose) ? [$purpose] : [],
+                true,
+            ];
+        }
+
+        if (! empty($context['corrective'])) {
+            return [PalVocabulary::correctiveLearningPurposes(), false];
+        }
+
+        return [[], false];
     }
 
     /**

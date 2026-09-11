@@ -151,6 +151,79 @@ class PalVocabulary
         return $v !== null && array_key_exists($v, config('pal_content.formats', []));
     }
 
+    // ── Board blueprint ──────────────────────────────────────────────────────
+
+    /** @return array<int, string> */
+    public static function blueprintCategories(): array
+    {
+        return array_keys(config('pal_content.blueprint_categories', []));
+    }
+
+    public static function isBlueprintCategory(?string $v): bool
+    {
+        return $v !== null && array_key_exists($v, config('pal_content.blueprint_categories', []));
+    }
+
+    /**
+     * The customary marks for a blueprint category.
+     *
+     * Guidance for authoring, not a constraint — boards vary the weighting
+     * between papers and years, so the marks an item actually carries live on
+     * the row and are allowed to differ from this.
+     */
+    public static function typicalMarksFor(?string $category): ?float
+    {
+        $categories = config('pal_content.blueprint_categories', []);
+
+        return isset($categories[$category]) ? (float) $categories[$category]['typical_marks'] : null;
+    }
+
+    // ── Learning purpose ─────────────────────────────────────────────────────
+
+    /** @return array<int, string> */
+    public static function learningPurposes(): array
+    {
+        return array_keys(config('pal_content.learning_purposes', []));
+    }
+
+    public static function isLearningPurpose(?string $v): bool
+    {
+        return $v !== null && array_key_exists($v, config('pal_content.learning_purposes', []));
+    }
+
+    /**
+     * The purposes that may be served as an alternate explanation after a
+     * failure — the candidate set for PAL's Corrective Micro-Lesson step.
+     *
+     * This is the whole reason the vocabulary exists. Without it the step can
+     * only ask "what else exists on this concept?", which is how a learner who
+     * just failed gets handed the assessment item they failed, or an
+     * enrichment activity, as their remediation.
+     *
+     * @return array<int, string>
+     */
+    public static function correctiveLearningPurposes(): array
+    {
+        return array_keys(array_filter(
+            config('pal_content.learning_purposes', []),
+            fn ($purpose) => ($purpose['corrective'] ?? false) === true
+        ));
+    }
+
+    /** True when this purpose may be served as corrective content. */
+    public static function isCorrectivePurpose(?string $v): bool
+    {
+        return $v !== null && in_array($v, self::correctiveLearningPurposes(), true);
+    }
+
+    /** Which stage of the loop a purpose belongs to: teach|practice|assess|support. */
+    public static function purposePhase(?string $v): ?string
+    {
+        $purposes = config('pal_content.learning_purposes', []);
+
+        return isset($purposes[$v]) ? (string) $purposes[$v]['phase'] : null;
+    }
+
     public static function isQualityStatus(?string $v): bool
     {
         return $v !== null && array_key_exists($v, config('pal_content.quality_statuses', []));
@@ -249,6 +322,17 @@ class PalVocabulary
         $inSet('bloom_level_served', self::bloomLevels(), 'bloom level');
         $inSet('bloom_ceiling', self::bloomLevels(), 'bloom level');
         $inSet('knowledge_type', config('pal_content.knowledge_types', []), 'knowledge type');
+        $inSet('learning_purpose', self::learningPurposes(), 'learning purpose');
+        $inSet('blueprint_category', self::blueprintCategories(), 'blueprint category');
+
+        // Marks are the board's weighting for the item. Zero is rejected as
+        // well as negative: a zero-mark question occupies a blueprint slot
+        // while contributing nothing to the paper total.
+        if (array_key_exists('marks', $data) && $data['marks'] !== null && $data['marks'] !== '') {
+            if ((float) $data['marks'] <= 0.0) {
+                $errors[] = "marks: {$data['marks']} must be greater than 0.";
+            }
+        }
 
         if (array_key_exists('practice_level', $data) && $data['practice_level'] !== null && $data['practice_level'] !== '') {
             if (! self::isPracticeLevel($data['practice_level'])) {

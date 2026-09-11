@@ -215,8 +215,8 @@ class PredictiveInterventionEngine
 
     protected function calculateEngagementSignal($lastWeek, $prevWeek): float
     {
-        $recent = $lastWeek->avg('engagement_score') ?? 50;
-        $older = $prevWeek->avg('engagement_score') ?? 50;
+        $recent = $lastWeek->avg('exam_accuracy') ?? 50;
+        $older = $prevWeek->avg('exam_accuracy') ?? 50;
         return $older > 0 ? min(1, max(0, ($older - $recent) / $older)) : 0;
     }
 
@@ -327,9 +327,9 @@ class PredictiveInterventionEngine
 
     protected function calculateEngagementDecaySignal($recent, $older, $oldest): float
     {
-        $recent = $recent->avg('engagement_score') ?? 50;
-        $older = $older->avg('engagement_score') ?? 50;
-        $oldest = $oldest->avg('engagement_score') ?? 50;
+        $recent = $recent->avg('exam_accuracy') ?? 50;
+        $older = $older->avg('exam_accuracy') ?? 50;
+        $oldest = $oldest->avg('exam_accuracy') ?? 50;
 
         $decay = $oldest - $recent;
         return max(0, $decay / 100);

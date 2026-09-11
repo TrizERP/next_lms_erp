@@ -323,7 +323,7 @@ class PalContentController extends Controller
         }
 
         if ($validated['to_status'] === 'approved') {
-            $servable = MisconceptionCorrective::where('misconception_id', $m->id)->servable()->count();
+            $servable = MisconceptionCorrective::where('misconception_id', $m->id)->forPal()->count();
             if ($servable === 0) {
                 return back()->with('pal_error',
                     "C6: '{$m->tag}' has no APPROVED corrective content. Approve at least one corrective "

@@ -590,7 +590,7 @@ class PedagogyEngineResolver
     public function engagementObservations(): array
     {
         $sessions = DB::table('pal_learning_sessions')
-            ->selectRaw('COUNT(*) as total, AVG(engagement_score) as avg_score, AVG(duration_minutes) as avg_minutes, AVG(interaction_count) as avg_interactions')
+            ->selectRaw('COUNT(*) as total, AVG(exam_accuracy) as avg_score, AVG(duration_minutes) as avg_minutes, AVG(interaction_count) as avg_interactions')
             ->first();
 
         $total = (int) ($sessions->total ?? 0);

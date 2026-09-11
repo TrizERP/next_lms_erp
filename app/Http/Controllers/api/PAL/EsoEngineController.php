@@ -5,6 +5,7 @@ namespace App\Http\Controllers\api\PAL;
 use App\Http\Controllers\Controller;
 use App\Models\Eso\DecisionLog;
 use App\Models\Eso\LearnerNodeState;
+use App\Services\Eso\AiTutorContextService;
 use App\Services\Eso\EsoPalRenderer;
 use App\Services\Eso\EsoPolicyService;
 use Illuminate\Http\JsonResponse;
@@ -26,6 +27,7 @@ class EsoEngineController extends Controller
     public function __construct(
         protected EsoPolicyService $policy,
         protected EsoPalRenderer $renderer,
+        protected AiTutorContextService $tutor,
     ) {
     }
 
@@ -106,6 +108,11 @@ class EsoEngineController extends Controller
             'concept_id' => $conceptId,
             'items' => $items,
             'diagnostic' => $groups + ['total' => $total],
+            // Whether the score this diagnostic produces measured anything.
+            // Always present: an uncalibrated diagnostic looks identical to a
+            // calibrated one in `items`, so the distinction has to be stated
+            // rather than inferred.
+            'calibration' => $this->policy->diagnosticCalibration($conceptId, $subInstituteId),
             // Only resolved when there is genuinely nothing to serve — it costs
             // two extra queries and exists purely to explain the empty state
             // truthfully rather than blaming "Phase 0 tagging".
@@ -113,6 +120,32 @@ class EsoEngineController extends Controller
                 ? $this->policy->diagnosticAvailability($conceptId, $subInstituteId)
                 : null,
         ]);
+    }
+
+    /**
+     * GET /api/pal/eso/tutor-context/{learnerId}/{conceptId}
+     *
+     * What the AI Tutor is allowed to say to this learner about this concept,
+     * and what material it may say it from. Read-only; records nothing.
+     *
+     * 404 rather than an empty payload when the concept has no K/A/S nodes:
+     * there is nothing to ground a tutor on, and a caller must not open a
+     * session that would be answered from the model's own knowledge.
+     */
+    public function tutorContext(Request $request, int $learnerId, int $conceptId): JsonResponse
+    {
+        $subInstituteId = $this->subInstituteId($learnerId);
+        if ($subInstituteId === null) {
+            return $this->fail('Unknown learner.', 404);
+        }
+
+        $context = $this->tutor->forConcept($learnerId, $conceptId, $subInstituteId);
+
+        if ($context === null) {
+            return $this->fail('This concept has no adaptive learning content to tutor from.', 404);
+        }
+
+        return $this->ok($context);
     }
 
     /**
@@ -374,6 +407,33 @@ class EsoEngineController extends Controller
         }
 
         return $this->ok($dashboard);
+    }
+
+    /**
+     * GET /api/pal/eso/learning-path/{learnerId}?syear=YYYY-YYYY
+     *
+     * PAL loop step 4 — the whole sequence this student is working through,
+     * rather than only the chapter they are currently on. Read-only, and
+     * writes no decision-log row.
+     */
+    public function learningPath(Request $request, int $learnerId): JsonResponse
+    {
+        $syear = $request->input('syear');
+        if ($syear === null || $syear === '') {
+            return $this->fail('syear is required.');
+        }
+
+        $subInstituteId = $this->subInstituteId($learnerId);
+        if ($subInstituteId === null) {
+            return $this->fail('Unknown learner.', 404);
+        }
+
+        $path = $this->policy->learningPath($learnerId, $subInstituteId, (string) $syear);
+        if ($path === null) {
+            return $this->fail('No enrollment found for this student in that academic year.', 404);
+        }
+
+        return $this->ok($path);
     }
 
     /**
