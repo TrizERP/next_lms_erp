@@ -496,6 +496,11 @@ return [
             'audience' => ['Parent'],
             'defaults' => ['web' => 'on', 'email' => 'on', 'mobile' => 'on', 'whatsapp' => 'on'],
         ],
+        'front_desk.call_log.follow_up_due' => [
+            'label' => 'Call follow-up due', 'description' => 'A logged call was promised a call back and has not had one.',
+            'audience' => ['Front desk'],
+            'defaults' => ['web' => 'on', 'email' => 'on', 'mobile' => 'on'],
+        ],
         'front_desk.gate_pass.issued' => [
             'label' => 'Student released early', 'description' => 'A student has left the campus during school hours.',
             'audience' => ['Parent', 'Class teacher'], 'mandatory' => true,
@@ -503,6 +508,11 @@ return [
         ],
 
         // ── Library ─────────────────────────────────────────────────────────
+        'library.catalogue.copies_missing' => [
+            'label' => 'Copies missing after stock audit', 'description' => 'Copies not accounted for in the latest stock audit.',
+            'audience' => ['Librarian'],
+            'defaults' => ['web' => 'on', 'email' => 'on'],
+        ],
         'library.circulation.due_soon' => [
             'label' => 'Book due soon', 'description' => 'A borrowed title is due back shortly.',
             'audience' => ['Student', 'Staff'],
@@ -537,6 +547,11 @@ return [
         ],
 
         // ── Transport ───────────────────────────────────────────────────────
+        'transport.route.changed' => [
+            'label' => 'Route or stop changed', 'description' => 'The route, stop or pickup time for a student has been altered.',
+            'audience' => ['Parent', 'Transport in-charge'],
+            'defaults' => ['web' => 'on', 'email' => 'on', 'mobile' => 'on', 'sms' => 'on', 'whatsapp' => 'on'],
+        ],
         'transport.trip.boarded' => [
             'label' => 'Boarded the bus', 'description' => 'The student has boarded at their stop.',
             'audience' => ['Parent'],
@@ -777,7 +792,19 @@ return [
             'schedule' => ['minute' => '0', 'hour' => '8', 'day' => '*', 'month' => '*', 'day_of_week' => '*'],
         ],
 
+        // Front desk
+        'front_desk.call_log.follow_up_scan' => [
+            'label' => 'Scan for pending call follow-ups',
+            'description' => 'Finds logged calls promised a call back that have not had one.',
+            'schedule' => ['minute' => '0', 'hour' => '9', 'day' => '*', 'month' => '*', 'day_of_week' => '1-6'],
+        ],
+
         // Library
+        'library.catalogue.stock_audit' => [
+            'label' => 'Reconcile the catalogue',
+            'description' => 'Compares accessioned copies against what circulation and the shelf report, and flags the gap.',
+            'schedule' => ['minute' => '0', 'hour' => '2', 'day' => '1', 'month' => '*', 'day_of_week' => '*'],
+        ],
         'library.circulation.overdue_scan' => [
             'label' => 'Scan for overdue books',
             'description' => 'Marks loans overdue and notifies the borrower.',
@@ -982,6 +1009,13 @@ return [
             'label' => 'Room allocation', 'description' => 'Allotting or changing a bed.', 'subject' => 'Allocation request',
             'suggested_steps' => [
                 ['name' => 'Warden', 'approver_type' => 'role', 'approver' => 'Warden', 'sla_hours' => 24],
+            ],
+        ],
+        'transport.route.flow' => [
+            'label' => 'Route change', 'description' => 'Altering a route, a stop or a pickup time.', 'subject' => 'Route change',
+            'suggested_steps' => [
+                ['name' => 'Transport in-charge', 'approver_type' => 'role', 'approver' => 'Transport in-charge', 'sla_hours' => 24],
+                ['name' => 'Principal approval', 'approver_type' => 'principal', 'approver' => '', 'sla_hours' => 48],
             ],
         ],
         'inventory.purchase.flow' => [
