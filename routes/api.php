@@ -152,6 +152,10 @@ Route::middleware('lms.auth')->get('/permissions', [App\Http\Controllers\api\Per
 // so api.session (JWT-hydrated session) must run first for type=API requests.
 Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 'fees/menu-categories', [App\Http\Controllers\api\FeesMenuCategoryApiController::class, 'index']);
 
+// Teach/Learn-only: the same category-tab pattern as Fees above, over the same
+// shared tables (module_name = 'teach_learn') — see TeachLearnMenuCategoryApiController.
+Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 'teach-learn/menu-categories', [App\Http\Controllers\api\TeachLearnMenuCategoryApiController::class, 'index']);
+
 // GET is accepted alongside POST so these can be opened in a browser or curled without
 // a body — the handlers read their parameters through $request->input(), which covers
 // the query string as well. POST is unchanged, so existing callers are unaffected.
