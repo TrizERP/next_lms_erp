@@ -82,8 +82,8 @@ class PedagogyFatigueEngine
 
         if ($recentSessions->isEmpty() || $olderSessions->isEmpty()) return 0;
 
-        $recentAvg = $recentSessions->avg('engagement_score') ?? 50;
-        $olderAvg = $olderSessions->avg('engagement_score') ?? 50;
+        $recentAvg = $recentSessions->avg('exam_accuracy') ?? 50;
+        $olderAvg = $olderSessions->avg('exam_accuracy') ?? 50;
 
         return $olderAvg > 0 ? (($recentAvg - $olderAvg) / $olderAvg) * 100 : 0;
     }

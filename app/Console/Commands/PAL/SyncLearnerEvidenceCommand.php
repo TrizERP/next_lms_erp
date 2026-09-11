@@ -34,7 +34,7 @@ use Illuminate\Support\Facades\DB;
  *
  *   lms_online_exam -> pal_learning_sessions
  *       one attempt is one session. duration comes from start_time -> created_at,
- *       engagement from the stored accuracy_rate, mastery from obtain_marks over
+ *       exam_accuracy from the stored accuracy_rate, mastery from obtain_marks over
  *       the paper's total_marks.
  *
  * NOT written, deliberately: pal_competencies and pal_concept_mastery. Both are
@@ -187,7 +187,7 @@ class SyncLearnerEvidenceCommand extends Command
                     'difficulty_level' => null,
                     'duration_minutes' => $minutes,
                     'interaction_count' => (int) $row->total_right + (int) $row->total_wrong,
-                    'engagement_score' => $row->accuracy_rate === null ? null : (float) $row->accuracy_rate,
+                    'exam_accuracy' => $row->accuracy_rate === null ? null : (float) $row->accuracy_rate,
                     'mastery_score' => $totalMarks > 0
                         ? round(((float) $row->obtain_marks / $totalMarks) * 100, 2)
                         : null,

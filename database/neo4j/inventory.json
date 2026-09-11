@@ -7681,6 +7681,7 @@
             "difficulty_level": "tinyint",
             "duration_minutes": "int",
             "interaction_count": "int",
+            "exam_accuracy": "double",
             "engagement_score": "double",
             "mastery_score": "double",
             "device_type": "varchar",

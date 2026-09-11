@@ -390,6 +390,11 @@ class PalContentIntelligenceController extends Controller
             'mother_tongue' => 'nullable|string',
             'content_type' => 'nullable|string',
             'bloom_level' => 'nullable|string',
+            // Learning purpose (spec: the Corrective Micro-Lesson step).
+            // `purpose` binds to one exactly; `corrective` asks for the whole
+            // corrective set without the caller owning that membership rule.
+            'purpose' => 'nullable|string',
+            'corrective' => 'nullable|boolean',
             'session_id' => 'nullable|integer',
             'record' => 'nullable|boolean',
         ]);
@@ -406,6 +411,8 @@ class PalContentIntelligenceController extends Controller
                 'mother_tongue' => $v['mother_tongue'] ?? null,
                 'content_type' => $v['content_type'] ?? null,
                 'bloom_level' => $v['bloom_level'] ?? null,
+                'purpose' => $v['purpose'] ?? null,
+                'corrective' => $v['corrective'] ?? null,
             ], fn ($x) => $x !== null)
         );
 
@@ -715,9 +722,9 @@ class PalContentIntelligenceController extends Controller
             ->when($tenant !== null, fn ($q) => $q->where('sub_institute_id', $tenant))->count();
 
         $qTagged = QuestionMetadata::forTenant($tenant)->whereNotNull('bloom_level')->count();
-        $qApproved = QuestionMetadata::forTenant($tenant)->servable()->count();
+        $qApproved = QuestionMetadata::forTenant($tenant)->forPal()->count();
         $cTagged = ContentMetadata::forTenant($tenant)->whereNotNull('content_type')->count();
-        $cApproved = ContentMetadata::forTenant($tenant)->servable()->count();
+        $cApproved = ContentMetadata::forTenant($tenant)->forPal()->count();
 
         return response()->json([
             'success' => true,

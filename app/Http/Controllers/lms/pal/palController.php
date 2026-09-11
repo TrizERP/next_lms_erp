@@ -55,9 +55,40 @@ class palController extends Controller
     {
         $sessionUserId = session()->get('user_id');
         if (!empty($sessionUserId)) {
+            // Two kinds of caller reach this branch, and they are treated
+            // differently on purpose.
+            //
+            // A genuine WEB session (browser cookie, no bearer token) ignores a
+            // client-supplied `user_id` entirely — session identity wins, so a
+            // logged-in user cannot escalate by editing a query string.
+            //
+            // An API caller arrives with a bearer token, and SessionMiddleware
+            // hydrates a session FROM it. That request is exactly what the
+            // ownership rule below was written for, and before this it returned
+            // here first — silently ignoring `user_id`. It never leaked one
+            // student's data to another (it served the caller their own), but a
+            // staff request for a student's data returned the staff member's
+            // own, and no cross-user request was ever refused.
+            if ($request->bearerToken() === null) {
+                return [
+                    'student_id' => $sessionUserId,
+                    'sub_institute_id' => session()->get('sub_institute_id'),
+                    'syear' => $request->get('syear') ?: session()->get('syear'),
+                ];
+            }
+
+            [$targetStudentId, $subInstituteId] = $this->resolveTargetStudent(
+                $request,
+                (int) $sessionUserId,
+                (bool) session()->get('is_student'),
+                (int) session()->get('is_admin'),
+                (int) session()->get('user_profile_id'),
+                (string) session()->get('sub_institute_id')
+            );
+
             return [
-                'student_id' => $sessionUserId,
-                'sub_institute_id' => session()->get('sub_institute_id'),
+                'student_id' => $targetStudentId,
+                'sub_institute_id' => $subInstituteId ?: session()->get('sub_institute_id'),
                 'syear' => $request->get('syear') ?: session()->get('syear'),
             ];
         }
@@ -79,52 +110,81 @@ class palController extends Controller
             abort(response()->json(['status' => 0, 'message' => 'Authentication token is malformed.'], 401));
         }
 
-        $isAdmin = (int) ($payload['is_admin'] ?? 0);
-        $isStudent = !empty($payload['is_student']);
-        $callerSubInstitute = $payload['sub_institute_id'] ?? '';
-
-        $requestedStudentId = $request->get('user_id');
-        $targetStudentId = $requestedStudentId ? (int) $requestedStudentId : $callerId;
-
-        if ($targetStudentId !== $callerId) {
-            if ($isStudent) {
-                abort(response()->json(['status' => 0, 'message' => 'You can only access your own PAL data.'], 403));
-            }
-
-            // `is_admin` is unreliable -- many genuine institute admins have
-            // it null in tbluser (same reason ApiSessionHydrator falls back
-            // to the profile name, and PalApiAuth falls back to profile
-            // parent_id, rather than trusting is_admin alone). Admin-tier
-            // profiles (Admin / School admin / Assistant admin / Principal,
-            // ...) all chain up to profile id 1 via parent_id.
-            $isAdminProfile = $isAdmin >= 1;
-            if (!$isAdminProfile && !empty($payload['user_profile_id'])) {
-                $profileParentId = DB::table('tbluserprofilemaster')
-                    ->where('id', $payload['user_profile_id'])
-                    ->value('parent_id');
-                $isAdminProfile = (int) $profileParentId === 1;
-            }
-            if (!$isAdminProfile) {
-                abort(response()->json(['status' => 0, 'message' => 'You are not authorized to access this student\'s PAL data.'], 403));
-            }
-
-            $targetSub = DB::table('tblstudent')->where('id', $targetStudentId)->value('sub_institute_id');
-            $callerInstitutes = array_filter(array_map('trim', explode(',', (string) $callerSubInstitute)), 'strlen');
-
-            if ($isAdmin !== 2 && !in_array((string) $targetSub, $callerInstitutes, true)) {
-                abort(response()->json(['status' => 0, 'message' => 'This student belongs to a different institute.'], 403));
-            }
-
-            $subInstituteId = $targetSub;
-        } else {
-            $subInstituteId = $callerSubInstitute ?: $request->get('sub_institute_id');
-        }
+        [$targetStudentId, $subInstituteId] = $this->resolveTargetStudent(
+            $request,
+            $callerId,
+            !empty($payload['is_student']),
+            (int) ($payload['is_admin'] ?? 0),
+            (int) ($payload['user_profile_id'] ?? 0),
+            (string) ($payload['sub_institute_id'] ?? '')
+        );
 
         return [
             'student_id' => $targetStudentId,
             'sub_institute_id' => $subInstituteId,
             'syear' => $request->get('syear'),
         ];
+    }
+
+    /**
+     * Which student's data this caller may read, and under which institute.
+     *
+     * One rule, two identity sources — a hydrated session and a bearer token
+     * carry the same facts, and the rule must not depend on which one the
+     * request arrived with. It previously lived only on the token path, which
+     * is why the session path never enforced it.
+     *
+     * Aborts 403 rather than returning a flag: every caller of this is about to
+     * read a named student's data, and there is no safe way to continue.
+     *
+     * @return array{0:int, 1:mixed} [targetStudentId, subInstituteId]
+     */
+    private function resolveTargetStudent(
+        Request $request,
+        int $callerId,
+        bool $isStudent,
+        int $isAdmin,
+        int $userProfileId,
+        string $callerSubInstitute
+    ): array {
+        $requestedStudentId = $request->get('user_id');
+        $targetStudentId = $requestedStudentId ? (int) $requestedStudentId : $callerId;
+
+        // Asking for your own data is always allowed, and is the only path a
+        // browser session takes — it sends no user_id.
+        if ($targetStudentId === $callerId) {
+            return [$targetStudentId, $callerSubInstitute ?: $request->get('sub_institute_id')];
+        }
+
+        if ($isStudent) {
+            abort(response()->json(['status' => 0, 'message' => 'You can only access your own PAL data.'], 403));
+        }
+
+        // `is_admin` is unreliable -- many genuine institute admins have
+        // it null in tbluser (same reason ApiSessionHydrator falls back
+        // to the profile name, and PalApiAuth falls back to profile
+        // parent_id, rather than trusting is_admin alone). Admin-tier
+        // profiles (Admin / School admin / Assistant admin / Principal,
+        // ...) all chain up to profile id 1 via parent_id.
+        $isAdminProfile = $isAdmin >= 1;
+        if (!$isAdminProfile && $userProfileId > 0) {
+            $profileParentId = DB::table('tbluserprofilemaster')
+                ->where('id', $userProfileId)
+                ->value('parent_id');
+            $isAdminProfile = (int) $profileParentId === 1;
+        }
+        if (!$isAdminProfile) {
+            abort(response()->json(['status' => 0, 'message' => 'You are not authorized to access this student\'s PAL data.'], 403));
+        }
+
+        $targetSub = DB::table('tblstudent')->where('id', $targetStudentId)->value('sub_institute_id');
+        $callerInstitutes = array_filter(array_map('trim', explode(',', $callerSubInstitute)), 'strlen');
+
+        if ($isAdmin !== 2 && !in_array((string) $targetSub, $callerInstitutes, true)) {
+            abort(response()->json(['status' => 0, 'message' => 'This student belongs to a different institute.'], 403));
+        }
+
+        return [$targetStudentId, $targetSub];
     }
 
     /**

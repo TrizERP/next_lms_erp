@@ -33,9 +33,42 @@ class PalMisconceptionAuthTest extends TestCase
 
         $this->instituteA = $this->makeInstitute('Institute A');
         $this->instituteB = $this->makeInstitute('Institute B');
+
+        // Both institutes need a current academic term, or SessionMiddleware
+        // rejects every token call with 422 "Academic Term Date Expired"
+        // BEFORE the controller's authorization check runs — which made these
+        // authorization tests fail for a reason that had nothing to do with
+        // authorization. A real tenant always has one; the fixture did not.
+        $this->makeCurrentTerm($this->instituteA);
+        $this->makeCurrentTerm($this->instituteB);
         $this->studentA = $this->makeStudent($this->instituteA);
         $this->studentB = $this->makeStudent($this->instituteB);
         $this->staffInInstituteA = $this->makeStaff($this->instituteA, isAdmin: 1);
+    }
+
+    /**
+     * An academic term spanning today, as every live tenant has.
+     *
+     * HydratesLegacyApiSession resolves the current term the same way
+     * loginController does — a row in `academic_year` whose start/end dates
+     * bracket today — and 422s when there is none.
+     */
+    private function makeCurrentTerm(int $subInstituteId): void
+    {
+        DB::table('academic_year')->insert([
+            'term_id' => 1,
+            'syear' => (int) date('Y'),
+            'sub_institute_id' => $subInstituteId,
+            'title' => 'Test Term',
+            'short_name' => 'TT',
+            'sort_order' => 1,
+            'start_date' => date('Y-01-01'),
+            'end_date' => date('Y-12-31'),
+            'post_start_date' => date('Y-01-01'),
+            'post_end_date' => date('Y-12-31'),
+            'does_grades' => 'Y',
+            'does_exams' => 'Y',
+        ]);
     }
 
     private function makeInstitute(string $name): int
