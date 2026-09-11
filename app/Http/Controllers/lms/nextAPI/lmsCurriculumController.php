@@ -101,28 +101,44 @@ class lmsCurriculumController extends Controller
 
         $chaptersByUnit = $chapterRows->groupBy('unit_id');
 
-        // The concepts themselves. lms_concept is the concept registry - around
-        // fifty rows per chapter here, against the dozen or so summary entries
-        // in chapter_master.key_concepts - and its count is already what this
-        // screen's header totals.
-        //
-        // Joined on chapter_id alone, deliberately: lms_concept is 100% tenant 1
-        // and tenant 341, so a sub_institute_id filter here returns nothing for
-        // most schools. The chapters were already scoped by curriculum, so the
-        // tenant is settled before this query runs.
-        //
-        // Names only. They are a level of the tree; the descriptions beside them
-        // are far larger and nothing on this screen reads one.
-        $conceptsByChapter = DB::table('lms_concept')
+        // topic_master is the missing level between a chapter and its concepts.
+        // It is read with the chapter rows already scoped by the curriculum,
+        // preserving its author-defined sort order.
+        $topicsByChapter = DB::table('topic_master')
+            ->whereIn('chapter_id', $chapterRows->pluck('id')->all() ?: [0])
+            ->orderBy('chapter_id')
+            ->orderBy('topic_sort_order')
+            ->orderBy('id')
+            ->get(['id', 'chapter_id', 'name', 'description'])
+            ->groupBy('chapter_id');
+
+        // lms_concept.topic_id is the authoritative concept -> topic_master
+        // link. Concepts are still fetched in one read; grouping happens below
+        // after the chapter is known.
+        $conceptRowsByChapter = DB::table('lms_concept')
             ->whereIn('chapter_id', $chapterRows->pluck('id')->all() ?: [0])
             ->orderBy('chapter_id')
             ->orderBy('id')
-            ->get(['chapter_id', 'name'])
+            ->get(['chapter_id', 'topic_id', 'name'])
+            ->groupBy('chapter_id');
+
+        // The chapter's own lms_learning_outcomes rows are the source of truth
+        // for this tab. Return only their `code` values, never descriptions or
+        // competency text inferred from an extraction document.
+        $competencyCodesByChapter = DB::table('lms_learning_outcomes')
+            ->whereIn('chapter_id', $chapterRows->pluck('id')->all() ?: [0])
+            ->whereNotNull('parent_id')
+            ->whereNotNull('code')
+            ->where('code', '<>', '')
+            ->orderBy('chapter_id')
+            ->orderBy('code')
+            ->get(['chapter_id', 'code'])
             ->groupBy('chapter_id')
             ->map(fn ($rows) => $rows
-                ->pluck('name')
-                ->map(fn ($name) => trim((string) $name))
+                ->pluck('code')
+                ->map(fn ($code) => trim((string) $code))
                 ->filter()
+                ->unique()
                 ->values()
                 ->all());
 
@@ -161,7 +177,19 @@ class lmsCurriculumController extends Controller
 
                     foreach ($declared as $index => $declaredName) {
                         $match = $canPair ? $extracted->get($index) : null;
-                        $concepts = $match ? ($conceptsByChapter->get($match->id) ?? []) : [];
+                        $conceptRows = $match ? ($conceptRowsByChapter->get($match->id) ?? collect()) : collect();
+                        $concepts = $conceptRows
+                            ->pluck('name')
+                            ->map(fn ($name) => trim((string) $name))
+                            ->filter()
+                            ->values()
+                            ->all();
+                        $topics = $match
+                            ? $this->chapterTopics(
+                                $topicsByChapter->get($match->id) ?? collect(),
+                                $conceptRows
+                            )
+                            : [];
 
                         $periods = $periodsByName[mb_strtolower(trim((string) $declaredName))] ?? null;
                         if ($periods === null && $match) {
@@ -174,6 +202,11 @@ class lmsCurriculumController extends Controller
                             // The extracted title for the same chapter, so the
                             // longer name the rest of the LMS uses stays visible.
                             'extracted_name' => $match->chapter_name ?? null,
+                            'topics'         => $topics,
+                            'topic_count'    => count($topics),
+                            'competency_codes' => $match
+                                ? ($competencyCodesByChapter->get($match->id) ?? [])
+                                : [],
                             'concepts'       => $concepts,
                             'concept_count'  => count($concepts),
                             'periods'        => $periods,
@@ -184,13 +217,26 @@ class lmsCurriculumController extends Controller
                     // ones - Hindi unit 3 holds eleven. Falling back to them
                     // keeps real content on screen instead of "No chapters".
                     $chapters = $extracted
-                        ->map(function ($chapter) use ($periodsByName, $conceptsByChapter) {
-                            $concepts = $conceptsByChapter->get($chapter->id) ?? [];
+                        ->map(function ($chapter) use ($periodsByName, $topicsByChapter, $conceptRowsByChapter, $competencyCodesByChapter) {
+                            $conceptRows = $conceptRowsByChapter->get($chapter->id) ?? collect();
+                            $concepts = $conceptRows
+                                ->pluck('name')
+                                ->map(fn ($name) => trim((string) $name))
+                                ->filter()
+                                ->values()
+                                ->all();
+                            $topics = $this->chapterTopics(
+                                $topicsByChapter->get($chapter->id) ?? collect(),
+                                $conceptRows
+                            );
 
                             return [
                                 'chapter_id'     => (int) $chapter->id,
                                 'chapter_name'   => $chapter->chapter_name,
                                 'extracted_name' => null,
+                                'topics'         => $topics,
+                                'topic_count'    => count($topics),
+                                'competency_codes' => $competencyCodesByChapter->get($chapter->id) ?? [],
                                 'concepts'       => $concepts,
                                 'concept_count'  => count($concepts),
                                 'periods'        => $periodsByName[mb_strtolower(trim((string) $chapter->chapter_name))] ?? null,
@@ -219,6 +265,73 @@ class lmsCurriculumController extends Controller
         $decoded = json_decode((string) $value, true);
 
         return is_array($decoded) ? array_values(array_filter($decoded, 'is_string')) : [];
+    }
+
+    /** Build topic_master -> lms_concept rows without ever deriving a topic by name. */
+    private function chapterTopics($topics, $conceptRows): array
+    {
+        return collect($topics)
+            ->map(function ($topic) use ($conceptRows) {
+                $concepts = collect($conceptRows)
+                    ->where('topic_id', $topic->id)
+                    ->pluck('name')
+                    ->map(fn ($name) => trim((string) $name))
+                    ->filter()
+                    ->values()
+                    ->all();
+
+                return [
+                    'topic_id'    => (int) $topic->id,
+                    'name'        => trim((string) $topic->name),
+                    'description' => trim((string) ($topic->description ?? '')) ?: null,
+                    'concepts'    => $concepts,
+                ];
+            })
+            ->filter(fn ($topic) => $topic['name'] !== '')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Competency codes are authored only in document_extractions.md_content.
+     * Match a chapter's own markdown section first, then return its C-* / C=*
+     * labels without descriptions or unrelated curriculum-wide competency rows.
+     */
+    private function chapterCompetencyCodes(?string $markdown, string ...$chapterNames): array
+    {
+        if ($markdown === null || trim($markdown) === '') {
+            return [];
+        }
+
+        $names = collect($chapterNames)
+            ->map(fn ($name) => mb_strtolower(trim(html_entity_decode(strip_tags($name)))))
+            ->filter(fn ($name) => $name !== '')
+            ->unique()
+            ->values();
+
+        if ($names->isEmpty()) {
+            return [];
+        }
+
+        // Markdown/HTML headings and plain "Chapter 3:" headings all delimit
+        // extracted chapter sections. The latter is common in OCR output.
+        $sections = preg_split('/(?=^\s*(?:#{1,6}\s+|(?:chapter|unit)\s+\d+[\s:.-])|<h[1-6]\\b)/mi', $markdown) ?: [];
+        foreach ($sections as $section) {
+            $plain = mb_strtolower(html_entity_decode(strip_tags($section)));
+            if (!$names->contains(fn ($name) => str_contains($plain, $name))) {
+                continue;
+            }
+
+            if (preg_match_all('/\bC\s*[-=]\s*\d+(?:\.\d+)+\b/ui', $plain, $matches)) {
+                return collect($matches[0])
+                    ->map(fn ($code) => preg_replace('/\s+/', '', $code))
+                    ->unique()
+                    ->values()
+                    ->all();
+            }
+        }
+
+        return [];
     }
 
     /**
