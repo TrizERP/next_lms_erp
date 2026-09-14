@@ -46,7 +46,7 @@ class lmsCurriculumController extends Controller
     /**
      * Adds what the flat three-way join cannot carry: the real chapters under
      * each unit, and the marks structure behind internal_marks.
-     *
+     **
      * Done as its own pass rather than by widening the join above. That join
      * multiplies units by learning outcomes, so every chapter added to it would
      * be repeated once per outcome - and `select('a.*','b.*','c.*')` already

@@ -17,7 +17,7 @@ class CurriculumPlanningApiController extends Controller
     /**
      * Yearly syllabus overview across subjects: summary stats, a subject x
      * month topic grid, upcoming lessons and per-subject chapter progress.
-     *
+     **
      * `standard_id` is OPTIONAL - when omitted, this returns a combined
      * summary across every standard the institute has curriculum data for
      * (each subject entry still carries its own standard_id/standard_name so

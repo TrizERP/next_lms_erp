@@ -9,7 +9,7 @@ class PopulateLmsLearningOutcomesChapterId extends Command
 {
     /**
      * The name and signature of the console command.
-     *
+     **
      * @var string
      */
     protected $signature = 'lms:populate-lo-chapter-id';
@@ -39,6 +39,7 @@ class PopulateLmsLearningOutcomesChapterId extends Command
                 ->orderBy('unit_number')
                 ->get();
 
+            
             $chapters = collect();
             foreach ($units as $unit) {
                 $unitChs = DB::table('chapter_master')

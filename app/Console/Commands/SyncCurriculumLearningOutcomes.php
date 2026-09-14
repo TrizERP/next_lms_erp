@@ -9,7 +9,7 @@ class SyncCurriculumLearningOutcomes extends Command
 {
     /**
      * The name and signature of the console command.
-     *
+     **
      * @var string
      */
     protected $signature = 'lms:sync-curriculum-learning-outcomes';
