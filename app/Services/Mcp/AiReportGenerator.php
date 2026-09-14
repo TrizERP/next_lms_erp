@@ -2,6 +2,11 @@
 
 namespace App\Services\Mcp;
 
+use App\Domain\AI\Templates\GeneratedReportStore;
+use App\Domain\AI\Templates\ReportDataSourceCatalog;
+use App\Domain\AI\Templates\ReportLayoutRenderer;
+use App\Domain\AI\Templates\ReportTemplateResolver;
+use App\Mcp\ToolRegistry;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -29,7 +34,15 @@ use Illuminate\Support\Facades\DB;
  */
 class AiReportGenerator
 {
-    /** The modules a report can be generated for, each with a service that feeds it. */
+    /**
+     * The modules that have a service wired in directly, from before Template Management.
+     *
+     * No longer the whole answer to "what can be reported on" — see `supportedFor()`.
+     * Any module with a published report layout is reportable too, and reaches its rows
+     * through the layout's bound MCP tool rather than through a service named here.
+     * These three stay because they work, they are what the estate uses today, and
+     * rewriting them as layouts would be a migration with no user-visible gain.
+     */
     public const SUPPORTED = ['fees', 'admissions', 'attendance'];
 
     /** Eight columns is what prints across a page without wrapping into unreadability. */
@@ -55,11 +68,52 @@ class AiReportGenerator
     /** A ceiling on the query echoed into the document, so one attribute cannot carry a payload. */
     private const MAX_ARGS_BYTES = 2000;
 
+    /**
+     * The attribute naming the layout a report was rendered from.
+     *
+     * Written into the marker so a refresh re-renders the same configured layout rather
+     * than splicing the built-in table into a document that never had one.
+     */
+    private const LAYOUT_ATTRIBUTE = 'data-ai-report-layout';
+
     public function __construct(
         private readonly FeesArrearsService $fees,
         private readonly AdmissionMcpService $admissions,
         private readonly AttendanceInsightService $attendance,
+        private readonly ReportTemplateResolver $layouts,
+        private readonly ReportDataSourceCatalog $sources,
+        private readonly ReportLayoutRenderer $renderer,
+        private readonly GeneratedReportStore $reports,
     ) {
+    }
+
+    /**
+     * Resolved per call rather than injected — see the note on
+     * `ReportDataSourceCatalog::registry()`. This class is reachable from a tool inside
+     * the registry, so taking the registry as a constructor argument makes building it
+     * recursive.
+     */
+    private function tools(): ToolRegistry
+    {
+        return app(ToolRegistry::class);
+    }
+
+    /**
+     * Every module this caller can generate a report for, right now.
+     *
+     * The three wired services plus every module with a published layout. Resolved per
+     * call rather than held in a constant because publishing a template in Template
+     * Management has to make its module reportable immediately — a constant would need
+     * a deploy, which is the coupling this whole feature exists to remove.
+     *
+     * @return array<int, string>
+     */
+    public function supportedFor(McpRequestContext $context): array
+    {
+        return array_values(array_unique(array_merge(
+            self::SUPPORTED,
+            $this->layouts->modulesWithLayouts($context->selectedInstituteId)
+        )));
     }
 
     /**
@@ -73,19 +127,27 @@ class AiReportGenerator
         $module = mb_strtolower(trim((string) ($arguments['module'] ?? '')));
         $question = trim((string) ($arguments['question'] ?? ''));
 
-        if (! in_array($module, self::SUPPORTED, true)) {
+        $supported = $this->supportedFor($context);
+
+        if (! in_array($module, $supported, true)) {
             return ToolResult::failure(
                 'ai.templates.generate',
                 sprintf(
-                    'Reports can be generated for %s. "%s" is not one of them.',
-                    implode(', ', self::SUPPORTED),
+                    'Reports can be generated for %s. "%s" is not one of them — publish a report '
+                        . 'template for it under AI & Intelligence → Template Management to make it one.',
+                    implode(', ', $supported),
                     $module === '' ? '(nothing named)' : $module
                 ),
                 'unsupported_module'
             );
         }
 
-        $data = $this->rowsFor($module, $context, $arguments);
+        // The school's configured layout for this module, if it has one. Resolved before
+        // the rows because the layout is what decides where they come from: its bound
+        // MCP tool, not the service this class happens to have been given.
+        $layout = $this->layouts->find($module, $context->selectedInstituteId);
+
+        $data = $this->rowsFor($module, $context, $arguments, $layout);
 
         // An empty result is an answer, not a failure — but it is not a report either.
         // Saving a document that says "no rows" clutters the library with something
@@ -98,16 +160,28 @@ class AiReportGenerator
             );
         }
 
-        $title = $this->titleFor($module, $question, count($data['rows']));
+        // A configured layout names the report; otherwise the generic title does.
+        $title = $layout !== null && trim((string) $layout->name) !== ''
+            ? $this->layoutTitle($layout, $data, $question)
+            : $this->titleFor($module, $question, count($data['rows']));
 
-        $id = (int) DB::table('template_master')->insertGetId([
-            'sub_institute_id' => $context->selectedInstituteId,
-            'module_name' => AiTemplateService::AI_MODULE,
-            'title' => mb_substr($title, 0, 250),
-            'html_content' => $this->composeHtml($title, $question, $module, $data, $arguments),
-            'status' => 1,
-            'created_by' => $context->userId,
-            'created_on' => now(),
+        $html = $layout !== null
+            ? $this->composeFromLayout($layout, $title, $question, $module, $data, $arguments, $context)
+            : $this->composeHtml($title, $question, $module, $data, $arguments);
+
+        // `ai_generated_reports`, not `template_master`. That table is UNIQUE on
+        // (sub_institute_id, module_name), so it could hold exactly one AI report per
+        // school and the second one generated threw a constraint violation out of this
+        // very line. See 2026_09_14_000004.
+        $id = $this->reports->create($context, [
+            'module_key' => $module,
+            'layout_template_id' => $layout === null ? null : (int) $layout->id,
+            'title' => $title,
+            'html_content' => $html,
+            'question' => $question,
+            'source_tool' => $data['source'],
+            'arguments' => $arguments,
+            'row_count' => count($data['rows']),
         ]);
 
         return ToolResult::success(
@@ -125,6 +199,11 @@ class AiReportGenerator
                 'row_count' => count($data['rows']),
                 'columns' => $data['columns'],
                 'source_tool' => $data['source'],
+                // Which centrally configured layout produced this, so the chat answer
+                // and the report page can both say so rather than leaving the reader to
+                // guess whether the design came from Template Management or the default.
+                'layout_template_id' => $layout === null ? null : (int) $layout->id,
+                'layout_name' => $layout === null ? null : (string) $layout->name,
                 // The record, not the page. The frontend owns its own routes, the same
                 // way it does for the module hand-off.
                 'template_link' => '/ai-reports/' . $id,
@@ -150,14 +229,10 @@ class AiReportGenerator
      */
     public function refresh(McpRequestContext $context, int $reportId): array
     {
-        $report = DB::table('template_master')
-            ->where('id', $reportId)
-            ->where('module_name', AiTemplateService::AI_MODULE)
-            // Tenant scoping is the whole authorisation check here. A report belonging
-            // to another school is not "forbidden" — from this caller's position it
-            // does not exist, and saying so is what stops the id being an oracle.
-            ->where('sub_institute_id', $context->selectedInstituteId)
-            ->first();
+        // Tenant scoping is the whole authorisation check, and the store applies it to
+        // both the current table and the legacy one — a report written before
+        // `ai_generated_reports` existed still refreshes.
+        $report = $this->reports->find($context, $reportId);
 
         if (! $report) {
             return ToolResult::failure(
@@ -180,7 +255,30 @@ class AiReportGenerator
             );
         }
 
-        $data = $this->rowsFor($marker['module'], $context, $marker['arguments']);
+        // The layout this report was rendered from, when it was rendered from one. Read
+        // by id rather than re-resolved by module, so a report keeps being refreshed
+        // with the template that produced it even after a newer one is published — a
+        // refresh is meant to update figures, not silently restyle the document.
+        $layoutId = $this->readLayoutId($html, $marker);
+        $layout = $layoutId === null ? null : $this->layouts->findById($layoutId, $context->selectedInstituteId);
+
+        // Neither a layout to re-render nor a service to fall back on. Said plainly,
+        // because the cause is recoverable — the layout was retired or its data source
+        // renamed — and "no rows matched" would send somebody looking at their filters.
+        if ($layout === null && ! in_array($marker['module'], self::SUPPORTED, true)) {
+            return ToolResult::failure(
+                'ai.templates.regenerate',
+                sprintf(
+                    'This report was built from a %s template that is no longer published, so its '
+                        . 'figures cannot be refreshed. Re-publish the template, or generate a new report.',
+                    $marker['module']
+                ),
+                'layout_unavailable',
+                ['template_id' => $reportId, 'module' => $marker['module']]
+            );
+        }
+
+        $data = $this->rowsFor($marker['module'], $context, $marker['arguments'], $layout);
 
         // An empty result must not blank the table. A report whose figures silently
         // vanished reads as an answer — "nobody owes fees" — when what happened is
@@ -197,17 +295,24 @@ class AiReportGenerator
             );
         }
 
-        $refreshed = substr_replace(
-            $html,
-            $this->figuresBlock($marker['module'], $data, $marker['arguments']),
-            $marker['start'],
-            $marker['length']
-        );
+        // Re-render the layout when there was one, splice the built-in table when there
+        // was not. Both replace exactly the marked region, so whatever an administrator
+        // wrote outside it survives either way.
+        $replacement = $layout !== null
+            ? $this->composeFromLayout(
+                $layout,
+                (string) $report->title,
+                '',
+                $marker['module'],
+                $data,
+                $marker['arguments'],
+                $context
+            )
+            : $this->figuresBlock($marker['module'], $data, $marker['arguments']);
 
-        DB::table('template_master')
-            ->where('id', $reportId)
-            ->where('sub_institute_id', $context->selectedInstituteId)
-            ->update(['html_content' => $refreshed]);
+        $refreshed = substr_replace($html, $replacement, $marker['start'], $marker['length']);
+
+        $this->reports->updateHtml($context, $reportId, $refreshed, (bool) ($report->legacy ?? false));
 
         return ToolResult::success(
             'ai.templates.regenerate',
@@ -247,7 +352,13 @@ class AiReportGenerator
             return null;
         }
 
-        $data = $this->rowsFor($marker['module'], $context, $marker['arguments']);
+        // Same layout the document was rendered from, so Share reads the rows through
+        // the same data source a refresh would — a notice must not be sent about
+        // figures a refresh would disagree with.
+        $layoutId = $this->readLayoutId($html, $marker);
+        $layout = $layoutId === null ? null : $this->layouts->findById($layoutId, $context->selectedInstituteId);
+
+        $data = $this->rowsFor($marker['module'], $context, $marker['arguments'], $layout);
 
         return [
             'module' => $marker['module'],
@@ -298,25 +409,156 @@ class AiReportGenerator
      * @param  array<string, mixed>  $arguments
      * @return array{rows: array<int, array<string, mixed>>, columns: array<int, string>, source: string}
      */
-    private function rowsFor(string $module, McpRequestContext $context, array $arguments): array
-    {
-        $result = match ($module) {
-            'fees' => $this->fees->arrears($context, $arguments),
-            'admissions' => $this->admissions->listEnquiries($context, $arguments),
-            'attendance' => $this->attendance->overview($context, $arguments),
-        };
+    private function rowsFor(
+        string $module,
+        McpRequestContext $context,
+        array $arguments,
+        ?object $layout = null
+    ): array {
+        // A configured layout decides where its own rows come from. That is what makes
+        // the flow generic: `fees.get_pending`, `attendance.overview` and
+        // `students.directory` are all reached the same way, so adding a module means
+        // publishing a template that names its tool — not editing this match.
+        $result = $layout !== null && $this->sources->isBindable((string) ($layout->data_source ?? ''))
+            ? $this->fromDataSource($layout, $context, $arguments)
+            : $this->fromWiredService($module, $context, $arguments);
 
         $rows = $this->firstList($result);
 
         return [
             'rows' => $rows,
             'columns' => $this->columnsOf($rows),
-            'source' => match ($module) {
-                'fees' => 'fees.arrears',
-                'admissions' => 'admissions.listEnquiries',
-                'attendance' => 'attendance.overview',
-            },
+            // Named by whatever actually ran. The old `match` here had no default arm,
+            // so the first module reportable by layout alone would have thrown an
+            // UnhandledMatchError after its rows had already been fetched.
+            'source' => $this->sourceName($module, $layout),
+            // The totals the tool worked out for itself.
+            'scalars' => $this->scalarsOf($result),
         ];
+    }
+
+    /**
+     * Run the MCP tool a layout is bound to.
+     *
+     * Through `ToolRegistry::execute()` rather than by calling the tool object, so the
+     * call is governed exactly as it is when the assistant makes it: same permission
+     * check, same tenant scoping, same confirmation gate. A report must not be a way
+     * around the rules that apply to asking the question directly.
+     *
+     * @param  array<string, mixed>  $arguments
+     * @return array<string, mixed>
+     */
+    private function fromDataSource(object $layout, McpRequestContext $context, array $arguments): array
+    {
+        $tool = (string) $layout->data_source;
+
+        // The layout's own mapping is the floor; the question's arguments override it,
+        // so "pending fees for Aarav" and "pending fees for everyone" reach the same
+        // tool through the same template with a different student_id.
+        $payload = array_merge($this->layouts->arguments($layout), $arguments);
+
+        // Housekeeping keys the generator adds for itself. Passing them on would fail
+        // validation on tools whose schema is closed.
+        unset($payload['module'], $payload['question']);
+
+        try {
+            $envelope = $this->tools()->execute($tool, $payload, $context);
+        } catch (\Throwable $exception) {
+            report($exception);
+
+            return ToolResult::failure(
+                'ai.templates.generate',
+                sprintf('The data source "%s" could not be read.', $tool),
+                'data_source_failed'
+            );
+        }
+
+        // `ToolRegistry::execute()` does not return the tool's own result — it wraps it
+        // as `['mode' => 'execute', 'result' => <ToolResult>]`. Handing the wrapper
+        // straight to `firstList()` finds no list inside it and yields zero rows, which
+        // surfaces as the cheerful and completely wrong "No fees records matched".
+        if (($envelope['mode'] ?? null) === 'preview') {
+            // Only reachable if a confirmable tool were ever annotated read-only. It
+            // has run nothing and returned a confirmation prompt, which is not data.
+            return ToolResult::failure(
+                'ai.templates.generate',
+                sprintf('The data source "%s" requires confirmation and cannot feed a report.', $tool),
+                'data_source_requires_confirmation'
+            );
+        }
+
+        $result = $envelope['result'] ?? $envelope;
+
+        return is_array($result) ? $result : [];
+    }
+
+    /**
+     * The three services wired in before Template Management existed.
+     *
+     * @param  array<string, mixed>  $arguments
+     * @return array<string, mixed>
+     */
+    private function fromWiredService(string $module, McpRequestContext $context, array $arguments): array
+    {
+        return match ($module) {
+            'fees' => $this->fees->arrears($context, $arguments),
+            'admissions' => $this->admissions->listEnquiries($context, $arguments),
+            'attendance' => $this->attendance->overview($context, $arguments),
+            // Reachable when a layout's data source has been renamed or made write-only
+            // since it was published. An empty result is reported honestly by the
+            // caller; throwing here would lose the report and the reason for it.
+            default => ToolResult::failure(
+                'ai.templates.generate',
+                sprintf('No data source is configured for the %s module.', $module),
+                'no_data_source'
+            ),
+        };
+    }
+
+    /**
+     * The single values a tool returns alongside its rows, as layout placeholders.
+     *
+     * `fees.arrears` works out `total_outstanding`, `defaulter_count`, `cohort_size`
+     * and `students_checked`; `attendance.overview` works out its own averages. These
+     * are exactly the figures a report wants in its heading, and the tool has already
+     * computed them correctly — recomputing them from the rows in the layout would get
+     * a different answer whenever the rows are a sample of a larger set, which for
+     * `fees.arrears` is the normal case.
+     *
+     * Without this, `<<total_outstanding>>` in a layout resolved to nothing and a
+     * Pending Fees Report could not state its own total.
+     *
+     * @param  array<string, mixed>  $result
+     * @return array<string, string>
+     */
+    private function scalarsOf(array $result): array
+    {
+        $data = is_array($result['data'] ?? null) ? $result['data'] : $result;
+        $scalars = [];
+
+        foreach ($data as $key => $value) {
+            if (is_scalar($value) || $value === null) {
+                $scalars[(string) $key] = $value === null
+                    ? ''
+                    : (is_bool($value) ? ($value ? 'yes' : 'no') : (string) $value);
+            }
+        }
+
+        return $scalars;
+    }
+
+    private function sourceName(string $module, ?object $layout): string
+    {
+        if ($layout !== null && $this->sources->isBindable((string) ($layout->data_source ?? ''))) {
+            return (string) $layout->data_source;
+        }
+
+        return match ($module) {
+            'fees' => 'fees.arrears',
+            'admissions' => 'admissions.listEnquiries',
+            'attendance' => 'attendance.overview',
+            default => $module,
+        };
     }
 
     /**
@@ -400,6 +642,112 @@ class AiReportGenerator
      * @param  array{rows: array<int, array<string, mixed>>, columns: array<int, string>, source: string}  $data
      * @param  array<string, mixed>  $arguments
      */
+    /**
+     * Render a configured layout and wrap it in the marker container.
+     *
+     * The whole rendered document goes inside the marker, not just a table, because
+     * with a layout the document *is* the figures — headings, totals and the operator's
+     * wording are all substituted from the same rows. Refreshing therefore re-renders
+     * the layout rather than splicing a table into it, and the marker carries the
+     * layout's id so the refresh knows which template to re-render.
+     *
+     * Anything an administrator adds outside the marker on the report page still
+     * survives a refresh, exactly as it did before.
+     *
+     * @param  array{rows: array<int, array<string, mixed>>, columns: array<int, string>, source: string}  $data
+     * @param  array<string, mixed>  $arguments
+     */
+    private function composeFromLayout(
+        object $layout,
+        string $title,
+        string $question,
+        string $module,
+        array $data,
+        array $arguments,
+        McpRequestContext $context
+    ): string {
+        $rendered = $this->renderer->render(
+            (string) $layout->html_layout,
+            $data['rows'],
+            $data['columns'],
+            // Report facts on the left, because PHP's `+` keeps the LEFT operand's key
+            // on a collision. A data source with its own `module` or `question` key
+            // must not rename the report in its own heading.
+            [
+                'report_title' => $title,
+                'question' => $question,
+                'module' => $module,
+            ] + ($data['scalars'] ?? [])
+        );
+
+        $open = sprintf(
+            '<div %s="%s" %s-source="%s" %s-generated="%s" %s-args="%s" %s="%d">',
+            self::MARKER,
+            e($module),
+            self::MARKER,
+            e($data['source']),
+            self::MARKER,
+            e(now()->toIso8601String()),
+            self::MARKER,
+            e($this->encodeArguments($arguments)),
+            self::LAYOUT_ATTRIBUTE,
+            (int) $layout->id
+        );
+
+        return $open . $rendered['html'] . '</div>';
+    }
+
+    /**
+     * The saved report's title when a layout named it.
+     *
+     * The layout's name plus what the report is actually of, so a library of fifty
+     * reports all rendered from "Pending Fees Report" is still distinguishable — the
+     * row count and date are what tell two of them apart.
+     *
+     * @param  array{rows: array<int, array<string, mixed>>, columns: array<int, string>, source: string}  $data
+     */
+    private function layoutTitle(object $layout, array $data, string $question): string
+    {
+        $count = count($data['rows']);
+
+        // A single-record report is better identified by whose it is than by "1 row".
+        $subject = $count === 1 ? $this->subjectOf($data['rows'][0] ?? []) : '';
+
+        if ($subject !== '') {
+            return sprintf('%s — %s, %s', $layout->name, $subject, now()->format('j M Y'));
+        }
+
+        return sprintf(
+            '%s — %d row%s, %s',
+            $layout->name,
+            $count,
+            $count === 1 ? '' : 's',
+            now()->format('j M Y')
+        );
+    }
+
+    /**
+     * A human name for a single row, for the title.
+     *
+     * Looks for the field names this estate's tools actually return rather than
+     * guessing one: a report titled "Pending Fees Report — 1 row" helps nobody find it
+     * again, and "— Aarav Sharma" does.
+     *
+     * @param  array<string, mixed>  $row
+     */
+    private function subjectOf(array $row): string
+    {
+        foreach (['student_name', 'name', 'full_name', 'title', 'employee_name', 'teacher_name'] as $key) {
+            $value = $row[$key] ?? null;
+
+            if (is_scalar($value) && trim((string) $value) !== '') {
+                return mb_substr(trim((string) $value), 0, 80);
+            }
+        }
+
+        return '';
+    }
+
     private function composeHtml(string $title, string $question, string $module, array $data, array $arguments = []): string
     {
         $head = '<h2>' . e($title) . '</h2>';
@@ -499,9 +847,26 @@ class AiReportGenerator
      *
      * @return array{module: string, start: int, length: int, arguments: array<string, mixed>}|null
      */
+    /**
+     * The layout id recorded on the marker, when the report was rendered from one.
+     *
+     * @param  array{start:int, length:int}  $marker
+     */
+    private function readLayoutId(string $html, array $marker): ?int
+    {
+        $container = substr($html, $marker['start'], $marker['length']);
+        $pattern = '/\b' . preg_quote(self::LAYOUT_ATTRIBUTE, '/') . '="(\d+)"/i';
+
+        return preg_match($pattern, $container, $found) ? (int) $found[1] : null;
+    }
+
     private function readMarker(string $html): ?array
     {
-        $pattern = '/<div\b[^>]*\b' . preg_quote(self::MARKER, '/') . '="([a-z]+)"[^>]*>/i';
+        // `[a-z0-9_-]` rather than `[a-z]`: module keys are `ai_modules` keys, and
+        // `course-master`, `front_desk` and `admin-services` are all real ones. The
+        // narrower class silently failed to match them, which read to the caller as
+        // "this document has no figures" for a document that plainly did.
+        $pattern = '/<div\b[^>]*\b' . preg_quote(self::MARKER, '/') . '="([a-z0-9_\-]+)"[^>]*>/i';
 
         if (! preg_match($pattern, $html, $match, PREG_OFFSET_CAPTURE)) {
             return null;
@@ -509,9 +874,12 @@ class AiReportGenerator
 
         $module = mb_strtolower($match[1][0]);
 
-        if (! in_array($module, self::SUPPORTED, true)) {
-            return null;
-        }
+        // Deliberately not checked against `SUPPORTED` any more. That list is the three
+        // modules with a wired service, and since a module becomes reportable by having
+        // a layout published, gating here made every layout-generated report
+        // unrefreshable — reported as "no generated table", which is not what was wrong.
+        // Whether the module can still be read is decided by `refresh()`, which has the
+        // context needed to answer it.
 
         $start = (int) $match[0][1];
         $end = $this->closingDiv($html, $start + strlen($match[0][0]));

@@ -45,18 +45,26 @@ class PlanningStage implements LifecycleStage
         return StageOutcome::ran(
             $this->summarise($plan),
             $plan->toArray(),
-        )->withComponent($plan->source === Plan::SOURCE_LLM
-            ? 'App\\Domain\\AI\\Lifecycle\\Plan\\LlmPlanner'
-            : 'App\\Domain\\AI\\Lifecycle\\Plan\\DeterministicPlanner');
+        )->withComponent(match ($plan->source) {
+            Plan::SOURCE_LLM => 'App\\Domain\\AI\\Lifecycle\\Plan\\LlmPlanner',
+            Plan::SOURCE_MODULE_READ => 'App\\Domain\\AI\\Lifecycle\\Plan\\ModuleReadPlanner',
+            default => 'App\\Domain\\AI\\Lifecycle\\Plan\\DeterministicPlanner',
+        });
     }
 
     private function summarise(Plan $plan): string
     {
         $count = $plan->stepCount();
 
-        $how = $plan->source === Plan::SOURCE_DETERMINISTIC
-            ? sprintf('matched the "%s" intent in the registry', $plan->intentKey)
-            : 'planned by the model and validated against this module\'s tool bindings';
+        $how = match ($plan->source) {
+            Plan::SOURCE_DETERMINISTIC => sprintf('matched the "%s" intent in the registry', $plan->intentKey),
+            // Says what actually happened. Claiming a registry match here would be the
+            // one thing this trace must never do: describe a route as more certain than
+            // it was.
+            Plan::SOURCE_MODULE_READ => 'no intent route and no model plan, so the module\'s own '
+                . 'read tools were used',
+            default => 'planned by the model and validated against this module\'s tool bindings',
+        };
 
         return sprintf(
             'A %d-step plan was prepared — %s.',

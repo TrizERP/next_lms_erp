@@ -361,19 +361,19 @@ return [
             ],
 
             'fees' => [
+                'workflow_key' => 'fees_collection',
                 'detail_tools' => ['student_id' => 'fees.getPending'],
                 'mcp_tools' => [
                     'fees.getPending',
                     'fees.arrears',
                     'fees.collection_report',
+                    'ai.templates.list',
+                    'ai.templates.render',
                     'ai.templates.generate',
                     'students.search',
                     'students.directory',
                     'academics.structure',
                 ],
-                'depth_reason' => 'Fees questions are answered from live records, but no agent owns a '
-                    . 'fees case type yet — so nothing here opens a case, recommends an action, or '
-                    . 'asks for an approval.',
             ],
 
             'admissions' => [

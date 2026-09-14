@@ -438,7 +438,11 @@ class AiServiceProvider extends ServiceProvider
             \App\Domain\AI\Lifecycle\Plan\HybridPlanner::class,
             fn ($app) => new \App\Domain\AI\Lifecycle\Plan\HybridPlanner(
                 $app->make(\App\Domain\AI\Lifecycle\Plan\DeterministicPlanner::class),
-                $app->make(\App\Domain\AI\Lifecycle\Plan\LlmPlanner::class)
+                $app->make(\App\Domain\AI\Lifecycle\Plan\LlmPlanner::class),
+                // Third and last: reads the module's own bound tools when neither of the
+                // two above can route the question, so an unmapped question on a module
+                // page answers from that module's data instead of halting the turn.
+                $app->make(\App\Domain\AI\Lifecycle\Plan\ModuleReadPlanner::class)
             )
         );
 

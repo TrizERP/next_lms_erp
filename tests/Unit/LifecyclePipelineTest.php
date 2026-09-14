@@ -10,6 +10,7 @@ use App\Domain\AI\Lifecycle\Modules\ModuleCapability;
 use App\Domain\AI\Lifecycle\Plan\DeterministicPlanner;
 use App\Domain\AI\Lifecycle\Plan\HybridPlanner;
 use App\Domain\AI\Lifecycle\Plan\LlmPlanner;
+use App\Domain\AI\Lifecycle\Plan\ModuleReadPlanner;
 use App\Domain\AI\Lifecycle\Plan\Plan;
 use App\Domain\AI\Lifecycle\StageContext;
 use App\Domain\AI\Lifecycle\StageKey;
@@ -298,7 +299,7 @@ class LifecyclePipelineTest extends TestCase
             }
         };
 
-        $planner = new HybridPlanner(new DeterministicPlanner($this->recordDetail()), $llm);
+        $planner = new HybridPlanner(new DeterministicPlanner($this->recordDetail()), $llm, new ModuleReadPlanner());
 
         $context = $this->context();
         $context->intent = Intent::unknown();
@@ -325,7 +326,7 @@ class LifecyclePipelineTest extends TestCase
             }
         };
 
-        $planner = new HybridPlanner(new DeterministicPlanner($this->recordDetail()), $llm);
+        $planner = new HybridPlanner(new DeterministicPlanner($this->recordDetail()), $llm, new ModuleReadPlanner());
         $planner->plan($this->contextAsking('Which students have the lowest attendance this term?'));
 
         $this->assertTrue($llm->called);

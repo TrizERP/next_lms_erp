@@ -212,6 +212,35 @@ class IntentClassifier
             'slots' => ['case'],
         ],
 
+        'fees_query' => [
+            'label' => 'Answer a fee query',
+            'description' => 'Recognises fees, pending payments, defaulters, and fee collection questions.',
+            'anchors' => ['fee', 'fees', 'payment', 'payments', 'invoice', 'invoices', 'receipt', 'receipts'],
+            'signals' => [
+                'pending fee' => 5.0, 'pending fees' => 5.0, 'outstanding' => 4.0,
+                'outstanding dues' => 4.5, 'defaulter' => 4.5, 'defaulters' => 4.5,
+                'arrears' => 4.0, 'unpaid' => 4.0, 'due' => 2.0, 'collection' => 2.5,
+                'total fee collection' => 4.0, 'what is the total fee collection' => 5.0,
+                'which' => 1.0, 'who' => 1.0, 'show' => 1.0, 'list' => 1.0,
+                'find' => 1.0,
+            ],
+            'patterns' => [
+                '/\b(which|what|show|list|find|any)\b.{0,30}\b(fee|fees|payment|payments|invoice|invoices|receipt|receipts)\b/i',
+                '/\b(pending fees?|unpaid fees?|outstanding dues?|defaulters?|arrears?|fee collection)\b/i',
+                '/\b(student|students|child|children|kid|kids|learner|learners|pupil)\b.{0,40}\b(pending fees?|unpaid fees?|outstanding dues?|defaulters?|arrears?)\b/i',
+                // "How much fee is pending?" — the most natural way to ask this, and it
+                // matched none of the three patterns above: they all want the adjective
+                // before the noun ("pending fees"), and none of them start with "how".
+                // The sentence classified as unknown and the turn stopped at planning
+                // with "no registered intent matched".
+                '/\bhow (much|many)\b.{0,40}\b(fee|fees|due|dues|outstanding|arrears|payment|payments)\b/i',
+                // The same inversion generally: "fees are pending", "the fee is unpaid",
+                // "dues are outstanding".
+                '/\b(fee|fees|due|dues|amount|balance)\b.{0,20}\b(is|are|remains?|still)\b.{0,15}\b(pending|unpaid|outstanding|due|owed)\b/i',
+            ],
+            'slots' => [],
+        ],
+
         'admission_enquiry_list' => [
             'label' => 'List admission enquiries',
             'description' => 'Shows the admission enquiries on record and which are still pending.',

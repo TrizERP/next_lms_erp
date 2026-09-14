@@ -65,7 +65,22 @@ class FeesMenuCategoryApiController extends Controller
             return response()->json(['status' => 1, 'data' => ['categories' => []]]);
         }
 
+        // Which module's categories to return.
+        //
+        // This filter was missing, and its absence is what put every tab in the bar
+        // twice. `fees_menu_categories` began as a Fees-only table and this query read
+        // all of it; when Teach/Learn was seeded into the same table it brought its own
+        // Onboarding, Reports, Intelligence, Help Guide/Support, Communication and AI
+        // Stack rows — identical labels — and the Fees bar rendered both sets. Nothing
+        // was duplicated in the data; the query simply never said which module it wanted.
+        //
+        // Defaulted rather than required so the existing caller keeps working untouched:
+        // the Fees bar sends no module and still gets Fees. Teach/Learn can ask for its
+        // own rows by name when its bar is built, without a second endpoint.
+        $moduleName = trim((string) $request->input('module_name', 'fees')) ?: 'fees';
+
         $categoryRows = DB::table('fees_menu_categories')
+            ->where('module_name', $moduleName)
             ->where('status', 1)
             ->orderBy('sort_order')
             ->orderBy('id')
@@ -78,7 +93,8 @@ class FeesMenuCategoryApiController extends Controller
         $itemsByCategory = $this->visibleItemsByCategory(
             $subInstituteId,
             $userId,
-            (string) $request->input('user_profile_name', '')
+            (string) $request->input('user_profile_name', ''),
+            $moduleName
         );
 
         $categories = $categoryRows->map(fn ($category) => [
@@ -107,8 +123,12 @@ class FeesMenuCategoryApiController extends Controller
      *
      * @return array<string,list<array{id:int,label:string,link:string}>>
      */
-    private function visibleItemsByCategory(string $subInstituteId, string $userId, string $userProfileName): array
-    {
+    private function visibleItemsByCategory(
+        string $subInstituteId,
+        string $userId,
+        string $userProfileName,
+        string $moduleName = 'fees'
+    ): array {
         $permittedMenuIds = $this->permittedMenuIds($subInstituteId, $userId, $userProfileName);
         if ($permittedMenuIds === []) {
             return [];
@@ -116,6 +136,11 @@ class FeesMenuCategoryApiController extends Controller
 
         $rows = DB::table('fees_menu_category_items as c')
             ->join('tblmenumaster as m', 'm.id', '=', 'c.menu_id')
+            // Same filter, same reason as the categories query above. Every item row is
+            // Fees today, so this changes nothing now — and it is what stops another
+            // module's items appearing under a category key both modules happen to use
+            // the moment a second module is seeded here.
+            ->where('c.module_name', $moduleName)
             ->where('c.status', 1)
             ->where('m.status', 1)
             ->whereIn('m.id', $permittedMenuIds)

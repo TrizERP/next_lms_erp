@@ -56,7 +56,7 @@ class LlmPlanner implements Planner
             return null;
         }
 
-        $response = $this->client->json(
+        $response = $client->json(
             [
                 ['role' => 'system', 'content' => $this->systemPrompt($available)],
                 ['role' => 'user', 'content' => $this->userPrompt($context)],
