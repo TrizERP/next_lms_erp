@@ -259,7 +259,8 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
             Your child has been placed on the waitlist. Please re-check your e-mail id by end of this month.
             Your co-operation is really appreciated.
         </p>
-        <p style="color:#000000; font-size: 15px;">Thanks</p>
+        <p style="color:#000000; font-size: 15px;">Regards ,</p>
+        <p style="color:#000000; font-size: 15px;">Hills High School</p>
     </div>
 @elseif(isset($pint) && $pint == 'NO')
     <div style="color:#000000;">
