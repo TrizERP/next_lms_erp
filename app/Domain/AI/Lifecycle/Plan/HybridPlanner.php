@@ -23,6 +23,7 @@ class HybridPlanner implements Planner
     public function __construct(
         private readonly DeterministicPlanner $deterministic,
         private readonly LlmPlanner $llm,
+        private readonly ModuleReadPlanner $moduleRead,
     ) {
     }
 
@@ -38,6 +39,9 @@ class HybridPlanner implements Planner
         // model to reinterpret. If "approve the thing" did not classify, the honest
         // outcome is that nothing was understood — not a model's best guess at which
         // record the user meant to change.
+        //
+        // The read fallback below is not reached either, and must not be: "approve the
+        // admission" is not a request to list admissions.
         if ($this->soundsConsequential($context->question)) {
             return null;
         }
@@ -46,7 +50,27 @@ class HybridPlanner implements Planner
             return null;
         }
 
-        return $this->llm->plan($context);
+        $plan = $this->llm->plan($context);
+
+        if ($plan !== null) {
+            return $plan;
+        }
+
+        // Third and last: read the module the question was asked on.
+        //
+        // Added because the two planners above share a failure mode that looks like a
+        // broken product. The deterministic one routes only what the intent registry
+        // knows; the model one needs a provider credential bound to `agent_reasoning`,
+        // and on an estate where none is configured it returns null for everything. The
+        // two together therefore refused every unmapped question, and stage 4 halted the
+        // turn with stages 5-12 marked not-reached — for questions whose answer was one
+        // bound read tool away.
+        //
+        // This runs last on purpose. It changes nothing about a question either planner
+        // can already route: both are tried first and their plans returned unchanged, so
+        // every intent that worked before still takes exactly the same path. It only
+        // occupies the gap where the alternative was no answer at all.
+        return $this->moduleRead->plan($context);
     }
 
     /**

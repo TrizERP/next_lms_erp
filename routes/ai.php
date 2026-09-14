@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AI\AgentController;
 use App\Http\Controllers\AI\AiConfigurationController;
+use App\Http\Controllers\AI\AiTemplateController;
 use App\Http\Controllers\AI\AskController;
 use App\Http\Controllers\AI\CapabilityController;
 use App\Http\Controllers\AI\CaseController;
@@ -49,6 +50,7 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             // GET is the shape §23 documents and is handy to inspect by hand; POST is
             // what the panel uses, because selected records and page data do not
             // belong in a query string. Same handler either way.
+            // The generate route is intentionally callable by either verb.
             /*
             | AI & Intelligence console.
             |
@@ -88,6 +90,39 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             Route::put('/configuration-models/{id}', [AiConfigurationController::class, 'updateModel'])
                 ->where('id', '[0-9]+');
 
+            /*
+            | Template Management — module-wise AI templates, managed centrally.
+            |
+            | One set of routes for every module. `index` filters by `module_key` and
+            | nothing else here mentions a module at all, because the module is a field
+            | on the record rather than a branch in the code — which is what lets a
+            | module added to `ai_modules` show up in the selector without a route, a
+            | controller or a screen of its own.
+            |
+            | Saving a published template against a module also writes its
+            | `ai_suggestions` binding, so the module's AI panel offers it on the next
+            | open. That pairing used to take two hand-written migrations.
+            */
+            Route::get('/templates/options', [AiTemplateController::class, 'options']);
+            // `/templates/catalog` rather than `/templates`, because `GET /templates`
+            // is already the generation layer's "which templates can I render" list
+            // further down this file. Two routes with one URI is not an error in
+            // Laravel — the later registration silently wins the lookup — so taking
+            // that URI here would have removed an endpoint instead of adding one.
+            // The two answer different questions anyway: that one lists published
+            // templates to render, this one lists every version and draft to manage.
+            Route::get('/templates/catalog', [AiTemplateController::class, 'index']);
+            // Before `/{id}`, or "preview" is matched as an id and rejected by the
+            // numeric constraint rather than reaching the handler.
+            Route::post('/templates/preview', [AiTemplateController::class, 'preview']);
+            Route::post('/templates', [AiTemplateController::class, 'store']);
+            Route::get('/templates/{id}', [AiTemplateController::class, 'show'])
+                ->where('id', '[0-9]+');
+            Route::put('/templates/{id}', [AiTemplateController::class, 'update'])
+                ->where('id', '[0-9]+');
+            Route::delete('/templates/{id}', [AiTemplateController::class, 'destroy'])
+                ->where('id', '[0-9]+');
+
             Route::get('/policies/options', [\App\Http\Controllers\AI\AiPolicyController::class, 'options']);
             Route::get('/policies', [\App\Http\Controllers\AI\AiPolicyController::class, 'index']);
             Route::post('/policies', [\App\Http\Controllers\AI\AiPolicyController::class, 'store']);
@@ -99,7 +134,7 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             Route::match(['get', 'post'], '/workspace/context', [WorkspaceController::class, 'context']);
             Route::match(['get', 'post'], '/workspace/flow', [WorkspaceController::class, 'flowState']);
             Route::post('/workspace/workflow-status', [WorkspaceController::class, 'workflowStatus']);
-            Route::post('/workspace/generate', [WorkspaceController::class, 'generate']);
+            Route::match(['get', 'post'], '/workspace/generate', [WorkspaceController::class, 'generate']);
             Route::post('/workspace/agents/{agent}/run', [WorkspaceController::class, 'runAgent'])
                 ->where('agent', '[a-z0-9_\-]+');
             Route::post('/workspace/workflows/{workflow}/start', [WorkspaceController::class, 'startWorkflow'])

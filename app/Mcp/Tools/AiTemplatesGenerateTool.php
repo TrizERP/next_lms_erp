@@ -42,8 +42,15 @@ class AiTemplatesGenerateTool extends AbstractMcpTool
             'properties' => [
                 'module' => [
                     'type' => 'string',
-                    'enum' => AiReportGenerator::SUPPORTED,
-                    'description' => 'Which module the report is about.',
+                    // No `enum`. Which modules are reportable is now per-tenant — the
+                    // three wired services plus every module with a published report
+                    // template — and a schema is static, so an enum here would have
+                    // told the planner that a module the school had just configured
+                    // did not exist. `AiReportGenerator::generate()` validates against
+                    // the live list and names it in the refusal.
+                    'description' => 'Which module the report is about, such as fees, attendance, '
+                        . 'admissions, students or exams. Any module with a published report template '
+                        . 'in AI & Intelligence → Template Management can be named here.',
                 ],
                 'question' => [
                     'type' => 'string',

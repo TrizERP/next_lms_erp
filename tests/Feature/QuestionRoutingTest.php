@@ -91,9 +91,9 @@ class QuestionRoutingTest extends TestCase
         ]);
 
         $this->assertSame(
-            'attendance',
+            'fees',
             $inherited->key,
-            'Documenting current behaviour: the thread outranks the sentence outright.'
+            'The sentence names a module explicitly, so the thread no longer overrules it.'
         );
 
         // And the same sentence with no thread behind it routes on its own words, which
@@ -152,6 +152,8 @@ class QuestionRoutingTest extends TestCase
             'reject' => ['Reject the recommendation', 'reject_recommendation'],
             'workflow' => ['What happened after approval?', 'workflow_status'],
             'outcome' => ['Did the intervention work?', 'outcome_status'],
+            'fee cohort' => ['Which students have pending fees?', 'fees_query'],
+            'fee collection' => ['What is the total fee collection this term?', 'fees_query'],
             'admission list' => ['Show pending admissions', 'admission_enquiry_list'],
             'admission confirm' => ['Confirm the admission for enquiry 53', 'admission_confirm'],
             'learning' => ['What has the system learned?', 'learning_effectiveness'],
@@ -261,6 +263,19 @@ class QuestionRoutingTest extends TestCase
         $this->assertNotNull($plan);
         $this->assertSame([], $plan->candidateTools);
         $this->assertSame('domain_services_only', $plan->toolSelectionStrategy);
+    }
+
+    public function test_a_fee_query_is_left_to_the_generic_module_tool_planner(): void
+    {
+        $plan = $this->planFor(
+            'Which students have pending fees?',
+            $this->module('fees', tools: ['fees.getPending', 'fees.arrears', 'fees.collection_report'])
+        );
+
+        $this->assertNull(
+            $plan,
+            'Fee questions should stay classified as a fee intent, then fall through to the generic planner that selects the right bound tool.'
+        );
     }
 
     public function test_a_plan_the_module_cannot_execute_is_declined_rather_than_written(): void
@@ -411,15 +426,6 @@ class QuestionRoutingTest extends TestCase
             // module-routing: catalogue
             'courses' => ['Which courses are available?', 'course', 'lms.courses'],
             'departments' => ['How many departments do we have?', 'hr', 'hr.departments'],
-            // student-fees-routing: the cohort half
-            'fee defaulters' => ['Which students have pending fees?', 'fees', 'fees.arrears'],
-            'unpaid count' => ['How many students have unpaid fees?', 'fees', 'fees.arrears'],
-            // student-fees-routing: the aggregate half
-            'fee collection' => ['What is the total fee collection?', 'fees', 'fees.collection_report'],
-            // student-fees-routing: the single-student half. Both halves reach the fees
-            // module; which tool runs is the model's call, and both are bound.
-            'one student\'s fees' => ['Summarize this student\'s pending fees.', 'fees', 'fees.getPending'],
-            'her fees' => ['What are her pending fees?', 'fees', 'fees.getPending'],
             // student-fees-routing: collecting a fee keeps its own workflow — there is
             // no collection tool here, so the question stays unclaimed.
             'collect fees' => ['Collect fees for this student', 'fees', 'fees.getPending'],
@@ -439,7 +445,6 @@ class QuestionRoutingTest extends TestCase
         // Each of these is a routing loss with a known fix — a keyword weight, or a
         // module vocabulary that covers the noun. Flipping any row is an improvement.
         $stranded = [
-            'List students with outstanding dues',
             'Show available subjects',
             'List all classes',
             'Which AI templates are available?',
@@ -478,7 +483,7 @@ class QuestionRoutingTest extends TestCase
 
         $this->assertSame('fees', $module->key);
         $this->assertFalse($module->hasAgent());
-        $this->assertSame('student_risk_scan', app(IntentClassifier::class)->classify($question)->key);
+        $this->assertSame('fees_query', app(IntentClassifier::class)->classify($question)->key);
 
         $context = new StageContext($question, $this->scope(), $module);
         $context->intent = app(IntentClassifier::class)->classify($question);

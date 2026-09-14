@@ -327,6 +327,12 @@ class DeterministicPlanner implements Planner
                 ['read_enquiries', 'Load the admission enquiries in scope.', 'admissions.listEnquiries'],
                 ['report', 'Return the enquiries and which are still pending.'],
             ],
+            // `fees_query` is intentionally not deterministic. The classifier recognises
+            // that a question belongs to the fees module, but the exact MCP tool depends
+            // on the wording of the question itself — whether it asks for a cohort,
+            // one student's pending balance, or a collection report. Letting the
+            // generic module-tool planner handle it preserves the existing fee tools and
+            // avoids a brittle one-off route for every fee phrase.
             // Replaced wholesale by detailSteps() when the module binds a lookup tool.
             // This is the shape when it does not: the row the reader was shown is still a
             // real record read from the database a turn ago, and reporting it is a better
