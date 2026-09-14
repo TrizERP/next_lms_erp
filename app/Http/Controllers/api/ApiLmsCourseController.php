@@ -21,7 +21,6 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Throwable;
-
 class ApiLmsCourseController extends Controller
 {
     /**
@@ -1684,41 +1683,86 @@ $restrict_date = $request->input('restrict_date');
         $chapterId = $request->input('chapter_id');
         $topicId = $request->input('topic_id');
         $questionType = $request->input('question_type');
-        // PAL learning-flow category (prerequisite, misconception_detection, ...).
-        // Stored on the question itself so the bank can filter without joining
-        // pal_question_metadata, which is a PAL-side table the bank never reads.
         $category = $request->input('category');
 
-        if (!$chapterId) {
+        // New filters — the enriched bank page can query by subject/standard
+        // instead of a single chapter, and facet on Bloom/difficulty.
+        $subjectId = $request->input('subject_id');
+        $standardId = $request->input('standard_id');
+        $conceptId = $request->input('concept_id');
+        $bloom = $request->input('bloom');
+        $difficulty = $request->input('difficulty');
+        $search = $request->input('search');
+
+        // chapter_id is no longer strictly required: if subject_id is supplied
+        // the query runs across all chapters of that subject. The old contract
+        // (chapter_id required) is kept for callers that send only chapter_id.
+        if (!$chapterId && !$subjectId) {
             return response()->json([
                 'status' => false,
-                'message' => 'Missing required field: chapter_id is required.',
+                'message' => 'Provide at least chapter_id or subject_id.',
                 'data' => [],
             ], 422);
         }
 
         $query = lmsQuestionMasterModel::query()
-            ->where('chapter_id', $chapterId)
             ->join('question_type_master', 'question_type_master.id', '=', 'lms_question_master.question_type_id')
+            ->leftJoin('chapter_master', 'chapter_master.id', '=', 'lms_question_master.chapter_id')
+            ->leftJoin('lms_question_extraction', 'lms_question_extraction.question_id', '=', 'lms_question_master.id')
+            ->leftJoin('question_type_catalog', 'question_type_catalog.code', '=', 'lms_question_extraction.question_type_code')
+            ->leftJoin('question_publisher', 'question_publisher.id', '=', 'lms_question_extraction.publisher_id')
             ->select(
                 'lms_question_master.id',
                 'lms_question_master.chapter_id',
                 'lms_question_master.topic_id',
-                // concept_id points at lms_concept and topic_id at topic_master —
-                // different id spaces. `concept` is the name stored on the question
-                // itself, which is the only link left on rows whose ids no longer
-                // resolve. The client needs all three to label a question correctly.
                 'lms_question_master.concept_id',
                 'lms_question_master.concept',
+                'lms_question_master.standard_id',
+                'lms_question_master.subject_id',
                 'lms_question_master.question_title',
-                'question_type_master.question_type',
+                DB::raw('COALESCE(question_type_catalog.label, question_type_master.question_type) as question_type'),
+                // The grading engine's own spelling, kept separately: the
+                // COALESCE above is a DISPLAY label, and classifying MCQ from
+                // it silently turns a "True / False" item into a Narrative one
+                // -- which then loses its options on the next save.
+                'question_type_master.question_type as lms_question_type',
+                'lms_question_extraction.question_type_code as question_type_code',
+                'lms_question_extraction.exam_section',
+                'lms_question_extraction.item_number',
+                'lms_question_extraction.attribution',
+                'lms_question_extraction.licence',
+                'lms_question_extraction.validation_status',
+                'lms_question_extraction.figure_required',
+                'lms_question_extraction.concept_confidence',
+                'lms_question_extraction.extraction_id',
+                'lms_question_master.status as question_status',
+                'question_publisher.short_name as publisher',
                 'lms_question_master.category',
                 'lms_question_master.points as marks',
-                'lms_question_master.answer as model_answer'
+                'lms_question_master.answer as model_answer',
+                // Enrichment columns populated by the extraction pipeline's AI tagger.
+                // NULL on older rows — the frontend treats null as "not tagged".
+                'lms_question_master.g_bloom',
+                'lms_question_master.g_difficulty',
+                'lms_question_master.g_dok',
+                'chapter_master.chapter_name'
             );
+
+        // Scope: single chapter, or whole subject, or whole standard.
+        if ($chapterId) {
+            $query->where('lms_question_master.chapter_id', $chapterId);
+        } elseif ($subjectId) {
+            $query->where('lms_question_master.subject_id', $subjectId);
+        }
+        if ($standardId) {
+            $query->where('lms_question_master.standard_id', $standardId);
+        }
 
         if ($topicId) {
             $query->where('lms_question_master.topic_id', $topicId);
+        }
+        if ($conceptId) {
+            $query->where('lms_question_master.concept_id', (int) $conceptId);
         }
 
         if ($questionType) {
@@ -1729,9 +1773,55 @@ $restrict_date = $request->input('restrict_date');
             }
         }
 
-        // 'all' is the dropdown's unset value, not a category anyone stored.
         if ($category && strtolower(trim($category)) !== 'all') {
             $query->where('lms_question_master.category', trim($category));
+        }
+
+        // Bloom / difficulty filters use the indexed g_* columns.
+        // Case-insensitive because the estate has mixed casing.
+        if ($bloom && strtolower(trim($bloom)) !== 'all') {
+            $query->whereRaw('LOWER(lms_question_master.g_bloom) = ?', [strtolower(trim($bloom))]);
+        }
+        if ($difficulty && strtolower(trim($difficulty)) !== 'all') {
+            $query->whereRaw('LOWER(lms_question_master.g_difficulty) = ?', [strtolower(trim($difficulty))]);
+        }
+
+        // Sidecar facets. These only ever match extracted questions, which is
+        // correct: an AI-generated row has no exam section and no publisher.
+        $examSection = $request->input('exam_section');
+        if ($examSection && strtolower(trim($examSection)) !== 'all') {
+            $query->where('lms_question_extraction.exam_section', trim($examSection));
+        }
+
+        $publisherId = $request->input('publisher_id');
+        if ($publisherId && strtolower((string) $publisherId) !== 'all') {
+            $query->where('lms_question_extraction.publisher_id', (int) $publisherId);
+        }
+
+        $dok = $request->input('dok');
+        if ($dok !== null && $dok !== '' && strtolower((string) $dok) !== 'all') {
+            $query->where('lms_question_master.g_dok', (int) $dok);
+        }
+
+        // Provenance: extracted from a published book, or machine-generated.
+        $source = strtolower((string) $request->input('source', 'all'));
+        if ($source === 'extracted') {
+            $query->whereNotNull('lms_question_extraction.id');
+        } elseif ($source === 'ai_generated') {
+            $query->whereNull('lms_question_extraction.id');
+        }
+
+        // Review state. Held items failed a validator and are not servable.
+        $status = strtolower((string) $request->input('status', 'all'));
+        if ($status === 'published') {
+            $query->where('lms_question_master.status', 1);
+        } elseif ($status === 'held') {
+            $query->where('lms_question_master.status', 0);
+        }
+
+        // Full-text search in question stem.
+        if ($search && trim($search) !== '') {
+            $query->where('lms_question_master.question_title', 'LIKE', '%' . trim($search) . '%');
         }
 
         $questions = $query->orderByDesc('lms_question_master.id')->get()->toArray();
@@ -1759,13 +1849,18 @@ $restrict_date = $request->input('restrict_date');
             }
         }
 
+        $figuresByQuestion = $this->questionFigures($questionIds);
+
         $data = [];
         foreach ($questions as $question) {
             $qid = (int) $question['id'];
-            // question_type_master spells the multiple-choice row 'multiple', not
-            // 'MCQ' — that is what the ~55k MCQ rows point at. Anything that is not a
-            // multiple-choice type is answered in prose, so it presents as Narrative.
-            $rawQuestionType = strtolower(trim((string) ($question['question_type'] ?? '')));
+            // question_type_master spells the multiple-choice row 'multiple',
+            // not 'MCQ' -- that is what the ~55k MCQ rows point at. Anything
+            // that is not a multiple-choice type is answered in prose, so it
+            // presents as Narrative. Read the grading type, never the label.
+            $rawQuestionType = strtolower(trim((string) (
+                $question['lms_question_type'] ?? $question['question_type'] ?? ''
+            )));
             $questionTypeLabel = in_array(
                 $rawQuestionType,
                 ['mcq', 'multiple', 'multiple choice', 'multiple_choice'],
@@ -1775,15 +1870,62 @@ $restrict_date = $request->input('restrict_date');
             $data[] = [
                 'id' => (int) $question['id'],
                 'chapter_id' => (int) $question['chapter_id'],
+                'chapter_name' => $question['chapter_name'] !== null ? (string) $question['chapter_name'] : null,
                 'topic_id' => $question['topic_id'] !== null ? (int) $question['topic_id'] : null,
                 'concept_id' => $question['concept_id'] !== null ? (int) $question['concept_id'] : null,
                 'concept' => $question['concept'] !== null ? (string) $question['concept'] : null,
+                'standard_id' => $question['standard_id'] !== null ? (int) $question['standard_id'] : null,
+                'subject_id' => $question['subject_id'] !== null ? (int) $question['subject_id'] : null,
                 'category' => $question['category'] !== null ? (string) $question['category'] : null,
                 'question' => (string) ($question['question_title'] ?? ''),
                 'question_type' => $questionTypeLabel,
+                // Display label from question_type_catalog, e.g. "Assertion &
+                // Reason". A row with no catalog entry (anything the generator
+                // made, which has no extraction sidecar) falls back to the
+                // normalised MCQ|Narrative label rather than to
+                // question_type_master's own spelling -- otherwise the bank's
+                // type dropdown lists "multiple" and "narrative" next to
+                // "Multiple Choice" and "Assertion & Reason".
+                'question_type_raw' => $question['question_type_code'] !== null
+                    ? trim((string) ($question['question_type'] ?? ''))
+                    : $questionTypeLabel,
+                // Stable machine code to filter on. A label can be reworded;
+                // this cannot.
+                'question_type_code' => $question['question_type_code'] !== null
+                    ? (string) $question['question_type_code']
+                    : null,
                 'options' => $optionsByQuestion[$qid] ?? [],
                 'model_answer' => $this->readableModelAnswer($question['model_answer'] ?? null),
                 'marks' => (int) ($question['marks'] ?? 1),
+                // Enrichment — null when the AI tagger has not run on this row.
+                'bloom' => $question['g_bloom'] !== null ? (string) $question['g_bloom'] : null,
+                'difficulty' => $question['g_difficulty'] !== null ? (string) $question['g_difficulty'] : null,
+                'dok' => $question['g_dok'] !== null ? (string) $question['g_dok'] : null,
+                'publisher' => $question['publisher'] ?? null,
+
+                // Everything below is what the extraction pipeline recorded.
+                // All null/empty for AI-generated rows, which the card renders
+                // as a plain question rather than a sourced one.
+                'exam_section' => $question['exam_section'] ?? null,
+                'item_number' => $question['item_number'] ?? null,
+                'attribution' => $question['attribution'] ?? null,
+                'licence' => $question['licence'] ?? null,
+                'validation_status' => $question['validation_status'] ?? null,
+                'figure_required' => (bool) ($question['figure_required'] ?? false),
+                'figures' => $figuresByQuestion[$qid] ?? [],
+                'concept_confidence' => isset($question['concept_confidence']) && $question['concept_confidence'] !== null
+                    ? (float) $question['concept_confidence']
+                    : null,
+                // 0 means a validator held it: visible to a teacher, not
+                // servable to a learner.
+                'status' => (int) ($question['question_status'] ?? 1),
+                'source' => !empty($question['extraction_id']) ? 'extracted' : 'ai_generated',
+                // Assertion-Reason is stored split in the answer envelope
+                // because the two halves are graded as one item but read as two.
+                'assertion' => $this->envelopeValue($question['model_answer'] ?? null, 'assertion'),
+                'reason' => $this->envelopeValue($question['model_answer'] ?? null, 'reason'),
+                'sub_part_labels' => $this->envelopeValue($question['model_answer'] ?? null, 'sub_part_labels') ?? [],
+                'correct_option' => $this->envelopeValue($question['model_answer'] ?? null, 'correct_option'),
             ];
         }
 
@@ -1791,7 +1933,58 @@ $restrict_date = $request->input('restrict_date');
             'status' => true,
             'message' => 'Questions fetched successfully.',
             'data' => $data,
+            'total' => count($data),
         ], 200);
+    }
+
+    /**
+     * Figures attached to a page of questions, keyed by question id.
+     *
+     * stored_url points at the extraction service, which is not necessarily
+     * reachable from every browser that can reach the ERP -- so ocr_text
+     * travels with it and the card shows the text when the image will not load.
+     */
+    private function questionFigures(array $questionIds): array
+    {
+        if (empty($questionIds) || !Schema::hasTable('lms_question_asset')) {
+            return [];
+        }
+
+        $byQuestion = [];
+        $rows = DB::table('lms_question_asset')
+            ->whereIn('question_id', $questionIds)
+            ->orderBy('ordinal')
+            ->get(['question_id', 'stored_url', 'asset_sha256', 'width', 'height',
+                   'alt_text', 'ocr_text', 'source_page']);
+
+        foreach ($rows as $row) {
+            $byQuestion[(int) $row->question_id][] = [
+                'url' => $row->stored_url,
+                'sha256' => $row->asset_sha256,
+                'width' => $row->width !== null ? (int) $row->width : null,
+                'height' => $row->height !== null ? (int) $row->height : null,
+                'caption' => $row->alt_text,
+                'ocr_text' => $row->ocr_text,
+                'page' => $row->source_page !== null ? (int) $row->source_page : null,
+            ];
+        }
+
+        return $byQuestion;
+    }
+
+    /**
+     * One key out of the `answer` JSON envelope, or null when the column holds
+     * plain prose rather than an envelope.
+     */
+    private function envelopeValue($value, string $key)
+    {
+        if (!is_string($value)) {
+            return null;
+        }
+
+        $envelope = $this->decodeAnswerEnvelope($value);
+
+        return is_array($envelope) ? ($envelope[$key] ?? null) : null;
     }
 
     /**
