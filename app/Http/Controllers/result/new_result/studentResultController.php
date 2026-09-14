@@ -3964,7 +3964,53 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
         $exam_marks = $this->get_exam_marks($sub_institute_id, $student_id, 'best_of_2');
         // echo "<pre>";print_r($exam_name);
 
-        // scholastic table started 
+        // Added by Rajesh 14-09-2026 - the optional subject mapped on level 6 is not printed in the
+        // normal subject result, it is printed in its own TERM-1 - R3 block below the table
+        $level6_subject_ids = DB::table('student_optional_subject')
+            ->where([
+                'sub_institute_id' => $sub_institute_id,
+                'syear'            => $syear,
+                'student_id'       => $student_id,
+                'level'            => 6,
+            ])
+            ->pluck('subject_id')->toArray();
+
+        $level6_subjects = $level6_exam_name = [];
+        if (!empty($level6_subject_ids)) {
+            // level 6 subject, kept aside and removed from the printed subject result
+            $level6_subjects = array_filter($get_subject, function ($value) use ($level6_subject_ids) {
+                return in_array($value->subject_id, $level6_subject_ids);
+            });
+            $get_subject = array_filter($get_subject, function ($value) use ($level6_subject_ids) {
+                return !in_array($value->subject_id, $level6_subject_ids);
+            });
+
+            // exam of the level 6 subject, kept aside and removed from the scholastic exam list
+            $level6_exam_name = array_filter($exam_name, function ($value) use ($level6_subject_ids) {
+                return in_array($value->subject_id, $level6_subject_ids);
+            });
+            $exam_name = array_filter($exam_name, function ($value) use ($level6_subject_ids) {
+                return !in_array($value->subject_id, $level6_subject_ids);
+            });
+        }
+
+        // Added by Rajesh 14-09-2026 - an exam heading is printed on the scholastic table only when a
+        // subject of the printed subject result has that exam, so the exam of the level 6 subject
+        // (printed in its own block below the table) does not print an empty heading
+        $scholastic_subject_ids = array_map(function ($value) {
+            return $value->subject_id;
+        }, $get_subject);
+        $scholastic_exam_ids = [];
+        foreach ($exam_name as $key => $value) {
+            if (in_array($value->subject_id, $scholastic_subject_ids)) {
+                $scholastic_exam_ids[] = $value->exam_id;
+            }
+        }
+        $exam_title = array_filter($exam_title, function ($value) use ($scholastic_exam_ids) {
+            return in_array($value->exam_id, $scholastic_exam_ids);
+        });
+
+        // scholastic table started
         $table = '<style>.data_center{text-align:center !important;}</style><table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
         <thead>
             <tr>
@@ -4024,10 +4070,21 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
                     <tbody>';
         $tot_ob_mark = $tot_sub_mark = $get_all_ob_mark = $get_all_tot_mark = $asteriskRemark = 0;
 
+        // Added by Rajesh 14-09-2026 - advance subjects are not printed in the subject result,
+        // their percentage is calculated separately to show the advance level NOTE below the table
+        $advance_subjects = [];
+        foreach (['ADVANCE/REVISION MATHS' => 'Maths', 'ADVANCE SCIENCE / MUSIC' => 'Science'] as $adv_name => $adv_label) {
+            $advance_subjects[strtoupper(preg_replace('/\s+/', '', $adv_name))] = $adv_label;
+        }
+        $advance_marks = [];
+
         // get all subject name 
         foreach ($get_subject as $val) {
             $both_term_ob_mark = 0;
-            $table .= '<tr>
+            // check advance subject, such subject row is excluded from the printed subject result
+            $advance_key = strtoupper(preg_replace('/\s+/', '', $val->subject_name));
+            $is_advance = isset($advance_subjects[$advance_key]);
+            $row = '<tr>
                         <td>' . $val->subject_name . '</td>';
             // get term wise eam and marks 
             foreach ($term_name as $keys => $terms) {
@@ -4107,7 +4164,12 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
                         $underline = ($pt_per < 33 && $academic_type == "upper") ? 'style="border-bottom: 2px solid red;"' : '';
                         if (count($obtained_mark_arr) > 1) {
                             $total_marks += $w_m;
-                            $table .= '<td class="data_center"><span '.$underline.'>' . number_format($convert_mark, 2) .$asterisk. '</span></td>';// ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'
+                            // advance subject marks, collected for the separate percentage
+                            if ($is_advance) {
+                                $advance_marks[$advance_key]['obtained'] = ($advance_marks[$advance_key]['obtained'] ?? 0) + $convert_mark;
+                                $advance_marks[$advance_key]['total'] = ($advance_marks[$advance_key]['total'] ?? 0) + $w_m;
+                            }
+                            $row .= '<td class="data_center"><span '.$underline.'>' . number_format($convert_mark, 2) .$asterisk. '</span></td>';// ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'
                         } else {
                             if (!isset($obtained_mark_arr[0])) {
                                 $obtained_mark_arr[0] = '0.00';
@@ -4121,22 +4183,109 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
                             } else {
                                 $tdVal = $obtained_mark_arr[0] ?? "0.00"; // print AB,NA,EX
                             }
-                            $table .= '<td class="data_center"><span '.$underline.'>' . $tdVal .$asterisk. '</span></td>';//else ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'
+                            // advance subject marks, collected for the separate percentage
+                            if ($is_advance) {
+                                if (!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0], ["N.A.", "EX"])) {
+                                    $advance_marks[$advance_key]['total'] = ($advance_marks[$advance_key]['total'] ?? 0) + $w_m;
+                                }
+                                if (!empty($obtained_mark_arr) && !in_array($obtained_mark_arr[0], ["N.A.", "EX", "AB"])) {
+                                    $advance_marks[$advance_key]['obtained'] = ($advance_marks[$advance_key]['obtained'] ?? 0) + $convert_mark;
+                                }
+                            }
+                            $row .= '<td class="data_center"><span '.$underline.'>' . $tdVal .$asterisk. '</span></td>';//else ' . $exam_id . '-' . $val->subject_id . '-' . $standard_id.'-'.$pt_per.'
                         }
                     }
                 } else {
                     // If marks not found
                     foreach ($title_exam as $exam_id => $marksArray) {
-                        $table .= '<td class="data_center no_mark ' . $exam_id . '">0.00</td>';
+                        $row .= '<td class="data_center no_mark ' . $exam_id . '">0.00</td>';
                     }
                 }
             }
-            $table .= '</tr>';
+            $row .= '</tr>';
+            // advance subjects are excluded from the printed subject result
+            if (!$is_advance) {
+                $table .= $row;
+            }
         }
         // exit;
         $table .= '<tr>';
 
         $table .= '</tr></tbody></table>';
+
+        // Added by Rajesh 14-09-2026 - NOTE for the advance level subject, cleared on 50% or more
+        $advance_cleared = [];
+        foreach ($advance_subjects as $adv_key => $adv_label) {
+            $adv_total = $advance_marks[$adv_key]['total'] ?? 0;
+            if ($adv_total > 0) {
+                $adv_per = round((($advance_marks[$adv_key]['obtained'] ?? 0) / $adv_total) * 100, 2);
+                if ($adv_per >= 50) {
+                    $advance_cleared[] = $adv_label;
+                }
+            }
+        }
+        if (!empty($advance_cleared)) {
+            $table .= '<p style="margin:5px 0;"><b></b>* Student has Successfully cleared The Advance level of ' . implode(' & ', $advance_cleared) . '.</p>';
+        }
+
+        // Added by Rajesh 14-09-2026 - separate TERM-1 - R3 block for the level 6 optional subject,
+        // it prints its own exam heading and the marks obtained in that exam
+        if (!empty($level6_subjects)) {
+            $level6_head = $level6_row = [];
+            foreach ($level6_subjects as $l6_sub) {
+                $level6_row[$l6_sub->subject_id] = ['subject_name' => $l6_sub->subject_name, 'marks' => []];
+                // get term wise exam and marks
+                foreach ($term_name as $keys => $terms) {
+                    foreach ($level6_exam_name as $key => $title) {
+                        if ($title->subject_id != $l6_sub->subject_id || $title->term_id != $terms->term_id) {
+                            continue;
+                        }
+                        // the block prints the created exam title, not the exam master title,
+                        // so each exam of the level 6 subject gets its own heading
+                        $head_key = $title->title;
+                        if (!isset($level6_head[$head_key])) {
+                            $level6_head[$head_key] = $title->title . '<br/>(' . (float) $title->con_point . ')';
+                        }
+                        // obtained marks of that exam
+                        $l6_mark = '';
+                        foreach ($exam_marks as $index => $marks) {
+                            if ($title->id == $marks->exam_id) {
+                                // for AB,NA,EX
+                                $l6_mark = ($marks->is_absent != "")
+                                    ? $marks->is_absent
+                                    : rtrim(rtrim(number_format($marks->points, 2, '.', ''), '0'), '.');
+                                break;
+                            }
+                        }
+                        $level6_row[$l6_sub->subject_id]['marks'][$head_key] = ($l6_mark === '') ? '-' : $l6_mark;
+                    }
+                }
+            }
+            // level 6 table started
+            if (!empty($level6_head)) {
+                $table .= '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
+                <thead>
+                    <tr>
+                        <th><b>R3</b></th>
+                        <th colspan="' . count($level6_head) . '"></th>
+                    </tr>
+                    <tr><th></th>';//style="background:black;color:white"
+                foreach ($level6_head as $l6_head) {
+                    $table .= '<th class="data_center"><b>' . $l6_head . '</b></th>';
+                }
+                $table .= '</tr>
+                    </thead>
+                    <tbody>';
+                foreach ($level6_row as $l6_row) {
+                    $table .= '<tr><td>' . $l6_row['subject_name'] . '</td>';
+                    foreach ($level6_head as $l6_key => $l6_head) {
+                        $table .= '<td class="data_center">' . ($l6_row['marks'][$l6_key] ?? '-') . '</td>';
+                    }
+                    $table .= '</tr>';
+                }
+                $table .= '</tbody></table>';
+            }
+        }
 
         $res['scholastic'] = $table;
         $ret_data = DB::table('result_student_attendance_master as atd')
