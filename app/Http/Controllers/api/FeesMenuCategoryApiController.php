@@ -2,6 +2,11 @@
 
 namespace App\Http\Controllers\api;
 
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+
 /**
  * Fees' category navigation feed for the Fees level-3 menu bar.
  *
@@ -191,6 +196,8 @@ class FeesMenuCategoryApiController extends AbstractMenuCategoryApiController
             ->pluck('m.id')
             ->map(fn ($id) => (int) $id)
             ->all();
+    }
+
     protected function moduleName(): string
     {
         return 'fees';
