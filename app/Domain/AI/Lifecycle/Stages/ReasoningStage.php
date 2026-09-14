@@ -3,6 +3,7 @@
 namespace App\Domain\AI\Lifecycle\Stages;
 
 use App\Domain\AI\Conversation\AnswerComposer;
+use App\Domain\AI\Conversation\ResultSet;
 use App\Domain\AI\Explanations\ExplanationBuilder;
 use App\Domain\AI\Lifecycle\Flows\AdmissionsFlow;
 use App\Domain\AI\Lifecycle\LifecycleStage;
@@ -11,6 +12,7 @@ use App\Domain\AI\Lifecycle\StageKey;
 use App\Domain\AI\Lifecycle\StageOutcome;
 use App\Domain\AI\Lifecycle\Support\CaseResolver;
 use App\Domain\AI\Lifecycle\Support\RiskScanLimit;
+use App\Domain\AI\Lifecycle\Support\SelectionAnswerComposer;
 use App\Domain\AI\Lifecycle\Support\ToolAnswerComposer;
 use App\Domain\KnowledgeGraph\GraphQueryService;
 
@@ -57,6 +59,7 @@ class ReasoningStage implements LifecycleStage
         private readonly GraphQueryService $graph,
         private readonly AnswerComposer $compose,
         private readonly ToolAnswerComposer $toolAnswers,
+        private readonly SelectionAnswerComposer $selections,
     ) {
     }
 
@@ -72,6 +75,19 @@ class ReasoningStage implements LifecycleStage
 
         if (is_array($admissions)) {
             return $this->admissions($context, $admissions);
+        }
+
+        // A turn that pointed at the previous answer is about that row and nothing else.
+        // Checked before the case resolver, which would otherwise try to find an
+        // academic-risk case for an admission enquiry and report that it could not tell
+        // which student was meant — after the turn had already identified the record
+        // precisely, by position, from a list the reader was looking at.
+        if ($context->intent?->key === 'record_detail') {
+            return $this->selections->detail($context);
+        }
+
+        if ($context->intent?->key === 'record_filter') {
+            return $this->selections->filter($context);
         }
 
         // Ambiguity found upstream is a finding, not a failure. Asking which person was
@@ -334,6 +350,48 @@ class ReasoningStage implements LifecycleStage
         return in_array($context->intent?->key, ['workflow_status', 'outcome_status'], true);
     }
 
+    /**
+     * The evidence and the narrative behind whoever ranked first.
+     *
+     * A ranked list answers "who", and leaves "why" one question away for every name on
+     * it — including the one the reader will almost always ask about first. Showing the
+     * top case's evidence closes that gap without spending a turn, and it is the case
+     * the ranking has already argued is the most urgent.
+     *
+     * It deliberately stops short of the recommendation's approval binding. Displaying
+     * why a student is at risk is a read; deciding to intervene is not, and
+     * `RecommendationStage` keeps that decision behind an explicit selection.
+     *
+     * @param  array<string, mixed>|null  $case
+     */
+    private function highestPriorityDetail(StageContext $context, ?array $case): void
+    {
+        if ($case === null) {
+            return;
+        }
+
+        $student = (string) ($case['student_name'] ?? 'this student');
+        $caseId = (int) ($case['case_id'] ?? $case['id'] ?? 0);
+
+        // Read by EvidenceStage a stage earlier, kept per case because these rows carry
+        // no case id once they are merged.
+        $rows = (array) ($context->get('evidence_by_case', [])[$caseId] ?? []);
+
+        $context->addSection($this->compose->evidence(
+            sprintf('Evidence behind the highest-priority case (%s)', $student),
+            array_slice($rows, 0, 5)
+        ));
+
+        $narrative = (string) ($case['explanation']['narrative'] ?? '');
+
+        if ($narrative !== '') {
+            $context->addSection($this->compose->text(
+                sprintf('Why %s is flagged', $student),
+                $narrative
+            ));
+        }
+    }
+
     private function rankedRiskScan(StageContext $context): StageOutcome
     {
         $count = RiskScanLimit::fromQuestion($context->question, count($context->cases));
@@ -342,33 +400,83 @@ class ReasoningStage implements LifecycleStage
         // A ranked answer names several valid subjects. Remember the exact order, but
         // do not make the first one the conversation's active student: that would make
         // an approval below this result silently target a student the user did not pick.
-        $context->link([
-            'last_case_list' => array_values(array_map(static fn (array $case) => [
-                'student_id' => (int) ($case['student_id'] ?? $case['subject_id'] ?? 0),
-                'student_name' => $case['student_name'] ?? null,
-                'case_id' => (int) ($case['case_id'] ?? $case['id'] ?? 0),
-            ], $cases)),
-        ]);
+        $ranked = array_values(array_map(static fn (array $case) => [
+            'student_id' => (int) ($case['student_id'] ?? $case['subject_id'] ?? 0),
+            'student_name' => $case['student_name'] ?? null,
+            'case_id' => (int) ($case['case_id'] ?? $case['id'] ?? 0),
+        ], $cases));
+
+        $context->link(['last_case_list' => $ranked]);
+
+        // The same list again, in the general shape every other list uses, so "show the
+        // first student" works here for the same reason it works on an admissions list.
+        // `last_case_list` above stays as it is: the risk journey resolves through it and
+        // through the case ids it carries, and replacing it would be a rewrite of a
+        // working path to no purpose.
+        $set = ResultSet::fromRows(
+            module: $context->module->key,
+            tool: 'the academic-risk agent',
+            key: 'students',
+            rows: $ranked,
+            question: $context->question,
+            total: count($context->cases),
+        );
+
+        if ($set !== null) {
+            $context->set('result_set', $set->toArray());
+            $context->link(['last_result_set' => $set->toArray()]);
+        }
 
         $context->setHeadline(sprintf(
-            'Top %d student%s at academic risk.',
+            '%d student%s currently showing academic risk signals.',
             count($cases),
-            count($cases) === 1 ? '' : 's'
+            count($cases) === 1 ? ' is' : 's are'
         ));
 
+        // Who is at risk, grouped by how badly. This is the shape of the cohort in one
+        // line, and it is what a head of year reads before reading anything else.
+        $bySeverity = [];
+
+        foreach ($cases as $case) {
+            $bySeverity[$this->compose->severityLabel($case['severity'] ?? null)][] = $case['student_name'] ?? 'Student';
+        }
+
+        $context->addSection($this->compose->keyValues(
+            'Breakdown',
+            array_map(static fn (array $names) => implode(', ', $names), $bySeverity)
+        ));
+
+        // The list, with the numbers behind each place in it.
+        //
+        // These were once withheld until a student was selected, on the reasoning that a
+        // ranked answer should not imply a verdict. In use that read as the assistant
+        // knowing something it would not say: the ranking is *derived* from the priority
+        // score and the signals, so showing the order while hiding what produced it left
+        // the reader unable to check the one claim the answer was making.
         $context->addSection($this->compose->records(
-            'Ranked by current risk priority',
+            'Students',
             array_map(function (array $case, int $index) {
                 return [
+                    'id' => $case['case_id'] ?? null,
                     'title' => sprintf('%d. %s', $index + 1, $case['student_name'] ?? 'Student'),
                     'badge' => $this->compose->severityLabel($case['severity'] ?? null),
-                    'badge_tone' => $case['severity'] ?? 'warning',
-                    // Evidence and priority are intentionally withheld until selection.
-                    'lines' => [],
-                    'meta' => [],
+                    'badge_tone' => in_array($case['severity'] ?? null, ['critical', 'high'], true) ? 'danger' : 'warning',
+                    'lines' => array_map(
+                        static fn (array $signal) => $signal['summary'] ?? ($signal['signal_key'] ?? 'signal'),
+                        array_values($case['signals'] ?? [])
+                    ),
+                    'meta' => array_filter([
+                        'Case' => isset($case['case_id']) ? '#' . $case['case_id'] : null,
+                        'Class' => $case['placement']['standard_name'] ?? null,
+                        'Priority' => number_format((float) ($case['priority_score'] ?? 0), 2),
+                    ]),
+                    'case_id' => $case['case_id'] ?? null,
+                    'student_id' => $case['student_id'] ?? null,
                 ];
             }, $cases, array_keys($cases))
         ));
+
+        $this->highestPriorityDetail($context, $cases[0] ?? null);
 
         foreach ($cases as $case) {
             $caseId = (int) ($case['case_id'] ?? $case['id'] ?? 0);
@@ -392,7 +500,14 @@ class ReasoningStage implements LifecycleStage
             ));
         }
 
-        $context->suggestFollowUp('Select a student above to view the complete evidence and recommendation.');
+        $top = $cases[0]['student_name'] ?? null;
+
+        $context->suggestFollowUp(...array_filter([
+            $top === null ? null : sprintf('Why is %s at risk?', $top),
+            'What evidence supports this?',
+            'What should the teacher do?',
+            'Select a student above to view the complete evidence and recommendation.',
+        ]));
 
         return StageOutcome::ran(
             sprintf('Ranked and returned %d of %d cases from this agent run.', count($cases), count($context->cases)),
@@ -701,15 +816,139 @@ class ReasoningStage implements LifecycleStage
         }
 
         if ($context->agentRun !== null) {
+            // "Nothing crossed its trigger" and "nothing could be judged" are opposite
+            // findings that used to produce the same sentence.
+            //
+            // A school whose students have no assessment, attendance or homework rows
+            // was told "no students are currently showing risk signals" — a clean bill
+            // of health issued by detectors that had not been able to look at a single
+            // child. That is the most dangerous thing this stage can say, and it is the
+            // one the whole blind-detector apparatus exists to prevent. The trace has
+            // carried the distinction all along; the answer did not.
+            $coverage = $context->get('detector_coverage', []);
+            $usable = array_values(array_filter(
+                $coverage,
+                static fn ($entry) => is_array($entry) && ($entry['blind'] ?? false) !== true
+            ));
+            $blind = array_values(array_filter(
+                $coverage,
+                static fn ($entry) => is_array($entry) && ($entry['blind'] ?? false) === true
+            ));
+
+            if ($coverage !== [] && $usable === []) {
+                $context->setHeadline(
+                    'Nothing could be assessed — the records these checks depend on are not there.'
+                );
+
+                $context->addSection($this->compose->records(
+                    'What each check needed, and what it found',
+                    array_map(static fn (array $entry) => [
+                        'title' => ucfirst(str_replace('_', ' ', (string) ($entry['signal_key'] ?? 'a detector'))),
+                        'badge' => 'No data',
+                        'badge_tone' => 'warning',
+                        'lines' => array_filter([$entry['requirement'] ?? null]),
+                        'meta' => [
+                            'Students examined' => (string) ($entry['examined'] ?? '0'),
+                            'Able to judge' => (string) ($entry['judged'] ?? $entry['evaluated'] ?? '0'),
+                        ],
+                    ], $blind)
+                ));
+
+                $context->addSection($this->compose->text(
+                    'What this is not',
+                    'This is not a finding that no student is at risk. Every student in scope was read '
+                    . 'and none of them had the source records these checks measure, so the sweep says '
+                    . 'nothing either way. Load attendance, assessment or homework data for this '
+                    . 'institute and the same question will answer properly.'
+                ));
+
+                return StageOutcome::blocked(
+                    sprintf(
+                        'All %d detector%s were blind — no student had the records they measure.',
+                        count($blind),
+                        count($blind) === 1 ? ' was' : 's were'
+                    ),
+                    ['detector_coverage' => $coverage]
+                )->withNote(
+                    'Reported as a refusal rather than a clean sweep, because a clean sweep is a '
+                    . 'claim about the students and this is a fact about the data.'
+                );
+            }
+
             $context->setHeadline('No students are currently showing risk signals.');
             $context->addSection($this->compose->text(
                 'What was checked',
-                'The detectors read the source records for the students in scope. Nothing crossed its trigger.'
+                $blind === []
+                    ? 'The detectors read the source records for the students in scope. Nothing crossed its trigger.'
+                    : sprintf(
+                        'The detectors that had records to read found nothing above their triggers. %d of '
+                        . '%d could not judge anyone for want of records, so this sweep says nothing about '
+                        . 'what %s would have found.',
+                        count($blind),
+                        count($coverage),
+                        count($blind) === 1 ? 'it' : 'they'
+                    )
             ));
 
             return StageOutcome::skipped(
                 'No signal fired, so there was nothing to build a case from or explain.',
-                []
+                ['blind_detectors' => count($blind), 'detectors' => count($coverage)]
+            );
+        }
+
+        // The thread listed several rows and the user pointed at one of them without
+        // saying which.
+        //
+        // "Why was that student flagged?" after a four-student risk scan is not a
+        // question the pipeline can answer, and it is not a question it should guess at
+        // either — picking the first of four would attach an explanation, and later a
+        // recommendation and an approval, to a child nobody chose. But refusing with
+        // "the question did not identify a student" is the generic non-answer: the
+        // conversation is holding the four names, so the useful reply is to show them
+        // and let one word settle it. ReferenceResolver reads the answer back by the
+        // title printed here, or by position, so every option offered is one the next
+        // turn can actually resolve.
+        $set = ResultSet::fromArray($context->thread['memory']['last_result_set'] ?? null);
+
+        if ($set !== null && $set->count() > 1) {
+            $context->setHeadline(sprintf(
+                'Which of the %d %s do you mean?',
+                $set->count(),
+                $set->noun
+            ));
+
+            $context->addSection($this->compose->records(
+                'From the previous answer',
+                array_map(static fn (array $item) => [
+                    'title' => (string) $item['title'],
+                    'meta' => ['Position' => '#' . $item['position']],
+                ], $set->items)
+            ));
+
+            $context->addSection($this->compose->text(
+                'How to answer',
+                sprintf(
+                    'Name one of them, or say "the first %s" — either resolves against the list above.',
+                    $set->singular
+                )
+            ));
+
+            $context->suggestFollowUp(...array_map(
+                static fn (array $item) => sprintf('Why is %s at risk?', $item['title']),
+                array_slice($set->items, 0, 4)
+            ));
+
+            return StageOutcome::blocked(
+                sprintf(
+                    'The previous answer listed %d %s and this question points at one of them without '
+                    . 'naming it.',
+                    $set->count(),
+                    $set->noun
+                ),
+                ['candidates' => array_column($set->items, 'title'), 'id_field' => $set->idField]
+            )->halting(
+                'The turn could not identify one subject, so nothing was concluded or acted on. '
+                . 'Naming one of the rows above answers it without re-running the scan.'
             );
         }
 

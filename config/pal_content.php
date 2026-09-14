@@ -148,6 +148,73 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Blueprint categories — the board's question-type taxonomy
+    |--------------------------------------------------------------------------
+    |
+    | The BOARD_COMPLIANCE half of an item's dual fitness (see the note on
+    | PAL calibration in QuestionMetadata). A board blueprint is written in
+    | these terms — "20 marks of short answer, 15 of case-based" — so an item
+    | cannot be placed in a paper without one, however well calibrated it is.
+    |
+    | `typical_marks` is the customary weighting for the category, kept as
+    | guidance for authoring rather than as a constraint: the marks actually
+    | carried by an item live on the row, because boards vary the weighting
+    | between papers and years. An item whose marks differ from the typical
+    | value is not invalid.
+    |
+    | CBSE terminology, since that is the board in scope. Other boards get
+    | their own entries here rather than a parallel column.
+    |
+    */
+    'blueprint_categories' => [
+        'mcq'                 => ['label' => 'Multiple choice',        'typical_marks' => 1],
+        'assertion_reason'    => ['label' => 'Assertion & reason',     'typical_marks' => 1],
+        'very_short_answer'   => ['label' => 'Very short answer',      'typical_marks' => 2],
+        'short_answer'        => ['label' => 'Short answer',           'typical_marks' => 3],
+        'long_answer'         => ['label' => 'Long answer',            'typical_marks' => 5],
+        'case_based'          => ['label' => 'Case / source based',    'typical_marks' => 4],
+        'competency_based'    => ['label' => 'Competency based',       'typical_marks' => 4],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Learning purpose — what a content object is FOR
+    |--------------------------------------------------------------------------
+    |
+    | Orthogonal to content_type and format. Those say what a thing IS; this
+    | says what job it does. Without it PAL's Corrective Micro-Lesson step can
+    | only ask "what else exists on this concept?", which is how a student who
+    | has just failed a question gets handed the assessment item they failed,
+    | or a stretch activity, as their remediation.
+    |
+    | `phase` groups purposes by where they sit in the loop. `corrective`
+    | marks the ones that may be served as an alternate explanation after a
+    | failure — deliberately NOT the same as "everything that teaches":
+    |
+    |   - assess purposes are excluded because serving an assessment item as a
+    |     micro-lesson shows the student the thing being measured;
+    |   - `enrich` is excluded because a student who just failed needs the
+    |     concept again, not an extension beyond it;
+    |   - `prerequisite` IS included: the honest answer to some failures is
+    |     that the gap is upstream of the concept being taught.
+    |
+    */
+    'learning_purposes' => [
+        'understand'   => ['label' => 'Understand',   'phase' => 'teach',    'corrective' => true,  'description' => 'Build the initial schema for a concept the learner has not met.'],
+        'prerequisite' => ['label' => 'Prerequisite', 'phase' => 'teach',    'corrective' => true,  'description' => 'Cover the upstream concept this one depends on.'],
+        'explain'      => ['label' => 'Explain',      'phase' => 'teach',    'corrective' => true,  'description' => 'Restate the concept a different way for a learner who did not follow the first.'],
+        'demonstrate'  => ['label' => 'Demonstrate',  'phase' => 'teach',    'corrective' => true,  'description' => 'Show the concept worked through end to end.'],
+        'practice'     => ['label' => 'Practice',     'phase' => 'practice', 'corrective' => false, 'description' => 'Repetition to build fluency at a known level.'],
+        'apply'        => ['label' => 'Apply',        'phase' => 'practice', 'corrective' => false, 'description' => 'Use the concept in a familiar problem context.'],
+        'transfer'     => ['label' => 'Transfer',     'phase' => 'practice', 'corrective' => false, 'description' => 'Use the concept in an unfamiliar context.'],
+        'remediate'    => ['label' => 'Remediate',    'phase' => 'support',  'corrective' => true,  'description' => 'Address a specific, identified misconception.'],
+        'enrich'       => ['label' => 'Enrich',       'phase' => 'support',  'corrective' => false, 'description' => 'Extend beyond the concept for a learner who already has it.'],
+        'recall'       => ['label' => 'Recall',       'phase' => 'assess',   'corrective' => false, 'description' => 'Spaced retrieval of previously demonstrated material.'],
+        'assess'       => ['label' => 'Assess',       'phase' => 'assess',   'corrective' => false, 'description' => 'Measure mastery. Never served as teaching.'],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Delivery formats — spec §2.1 variant table
     |--------------------------------------------------------------------------
     |
@@ -394,6 +461,148 @@ return [
         // Upper/lower group fraction for the classical discrimination index.
         'group_fraction' => 0.27,
         'b_bounds' => ['min' => -4.0, 'max' => 4.0],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Diagnostic item selection — what "calibrated" means at serve time
+    |--------------------------------------------------------------------------
+    |
+    | quality_status = approved is an EDITORIAL gate: a human agreed the item
+    | is fit to publish. It says nothing about whether the item separates
+    | learners, which is what a diagnostic needs. An item is treated as
+    | calibrated here only when its psychometrics were actually derived from
+    | responses by `pal:derive-irt` — reusing the same two thresholds that
+    | command already applies, so "calibrated" means one thing in this codebase.
+    |
+    | `require_calibrated` is the policy switch. Left FALSE, the diagnostic
+    | prefers calibrated items and falls back to approved-only ones rather than
+    | serving an empty diagnostic — today almost nothing is calibrated, so
+    | flipping this true would take the loop offline for most concepts. Turn it
+    | on per tenant once coverage is real; the response's `calibration` block
+    | reports how close that is.
+    |
+    */
+    'diagnostic' => [
+        'require_calibrated' => false,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Tutor — grounding and governance
+    |--------------------------------------------------------------------------
+    |
+    | Alpha School / TimeBack disabled chat outright on the stated grounds that
+    | "90% of kids use chatbots to cheat". The response taken here is narrower
+    | than a ban: the tutor stays available, but it may not hand over an answer
+    | a student has not yet tried to reach.
+    |
+    | `min_genuine_attempts_for_direct_answer` is the number of UNASSISTED
+    | attempts (hint_used = false) a learner must have logged on a concept
+    | before the tutor will explain directly rather than Socratically. It
+    | gates explanation only.
+    |
+    | Answers to assessment items are never unlocked by attempt count — see
+    | AiTutorContextService, where that clause is unconditional. Raising this
+    | number makes the tutor more Socratic; there is no value that turns the
+    | assessment-answer rule off.
+    |
+    */
+    'ai_tutor' => [
+        'min_genuine_attempts_for_direct_answer' => 2,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Pedagogy Engine — per-tier rollout switches
+    |--------------------------------------------------------------------------
+    |
+    | Each authored tier can be turned off independently, without a deploy.
+    |
+    | These exist because the tiers were dark for a long time (52 authored rules,
+    | none reachable from a student flow) and are now being switched on one at a
+    | time. A tier that starts making bad decisions in front of students must be
+    | stoppable in seconds, and stopping ONE tier must not take the others down
+    | with it.
+    |
+    | Turning a tier off returns the selector to its previous behaviour for that
+    | tier — the hardcoded path is still there and still correct — so this
+    | degrades rather than breaking.
+    |
+    | Only the tiers actually wired appear here. Tiers 2, 3 and 5 are not
+    | listed because they are not yet executable: their thresholds live only in
+    | the prose `condition` column, and tier 2's input signal is the
+    | mis-derived `engagement_score` (see tracker #32).
+    |
+    */
+    'pedagogy' => [
+        'tiers' => [
+            'tier-1' => true,   // mastery bands -> content type
+            'tier-2' => false,  // engagement state — disabled until real engagement_score exists (tracker #32)
+            'tier-4' => true,   // learning style -> format order
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Capability Confidence — "does this learner actually have it?"
+    |--------------------------------------------------------------------------
+    |
+    | One of the three scores in the Evidence & Confidence framework, and the
+    | only one that is about a person rather than about content. Built here
+    | because the worked ESO example (tracker #25) specifies its bands as
+    | CONFIRMED and requires them to be configurable rather than hardcoded.
+    |
+    | It is deliberately NOT the BKT mastery estimate. The spec is explicit that
+    | capability must be evidence-driven — attempt variety, hint dependence,
+    | independent versus assisted performance — because a learner can reach a
+    | high score by repeating one question with hints, and that is not the same
+    | as being able to do it.
+    |
+    | `weights` must sum to 1.0; the service asserts this rather than silently
+    | renormalising, since a typo would otherwise shift every band quietly.
+    |
+    |   mastery      the BKT estimate. Still the largest single input — what
+    |                they can do matters most — but never the only one.
+    |   independence share of attempts made without a hint, in independent mode.
+    |   variety      breadth of distinct questions the evidence covers, against
+    |                `variety_target`. Answering one item ten times is one piece
+    |                of evidence repeated, not ten.
+    |
+    */
+    'capability_confidence' => [
+        'weights' => [
+            'mastery' => 0.60,
+            'independence' => 0.25,
+            'variety' => 0.15,
+        ],
+
+        // Distinct questions at which variety is considered fully evidenced.
+        'variety_target' => 5,
+
+        // Below this many attempts there is not enough to judge capability at
+        // all, and the service returns null rather than a number built from
+        // one data point.
+        'min_attempts' => 3,
+
+        /*
+        | CONFIRMED bands (tracker #25). Ordered high to low; the first whose
+        | `min` is met wins.
+        |
+        | NOTE: the source sheet specifies <0.60 relearn, 0.80-0.90 independent
+        | application, >0.90 mastery verification, >0.95 delayed retrieval — and
+        | says nothing about 0.60-0.80. That gap is named `consolidating` here
+        | rather than folded into a neighbouring band, because silently
+        | extending `relearn` up to 0.80 would send a learner back through
+        | content they had largely demonstrated. Confirm the intended label.
+        */
+        'bands' => [
+            ['key' => 'stable_mastery', 'min' => 0.95, 'action' => 'delayed_retrieval'],
+            ['key' => 'mastery_verification', 'min' => 0.90, 'action' => 'verify_mastery'],
+            ['key' => 'independent_application', 'min' => 0.80, 'action' => 'apply_independently'],
+            ['key' => 'consolidating', 'min' => 0.60, 'action' => 'continue_practice'],
+            ['key' => 'relearn', 'min' => 0.0, 'action' => 'relearn'],
+        ],
     ],
 
     /*

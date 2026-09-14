@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Brain;
 
 use App\Brain\Ingestion\FoundationIngestor;
 use App\Brain\Screens\ScreenRegistry;
+use App\Brain\Support\AcademicYear;
+use App\Brain\Support\LmsOrganization;
 use App\Brain\Support\LmsQueryScope;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
@@ -28,6 +30,12 @@ class BrainController extends Controller
 
     /** Set by tenant(); the trait reads it. */
     protected string $tenantId = '';
+
+    /** Set by tenant(); the signed-in user, used for the display name only. */
+    private string $actorId = '';
+
+    /** Set by tenant(); whether that id is a student rather than staff. */
+    private bool $actorIsStudent = false;
 
     /**
      * The staff columns every People-shaped payload returns.
@@ -990,12 +998,30 @@ class BrainController extends Controller
 
     /* --------------------------------------------------------------- helpers */
 
+    /**
+     * The tenant this request is answered for, and the academic year with it.
+     *
+     * Resolved in one place for the same reason as in BrainIntelligenceController:
+     * the trait's query builders read $this->syear, so this is what puts the
+     * Foundation screens on the year the LMS header has selected.
+     */
     private function tenant(Request $request): string
     {
-        return $this->tenantId = (string) $request->attributes->get(
+        $this->tenantId = (string) $request->attributes->get(
             'tenantId',
             $request->attributes->get('auth.tenantId')
         );
+
+        $this->syear = AcademicYear::resolve($this->tenantId, $request->query('syear'));
+        // The signed-in user, for the DISPLAY name only. Data scope stays
+        // $this->tenantId; the two are resolved together but never mixed.
+        // `is_student` says which table that id belongs to — staff and student
+        // ids are both integers and would otherwise be looked up in the wrong one.
+        $this->actorId = (string) $request->attributes->get('auth.userId', '');
+        $payload = (array) $request->attributes->get('brain.payload', []);
+        $this->actorIsStudent = (bool) ($payload['is_student'] ?? false);
+
+        return $this->tenantId;
     }
 
     private function listInput(Request $request, string $field): array
@@ -1053,14 +1079,6 @@ class BrainController extends Controller
 
     private function organization(string $tenant): array
     {
-        $name = null;
-        if (SchemaCache::hasTable('school_detail')) {
-            $row = DB::table('school_detail')->where('sub_institute_id', $tenant)->orderBy('id')->first();
-            if ($row && $row->title) {
-                $name = trim(explode(' - ', trim(preg_replace('/\s+/', ' ', strip_tags((string) $row->title))))[0]);
-            }
-        }
-
         $brain = SchemaCache::hasTable('hpbrain_organizations')
             ? DB::table('hpbrain_organizations')->where('tenant_id', $tenant)->first()
             : null;
@@ -1071,7 +1089,12 @@ class BrainController extends Controller
 
         return [
             'tenantId' => $tenant,
-            'name' => $brain->name ?? $name ?? ('Organization '.$tenant),
+            // The Organization screen's label: the signed-in user's
+            // tbluser.user_name, same resolver as the executive header.
+            'name' => LmsOrganization::displayNameFor($tenant, $this->actorId, $this->actorIsStudent),
+            // The school itself, kept alongside so nothing that needs the
+            // institute has to go looking for another source.
+            'instituteName' => LmsOrganization::instituteNameFor($tenant),
             'orgCode' => $brain->org_code ?? ('LMS-'.$tenant),
             'projected' => (bool) $brain,
             'detail' => $detail ? (array) $detail : null,

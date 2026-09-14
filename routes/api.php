@@ -91,10 +91,12 @@ Route::middleware('api.session')->prefix('hrms')->group(function () {
     Route::get('attendance', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'attendance']);
     Route::get('leaves', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'leaves']);
 });
-Route::post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
-// Module dashboards (Admissions/Students) — same stateless pattern as
-// fees-dashboard/summary above: tenant/year travel in the request body, so
-// no session middleware is required.
+// check_permissions reads session()->get('user_profile_id'/'sub_institute_id'/'user_id'),
+// so api.session (JWT-hydrated session) must run first for type=API requests.
+Route::middleware(['api.session', 'check_permissions'])->post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
+// Module dashboards (Admissions/Students) — stateless: tenant/year travel in
+// the request body and there's no permission check, so no session middleware
+// is required.
 Route::post('admissions-dashboard/summary', [AdmissionsDashboardApiController::class, 'summary']);
 Route::post('students-dashboard/summary', [StudentsDashboardApiController::class, 'summary']);
 Route::post('library-dashboard/summary', [LibraryDashboardApiController::class, 'summary']);
@@ -147,7 +149,13 @@ Route::middleware('lms.auth')->get('/permissions', [App\Http\Controllers\api\Per
 
 // Fees-only: the seven category tabs on the dedicated Fees page. Presentation
 // grouping over the module's existing menus — see FeesMenuCategoryApiController.
-Route::match(['get', 'post'], 'fees/menu-categories', [App\Http\Controllers\api\FeesMenuCategoryApiController::class, 'index']);
+// check_permissions reads session()->get('user_profile_id'/'sub_institute_id'/'user_id'),
+// so api.session (JWT-hydrated session) must run first for type=API requests.
+Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 'fees/menu-categories', [App\Http\Controllers\api\FeesMenuCategoryApiController::class, 'index']);
+
+// Teach/Learn-only: the same category-tab pattern as Fees above, over the same
+// shared tables (module_name = 'teach_learn') — see TeachLearnMenuCategoryApiController.
+Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 'teach-learn/menu-categories', [App\Http\Controllers\api\TeachLearnMenuCategoryApiController::class, 'index']);
 
 // GET is accepted alongside POST so these can be opened in a browser or curled without
 // a body — the handlers read their parameters through $request->input(), which covers
@@ -188,7 +196,17 @@ Route::middleware(['lms.auth'])->get('lms/content/authoring-vocabulary', [\App\H
 Route::middleware(['lms.auth', 'perm:lms.content,create'])->post('lms/content/author', [\App\Http\Controllers\api\lms\ContentAuthoringController::class, 'store']);
 Route::post('lms-content-mapping-values', [ApiLmsCourseController::class, 'getContentMappingValues']);
 Route::post('lms-store-subject', [ApiLmsCourseController::class, 'storeSubject']);
-Route::post('lms/gamma-content-master', [\App\Http\Controllers\lms\contentController::class, 'storeGammaContent']);
+// Chapter content generation. Historically Gamma (presentations) + Gemini
+// (documents); for chapters listed in config('claude.chapter_ids') it is now
+// Claude, via App\Services\ContentGenerationService.
+//
+// This route is unauthenticated and reads sub_institute_id / user_id from the
+// request body - it predates api.session and the drawer sends no bearer token.
+// throttle.contentgen is a spend cap on top of that, not a substitute for auth.
+// The authenticated door is intelligence/content/generate, below.
+Route::middleware('throttle.contentgen')->group(function () {
+    Route::post('lms/gamma-content-master', [\App\Http\Controllers\lms\contentController::class, 'storeGammaContent']);
+});
 Route::get('ai-sop', [AiSopGenerationController::class, 'index']);
 Route::get('ai-platforms', [AiPlatformController::class, 'index']);
 Route::get('ai-sop/department-job-roles', [AiSopGenerationController::class, 'departmentJobRoles']);
@@ -210,6 +228,35 @@ Route::post('lms-homework/submission-list', [\App\Http\Controllers\api\lms\Stude
 Route::post('lms-homework/submission-store', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionStore']);
 Route::post('lms-homework/submission-report', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionReport']);
 Route::post('lms-homework/ai-status/{id}', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'aiEvaluationStatus']);
+
+// ------------------------------------------------------------------
+// Homework Submissions v2 - multi-file student submission + teacher review
+// workflow, built directly on the `homework` table's own submission/review
+// columns (status, submission_files, teacher_remarks, ai_*, etc. — see the
+// 2026_09_11 migration; no separate submission/file tables). One submission
+// per student per homework, overwritable while not yet under review, since
+// this row is the same row StudentHomeworkApiController above operates on.
+// ------------------------------------------------------------------
+Route::middleware('api.session')->group(function () {
+    Route::post('lms-homework/detail/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'detail']);
+    Route::post('lms-homework/submission/store', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'submit']);
+    Route::post('lms-homework/submission/ai-status/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'submissionAiStatus']);
+    Route::post('lms-homework/submission-file/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'downloadFile']);
+    Route::post('lms-homework/my-submissions', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'mySubmissions']);
+});
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::post('lms-homework/review-list', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewList']);
+    Route::post('lms-homework/review-detail/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewDetail']);
+    Route::post('lms-homework/review-store', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewStore']);
+});
+
+// Generate homework from the question bank (teacher-only lookups feeding
+// StudentHomeworkApiController::store()'s source_type = 'question_bank' path).
+// Additive; does not touch ApiLmsCourseController or the Exam module.
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::post('lms-homework/question-bank/types', [\App\Http\Controllers\api\lms\HomeworkQuestionBankApiController::class, 'questionTypes']);
+    Route::post('lms-homework/question-bank/questions', [\App\Http\Controllers\api\lms\HomeworkQuestionBankApiController::class, 'questions']);
+});
 
 // ------------------------------------------------------------------
 // LMS Assignment / Assignment Submission / Annotate Assignment
@@ -248,6 +295,7 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     Route::post('lms-assignment/students', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'students']);
     Route::post('lms-assignment/exam-papers', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'examPapers']);
     Route::post('lms-assignment/store', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'store']);
+    Route::post('lms-assignment/upload-homework', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'uploadHomework']);
     Route::post('lms-assignment/list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'index']);
     Route::post('lms-assignment/annotate-list', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateList']);
     Route::post('lms-assignment/annotate-questions', [\App\Http\Controllers\api\lms\LmsAssignmentApiController::class, 'annotateQuestions']);
@@ -377,7 +425,9 @@ Route::post('inventory/receivables/multiple', [InventoryApiController::class, 's
 Route::match(['put', 'patch'], 'inventory/{module}/{id}', [InventoryApiController::class, 'update'])->where('module', '^(?!reports$).+');
 Route::delete('inventory/{module}/{id}', [InventoryApiController::class, 'destroy'])->where('module', '^(?!reports$).+');
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
-Route::post('fees-cancel/search', [feesCancelController::class, 'search']);
+// check_permissions reads session()->get('user_profile_id'/'sub_institute_id'/'user_id'),
+// so api.session (JWT-hydrated session) must run first for type=API requests.
+Route::middleware(['api.session', 'check_permissions'])->post('fees-cancel/search', [feesCancelController::class, 'search']);
 
 // Import Data API - stateless JSON entry points for the Next.js frontend.
 // These mirror the legacy web import routes but return JSON instead of HTML.
@@ -391,20 +441,27 @@ Route::middleware('api.session')->prefix('import')->group(function () {
 // Fees Circular - stateless JSON entry points for the Next.js frontend.
 // Callers must send type=JSON (is_mobile then returns response()->json) plus
 // syear/sub_institute_id/user_id, which the controllers seed into session()
-// for the downstream fee helpers. api.php does not run StartSession.
-Route::post('fees-circular/filters', [feesCircularController::class, 'index']);
-Route::post('fees-circular/students', [feesCircularController::class, 'showStudent']);
-Route::post('fees-circular/generate', [feesCircularController::class, 'showCircular']);
-Route::post('fees-circular-master', [feesCircularMasterController::class, 'index']);
-Route::post('fees-circular-master/store', [feesCircularMasterController::class, 'store']);
-Route::post('fees-circular-master/{id}/update', [feesCircularMasterController::class, 'update']);
-Route::post('fees-circular-master/{id}/delete', [feesCircularMasterController::class, 'destroy']);
+// for the downstream fee helpers. api.php does not run StartSession, so
+// check_permissions (which reads session()->get('user_profile_id'/etc.))
+// needs api.session in front of it to hydrate a session from the JWT first.
+Route::middleware(['api.session', 'check_permissions'])->post('fees-circular/filters', [feesCircularController::class, 'index']);
+Route::middleware(['api.session', 'check_permissions'])->post('fees-circular/students', [feesCircularController::class, 'showStudent']);
+Route::middleware(['api.session', 'check_permissions'])->post('fees-circular/generate', [feesCircularController::class, 'showCircular']);
+Route::middleware(['api.session', 'check_permissions'])->post('fees-circular-master', [feesCircularMasterController::class, 'index']);
+Route::middleware(['api.session', 'check_permissions'])->post('fees-circular-master/store', [feesCircularMasterController::class, 'store']);
+Route::middleware(['api.session', 'check_permissions'])->post('fees-circular-master/{id}/update', [feesCircularMasterController::class, 'update']);
+Route::middleware(['api.session', 'check_permissions'])->post('fees-circular-master/{id}/delete', [feesCircularMasterController::class, 'destroy']);
 
 // Intelligence Lesson Plan - Lesson Plan -> Period -> Concepts hierarchy
 Route::match(['GET', 'POST'], 'intelligence/lesson-plans', [\App\Http\Controllers\api\lms\IntelligenceLessonPlanApiController::class, 'index']);
 
 // Curriculum Planning - yearly syllabus overview (stats, subject x month grid, upcoming lessons, subject progress)
 Route::match(['GET', 'POST'], 'intelligence/curriculum-planning', [\App\Http\Controllers\api\lms\CurriculumPlanningApiController::class, 'index']);
+
+// Curriculum Planning - one chapter's topics, concepts and key concepts. Kept off the
+// roll-up above because inlining them for every chapter costs ~0.5MB, nearly all of it
+// for chapters nobody opens. Scoped by sub_institute_id inside the controller.
+Route::match(['GET', 'POST'], 'intelligence/curriculum-planning/chapter', [\App\Http\Controllers\api\lms\CurriculumPlanningApiController::class, 'chapter']);
 
 // Monthly Plan - calendar view of scheduled periods for a given month
 Route::match(['GET', 'POST'], 'intelligence/monthly-plan', [\App\Http\Controllers\api\lms\MonthlyPlanApiController::class, 'index']);
@@ -467,6 +524,17 @@ Route::prefix('lesson-intelligence')->group(function () {
 //                 group's throttle:1000,1 which was no limit at all here.
 Route::middleware(['api.session', 'staff.only', 'throttle.qgen'])->group(function () {
     Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);
+});
+
+// Intelligence Content Generation - chapter content via Claude -> content_master
+//
+// The authenticated sibling of lms/gamma-content-master. Same service, same
+// prompt-from-the-caller contract, but the tenant (sub_institute_id) and author
+// (created_by) come from the verified JWT session instead of the request body,
+// so a caller cannot write content into another school attributed to another
+// user. Point the drawer here once it sends a bearer token.
+Route::middleware(['api.session', 'staff.only', 'throttle.contentgen'])->group(function () {
+    Route::post('intelligence/content/generate', [\App\Http\Controllers\api\lms\IntelligenceContentGenerationApiController::class, 'generate']);
 });
 
 // Semantic Intelligence - read-only chapter intelligence for presentation generators

@@ -41,6 +41,12 @@ class MisconceptionLibrary extends Model
         return $query->whereIn('quality_status', config('pal_content.servable_statuses', ['approved']));
     }
 
+    /** PAL consumer — approved misconceptions available to the engine. */
+    public function scopeForPal($query)
+    {
+        return $query->servable();
+    }
+
     public function scopeForTenant($query, ?int $subInstituteId)
     {
         if ($subInstituteId === null) {

@@ -33,8 +33,9 @@ final class EntityIntelligence
     /** Below this many observations, an individual figure is not worth quoting. */
     private const MIN_OBSERVATIONS = 3;
 
-    public function __construct(private readonly string $tenantId)
+    public function __construct(private readonly string $tenantId, ?string $syear = null)
     {
+        $this->syear = $syear;
     }
 
     /* --------------------------------------------------------------- student */
@@ -215,8 +216,7 @@ final class EntityIntelligence
             return ['available' => false];
         }
 
-        $own = DB::table('attendance_student')
-            ->where('sub_institute_id', $this->tenantId)->where('student_id', $studentId)
+        $own = $this->lmsAttendance()->where('student_id', $studentId)
             ->selectRaw('COUNT(*) as marks, SUM(attendance_code = "P") as present, SUM(attendance_code = "A") as absent, MAX(standard_id) as standard_id')
             ->first();
 
@@ -232,8 +232,7 @@ final class EntityIntelligence
         $classRate = null;
         $className = null;
         if ($own->standard_id) {
-            $peers = DB::table('attendance_student')
-                ->where('sub_institute_id', $this->tenantId)
+            $peers = $this->lmsAttendance()
                 ->where('standard_id', $own->standard_id)
                 ->where('student_id', '!=', $studentId)
                 ->selectRaw('COUNT(*) as marks, SUM(attendance_code = "P") as present')->first();
@@ -267,8 +266,7 @@ final class EntityIntelligence
             return ['available' => false];
         }
 
-        $own = DB::table('result_marks')
-            ->where('sub_institute_id', $this->tenantId)->where('student_id', $studentId)
+        $own = $this->lmsMarks()->where('student_id', $studentId)
             ->selectRaw('COUNT(*) as records, AVG(per) as mean_pct')->first();
 
         if ((int) ($own->records ?? 0) === 0) {
@@ -277,12 +275,11 @@ final class EntityIntelligence
 
         $mean = round((float) $own->mean_pct, 1);
 
-        $peerMean = DB::table('result_marks')->where('sub_institute_id', $this->tenantId)
+        $peerMean = $this->lmsMarks()
             ->where('student_id', '!=', $studentId)->avg('per');
         $peerMean = $peerMean !== null ? round((float) $peerMean, 1) : null;
 
-        $bySubject = DB::table('result_marks')
-            ->where('sub_institute_id', $this->tenantId)->where('student_id', $studentId)
+        $bySubject = $this->lmsMarks()->where('student_id', $studentId)
             ->whereNotNull('subject_name')->where('subject_name', '!=', '')
             ->selectRaw('subject_name, AVG(per) as mean_pct, COUNT(*) as records')
             ->groupBy('subject_name')->get()
@@ -307,8 +304,7 @@ final class EntityIntelligence
             return ['available' => false];
         }
 
-        $row = DB::table('homework')
-            ->where('sub_institute_id', $this->tenantId)->where('student_id', $studentId)
+        $row = $this->lmsHomework()->where('student_id', $studentId)
             ->selectRaw('COUNT(*) as total, SUM(completion_status = "Y") as submitted')->first();
 
         $total = (int) ($row->total ?? 0);
@@ -331,8 +327,7 @@ final class EntityIntelligence
             return ['receipts' => 0, 'collected' => 0.0];
         }
 
-        $row = DB::table('fees_collect')
-            ->where('sub_institute_id', $this->tenantId)->where('student_id', $studentId)
+        $row = $this->lmsFees()->where('student_id', $studentId)
             ->where(fn ($q) => $q->whereNull('is_deleted')->orWhere('is_deleted', '!=', 'Y'))
             ->selectRaw('COUNT(*) as receipts, COALESCE(SUM(amount),0) as collected')->first();
 
@@ -370,7 +365,7 @@ final class EntityIntelligence
     /** @return array<int, array<string, mixed>> */
     public function classes(): array
     {
-        $byClass = (new TrendAnalyzer($this->tenantId))->attendanceByClass();
+        $byClass = (new TrendAnalyzer($this->tenantId, $this->syear))->attendanceByClass();
 
         if ($byClass['classes'] === []) {
             return [];
@@ -513,14 +508,14 @@ final class EntityIntelligence
         }
 
         $attendanceByTeacher = SchemaCache::hasTable('attendance_student')
-            ? DB::table('attendance_student')->where('sub_institute_id', $this->tenantId)
+            ? $this->lmsAttendance()
                 ->whereNotNull('teacher_id')->where('teacher_id', '!=', '')
                 ->selectRaw('teacher_id, COUNT(*) as marks, SUM(attendance_code = "A") as absent, COUNT(DISTINCT student_id) as students')
                 ->groupBy('teacher_id')->get()->keyBy('teacher_id')
             : collect();
 
         $homeworkByTeacher = SchemaCache::hasTable('homework')
-            ? DB::table('homework')->where('sub_institute_id', $this->tenantId)
+            ? $this->lmsHomework()
                 ->whereNotNull('created_by')->where('created_by', '>', 0)
                 ->selectRaw('created_by, COUNT(*) as total, SUM(completion_status = "Y") as submitted')
                 ->groupBy('created_by')->get()->keyBy('created_by')
@@ -540,7 +535,7 @@ final class EntityIntelligence
 
         // Attribution coverage — the honest headline for this whole screen.
         $totalMarks = SchemaCache::hasTable('attendance_student')
-            ? (int) DB::table('attendance_student')->where('sub_institute_id', $this->tenantId)->count() : 0;
+            ? (int) $this->lmsAttendance()->count() : 0;
         $attributedMarks = (int) $attendanceByTeacher->sum('marks');
 
         if ($ids->isEmpty()) {

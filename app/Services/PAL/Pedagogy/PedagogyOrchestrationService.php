@@ -66,6 +66,13 @@ class PedagogyOrchestrationService
         $fatigueStatus = $this->fatigue->check($learnerId);
         if ($fatigueStatus['is_fatigued']) {
             $selected = $this->fatigue->rotate($selected);
+
+            // Rotation replaces the pedagogy the Tier 1 rule chose, so the rule
+            // no longer describes this decision. Dropping the attribution keeps
+            // the audit column honest: the log is meant to answer "how did this
+            // rule perform?", and crediting a rule with a pedagogy that was
+            // overridden after it fired would poison exactly that analysis.
+            unset($selected['tier_1_rule']);
         }
 
         // Phase 8: a strategy name alone is not a recommendation the student can
@@ -127,13 +134,30 @@ class PedagogyOrchestrationService
             return;
         }
 
+        // The rule-key columns arrive in a later migration than the table, so an
+        // environment that has one and not the other must still be able to log.
+        // Without this check the insert 500s on EVERY recommendation there —
+        // turning a missing audit column into an outage, which is the opposite
+        // of what the surrounding hasTable() guard is for.
+        $hasRuleKeys = Schema::hasColumn('pal_recommendation_log', 'tier_1_rule_key');
+
         $masteryBefore = \App\Models\PAL\Competency::where('learner_id', $learnerId)
             ->when($context['subject_id'] ?? null, fn ($q, $subjectId) => $q->where('subject_id', $subjectId))
             ->avg('mastery_score');
 
         $content = $contentRecommendation['content'] ?? null;
 
-        DB::table('pal_recommendation_log')->insert([
+        $ruleKeys = $hasRuleKeys ? [
+            // Which authored rule actually decided this, as a queryable value
+            // rather than a phrase inside selection_reason. NULL means the
+            // hardcoded path resolved it and no authored rule fired — a real
+            // distinction, and the one that says how much of the engine is
+            // genuinely live.
+            'tier_1_rule_key' => $selectedPedagogy['tier_1_rule']['rule_key'] ?? null,
+            'tier_4_rule_key' => $selectedPedagogy['tier_4_style']['rule_key'] ?? null,
+        ] : [];
+
+        DB::table('pal_recommendation_log')->insert($ruleKeys + [
             'learner_id' => $learnerId,
             'concept_id' => $conceptId,
             'subject_id' => $context['subject_id'] ?? null,

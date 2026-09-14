@@ -109,8 +109,6 @@ class SeedAiDemoDataCommand extends Command
      * should be able to tell at a glance that it is a fixture and not somebody's real
      * login. It only ever exists on the synthetic institute, and `--purge` removes it.
      */
-    public const DEMO_PASSWORD = 'SyntheticDemo!2026';
-
     private const FIRST_NAMES = [
         'Aarav', 'Vivaan', 'Aditya', 'Arjun', 'Reyansh', 'Ishaan', 'Kabir', 'Ayaan', 'Rudra', 'Vihaan',
         'Ananya', 'Diya', 'Aadhya', 'Saanvi', 'Myra', 'Kiara', 'Anika', 'Navya', 'Riya', 'Ira',
@@ -505,7 +503,7 @@ class SeedAiDemoDataCommand extends Command
      */
     private function seedStaff(int $institute, int $year): int
     {
-        $password = Hash::make(self::DEMO_PASSWORD);
+        $password = Hash::make(env('SEED_DEMO_PASSWORD', 'SyntheticDemo!2026'));
         $created = 0;
 
         DB::table('tbluser')->insert([

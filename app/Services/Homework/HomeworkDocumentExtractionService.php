@@ -3,11 +3,12 @@
 namespace App\Services\Homework;
 
 use App\Services\Homework\Exceptions\DocumentExtractionException;
+use PhpOffice\PhpWord\IOFactory as WordIOFactory;
 use Smalot\PdfParser\Parser as PdfParser;
 
 /**
  * Extracts readable text from an assignment PDF (teacher-uploaded) or a
- * student submission file (PDF/JPG/JPEG/PNG).
+ * student submission file (PDF/JPG/JPEG/PNG/DOC/DOCX).
  *
  * Strategy:
  *  - PDF with a real text layer: parsed directly via smalot/pdfparser
@@ -18,11 +19,19 @@ use Smalot\PdfParser\Parser as PdfParser;
  *    installed in this project, and the target hosting cannot be assumed
  *    to have one) while satisfying the "Tesseract or equivalent" OCR
  *    requirement.
+ *  - Word documents (.doc/.docx) already carry their own text layer, so
+ *    they're read directly via phpoffice/phpword and never sent to Gemini
+ *    at all — there is no scanned/image case for a native Word file.
  */
 class HomeworkDocumentExtractionService
 {
     /** Below this many characters, a "PDF text layer" is treated as absent (scanned page images, watermarks, etc). */
     private const MIN_TEXT_LAYER_LENGTH = 40;
+
+    public const WORD_MIME_TYPES = [
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
 
     public function __construct(private readonly GeminiClient $gemini)
     {
@@ -30,7 +39,8 @@ class HomeworkDocumentExtractionService
 
     /**
      * @param string $absolutePath Absolute filesystem path to the file.
-     * @param string $mimeType One of application/pdf, image/jpeg, image/png.
+     * @param string $mimeType One of application/pdf, image/jpeg, image/png,
+     *                         application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document.
      * @param string $context Short label used in the OCR prompt, e.g. "assignment questions" or "student answers".
      *
      * @throws DocumentExtractionException
@@ -41,6 +51,10 @@ class HomeworkDocumentExtractionService
             throw new DocumentExtractionException("File not found or unreadable: {$absolutePath}");
         }
 
+        if (in_array($mimeType, self::WORD_MIME_TYPES, true)) {
+            return $this->extractWordText($absolutePath, $mimeType);
+        }
+
         if ($mimeType === 'application/pdf') {
             $textLayer = $this->extractPdfTextLayer($absolutePath);
             if (mb_strlen(trim($textLayer)) >= self::MIN_TEXT_LAYER_LENGTH) {
@@ -49,6 +63,62 @@ class HomeworkDocumentExtractionService
         }
 
         return $this->extractViaGeminiOcr($absolutePath, $mimeType, $context);
+    }
+
+    /** @throws DocumentExtractionException */
+    private function extractWordText(string $absolutePath, string $mimeType): string
+    {
+        try {
+            $readerType = $mimeType === 'application/msword' ? 'MsDoc' : 'Word2007';
+            $phpWord = WordIOFactory::load($absolutePath, $readerType);
+        } catch (\Throwable $exception) {
+            throw new DocumentExtractionException('The Word document could not be read: ' . $exception->getMessage(), 0, $exception);
+        }
+
+        $sections = [];
+        foreach ($phpWord->getSections() as $section) {
+            $sectionText = $this->collectElementsText($section->getElements());
+            if ($sectionText !== '') {
+                $sections[] = $sectionText;
+            }
+        }
+
+        $combined = trim(implode("\n", $sections));
+        if ($combined === '') {
+            throw new DocumentExtractionException('The Word document has no readable text.');
+        }
+
+        return $combined;
+    }
+
+    /** @param array<int, mixed> $elements */
+    private function collectElementsText(array $elements): string
+    {
+        $lines = [];
+        foreach ($elements as $element) {
+            if (method_exists($element, 'getRows')) {
+                foreach ($element->getRows() as $row) {
+                    foreach ($row->getCells() as $cell) {
+                        $lines[] = $this->collectElementsText($cell->getElements());
+                    }
+                }
+                continue;
+            }
+
+            if (method_exists($element, 'getElements')) {
+                $lines[] = $this->collectElementsText($element->getElements());
+                continue;
+            }
+
+            if (method_exists($element, 'getText')) {
+                $text = $element->getText();
+                if (is_string($text) && trim($text) !== '') {
+                    $lines[] = $text;
+                }
+            }
+        }
+
+        return implode("\n", array_filter($lines, static fn ($line) => trim((string) $line) !== ''));
     }
 
     private function extractPdfTextLayer(string $absolutePath): string

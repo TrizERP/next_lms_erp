@@ -138,21 +138,25 @@ class update_fees_breackoff_controller extends Controller
                 foreach ($all_data as $quota_id => $arr) {
                     foreach ($arr as $title_id => $amount) {
     //                                foreach ($req['month_id'] as $month_id => $on) {
-                        DB::table('fees_breackoff')->where(
-                            array(
-                                'syear' => session()->get('syear'),
-                                'admission_year' => session()->get('syear'),
-                                'fee_type_id' => $title_id,
-                                'quota' => $quota_id,
-                                'grade_id' => $req['grade'],
-                                'standard_id' => $req['standard'],
-                                // 'section_id' => $req['division'],
-                                'month_id' => $req['month'],
-                                'sub_institute_id' => session()->get('sub_institute_id')
-                            )
-                        )->delete();
+                        $fees_breackoff_match = [
+                            'syear' => session()->get('syear'),
+                            'admission_year' => session()->get('syear'),
+                            'fee_type_id' => $title_id,
+                            'quota' => $quota_id,
+                            'grade_id' => $req['grade'],
+                            'standard_id' => $req['standard'],
+                            // 'section_id' => $req['division'],
+                            'month_id' => $req['month'],
+                            'sub_institute_id' => session()->get('sub_institute_id')
+                        ];
+
+                        $fees_breackoff_before = DB::table('fees_breackoff')->where($fees_breackoff_match)->get()->toArray();
+
+                        DB::table('fees_breackoff')->where($fees_breackoff_match)->delete();
+                        $fees_breackoff_new_id = null;
+                        $fees_breackoff_row = null;
                         if ($amount != 0 && $amount != '') {
-                            DB::table('fees_breackoff')->insert([
+                            $fees_breackoff_row = [
                                 'syear' => session()->get('syear'),
                                 'admission_year' => session()->get('syear'),
                                 'fee_type_id' => $title_id,
@@ -164,6 +168,18 @@ class update_fees_breackoff_controller extends Controller
                                 'amount' => $amount,
                                 'sub_institute_id' => session()->get('sub_institute_id'),
                                 'created_at' => date('Y-m-d H:i:s')
+                            ];
+                            $fees_breackoff_new_id = DB::table('fees_breackoff')->insertGetId($fees_breackoff_row);
+                        }
+
+                        if (!empty($fees_breackoff_before) || $fees_breackoff_row !== null) {
+                            \App\Models\AuditLog::record([
+                                'module' => 'fees',
+                                'action' => 'FEE_ASSIGNED',
+                                'entity_type' => 'fees_breackoff',
+                                'entity_id' => $fees_breackoff_new_id,
+                                'old_values' => $fees_breackoff_before,
+                                'new_values' => $fees_breackoff_row,
                             ]);
                         }
     //                                }
@@ -206,7 +222,7 @@ class update_fees_breackoff_controller extends Controller
                         foreach ($arr as $title_id => $amount) {
     //                        foreach ($req['month_id'] as $month_id => $on) {
 
-                            DB::table('fees_breackoff')->where([
+                            $fees_breackoff_match = [
                                 'syear' => session()->get('syear'),
                                 'admission_year' => $year_arr->admission_year,
                                 'fee_type_id' => $title_id,
@@ -216,9 +232,15 @@ class update_fees_breackoff_controller extends Controller
                                 // 'section_id' => $req['division'],
                                 'month_id' => $req['month'],
                                 'sub_institute_id' => session()->get('sub_institute_id')
-                            ])->delete();
+                            ];
+
+                            $fees_breackoff_before = DB::table('fees_breackoff')->where($fees_breackoff_match)->get()->toArray();
+
+                            DB::table('fees_breackoff')->where($fees_breackoff_match)->delete();
+                            $fees_breackoff_new_id = null;
+                            $fees_breackoff_row = null;
                             if ($amount != 0 && $amount != '') {
-                                DB::table('fees_breackoff')->insert([
+                                $fees_breackoff_row = [
                                     'syear' => session()->get('syear'),
                                     'admission_year' => $year_arr->admission_year,
                                     'fee_type_id' => $title_id,
@@ -230,6 +252,18 @@ class update_fees_breackoff_controller extends Controller
                                     'amount' => $amount,
                                     'sub_institute_id' => session()->get('sub_institute_id'),
                                     'created_at' => date('Y-m-d H:i:s')
+                                ];
+                                $fees_breackoff_new_id = DB::table('fees_breackoff')->insertGetId($fees_breackoff_row);
+                            }
+
+                            if (!empty($fees_breackoff_before) || $fees_breackoff_row !== null) {
+                                \App\Models\AuditLog::record([
+                                    'module' => 'fees',
+                                    'action' => 'FEE_ASSIGNED',
+                                    'entity_type' => 'fees_breackoff',
+                                    'entity_id' => $fees_breackoff_new_id,
+                                    'old_values' => $fees_breackoff_before,
+                                    'new_values' => $fees_breackoff_row,
                                 ]);
                             }
     //                        }

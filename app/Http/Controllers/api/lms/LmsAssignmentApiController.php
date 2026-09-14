@@ -8,6 +8,7 @@ use App\Models\lms\assignment\lms_assignmentModel;
 use App\Models\lms\lmsOfflineExamModel;
 use App\Models\lms\lmsOfflineExamAnswerModel;
 use App\Models\lms\questionpaperModel;
+use App\Services\Homework\HomeworkDocumentExtractionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -223,11 +224,133 @@ class LmsAssignmentApiController extends Controller
     }
 
     /**
+     * Upload a homework file for a teacher-created assignment.
+     * Stores under storage/app/public/QuestionPaper alongside exam paper PDFs
+     * and returns the relative path.
+     *
+     * Validated up front because this file is later handed to
+     * EvaluateAssignmentSubmissionJob as the "reference document" for every
+     * student's AI evaluation: an empty/corrupt/mislabeled upload here used
+     * to surface only much later, as a cryptic "OCR via Gemini failed: The
+     * document has no pages" on every single student's submission.
+     */
+    public function uploadHomework(Request $request): JsonResponse
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+
+        if (!$sub_institute_id || !$syear) {
+            return $this->fail('sub_institute_id and syear are required');
+        }
+
+        $file = $request->file('homework_file');
+        if (!$file) {
+            return $this->fail('Please choose a file to upload.');
+        }
+
+        if (!$file->isValid()) {
+            return $this->fail('The upload was incomplete or corrupted. Please try again.');
+        }
+
+        $detectedMime = $file->getMimeType();
+        $clientExt = strtolower((string) File::extension($file->getClientOriginalName()));
+        // .docx is itself a zip archive, and fileinfo commonly reports it as
+        // the generic application/zip/octet-stream rather than recognising
+        // the Word-specific content types inside — trust a .docx extension
+        // over that generic sniff result.
+        if ($clientExt === 'docx' && in_array($detectedMime, ['application/zip', 'application/octet-stream'], true)) {
+            $detectedMime = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        }
+
+        $allowedMimes = [
+            'application/pdf',
+            'image/png',
+            'image/jpeg',
+            'application/msword',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        ];
+        if (!in_array($detectedMime, $allowedMimes, true)) {
+            return $this->fail('Only PDF, PNG, JPEG, DOC or DOCX files are supported for a homework file.');
+        }
+
+        if ($detectedMime === 'application/pdf') {
+            $pageCount = $this->pdfPageCount($file->getRealPath());
+            if ($pageCount === null || $pageCount < 1) {
+                return $this->fail('The PDF could not be read or has no pages. Please re-export it and try again.');
+            }
+        }
+
+        if (in_array($detectedMime, HomeworkDocumentExtractionService::WORD_MIME_TYPES, true)) {
+            if (!$this->wordDocumentHasText($file->getRealPath(), $detectedMime)) {
+                return $this->fail('The Word document could not be read or has no readable text. Please re-save it and try again.');
+            }
+        }
+
+        $extensionByMime = [
+            'application/pdf' => 'pdf',
+            'image/png' => 'png',
+            'image/jpeg' => 'jpg',
+            'application/msword' => 'doc',
+            'application/vnd.openxmlformats-officedocument.wordprocessingml.document' => 'docx',
+        ];
+        $file_name = 'homework_' . time() . '-' . uniqid() . '.' . $extensionByMime[$detectedMime];
+        $file->storeAs('public/QuestionPaper', $file_name);
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'Homework uploaded successfully',
+            'file_path' => 'QuestionPaper/' . $file_name,
+        ], 200);
+    }
+
+    /** Returns the page count of a PDF, or null if it cannot be parsed at all. */
+    private function pdfPageCount(string $absolutePath): ?int
+    {
+        try {
+            $parser = new \Smalot\PdfParser\Parser();
+            $pdf = $parser->parseFile($absolutePath);
+
+            return count($pdf->getPages());
+        } catch (\Throwable $exception) {
+            return null;
+        }
+    }
+
+    private function wordDocumentHasText(string $absolutePath, string $mimeType): bool
+    {
+        try {
+            $readerType = $mimeType === 'application/msword' ? 'MsDoc' : 'Word2007';
+            $phpWord = \PhpOffice\PhpWord\IOFactory::load($absolutePath, $readerType);
+
+            foreach ($phpWord->getSections() as $section) {
+                foreach ($section->getElements() as $element) {
+                    if (method_exists($element, 'getText') && trim((string) $element->getText()) !== '') {
+                        return true;
+                    }
+                    if (method_exists($element, 'getElements') && !empty($element->getElements())) {
+                        return true;
+                    }
+                    if (method_exists($element, 'getRows') && !empty($element->getRows())) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        } catch (\Throwable $exception) {
+            return false;
+        }
+    }
+
+    /**
      * Create one lms_assignment row per selected student.
      * Mirrors assignmentController::store() (+ notification, best-effort).
      */
     public function store(Request $request): JsonResponse
     {
+        $sourceType = $request->input('assignment_source_type', 'exam_paper');
+        $homeworkFile = $request->input('homework_file');
+
         $validator = Validator::make($request->all(), [
             'sub_institute_id' => 'required|numeric',
             'syear' => 'required|numeric',
@@ -235,12 +358,24 @@ class LmsAssignmentApiController extends Controller
             'title' => 'required|string|max:50',
             'description' => 'nullable|string|max:50',
             'subject_id' => 'required|numeric',
-            'exam_id' => 'required|numeric',
             'submission_date' => 'nullable|date',
+            'assignment_source_type' => 'nullable|string|in:exam_paper,uploaded_homework',
+            'homework_file' => 'nullable|string|max:250',
         ]);
 
         if ($validator->fails()) {
             return $this->fail('Validation failed', 422, ['errors' => $validator->errors()]);
+        }
+
+        if ($sourceType === 'uploaded_homework') {
+            if (empty($homeworkFile)) {
+                return $this->fail('Homework file is required when sending homework from system.', 422);
+            }
+        } else {
+            $exam_id = $request->input('exam_id');
+            if (empty($exam_id)) {
+                return $this->fail('Exam paper is required when not sending homework from system.', 422);
+            }
         }
 
         $sub_institute_id = $request->input('sub_institute_id');
@@ -253,8 +388,6 @@ class LmsAssignmentApiController extends Controller
         $exam_id = $request->input('exam_id');
         $created_by = $request->input('user_id') ?? $request->input('teacher_id');
 
-        // exam_pdf can arrive either as a plain pdf name or the packed
-        // "<pdf_name>####<exam_id>" value used by the legacy blade select.
         $exam_pdf_input = (string) $request->input('exam_pdf', '');
         if (strpos($exam_pdf_input, '####') !== false) {
             $parts = explode('####', $exam_pdf_input);
@@ -284,8 +417,10 @@ class LmsAssignmentApiController extends Controller
                 'standard_id' => $arr['standard_id'],
                 'division_id' => $arr['section_id'],
                 'subject_id' => $subject_id,
-                'exam_id' => $exam_id,
-                'exam_pdf' => $exam_pdf,
+                'exam_id' => $sourceType === 'uploaded_homework' ? null : $exam_id,
+                'exam_pdf' => $sourceType === 'uploaded_homework' ? null : $exam_pdf,
+                'assignment_source_type' => $sourceType,
+                'homework_file' => $sourceType === 'uploaded_homework' ? $homeworkFile : null,
                 'created_date' => date('Y-m-d'),
                 'submission_date' => $submission_date,
                 'syear' => $syear,
@@ -297,7 +432,6 @@ class LmsAssignmentApiController extends Controller
 
             $inserted_ids[] = lms_assignmentModel::insertGetId($assignment_arr);
 
-            // Notification is best-effort: never fail assignment creation on it.
             try {
                 if (function_exists('App\\Helpers\\sendNotification')) {
                     \App\Helpers\sendNotification([
@@ -313,7 +447,6 @@ class LmsAssignmentApiController extends Controller
                     ]);
                 }
             } catch (\Throwable $e) {
-                // swallow – notification is non-critical
             }
         }
 
@@ -371,6 +504,8 @@ class LmsAssignmentApiController extends Controller
                 IF(a.exam_pdf IS NULL OR a.exam_pdf = '', '', CONCAT('$server/storage/', a.exam_pdf)) AS exam_pdf_url,
                 IF(a.submission_image IS NULL OR a.submission_image = '', '',
                     CONCAT('$server/storage/lms_assignment_submission/', a.submission_image)) AS submission_file_url,
+                IF(a.assignment_source_type = 'uploaded_homework' AND a.homework_file IS NOT NULL AND a.homework_file != '',
+                    CONCAT('$server/storage/', a.homework_file), '') AS homework_file_url,
                 DATE_FORMAT(a.created_date, '%d-%m-%Y') AS created_date_fmt,
                 DATE_FORMAT(a.submission_date, '%d-%m-%Y') AS submission_date_fmt")
             ->where('a.sub_institute_id', $sub_institute_id)
@@ -467,6 +602,8 @@ class LmsAssignmentApiController extends Controller
                 IF(a.exam_pdf IS NULL OR a.exam_pdf = '', '', CONCAT('$server/storage/', a.exam_pdf)) AS exam_pdf_url,
                 IF(a.submission_image IS NULL OR a.submission_image = '', '',
                     CONCAT('$server/storage/lms_assignment_submission/', a.submission_image)) AS submission_file_url,
+                IF(a.assignment_source_type = 'uploaded_homework' AND a.homework_file IS NOT NULL AND a.homework_file != '',
+                    CONCAT('$server/storage/', a.homework_file), '') AS homework_file_url,
                 DATE_FORMAT(a.created_date, '%d-%m-%Y') AS created_date_fmt,
                 DATE_FORMAT(a.submission_date, '%d-%m-%Y') AS submission_date_fmt")
             ->where('a.sub_institute_id', $sub_institute_id)
@@ -660,6 +797,8 @@ class LmsAssignmentApiController extends Controller
                 IF(a.exam_pdf IS NULL OR a.exam_pdf = '', '', CONCAT('$server/storage/', a.exam_pdf)) AS exam_pdf_url,
                 IF(a.submission_image IS NULL OR a.submission_image = '', '',
                     CONCAT('$server/storage/lms_assignment_submission/', a.submission_image)) AS submission_file_url,
+                IF(a.assignment_source_type = 'uploaded_homework' AND a.homework_file IS NOT NULL AND a.homework_file != '',
+                    CONCAT('$server/storage/', a.homework_file), '') AS homework_file_url,
                 DATE_FORMAT(a.created_date, '%d-%m-%Y') AS created_date_fmt,
                 DATE_FORMAT(a.submission_date, '%d-%m-%Y') AS submission_date_fmt")
             ->where('a.sub_institute_id', $sub_institute_id)
@@ -696,6 +835,8 @@ class LmsAssignmentApiController extends Controller
     /**
      * Load one assignment's question paper + questions for the grading screen.
      * Counterpart of annotateAssignmentController::edit().
+     * For uploaded-homework assignments there is no question paper; the caller
+     * can still open the student's submission file and record remarks.
      */
     public function annotateQuestions(Request $request): JsonResponse
     {
@@ -715,24 +856,25 @@ class LmsAssignmentApiController extends Controller
         }
         $assignment = $assignment->toArray();
 
-        $paper = questionpaperModel::find($assignment['exam_id']);
-        if (!$paper) {
-            return $this->fail('Question paper not found for this assignment', 404);
-        }
-        $paper = $paper->toArray();
-
-        $questions = [];
-        if (!empty($paper['question_ids'])) {
-            $questions = DB::table('lms_question_master')
-                ->whereRaw('id in (' . $paper['question_ids'] . ')')
-                ->where('sub_institute_id', $sub_institute_id)
-                ->get()->toArray();
-        }
-
         $server = $request->getSchemeAndHttpHost();
         $assignment['submission_file_url'] = !empty($assignment['submission_image'])
             ? $server . '/storage/lms_assignment_submission/' . $assignment['submission_image']
             : '';
+
+        $paper = [];
+        $questions = [];
+        if (!empty($assignment['exam_id'])) {
+            $paper = questionpaperModel::find($assignment['exam_id']);
+            if ($paper) {
+                $paper = $paper->toArray();
+                if (!empty($paper['question_ids'])) {
+                    $questions = DB::table('lms_question_master')
+                        ->whereRaw('id in (' . $paper['question_ids'] . ')')
+                        ->where('sub_institute_id', $sub_institute_id)
+                        ->get()->toArray();
+                }
+            }
+        }
 
         return response()->json([
             'status_code' => 1,
@@ -748,7 +890,9 @@ class LmsAssignmentApiController extends Controller
     /**
      * Record the teacher's review/grade of a submitted assignment.
      * Mirrors annotateAssignmentController::store(): inserts an offline exam +
-     * per-question answers, then flags the assignment as teacher-reviewed.
+     * per-question answers for exam-paper assignments, then flags the assignment
+     * as teacher-reviewed. For uploaded-homework assignments the question paper
+     * path is skipped; the teacher can still record remarks and mark reviewed.
      * Expects JSON: hid_question_paper_id, hid_assignment_id, hid_student_id,
      * questions { <question_id>: <marks> }, teacher_remarks.
      */
@@ -763,64 +907,79 @@ class LmsAssignmentApiController extends Controller
         $question_arr = $request->input('questions', []);
         $teacher_remarks = $request->input('teacher_remarks');
 
-        if (!$sub_institute_id || !$assignment_id || !$question_paper_id || !$student_id) {
-            return $this->fail('sub_institute_id, assignment, question paper and student are required');
+        if (!$sub_institute_id || !$assignment_id || !$student_id) {
+            return $this->fail('sub_institute_id, assignment and student are required');
+        }
+
+        $assignment = lms_assignmentModel::find($assignment_id);
+        if (!$assignment) {
+            return $this->fail('Assignment not found', 404);
+        }
+
+        $isHomework = $assignment->assignment_source_type === 'uploaded_homework';
+
+        if (!$isHomework && empty($question_paper_id)) {
+            return $this->fail('Question paper is required for exam-paper assignments.');
         }
 
         if (!is_array($question_arr)) {
             $question_arr = [];
         }
 
-        $paper = questionpaperModel::find($question_paper_id);
-        if (!$paper) {
-            return $this->fail('Question paper not found', 404);
-        }
-        $paper = $paper->toArray();
+        $obtain_marks = 0;
+        $offline_exam_id = null;
 
-        // Any MCQ question left untoggled by the teacher counts as 0 (wrong).
-        if (!empty($paper['question_ids'])) {
-            $questionData = DB::table('lms_question_master')
-                ->whereRaw('id in (' . $paper['question_ids'] . ')')
-                ->where('sub_institute_id', $sub_institute_id)
-                ->get()->toArray();
-            foreach ($questionData as $v) {
-                if (!isset($question_arr[$v->id])) {
-                    $question_arr[$v->id] = 0;
+        if (!$isHomework && $question_paper_id) {
+            $paper = questionpaperModel::find($question_paper_id);
+            if (!$paper) {
+                return $this->fail('Question paper not found', 404);
+            }
+            $paper = $paper->toArray();
+
+            if (!empty($paper['question_ids'])) {
+                $questionData = DB::table('lms_question_master')
+                    ->whereRaw('id in (' . $paper['question_ids'] . ')')
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->get()->toArray();
+                foreach ($questionData as $v) {
+                    if (!isset($question_arr[$v->id])) {
+                        $question_arr[$v->id] = 0;
+                    }
                 }
             }
-        }
 
-        $total_wrong = $total_right = $obtain_marks = 0;
-        foreach ($question_arr as $marks) {
-            if ((float) $marks == 0) {
-                $total_wrong++;
-            } else {
-                $total_right++;
+            foreach ($question_arr as $marks) {
+                if ((float) $marks == 0) {
+                } else {
+                }
+                $obtain_marks += (float) $marks;
             }
-            $obtain_marks += (float) $marks;
-        }
 
-        $offline_exam_id = lmsOfflineExamModel::insertGetId([
-            'student_id' => $student_id,
-            'question_paper_id' => $question_paper_id,
-            'assignment_id' => $assignment_id,
-            'total_right' => $total_right,
-            'total_wrong' => $total_wrong,
-            'obtain_marks' => $obtain_marks,
-            'created_by' => $user_id,
-            'syear' => $syear,
-            'sub_institute_id' => $sub_institute_id,
-        ]);
+            $total_wrong = count(array_filter($question_arr, fn ($m) => (float) $m == 0));
+            $total_right = count($question_arr) - $total_wrong;
 
-        foreach ($question_arr as $qid => $marks) {
-            lmsOfflineExamAnswerModel::insert([
-                'question_paper_id' => $question_paper_id,
-                'offline_exam_id' => $offline_exam_id,
+            $offline_exam_id = lmsOfflineExamModel::insertGetId([
                 'student_id' => $student_id,
-                'question_id' => $qid,
-                'ans_status' => ((float) $marks == 0) ? 'wrong' : 'right',
+                'question_paper_id' => $question_paper_id,
+                'assignment_id' => $assignment_id,
+                'total_right' => $total_right,
+                'total_wrong' => $total_wrong,
+                'obtain_marks' => $obtain_marks,
                 'created_by' => $user_id,
+                'syear' => $syear,
+                'sub_institute_id' => $sub_institute_id,
             ]);
+
+            foreach ($question_arr as $qid => $marks) {
+                lmsOfflineExamAnswerModel::insert([
+                    'question_paper_id' => $question_paper_id,
+                    'offline_exam_id' => $offline_exam_id,
+                    'student_id' => $student_id,
+                    'question_id' => $qid,
+                    'ans_status' => ((float) $marks == 0) ? 'wrong' : 'right',
+                    'created_by' => $user_id,
+                ]);
+            }
         }
 
         lms_assignmentModel::where(['id' => $assignment_id])->update([

@@ -1,5 +1,21 @@
 <?php
 
+// Google retires model ids and then answers them with 404 NOT_FOUND, which reaches
+// the user as a failed generation rather than as a config error. Any retired id
+// still pinned in a deployed .env is mapped forward to its replacement here, so a
+// stale environment keeps working without an .env edit on every server.
+$geminiModel = (static function (): string {
+    $model = trim((string) env('GEMINI_MODEL', ''));
+
+    $retired = [
+        'gemini-2.5-flash' => 'gemini-3.6-flash',
+        'gemini-1.5-flash' => 'gemini-3.6-flash',
+        'gemini-1.5-pro'   => 'gemini-3.6-pro',
+    ];
+
+    return $retired[$model] ?? ($model !== '' ? $model : 'gemini-3.6-flash');
+})();
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -40,7 +56,7 @@ return [
             // Left without a version segment on purpose: the client appends
             // /models/{model}:generateContent, which is how Google's REST API is shaped.
             'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
-            'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
+            'model' => $geminiModel,
             'timeout' => (int) env('GEMINI_REQUEST_TIMEOUT', 45),
             'max_output_tokens' => (int) env('GEMINI_MAX_OUTPUT_TOKENS', 1466),
             // The api_type used to look the key up in the ai_api_keys pool, which
@@ -249,28 +265,32 @@ return [
     | returns the same wire shape. Both write turns to the same tables, so it can be
     | turned on and off without stranding history.
     |
-    | It defaults to **false**, which is the pipeline every environment is expected to
-    | serve today. The two pipelines answer the same question with visibly different
-    | products, so the default is what decides which application a deployment appears to
-    | be: the lifecycle ranks the cohort and offers a per-student "View details" while
-    | withholding evidence until one is picked (ReasoningStage::rankedRiskScan), whereas
-    | AskService returns the severity breakdown, the full student list, the evidence
-    | behind the highest-priority case and the recommendation, in one answer.
+    | It defaults to **true**. The lifecycle is the only pipeline that resolves a module
+    | per turn, so it is the only one that can answer from the page a question was asked
+    | on — AskService contains no reference to a module or a route at all. Page context,
+    | the module registry, dynamic follow-ups and agentic depth therefore all exist on
+    | this side of the flag only.
     |
-    | This briefly defaulted to true, and the result was two environments running the
-    | same commit and looking like two different applications — one answering "Top 4
-    | students at academic risk / Ranked by current risk priority", the other "5 students
-    | are currently showing academic risk signals / Breakdown, Students, Evidence,
-    | Recommended action", from the same rows in the same database.
+    | Whichever way it is set, it must be set the SAME in every environment. The two
+    | pipelines answer the same question with visibly different products, so a
+    | deployment that disagrees with its neighbour is not subtly different — it is a
+    | different application. That is not hypothetical: two environments of one commit
+    | once answered "Top 4 students at academic risk / Ranked by current risk priority"
+    | and "5 students are currently showing academic risk signals / Breakdown, Students,
+    | Evidence, Recommended action" from the same rows in the same database, purely
+    | because one of them had never set the variable.
     |
-    | The cutover's own gates (docs/lifecycle-cutover-plan.md §3) are not met: gate 1
-    | fails on a regression and gate 2 on refusals that do not say why they refused.
-    | Phase 2 flips this to true once they pass; until then true is the deliberate
-    | opt-in, per environment, not the default.
+    | The regression that argued for false is fixed rather than avoided: the ranked scan
+    | now returns the breakdown, the full list with each case's score, and the evidence
+    | and recommendation behind the highest-priority case. What it still will not do is
+    | arm that recommendation for approval — see RecommendationStage::forRankedRiskScan.
+    |
+    | Set it to false to fall back deliberately, in every environment at once. The flag
+    | goes away in Phase 3 of docs/lifecycle-cutover-plan.md.
     |
     */
     'lifecycle' => [
-        'enabled' => (bool) env('AI_LIFECYCLE_ENABLED', false),
+        'enabled' => (bool) env('AI_LIFECYCLE_ENABLED', true),
 
         /*
         | Module depth bindings.
@@ -285,11 +305,30 @@ return [
         | `depth_reason` as the explanation. That is the honest state for most modules
         | today, and the ladder stays twelve rungs long either way.
         */
+        /*
+        | `detail_tools` — how a module opens one row of a list it just showed.
+        |
+        | Selecting a record off an answer ("show the details of the first candidate") is
+        | resolved deterministically against the rows the previous turn returned, and the
+        | id it lands on then needs a lookup that reads that record in full. Which tool
+        | that is differs per module, and several tools usually accept the same id: half a
+        | dozen tools take a student_id, and only one of them is "who is this person".
+        |
+        | RecordDetail derives an answer when nothing is configured — a read-only tool
+        | that takes this id and requires nothing else is, by construction, the lookup for
+        | it — so a module left out of this block still gets selection working. The entries
+        | here exist where derivation would be ambiguous or would pick the wrong one, and
+        | a configured tool is still ignored unless the module is bound to it.
+        |
+        | A module with no lookup at all is not broken: the turn answers from the fields
+        | the previous answer already showed, and says that is what it did.
+        */
         'modules' => [
             'student' => [
                 'agent_key' => 'k12_academic_risk',
                 'workflow_key' => 'k12_academic_intervention',
                 'case_type' => 'academic_risk',
+                'detail_tools' => ['student_id' => 'students.search'],
                 'mcp_tools' => [
                     'students.search',
                     'students.directory',
@@ -310,6 +349,7 @@ return [
                 'agent_key' => 'k12_academic_risk',
                 'workflow_key' => 'k12_academic_intervention',
                 'case_type' => 'academic_risk',
+                'detail_tools' => ['student_id' => 'students.search'],
                 'mcp_tools' => [
                     'students.search',
                     'students.directory',
@@ -321,6 +361,7 @@ return [
             ],
 
             'fees' => [
+                'detail_tools' => ['student_id' => 'fees.getPending'],
                 'mcp_tools' => [
                     'fees.getPending',
                     'fees.arrears',
@@ -336,6 +377,7 @@ return [
             ],
 
             'admissions' => [
+                'detail_tools' => ['enquiry_id' => 'admissions.getEnquiryDetails'],
                 'mcp_tools' => [
                     'admissions.today',
                     'admissions.listEnquiries',
@@ -353,6 +395,7 @@ return [
             ],
 
             'attendance' => [
+                'detail_tools' => ['student_id' => 'attendance.student'],
                 'mcp_tools' => [
                     'attendance.overview',
                     'attendance.student',
@@ -367,6 +410,7 @@ return [
             ],
 
             'exam' => [
+                'detail_tools' => ['student_id' => 'exams.results'],
                 'mcp_tools' => [
                     'exams.list',
                     'exams.results',
@@ -402,6 +446,7 @@ return [
             | exists answers the questions the screen invites.
             */
             'lms' => [
+                'detail_tools' => ['student_id' => 'homework.list'],
                 'mcp_tools' => [
                     'homework.list',
                     'lms.activities',
@@ -513,10 +558,32 @@ return [
                 'attendance' => 3.5, 'absent' => 3.0, 'absence' => 3.0, 'present' => 2.0,
                 'leave' => 1.5, 'late' => 1.5, 'punctuality' => 2.5,
             ],
+            /*
+            | The compound phrases below are not decoration, and the fees block above is
+            | why they are here. "How many students have pending fees?" routes to fees
+            | because `pending fees` scores 4.0 on top of the individual words; the same
+            | sentence about admissions scored 3.5 for `admission` against 4.0 for the
+            | word "students" — which every module's records are about — and so resolved
+            | to the general module, where nothing is bound and the question died at
+            | planning. Fees was only ever surviving that collision because somebody had
+            | already written its phrase down.
+            |
+            | A domain noun has to outweigh the population noun that inevitably shares
+            | the sentence with it, so the phrase that names the domain outright carries
+            | the weight that says so.
+            */
             'admissions' => [
                 'admission' => 3.5, 'admissions' => 3.5, 'enquiry' => 3.0, 'enquiries' => 3.0,
                 'enrol' => 2.5, 'enroll' => 2.5, 'registration' => 2.5, 'applicant' => 3.0,
                 'prospective' => 2.5,
+                // "candidate" is deliberately absent. It is the word people use to point
+                // at a row of a list — "show the details of the first candidate" — and an
+                // elliptical follow-up like that has to score for nothing at all, or the
+                // resolver stops treating it as elliptical and the panel's own screen
+                // re-asserts itself over the thread the question belongs to.
+                'pending admission' => 4.0, 'admission enquiry' => 4.0,
+                'new admission' => 4.0, 'admission confirmation' => 4.0,
+                'confirm admission' => 4.0, 'admission list' => 4.0,
             ],
             'exam' => [
                 'exam' => 3.0, 'exams' => 3.0, 'result' => 2.5, 'results' => 2.5, 'marks' => 3.0,

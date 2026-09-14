@@ -133,7 +133,7 @@ class AiSopGenerationController extends Controller
 
         $data = $validator->validated();
         $mode = $data['mode'] ?? 'generate';
-        $model = env('GEMINI_MODEL', 'gemini-2.5-flash');
+        $model = config('gemini.model');
         $prompt = $this->buildPrompt($data, $mode);
 
         try {

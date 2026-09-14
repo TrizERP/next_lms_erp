@@ -159,7 +159,7 @@ class FrameworkProgressService
             ->toArray();
 
         $mastery = DB::table('pal_competencies')->where('learner_id', $learnerId)->avg('mastery_score') ?? 0;
-        $engagement = DB::table('pal_learning_sessions')->where('learner_id', $learnerId)->avg('engagement_score') ?? 0;
+        $engagement = DB::table('pal_learning_sessions')->where('learner_id', $learnerId)->avg('exam_accuracy') ?? 0;
 
         return [
             'learner_id' => $learnerId,

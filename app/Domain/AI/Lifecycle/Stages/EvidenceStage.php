@@ -125,14 +125,26 @@ class EvidenceStage implements LifecycleStage
         $count = RiskScanLimit::fromQuestion($context->question, count($context->cases));
         $cases = array_slice($context->cases, 0, $count);
         $allRows = [];
+        $byCase = [];
 
         foreach ($cases as $case) {
             $caseId = (int) ($case['case_id'] ?? $case['id'] ?? 0);
             $rows = $caseId > 0 ? $this->evidence->forCase($caseId, $context->scope) : [];
             $allRows = [...$allRows, ...$rows];
+
+            if ($caseId > 0) {
+                $byCase[$caseId] = $rows;
+            }
         }
 
         $context->evidence = $allRows;
+
+        // Kept per case as well as flattened. `ai_evidence` rows carry no case id of
+        // their own — the link lives in `ai_case_evidence` — so once these are merged
+        // there is no way back to "the evidence behind this one case", which is exactly
+        // what the answer shows for the highest-priority student. Grouping here costs
+        // nothing: this loop already reads them one case at a time.
+        $context->set('evidence_by_case', $byCase);
 
         return StageOutcome::ran(
             sprintf('Read %d evidence row%s for the top %d ranked cases.', count($allRows), count($allRows) === 1 ? '' : 's', count($cases)),

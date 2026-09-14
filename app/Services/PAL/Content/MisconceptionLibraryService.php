@@ -168,7 +168,7 @@ class MisconceptionLibraryService
     public function selectCorrective(int $misconceptionId, int $learnerId, ?int $subInstituteId, ?string $motherTongue = null): ?array
     {
         $all = MisconceptionCorrective::where('misconception_id', $misconceptionId)
-            ->servable()
+            ->forPal()
             ->forTenant($subInstituteId)
             ->orderBy('priority_level')
             ->get();
@@ -332,10 +332,10 @@ class MisconceptionLibraryService
         }
 
         $total = (clone $q)->count();
-        $approved = (clone $q)->servable()->count();
-        $withCorrective = (clone $q)->servable()->withCorrective()->count();
+        $approved = (clone $q)->forPal()->count();
+        $withCorrective = (clone $q)->forPal()->withCorrective()->count();
 
-        $orphans = (clone $q)->servable()->whereNotExists(function ($sub) {
+        $orphans = (clone $q)->forPal()->whereNotExists(function ($sub) {
             $sub->selectRaw(1)
                 ->from('pal_misconception_corrective as c')
                 ->whereColumn('c.misconception_id', 'pal_misconception_library.id')
@@ -363,7 +363,7 @@ class MisconceptionLibraryService
         }
 
         $rows = MisconceptionLibrary::whereIn('tag', $tags)
-            ->servable()
+            ->forPal()
             ->withCorrective()          // C6 — never surface an unserviceable tag
             ->forTenant($subInstituteId)
             ->orderBy('priority_level')
@@ -397,7 +397,7 @@ class MisconceptionLibraryService
 
         $rows = MisconceptionLibrary::whereIn('tag', $tags)
             ->whereNotNull('error_regex')
-            ->servable()
+            ->forPal()
             ->withCorrective()
             ->forTenant($subInstituteId)
             ->orderBy('priority_level')

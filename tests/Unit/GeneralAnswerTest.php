@@ -4,6 +4,7 @@ namespace Tests\Unit;
 
 use App\Domain\AI\Conversation\AnswerComposer;
 use App\Domain\AI\Conversation\ConversationStore;
+use App\Domain\AI\Conversation\FollowUpComposer;
 use App\Domain\AI\Conversation\GeneralAnswerService;
 use App\Domain\AI\Lifecycle\LifecycleAskService;
 use App\Domain\AI\Lifecycle\LifecyclePipeline;
@@ -232,6 +233,9 @@ class GeneralAnswerTest extends TestCase
             // no follow-ups of its own, and `general()` — the method under test — never
             // reaches that point.
             new ModuleSuggestions(),
+            // Likewise real. It derives follow-ups from the context, which for a general
+            // answer carries no list and no open record, so it returns nothing.
+            app(FollowUpComposer::class),
         );
 
         $method = new ReflectionMethod(LifecycleAskService::class, 'general');

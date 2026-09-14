@@ -2,6 +2,7 @@
 
 namespace App\Brain\Intelligence;
 
+use App\Brain\Support\LmsOrganization;
 use App\Brain\Support\LmsQueryScope;
 use App\Brain\Support\SchemaCache;
 use Illuminate\Support\Facades\DB;
@@ -37,8 +38,18 @@ final class GraphExplorer
      */
     use LmsQueryScope;
 
-    public function __construct(private readonly string $tenantId)
-    {
+    /**
+     * $organizationLabel is the name the Organization node carries. The caller
+     * passes it because only the controller knows the signed-in user, and the
+     * Brain shows that user's `tbluser.user_name` as the organization's name.
+     * Omitted, it falls back to the institute's own name.
+     */
+    public function __construct(
+        private readonly string $tenantId,
+        ?string $syear = null,
+        private readonly ?string $organizationLabel = null,
+    ) {
+        $this->syear = $syear;
     }
 
     /**
@@ -103,14 +114,10 @@ final class GraphExplorer
 
     private function organizationNode(): array
     {
-        $name = SchemaCache::hasTable('hpbrain_organizations')
-            ? DB::table('hpbrain_organizations')->where('tenant_id', $this->tenantId)->value('name')
-            : null;
-
         return [
             'type' => 'organization',
             'id' => $this->tenantId,
-            'label' => (string) ($name ?: 'This organization'),
+            'label' => $this->organizationLabel ?: LmsOrganization::instituteNameFor($this->tenantId),
             'degree' => $this->occupiedDepartments() + $this->activeClasses(),
             'metrics' => [
                 ['label' => 'Departments with staff', 'value' => number_format($this->occupiedDepartments())],
@@ -151,9 +158,8 @@ final class GraphExplorer
             return [];
         }
 
-        return DB::table('attendance_student as a')
+        return $this->lmsAttendance('a')
             ->join('standard as s', 's.id', '=', 'a.standard_id')
-            ->where('a.sub_institute_id', $this->tenantId)
             ->when($search !== '', fn ($q) => $q->where('s.name', 'like', '%'.$search.'%'))
             ->selectRaw('a.standard_id, s.name, s.short_name, COUNT(DISTINCT a.student_id) as students, COUNT(*) as marks, SUM(a.attendance_code = "P") as present')
             ->groupBy('a.standard_id', 's.name', 's.short_name')
@@ -233,7 +239,7 @@ final class GraphExplorer
         }
 
         $homework = SchemaCache::hasTable('homework')
-            ? DB::table('homework')->where('sub_institute_id', $this->tenantId)
+            ? $this->lmsHomework()
                 ->selectRaw('subject_id, COUNT(*) as total')->groupBy('subject_id')->pluck('total', 'subject_id')
             : collect();
 
@@ -358,9 +364,8 @@ final class GraphExplorer
         $name = SchemaCache::hasTable('standard') ? DB::table('standard')->where('id', $id)->value('name') : null;
         $label = $name === null ? ('Class '.$id) : (is_numeric($name) ? 'Class '.$name : (string) $name);
 
-        $students = DB::table('attendance_student as a')
-            ->leftJoin('tblstudent as st', 'st.id', '=', 'a.student_id')
-            ->where('a.sub_institute_id', $this->tenantId)->where('a.standard_id', $id)
+        $students = $this->lmsAttendance('a')
+            ->leftJoin('tblstudent as st', 'st.id', '=', 'a.student_id')->where('a.standard_id', $id)
             ->selectRaw('a.student_id, st.first_name, st.last_name, st.enrollment_no')
             ->selectRaw('COUNT(*) as marks, SUM(a.attendance_code = "P") as present, SUM(a.attendance_code = "A") as absent')
             ->groupBy('a.student_id', 'st.first_name', 'st.last_name', 'st.enrollment_no')
@@ -391,7 +396,7 @@ final class GraphExplorer
                 ])->all()
             : [];
 
-        $totals = DB::table('attendance_student')->where('sub_institute_id', $this->tenantId)->where('standard_id', $id)
+        $totals = $this->lmsAttendance()->where('standard_id', $id)
             ->selectRaw('COUNT(*) as marks, SUM(attendance_code = "P") as present')->first();
         $rate = ((int) $totals->marks) > 0 ? round(((int) $totals->present) / ((int) $totals->marks) * 100, 1) : 0;
 
@@ -441,12 +446,11 @@ final class GraphExplorer
         $label = self::subjectLabel($subject);
 
         $homeworkTotal = SchemaCache::hasTable('homework')
-            ? (int) DB::table('homework')->where('sub_institute_id', $this->tenantId)->where('subject_id', $id)->count()
+            ? (int) $this->lmsHomework()->where('subject_id', $id)->count()
             : 0;
 
         $classes = SchemaCache::hasTable('homework') && SchemaCache::hasTable('standard')
-            ? DB::table('homework as h')->join('standard as s', 's.id', '=', 'h.standard_id')
-                ->where('h.sub_institute_id', $this->tenantId)->where('h.subject_id', $id)
+            ? $this->lmsHomework('h')->join('standard as s', 's.id', '=', 'h.standard_id')->where('h.subject_id', $id)
                 ->selectRaw('s.id, s.name, COUNT(*) as assignments')
                 ->groupBy('s.id', 's.name')->orderByDesc('assignments')->limit(20)->get()
                 ->map(fn ($r) => [
@@ -462,8 +466,7 @@ final class GraphExplorer
         $marksTotal = 0;
         $name = trim((string) ($subject->subject_name ?? ''));
         if ($name !== '' && SchemaCache::hasTable('result_marks')) {
-            $row = DB::table('result_marks')
-                ->where('sub_institute_id', $this->tenantId)->where('subject_name', $name)
+            $row = $this->lmsMarks()->where('subject_name', $name)
                 ->selectRaw('COUNT(*) as marks, COUNT(DISTINCT student_id) as students, AVG(per) as mean')
                 ->first();
 
@@ -558,15 +561,14 @@ final class GraphExplorer
 
     private function expandStudent(string $id): array
     {
-        $intelligence = (new EntityIntelligence($this->tenantId))->student($id);
+        $intelligence = (new EntityIntelligence($this->tenantId, $this->syear))->student($id);
 
         if (! ($intelligence['available'] ?? false)) {
             return ['available' => false, 'reason' => $intelligence['reason'] ?? 'No such student.'];
         }
 
         $classes = SchemaCache::hasTable('attendance_student') && SchemaCache::hasTable('standard')
-            ? DB::table('attendance_student as a')->join('standard as s', 's.id', '=', 'a.standard_id')
-                ->where('a.sub_institute_id', $this->tenantId)->where('a.student_id', $id)
+            ? $this->lmsAttendance('a')->join('standard as s', 's.id', '=', 'a.standard_id')->where('a.student_id', $id)
                 ->selectRaw('s.id, s.name, COUNT(*) as marks')->groupBy('s.id', 's.name')
                 ->orderByDesc('marks')->limit(10)->get()
                 ->map(fn ($r) => [
@@ -680,7 +682,7 @@ final class GraphExplorer
             return 0;
         }
 
-        return (int) DB::table('attendance_student')->where('sub_institute_id', $this->tenantId)
+        return (int) $this->lmsAttendance()
             ->whereNotNull('standard_id')->distinct()->count('standard_id');
     }
 

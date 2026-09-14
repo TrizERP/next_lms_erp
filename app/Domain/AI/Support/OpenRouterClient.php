@@ -2,6 +2,7 @@
 
 namespace App\Domain\AI\Support;
 
+use App\Domain\AI\Configuration\ResolvedAiConfiguration;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 use Throwable;
@@ -30,6 +31,34 @@ class OpenRouterClient implements ModelClient
 
     private const DEFAULT_TIMEOUT = 45;
 
+    /** The school this client resolves credentials for. Null means platform keys only. */
+    private int|string|null $subInstituteId = null;
+
+    public function forInstitute(int|string|null $subInstituteId): static
+    {
+        $clone = clone $this;
+        $clone->subInstituteId = $subInstituteId;
+
+        return $clone;
+    }
+
+    /**
+     * The configuration a module resolved to, when one was resolved.
+     *
+     * Null for every call site that predates centralised configuration, and each
+     * method that reads it falls back to exactly what it did before — so an
+     * unconfigured caller cannot tell this field exists.
+     */
+    private ?ResolvedAiConfiguration $configuration = null;
+
+    public function withConfiguration(ResolvedAiConfiguration $configuration): static
+    {
+        $clone = clone $this;
+        $clone->configuration = $configuration;
+
+        return $clone;
+    }
+
     public function isConfigured(): bool
     {
         return $this->resolveApiKey() !== null;
@@ -45,7 +74,8 @@ class OpenRouterClient implements ModelClient
      */
     public function defaultModel(): string
     {
-        return (string) config('ai.provider.openrouter.model', 'deepseek/deepseek-chat');
+        return $this->configuration?->model
+            ?? (string) config('ai.provider.openrouter.model', 'deepseek/deepseek-chat');
     }
 
     public function chat(
@@ -246,32 +276,31 @@ class OpenRouterClient implements ModelClient
      */
     private function resolveApiKey(): ?array
     {
-        if (function_exists('getAIKey')) {
-            try {
-                $key = getAIKey('OPENROUTER_API_KEY', 1);
-
-                if ($key !== '-' && ! empty($key->api_key)) {
-                    return [
-                        'api_key' => trim((string) $key->api_key),
-                        'api_limit' => isset($key->api_limit) ? (int) $key->api_limit : null,
-                        'id' => $key->id ?? null,
-                    ];
-                }
-            } catch (Throwable) {
-                // Fall through to env — a key-table outage should not stop generation.
-            }
+        // A module's saved configuration has already been through the full precedence
+        // chain — including this pool — so it is taken as decided rather than looked up
+        // a second time and possibly disagreed with.
+        if ($this->configuration?->hasKey()) {
+            return [
+                'api_key' => $this->configuration->apiKey,
+                'id' => $this->configuration->keyId,
+                'api_limit' => $this->configuration->maxOutputTokens ?? self::DEFAULT_MAX_TOKENS,
+            ];
         }
 
-        $envKey = config('openrouter.api_key') ?: env('OPENROUTER_API_KEY');
+        // Was `getAIKey('OPENROUTER_API_KEY', 1)`, which is an unordered first() with
+        // no tenant filter. ProviderKeyResolver keeps the env fallback and adds both
+        // the ordering and the school branch.
+        $key = app(ProviderKeyResolver::class)->resolve(
+            'OPENROUTER_API_KEY',
+            $this->subInstituteId,
+            config('openrouter.api_key') ?: env('OPENROUTER_API_KEY'),
+        );
 
-        if (empty($envKey)) {
+        if ($key === null) {
             return null;
         }
 
-        return [
-            'api_key' => trim((string) $envKey, " \t\n\r\0\x0B'\""),
-            'api_limit' => self::DEFAULT_MAX_TOKENS,
-            'id' => null,
-        ];
+        // An env key carries no recorded limit, so the client's own ceiling applies.
+        return $key + ['api_limit' => self::DEFAULT_MAX_TOKENS];
     }
 }

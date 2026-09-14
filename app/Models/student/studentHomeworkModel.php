@@ -47,11 +47,22 @@ class studentHomeworkModel extends Model {
         'ai_status',
         'ai_failure_reason',
         'evaluated_at',
+        'source_type',
+        'question_ids',
+        'status',
+        'submission_files',
+        'teacher_remarks',
+        'reviewed_by',
+        'reviewed_at',
+        'feedback_published',
     ];
 
     protected $casts = [
         'ai_result_json' => 'array',
         'evaluated_at' => 'datetime',
         'ai_percentage' => 'float',
+        'reviewed_at' => 'datetime',
+        'feedback_published' => 'boolean',
+        'submission_files' => 'array',
     ];
 }

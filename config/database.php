@@ -76,11 +76,10 @@ return [
         */
 "information_schema" => [
             'driver' => 'mysql',
-#            'host' => env('LMS_INSPECT_DB_HOST', '202.47.117.131'),
-            'host' => env('LMS_INSPECT_DB_HOST', '127.0.0.1'),
-            'database' => env('LMS_INSPECT_DB_DATABASE', 'triz_lms'),
-            'username' => env('LMS_INSPECT_DB_USERNAME', 'dev_db'),
-            'password' => env('LMS_INSPECT_DB_PASSWORD', 'Triz@2020'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'database' => 'triz_lms',
+            'username' => env('DB_USERNAME', 'dev_db'),
+            'password' => env('DB_PASSWORD'),
             'charset' => 'utf8',
             'collation' => 'utf8_unicode_ci',
             'prefix' => '',

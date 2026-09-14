@@ -870,6 +870,16 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
             $fees_receipt_insert['STANDARD'] = $_REQUEST['standard_id'];
             $fees_receipt_insert['CREATED_ON'] = date('Y-m-d');
             $insert_id = DB::table('fees_receipt')->insertGetId($fees_receipt_insert);
+
+            // receipt row did not exist before this insert - record its creation for audit purposes
+            \App\Models\AuditLog::record([
+                'module' => 'fees',
+                'action' => 'RECEIPT_GENERATED',
+                'entity_type' => 'fees_receipt',
+                'entity_id' => $insert_id,
+                'old_values' => null,
+                'new_values' => $fees_receipt_insert,
+            ]);
         });
 
         // added 2024-08-28 fees id or paid other fees id not found return status 0
@@ -883,12 +893,15 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         // record the successful fee collection for audit purposes
         \App\Models\AuditLog::record([
             'module' => 'fees',
-            'action' => 'fee_collect',
+            'action' => 'PAYMENT_RECEIVED',
             'entity_type' => 'fees_receipt',
             'entity_id' => $insert_id,
+            'old_values' => null,
             'new_values' => [
                 'amount' => $collected_amount,
                 'student_id' => $stu_arr[0],
+                'fees_collect_ids' => $regular_insert_arr,
+                'fees_paid_other_ids' => $other_insert_arr,
                 'titles' => $reg_insert_arr ?? [],
             ],
         ]);
@@ -3110,6 +3123,70 @@ foreach ($previous_standard as $item) {
         return is_mobile($type, "fees_collect.index", $res, "redirect");
     }
 
+    /**
+     * Track A / Day 11 - basic student fee ledger: demand, payment, and
+     * running balance for this one flow only.
+     *
+     * Deliberately separate from getBk()/edit(), which also folds in
+     * discount, previous-year, imprest and fine handling - the "full"
+     * ledger this issue's Definition of Done explicitly excludes. This
+     * method sticks to the same three numbers every month row: what the fee
+     * structure demands (FeeBreackoff()), what has actually been collected
+     * (fees_collect), and the balance between them - no template
+     * engine/versioning, no discount/refund breakdown.
+     */
+    public function ledger(Request $request, $id)
+    {
+        $sub_institute_id = session()->get('sub_institute_id');
+        $syear = session()->get('syear');
+        $type = $request->input('type');
+
+        if ($type == 'API') {
+            // sub_institute_id now always comes from the verified session, never the client.
+            $syear = $request->syear;
+        }
+
+        $demand = FeeBreackoff([$id], null, $syear, $sub_institute_id);
+
+        $months = [];
+        $totalDemand = 0;
+        $totalPaid = 0;
+
+        foreach ($demand as $row) {
+            $paid = (int) DB::table('fees_collect')
+                ->where([
+                    'student_id' => $id,
+                    'term_id' => $row->month_id,
+                    'sub_institute_id' => $sub_institute_id,
+                    'syear' => $syear,
+                ])
+                ->where('is_deleted', 'N')
+                ->sum('amount');
+
+            $rowDemand = (int) $row->bkoff;
+
+            $months[] = [
+                'month_id' => (int) $row->month_id,
+                'demand' => $rowDemand,
+                'paid' => $paid,
+                'balance' => $rowDemand - $paid,
+            ];
+
+            $totalDemand += $rowDemand;
+            $totalPaid += $paid;
+        }
+
+        $res = [
+            'student_id' => (int) $id,
+            'syear' => (int) $syear,
+            'months' => $months,
+            'total_demand' => $totalDemand,
+            'total_paid' => $totalPaid,
+            'running_balance' => $totalDemand - $totalPaid,
+        ];
+
+        return is_mobile($type, "fees/fees_collect/ledger", $res, "view");
+    }
 
     // 01-03-2024 by uma autoincrement fine amount for hills
     public function hillsFine($id,$request,$late_fees_amount,$sub_institute_id='',$syear='',$previousYear=''){

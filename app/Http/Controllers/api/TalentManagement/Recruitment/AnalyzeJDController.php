@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Validator;
  *     multi-key fallback and Sanctum-token identity (`ResolvesApiIdentity`).
  *   - Neither `gemini_api` nor Sanctum auth exist here. This project already
  *     has an established Gemini-calling convention instead - `env('GEMINI_API_KEY')`
- *     / `env('GEMINI_MODEL')`, exactly as `AiSopGenerationController::generate()`
+ *     / `config('gemini.model')`, exactly as `AiSopGenerationController::generate()`
  *     uses - so this controller follows that, and tenant/actor identity comes
  *     from the JWT-hydrated session (`api.session` middleware), matching
  *     every other controller in this module (see `JobPostingController`).
@@ -66,7 +66,7 @@ class AnalyzeJDController extends Controller
         }
 
         $jd = $validator->validated()['jd'];
-        $model = env('GEMINI_MODEL', 'gemini-2.5-flash');
+        $model = config('gemini.model');
 
         $prompt = <<<PROMPT
 Analyze this job description and extract:

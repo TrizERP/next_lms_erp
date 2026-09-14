@@ -91,9 +91,17 @@ class PALServiceProvider extends ServiceProvider
             );
         });
 
+        // Tier 1 now resolves through the authored pal_pedagogy_engine_rules
+        // rows rather than thresholds hardcoded in the selector, so it needs
+        // the rule reader. EsoPolicyService — which owns the BKT estimate those
+        // rules band on — is deliberately NOT injected here: it depends back on
+        // this class through EsoEnrichmentResolver -> PedagogySuggestedContentService
+        // -> PedagogyOrchestrationService, so eager injection is a resolution
+        // cycle. The selector resolves it lazily at call time instead.
         $this->app->singleton(PedagogySelectorEngine::class, function ($app) {
             return new PedagogySelectorEngine(
-                $app->make(FrameworkCatalogService::class)
+                $app->make(FrameworkCatalogService::class),
+                $app->make(\App\Services\PAL\Pedagogy\PedagogyRuleBands::class)
             );
         });
 

@@ -311,7 +311,7 @@ class NewLMS_StudentApiController extends Controller
 
         $new_enrollment_no = $maxEnrollment[0]->new_enrollment_no;
         $user_name = $data->first_name.'_'.$data->last_name;
-        $password = md5('student');
+        $password = md5(env('DEFAULT_STUDENT_PASSWORD', 'student'));
 
         $insert_stu = DB::table('tblstudent')
             ->insert([

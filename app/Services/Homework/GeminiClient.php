@@ -20,7 +20,7 @@ class GeminiClient
     public function __construct()
     {
         $this->apiKey = config('gemini.api_key') ?: env('GEMINI_API_KEY');
-        $this->model = env('GEMINI_MODEL', 'gemini-2.5-flash');
+        $this->model = config('gemini.model');
     }
 
     public function isConfigured(): bool

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\api\PAL\AttainmentReportController;
 use App\Http\Controllers\api\PAL\EsoEngineController;
 use App\Http\Controllers\api\PAL\PilotMetricsController;
 use Illuminate\Support\Facades\Route;
@@ -37,6 +38,18 @@ Route::prefix('api/pal/eso')->middleware('pal.auth')->group(function () {
 
     Route::get('/pilot/metrics', [PilotMetricsController::class, 'summary']);
 
+    // Curriculum Coverage and Student Attainment — a cohort report, so it
+    // takes no {learnerId} and is staff-only inside the controller. The
+    // institute comes from the session, never the query string.
+    Route::get('/reports/attainment', [AttainmentReportController::class, 'attainment'])
+        ->name('pal.eso.reports.attainment');
+
+    // Can the tagged pool fill a board's paper pattern? Counts only — it
+    // returns no questions, because the exam-reservation rule (#6) is still
+    // undecided.
+    Route::get('/reports/blueprint-feasibility', [AttainmentReportController::class, 'blueprintFeasibility'])
+        ->name('pal.eso.reports.blueprint_feasibility');
+
     // ── Start/advance a session — student-only (see eso.student /
     // EsoStudentOnlyAuth). Every route below either serves or mutates one
     // student's live learning state; a teacher/staff/admin session must
@@ -49,6 +62,13 @@ Route::prefix('api/pal/eso')->middleware('pal.auth')->group(function () {
         Route::post('/diagnostic/{learnerId}/{conceptId}/submit', [EsoEngineController::class, 'submitDiagnostic'])
             ->where(['learnerId' => '[0-9]+', 'conceptId' => '[0-9]+']);
 
+        // What the AI Tutor may say to this learner, and what it may say it
+        // from. Sits behind eso.student with its siblings: the governance it
+        // returns is per-learner, so it must not be readable for someone else.
+        Route::get('/tutor-context/{learnerId}/{conceptId}', [EsoEngineController::class, 'tutorContext'])
+            ->where(['learnerId' => '[0-9]+', 'conceptId' => '[0-9]+'])
+            ->name('pal.eso.tutor_context');
+
         Route::get('/practice-item/{learnerId}/{nodeId}', [EsoEngineController::class, 'practiceItem'])
             ->where(['learnerId' => '[0-9]+', 'nodeId' => '[0-9]+']);
 
@@ -57,6 +77,11 @@ Route::prefix('api/pal/eso')->middleware('pal.auth')->group(function () {
 
         Route::get('/chapter-dashboard/{learnerId}/{chapterId}', [EsoEngineController::class, 'chapterDashboard'])
             ->where(['learnerId' => '[0-9]+', 'chapterId' => '[0-9]+']);
+
+        // The whole plan, not just the current chapter — PAL loop step 4.
+        Route::get('/learning-path/{learnerId}', [EsoEngineController::class, 'learningPath'])
+            ->where('learnerId', '[0-9]+')
+            ->name('pal.eso.learning_path');
 
         Route::get('/student-dashboard/{learnerId}', [EsoEngineController::class, 'studentDashboard'])
             ->where('learnerId', '[0-9]+');

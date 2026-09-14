@@ -15,6 +15,7 @@ class LearningSession extends Model
         'difficulty_level',
         'duration_minutes',
         'interaction_count',
+        'exam_accuracy',
         'engagement_score',
         'mastery_score',
         'device_type',
@@ -25,6 +26,7 @@ class LearningSession extends Model
         'difficulty_level' => 'integer',
         'duration_minutes' => 'integer',
         'interaction_count' => 'integer',
+        'exam_accuracy' => 'float',
         'engagement_score' => 'float',
         'mastery_score' => 'float',
     ];

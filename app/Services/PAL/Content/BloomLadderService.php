@@ -218,7 +218,7 @@ class BloomLadderService
         $query = QuestionMetadata::query()
             ->forCurriculum($conceptId ?: null, $chapterId)
             ->where('practice_level', $practiceLevel)
-            ->servable()
+            ->forPal()
             ->forTenant($subInstituteId);
 
         if ($learnerId !== null) {

@@ -69,6 +69,37 @@ return [
             'label' => 'LMS question bank',
             'links' => ['question_paper.index', 'content_master.index'],
         ],
+
+        /*
+        | Platform services — Communication, Scheduler, Workflow.
+        |
+        | ONE KEY PER SERVICE, NOT PER BUSINESS MODULE. The question these screens
+        | ask is "may this person change how the WHOLE INSTITUTE is notified",
+        | which is an administrator's right rather than a Fees clerk's. Keying by
+        | business module would mean whoever may edit fee reminders may also edit
+        | the safeguarding alert, because both sit in the same matrix.
+        |
+        | The links are created by
+        | database/migrations/2026_09_11_100400_add_platform_services_menu_rows.php,
+        | which exists precisely so there is a menu row for a grant to live on.
+        | Until an administrator grants rights there, these resolve to deny — the
+        | screens read and refuse to save, which is the correct failure and not a
+        | bug to work around here. This file grants nothing.
+        */
+        'platform.notification' => [
+            'label' => 'Platform services — Communication',
+            'links' => ['platform_services.notification', 'platform_services'],
+        ],
+
+        'platform.scheduler' => [
+            'label' => 'Platform services — Scheduler',
+            'links' => ['platform_services.scheduler', 'platform_services'],
+        ],
+
+        'platform.workflow' => [
+            'label' => 'Platform services — Workflow',
+            'links' => ['platform_services.workflow', 'platform_services'],
+        ],
     ],
 
     /*

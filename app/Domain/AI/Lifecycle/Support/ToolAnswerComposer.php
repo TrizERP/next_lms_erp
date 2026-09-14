@@ -3,6 +3,7 @@
 namespace App\Domain\AI\Lifecycle\Support;
 
 use App\Domain\AI\Conversation\AnswerComposer;
+use App\Domain\AI\Conversation\ResultSet;
 use App\Domain\AI\Lifecycle\StageContext;
 
 /**
@@ -108,6 +109,15 @@ class ToolAnswerComposer
         $context->setHeadline($this->headline($answer));
 
         $shown = array_slice($answer['items'], 0, self::MAX_ITEMS);
+
+        // Remember the list so the next turn can point at a row of it.
+        //
+        // This is what turns a correct answer into a conversation. Without it every list
+        // in the estate was a terminus: the rows were right, the reader could see them,
+        // and "show me the first one" had nothing to resolve against — so the thread
+        // stopped one question after it started working. Only the rows actually rendered
+        // are remembered, so a follow-up can never select something that was not shown.
+        $this->rememberList($context, $answer, $shown);
 
         $context->addSection($this->compose->records(
             $this->sectionTitle($answer),
@@ -248,6 +258,35 @@ class ToolAnswerComposer
             'report_id' => (int) $artifact['template_id'],
             'report_title' => $title,
         ]);
+    }
+
+    /**
+     * Carry the rendered list into conversation memory.
+     *
+     * @param  array{tool:string, key:string, payload:array<string, mixed>}  $answer
+     * @param  array<int, array<string, mixed>>  $shown
+     */
+    private function rememberList(StageContext $context, array $answer, array $shown): void
+    {
+        $set = ResultSet::fromRows(
+            module: $context->module->key,
+            tool: $answer['tool'],
+            key: $answer['key'],
+            rows: $shown,
+            question: $context->question,
+            total: (int) ($answer['payload']['count'] ?? count($shown)),
+        );
+
+        if ($set === null) {
+            return;
+        }
+
+        // On the context for this turn's follow-ups, and on the links for the next turn's
+        // memory. Two consumers, two separate acts — a stage contributes artifacts and
+        // reports referents, and conflating them is how a turn ends up remembering
+        // something it never showed.
+        $context->set('result_set', $set->toArray());
+        $context->link(['last_result_set' => $set->toArray()]);
     }
 
     /**

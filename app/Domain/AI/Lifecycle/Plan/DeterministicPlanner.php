@@ -4,6 +4,8 @@ namespace App\Domain\AI\Lifecycle\Plan;
 
 use App\Domain\AI\Lifecycle\Flows\AdmissionsFlow;
 use App\Domain\AI\Lifecycle\StageContext;
+use App\Domain\AI\Lifecycle\Support\RecordDetail;
+use App\Domain\AI\Conversation\Intent;
 
 /**
  * The fast path: a known intent routes the same way every time.
@@ -21,6 +23,10 @@ use App\Domain\AI\Lifecycle\StageContext;
  */
 class DeterministicPlanner implements Planner
 {
+    public function __construct(private readonly RecordDetail $detail)
+    {
+    }
+
     /**
      * The lookup tool every student-scoped route may need to resolve or hydrate a
      * person. Named as a candidate; whether it is actually called is stage 5's business.
@@ -92,6 +98,15 @@ class DeterministicPlanner implements Planner
         $wanted = match ($intent->key) {
             'admission_confirm' => self::ADMISSION_TOOLS,
             'admission_enquiry_list' => ['admissions.listEnquiries'],
+            // Selecting a row is answerable from the rows already in memory, so the
+            // lookup is an enrichment rather than a requirement: where the module binds a
+            // tool that reads one record of this shape, the answer is the whole record;
+            // where it does not, it is the fields the reader was already shown. Both are
+            // real answers, which is why this route never fails for want of a binding.
+            'record_detail' => array_filter([
+                $this->detail->toolFor($context->module, $intent->slot('record_id_field')),
+            ]),
+            'record_filter' => [],
             default => $needsStudent ? self::STUDENT_LOOKUP : [],
         };
 
@@ -104,8 +119,16 @@ class DeterministicPlanner implements Planner
             $candidates === [] => 'domain_services_only',
             $intent->key === 'admission_confirm' => 'admissions_confirmation_flow',
             $intent->key === 'admission_enquiry_list' => 'mcp_read',
+            $intent->key === 'record_detail' => 'selected_record_lookup',
             default => 'mcp_student_resolution',
         };
+
+        // The detail route has to carry its argument on the step. The transport runs a
+        // planned step with the arguments the plan wrote — it has no way to know that
+        // `record_id` from a selection means `enquiry_id` to this particular tool.
+        if ($intent->key === 'record_detail' && $candidates !== []) {
+            $steps = $this->detailSteps($intent, $candidates[0]);
+        }
 
         return new Plan(
             goal: $this->goalFor($intent->key, $intent->label),
@@ -186,8 +209,41 @@ class DeterministicPlanner implements Planner
             'learning_effectiveness' => 'effectiveness_read',
             'admission_enquiry_list' => 'mcp_tools',
             'admission_confirm' => 'admissions_flow',
+            // Both selection routes answer from the previous turn's rows. `record_detail`
+            // upgrades to a tool call when the module binds one that reads this record;
+            // `record_filter` never does, because narrowing a list the user is looking at
+            // is a question about that list rather than a new query.
+            'record_detail' => 'selected_record',
+            'record_filter' => 'previous_answer_filter',
             default => 'conversation',
         };
+    }
+
+    /**
+     * The detail route's steps, with the selected row's id bound to the tool's own
+     * argument name.
+     *
+     * @return array<int, PlanStep>
+     */
+    private function detailSteps(Intent $intent, string $tool): array
+    {
+        $idField = (string) $intent->slot('record_id_field', 'id');
+        $recordId = $intent->slot('record_id');
+
+        return [
+            new PlanStep('resolve_record', sprintf(
+                'Identify which row of the previous answer "%s" refers to.',
+                $intent->slot('record_title') ?? 'the selection'
+            )),
+            new PlanStep(
+                'read_record',
+                'Load that record in full through the module\'s own lookup.',
+                $tool,
+                is_numeric($recordId) ? [$idField => (int) $recordId] : [],
+                ['resolve_record']
+            ),
+            new PlanStep('report', 'Return the record, and say what it is still missing.', null, [], ['read_record']),
+        ];
     }
 
     private function goalFor(string $intentKey, string $label): string
@@ -204,6 +260,8 @@ class DeterministicPlanner implements Planner
             'learning_effectiveness' => 'Aggregate historical outcomes into effectiveness by action type.',
             'admission_enquiry_list' => 'List the admission enquiries on record and their state.',
             'admission_confirm' => 'Collect whatever the admission still needs, then put the confirmation to a person.',
+            'record_detail' => 'Open the row the previous answer listed and show everything held about it.',
+            'record_filter' => 'Narrow the previous answer to the rows that match, without re-querying.',
             default => $label,
         };
     }
@@ -268,6 +326,18 @@ class DeterministicPlanner implements Planner
             'admission_enquiry_list' => [
                 ['read_enquiries', 'Load the admission enquiries in scope.', 'admissions.listEnquiries'],
                 ['report', 'Return the enquiries and which are still pending.'],
+            ],
+            // Replaced wholesale by detailSteps() when the module binds a lookup tool.
+            // This is the shape when it does not: the row the reader was shown is still a
+            // real record read from the database a turn ago, and reporting it is a better
+            // answer than refusing because no deeper lookup happens to be bound.
+            'record_detail' => [
+                ['resolve_record', 'Identify which row of the previous answer this refers to.'],
+                ['report', 'Return what is held about that record, and what it is missing.'],
+            ],
+            'record_filter' => [
+                ['resolve_filter', 'Read the field and value from the rows already shown.'],
+                ['report', 'Return the rows that match, out of the ones the last answer returned.'],
             ],
             'admission_confirm' => [
                 ['resolve_enquiry', 'Identify which admission enquiry is being confirmed.'],

@@ -368,7 +368,19 @@ class EsoPolicyServiceTest extends TestCase
     }
 
     /** @return array{0:int,1:int,2:int} [prerequisiteConceptId, prerequisiteKNodeId, prerequisiteANodeId] */
-    private function makePrerequisiteOfMainConcept(): array
+    /**
+     * A weak prerequisite wired to the main concept.
+     *
+     * `$diagnoseMainConcept` seeds state on the MAIN concept so D1-entry does
+     * not fire ahead of D2 — which is what most callers here want, since they
+     * are testing the prerequisite gate.
+     *
+     * The D1-precedence test needs the opposite: a target concept with no
+     * learner state at all, so that D1 can be shown to outrank D2. It passed
+     * false. Previously the seeding was unconditional, so that test asserted
+     * D1 fires while calling a fixture that deliberately prevented it.
+     */
+    private function makePrerequisiteOfMainConcept(bool $diagnoseMainConcept = true): array
     {
         $prereqConceptId = $this->makeConcept('Stale Prerequisite Concept');
         [$prereqK, $prereqA] = $this->makeKANodes($prereqConceptId);
@@ -383,8 +395,10 @@ class EsoPolicyServiceTest extends TestCase
         ]);
 
         // Main concept already diagnosed, so D1-entry doesn't fire ahead of D2.
-        $this->setMastery($this->kNodeId, 0.3);
-        $this->setMastery($this->aNodeId, 0.3);
+        if ($diagnoseMainConcept) {
+            $this->setMastery($this->kNodeId, 0.3);
+            $this->setMastery($this->aNodeId, 0.3);
+        }
 
         return [$prereqConceptId, $prereqK, $prereqA];
     }
@@ -1272,7 +1286,21 @@ class EsoPolicyServiceTest extends TestCase
     // ── STEP 10: the retention recap, wired into the due check ───────────
 
     /** A node whose scheduled spaced-review check has come due. */
-    private function setRetrievalDue(int $nodeId, int $daysAgo = 7): LearnerNodeState
+    /**
+     * A mastered node whose next retrieval is due.
+     *
+     * `$stage` defaults to 0 — where masteryVerdict() actually leaves a node
+     * when it first clears a concept: STATUS_MASTERED, scheduled at the
+     * ladder's first interval, no rung climbed yet. Only a PASSED retrieval
+     * advances it.
+     *
+     * It is a parameter rather than a constant because the tests below need
+     * both starting points and say so in their own comments: the ladder walks
+     * start at 0 ("stage 0 -> 1 -> 2 -> 3"), while the recap test starts a rung
+     * up ("stage 1 -> 2"). Hardcoding either value made one group fail by
+     * exactly one rung, which is what it had drifted into doing.
+     */
+    private function setRetrievalDue(int $nodeId, int $daysAgo = 7, int $stage = 0): LearnerNodeState
     {
         // A due review needs something to review with. Without a servable item
         // the engine now correctly resolves to `content_unavailable` instead of
@@ -1288,7 +1316,7 @@ class EsoPolicyServiceTest extends TestCase
                 'attempts' => 4,
                 'consecutive_correct' => 2,
                 'status' => LearnerNodeState::STATUS_MASTERED,
-                'retention_stage' => 1,
+                'retention_stage' => $stage,
                 'last_seen_at' => now()->subDays($daysAgo),
                 'next_review_at' => now()->subMinutes(5),
                 'taught_at' => now()->subDays($daysAgo),
@@ -1351,7 +1379,7 @@ class EsoPolicyServiceTest extends TestCase
         [, $correctId, $wrongId] = $this->makeCfuQuestion($this->kNodeId);
 
         // Pass: stage 1 -> 2, scheduled at the THIRD rung (30 days).
-        $state = $this->setRetrievalDue($this->kNodeId);
+        $state = $this->setRetrievalDue($this->kNodeId, stage: 1);
         $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId); // serves the recap
         $this->policy->retrievalCheck($this->studentId, $this->kNodeId, $this->conceptId, $this->subInstituteId, [
             ['answer_master_id' => $correctId],
@@ -2322,7 +2350,7 @@ class EsoPolicyServiceTest extends TestCase
         // Note the structural fact this encodes: a misconception cannot exist on
         // a concept with no state, because flagging one requires an attempt,
         // which requires the concept to have been served.
-        [, $prereqK, $prereqA] = $this->makePrerequisiteOfMainConcept();
+        [, $prereqK, $prereqA] = $this->makePrerequisiteOfMainConcept(diagnoseMainConcept: false);
         $this->setMastery($prereqK, 0.1);
         $this->setMastery($prereqA, 0.1);
         $this->flagMisconception($prereqK);
@@ -3431,5 +3459,182 @@ class EsoPolicyServiceTest extends TestCase
         // CASE C, exercised again through the real attempt path: state stays this way on a fresh call.
         $again = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
         $this->assertSame('mastered_stop_practice', $again['action']);
+    }
+
+    // ── Diagnostic item calibration ─────────────────────────────────────────
+    //
+    // quality_status = approved is an editorial gate, not a measurement one.
+    // Before this, diagnosticItems() shuffled every approved item and served
+    // the first few, so the mastery signal was uncalibrated and — worse —
+    // indistinguishable in the response from a calibrated one.
+
+    /**
+     * A servable item carrying derived psychometrics, exactly as
+     * `pal:derive-irt` writes them (discrimination_index + response_count +
+     * psychometrics_derived_at together; the command never writes one alone).
+     */
+    private function makeCalibratedQuestion(int $nodeId, int $difficulty = 3): int
+    {
+        $questionId = $this->makeServableQuestion($nodeId);
+
+        DB::table('pal_question_metadata')
+            ->where('question_id', $questionId)
+            ->where('sub_institute_id', $this->subInstituteId)
+            ->update([
+                'difficulty_1_to_5' => $difficulty,
+                // Comfortably over approve_above_discrimination (0.30) and
+                // min_responses (30) so the test pins the behaviour, not the
+                // exact threshold values.
+                'discrimination_index' => 0.45,
+                'response_count' => 120,
+                'psychometrics_derived_at' => now(),
+            ]);
+
+        return $questionId;
+    }
+
+    public function test_the_diagnostic_prefers_a_calibrated_item_over_a_merely_approved_one(): void
+    {
+        // One of each on the same node, so preference is the only thing that
+        // can decide which is served: both are equally servable.
+        $approvedOnly = $this->makeServableQuestion($this->kNodeId);
+        $calibrated = $this->makeCalibratedQuestion($this->kNodeId);
+
+        // totalItems = 1 across 2 nodes floors perNode to 1, so exactly one
+        // item comes back per node and the choice is forced.
+        $items = $this->policy->diagnosticItems($this->conceptId, $this->subInstituteId, 1);
+
+        $kItems = array_values(array_filter($items, fn ($i) => $i['node_id'] === $this->kNodeId));
+
+        $this->assertCount(1, $kItems);
+        $this->assertSame(
+            $calibrated,
+            $kItems[0]['question_id'],
+            'With one calibrated and one approved-only item available, the diagnostic must serve the calibrated one — approval is an editorial gate, not a measurement one.'
+        );
+        $this->assertTrue($kItems[0]['calibrated']);
+        $this->assertNotSame($approvedOnly, $kItems[0]['question_id']);
+    }
+
+    public function test_an_uncalibrated_item_is_still_served_rather_than_serving_an_empty_diagnostic(): void
+    {
+        // Nothing calibrated anywhere — today's real estate for almost every
+        // concept. The loop must keep working; it just must not claim the
+        // resulting score measured something.
+        $approvedOnly = $this->makeServableQuestion($this->kNodeId);
+
+        $items = $this->policy->diagnosticItems($this->conceptId, $this->subInstituteId, 1);
+        $kItems = array_values(array_filter($items, fn ($i) => $i['node_id'] === $this->kNodeId));
+
+        $this->assertCount(1, $kItems, 'Falling back to approved-only items is deliberate: a hard calibration gate would take the diagnostic offline for practically every concept on the live estate.');
+        $this->assertSame($approvedOnly, $kItems[0]['question_id']);
+        $this->assertFalse(
+            $kItems[0]['calibrated'],
+            'The item is served, but must be labelled uncalibrated so a caller scoring it can weight or discard the evidence.'
+        );
+    }
+
+    public function test_requiring_calibration_serves_nothing_rather_than_an_uncalibrated_item(): void
+    {
+        $this->makeServableQuestion($this->kNodeId);
+
+        config()->set('pal_content.diagnostic.require_calibrated', true);
+
+        $items = $this->policy->diagnosticItems($this->conceptId, $this->subInstituteId, 1);
+
+        $this->assertSame(
+            [],
+            array_values(array_filter($items, fn ($i) => $i['node_id'] === $this->kNodeId)),
+            'With the policy switch on, an uncalibrated item must not be served at all — a tenant that has turned this on has decided an absent diagnostic beats a meaningless one.'
+        );
+    }
+
+    public function test_a_short_diagnostic_spreads_across_difficulty_rather_than_serving_the_easiest(): void
+    {
+        // Five calibrated items, difficulty 1..5 on one node.
+        $byDifficulty = [];
+        foreach (range(1, 5) as $difficulty) {
+            $byDifficulty[$difficulty] = $this->makeCalibratedQuestion($this->kNodeId, $difficulty);
+        }
+
+        // Two nodes, so totalItems 4 gives perNode 2 — a short diagnostic, the
+        // case where the choice actually matters.
+        $items = $this->policy->diagnosticItems($this->conceptId, $this->subInstituteId, 4);
+
+        $served = collect($items)
+            ->filter(fn ($i) => $i['node_id'] === $this->kNodeId)
+            ->pluck('question_id')
+            ->all();
+
+        $this->assertCount(2, $served);
+        $this->assertNotSame(
+            [$byDifficulty[1], $byDifficulty[2]],
+            $served,
+            'Taking the first N of a difficulty-ordered list serves the N EASIEST items, which locates nothing. A diagnostic is trying to find where the learner stops.'
+        );
+        $this->assertContains(
+            $byDifficulty[5],
+            $served,
+            'The hardest item must be reachable in a short diagnostic — otherwise the top of the range is never probed.'
+        );
+    }
+
+    public function test_calibration_reporting_distinguishes_a_measured_diagnostic_from_a_merely_populated_one(): void
+    {
+        $none = $this->policy->diagnosticCalibration($this->conceptId, $this->subInstituteId);
+        $this->assertSame('none', $none['signal'], 'No servable items at all is a different state from having items that are not calibrated.');
+
+        $this->makeServableQuestion($this->kNodeId);
+        $uncalibrated = $this->policy->diagnosticCalibration($this->conceptId, $this->subInstituteId);
+        $this->assertSame('uncalibrated', $uncalibrated['signal']);
+        $this->assertSame(1, $uncalibrated['servable']);
+        $this->assertSame(0, $uncalibrated['calibrated']);
+        $this->assertSame(0.0, $uncalibrated['calibrated_pct']);
+
+        // One calibrated of two servable is 50% — at the boundary, which the
+        // match() treats as calibrated rather than partial.
+        $this->makeCalibratedQuestion($this->kNodeId);
+        $mixed = $this->policy->diagnosticCalibration($this->conceptId, $this->subInstituteId);
+        $this->assertSame(2, $mixed['servable']);
+        $this->assertSame(1, $mixed['calibrated']);
+        $this->assertSame(50.0, $mixed['calibrated_pct']);
+        $this->assertSame('calibrated', $mixed['signal']);
+
+        // Two uncalibrated against one calibrated drops it below the halfway
+        // mark, which must read as partial rather than calibrated.
+        $this->makeServableQuestion($this->kNodeId);
+        $partial = $this->policy->diagnosticCalibration($this->conceptId, $this->subInstituteId);
+        $this->assertSame('partial', $partial['signal']);
+    }
+
+    public function test_an_item_with_psychometrics_below_the_derivation_thresholds_is_not_treated_as_calibrated(): void
+    {
+        $questionId = $this->makeCalibratedQuestion($this->kNodeId);
+
+        // Same item, but derived from too few responses to mean anything —
+        // the exact case irt.min_responses exists to exclude.
+        DB::table('pal_question_metadata')
+            ->where('question_id', $questionId)
+            ->where('sub_institute_id', $this->subInstituteId)
+            ->update(['response_count' => 5]);
+
+        $this->assertSame(
+            'uncalibrated',
+            $this->policy->diagnosticCalibration($this->conceptId, $this->subInstituteId)['signal'],
+            'A discrimination index derived from 5 responses is noise; min_responses must gate it out at serve time, not only at derivation time.'
+        );
+
+        // And a discrimination index too low to separate learners, on enough
+        // responses to be believable, is equally not calibrated.
+        DB::table('pal_question_metadata')
+            ->where('question_id', $questionId)
+            ->where('sub_institute_id', $this->subInstituteId)
+            ->update(['response_count' => 120, 'discrimination_index' => 0.05]);
+
+        $this->assertSame(
+            'uncalibrated',
+            $this->policy->diagnosticCalibration($this->conceptId, $this->subInstituteId)['signal'],
+            'An item everyone answers the same way separates nobody, whatever its response count.'
+        );
     }
 }

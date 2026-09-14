@@ -2,6 +2,8 @@
 
 namespace App\Domain\AI\Conversation;
 
+use App\Domain\AI\Configuration\AiModelClientFactory;
+use App\Services\Mcp\McpRequestContext;
 use App\Domain\AI\Support\ModelClient;
 use Throwable;
 
@@ -34,9 +36,28 @@ class GeneralAnswerService
 {
     private const MAX_TOKENS = 600;
 
-    public function __construct(private readonly ModelClient $client)
-    {
+    /**
+     * @param  ModelClient  $client  The container's default client. Still what
+     *                               `isAvailable()` asks, because that question has no
+     *                               school in scope, and the fallback below when no
+     *                               factory was supplied.
+     * @param  AiModelClientFactory|null  $clients  Resolves the provider, model and key
+     *                               configured for this module. Optional so a caller
+     *                               that constructs this service with a client of its
+     *                               own — the unit tests do exactly that — keeps
+     *                               working against that client rather than having the
+     *                               factory hand it a real one. The container always
+     *                               supplies it, so the configured path is what runs in
+     *                               production.
+     */
+    public function __construct(
+        private readonly ModelClient $client,
+        private readonly ?AiModelClientFactory $clients = null,
+    ) {
     }
+
+    /** The AI module this path is configured under. */
+    private const MODULE = 'conversational_ai';
 
     public function isAvailable(): bool
     {
@@ -53,9 +74,25 @@ class GeneralAnswerService
      * @param  array<int, array{role:string, content:string}>  $history  Prior turns, oldest first.
      * @return array{answer:string, follow_ups:array<int, string>}|null
      */
-    public function answer(string $question, array $history = [], ?callable $onToken = null): ?array
-    {
-        if (trim($question) === '' || ! $this->isAvailable()) {
+    /**
+     * @param  McpRequestContext|null  $scope  The asking school, so a tenant holding its
+     *                                        own provider configuration uses it. Optional
+     *                                        so existing callers keep working unchanged;
+     *                                        null resolves platform configuration only.
+     */
+    public function answer(
+        string $question,
+        array $history = [],
+        ?callable $onToken = null,
+        ?McpRequestContext $scope = null
+    ): ?array {
+        if (trim($question) === '') {
+            return null;
+        }
+
+        $client = $this->clients?->for(self::MODULE, $scope?->selectedInstituteId) ?? $this->client;
+
+        if (! $client->isConfigured()) {
             return null;
         }
 
@@ -73,13 +110,13 @@ class GeneralAnswerService
             // Temperature: small talk reads as a machine at 0.0, and this path never
             // produces numbers anyone acts on, so a little warmth costs nothing.
             $content = $onToken === null
-                ? $this->client->chat(
+                ? $client->chat(
                     $messages,
                     model: null,
                     maxTokens: self::MAX_TOKENS,
                     temperature: 0.3,
                 )
-                : $this->client->stream(
+                : $client->stream(
                     $messages,
                     $onToken,
                     model: null,

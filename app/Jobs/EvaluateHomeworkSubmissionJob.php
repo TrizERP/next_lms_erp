@@ -73,16 +73,24 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
         }
 
         $questionsText = '';
-        $submissionMime = $this->mimeFromExtension($homework->submission_image_type);
+        $submissionMime = $this->detectMime($submissionPath, $homework->submission_image_type);
         $located = null;
+
+        // A Word submission has no page images for the locator's spatial
+        // box_2d lookup to make sense of, so its own text layer (already
+        // clean, never scanned) is read directly and there is nothing to
+        // annotate — see the annotation step below.
+        $submissionIsWord = in_array($submissionMime, HomeworkDocumentExtractionService::WORD_MIME_TYPES, true);
 
         try {
             $questionsText = $extractor->extractText(
                 $assignmentPath,
-                $this->mimeFromExtension($homework->image_type),
+                $this->detectMime($assignmentPath, $homework->image_type),
                 'assignment questions'
             );
-            $located = $locator->locateAnswers($submissionPath, $submissionMime);
+            $located = $submissionIsWord
+                ? ['answers' => [], 'combined_text' => $extractor->extractText($submissionPath, $submissionMime, 'student answers')]
+                : $locator->locateAnswers($submissionPath, $submissionMime);
         } catch (DocumentExtractionException $exception) {
             Log::warning('Homework OCR/extraction failed', [
                 'homework_id' => $this->homeworkId,
@@ -106,18 +114,24 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
         }
 
         $evaluatedSubmissionUrl = null;
-        try {
-            $annotations = $this->mergeAnnotations($evaluation['results'], $located['answers']);
-            $pdfBinary = $annotatedPdfService->annotate($submissionPath, $submissionMime, $annotations);
-            $filePath = 'public/homework_evaluated_submissions/evaluated-' . $this->homeworkId . '-' . now()->format('YmdHis') . '.pdf';
-            Storage::disk('digitalocean')->put($filePath, $pdfBinary, 'public');
-            $evaluatedSubmissionUrl = Storage::disk('digitalocean')->url($filePath);
-        } catch (Throwable $exception) {
-            Log::warning('Homework annotated-submission generation/storage failed', [
+        if ($submissionIsWord) {
+            Log::info('Skipping annotated-submission generation for a Word document submission (no page images to mark up)', [
                 'homework_id' => $this->homeworkId,
-                'message' => $exception->getMessage(),
             ]);
-            // Non-fatal: the structured result is still saved even if the annotated PDF could not be produced.
+        } else {
+            try {
+                $annotations = $this->mergeAnnotations($evaluation['results'], $located['answers']);
+                $pdfBinary = $annotatedPdfService->annotate($submissionPath, $submissionMime, $annotations);
+                $filePath = 'public/homework_evaluated_submissions/evaluated-' . $this->homeworkId . '-' . now()->format('YmdHis') . '.pdf';
+                Storage::disk('digitalocean')->put($filePath, $pdfBinary, 'public');
+                $evaluatedSubmissionUrl = Storage::disk('digitalocean')->url($filePath);
+            } catch (Throwable $exception) {
+                Log::warning('Homework annotated-submission generation/storage failed', [
+                    'homework_id' => $this->homeworkId,
+                    'message' => $exception->getMessage(),
+                ]);
+                // Non-fatal: the structured result is still saved even if the annotated PDF could not be produced.
+            }
         }
 
         $summary = $this->buildTeacherRemarks($evaluation);
@@ -236,11 +250,37 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
         return is_file($path) ? $path : null;
     }
 
+    /** @see EvaluateAssignmentSubmissionJob::detectMime() — same reasoning, different model. */
+    private const RECOGNISED_MIME_TYPES = [
+        'image/png',
+        'image/jpeg',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ];
+
+    private function detectMime(?string $absolutePath, ?string $extension): string
+    {
+        if ($absolutePath && is_file($absolutePath)) {
+            $detected = @mime_content_type($absolutePath);
+            if (in_array($detected, self::RECOGNISED_MIME_TYPES, true)) {
+                return $detected;
+            }
+            if (strtolower((string) $extension) === 'docx' && in_array($detected, ['application/zip', 'application/octet-stream'], true)) {
+                return 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            }
+        }
+
+        return $this->mimeFromExtension($extension);
+    }
+
     private function mimeFromExtension(?string $extension): string
     {
         return match (strtolower((string) $extension)) {
             'png' => 'image/png',
             'jpg', 'jpeg' => 'image/jpeg',
+            'doc' => 'application/msword',
+            'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             default => 'application/pdf',
         };
     }
