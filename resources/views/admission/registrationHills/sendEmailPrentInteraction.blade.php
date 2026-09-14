@@ -16,28 +16,241 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
 
 @if($page_type=="parent")
 @if (isset($pint) && $pint == 'I')
-    <div style="color:#000000;">
-        <b style="color:#000000;">Dear Parent,</b>
-        <p style="color:#000000; font-size: 15px; line-height: 1.6;">
-            We are glad to inform you that you have proceeded to stage 3 of admission for your child at Hills High
-            School, Vesu, Surat. You are requested to be present at Hills High School campus on <span
-                style="background:#ffff00;">{{ \Carbon\Carbon::parse($parent_date)->format('d/m/Y') }} at
-                {{ \Carbon\Carbon::parse($parent_time)->format('h:i a') }}</span> sharp, for a brief interaction
-            (approx.45mins) with the Admission Committee. This is an opportunity for all of us to get familiar with
-            each other. It is compulsory for BOTH the parents to be present and also to strictly follow the time.
-            This will be an exclusive interaction with the parents, kindly avoid bringing your child along with you.
-            Parents who cannot be present for the interaction please mail on <a href="mailto:admission@hillshigh.com" style="color: #1a73e8;">admission@hillshigh.com</a> for an
-            alternative date.
-        </p>
-        <p style="margin: 15px 0;">&nbsp;</p>
-        <p style="color:#000000; font-size: 15px;">->Please carry a xerox copy of Child's previous year Report card for Academic Year 2025-26 (Any one) & 2024-25 (Final exam Report card).</p>
-        
-        <p style="color:#000000; font-size: 15px;"><b>Please revert your confirmation for same.</b></p>
-        <p style="color:#000000; font-size: 15px;"><b>THIS IS NOT A CONFIRMATION OF ADMISSION</b></p>
-        <p style="margin: 15px 0;">&nbsp;</p>
-        <p style="color:#000000; font-size: 15px;"><b>Mr.P.P.Jose</b></p>
-        <p style="color:#000000; font-size: 15px;"><b>(Principal)</b></p>
-    </div>
+    <div style="
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #ffffff;
+    color: #000000;
+    font-family: 'Times New Roman', Times, serif;
+">
+
+    <!-- MAIN CONTAINER -->
+    <table
+        width="100%"
+        cellpadding="0"
+        cellspacing="0"
+        border="0"
+        style="
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #ffffff;
+        "
+    >
+        <tr>
+            <td style="padding: 30px 45px 0 45px;">
+
+                <!-- HEADER LOGOS -->
+                <table
+                    width="100%"
+                    cellpadding="0"
+                    cellspacing="0"
+                    border="0"
+                    style="
+                        width: 100%;
+                        border-collapse: collapse;
+                    "
+                >
+                    <tr>
+
+                        <!-- LEFT LOGO -->
+                        <td
+                            width="30%"
+                            align="left"
+                            valign="top"
+                            style="padding: 0;"
+                        >
+                            <img
+                                src="https://erp.triz.co.in/admin_dep/images/admission_logo.png"
+                                alt="Admission Logo"
+                                width="150"
+                                style="
+                                    display: block;
+                                    width: 150px;
+                                    height: auto;
+                                    border: 0;
+                                "
+                            >
+                        </td>
+
+                        <!-- CENTER SPACE -->
+                        <td width="40%"></td>
+
+                        <!-- RIGHT LOGO -->
+                        <td
+                            width="30%"
+                            align="right"
+                            valign="top"
+                            style="padding: 0;"
+                        >
+                            <img
+                                src="https://erp.triz.co.in/admin_dep/images/hills_logo1.png"
+                                alt="Hills High School"
+                                width="190"
+                                style="
+                                    display: block;
+                                    width: 190px;
+                                    height: auto;
+                                    border: 0;
+                                "
+                            >
+                        </td>
+
+                    </tr>
+                </table>
+
+
+                <!-- TITLE -->
+                <div style="
+                    margin-top: 35px;
+                    margin-bottom: 35px;
+                    text-align: center;
+                    font-family: 'Times New Roman', Times, serif;
+                    font-size: 24px;
+                    line-height: 1.3;
+                    font-weight: bold;
+                    color: #000000;
+                ">
+                    STAGE 3 PARENT INTERACTION
+                </div>
+
+
+                <!-- DEAR PARENT -->
+                <div style="
+                    margin: 0 0 25px 0;
+                    font-family: 'Times New Roman', Times, serif;
+                    font-size: 20px;
+                    line-height: 1.4;
+                    font-weight: bold;
+                    color: #000000;
+                ">
+                    Dear Parent
+                </div>
+
+
+                <!-- MAIN CONTENT -->
+                <div style="
+                    margin: 0;
+                    padding: 0;
+                    font-family: 'Times New Roman', Times, serif;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    font-weight: normal;
+                    color: #000000;
+                ">
+
+                    We are glad to inform you that you have proceeded to Stage 3
+                    of admission for your child at Hills' High School, Vesu, Surat.
+                    You are requested to be present at Hills' High School campus on
+
+                    <span style="
+                        background-color: #ffff00;
+                        font-weight: bold;
+                        white-space: nowrap;
+                    ">
+                        {{ \Carbon\Carbon::parse($parent_date)->format('d/m/Y') }}
+                        at
+                        {{ \Carbon\Carbon::parse($parent_time)->format('h:i a') }}
+                    </span>
+
+                    sharp, for a brief interaction (approx. 45 mins) with the
+                    Admission Committee.
+
+                    This is an opportunity for all of us to get familiar with
+                    each other.
+
+                    It is compulsory for <b>BOTH</b> the parents to be present
+                    and also to strictly follow the time.
+
+                    This will be an exclusive interaction with the parents.
+                    Kindly avoid bringing your child along with you.
+
+                    Parents who cannot be present for the interaction, please
+                    mail on
+
+                    <a
+                        href="mailto:admission@hillshigh.com"
+                        style="
+                            color: #1a73e8;
+                            text-decoration: underline;
+                        "
+                    >
+                        admission@hillshigh.com
+                    </a>
+
+                    for an alternative date.
+
+                </div>
+
+
+                <!-- SPACING -->
+                <div style="height: 35px; line-height: 35px;">
+                    &nbsp;
+                </div>
+
+
+                <!-- CONFIRMATION -->
+                <div style="
+                    margin: 0 0 15px 0;
+                    font-family: 'Times New Roman', Times, serif;
+                    font-size: 18px;
+                    line-height: 1.4;
+                    font-weight: bold;
+                    color: #000000;
+                ">
+                    PLEASE REVERT YOUR CONFIRMATION FOR THE MEETING
+                </div>
+
+
+                <!-- NOT ADMISSION CONFIRMATION -->
+                <div style="
+                    margin: 0;
+                    font-family: 'Times New Roman', Times, serif;
+                    font-size: 18px;
+                    line-height: 1.4;
+                    font-weight: bold;
+                    color: #000000;
+                ">
+                    THIS IS NOT A CONFIRMATION OF ADMISSION
+                </div>
+
+
+                <!-- SPACING -->
+                <div style="height: 40px; line-height: 40px;">
+                    &nbsp;
+                </div>
+
+
+                <!-- PRINCIPAL -->
+                <div style="
+                    margin: 0 0 8px 0;
+                    font-family: 'Times New Roman', Times, serif;
+                    font-size: 18px;
+                    line-height: 1.4;
+                    font-weight: bold;
+                    color: #000000;
+                ">
+                    Mr. Ajay Singh Chauhan
+                </div>
+
+
+                <!-- DESIGNATION -->
+                <div style="
+                    margin: 0;
+                    font-family: 'Times New Roman', Times, serif;
+                    font-size: 18px;
+                    line-height: 1.4;
+                    font-weight: bold;
+                    color: #000000;
+                ">
+                    (Principal)
+                </div>
+
+            </td>
+        </tr>
+    </table>
+
+</div>
 @elseif(isset($pint) && $pint == 'W/L')
     <div style="color:#000000;">
         <h3 style="color:#000000; margin: 10px 0;">HILLS HIGH SCHOOL</h3>

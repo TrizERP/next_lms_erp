@@ -3861,7 +3861,9 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
                 // $grade_arr = $this->getGradeScale($standard_id, '');
             }
             // get percentage 
-            if (($standard_id >= 3296 && $standard_id <= 3307) || ($standard_id >= 3313 && $standard_id <= 3316) && $academic_type == "upper") {
+            /*if (($standard_id >= 3296 && $standard_id <= 3307) || ($standard_id >= 3313 && $standard_id <= 
+            3316) && $academic_type == "upper") {*/
+            if(in_array($standard_id, $standard_array)){
                 $total_obt_mark =  round($obtained_mark_formatted, 0);
                 if ($total_obt_mark == 0) {
                     $grade_std = $this->getGrade($grade_arr, 0, $total_obt_mark);
