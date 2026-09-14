@@ -253,6 +253,52 @@ class ApiLmsCourseController extends Controller
                     $mycourse_arr[$valArray['content_category']][] = $valArray;
                 }
             }
+            // Shared library: with school_setup.is_lms = 'Y', institute 1's courses are
+            // offered alongside the teacher's own. They cannot arrive through the
+            // timetable join above — that ties t.sub_institute_id to s.sub_institute_id,
+            // and no teacher here holds timetable rows under institute 1. Matching on
+            // standard_id fails too: institute 1 owns standard ids 34-45 while a school
+            // such as 61 owns 2887-2901, so the two sets never meet. They are therefore
+            // listed from the subject mapping alone, exactly as SEL is above.
+            //
+            // Institute 1 itself is skipped: its own teachers already receive these rows
+            // through the timetable query, and adding them again would duplicate.
+            if ($getIsLms == 'Y' && (int)$sub_institute_id !== 1) {
+                $getShared = DB::table('sub_std_map as s')
+                    ->selectRaw("STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,
+                        s.display_image,IFNULL(s.subject_category,'My Course') AS content_category,s.sub_institute_id")
+                    ->join('standard AS STD', function ($join) {
+                        $join->on('STD.id', '=', 's.standard_id')
+                             ->on('STD.sub_institute_id', '=', 's.sub_institute_id');
+                    })
+                    ->where('s.sub_institute_id', '=', 1)
+                    ->where('s.allow_content', '=', 'Yes')
+                    ->where(function ($query) {
+                        // `!= 'SEL'` on its own discards rows whose category is NULL, and
+                        // institute 1 has those; they belong under My Course.
+                        $query->where('s.subject_category', '!=', 'SEL')
+                            ->orWhereNull('s.subject_category');
+                    })
+                    ->groupBy('s.subject_id', 's.standard_id', 's.subject_category')
+                    ->orderBy('s.sort_order')
+                    ->get()->toArray();
+
+                if (count($getShared) > 0) {
+                    $sharedChapters = $this->getChaptersForSubjects(
+                        array_map(fn ($val) => [
+                            'subject_id' => $val->subject_id,
+                            'standard_id' => $val->standard_id,
+                        ], $getShared),
+                        $sub_institute_id
+                    );
+
+                    foreach ($getShared as $val) {
+                        $valArray = (array)$val;
+                        $valArray['chapters'] = $sharedChapters[$val->subject_id . ':' . $val->standard_id] ?? [];
+                        $mycourse_arr[$valArray['content_category']][] = $valArray;
+                    }
+                }
+            }
         } else {
             $whereExtra = trim(ltrim($extra, ' AND '));
             $arr = DB::table('sub_std_map as s')
