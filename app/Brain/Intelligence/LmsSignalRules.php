@@ -45,7 +45,9 @@ final class LmsSignalRules
     public function __construct(
         private readonly string $tenantId,
         private readonly SignalWriter $writer,
+        ?string $syear = null,
     ) {
+        $this->syear = $syear;
     }
 
     /**
@@ -708,15 +710,14 @@ final class LmsSignalRules
             return $this->skip('no_data');
         }
 
-        $covered = (int) DB::table('attendance_student')
-            ->where('sub_institute_id', $this->tenantId)->distinct()->count('student_id');
+        $covered = (int) $this->lmsAttendance()->distinct()->count('student_id');
 
         $share = 1 - ($covered / $students);
         if ($share < $this->threshold('attendance_coverage_gap', 0.30)) {
             return $this->skip('below_threshold');
         }
 
-        $range = DB::table('attendance_student')->where('sub_institute_id', $this->tenantId)
+        $range = $this->lmsAttendance()
             ->selectRaw('MIN(attendance_date) as first_date, MAX(attendance_date) as last_date, COUNT(*) as marks')->first();
 
         $evidence = [$this->writer->recordEvidence([
@@ -750,8 +751,7 @@ final class LmsSignalRules
 
     private function studentAbsenceRate(): array
     {
-        $counts = DB::table('attendance_student')
-            ->where('sub_institute_id', $this->tenantId)
+        $counts = $this->lmsAttendance()
             ->select('attendance_code', DB::raw('COUNT(*) as marks'))
             ->groupBy('attendance_code')->pluck('marks', 'attendance_code');
 
@@ -780,8 +780,7 @@ final class LmsSignalRules
             'absenceRate' => round($share, 4),
         ])];
 
-        foreach (DB::table('attendance_student')
-            ->where('sub_institute_id', $this->tenantId)->where('attendance_code', 'A')
+        foreach ($this->lmsAttendance()->where('attendance_code', 'A')
             ->select('standard_id', 'section_id', DB::raw('COUNT(*) as absences'))
             ->groupBy('standard_id', 'section_id')->orderByDesc('absences')->limit(self::EVIDENCE_SAMPLE)->get() as $row) {
             $evidence[] = $this->writer->recordEvidence([
@@ -818,8 +817,7 @@ final class LmsSignalRules
     {
         $floor = (int) config('brain.thresholds.chronic_absence_marks', 5);
 
-        $rows = DB::table('attendance_student')
-            ->where('sub_institute_id', $this->tenantId)->where('attendance_code', 'A')
+        $rows = $this->lmsAttendance()->where('attendance_code', 'A')
             ->select('student_id', DB::raw('COUNT(*) as absences'))
             ->groupBy('student_id')->having('absences', '>=', $floor)
             ->orderByDesc('absences')->limit(100)->get();
@@ -930,7 +928,7 @@ final class LmsSignalRules
             return $this->skip('no_data');
         }
 
-        $graded = (int) DB::table('result_marks')->where('sub_institute_id', $this->tenantId)->distinct()->count('student_id');
+        $graded = (int) $this->lmsMarks()->distinct()->count('student_id');
         $share = 1 - ($graded / $students);
         if ($share < $this->threshold('result_coverage_gap', 0.30)) {
             return $this->skip('below_threshold');
@@ -941,7 +939,7 @@ final class LmsSignalRules
             'issue' => 'marks are recorded for a small fraction of the enrolled roll',
             'studentsEnrolled' => $students,
             'studentsWithMarks' => $graded,
-            'markRows' => DB::table('result_marks')->where('sub_institute_id', $this->tenantId)->count(),
+            'markRows' => $this->lmsMarks()->count(),
         ])];
 
         return $this->writer->raise([
@@ -965,7 +963,7 @@ final class LmsSignalRules
 
     private function resultLowPerformance(): array
     {
-        $stats = DB::table('result_marks')->where('sub_institute_id', $this->tenantId)
+        $stats = $this->lmsMarks()
             ->selectRaw('COUNT(*) as rows_count, AVG(per) as mean_pct, MIN(per) as min_pct, MAX(per) as max_pct')->first();
 
         $rows = (int) ($stats->rows_count ?? 0);
@@ -989,7 +987,7 @@ final class LmsSignalRules
             'passBand' => $floor,
         ])];
 
-        foreach (DB::table('result_marks')->where('sub_institute_id', $this->tenantId)
+        foreach ($this->lmsMarks()
             ->where('per', '<', $floor)->orderBy('per')->limit(self::EVIDENCE_SAMPLE)
             ->get(['id', 'student_id', 'subject_name', 'exam_title', 'per', 'grade']) as $row) {
             $evidence[] = $this->writer->recordEvidence([
@@ -1014,7 +1012,7 @@ final class LmsSignalRules
             'metadata' => [
                 'rule' => 'result_low_performance',
                 'title' => sprintf('Mean recorded score is %.1f%%, below the %.0f%% pass band', $mean, $floor),
-                'affectedCount' => DB::table('result_marks')->where('sub_institute_id', $this->tenantId)->where('per', '<', $floor)->count(),
+                'affectedCount' => $this->lmsMarks()->where('per', '<', $floor)->count(),
                 'totalCount' => $rows,
                 'meanPercentage' => round($mean, 2),
                 'passBand' => $floor,
@@ -1027,12 +1025,12 @@ final class LmsSignalRules
 
     private function homeworkNonSubmission(): array
     {
-        $total = DB::table('homework')->where('sub_institute_id', $this->tenantId)->count();
+        $total = $this->lmsHomework()->count();
         if ($total === 0) {
             return $this->skip('no_data');
         }
 
-        $outstanding = DB::table('homework')->where('sub_institute_id', $this->tenantId)
+        $outstanding = $this->lmsHomework()
             ->where(fn ($q) => $q->where('completion_status', '!=', 'Y')->orWhereNull('completion_status'))->count();
 
         if ($outstanding === 0) {
@@ -1052,7 +1050,7 @@ final class LmsSignalRules
             'nonSubmissionRate' => round($share, 4),
         ])];
 
-        foreach (DB::table('homework')->where('sub_institute_id', $this->tenantId)
+        foreach ($this->lmsHomework()
             ->where(fn ($q) => $q->where('completion_status', '!=', 'Y')->orWhereNull('completion_status'))
             ->select('subject_id', DB::raw('COUNT(*) as outstanding'))
             ->groupBy('subject_id')->orderByDesc('outstanding')->limit(self::EVIDENCE_SAMPLE)->get() as $row) {
@@ -1095,7 +1093,7 @@ final class LmsSignalRules
             return $this->skip('no_data');
         }
 
-        $paying = (int) DB::table('fees_collect')->where('sub_institute_id', $this->tenantId)
+        $paying = (int) $this->lmsFees()
             ->where(fn ($q) => $q->whereNull('is_deleted')->orWhere('is_deleted', '!=', 'Y'))
             ->distinct()->count('student_id');
 
@@ -1104,7 +1102,7 @@ final class LmsSignalRules
             return $this->skip('below_threshold');
         }
 
-        $totals = DB::table('fees_collect')->where('sub_institute_id', $this->tenantId)
+        $totals = $this->lmsFees()
             ->selectRaw('COUNT(*) as receipts, SUM(amount) as collected, SUM(fine) as fines, SUM(fees_discount) as discounts')->first();
 
         $evidence = [$this->writer->recordEvidence([
@@ -1571,7 +1569,7 @@ final class LmsSignalRules
      */
     private function trends(): TrendAnalyzer
     {
-        return $this->trends ??= new TrendAnalyzer($this->tenantId);
+        return $this->trends ??= new TrendAnalyzer($this->tenantId, $this->syear);
     }
 
     /** One decimal place, without a trailing ".0" on whole numbers. */

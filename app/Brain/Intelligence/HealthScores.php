@@ -33,8 +33,9 @@ final class HealthScores
     /** Below this share of the roll, a dimension cannot speak for the school. */
     private const COVERAGE_FLOOR = 0.20;
 
-    public function __construct(private readonly string $tenantId)
+    public function __construct(private readonly string $tenantId, ?string $syear = null)
     {
+        $this->syear = $syear;
     }
 
     /** @return array<string, mixed> */
@@ -87,7 +88,7 @@ final class HealthScores
     {
         $students = $this->lmsCount('tblstudent');
         $covered = SchemaCache::hasTable('attendance_student')
-            ? (int) DB::table('attendance_student')->where('sub_institute_id', $this->tenantId)->distinct()->count('student_id')
+            ? (int) $this->lmsAttendance()->distinct()->count('student_id')
             : 0;
 
         if ($students === 0 || $covered === 0) {
@@ -107,7 +108,7 @@ final class HealthScores
             ]);
         }
 
-        $trends = new TrendAnalyzer($this->tenantId);
+        $trends = new TrendAnalyzer($this->tenantId, $this->syear);
         $byClass = $trends->attendanceByClass();
         $trend = $trends->attendanceTrend();
 
@@ -158,7 +159,7 @@ final class HealthScores
             return $this->unavailable('engagement', 'Engagement health', 'This LMS records no homework.');
         }
 
-        $totals = DB::table('homework')->where('sub_institute_id', $this->tenantId)
+        $totals = $this->lmsHomework()
             ->selectRaw('COUNT(*) as total, SUM(completion_status = "Y") as submitted')->first();
 
         $total = (int) ($totals->total ?? 0);
@@ -168,7 +169,7 @@ final class HealthScores
         }
 
         $rate = round(((int) $totals->submitted) / $total * 100, 1);
-        $trends = new TrendAnalyzer($this->tenantId);
+        $trends = new TrendAnalyzer($this->tenantId, $this->syear);
         $trend = $trends->homeworkTrend();
         $bySubject = $trends->homeworkBySubject();
         $lagging = array_values(array_filter($bySubject['subjects'], fn ($s) => $s['gapPoints'] <= -15));
@@ -213,7 +214,7 @@ final class HealthScores
         }
 
         $students = $this->lmsCount('tblstudent');
-        $graded = (int) DB::table('result_marks')->where('sub_institute_id', $this->tenantId)->distinct()->count('student_id');
+        $graded = (int) $this->lmsMarks()->distinct()->count('student_id');
 
         if ($students > 0 && ($graded / $students) < self::COVERAGE_FLOOR) {
             return $this->unavailable('academic', 'Academic health', sprintf(
@@ -226,7 +227,7 @@ final class HealthScores
             ]);
         }
 
-        $stats = DB::table('result_marks')->where('sub_institute_id', $this->tenantId)
+        $stats = $this->lmsMarks()
             ->selectRaw('COUNT(*) as rows_count, AVG(per) as mean_pct')->first();
 
         $mean = (float) ($stats->mean_pct ?? 0);
@@ -436,11 +437,11 @@ final class HealthScores
         }
 
         $students = $this->lmsCount('tblstudent');
-        $paying = (int) DB::table('fees_collect')->where('sub_institute_id', $this->tenantId)
+        $paying = (int) $this->lmsFees()
             ->where(fn ($q) => $q->whereNull('is_deleted')->orWhere('is_deleted', '!=', 'Y'))
             ->distinct()->count('student_id');
 
-        $totals = DB::table('fees_collect')->where('sub_institute_id', $this->tenantId)
+        $totals = $this->lmsFees()
             ->where(fn ($q) => $q->whereNull('is_deleted')->orWhere('is_deleted', '!=', 'Y'))
             ->selectRaw('COUNT(*) as receipts, COALESCE(SUM(amount),0) as collected')->first();
 
@@ -458,7 +459,7 @@ final class HealthScores
 
         $coverage = $students > 0 ? $paying / $students : 0;
         $score = (int) round($coverage * 100);
-        $trend = (new TrendAnalyzer($this->tenantId))->feeTrend();
+        $trend = (new TrendAnalyzer($this->tenantId, $this->syear))->feeTrend();
 
         return [
             'key' => 'finance',

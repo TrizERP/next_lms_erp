@@ -22,6 +22,8 @@ use function App\Helpers\FeeBreakoffHeadWise;
 use function App\Helpers\FeeMonthId;
 use Carbon\Carbon;
 use Validator;
+use App\Services\Fees\FeeAuditService;
+use App\Services\Fees\FeeStatusMapper;
 
 class online_fees_collect_controller extends Controller
 {
@@ -285,6 +287,7 @@ class online_fees_collect_controller extends Controller
         // 28-04-2025 end 
         DB::table("fees_payment")
             ->insert($in_arr);
+        FeeAuditService::logOrderCreated('hdfc', $orderId, $_REQUEST["student_id"], session()->get("sub_institute_id"), $amount);
         
         $type = "web";
         $data = array(
@@ -371,6 +374,7 @@ class online_fees_collect_controller extends Controller
         $get_all_data = DB::table("fees_payment")
             ->where(["hdfc_order_id" => $order_id])
             ->get();
+        FeeAuditService::logCallbackReceived('hdfc', $order_id, $get_all_data[0]->student_id ?? null, $get_all_data[0]->sub_institute_id ?? null);
         $payment_status = "PF";
         if ($order_status == "Success") {
             $payment_status = "PS";
@@ -400,6 +404,7 @@ class online_fees_collect_controller extends Controller
         DB::table("fees_payment")
             ->where($where_arr)
             ->update($update_arr);
+        FeeAuditService::logPaymentOutcome('hdfc', $order_id, $get_all_data[0]->student_id, $get_all_data[0]->sub_institute_id, FeeStatusMapper::normalize('hdfc', $payment_status), $order_status);
         if ($order_status == "Success") {
             $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $mer_amount, $order_id,"","","","In Processed");
             $type = $request->input('type');
@@ -881,6 +886,7 @@ class online_fees_collect_controller extends Controller
         );
         DB::table("fees_payment")
             ->insert($in_arr);
+        FeeAuditService::logOrderCreated('hdfc_ssmission', $orderId, $_REQUEST["student_id"], session()->get("sub_institute_id"), $amount);
         
         $type = "web";
         $data = array(
@@ -967,6 +973,7 @@ class online_fees_collect_controller extends Controller
         $get_all_data = DB::table("fees_payment")
             ->where(["hdfc_order_id" => $order_id])
             ->get();
+        FeeAuditService::logCallbackReceived('hdfc_ssmission', $order_id, $get_all_data[0]->student_id ?? null, $get_all_data[0]->sub_institute_id ?? null);
         $payment_status = "PF";
         if ($order_status == "Success") {
             $payment_status = "PS";
@@ -995,6 +1002,7 @@ class online_fees_collect_controller extends Controller
         DB::table("fees_payment")
             ->where($where_arr)
             ->update($update_arr);
+        FeeAuditService::logPaymentOutcome('hdfc_ssmission', $order_id, $get_all_data[0]->student_id, $get_all_data[0]->sub_institute_id, FeeStatusMapper::normalize('hdfc_ssmission', $payment_status), $order_status);
             // (Request $request, $student_id, $syear, $sub_institute_id, $amount, $cheque_no = "",$fine="",$payment_mode = "",$discount="")
         if ($order_status == "Success") {
             $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $mer_amount, $order_id,"","","","In Processed");
@@ -1303,6 +1311,7 @@ class online_fees_collect_controller extends Controller
         );
         DB::table("fees_payment")
             ->insert($in_arr);
+        FeeAuditService::logOrderCreated('icici', $orderId, $_REQUEST["student_id"], session()->get("sub_institute_id"), $amount - $fine);
         $type = "web";
         $data = array(
             "send_data" => $action_url,
@@ -1438,6 +1447,7 @@ exit; */
         $get_all_data = DB::table("fees_payment")
             ->where(["icici_order_id" => $response["ReferenceNo"]])
             ->get();
+        FeeAuditService::logCallbackReceived('icici', $response["ReferenceNo"], $get_all_data[0]->student_id ?? null, $get_all_data[0]->sub_institute_id ?? null);
         $payment_status = "PF";
         if ($response["Response_Code"] == "E000") {
             $payment_status = "PS";
@@ -1466,6 +1476,7 @@ exit; */
         DB::table("fees_payment")
             ->where($where_arr)
             ->update($update_arr);
+        FeeAuditService::logPaymentOutcome('icici', $response["ReferenceNo"], $get_all_data[0]->student_id, $get_all_data[0]->sub_institute_id, FeeStatusMapper::normalize('icici', $payment_status), $response["Response_Code"] ?? null);
         if ($payment_status == "PS") {
             $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $get_all_data[0]->amount,$response["ReferenceNo"],$get_all_data[0]->fine,$response["Payment_Mode"]);
             $type = $request->input('type');
@@ -1668,6 +1679,7 @@ exit; */
             "created_at"            => now(),
             "updated_at"            => now(),
         ]);
+        FeeAuditService::logOrderCreated('icici_orange', $merchantTxnNo, $student_id, session()->get("sub_institute_id"), $amountInt - $fineInt);
 
         // ── Redirect student to Orange PG payment page ────────────────────────
         if (
@@ -1712,6 +1724,8 @@ exit; */
             return \App\Helpers\is_mobile("web", "fees/online_fees_collect/show_error", [], "view");
         }
 
+        FeeAuditService::logCallbackReceived('icici_orange', $merchantTxnNo, $get_all_data[0]->student_id ?? null, $get_all_data[0]->sub_institute_id ?? null);
+
         // ── Prevent duplicate success processing ──────────────────────────────
         if ($get_all_data[0]->icici_payment_status === 'PS') {
             return \App\Helpers\is_mobile("web", "fees/online_fees_collect/search_student", ["website" => $this->site_name()], "view");
@@ -1738,6 +1752,7 @@ exit; */
                 "icici_bank_res"       => $resJson,
                 "updated_at"           => now(),
             ]);
+        FeeAuditService::logPaymentOutcome('icici_orange', $merchantTxnNo, $get_all_data[0]->student_id, $get_all_data[0]->sub_institute_id, FeeStatusMapper::normalize('icici_orange', $payment_status), $responseCode);
 
         // ── Post-payment processing ───────────────────────────────────────────
         $type = $request->input('type') ?? "web";
@@ -1988,6 +2003,7 @@ exit; */
         );
         DB::table("fees_payment")
             ->insert($in_arr);
+        FeeAuditService::logOrderCreated('axis', $orderId, $_REQUEST["student_id"], session()->get("sub_institute_id"), $amount);
         $type = "web";
         $data = array(
             "send_data" => $i,
@@ -2037,6 +2053,7 @@ exit; */
         $get_all_data = DB::table("fees_payment")
             ->where(["axis_order_id" => $res_arr["RID"]])
             ->get();
+        FeeAuditService::logCallbackReceived('axis', $res_arr["RID"], $get_all_data[0]->student_id ?? null, $get_all_data[0]->sub_institute_id ?? null);
         $payment_status = "PF";
         if ($res_arr["RMK"] == "success") {
             $payment_status = "PS";
@@ -2055,6 +2072,7 @@ exit; */
         DB::table("fees_payment")
             ->where($where_arr)
             ->update($update_arr);
+        FeeAuditService::logPaymentOutcome('axis', $res_arr["RID"], $get_all_data[0]->student_id, $get_all_data[0]->sub_institute_id, FeeStatusMapper::normalize('axis', $payment_status), $res_arr["RMK"] ?? null);
         if ($payment_status == "PS") {
             $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $res_arr["AMT"], $res_arr["RID"]);
             $type = $request->input('type');
@@ -2154,6 +2172,7 @@ exit; */
         );
         DB::table("fees_payment")
             ->insert($in_arr);
+        FeeAuditService::logOrderCreated('aggre_pay', $_POST['order_id'], $_REQUEST["student_id"], session()->get("sub_institute_id"), $amount);
         $type = "web";
         $data = array(
             "hash" => $hash,
@@ -2213,6 +2232,7 @@ exit; */
         $get_all_data = DB::table("fees_payment")
             ->where(["aggre_pay_order_id" => $response["order_id"]])
             ->get();
+        FeeAuditService::logCallbackReceived('aggre_pay', $response["order_id"], $get_all_data[0]->student_id ?? null, $get_all_data[0]->sub_institute_id ?? null);
         $payment_status = "PF";
         if ($response["response_message"] == "Transaction successful") {
             $payment_status = "PS";
@@ -2231,6 +2251,7 @@ exit; */
         DB::table("fees_payment")
             ->where($where_arr)
             ->update($update_arr);
+        FeeAuditService::logPaymentOutcome('aggre_pay', $response["order_id"], $get_all_data[0]->student_id, $get_all_data[0]->sub_institute_id, FeeStatusMapper::normalize('aggre_pay', $payment_status), $response["response_message"] ?? null);
         if ($payment_status == "PS") {
             $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, $response["amount"], $response["order_id"]);
             $type = $request->input('type');
@@ -2868,6 +2889,7 @@ exit; */
         DB::table("fees_payment")
             ->insert($in_arr);
         $id = DB::getPdo()->lastInsertId();
+        FeeAuditService::logOrderCreated('razorpay', $razorpayOrder['id'], $student_id, session()->get("sub_institute_id"), $amount);
 
         $data = array(
             "student_id" => $student_id,
@@ -3025,6 +3047,7 @@ if (Str::startsWith($order_id, 'pay_')) {
         // exit;
 
         $student_id = $input['student_id'];
+        FeeAuditService::logCallbackReceived('razorpay', $input['razorpay_order_id'], $student_id, session()->get('sub_institute_id'));
         $medium_data = DB::table('tblstudent_enrollment as e')
             ->join('academic_section as a', 'e.grade_id', '=', 'a.id')
             ->join('fees_online_maping as fom', function ($join) {
@@ -3111,6 +3134,7 @@ if (Str::startsWith($order_id, 'pay_')) {
                 DB::table("fees_payment")
                     ->where($where_arr)
                     ->update($update_arr);
+                FeeAuditService::logPaymentOutcome('razorpay', $input['razorpay_order_id'], $get_all_data[0]->student_id, $get_all_data[0]->sub_institute_id, FeeStatusMapper::normalize('razorpay', $payment_status_res), $payment_status_res);
 
                 if($payment_status_res == 'captured'){
                     $data = $this->pay_fees($request, $get_all_data[0]->student_id, $get_all_data[0]->syear, $get_all_data[0]->sub_institute_id, ($get_all_data[0]->amount / 100), $input['razorpay_payment_id']);
@@ -3144,6 +3168,7 @@ if (Str::startsWith($order_id, 'pay_')) {
                 DB::table("fees_payment")
                     ->where($where_arr)
                     ->update($update_arr);
+                FeeAuditService::logPaymentOutcome('razorpay', $input['razorpay_order_id'] ?? null, $get_all_data[0]->student_id ?? null, $get_all_data[0]->sub_institute_id ?? null, FeeStatusMapper::normalize('razorpay', $payment_status), $e->getMessage());
                 Session::put('error', $e->getMessage());
                 $school_data = array();
                 return \App\Helpers\is_mobile($type, "fees/online_fees_collect/show_error", $school_data, "view");
@@ -3284,6 +3309,7 @@ if (Str::startsWith($order_id, 'pay_')) {
 
         DB::table("fees_payment")->insert($in_arr);
         $id = DB::getPdo()->lastInsertId();
+        FeeAuditService::logOrderCreated('hdfcrazorpay', $razorpayOrder['id'], $student_id, session()->get("sub_institute_id"), $amount);
 
         // ---- 🔹 STEP 4: Send Response ----
         $data = [
@@ -3318,6 +3344,7 @@ if (Str::startsWith($order_id, 'pay_')) {
             
             $student_id = $request->student_id;
             $inserted_id = $request->inserted_id;
+            FeeAuditService::logCallbackReceived('hdfcrazorpay', $request->razorpay_order_id ?? null, $student_id, session()->get('sub_institute_id'));
 
             // Get HDFC Razorpay configuration
             $medium_data = DB::select("SELECT a.*,e.grade_id FROM tblstudent_enrollment e
@@ -3368,6 +3395,7 @@ if (Str::startsWith($order_id, 'pay_')) {
             }
 
             DB::table("fees_payment")->where($where_arr)->update($update_arr);
+            FeeAuditService::logPaymentOutcome('hdfcrazorpay', $input['razorpay_order_id'], $get_all_data->student_id, $get_all_data->sub_institute_id, FeeStatusMapper::normalize('hdfcrazorpay', $payment['status']), $payment['status']);
 
             // Process fee payment
             if ($payment['status'] == 'captured') {
@@ -3396,6 +3424,7 @@ if (Str::startsWith($order_id, 'pay_')) {
                     "updated_at" => now()
                 ];
                 DB::table("fees_payment")->where('id', $inserted_id)->update($update_arr);
+                FeeAuditService::logPaymentOutcome('hdfcrazorpay', $input['razorpay_order_id'] ?? null, $student_id ?? null, session()->get('sub_institute_id'), FeeStatusMapper::STATUS_FAILED, $e->getMessage());
             }
 
             $type = $request->input('type');
@@ -3416,6 +3445,7 @@ if (Str::startsWith($order_id, 'pay_')) {
         if (empty($student_id) || empty($inserted_id)) {
             return response()->json(['error' => 'Missing required parameters'], 400);
         }
+        FeeAuditService::logCallbackReceived('hdfcrazorpay', $input['razorpay_payment_id'] ?? null, $student_id, session()->get('sub_institute_id'));
 
         // STEP 2: Get student data (same as first function)
         $medium_data = DB::select("
@@ -3498,6 +3528,7 @@ if (isset($input['error'])) {
                 "razorpay_bank_res" => $json_response,
                 "updated_at" => now()
             ]);
+        FeeAuditService::logPaymentOutcome('hdfcrazorpay', $input['razorpay_payment_id'], $get_all_data->student_id, $get_all_data->sub_institute_id, FeeStatusMapper::normalize('hdfcrazorpay', $payment_status_res), $payment_status_res);
 
         // STEP 10: Process successful payment (same as first function)
         if($payment_status_res == 'captured'){
@@ -3529,6 +3560,7 @@ if (isset($input['error'])) {
                 "razorpay_bank_res" => $res_josn,
                 "updated_at" => now()
             ]);
+        FeeAuditService::logPaymentOutcome('hdfcrazorpay', $input['razorpay_payment_id'] ?? null, $student_id ?? null, session()->get('sub_institute_id'), FeeStatusMapper::STATUS_FAILED, $e->getMessage());
             
         $type = $request->input('type') ?? 'web';
         $school_data = array();
@@ -3775,6 +3807,7 @@ if (isset($input['error'])) {
 
         DB::table("fees_payment")
             ->insert($in_arr);
+        FeeAuditService::logOrderCreated('payphi', $merchantTxnNo, $_REQUEST["student_id"], session()->get("sub_institute_id"), $amount - $fine);
         $type = "web";
 
         $data = array(
@@ -3932,6 +3965,7 @@ if (isset($input['error'])) {
         $get_all_data = DB::table("fees_payment")
             ->where(["payphi_order_id" => $response["merchantTxnNo"]])
             ->get();
+        FeeAuditService::logCallbackReceived('payphi', $response["merchantTxnNo"], $get_all_data[0]->student_id ?? null, $get_all_data[0]->sub_institute_id ?? null);
 
         $payment_status = "PF";
         if ($response["responseCode"] == "0000") {
@@ -3963,6 +3997,7 @@ if (isset($input['error'])) {
         DB::table("fees_payment")
             ->where($where_arr)
             ->update($update_arr);
+        FeeAuditService::logPaymentOutcome('payphi', $response["merchantTxnNo"], $get_all_data[0]->student_id, $get_all_data[0]->sub_institute_id, FeeStatusMapper::normalize('payphi', $payment_status), $response["responseCode"] ?? null);
             
         if ($payment_status == "PS") 
         {
@@ -3983,6 +4018,7 @@ if (isset($input['error'])) {
     public function abcmapp_response_handler(Request $request)
     {
         $response = $_REQUEST;
+        FeeAuditService::logCallbackReceived('abcmapp', $response['order_id'] ?? $response['merchantTxnNo'] ?? null, $response['student_id'] ?? null, session()->get('sub_institute_id'));
         print_r($response);
         echo "ABCM APP";
     }

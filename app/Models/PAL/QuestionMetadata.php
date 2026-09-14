@@ -12,8 +12,9 @@ class QuestionMetadata extends Model
     protected $table = 'pal_question_metadata';
 
     protected $fillable = [
-        'question_id', 'sub_institute_id', 'scope',
+        'question_id', 'sub_institute_id', 'curriculum_version_id', 'scope',
         'content_id_ref', 'concept_ref_id', 'node_id', 'chapter_ref_id', 'topic_ref_id', 'sub_concept_ref', 'grade_band', 'stage', 'board',
+        'blueprint_category', 'marks', 'learning_outcome_ref',
         'bloom_level', 'practice_level', 'knowledge_type', 'item_type', 'difficulty_1_to_5',
         'irt_a', 'irt_b', 'irt_c', 'discrimination_index', 'avg_time_seconds',
         'first_attempt_correct_rate', 'response_count', 'guessing_vulnerability',
@@ -49,6 +50,7 @@ class QuestionMetadata extends Model
         'irt_a' => 'float',
         'irt_b' => 'float',
         'irt_c' => 'float',
+        'marks' => 'float',
         'discrimination_index' => 'float',
         'first_attempt_correct_rate' => 'float',
         'reading_level_fk' => 'float',
@@ -61,6 +63,137 @@ class QuestionMetadata extends Model
     public function scopeServable($query)
     {
         return $query->whereIn('quality_status', config('pal_content.servable_statuses', ['approved']));
+    }
+
+    /** PAL consumer — approved items available to adaptive selection. */
+    public function scopeForPal($query)
+    {
+        return $query->servable();
+    }
+
+    /** Examination consumer — approved items fit for a board paper. */
+    public function scopeForExamination($query)
+    {
+        return $query
+            ->servable()
+            ->whereNotNull('board')
+            ->where('board', '!=', '')
+            ->whereNotNull('blueprint_category')
+            ->whereNotNull('marks')
+            ->where('marks', '>', 0.0);
+    }
+
+    /**
+     * Items whose psychometrics were genuinely derived from responses, not
+     * merely approved by an author.
+     *
+     * servable() is an editorial gate — it says a human published the item. It
+     * does not say the item discriminates between learners, which is the one
+     * property a diagnostic actually depends on. Both gates below mirror
+     * DeriveIrtCommand's own thresholds so "calibrated" means the same thing
+     * wherever it is asserted:
+     *
+     *   - response_count >= irt.min_responses     enough data to derive from
+     *   - discrimination_index >= approve_above_  the item separates learners
+     *
+     * psychometrics_derived_at is required too, so a hand-typed
+     * discrimination_index can never pass for a derived one.
+     */
+    public function scopeCalibrated($query)
+    {
+        $cfg = config('pal_content.irt');
+
+        return $query
+            ->whereNotNull('psychometrics_derived_at')
+            ->whereNotNull('discrimination_index')
+            ->where('discrimination_index', '>=', $cfg['approve_above_discrimination'])
+            ->where('response_count', '>=', $cfg['min_responses']);
+    }
+
+    // ── Dual fitness for purpose ─────────────────────────────────────────────
+    //
+    // One item, two INDEPENDENT fitness criteria. "Calibrated for PAL" and
+    // "compliant for a board paper" measure different things, so an item can
+    // satisfy either, both or neither:
+    //
+    //   calibrated, not board-fit  — strong discrimination, no blueprint category
+    //   board-fit, not calibrated  — a valid 3-mark short answer nobody has sat
+    //
+    // Collapsing them into one "quality" number is what makes a single Question
+    // Intelligence Engine look impossible; kept apart, one engine serves both
+    // consumers because each asks its own question of the same row.
+
+    /**
+     * The PAL half: can this item measure a learner?
+     *
+     * @return array<string, mixed>
+     */
+    public function palCalibration(): array
+    {
+        return [
+            'difficulty_1_to_5' => $this->difficulty_1_to_5,
+            'discrimination_index' => $this->discrimination_index,
+            'irt_a' => $this->irt_a,
+            'irt_b' => $this->irt_b,
+            'irt_c' => $this->irt_c,
+            'response_count' => $this->response_count,
+            'psychometrics_derived_at' => $this->psychometrics_derived_at,
+            'misconception_tags' => $this->misconception_tags,
+            'fit' => $this->isFitForPalDiagnostic(),
+        ];
+    }
+
+    /**
+     * The board half: can this item be placed in a paper?
+     *
+     * @return array<string, mixed>
+     */
+    public function boardCompliance(): array
+    {
+        return [
+            'board' => $this->board,
+            'grade_band' => $this->grade_band,
+            'stage' => $this->stage,
+            'blueprint_category' => $this->blueprint_category,
+            'marks' => $this->marks,
+            'learning_outcome_ref' => $this->learning_outcome_ref,
+            'fit' => $this->isFitForBoardExam(),
+        ];
+    }
+
+    /**
+     * Fit to serve in PAL's adaptive diagnostic.
+     *
+     * MUST agree with scopeCalibrated() on any given row. They cannot share an
+     * implementation — one is SQL, one is PHP over a loaded model — so the
+     * thresholds are read from the same config in both, and a test asserts the
+     * two answer identically. If you change one, change the other.
+     */
+    public function isFitForPalDiagnostic(): bool
+    {
+        $cfg = config('pal_content.irt');
+
+        return $this->psychometrics_derived_at !== null
+            && $this->discrimination_index !== null
+            && (float) $this->discrimination_index >= (float) $cfg['approve_above_discrimination']
+            && (int) $this->response_count >= (int) $cfg['min_responses'];
+    }
+
+    /**
+     * Fit to be placed in a board paper.
+     *
+     * Deliberately says nothing about psychometrics: a board paper is assembled
+     * from a blueprint, and an uncalibrated item is a perfectly valid 3-mark
+     * short answer. Marks must be positive — a zero-mark item occupies a
+     * blueprint slot while contributing nothing to the total.
+     */
+    public function isFitForBoardExam(): bool
+    {
+        return $this->board !== null
+            && $this->board !== ''
+            && $this->blueprint_category !== null
+            && $this->marks !== null
+            && (float) $this->marks > 0.0;
     }
 
     /**

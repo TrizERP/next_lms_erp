@@ -27,6 +27,7 @@ class VocabCheckCommand extends Command
     protected array $checks = [
         'pal_question_metadata' => [
             'bloom_level' => 'bloom_levels',
+            'blueprint_category' => 'blueprint_categories',
             'knowledge_type' => 'knowledge_types',
             'content_type' => null,
             'format' => 'formats',
@@ -55,6 +56,7 @@ class VocabCheckCommand extends Command
         ],
         'pal_content_metadata' => [
             'content_type' => 'content_types',
+            'learning_purpose' => 'learning_purposes',
             'format' => 'formats',
             'bloom_level_served' => 'bloom_levels',
             'language' => 'languages',

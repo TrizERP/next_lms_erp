@@ -2,6 +2,7 @@
 
 namespace App\Brain\Intelligence;
 
+use App\Brain\Support\LmsQueryScope;
 use App\Brain\Support\SchemaCache;
 use Illuminate\Support\Facades\DB;
 
@@ -28,14 +29,18 @@ use Illuminate\Support\Facades\DB;
  */
 final class TrendAnalyzer
 {
+    /** Attendance, homework and fees are all year-scoped by the LMS. */
+    use LmsQueryScope;
+
     /** Below this many records a period is noise, not a trend. */
     private const MIN_SAMPLE = 30;
 
     /** A gap smaller than this is not worth a person's attention. */
     private const MATERIAL_POINTS = 2.0;
 
-    public function __construct(private readonly string $tenantId)
+    public function __construct(private readonly string $tenantId, ?string $syear = null)
     {
+        $this->syear = $syear;
     }
 
     /**
@@ -49,8 +54,7 @@ final class TrendAnalyzer
             return [];
         }
 
-        $rows = DB::table('attendance_student')
-            ->where('sub_institute_id', $this->tenantId)
+        $rows = $this->lmsAttendance()
             ->whereNotNull('attendance_date')
             ->selectRaw('DATE_FORMAT(attendance_date, "%Y-%m") as period')
             ->selectRaw('COUNT(*) as marks')
@@ -124,17 +128,15 @@ final class TrendAnalyzer
             return ['baseline' => 0.0, 'marks' => 0, 'classes' => []];
         }
 
-        $overall = DB::table('attendance_student')
-            ->where('sub_institute_id', $this->tenantId)
+        $overall = $this->lmsAttendance()
             ->selectRaw('COUNT(*) as marks, SUM(attendance_code = "P") as present')
             ->first();
 
         $marks = (int) ($overall->marks ?? 0);
         $baseline = $marks > 0 ? round(((int) $overall->present) / $marks * 100, 1) : 0.0;
 
-        $classes = DB::table('attendance_student as a')
+        $classes = $this->lmsAttendance('a')
             ->join('standard as s', 's.id', '=', 'a.standard_id')
-            ->where('a.sub_institute_id', $this->tenantId)
             ->selectRaw('a.standard_id, s.name as class_name, s.short_name')
             ->selectRaw('COUNT(*) as marks, SUM(a.attendance_code = "P") as present, SUM(a.attendance_code = "A") as absent')
             ->selectRaw('COUNT(DISTINCT a.student_id) as students')
@@ -174,8 +176,7 @@ final class TrendAnalyzer
             return ['available' => false, 'reason' => 'This LMS records no homework.'];
         }
 
-        $months = DB::table('homework')
-            ->where('sub_institute_id', $this->tenantId)
+        $months = $this->lmsHomework()
             ->whereNotNull('date')
             ->selectRaw('DATE_FORMAT(date, "%Y-%m") as period, COUNT(*) as total, SUM(completion_status = "Y") as submitted')
             ->groupBy('period')->orderByDesc('period')->limit(13)->get()
@@ -215,15 +216,14 @@ final class TrendAnalyzer
             return ['baseline' => 0.0, 'subjects' => []];
         }
 
-        $overall = DB::table('homework')->where('sub_institute_id', $this->tenantId)
+        $overall = $this->lmsHomework()
             ->selectRaw('COUNT(*) as total, SUM(completion_status = "Y") as submitted')->first();
 
         $total = (int) ($overall->total ?? 0);
         $baseline = $total > 0 ? round(((int) $overall->submitted) / $total * 100, 1) : 0.0;
 
-        $subjects = DB::table('homework as h')
+        $subjects = $this->lmsHomework('h')
             ->leftJoin('subject as s', 's.id', '=', 'h.subject_id')
-            ->where('h.sub_institute_id', $this->tenantId)
             ->selectRaw('h.subject_id, s.subject_name, COUNT(*) as total, SUM(h.completion_status = "Y") as submitted')
             ->groupBy('h.subject_id', 's.subject_name')
             ->having('total', '>=', 10)
@@ -257,8 +257,7 @@ final class TrendAnalyzer
             return ['available' => false, 'reason' => 'This LMS records no fee collection.'];
         }
 
-        $months = DB::table('fees_collect')
-            ->where('sub_institute_id', $this->tenantId)
+        $months = $this->lmsFees()
             ->where(fn ($q) => $q->whereNull('is_deleted')->orWhere('is_deleted', '!=', 'Y'))
             ->whereNotNull('receiptdate')
             ->selectRaw('DATE_FORMAT(receiptdate, "%Y-%m") as period, COUNT(*) as receipts, COALESCE(SUM(amount),0) as collected')
@@ -304,8 +303,7 @@ final class TrendAnalyzer
             return [];
         }
 
-        $rows = DB::table('attendance_student as a')
-            ->where('a.sub_institute_id', $this->tenantId)
+        $rows = $this->lmsAttendance('a')
             ->selectRaw('a.student_id, COUNT(*) as marks, SUM(a.attendance_code = "A") as absent')
             ->groupBy('a.student_id')
             ->having('absent', '>=', (int) config('brain.thresholds.chronic_absence_marks', 5))

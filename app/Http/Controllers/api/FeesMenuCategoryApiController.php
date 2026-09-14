@@ -2,20 +2,14 @@
 
 namespace App\Http\Controllers\api;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
-
 /**
- * Fees-only category navigation feed for the Fees level-3 menu bar.
+ * Fees' category navigation feed for the Fees level-3 menu bar.
  *
  * The Fees module groups its *existing* menus into categories and renders them
  * in two steps through the existing level-3 bar:
  *
- *   FEES                [Onboarding] [Master Setup] [Transactional Data] …
- *   TRANSACTIONAL DATA  [Fees Collect] [Online Fees Collect] [Fees Circular] …
+ *   FEES                [Onboarding] [Master Setup] [Operations] [Reports] …
+ *   OPERATIONS          [Fees Collect] [Online Fees Collect] [Fees Circular] …
  *
  * The categories and their membership are data, not code: they live in
  * `fees_menu_categories` and `fees_menu_category_items` (see
@@ -40,14 +34,15 @@ use Illuminate\Support\Facades\Schema;
  *    and carries no `status` column, so the "only status=1 menus are visible"
  *    rule cannot be enforced from its response.
  *
- * Neither endpoint is modified. This one enforces all three visibility rules in
- * SQL: the menu is status=1, the tenant is in its sub_institute_id, and the
- * caller holds a rights row for it — the same rights tables MenuRightsController
- * joins against, so a user sees precisely the Fees screens they could already
- * reach. A category with no visible menus is returned empty rather than hidden,
- * so the bar always offers the full set of categories.
+ * Neither endpoint is modified. All three visibility rules (menu status = 1,
+ * tenant provisioning, caller's menu rights) are enforced in SQL by the shared
+ * base class — see AbstractMenuCategoryApiController. This class only names
+ * the module: `fees_menu_categories`/`fees_menu_category_items` are shared
+ * with Teach/Learn (see TeachLearnMenuCategoryApiController) via the
+ * `module_name` column, so every query is scoped to 'fees' and the two
+ * modules' rows can never collide or leak into each other.
  */
-class FeesMenuCategoryApiController extends Controller
+class FeesMenuCategoryApiController extends AbstractMenuCategoryApiController
 {
     public function index(Request $request): JsonResponse
     {
@@ -196,5 +191,8 @@ class FeesMenuCategoryApiController extends Controller
             ->pluck('m.id')
             ->map(fn ($id) => (int) $id)
             ->all();
+    protected function moduleName(): string
+    {
+        return 'fees';
     }
 }

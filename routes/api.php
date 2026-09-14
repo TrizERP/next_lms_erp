@@ -9,6 +9,7 @@ use App\Http\Controllers\StudentGraphController;
 use App\Http\Controllers\api\ApiLoginController;
 use App\Http\Controllers\api\MenuRightsController;
 use App\Http\Controllers\api\ApiLmsCourseController;
+use App\Http\Controllers\api\ApiQuestionBankController;
 use App\Http\Controllers\api\ApiQuestionPaperController;
 use App\Http\Controllers\api\AiSopGenerationController;
 use App\Http\Controllers\api\AiPlatformController;
@@ -152,6 +153,10 @@ Route::middleware('lms.auth')->get('/permissions', [App\Http\Controllers\api\Per
 // so api.session (JWT-hydrated session) must run first for type=API requests.
 Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 'fees/menu-categories', [App\Http\Controllers\api\FeesMenuCategoryApiController::class, 'index']);
 
+// Teach/Learn-only: the same category-tab pattern as Fees above, over the same
+// shared tables (module_name = 'teach_learn') — see TeachLearnMenuCategoryApiController.
+Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 'teach-learn/menu-categories', [App\Http\Controllers\api\TeachLearnMenuCategoryApiController::class, 'index']);
+
 // GET is accepted alongside POST so these can be opened in a browser or curled without
 // a body — the handlers read their parameters through $request->input(), which covers
 // the query string as well. POST is unchanged, so existing callers are unaffected.
@@ -165,6 +170,13 @@ Route::post('lms-question-bank', [ApiLmsCourseController::class, 'getQuestionBan
 Route::post('lms-question-bank/update', [ApiLmsCourseController::class, 'updateQuestionBank']);
 Route::post('lms-question-bank/delete', [ApiLmsCourseController::class, 'deleteQuestionBank']);
 Route::get('question-mapping-levels', [ApiLmsCourseController::class, 'getQuestionMappingLevels']);
+
+// Board-level question bank browser. Additive: lms-question-bank above still
+// serves the course-master editor unchanged. These read the richer vocabulary
+// that extraction records in lms_question_extraction / question_type_catalog.
+Route::match(['get', 'post'], 'question-bank/filters', [ApiQuestionBankController::class, 'filters']);
+Route::match(['get', 'post'], 'question-bank/search', [ApiQuestionBankController::class, 'search']);
+Route::match(['get', 'post'], 'question-bank/question-types', [ApiQuestionBankController::class, 'questionTypes']);
 Route::post('lms-chapters/store', [ApiLmsCourseController::class, 'storeChapter']);
 Route::post('lms-create-content', [ApiLmsCourseController::class, 'createContent'])->middleware(['lms.auth', 'perm:lms.content,create']);
 Route::post('lms-store-content', [ApiLmsCourseController::class, 'storeContent'])->middleware(['lms.auth', 'perm:lms.content,create']);
@@ -216,6 +228,35 @@ Route::post('lms-homework/submission-list', [\App\Http\Controllers\api\lms\Stude
 Route::post('lms-homework/submission-store', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionStore']);
 Route::post('lms-homework/submission-report', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'submissionReport']);
 Route::post('lms-homework/ai-status/{id}', [\App\Http\Controllers\api\lms\StudentHomeworkApiController::class, 'aiEvaluationStatus']);
+
+// ------------------------------------------------------------------
+// Homework Submissions v2 - multi-file student submission + teacher review
+// workflow, built directly on the `homework` table's own submission/review
+// columns (status, submission_files, teacher_remarks, ai_*, etc. — see the
+// 2026_09_11 migration; no separate submission/file tables). One submission
+// per student per homework, overwritable while not yet under review, since
+// this row is the same row StudentHomeworkApiController above operates on.
+// ------------------------------------------------------------------
+Route::middleware('api.session')->group(function () {
+    Route::post('lms-homework/detail/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'detail']);
+    Route::post('lms-homework/submission/store', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'submit']);
+    Route::post('lms-homework/submission/ai-status/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'submissionAiStatus']);
+    Route::post('lms-homework/submission-file/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'downloadFile']);
+    Route::post('lms-homework/my-submissions', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'mySubmissions']);
+});
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::post('lms-homework/review-list', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewList']);
+    Route::post('lms-homework/review-detail/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewDetail']);
+    Route::post('lms-homework/review-store', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewStore']);
+});
+
+// Generate homework from the question bank (teacher-only lookups feeding
+// StudentHomeworkApiController::store()'s source_type = 'question_bank' path).
+// Additive; does not touch ApiLmsCourseController or the Exam module.
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::post('lms-homework/question-bank/types', [\App\Http\Controllers\api\lms\HomeworkQuestionBankApiController::class, 'questionTypes']);
+    Route::post('lms-homework/question-bank/questions', [\App\Http\Controllers\api\lms\HomeworkQuestionBankApiController::class, 'questions']);
+});
 
 // ------------------------------------------------------------------
 // LMS Assignment / Assignment Submission / Annotate Assignment

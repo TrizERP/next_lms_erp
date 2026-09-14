@@ -660,8 +660,8 @@ class LearnerStateEngine
             return null;
         }
 
-        $recentEngagement = $sessions->take(7)->avg('engagement_score');
-        $olderEngagement = $sessions->slice(7)->avg('engagement_score');
+        $recentEngagement = $sessions->take(7)->avg('exam_accuracy');
+        $olderEngagement = $sessions->slice(7)->avg('exam_accuracy');
 
         if ($recentEngagement === null || $olderEngagement === null || $olderEngagement <= 0) {
             return null;

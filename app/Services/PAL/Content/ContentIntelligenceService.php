@@ -227,7 +227,7 @@ class ContentIntelligenceService
     public function getMisconceptionContent(int $misconceptionId, ?int $subInstituteId = null): array
     {
         $contents = \App\Models\PAL\MisconceptionCorrective::where('misconception_id', $misconceptionId)
-            ->servable()
+            ->forPal()
             ->forTenant($subInstituteId)
             ->orderBy('priority_level')
             ->get();

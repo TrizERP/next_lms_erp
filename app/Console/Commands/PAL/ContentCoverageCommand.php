@@ -187,7 +187,23 @@ class ContentCoverageCommand extends Command
             ->selectRaw('a.question_id, COUNT(*) AS n')
             ->groupBy('a.question_id');
 
+        // Answers outlive the questions they were given for: 15,221 of the
+        // 29,234 question_ids with 30+ responses have no lms_question_master
+        // row at all (measured 2026-09-08). Counting those as "eligible"
+        // overstated what pal:derive-irt could actually calibrate by 52% — it
+        // joins to the question and can only derive for ones that still exist.
+        //
+        // Reported with the orphan count rather than silently filtered, since
+        // a two-to-one ratio of answers-to-deleted-questions is itself worth
+        // someone's attention.
         $eligible = DB::query()->fromSub($sub, 't')
+            ->join('lms_question_master as q', 'q.id', '=', 't.question_id')
+            ->where('t.n', '>=', $min)
+            ->count();
+
+        $orphaned = DB::query()->fromSub($sub, 't')
+            ->leftJoin('lms_question_master as q', 'q.id', '=', 't.question_id')
+            ->whereNull('q.id')
             ->where('t.n', '>=', $min)
             ->count();
 
@@ -202,6 +218,10 @@ class ContentCoverageCommand extends Command
             'min_responses' => $min,
             'questions_with_any_response' => $totalAnswered,
             'questions_irt_eligible' => $eligible,
+            // Answered enough times to calibrate, but the question itself is
+            // gone. Not calibratable by anyone — surfaced so the eligible
+            // figure cannot be read as larger than it is.
+            'orphaned_answers' => $orphaned,
             'questions_already_derived' => $derived,
             'remaining' => max(0, $eligible - $derived),
         ];
@@ -426,6 +446,11 @@ class ContentCoverageCommand extends Command
         $i = $r['irt'];
         $this->line("  questions with >= {$i['min_responses']} responses: {$i['questions_irt_eligible']}"
             . "  ·  already derived: {$i['questions_already_derived']}  ·  remaining: {$i['remaining']}");
+
+        if (($i['orphaned_answers'] ?? 0) > 0) {
+            $this->warn("  {$i['orphaned_answers']} more question_ids clear the response threshold but no longer exist "
+                . 'in lms_question_master — answers outliving their questions. Not calibratable by anyone.');
+        }
         $this->line("  questions with any response at all: {$i['questions_with_any_response']}");
 
         $this->line('');

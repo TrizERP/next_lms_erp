@@ -125,6 +125,41 @@ class courseController extends Controller
 					}
 				}
 
+				// Shared library: when the school opts into the central LMS
+				// (school_setup.is_lms = 'Y'), sub_institute 1's courses are offered
+				// alongside the teacher's own. They cannot arrive through the timetable
+				// join above — that join ties t.sub_institute_id to s.sub_institute_id,
+				// and no teacher here holds timetable rows under institute 1. Matching on
+				// standard_id would not help either: institute 1 owns ids 34-45 while this
+				// school owns 2887-2901, so the sets never meet. They are therefore listed
+				// from the subject mapping alone, exactly as SEL is above.
+				if ($getIsLms == 'Y') {
+					$getShared = DB::table('sub_std_map as s')
+						->selectRaw("STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,
+							s.display_image,GROUP_CONCAT(DISTINCT(CONCAT_WS('/',cp.chapter_name,cp.id))SEPARATOR '#') AS chapter_list,
+							IFNULL(s.subject_category,'My Course') AS content_category,s.sub_institute_id")
+						->join('standard AS STD', 'STD.id', '=', 's.standard_id')
+						->leftJoin('chapter_master AS cp', function ($join) {
+							$join->on('cp.subject_id', '=', 's.subject_id')
+								->on('cp.standard_id', '=', 's.standard_id');
+						})
+						->where('s.sub_institute_id', '=', 1)
+						->where('s.allow_content', '=', 'Yes')
+						->where(function ($q) {
+							// `!= 'SEL'` on its own discards rows whose category is NULL,
+							// and institute 1 has those; they belong under My Course.
+							$q->where('s.subject_category', '!=', 'SEL')
+								->orWhereNull('s.subject_category');
+						})
+						->groupBy('s.subject_id', 's.standard_id', 's.subject_category')
+						->orderBy('s.sort_order')
+						->get()->toArray();
+
+					foreach ($getShared as $val) {
+						$mycourse_arr[$val->content_category][] = (array)$val;
+					}
+				}
+
 	    } else {
 	        $arr = DB::table('sub_std_map as s')
 	            ->selectRaw("STD.name AS standard_name,s.display_name AS subject_name,s.subject_id,STD.id AS standard_id,

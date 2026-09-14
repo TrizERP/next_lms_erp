@@ -12,9 +12,9 @@ class ContentMetadata extends Model
     protected $table = 'pal_content_metadata';
 
     protected $fillable = [
-        'content_master_id', 'sub_institute_id', 'scope',
+        'content_master_id', 'sub_institute_id', 'curriculum_version_id', 'scope',
         'content_id_ref', 'concept_ref_id', 'chapter_ref_id', 'topic_ref_id', 'sub_concept_ref',
-        'content_type', 'variant_number', 'format',
+        'content_type', 'learning_purpose', 'variant_number', 'format',
         'language', 'language_variants_available', 'grade_band', 'stage',
         'bloom_level_served', 'practice_level', 'difficulty_1_to_5',
         'pedagogy_mapping_id', 'pedagogy_secondary', 'cultural_context',
@@ -56,6 +56,12 @@ class ContentMetadata extends Model
     public function scopeServable($query)
     {
         return $query->whereIn('quality_status', config('pal_content.servable_statuses', ['approved']));
+    }
+
+    /** PAL consumer — approved content available to adaptive delivery. */
+    public function scopeForPal($query)
+    {
+        return $query->servable();
     }
 
     public function scopeForTenant($query, ?int $subInstituteId)
