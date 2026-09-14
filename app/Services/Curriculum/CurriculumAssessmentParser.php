@@ -21,7 +21,7 @@ namespace App\Services\Curriculum;
  *   English (ext 105)      2-col table, marker in a single colspan cell
  *   Social Science (ext 66) 3-col table, marker in a heading *before* the table
  *
- * and Hindi (ext 86) states none of it at all. So every result here is reported
+ * and Hindi (ext 86) statres none of it at all. So every result here is reported
  * with whether its components actually reconcile to the internal_marks already
  * stored: a breakdown that does not add up is a parse that went wrong, and the
  * caller is told rather than shown plausible wrong numbers.
