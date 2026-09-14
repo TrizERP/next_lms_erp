@@ -2212,6 +2212,87 @@ $restrict_date = $request->input('restrict_date');
     }
 
     /**
+     * POST /api/lms-question-bank/review
+     *
+     * Clear (or re-raise) the hold on an extracted question.
+     *
+     * A question that fails a validator is written with status = 0: a teacher
+     * can see it in the bank but it is not servable and no paper can draw on
+     * it. Until now there was no way back -- the bank could show the held
+     * items but not release them, so a validator false positive stranded a
+     * perfectly good question forever.
+     */
+    public function reviewQuestionBank(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'id' => 'required|integer',
+            'sub_institute_id' => 'required|integer',
+            'action' => 'required|string|in:approve,hold',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        try {
+            $question = lmsQuestionMasterModel::find($request->input('id'));
+            if (!$question) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Question not found.',
+                ], 404);
+            }
+
+            // Authority is the chapter's tenant, not the question's own column:
+            // the same guard updateQuestionBank and deleteQuestionBank use.
+            $chapterTenant = DB::table('chapter_master')
+                ->where('id', $question->chapter_id)
+                ->value('sub_institute_id');
+
+            if ($chapterTenant !== null
+                && (int) $chapterTenant !== (int) $request->input('sub_institute_id')) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'This question belongs to another institute.',
+                ], 403);
+            }
+
+            $approve = $request->input('action') === 'approve';
+            $question->status = $approve ? 1 : 0;
+            $question->save();
+
+            // Record who cleared it, so a released question is traceable.
+            if (Schema::hasTable('lms_question_extraction')) {
+                DB::table('lms_question_extraction')
+                    ->where('question_id', $question->id)
+                    ->update([
+                        'validation_status' => $approve ? 'approved' : 'failed',
+                        'corrected_by' => $request->input('user_id'),
+                        'corrected_at' => now(),
+                    ]);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => $approve
+                    ? 'Question approved and published.'
+                    : 'Question held for review.',
+                'data' => ['id' => (int) $question->id, 'status' => (int) $question->status],
+            ], 200);
+        } catch (Throwable $e) {
+            Log::error('question-bank review failed', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'Failed to update the question: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * POST /api/lms-question-bank/delete
      *
      * Remove a Question Bank question. This is a soft delete: it stamps
