@@ -11,6 +11,7 @@ use App\Http\Controllers\fees\online_fees\online_fees_collect_controller;
 use GenTux\Jwt\GetsJwtToken;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
+use App\Services\Fees\FeeAuditService;
 use DB;
 
 class confirmOnlineFeesController extends Controller
@@ -181,6 +182,7 @@ class confirmOnlineFeesController extends Controller
                 }
                 
                 // get  order and update fees_collect is_deleted
+                FeeAuditService::logReconciliationConfirmed($paymentId, $studentId, $payementData->sub_institute_id ?? $sub_institute_id, $payementData->hdfc_order_id);
                 $payementData = DB::table('fees_payment')
                 ->where('id', $paymentId)
                 ->update(["axis_order_id"=>"2"]);
