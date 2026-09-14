@@ -53,6 +53,35 @@ class ApiQuestionBankController extends Controller
      * stored rather than from a hardcoded list -- a publisher's own question
      * form appears here the moment the first question using it is ingested.
      */
+    /**
+     * The scope every facet count is measured within.
+     *
+     * Without this each dropdown counted the whole estate, so a chapter with
+     * four "Analyze" questions offered "Analyze (27)". A count that does not
+     * match what the filter will return is worse than no count at all.
+     *
+     * `$except` drops one dimension so a facet does not narrow itself: the
+     * chapter list must not be filtered by the chosen chapter, or picking one
+     * leaves a dropdown with a single entry and no way back.
+     */
+    private function scoped($query, Request $request, string $prefix = 'q.', string $except = ''): void
+    {
+        foreach ([
+            'sub_institute_id' => 'sub_institute_id',
+            'standard_id' => 'standard_id',
+            'subject_id' => 'subject_id',
+            'chapter_id' => 'chapter_id',
+        ] as $param => $column) {
+            if ($param === $except) {
+                continue;
+            }
+            $value = $request->input($param);
+            if ($value !== null && $value !== '' && strtolower((string) $value) !== 'all') {
+                $query->where($prefix . $column, (int) $value);
+            }
+        }
+    }
+
     public function filters(Request $request): JsonResponse
     {
         try {
@@ -63,7 +92,7 @@ class ApiQuestionBankController extends Controller
             $standards = DB::table('lms_question_master as q')
                 ->join('standard as st', 'st.id', '=', 'q.standard_id')
                 ->whereNull('q.deleted_at')
-                ->when($board, fn ($w) => $w->where('q.sub_institute_id', (int) $board))
+                ->tap(fn ($w) => $this->scoped($w, $request, 'q.', 'standard_id'))
                 ->select('st.id', 'st.name', DB::raw('COUNT(*) as total'))
                 ->groupBy('st.id', 'st.name', 'st.sort_order')
                 ->orderBy('st.sort_order')
@@ -72,8 +101,7 @@ class ApiQuestionBankController extends Controller
             $subjects = DB::table('lms_question_master as q')
                 ->join('subject as sb', 'sb.id', '=', 'q.subject_id')
                 ->whereNull('q.deleted_at')
-                ->when($board, fn ($w) => $w->where('q.sub_institute_id', (int) $board))
-                ->when($request->input('standard_id'), fn ($w, $v) => $w->where('q.standard_id', (int) $v))
+                ->tap(fn ($w) => $this->scoped($w, $request, 'q.', 'subject_id'))
                 ->select('sb.id', 'sb.subject_name as name', DB::raw('COUNT(*) as total'))
                 ->groupBy('sb.id', 'sb.subject_name')
                 ->orderBy('sb.subject_name')
@@ -82,9 +110,7 @@ class ApiQuestionBankController extends Controller
             $chapters = DB::table('lms_question_master as q')
                 ->join('chapter_master as ch', 'ch.id', '=', 'q.chapter_id')
                 ->whereNull('q.deleted_at')
-                ->when($board, fn ($w) => $w->where('q.sub_institute_id', (int) $board))
-                ->when($request->input('standard_id'), fn ($w, $v) => $w->where('q.standard_id', (int) $v))
-                ->when($request->input('subject_id'), fn ($w, $v) => $w->where('q.subject_id', (int) $v))
+                ->tap(fn ($w) => $this->scoped($w, $request, 'q.', 'chapter_id'))
                 ->select('ch.id', 'ch.chapter_name as name', DB::raw('COUNT(*) as total'))
                 ->groupBy('ch.id', 'ch.chapter_name', 'ch.sort_order')
                 ->orderBy('ch.sort_order')
@@ -93,10 +119,7 @@ class ApiQuestionBankController extends Controller
             $concepts = DB::table('lms_question_master as q')
                 ->join('lms_concept as c', 'c.id', '=', 'q.concept_id')
                 ->whereNull('q.deleted_at')
-                ->when($board, fn ($w) => $w->where('q.sub_institute_id', (int) $board))
-                ->when($request->input('chapter_id'), fn ($w, $v) => $w->where('q.chapter_id', (int) $v))
-                ->when($request->input('standard_id'), fn ($w, $v) => $w->where('q.standard_id', (int) $v))
-                ->when($request->input('subject_id'), fn ($w, $v) => $w->where('q.subject_id', (int) $v))
+                ->tap(fn ($w) => $this->scoped($w, $request))
                 ->select('c.id', 'c.name', DB::raw('COUNT(*) as total'))
                 ->groupBy('c.id', 'c.name')
                 ->orderBy('c.name')
@@ -111,28 +134,30 @@ class ApiQuestionBankController extends Controller
                     'subjects' => $subjects,
                     'chapters' => $chapters,
                     'concepts' => $concepts,
-                    'question_types' => $this->questionTypeOptions($board),
+                    'question_types' => $this->questionTypeOptions($request),
                     'publishers' => $this->publisherOptions(),
                     // g_bloom is Title-Case on most rows but a handful of older
                     // rows stored it lowercase, so fold before offering it as a
                     // choice or the dropdown shows "apply" and "Apply" twice.
-                    'bloom_levels' => $this->distinctFolded('g_bloom', $board),
-                    'difficulty_levels' => $this->distinctFolded('g_difficulty', $board),
+                    'bloom_levels' => $this->distinctFolded('g_bloom', $request),
+                    'difficulty_levels' => $this->distinctFolded('g_difficulty', $request),
                     'dok_levels' => DB::table('lms_question_master')
                         ->whereNull('deleted_at')
                         ->whereNotNull('g_dok')
-                        ->when($board, fn ($w) => $w->where('sub_institute_id', (int) $board))
+                        ->tap(fn ($w) => $this->scoped($w, $request, ''))
                         ->select('g_dok as value', DB::raw('COUNT(*) as total'))
                         ->groupBy('g_dok')
                         ->orderBy('g_dok')
                         ->get(),
                     'exam_sections' => $this->hasSidecar()
-                        ? DB::table('lms_question_extraction')
-                            ->whereNotNull('exam_section')
-                            ->when($board, fn ($w) => $w->where('sub_institute_id', (int) $board))
-                            ->select('exam_section as value', DB::raw('COUNT(*) as total'))
-                            ->groupBy('exam_section')
-                            ->orderBy('exam_section')
+                        ? DB::table('lms_question_extraction as x')
+                            ->join('lms_question_master as q', 'q.id', '=', 'x.question_id')
+                            ->whereNotNull('x.exam_section')
+                            ->whereNull('q.deleted_at')
+                            ->tap(fn ($w) => $this->scoped($w, $request))
+                            ->select('x.exam_section as value', DB::raw('COUNT(*) as total'))
+                            ->groupBy('x.exam_section')
+                            ->orderBy('x.exam_section')
                             ->get()
                         : [],
                 ],
@@ -161,7 +186,7 @@ class ApiQuestionBankController extends Controller
             return response()->json([
                 'status' => true,
                 'message' => 'Question types fetched successfully.',
-                'data' => $this->questionTypeOptions($request->input('sub_institute_id')),
+                'data' => $this->questionTypeOptions($request),
             ], 200);
         } catch (Throwable $e) {
             Log::error('question-bank question-types failed', ['error' => $e->getMessage()]);
@@ -219,13 +244,13 @@ class ApiQuestionBankController extends Controller
     /**
      * Distinct values of a g_* column, case-folded so one spelling wins.
      */
-    private function distinctFolded(string $column, $board): array
+    private function distinctFolded(string $column, Request $request): array
     {
         $rows = DB::table('lms_question_master')
             ->whereNull('deleted_at')
             ->whereNotNull($column)
             ->where($column, '<>', '')
-            ->when($board, fn ($w) => $w->where('sub_institute_id', (int) $board))
+            ->tap(fn ($w) => $this->scoped($w, $request, ''))
             ->select($column . ' as value', DB::raw('COUNT(*) as total'))
             ->groupBy($column)
             ->get();
@@ -253,44 +278,81 @@ class ApiQuestionBankController extends Controller
      * the grading engine's eight rows. Prefer the catalogue and fall back, so
      * this endpoint is useful before any extraction has run.
      */
-    private function questionTypeOptions($board): array
+    private function questionTypeOptions(Request $request): array
     {
-        if (Schema::hasTable('question_type_catalog') && $this->hasSidecar()) {
-            $rows = DB::table('question_type_catalog as t')
-                ->leftJoin('question_publisher as p', 'p.id', '=', 't.publisher_id')
-                ->leftJoin('lms_question_extraction as x', function ($join) use ($board) {
-                    $join->on('x.question_type_code', '=', 't.code');
-                    if ($board) {
-                        $join->where('x.sub_institute_id', '=', (int) $board);
-                    }
-                })
-                ->where('t.status', 1)
-                ->select(
-                    't.code',
-                    't.label',
-                    't.exam_section',
-                    't.default_marks',
-                    't.is_standard',
-                    'p.short_name as publisher',
-                    DB::raw('COUNT(x.id) as total')
-                )
-                ->groupBy('t.code', 't.label', 't.exam_section', 't.default_marks', 't.is_standard', 'p.short_name')
-                ->orderByDesc('t.is_standard')
-                ->orderBy('t.label')
-                ->get();
-
-            if ($rows->isNotEmpty()) {
-                return $rows->toArray();
-            }
+        if (!Schema::hasTable('question_type_catalog') || !$this->hasSidecar()) {
+            return DB::table('question_type_master')
+                ->where('status', 1)
+                ->select('question_type as code', 'question_type as label')
+                ->distinct()
+                ->orderBy('question_type')
+                ->get()
+                ->toArray();
         }
 
-        return DB::table('question_type_master')
-            ->where('status', 1)
-            ->select('question_type as code', 'question_type as label')
-            ->distinct()
-            ->orderBy('question_type')
-            ->get()
-            ->toArray();
+        // Count on the question's EFFECTIVE form. An AI-generated row has no
+        // extraction sidecar and therefore no catalogue code, so counting the
+        // sidecar alone reported "Multiple Choice (0)" on a chapter holding
+        // 125 MCQs. Fall back to the grading type for those.
+        $counts = DB::table('lms_question_master as q')
+            ->leftJoin('lms_question_extraction as x', 'x.question_id', '=', 'q.id')
+            ->whereNull('q.deleted_at')
+            ->tap(fn ($w) => $this->scoped($w, $request))
+            ->select(
+                DB::raw(
+                    "COALESCE(x.question_type_code, CASE WHEN q.question_type_id = 1 "
+                    . "THEN 'mcq' ELSE 'narrative' END) as code"
+                ),
+                DB::raw('COUNT(*) as total')
+            )
+            ->groupBy('code')
+            ->pluck('total', 'code');
+
+        // LEFT from the catalogue, so every known form is listed even at zero:
+        // a dropdown whose contents change per chapter is the thing being
+        // fixed here.
+        $catalogue = DB::table('question_type_catalog as t')
+            ->leftJoin('question_publisher as p', 'p.id', '=', 't.publisher_id')
+            ->where('t.status', 1)
+            ->select('t.code', 't.label', 't.exam_section', 't.default_marks',
+                     't.is_standard', 'p.short_name as publisher')
+            ->orderByDesc('t.is_standard')
+            ->orderBy('t.label')
+            ->get();
+
+        $out = [];
+        $seen = [];
+        foreach ($catalogue as $row) {
+            $seen[$row->code] = true;
+            $out[] = [
+                'code' => $row->code,
+                'label' => $row->label,
+                'exam_section' => $row->exam_section,
+                'default_marks' => $row->default_marks,
+                'is_standard' => $row->is_standard,
+                'publisher' => $row->publisher,
+                'total' => (int) ($counts[$row->code] ?? 0),
+            ];
+        }
+
+        // A code in use that the catalogue has never seen still has to be
+        // reachable, or those questions cannot be filtered to at all.
+        foreach ($counts as $code => $total) {
+            if (isset($seen[$code])) {
+                continue;
+            }
+            $out[] = [
+                'code' => $code,
+                'label' => ucwords(str_replace('_', ' ', (string) $code)),
+                'exam_section' => null,
+                'default_marks' => null,
+                'is_standard' => 0,
+                'publisher' => null,
+                'total' => (int) $total,
+            ];
+        }
+
+        return $out;
     }
 
     private function publisherOptions(): array
