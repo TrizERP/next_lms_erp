@@ -9,6 +9,7 @@ use App\Http\Controllers\StudentGraphController;
 use App\Http\Controllers\api\ApiLoginController;
 use App\Http\Controllers\api\MenuRightsController;
 use App\Http\Controllers\api\ApiLmsCourseController;
+use App\Http\Controllers\api\ApiQuestionBankController;
 use App\Http\Controllers\api\ApiQuestionPaperController;
 use App\Http\Controllers\api\AiSopGenerationController;
 use App\Http\Controllers\api\AiPlatformController;
@@ -169,6 +170,13 @@ Route::post('lms-question-bank', [ApiLmsCourseController::class, 'getQuestionBan
 Route::post('lms-question-bank/update', [ApiLmsCourseController::class, 'updateQuestionBank']);
 Route::post('lms-question-bank/delete', [ApiLmsCourseController::class, 'deleteQuestionBank']);
 Route::get('question-mapping-levels', [ApiLmsCourseController::class, 'getQuestionMappingLevels']);
+
+// Board-level question bank browser. Additive: lms-question-bank above still
+// serves the course-master editor unchanged. These read the richer vocabulary
+// that extraction records in lms_question_extraction / question_type_catalog.
+Route::match(['get', 'post'], 'question-bank/filters', [ApiQuestionBankController::class, 'filters']);
+Route::match(['get', 'post'], 'question-bank/search', [ApiQuestionBankController::class, 'search']);
+Route::match(['get', 'post'], 'question-bank/question-types', [ApiQuestionBankController::class, 'questionTypes']);
 Route::post('lms-chapters/store', [ApiLmsCourseController::class, 'storeChapter']);
 Route::post('lms-create-content', [ApiLmsCourseController::class, 'createContent'])->middleware(['lms.auth', 'perm:lms.content,create']);
 Route::post('lms-store-content', [ApiLmsCourseController::class, 'storeContent'])->middleware(['lms.auth', 'perm:lms.content,create']);
