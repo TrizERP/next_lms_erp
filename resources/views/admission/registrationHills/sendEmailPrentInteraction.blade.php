@@ -23,7 +23,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
     background-color: #ffffff;
     color: #000000;
     font-family: 'Times New Roman', Times, serif;
-">
+    ">
 
     <!-- MAIN CONTAINER -->
     <table
@@ -255,6 +255,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
     <div style="color:#000000;">
         <h3 style="color:#000000; margin: 10px 0;">HILLS HIGH SCHOOL</h3>
         <h3 style="color:#000000; text-align:center; margin: 15px 0;"><b>Waitlisted</b></h3>
+        <p style="color:#000000; font-size: 15px;">Dear Parent,</p>
         <p style="color:#000000; font-size: 15px; line-height: 1.6;">
             Your child has been placed on the waitlist. Please re-check your e-mail id by end of this month.
             Your co-operation is really appreciated.

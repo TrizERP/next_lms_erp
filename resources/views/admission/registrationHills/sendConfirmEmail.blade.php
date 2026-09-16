@@ -35,16 +35,17 @@
 
         </div>
     @elseif(isset($pint) && $pint == 'W/L')
-        <div style="color:black">
-            <h3 style="color:black">HILLS HIGH SCHOOL</h3>
-            <h3 style="color:black;text-align:center"><b>Waitlisted</b></h3>
-            <p style="color:black">
-                Your child has been placed on the waitlist. Please re-check your e-mail id by end of this month.
-                Your co-operation is really appreciated.
-            </p>
-            <p style="color:black">Thanks</p>
-
-        </div>
+        <div style="color:#000000;">
+        <h3 style="color:#000000; margin: 10px 0;">HILLS HIGH SCHOOL</h3>
+        <h3 style="color:#000000; text-align:center; margin: 15px 0;"><b>Waitlisted</b></h3>
+        <p style="color:#000000; font-size: 15px;">Dear Parent,</p>
+        <p style="color:#000000; font-size: 15px; line-height: 1.6;">
+            Your child has been placed on the waitlist. Please re-check your e-mail id by end of this month.
+            Your co-operation is really appreciated.
+        </p>
+        <p style="color:#000000; font-size: 15px;">Regards ,</p>
+        <p style="color:#000000; font-size: 15px;">Hills High School</p>
+    </div>
     @elseif(isset($pint) && $pint == 'NO')
         <div style="color:black">
             <h3 style="color:black;text-align:center"><b>Regret mail</b></h3>
