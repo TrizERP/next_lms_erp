@@ -100,6 +100,36 @@ return [
             'label' => 'Platform services — Workflow',
             'links' => ['platform_services.workflow', 'platform_services'],
         ],
+
+        /*
+        | Platform services — Event Bus.
+        |
+        | THE FIRST KEY IN THIS FAMILY ON A READ. The three above gate writes;
+        | their reads need only a session, because seeing which notifications the
+        | product can raise is useful to most staff and harmful to none. Event Bus
+        | is different in kind: it reports operational data, and some of it comes
+        | from tables with no tenant column. "Who may look" is therefore a real
+        | question here, and it is asked on the GET.
+        |
+        | THIS KEY CANNOT AUTHORISE CROSS-TENANT READS, and nothing should be
+        | written here that implies otherwise. PermissionService resolves every
+        | grant `where sub_institute_id = ?` (PermissionService.php:183-199), so a
+        | right held in one institute says nothing about another. The estate-wide
+        | sections of the screen are gated in code on `is_admin === 2` instead —
+        | see EventBusController::TIER_2.
+        |
+        | NO NEW MENU ROW WAS ADDED. `platform_services.event_bus` does not exist
+        | in tblmenumaster, so resolution falls through to `platform_services` —
+        | the parent row created by
+        | 2026_09_11_100400_add_platform_services_menu_rows.php — exactly as the
+        | three siblings do when their own child row is absent. A dedicated row
+        | can be added later to grant Event Bus separately from the rest of
+        | Platform Services; until then a grant on the parent covers all four.
+        */
+        'platform.eventbus' => [
+            'label' => 'Platform services — Event Bus',
+            'links' => ['platform_services.event_bus', 'platform_services'],
+        ],
     ],
 
     /*

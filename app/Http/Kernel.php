@@ -80,6 +80,10 @@ class Kernel extends HttpKernel
         'perm' => \App\Http\Middleware\RequirePermission::class,
         'eso.student' => \App\Http\Middleware\EsoStudentOnlyAuth::class,
         'staff.only' => \App\Http\Middleware\RequireStaffRole::class,
+        // The same rule as `staff.only`, for routes authenticated by `lms.auth`
+        // rather than `api.session`. The two are not interchangeable — see
+        // RequireLmsStaff for why.
+        'lms.staff' => \App\Http\Middleware\RequireLmsStaff::class,
         'throttle.qgen' => \App\Http\Middleware\ThrottleQuestionGeneration::class,
         'throttle.contentgen' => \App\Http\Middleware\ThrottleContentGeneration::class,
         'task.permission' => \App\Http\Middleware\TaskPermissionMiddleware::class,

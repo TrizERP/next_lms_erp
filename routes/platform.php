@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\api\Platform\EventBusController;
 use App\Http\Controllers\api\Platform\NotificationController;
 use App\Http\Controllers\api\Platform\RegistryController;
 use App\Http\Controllers\api\Platform\SchedulerController;
@@ -82,4 +83,57 @@ Route::middleware('lms.auth')->group(function () {
     Route::delete('/workflow/{id}', [WorkflowController::class, 'destroy'])
         ->where('id', '[0-9]+')
         ->middleware('perm:platform.workflow,delete');
+
+    /*
+    | Event Bus — six reads, and only reads.
+    |
+    | The fourth service in this file is the one that configures nothing. Where
+    | Communication, Scheduler and Workflow decide what a component SHOULD do,
+    | this reports what actually happened: the `sync_log` outbox the database
+    | triggers feed and `neo4j:drain` consumes, `ai_audit_logs`, `workflow_runs`
+    | and its steps, `failed_jobs`, and the four communication send-logs.
+    |
+    | NO WRITE VERB EXISTS HERE AND NONE SHOULD BE ADDED YET. Replay and redrive
+    | are the obvious next controls and they cannot ship while
+    | QUEUE_CONNECTION=sync: a replayed event would run on the operator's own
+    | request thread rather than on a worker.
+    |
+    | GATED, UNLIKE THE THREE ABOVE — a deliberate departure from the "reads need
+    | only a session" rule stated at the top of this file. That rule holds for
+    | configuration: seeing which notifications the product can raise is useful to
+    | most staff and harmful to none. Event Bus reports operational data, and some
+    | of it comes from tables with no tenant column, so "who may look" is a real
+    | question here and it is asked on the GET.
+    |
+    |   `lms.staff`                     students and parents are refused 403.
+    |                                   RequireStaffRole could not be reused: it
+    |                                   reads the session, and `lms.auth` sets a
+    |                                   request attribute without hydrating one.
+    |   `perm:platform.eventbus,view`   which staff. Registered in
+    |                                   config/rbac_modules.php; resolves through
+    |                                   the `platform_services` parent menu row,
+    |                                   so no new menu row and no migration.
+    |
+    | NOTE: `perm:` is in warn-only mode until LMS_API_AUTH_ENFORCE=true — it logs
+    | "would have DENIED" and lets the caller through (RequirePermission.php:43,
+    | 79-90). The gate is declared now so that flipping that flag turns it on
+    | rather than requiring another change here. `lms.staff` does NOT depend on
+    | that flag and refuses students and parents today.
+    |
+    | THE THIRD GATE IS IN CODE, NOT HERE. Estate-wide sections — the stream, the
+    | failures list, the four outbox KPIs, the volume series — need `is_admin === 2`.
+    | That cannot be a `perm:` key, because PermissionService resolves every grant
+    | `where sub_institute_id = ?`, so a right held in one institute says nothing
+    | about another. See EventBusController for the tier split.
+    */
+    Route::prefix('/events')
+        ->middleware(['lms.staff', 'perm:platform.eventbus,view'])
+        ->group(function () {
+            Route::get('/overview', [EventBusController::class, 'overview']);
+            Route::get('/stream', [EventBusController::class, 'stream']);
+            Route::get('/failures', [EventBusController::class, 'failures']);
+            Route::get('/deliveries', [EventBusController::class, 'deliveries']);
+            Route::get('/audit', [EventBusController::class, 'audit']);
+            Route::get('/integrations', [EventBusController::class, 'integrations']);
+        });
 });
