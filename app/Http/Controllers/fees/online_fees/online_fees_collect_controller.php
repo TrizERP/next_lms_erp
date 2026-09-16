@@ -50,7 +50,11 @@ class online_fees_collect_controller extends Controller
 
     public function get_fees(Request $request)
     {
-        // echo '<pre>'; print_r($_REQUEST); exit;
+        $studentId = $request->input('student_id');
+        if (!$studentId) {
+            throw new \InvalidArgumentException('Student ID is required for online fee collection.');
+        }
+
         $all_student = DB::table("tblstudent as s")
             ->join('fees_online_maping as fo', 'fo.sub_institute_id', '=', 's.sub_institute_id')
             ->select(
@@ -60,17 +64,23 @@ class online_fees_collect_controller extends Controller
                 's.sub_institute_id',
                 'fo.fees_type'
             )
-            ->where("s.id", $_REQUEST["student_id"])
+            ->where("s.id", $studentId)
             ->get();
+        if ($all_student->isEmpty()) {
+            throw new \RuntimeException('The selected student is not mapped to an online fee configuration.');
+        }
             // added school_setup join on 15-03-2025 for lions fees issue
         $get_syear = DB::select("SELECT s.id,s.mobile,se.syear,se.sub_institute_id,s.admission_under
                                 FROM tblstudent s
                                 INNER JOIN tblstudent_enrollment se ON se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id
                                 INNER JOIN school_setup ss ON se.sub_institute_id = ss.Id AND ss.syear = se.syear
-                                WHERE s.id = '" . $_REQUEST["student_id"] . "'
+                                WHERE s.id = '" . addslashes((string) $studentId) . "'
                                 ORDER BY se.syear desc");
-        if (isset($_REQUEST["syear"])) {
-            $year = $_REQUEST["syear"];
+        if (empty($get_syear)) {
+            throw new \RuntimeException('The selected student has no active academic enrollment.');
+        }
+        if ($request->filled('syear')) {
+            $year = $request->input('syear');
         } else {
             $year = $get_syear['0']->syear; //date("Y");
         }
@@ -80,9 +90,9 @@ class online_fees_collect_controller extends Controller
         $controller = new fees_collect_controller;
         // echo '<pre>'; print_r($_REQUEST); exit;
         if($all_student[0]->sub_institute_id != 48 && $all_student[0]->sub_institute_id != 61){
-            $OldData = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year - 1, $_REQUEST["student_id"]);
+            $OldData = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year - 1, $studentId);
         }
-        $data = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year, $_REQUEST["student_id"]);
+        $data = $controller->getOnlinebk($request, $all_student[0]->sub_institute_id, $year, $studentId);
         
         // echo $year;
         $fees_amt = 0;
@@ -123,9 +133,9 @@ class online_fees_collect_controller extends Controller
             'sub_institute_id' => $all_student[0]->sub_institute_id, 'syear' => $year,
         ])->get()->toArray();
 
-        $data["redirect_url"] = $_SERVER["HTTP_ORIGIN"] . $_SERVER["REQUEST_URI"];
+        $data["redirect_url"] = $request->headers->get('origin', $request->getSchemeAndHttpHost()) . $request->getRequestUri();
         $data["dd_arr"] = $dd_arr;
-        $data["student_id"] = $_REQUEST["student_id"];
+        $data["student_id"] = $studentId;
         $data["cur_year"] = $year;
         // echo '<pre>'; print_r($dd_arr); exit;
         $data["fees_type"] = $all_student[0]->fees_type;
