@@ -39,14 +39,26 @@ final class IntelligencePipeline
     {
         $started = microtime(true);
 
-        $writer = new SignalWriter($this->tenantId);
+        // The year reaches the WRITER as well as the rules. The rules use it to
+        // decide what to read; the writer uses it to decide what a finding IS,
+        // so a 2020 pass cannot overwrite the 2021 row (SignalWriter, note 1).
+        $writer = new SignalWriter($this->tenantId, $this->syear);
         $rules = new LmsSignalRules($this->tenantId, $writer, $this->syear);
+
+        // The fee rules are a separate catalogue, not extra cases inside
+        // LmsSignalRules, because they read a different layer: FeesIntelligence
+        // resolves per-student demand through the fee structure, which none of
+        // the other rules need and all of them would pay for. They run in the
+        // same pass, through the same writer, and are reasoned over by the same
+        // Reasoner — so a fee finding reaches a recommendation by exactly the
+        // route every other finding does.
+        $feeRules = new FeesSignalRules($this->tenantId, $writer, $this->syear);
 
         $outcomes = [];
         $created = 0;
         $refreshed = 0;
 
-        foreach ($rules->applicable() as $ruleKey => $rule) {
+        foreach ($rules->applicable() + $feeRules->applicable() as $ruleKey => $rule) {
             try {
                 $result = $rule();
             } catch (\Throwable $e) {
@@ -83,8 +95,10 @@ final class IntelligencePipeline
         $this->reinforceMentalModels();
         // The executable half: a named procedure for every standing remedy, and
         // the policy that says a human has to authorise it.
-        $automation = (new AutomationCatalogue($this->tenantId))->sync();
-        $this->linkRecommendationsToEsos();
+        $catalogue = new AutomationCatalogue($this->tenantId);
+        $automation = $catalogue->sync();
+        // Shared with the Fees pipeline — see AutomationCatalogue::linkRecommendations().
+        $catalogue->linkRecommendations();
 
         $elapsed = (int) round((microtime(true) - $started) * 1000);
         $this->telemetry('intelligence.run', $created + $refreshed);
@@ -103,44 +117,6 @@ final class IntelligencePipeline
             'automation' => $automation,
             'elapsedMs' => $elapsed,
         ];
-    }
-
-    /**
-     * Point each recommendation at the ESO that would carry it out.
-     *
-     * Without this link a recommendation is advice with no executable form, and
-     * the Automation screen cannot show what approving it would actually run.
-     * The join is by rule key, which both sides derive from the same signal.
-     */
-    private function linkRecommendationsToEsos(): void
-    {
-        if (! SchemaCache::hasTable('hpbrain_recommendations')
-            || ! SchemaCache::hasTable('hpbrain_eso_definitions')
-            || ! SchemaCache::hasColumn('hpbrain_recommendations', 'eso_id')) {
-            return;
-        }
-
-        $esoByCode = DB::table('hpbrain_eso_definitions')
-            ->where('tenant_id', $this->tenantId)->pluck('id', 'eso_code');
-
-        $rows = DB::table('hpbrain_recommendations as r')
-            ->join('hpbrain_reasoning_steps as s', 's.id', '=', 'r.reasoning_step_id')
-            ->join('hpbrain_signals as sg', 'sg.id', '=', 's.signal_id')
-            ->where('r.tenant_id', $this->tenantId)
-            ->whereNull('r.eso_id')
-            ->whereNotNull('sg.rule_key')
-            ->get(['r.id as recommendation_id', 'sg.rule_key']);
-
-        foreach ($rows as $row) {
-            $code = 'ESO-'.strtoupper(str_replace('_', '-', (string) $row->rule_key));
-            if (! isset($esoByCode[$code])) {
-                continue;
-            }
-
-            DB::table('hpbrain_recommendations')
-                ->where('id', $row->recommendation_id)
-                ->update(['eso_id' => $esoByCode[$code]]);
-        }
     }
 
     /**

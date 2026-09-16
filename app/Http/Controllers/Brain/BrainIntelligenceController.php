@@ -257,6 +257,14 @@ class BrainIntelligenceController extends Controller
             DB::table('hpbrain_decisions')->insert(SchemaCache::only('hpbrain_decisions', [
                 'id' => $decisionId,
                 'tenant_id' => $tenant,
+                // The decision inherits the RECOMMENDATION's academic year, not
+                // the year the browser happens to have selected while deciding.
+                // A decision is provenance — "this was decided, on this
+                // evidence, for this year" — and re-resolving it here would let
+                // a 2021 recommendation be recorded as a 2022 decision.
+                'syear' => isset($recommendation->syear) && $recommendation->syear !== null
+                    ? (int) $recommendation->syear
+                    : null,
                 'recommendation_id' => (string) $recommendation->id,
                 'decided_by' => $userId,
                 'executor_type' => 'human',
@@ -294,6 +302,9 @@ class BrainIntelligenceController extends Controller
             DB::table('hpbrain_eso_executions')->insert(SchemaCache::only('hpbrain_eso_executions', [
                 'id' => $executionId,
                 'tenant_id' => $tenant,
+                'syear' => isset($recommendation->syear) && $recommendation->syear !== null
+                    ? (int) $recommendation->syear
+                    : null,
                 'eso_id' => (string) $recommendation->eso_id,
                 'eso_definition_id' => (string) $recommendation->eso_id,
                 'decision_id' => $decisionId,
@@ -336,6 +347,13 @@ class BrainIntelligenceController extends Controller
         $validator = Validator::make($request->all(), [
             'result' => 'required|string|in:success,partial,failed',
             'feedback' => 'nullable|string|max:2000',
+            // Optional, and measured by the person reporting back. The loop can
+            // close without them — an outcome nobody quantified is still an
+            // outcome — but when both are supplied the change becomes a fact the
+            // next decision can be weighed against.
+            'measured_before' => 'nullable|numeric',
+            'measured_after' => 'nullable|numeric',
+            'accounts_affected' => 'nullable|integer|min:0',
         ]);
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
@@ -363,13 +381,45 @@ class BrainIntelligenceController extends Controller
             }
 
             $outcomeId = Uuid::v4();
+
+            /*
+             * The measured change, and why it is computed here rather than
+             * inferred anywhere later.
+             *
+             * `result` is what the PERSON judged happened; the delta is what the
+             * numbers say. They are recorded separately and neither is derived
+             * from the other — a balance that fell is not automatically a
+             * success (it may have fallen for an unrelated reason), and a
+             * success is not assumed to have moved the balance. Where either
+             * figure is missing the delta is NULL rather than zero, because
+             * "not measured" and "no change" are different outcomes.
+             */
+            $before = $request->input('measured_before');
+            $after = $request->input('measured_after');
+            $measured = is_numeric($before) && is_numeric($after);
+            $kpis = [
+                'measuredBefore' => $measured ? round((float) $before, 2) : null,
+                'measuredAfter' => $measured ? round((float) $after, 2) : null,
+                'measuredChange' => $measured ? round((float) $before - (float) $after, 2) : null,
+                'accountsAffected' => $request->filled('accounts_affected')
+                    ? (int) $request->input('accounts_affected')
+                    : null,
+                'unit' => 'INR',
+                'basis' => 'Outstanding balance recorded by the person reporting the outcome.',
+            ];
+
             DB::table('hpbrain_outcomes')->insert(SchemaCache::only('hpbrain_outcomes', [
                 'id' => $outcomeId,
                 'tenant_id' => $tenant,
+                // Same rule as the decision: the outcome describes the year the
+                // execution was authorised for.
+                'syear' => isset($execution->syear) && $execution->syear !== null
+                    ? (int) $execution->syear
+                    : null,
                 'decision_id' => (string) $execution->decision_id,
                 'result' => $result,
                 'metrics' => json_encode(['executionId' => (string) $execution->id]),
-                'kpis' => '{}',
+                'kpis' => json_encode($kpis),
                 'evidence_ids' => '[]',
                 'feedback' => (string) $request->input('feedback', ''),
                 'confidence' => $result === 'success' ? 0.9 : ($result === 'partial' ? 0.6 : 0.3),

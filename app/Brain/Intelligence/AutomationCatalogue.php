@@ -47,6 +47,58 @@ final class AutomationCatalogue
     }
 
     /**
+     * Point each recommendation at the ESO that would carry it out.
+     *
+     * Without this link a recommendation is advice with no executable form:
+     * approving it records a decision and queues NOTHING, so the loop stops
+     * before Execution and the Outcome stage has nothing to report on. The join
+     * is by rule key, which both sides derive from the same signal.
+     *
+     * IT LIVES HERE RATHER THAN IN IntelligencePipeline because it is a fact
+     * about ESOs, and because two pipelines now need it — the general one and
+     * the Fees one. One implementation means a fee recommendation reaches an
+     * executable form by exactly the route every other recommendation does.
+     *
+     * @param  string|null  $ruleKeyPrefix  limit to one family of rules (e.g. 'fee_'), or null for all
+     * @return int  recommendations linked
+     */
+    public function linkRecommendations(?string $ruleKeyPrefix = null): int
+    {
+        if (! SchemaCache::hasTable('hpbrain_recommendations')
+            || ! SchemaCache::hasTable('hpbrain_eso_definitions')
+            || ! SchemaCache::hasColumn('hpbrain_recommendations', 'eso_id')) {
+            return 0;
+        }
+
+        $esoByCode = DB::table('hpbrain_eso_definitions')
+            ->where('tenant_id', $this->tenantId)->pluck('id', 'eso_code');
+
+        $rows = DB::table('hpbrain_recommendations as r')
+            ->join('hpbrain_reasoning_steps as s', 's.id', '=', 'r.reasoning_step_id')
+            ->join('hpbrain_signals as sg', 'sg.id', '=', 's.signal_id')
+            ->where('r.tenant_id', $this->tenantId)
+            ->whereNull('r.eso_id')
+            ->whereNotNull('sg.rule_key')
+            ->when($ruleKeyPrefix !== null, fn ($q) => $q->where('sg.rule_key', 'like', $ruleKeyPrefix.'%'))
+            ->get(['r.id as recommendation_id', 'sg.rule_key']);
+
+        $linked = 0;
+        foreach ($rows as $row) {
+            $code = 'ESO-'.strtoupper(str_replace('_', '-', (string) $row->rule_key));
+            if (! isset($esoByCode[$code])) {
+                continue;
+            }
+
+            DB::table('hpbrain_recommendations')
+                ->where('id', $row->recommendation_id)
+                ->update(['eso_id' => $esoByCode[$code]]);
+            $linked++;
+        }
+
+        return $linked;
+    }
+
+    /**
      * One ESO per distinct remedy in the approved catalogue.
      *
      * Keyed by eso_code (derived from the rule key) so a nightly run updates the
