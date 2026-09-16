@@ -14,11 +14,18 @@ use Illuminate\Support\Facades\DB;
  *
  *   1. A RULE THAT STILL FIRES REFRESHES ITS OPEN SIGNAL, IT DOES NOT STACK A
  *      SECOND ONE. Re-running the pipeline every night must not turn one
- *      standing problem into thirty rows. The match is on (tenant, rule_key,
- *      status not resolved/dismissed); a resolved problem that comes back is
- *      genuinely new and does get its own signal. created_date is never
- *      rewritten on a refresh — how long a problem has been open is the most
- *      useful fact about it.
+ *      standing problem into thirty rows. The match is on (tenant, ACADEMIC
+ *      YEAR, rule_key, status not resolved/dismissed); a resolved problem that
+ *      comes back is genuinely new and does get its own signal. created_date is
+ *      never rewritten on a refresh — how long a problem has been open is the
+ *      most useful fact about it.
+ *
+ *      THE YEAR IS PART OF THE IDENTITY, not a filter applied afterwards.
+ *      "Collection fell 40%" is a claim about one academic year; without the
+ *      year in the dedupe key a run for 2020 would find 2021's open signal and
+ *      overwrite its figures in place, leaving one row that silently reports
+ *      whichever year happened to run last. That is worse than a duplicate,
+ *      because it still looks like an answer.
  *
  *   2. THE SIGNAL ROW IS WRITTEN BEFORE ITS EVIDENCE. hpbrain_evidence carries a
  *      foreign key to hpbrain_signals, so the reverse order fails on MySQL. That
@@ -40,8 +47,17 @@ final class SignalWriter
     /** Evidence ledger high-water mark, read once and then held for this run. */
     private ?int $ledgerSequence = null;
 
-    public function __construct(private readonly string $tenantId)
-    {
+    /**
+     * @param  string  $tenantId  the institute every row is scoped to
+     * @param  string|null  $syear  the academic year the figures describe, or
+     *                              null when the caller genuinely has not
+     *                              resolved one — recorded as NULL rather than
+     *                              guessed, so "year unknown" stays visible.
+     */
+    public function __construct(
+        private readonly string $tenantId,
+        private readonly ?string $syear = null,
+    ) {
     }
 
     /**
@@ -76,7 +92,7 @@ final class SignalWriter
         $open = $ruleKey !== '' ? $this->openSignalFor($ruleKey) : null;
 
         if ($open !== null) {
-            $this->refresh($open, (array) $data['metadata']);
+            $this->refresh($open, (array) $data['metadata'], $ruleKey);
             $this->discard($evidenceIds);
 
             return ['created' => false, 'refreshed' => true, 'signalId' => (string) $open->id, 'reason' => null];
@@ -90,10 +106,12 @@ final class SignalWriter
             DB::table('hpbrain_signals')->insert(SchemaCache::only('hpbrain_signals', [
                 'id' => $signalId,
                 'tenant_id' => $this->tenantId,
+                'syear' => $this->syear,
                 // The unique index is (tenant_id, dedupe_key). One open signal
-                // per rule is exactly the invariant we want the database itself
-                // to hold, so a concurrent second pipeline run cannot duplicate.
-                'dedupe_key' => $ruleKey !== '' ? hash('sha256', $this->tenantId.'|'.$ruleKey) : hash('sha256', $signalId),
+                // per rule PER YEAR is exactly the invariant we want the
+                // database itself to hold, so a concurrent second pipeline run
+                // cannot duplicate and a run for another year cannot collide.
+                'dedupe_key' => $ruleKey !== '' ? $this->dedupeKey($ruleKey) : hash('sha256', $signalId),
                 'org_id' => 'org-'.$this->tenantId.'-'.$this->tenantId,
                 'source' => (string) $data['source'],
                 'classification' => (string) $data['classification'],
@@ -119,15 +137,61 @@ final class SignalWriter
         return ['created' => true, 'refreshed' => false, 'signalId' => $signalId, 'reason' => null];
     }
 
-    /** The unresolved signal this rule already raised, if any. */
+    /**
+     * The unresolved signal this rule already raised FOR THIS ACADEMIC YEAR, if
+     * any.
+     *
+     * The ordering of the two candidates matters and is the whole of the
+     * migration story:
+     *
+     *   1. A row already stamped with this year is this rule's signal for this
+     *      year, and is refreshed.
+     *
+     *   2. Failing that, a row with syear NULL is a legacy signal written before
+     *      the tables carried a year at all (migration
+     *      2026_09_16_000100_brain_year_scope_intelligence deliberately left
+     *      those NULL rather than inventing provenance for them). It is adopted
+     *      onto this year — which is honest, because refresh() rewrites its
+     *      figures from this year's data in the same breath. Adopting rather
+     *      than ignoring is also what stops the first year-aware run from
+     *      doubling every standing finding on the existing Brain screens.
+     *
+     * A run for a DIFFERENT year matches neither and raises its own signal,
+     * which is the defect this method exists to prevent.
+     */
     private function openSignalFor(string $ruleKey): ?object
     {
-        return DB::table('hpbrain_signals')
+        $open = DB::table('hpbrain_signals')
             ->where('tenant_id', $this->tenantId)
             ->where('rule_key', $ruleKey)
-            ->whereNotIn('status', ['resolved', 'dismissed'])
+            ->whereNotIn('status', ['resolved', 'dismissed']);
+
+        if (! SchemaCache::hasColumn('hpbrain_signals', 'syear')) {
+            return $open->orderByDesc('created_date')->first();
+        }
+
+        if ($this->syear === null) {
+            // A caller with no year must not adopt a year-stamped row and
+            // relabel it "year unknown"; it matches only the unstamped ones.
+            return $open->whereNull('syear')->orderByDesc('created_date')->first();
+        }
+
+        return $open
+            ->where(fn ($q) => $q->where('syear', $this->syear)->orWhereNull('syear'))
+            // An exact year match wins over a legacy row, whatever their dates.
+            ->orderByRaw('syear IS NULL')
             ->orderByDesc('created_date')
             ->first();
+    }
+
+    /**
+     * The identity of "this rule's open finding", as the unique index sees it.
+     *
+     * The year is in the hash, so two years of the same rule are two rows.
+     */
+    private function dedupeKey(string $ruleKey): string
+    {
+        return hash('sha256', $this->tenantId.'|'.($this->syear ?? '-').'|'.$ruleKey);
     }
 
     /**
@@ -138,17 +202,32 @@ final class SignalWriter
      * standing signal, and it is lost the moment the metadata is overwritten
      * wholesale.
      *
+     * A legacy row picked up by openSignalFor() is also STAMPED with the year
+     * here, together with the dedupe key that year implies. Doing both in the
+     * same update is what keeps the claim true: the row is labelled 2021 in the
+     * same statement that replaces its figures with 2021's.
+     *
      * @param  array<string, mixed>  $metadata
      */
-    private function refresh(object $signal, array $metadata): void
+    private function refresh(object $signal, array $metadata, string $ruleKey): void
     {
         $previous = json_decode((string) $signal->metadata, true);
         $previous = is_array($previous) ? $previous : [];
 
+        $adoption = [];
+        if ($this->syear !== null
+            && SchemaCache::hasColumn('hpbrain_signals', 'syear')
+            && $signal->syear === null) {
+            $adoption['syear'] = $this->syear;
+            if ($ruleKey !== '') {
+                $adoption['dedupe_key'] = $this->dedupeKey($ruleKey);
+            }
+        }
+
         DB::table('hpbrain_signals')
             ->where('tenant_id', $this->tenantId)
             ->where('id', $signal->id)
-            ->update(SchemaCache::only('hpbrain_signals', [
+            ->update(SchemaCache::only('hpbrain_signals', $adoption + [
                 'metadata' => json_encode(array_merge($previous, $metadata, [
                     'firstCount' => $previous['firstCount'] ?? ($previous['affectedCount'] ?? null),
                     'firstSeenAt' => $previous['firstSeenAt'] ?? (string) $signal->created_date,
@@ -176,6 +255,7 @@ final class SignalWriter
         DB::table('hpbrain_evidence')->insert(SchemaCache::only('hpbrain_evidence', [
             'id' => $evidenceId,
             'tenant_id' => $this->tenantId,
+            'syear' => $this->syear,
             'signal_id' => $signalId,
             'source' => (string) ($content['source'] ?? 'vivek_erp'),
             'evidence_type' => 'observation',

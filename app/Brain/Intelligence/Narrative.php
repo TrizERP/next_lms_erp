@@ -237,6 +237,76 @@ final class Narrative
             'matters' => 'A slowdown this size affects cash flow and usually concentrates in a few overdue accounts.',
             'metric' => 'collected this month',
         ],
+        /*
+         * Fees intelligence (App\Brain\Intelligence\FeesSignalRules).
+         *
+         * These read as sentences a bursar would say out loud. The placeholders
+         * are filled from the signal's own metadata, so a figure appearing in
+         * one of these strings was computed in the run that raised it — there is
+         * no wording here that survives the numbers being absent.
+         */
+        'fee_collection_shortfall' => [
+            'title' => 'Collection is well short of what was billed',
+            'what' => ':collectedAmount of the :demandAmount billed this year has been collected, leaving :outstandingAmount outstanding.',
+            'matters' => 'The gap is the school\'s working capital for the year — salaries, transport and supplies are paid from it.',
+            'metric' => 'collected against demand',
+        ],
+        'fee_receipt_coverage' => [
+            'title' => 'Most fee accounts have no receipt recorded',
+            'what' => ':affected of :total fee accounts have no receipt against them for this year.',
+            'matters' => 'Until it is clear whether this is unpaid fees or unrecorded collection, no outstanding figure can be relied on — and the two call for opposite responses.',
+            'metric' => 'accounts with no receipt',
+        ],
+        'fee_outstanding_concentration' => [
+            'title' => 'Outstanding fees sit in a small number of accounts',
+            'what' => ':affected accounts hold :impactAmount of the :outstandingAmount outstanding.',
+            'matters' => 'A focused follow-up on those accounts reaches most of the outstanding balance, where a school-wide reminder would not.',
+            'metric' => 'held by the largest accounts',
+        ],
+        'fee_overdue_backlog' => [
+            'title' => 'Fees billed in past cycles are still unpaid',
+            'what' => ':overdueAmount remains unpaid across :affected fee cycles whose month has already passed.',
+            'matters' => 'Arrears that survive several cycles are collected far less often than arrears chased in the cycle they arise.',
+            'metric' => 'overdue across past cycles',
+        ],
+        'fee_cycle_decline' => [
+            'title' => 'Collection fell between the last two billed cycles',
+            'what' => 'Collection moved from :previousAmount in :previousPeriod to :currentAmount in :currentPeriod.',
+            'matters' => 'A fall between consecutive cycles is usually a missed follow-up round, and it compounds if the next cycle is missed too.',
+            'metric' => 'collected in the latest cycle',
+        ],
+        'fee_class_collection_gap' => [
+            'title' => 'Some classes are collecting well below the rest',
+            'what' => ':affected of :total classes are collecting materially below the school\'s own rate of :instituteRatePercent%.',
+            'matters' => 'A gap this specific points at those cohorts — their fee structure or their follow-up — rather than at a school-wide cause.',
+            'metric' => 'classes behind the school rate',
+        ],
+        'fee_head_collection_gap' => [
+            'title' => 'Some fee heads are collecting well below the rest',
+            'what' => ':affected of :total fee heads are collecting materially below the school\'s own rate of :instituteRatePercent%.',
+            'matters' => 'A single head lagging usually means families do not know it applies to them, or dispute that it does.',
+            'metric' => 'fee heads behind the school rate',
+        ],
+        'fee_payment_mode_concentration' => [
+            'title' => 'Fee money arrives almost entirely through one channel',
+            'what' => ':affected of :total receipts were taken as :mode.',
+            'matters' => 'Handling and reconciliation risk is concentrated in one channel, and families without access to it have no easy alternative.',
+            'metric' => 'receipts through the leading channel',
+        ],
+
+        'fee_cancellation_pressure' => [
+            'title' => 'A large share of collection was cancelled',
+            'what' => ':cancelledAmount was cancelled across :affected receipts, against :collectedAmount collected.',
+            'matters' => 'Cancelled receipts are money the school counted and then un-counted, so the headline collection figure overstates what actually arrived.',
+            'metric' => 'cancelled against collected',
+        ],
+        'fee_reconciliation_gap' => [
+            'title' => 'Cancelled receipts are still counted as collected',
+            'what' => ':affected receipts appear in the cancellation record but are still marked live, carrying :collectedAmount.',
+            'matters' => 'Every fees report filters on that flag, so this amount is counted as collected money the school has already cancelled.',
+            'metric' => 'receipts double-counted',
+        ],
+
         'complaint_unresolved' => [
             'title' => 'Complaints are open with no recorded resolution',
             'what' => ':affected of :total complaints have no resolution written against them.',
@@ -383,6 +453,38 @@ final class Narrative
     {
         $points = [];
 
+        /*
+         * Fee amounts lead the evidence list, because for a money finding the
+         * amount IS the evidence — "43 accounts" only means something once the
+         * reader knows ₹37.2L sits behind them. Each point is emitted only when
+         * the rule actually recorded that figure; an absent key produces no
+         * point rather than a zero.
+         */
+        if (isset($metadata['demandAmount'])) {
+            $points[] = ['label' => 'Billed', 'value' => self::money($metadata['demandAmount'])];
+        }
+        if (isset($metadata['collectedAmount']) && ! isset($metadata['currentAmount'])) {
+            $points[] = ['label' => 'Collected', 'value' => self::money($metadata['collectedAmount'])];
+        }
+        if (isset($metadata['outstandingAmount'])) {
+            $points[] = ['label' => 'Outstanding', 'value' => self::money($metadata['outstandingAmount'])];
+        }
+        if (isset($metadata['overdueAmount'])) {
+            $points[] = ['label' => 'Overdue', 'value' => self::money($metadata['overdueAmount'])];
+        }
+        if (isset($metadata['collectionRatePercent'])) {
+            $points[] = [
+                'label' => 'Collection rate',
+                'value' => self::pct($metadata['collectionRatePercent']),
+                'note' => isset($metadata['thresholdPercent'])
+                    ? 'Reviewed below '.self::pct($metadata['thresholdPercent'])
+                    : null,
+            ];
+        }
+        if (isset($metadata['instituteRatePercent']) && ! isset($metadata['collectionRatePercent'])) {
+            $points[] = ['label' => 'School rate', 'value' => self::pct($metadata['instituteRatePercent'])];
+        }
+
         if (isset($metadata['currentRate'])) {
             $points[] = ['label' => 'Now', 'value' => self::pct($metadata['currentRate']),
                 'note' => isset($metadata['currentPeriod']) ? self::monthName((string) $metadata['currentPeriod']) : null];
@@ -490,6 +592,21 @@ final class Narrative
         'coveredCount' => 'covered',
     ];
 
+    /**
+     * Metadata keys that hold a rupee amount and must be rendered as money.
+     *
+     * Kept as a list rather than inferred from the key name, so adding a metric
+     * is a deliberate decision about how it reads rather than a naming accident.
+     *
+     * @var array<int, string>
+     */
+    private const MONEY_KEYS = [
+        'currentAmount', 'previousAmount', 'demandAmount', 'collectedAmount',
+        'cancelledAmount', 'refundedAmount',
+        'outstandingAmount', 'overdueAmount', 'impactAmount', 'modeAmount',
+        'topAccountsAmount', 'collectedThisYear', 'concessionAmount', 'fineAmount',
+    ];
+
     private static function fill(string $template, array $metadata): string
     {
         foreach (self::ALIASES as $source => $alias) {
@@ -505,9 +622,14 @@ final class Narrative
             }
             $formatted = match (true) {
                 $key === 'share' => self::num(((float) $value) * 100),
-                is_int($value) || (is_numeric($value) && floor((float) $value) == $value && abs((float) $value) >= 1000) => number_format((float) $value),
+                // MONEY IS TESTED FIRST, and has to be. Every one of these keys
+                // holds a whole-rupee amount, so the generic "large round
+                // number" branch below would claim it and render ₹38.3L as
+                // "3,828,570" — the money branch underneath was unreachable for
+                // any amount worth formatting.
+                in_array($key, self::MONEY_KEYS, true) => self::money($value),
                 in_array($key, ['currentPeriod', 'previousPeriod'], true) => self::monthName((string) $value),
-                in_array($key, ['currentAmount', 'previousAmount'], true) => self::money($value),
+                is_int($value) || (is_numeric($value) && floor((float) $value) == $value && abs((float) $value) >= 1000) => number_format((float) $value),
                 is_numeric($value) => self::num($value),
                 default => (string) $value,
             };

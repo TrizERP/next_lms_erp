@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Brain\BrainController;
+use App\Http\Controllers\Brain\BrainFeesIntelligenceController;
 use App\Http\Controllers\Brain\BrainIntelligenceController;
 use Illuminate\Support\Facades\Route;
 
@@ -59,6 +60,24 @@ Route::middleware(['brain.auth', 'brain.tenant'])->group(function () {
         // the loop into an outcome. Both require a named LMS user.
         Route::post('recommendations/{id}/decide', [BrainIntelligenceController::class, 'decide'])->middleware('brain.permission:update');
         Route::post('executions/{id}/complete', [BrainIntelligenceController::class, 'executionComplete'])->middleware('brain.permission:update');
+
+        /*
+         * Fees Intelligence — the Fees module's own loop, for the academic year
+         * the LMS header has selected.
+         *
+         * Inside this group on purpose: it inherits brain.auth (the LMS's own
+         * JWT), brain.tenant (pinned to the token's institute) and the Brain
+         * permission model, so the Fees screen gets tenant isolation and
+         * year validation without a second authentication path to keep correct.
+         *
+         * Decisions and outcomes are NOT duplicated here — a fee recommendation
+         * is decided through `recommendations/{id}/decide` and reported through
+         * `executions/{id}/complete` above, the same two writes every other
+         * recommendation in the system goes through.
+         */
+        Route::get('fees/intelligence', [BrainFeesIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('fees/intelligence/run', [BrainFeesIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('fees/accounts', [BrainFeesIntelligenceController::class, 'accounts'])->middleware('brain.permission:read');
 
         // Executive intelligence: health, what changed, what is at risk, what to do.
         Route::get('executive', [BrainIntelligenceController::class, 'executive'])->middleware('brain.permission:read');

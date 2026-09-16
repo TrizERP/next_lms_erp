@@ -104,10 +104,21 @@ final class Reasoner
 
         $counters = ['cases' => 0, 'hypotheses' => 0, 'steps' => 0, 'recommendations' => 0, 'undetermined' => 0];
 
-        DB::transaction(function () use ($signal, $metadata, $ruleKey, $evidence, $confidence, $cause, $caseId, $now, $title, &$counters) {
+        /**
+         * The academic year is INHERITED FROM THE SIGNAL, never re-resolved.
+         * A case explains one signal, so it describes exactly the year that
+         * signal describes; reading the "current" year here instead would let a
+         * pass run under 2022 label a 2021 finding's case 2022. NULL propagates
+         * as NULL, which is the honest label for a legacy signal that predates
+         * year scoping.
+         */
+        $syear = isset($signal->syear) && $signal->syear !== null ? (int) $signal->syear : null;
+
+        DB::transaction(function () use ($signal, $metadata, $ruleKey, $evidence, $confidence, $cause, $caseId, $now, $title, $syear, &$counters) {
             DB::table('hpbrain_cases')->insert(SchemaCache::only('hpbrain_cases', [
                 'id' => $caseId,
                 'tenant_id' => $this->tenantId,
+                'syear' => $syear,
                 'signal_id' => (string) $signal->id,
                 'title' => $title,
                 'description' => $this->describeCase($signal, $metadata, $evidence->count()),
@@ -150,6 +161,7 @@ final class Reasoner
                 DB::table('hpbrain_hypotheses')->insert(SchemaCache::only('hpbrain_hypotheses', [
                     'id' => $hypothesisId,
                     'tenant_id' => $this->tenantId,
+                    'syear' => $syear,
                     'case_id' => $caseId,
                     'statement' => (string) $cause['hypothesis'],
                     'root_cause_family' => (string) $cause['family'],
@@ -165,7 +177,7 @@ final class Reasoner
                     ->update(SchemaCache::only('hpbrain_cases', ['resolved_hypothesis_id' => $hypothesisId]));
             }
 
-            $stepIds = $this->writeTrail($caseId, (string) $signal->id, $metadata, $evidence, $cause, $confidence, $now);
+            $stepIds = $this->writeTrail($caseId, (string) $signal->id, $metadata, $evidence, $cause, $confidence, $now, $syear);
             $counters['steps'] += count($stepIds);
 
             if (! SchemaCache::hasTable('hpbrain_recommendations') || $stepIds === []) {
@@ -177,6 +189,7 @@ final class Reasoner
             DB::table('hpbrain_recommendations')->insert(SchemaCache::only('hpbrain_recommendations', [
                 'id' => Uuid::v4(),
                 'tenant_id' => $this->tenantId,
+                'syear' => $syear,
                 // The recommendation hangs off the LAST step — the conclusion.
                 // Earlier steps are reachable through the shared case, ordered by
                 // step_order, without a second foreign key per step.
@@ -223,6 +236,8 @@ final class Reasoner
         array $cause,
         float $confidence,
         string $now,
+        /** The signal's academic year, carried down so each step is year-traceable. */
+        ?int $syear = null,
     ): array {
         if (! SchemaCache::hasTable('hpbrain_reasoning_steps')) {
             return [];
@@ -267,6 +282,7 @@ final class Reasoner
             DB::table('hpbrain_reasoning_steps')->insert(SchemaCache::only('hpbrain_reasoning_steps', [
                 'id' => $id,
                 'tenant_id' => $this->tenantId,
+                'syear' => $syear,
                 'case_id' => $caseId,
                 'signal_id' => $signalId,
                 'step_order' => $index + 1,

@@ -205,6 +205,93 @@ final class RuleCatalogue
             'category' => 'investigate',
         ],
 
+        /* ----------------------------------------------- fees intelligence */
+        /*
+         * Causes for App\Brain\Intelligence\FeesSignalRules.
+         *
+         * Every `action` below is a REVIEW OR A PROCESS CHANGE, never a promise
+         * about money. "Prioritise", "check", "review" are what the evidence
+         * supports; "recover ₹X" is not, because nothing in this database
+         * establishes what a follow-up call collects. The Outcome stage records
+         * what actually happened, and that is where recovery becomes a fact.
+         *
+         * Confidence is the CEILING on each causal claim, and these sit lower
+         * than the structural rules on purpose: that a department has no head is
+         * a fact about the row, whereas why fees are unpaid is an inference
+         * about families, and the honest ceiling for an inference is lower.
+         */
+        'fee_collection_shortfall' => [
+            'family' => 'collection_risk',
+            'confidence' => 0.72,
+            'hypothesis' => 'A year-wide collection shortfall of this size is rarely spread evenly: it usually combines a group of accounts that have paid nothing with cycles that were billed but never followed up.',
+            'action' => 'Review the accounts in arrears against the cycles already billed, starting with the largest balances.',
+            'category' => 'investigate',
+        ],
+        'fee_receipt_coverage' => [
+            'family' => 'process_adoption_gap',
+            'confidence' => 0.80,
+            'hypothesis' => 'When most accounts carry no receipt at all, collection is usually happening outside the ERP or being entered late, so the system understates what has actually been collected.',
+            'action' => 'Confirm whether collection is being recorded in the ERP before treating these balances as arrears.',
+            'category' => 'investigate',
+        ],
+        'fee_outstanding_concentration' => [
+            'family' => 'collection_risk',
+            'confidence' => 0.85,
+            'hypothesis' => 'Outstanding balances concentrate in a few accounts where a full year, or several heads, went unpaid rather than a single instalment being missed.',
+            'action' => 'Prioritise the highest-value overdue accounts for structured follow-up before any school-wide reminder.',
+            'category' => 'remediate',
+        ],
+        'fee_overdue_backlog' => [
+            'family' => 'collection_aging',
+            'confidence' => 0.78,
+            'hypothesis' => 'Fees still unpaid several cycles after they were billed indicate follow-up is not running on a cycle-by-cycle schedule, so arrears accumulate rather than being cleared as they arise.',
+            'action' => 'Work the oldest overdue cycles first, and set a follow-up point at the close of each cycle.',
+            'category' => 'remediate',
+        ],
+        'fee_cycle_decline' => [
+            'family' => 'collection_risk',
+            'confidence' => 0.70,
+            'hypothesis' => 'A fall between consecutive billed cycles usually reflects a missed follow-up round for the later cycle rather than a change in what families can pay.',
+            'action' => 'Check whether the later cycle was followed up, and compare the two cycles by class before drawing a conclusion.',
+            'category' => 'investigate',
+        ],
+        'fee_class_collection_gap' => [
+            'family' => 'collection_distribution',
+            'confidence' => 0.75,
+            'hypothesis' => 'A class well below the school collection rate generally reflects something specific to that cohort — its fee structure, its quota mix, or follow-up that has not reached it — rather than a school-wide cause.',
+            'action' => 'Review the classes named here with their class teachers, and confirm the fee structure applied to each.',
+            'category' => 'investigate',
+        ],
+        'fee_head_collection_gap' => [
+            'family' => 'collection_distribution',
+            'confidence' => 0.70,
+            'hypothesis' => 'A fee head lagging the school rate is often optional in practice, disputed, or billed to families who were never told it applied to them.',
+            'action' => 'Review how the lagging fee heads are communicated and whether they are being billed to the right cohorts.',
+            'category' => 'investigate',
+        ],
+        'fee_payment_mode_concentration' => [
+            'family' => 'payment_handling_risk',
+            'confidence' => 0.65,
+            'hypothesis' => 'Fee money arriving almost entirely through one channel concentrates handling, reconciliation and continuity risk in that channel.',
+            'action' => 'Review whether the alternative payment channels offered to families are actually usable.',
+            'category' => 'watch',
+        ],
+
+        'fee_cancellation_pressure' => [
+            'family' => 'ledger_quality',
+            'confidence' => 0.70,
+            'hypothesis' => 'Heavy cancellation relative to collection usually means receipts are being issued and reversed rather than corrected at entry, so the collection figure reflects activity rather than money received.',
+            'action' => 'Review why receipts are being cancelled at this rate before relying on the collection figure.',
+            'category' => 'investigate',
+        ],
+        'fee_reconciliation_gap' => [
+            'family' => 'ledger_quality',
+            'confidence' => 0.92,
+            'hypothesis' => 'A receipt cancelled in one table but left live in another indicates the cancellation flow does not always write back the deletion flag the reports read.',
+            'action' => 'Reconcile the cancelled receipts still marked live, and correct the cancellation flow that left them.',
+            'category' => 'remediate',
+        ],
+
         /* -------------------------------------------------------- complaints */
         'complaint_unresolved' => [
             'family' => 'sla_breach',

@@ -127,5 +127,54 @@ return [
         // Absolute thresholds, where a proportion would be meaningless.
         'chronic_absence_marks' => 5,
         'pass_percentage' => 40.0,
+
+        /*
+        |----------------------------------------------------------------------
+        | Fees intelligence (App\Brain\Intelligence\FeesSignalRules)
+        |----------------------------------------------------------------------
+        |
+        | Every fee rule is evaluated against ONE academic year's demand and
+        | receipts. The MINIMUMS below are not sensitivity dials — they are the
+        | point beneath which a proportion stops being evidence. Three accounts
+        | in arrears are always "100% concentrated in the top three"; a cycle
+        | with one receipt always "declined 100%" against the one before it.
+        | Rules that fire on those produce confident nonsense, so each rule
+        | states the floor it needs and declines below it, and the screen shows
+        | the decline as "insufficient evidence" rather than inventing a finding.
+        |
+        */
+
+        // Collection rate (percentage points) under which the year's collection
+        // performance is itself the finding.
+        'fee_collection_rate_floor' => 70.0,
+        // Share of outstanding held by the largest accounts before concentration
+        // is worth acting on, and how many accounts "largest" means.
+        'fee_outstanding_concentration' => 0.60,
+        'fee_concentration_accounts' => 10,
+        // A class or fee head must be this many percentage points below the
+        // institute's own rate before it is named.
+        'fee_class_gap_points' => 15.0,
+        'fee_head_gap_points' => 15.0,
+        // Overdue money as a share of total demand.
+        'fee_overdue_share' => 0.25,
+        // Share of fee accounts with no receipt at all — a process/adoption
+        // finding rather than a collection one.
+        'fee_receipt_coverage' => 0.50,
+        // Cycle-over-cycle fall in collection, as a proportion.
+        'fee_cycle_decline' => 0.25,
+        // Share of collected value arriving through a single payment mode.
+        'fee_payment_mode_concentration' => 0.85,
+
+        // Evidence floors. Below these a proportion is arithmetic, not a finding.
+        'fee_min_accounts' => 10,
+        'fee_min_defaulters' => 5,
+        'fee_min_class_accounts' => 5,
+        'fee_min_receipts' => 10,
+        'fee_min_cycle_amount' => 1000.0,
+
+        // Ledger quality. Cancellation is normal; cancellation on this scale
+        // relative to collection is a finding about how receipts are handled.
+        'fee_cancellation_share' => 25.0,
+        'fee_min_cancellations' => 5,
     ],
 ];
