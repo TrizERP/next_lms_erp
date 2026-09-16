@@ -1482,15 +1482,22 @@ die; */
                 }
             }
         }else{
+            //remove the previous selection of every submitted level first, so re-saving actually updates it
+            //(and so a subject can be moved from one level to another in the same save)
+            foreach ([4 => 'optional_subject4', 5 => 'optional_subject5', 6 => 'optional_subject6'] as $optLevel => $optField) {
+                if ($request->input($optField)) {
+                    student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear, 'level' => $optLevel])->delete();
+                }
+            }
             if ($request->input('optional_subject4')) {
                 $optional_subject4['student_id'] = $student_id;
                 $optional_subject4['sub_institute_id'] = $sub_institute_id;
                 $optional_subject4['syear'] = $syear;
+                $optional_subject4['level'] = 4;
                 foreach ($request->input('optional_subject4') as $key => $val) {
                     $optional_subject4['subject_id'] = $val;
                     $checkSubject = student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->where('subject_id',$optional_subject4['subject_id'])->first();
                     if(empty($checkSubject)){
-                    $optional_subject4['level'] = 4;
                     student_optional_subjectModel::insert($optional_subject4);
                     }
                 }
@@ -1501,11 +1508,11 @@ die; */
                 $optional_subject5['student_id'] = $student_id;
                 $optional_subject5['sub_institute_id'] = $sub_institute_id;
                 $optional_subject5['syear'] = $syear;
+                $optional_subject5['level'] = 5;
                 foreach ($request->input('optional_subject5') as $key => $val) {
                     $optional_subject5['subject_id'] = $val;
                     $checkSubject5 = student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->where('subject_id',$optional_subject5['subject_id'])->first();
                     if(empty($checkSubject5)){
-                    $optional_subject5['level'] = 5;
                     student_optional_subjectModel::insert($optional_subject5);
                     }
                 }
@@ -1517,11 +1524,11 @@ die; */
                 $optional_subject6['student_id'] = $student_id;
                 $optional_subject6['sub_institute_id'] = $sub_institute_id;
                 $optional_subject6['syear'] = $syear;
+                $optional_subject6['level'] = 6;
                 foreach ($request->input('optional_subject6') as $key => $val) {
                     $optional_subject6['subject_id'] = $val;
                     $checkSubject6 = student_optional_subjectModel::where(["sub_institute_id" => $sub_institute_id, 'student_id' => $student_id, 'syear' => $syear])->where('subject_id',$optional_subject6['subject_id'])->first();
                     if(empty($checkSubject6)){
-                    $optional_subject6['level'] = 6;
                     student_optional_subjectModel::insert($optional_subject6);
                     }
                 }
