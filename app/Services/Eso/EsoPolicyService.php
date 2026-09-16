@@ -711,13 +711,16 @@ class EsoPolicyService
 
     /**
      * Score a diagnostic and set every node's initial state (D1, weighted double
-     * per the brief). Nodes at/above SKIP_THRESHOLD are marked mastered and
-     * skipped; everything else starts in "learning". Correctness is resolved
-     * server-side from each response's `answer_master_id` — a client cannot
-     * self-report "correct".
+     * per the brief). Three outcomes per node: a clean sweep (every item
+     * correct, at least MIN_EVENTS_K distinct items, estimate at/above
+     * SKIP_THRESHOLD) is mastered outright and enters the retention ladder; a
+     * bare skip (at/above SKIP_THRESHOLD, but short of a sweep) goes straight
+     * to practice without teaching; everything else starts in "learning" and is
+     * taught. Correctness is resolved server-side from each response's
+     * `answer_master_id` — a client cannot self-report "correct".
      *
      * @param  array<int, array{node_id:int, answer_master_id:int}>  $responses
-     * @return array<int, array{node_id:int, mastery_estimate:float, skip:bool}>
+     * @return array<int, array{node_id:int, mastery_estimate:float, skip:bool, mastered:bool}>
      */
     public function scoreDiagnostic(int $studentId, int $conceptId, int $subInstituteId, array $responses): array
     {
@@ -728,34 +731,60 @@ class EsoPolicyService
         foreach ($byNode as $nodeId => $nodeResponses) {
             $nodeId = (int) $nodeId;
             $state = $this->stateFor($studentId, $nodeId, $subInstituteId);
+            $askedQuestionIds = [];
+            $wrongAnswers = 0;
 
             foreach ($nodeResponses as $response) {
                 $answerMasterId = (int) $response['answer_master_id'];
                 $correct = $this->isAnswerCorrect($answerMasterId);
                 $this->applyUpdate($state, $correct, weight: 2.0);
                 $this->logResponse($studentId, $conceptId, $nodeId, $subInstituteId, $answerMasterId, $correct, false, self::RESPONSE_MODE_DIAGNOSTIC);
+                $questionId = $this->questionIdFor($answerMasterId);
+                $askedQuestionIds[] = $questionId;
+                if (! $correct) {
+                    $wrongAnswers++;
+                }
                 // Collected across every node, published once below — a whole
                 // diagnostic is one operation, not eight.
-                $evidence[] = ['question_id' => $this->questionIdFor($answerMasterId), 'correct' => $correct];
+                $evidence[] = ['question_id' => $questionId, 'correct' => $correct];
             }
 
             $skip = $state->mastery_estimate >= self::SKIP_THRESHOLD;
 
-            // A diagnostic skip means "do not TEACH this — the learner already
-            // appears to know it". It does NOT mean mastered.
+            // A CLEAN SWEEP may master the node outright, without practice.
             //
-            // This branch used to write STATUS_MASTERED and schedule retention,
-            // which is how two correct diagnostic answers (weight 2.0, so
-            // 0.000 -> 0.400 -> 0.800) could master a node outright. Writing a
-            // diagnostic outcome as mastery state is the semantic defect
-            // underneath that arithmetic; lowering the weight would have hidden
-            // it rather than fixed it (ADR-001 §4.2).
+            // Requires all three: no wrong answer, enough distinct questions to
+            // be worth trusting, and the estimate clearing SKIP_THRESHOLD. The
+            // item floor is the point — `applyUpdate` uses weight 2.0, so two
+            // correct answers alone reach 0.000 -> 0.400 -> 0.800 and would
+            // otherwise master a node on a coin-flip's worth of evidence, which
+            // is the arithmetic defect ADR-001 §4.2 was written about.
             //
-            // The skip still works: nextAction()'s loop passes over a node via
-            // hasSatisfiedOwnThreshold(), which reads the estimate, not the
-            // status. Mastery — and therefore the retention ladder — is granted
-            // only by masteryVerdict() once the evidence floor is met.
-            $state->status = LearnerNodeState::STATUS_LEARNING;
+            // This deliberately departs from ADR-001 §4.1 ("a diagnostic
+            // informs state but cannot complete mastery"), as an explicit
+            // product decision: a learner who answers every diagnostic item
+            // correctly should not be made to practise what they have just
+            // demonstrated. Without it the engine deadlocks outright —
+            // nextAction() skips the saturated node via
+            // hasSatisfiedOwnThreshold() while masteryVerdict() withholds
+            // mastery for want of non-diagnostic evidence, so the learner is
+            // told to "continue practising" with no node to practise, forever.
+            $cleanSweep = $skip
+                && $wrongAnswers === 0
+                && count(array_unique($askedQuestionIds)) >= self::MIN_EVENTS_K;
+
+            // A partial skip still means only "do not TEACH this — the learner
+            // already appears to know it", NOT mastered: the node goes straight
+            // to practice, which is where the evidence the floor requires gets
+            // recorded, and masteryVerdict() grants mastery as it always has.
+            //
+            // Only a clean sweep short-circuits that. The distinction is what
+            // keeps the ADR-001 §4.2 arithmetic defect closed: a node carried
+            // over SKIP_THRESHOLD by two correct answers has neither the item
+            // count nor a perfect record, so it still practises.
+            $state->status = $cleanSweep
+                ? LearnerNodeState::STATUS_MASTERED
+                : LearnerNodeState::STATUS_LEARNING;
 
             if ($skip) {
                 // Skip the teach/CFU phases too: the learner has demonstrated
@@ -763,6 +792,17 @@ class EsoPolicyService
                 // evidence the floor requires actually gets recorded.
                 $state->taught_at ??= now();
                 $state->cfu_passed_at ??= now();
+            }
+
+            if ($cleanSweep) {
+                // Mastery granted here must also enter the retention ladder,
+                // exactly as masteryVerdict() does when it grants it. Skipping
+                // this would hand out mastery that is never re-verified —
+                // `next_review_at` would stay NULL and no D5 check would ever
+                // come due, so the one safeguard on diagnostic-granted mastery
+                // (failing a later retrieval drops the node back to `learning`)
+                // would never run.
+                $this->scheduleRetention($state);
             }
 
             $state->save();
@@ -773,13 +813,29 @@ class EsoPolicyService
                 $nodeId,
                 $subInstituteId,
                 ['mastery_estimate' => $state->mastery_estimate, 'attempts' => $state->attempts],
-                $skip
-                    ? sprintf('D1: node mastery %.2f >= %.2f, skip-eligible', $state->mastery_estimate, self::SKIP_THRESHOLD)
-                    : sprintf('D1: node mastery %.2f < %.2f, needs instruction', $state->mastery_estimate, self::SKIP_THRESHOLD),
-                $skip ? 'skip_instruction' : 'needs_instruction'
+                match (true) {
+                    $cleanSweep => sprintf(
+                        'D1: node mastery %.2f >= %.2f on %d items, all correct — mastered on diagnostic',
+                        $state->mastery_estimate,
+                        self::SKIP_THRESHOLD,
+                        count(array_unique($askedQuestionIds))
+                    ),
+                    $skip => sprintf('D1: node mastery %.2f >= %.2f, skip-eligible', $state->mastery_estimate, self::SKIP_THRESHOLD),
+                    default => sprintf('D1: node mastery %.2f < %.2f, needs instruction', $state->mastery_estimate, self::SKIP_THRESHOLD),
+                },
+                match (true) {
+                    $cleanSweep => 'mastered_on_diagnostic',
+                    $skip => 'skip_instruction',
+                    default => 'needs_instruction',
+                }
             );
 
-            $results[] = ['node_id' => $nodeId, 'mastery_estimate' => $state->mastery_estimate, 'skip' => $skip];
+            $results[] = [
+                'node_id' => $nodeId,
+                'mastery_estimate' => $state->mastery_estimate,
+                'skip' => $skip,
+                'mastered' => $cleanSweep,
+            ];
         }
 
         $this->publishEvidence($studentId, $conceptId, $subInstituteId, $evidence);
@@ -847,6 +903,10 @@ class EsoPolicyService
         // initial diagnosis, because mastery IS held.
         $conceptStale = $this->isConceptStale($studentId, $nodes, $states);
 
+        // Resolved once for the whole concept rather than per node inside the
+        // loop below, which would re-query the response log for every node.
+        $nodeEvidence = $this->evidenceByNode($studentId, $nodes);
+
         // D3 precedence is CONCEPT-WIDE, not per node.
         //
         // This scan used to live inside the node loop below, which made
@@ -896,7 +956,22 @@ class EsoPolicyService
                 return $this->staleMasteryAction($studentId, $conceptId, $node, $state, $subInstituteId, $silent);
             }
 
-            if ($state->isMastered() || $this->hasSatisfiedOwnThreshold($node, $state)) {
+            // A node may only be passed over for being "good enough" if the
+            // evidence floor masteryVerdict() will judge it against is already
+            // satisfied. Testing the estimate alone deadlocked the engine: a
+            // diagnostic can carry a node over its threshold (weight 2.0) while
+            // contributing zero valid events — evidenceByNode() excludes
+            // diagnostic, CFU and retrieval modes — so every node was skipped
+            // here, the verdict then withheld mastery for want of evidence, and
+            // the learner was told to `continue_practice` with no node to
+            // practise on. Requiring the floor sends exactly those nodes to
+            // practice, which is what records the missing evidence.
+            //
+            // This does not reopen the deadlock hasSatisfiedOwnThreshold() was
+            // written to close: a node that reached its threshold THROUGH
+            // practice already carries those events, so it is still skipped.
+            if ($state->isMastered()
+                || ($this->hasSatisfiedOwnThreshold($node, $state) && $this->nodeMeetsEvidenceFloor($node, $nodeEvidence))) {
                 continue;
             }
 
@@ -953,6 +1028,39 @@ class EsoPolicyService
             'S' => $state->attempts > 0,
             default => false,
         };
+    }
+
+    /**
+     * Does this node already carry the evidence masteryVerdict() will require
+     * of it — enough distinct practice events, at least one of them unaided?
+     *
+     * The per-type counts are MIN_EVENTS_K / MIN_EVENTS_A, the same constants
+     * evidenceFloorFor() uses, so this cannot drift from the verdict it is
+     * predicting. It is deliberately stricter on independence: the verdict sums
+     * independent events ACROSS a type's nodes, while this asks each node for
+     * its own. Being stricter here is safe (the worst case is one extra
+     * practice item) whereas being looser would let a node skip out while the
+     * concept-level requirement is still unmet — the deadlock this guards.
+     *
+     * S nodes have no floor because masteryVerdict() does not gate on them.
+     *
+     * @param  array<int, array{events:int, independent:int, last_at:mixed}>  $evidence
+     */
+    protected function nodeMeetsEvidenceFloor(ConceptNode $node, array $evidence): bool
+    {
+        $required = match ($node->node_type) {
+            'K' => self::MIN_EVENTS_K,
+            'A' => self::MIN_EVENTS_A,
+            default => 0,
+        };
+
+        if ($required === 0) {
+            return true;
+        }
+
+        $seen = $evidence[$node->id] ?? ['events' => 0, 'independent' => 0];
+
+        return $seen['events'] >= $required && $seen['independent'] >= self::MIN_INDEPENDENT;
     }
 
     // ── D2: prerequisite gate ────────────────────────────────────────────
