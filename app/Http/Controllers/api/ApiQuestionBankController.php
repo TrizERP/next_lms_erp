@@ -300,7 +300,13 @@ class ApiQuestionBankController extends Controller
             ->tap(fn ($w) => $this->scoped($w, $request))
             ->select(
                 DB::raw(
-                    "COALESCE(x.question_type_code, CASE WHEN q.question_type_id = 1 "
+                    // Three tiers, most authoritative first. The sidecar code was
+                    // read off the source document. q.g_qtype_code is derived from
+                    // the stem for the ~3k questions that were generated and so
+                    // have no sidecar -- without it every one of them counted as
+                    // "narrative" and the form dropdown could not see them at all.
+                    "COALESCE(x.question_type_code, q.g_qtype_code, "
+                    . "CASE WHEN q.question_type_id = 1 "
                     . "THEN 'mcq' ELSE 'narrative' END) as code"
                 ),
                 DB::raw('COUNT(*) as total')
@@ -408,6 +414,7 @@ class ApiQuestionBankController extends Controller
                 'q.standard_id', 'q.subject_id', 'q.question_title', 'q.description',
                 'q.points as marks', 'q.category', 'q.status', 'q.answer as answer_envelope',
                 'q.g_bloom as bloom', 'q.g_dok as dok', 'q.g_difficulty as difficulty',
+                'q.g_qtype_code as derived_type_code',
                 'q.question_type_id',
                 'qt.question_type as lms_question_type',
                 'ch.chapter_name', 'c.name as concept_name',
@@ -533,7 +540,16 @@ class ApiQuestionBankController extends Controller
             $codes = [$codes];
         }
         if (is_array($codes) && $codes !== []) {
-            $query->whereIn('x.question_type_code', $codes);
+            // Match on the same three-tier resolution the counts use, or a
+            // chapter would offer "Very Short Answer (990)" and then return
+            // nothing when you picked it.
+            $query->whereIn(
+                DB::raw(
+                    "COALESCE(x.question_type_code, q.g_qtype_code, "
+                    . "CASE WHEN q.question_type_id = 1 THEN 'mcq' ELSE 'narrative' END)"
+                ),
+                $codes
+            );
         }
 
         // Provenance: extracted from a published book, or machine-generated.
@@ -623,7 +639,13 @@ class ApiQuestionBankController extends Controller
             $envelope = $this->decodeEnvelope($row->answer_envelope ?? null);
             $rawType = strtolower(trim((string) ($row->lms_question_type ?? '')));
             $isMcq = in_array($rawType, ['mcq', 'multiple', 'multiple choice', 'multiple_choice'], true);
-            $code = $row->question_type_code ?? ($envelope['item_form'] ?? null) ?? ($isMcq ? 'mcq' : 'narrative');
+            // Sidecar (read off the source) -> envelope -> derived from the stem
+            // -> the grading type. Without the derived tier the ~3k generated
+            // questions all reported 'narrative' and showed catalog label "(none)".
+            $code = $row->question_type_code
+                ?? ($envelope['item_form'] ?? null)
+                ?? ($row->derived_type_code ?? null)
+                ?? ($isMcq ? 'mcq' : 'narrative');
 
             $data[] = [
                 'id' => $id,
