@@ -22,6 +22,18 @@ final class Plan
     public const SOURCE_LLM = 'llm';
 
     /**
+     * Planned by reading the module the question was asked on, because neither the
+     * intent registry nor the model could route it.
+     *
+     * Distinct from `deterministic` so the trace does not claim an intent matched when
+     * none did. It is still deterministic in the sense that matters — same module, same
+     * tools, every time, no model involved — but "matched the X intent in the registry"
+     * would be a false statement about how the route was chosen, and this trace is read
+     * precisely to find out how.
+     */
+    public const SOURCE_MODULE_READ = 'module_read';
+
+    /**
      * @param  array<int, PlanStep>  $steps
      * @param  array<int, string>  $candidateTools  Proposed, not selected.
      * @param  array<int, array{when_unavailable:string, reason:string}>  $refusals

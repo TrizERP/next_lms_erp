@@ -124,6 +124,8 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapBrainRoutes();
 
         $this->mapPlatformRoutes();
+
+        $this->mapDocumentRoutes();
     }
 
     /**
@@ -430,7 +432,23 @@ class RouteServiceProvider extends ServiceProvider
             ->middleware('api')
             ->group(base_path('routes/platform.php'));
     }
-    
+
+    /**
+     * Document module — the read-only aggregation layer over the document
+     * sources every other module already owns.
+     *
+     * Mounted like the Platform and Brain routes: its own prefix, its own file.
+     * routes/api.php is untouched, and no existing upload, download or delete
+     * path changes. Authentication (api.session) is declared inside the file,
+     * next to the endpoints it covers.
+     */
+    protected function mapDocumentRoutes()
+    {
+        Route::prefix('api/documents')
+            ->middleware('api')
+            ->group(base_path('routes/documents.php'));
+    }
+
     /**
      * Configure the rate limiters for the application.
      *

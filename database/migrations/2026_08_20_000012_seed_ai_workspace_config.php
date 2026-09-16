@@ -78,7 +78,7 @@ return new class extends Migration
                 'route_patterns' => ['/fees', '/fees/**'],
                 'entity_key' => null,
                 'entity_param' => null,
-                'capabilities' => ['conversational' => true, 'generative' => false, 'agent' => false, 'workflow' => false, 'ontology' => false],
+                'capabilities' => ['conversational' => true, 'generative' => false, 'agent' => false, 'workflow' => true, 'ontology' => false],
                 'icon' => 'receipt',
                 'sort_order' => 40,
                 'match_priority' => 70,
@@ -175,6 +175,8 @@ return new class extends Migration
             ['fees', 'conversational', 'Which students have pending fees?', 'prompt', null, 'Which students currently have pending or unpaid fees?', false, 10],
             ['fees', 'conversational', 'Fee collection summary', 'prompt', null, 'Summarise fee collection for the current period.', false, 20],
             ['fees', 'conversational', 'Show defaulters', 'prompt', null, 'Show the fee defaulter report.', false, 30],
+
+            ['fees', 'workflow', 'Review pending fees', 'start_workflow', 'fees_collection', null, false, 10],
 
             // ---- Attendance -----------------------------------------------------
             ['attendance', 'conversational', "Today's attendance", 'prompt', null, 'Summarise attendance recorded today.', false, 10],

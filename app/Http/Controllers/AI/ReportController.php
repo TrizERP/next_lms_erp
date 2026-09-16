@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\AI;
 
+use App\Domain\AI\Templates\GeneratedReportStore;
 use App\Services\Mcp\AiReportGenerator;
-use App\Services\Mcp\AiTemplateService;
 use App\Services\Mcp\ReportSender;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +41,7 @@ class ReportController extends AiController
     public function __construct(
         private readonly AiReportGenerator $reports,
         private readonly ReportSender $sender,
+        private readonly GeneratedReportStore $store,
     ) {
     }
 
@@ -91,13 +92,13 @@ class ReportController extends AiController
                 return $this->failure('That report could not be found.', 404);
             }
 
-            DB::table('template_master')
-                ->where('id', $report)
-                ->where('sub_institute_id', $context->selectedInstituteId)
-                ->update([
-                    'title' => $validated['title'],
-                    'html_content' => $validated['html'],
-                ]);
+            $this->store->save(
+                $context,
+                $report,
+                $validated['title'],
+                $validated['html'],
+                (bool) ($row->legacy ?? false)
+            );
 
             return $this->success('Report saved.', [
                 'report' => [
@@ -192,20 +193,8 @@ class ReportController extends AiController
 
     private function find($context, int $report)
     {
-        return $this->scopedQuery($context)->where('id', $report)->first();
-    }
-
-    /** The assistant's own reports for this school, and nothing else. */
-    private function scopedQuery($context)
-    {
-        return DB::table('template_master')
-            ->where('module_name', AiTemplateService::AI_MODULE)
-            ->where('sub_institute_id', $context->selectedInstituteId)
-            ->where(function ($query) {
-                // `status` is nullable in this table and generated rows are saved as 1.
-                // Anything not explicitly disabled counts, matching how
-                // AiTemplateService reads the same column.
-                $query->whereNull('status')->orWhere('status', '!=', 0);
-            });
+        // Both tables, current one first — see `GeneratedReportStore`. A report written
+        // before `ai_generated_reports` existed keeps its link and still opens.
+        return $this->store->find($context, $report);
     }
 }
