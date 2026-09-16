@@ -57,6 +57,55 @@ abstract class PlatformController extends Controller
     }
 
     /**
+     * Whether the caller may read across institutes.
+     *
+     * `is_admin === 2` is this codebase's Super Admin, and it is the only value
+     * meaning "not bound to one tenant": ApiLoginController branches on it
+     * throughout, and PAL's tenant resolvers (CoherenceMapController::tenantFor,
+     * NewPalContentModelController::writeTenantFor) treat it as the one identity
+     * allowed to name an institute other than its own. `is_admin === 1` is an
+     * institute administrator and is deliberately NOT included.
+     *
+     * READ FROM THE TOKEN, NEVER FROM INPUT — the same rule as `tenantId()`. A
+     * body or query parameter claiming super-admin would be caller-controlled
+     * privilege.
+     *
+     * WHY THIS IS NOT AN RBAC CHECK. Grants are stored per institute
+     * (PermissionService.php:183-199), so no permission key can express "may see
+     * every tenant". Cross-tenant access has to be an identity check, and this is
+     * it.
+     */
+    protected function isSuperAdmin(Request $request): bool
+    {
+        $auth = $this->auth($request);
+
+        return (int) ($auth['is_admin'] ?? 0) === 2;
+    }
+
+    /**
+     * The body returned in place of data the caller may not see.
+     *
+     * 200 rather than 403, deliberately. A 403 says "you may not use this
+     * endpoint"; this says "you may use it, and this part of it is not yours" —
+     * a different fact, which the screen renders as a labelled panel rather than
+     * as an error. The caller reached a resource they are entitled to reach; one
+     * section of the answer is withheld.
+     *
+     * The withheld data is never computed, let alone filtered out afterwards —
+     * see EventBusController, where the restricted branch returns before any
+     * query runs.
+     *
+     * @return array{restricted: bool, reason: string}
+     */
+    protected function restricted(string $reason = 'Super Admin only'): array
+    {
+        return [
+            'restricted' => true,
+            'reason' => $reason,
+        ];
+    }
+
+    /**
      * The 401 body for a request with no usable identity.
      *
      * Says which of the two problems it is — no token at all, or a token with no
