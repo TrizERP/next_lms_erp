@@ -207,8 +207,12 @@ class fees_breackoff_controller extends Controller
         $context = $this->resolveRequestContext($request);
         if (isset($_REQUEST['action']) && $_REQUEST['action'] == 'insert')
         {
-            $all_data = $_REQUEST['NewValues'];
-          
+            // A structure may be for new students only, old students only, or both,
+            // so neither matrix is required in the request.
+            $all_data = isset($_REQUEST['NewValues']) && is_array($_REQUEST['NewValues'])
+                ? $_REQUEST['NewValues']
+                : [];
+
             foreach ($all_data as $id => $arr) {
                 foreach ($arr as $ids => $val) {
                     if ($val == '' || $val == null) {
@@ -304,7 +308,9 @@ class fees_breackoff_controller extends Controller
             // ->where('syear', '<', $cur_syear)->get()->toArray();
             // echo "<pre>";print_r($old_year);exit;
             // end 16-08-2024
-            $all_data = $_REQUEST['OldValues'];
+            $all_data = isset($_REQUEST['OldValues']) && is_array($_REQUEST['OldValues'])
+                ? $_REQUEST['OldValues']
+                : [];
             foreach ($all_data as $id => $arr) {
                 foreach ($arr as $ids => $val) {
                     if ($val == '' || $val == null) {
