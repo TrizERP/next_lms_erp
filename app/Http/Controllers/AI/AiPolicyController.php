@@ -6,10 +6,36 @@ use App\Domain\AI\Support\AiAuditLogger;
 use App\Services\AI\AiPolicyResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 class AiPolicyController extends AiController
 {
+    /**
+     * The scopes a policy assignment may name.
+     *
+     * One list, read by both `options()` and the validator — they were two copies of
+     * the same array and drifting them apart would let the form offer a scope the
+     * validator rejects.
+     *
+     * `module` is the scope that makes a policy a *module's* policy: its `scope_id` is
+     * an `ai_modules` row id, so "this policy governs Fees AI" is expressed with the
+     * columns `ai_policy_assignments` already has. Nothing was added to store it —
+     * `scope_type` has always been a discriminator string and `scope_id` the id of
+     * whatever it discriminates.
+     */
+    private const SCOPE_TYPES = [
+        ['value' => 'global', 'label' => 'Global'],
+        ['value' => 'module', 'label' => 'Module'],
+        ['value' => 'academic_year', 'label' => 'Academic year'],
+        ['value' => 'grade', 'label' => 'Grade'],
+        ['value' => 'course', 'label' => 'Course'],
+        ['value' => 'class', 'label' => 'Class'],
+        ['value' => 'assignment', 'label' => 'Assignment'],
+        ['value' => 'assessment', 'label' => 'Assessment'],
+        ['value' => 'activity', 'label' => 'Activity'],
+    ];
+
     public function __construct(
         private readonly AiPolicyResolver $resolver,
         private readonly AiAuditLogger $audit,
@@ -19,27 +45,30 @@ class AiPolicyController extends AiController
     public function options(Request $request)
     {
         try {
-            $this->scope($request);
+            $scope = $this->scope($request);
 
             return $this->success('AI policy options resolved.', [
                 'policy_types' => $this->resolver->policyTypeOptions(),
                 'rule_catalogue' => $this->resolver->ruleCatalogue(),
-                'scope_types' => [
-                    ['value' => 'global', 'label' => 'Global'],
-                    ['value' => 'academic_year', 'label' => 'Academic year'],
-                    ['value' => 'grade', 'label' => 'Grade'],
-                    ['value' => 'course', 'label' => 'Course'],
-                    ['value' => 'class', 'label' => 'Class'],
-                    ['value' => 'assignment', 'label' => 'Assignment'],
-                    ['value' => 'assessment', 'label' => 'Assessment'],
-                    ['value' => 'activity', 'label' => 'Activity'],
-                ],
+                'scope_types' => self::SCOPE_TYPES,
+                // The modules a policy can be scoped to, straight from `ai_modules`.
+                // A module-scoped screen needs the id to save an assignment, and must
+                // never hardcode one — ids differ per estate.
+                'modules' => $this->moduleOptions($scope->selectedInstituteId),
             ]);
         } catch (Throwable $exception) {
             return $this->handle($exception);
         }
     }
 
+    /**
+     * Policies this school can see.
+     *
+     * `module_key` narrows the list to the policies that govern one module: those with
+     * a `module` assignment naming it. A module's own AI Stack screen passes it so it
+     * can never show, or edit, another module's policy. Omitted, the behaviour is
+     * exactly what it was — every policy, which is what the central console wants.
+     */
     public function index(Request $request)
     {
         try {
@@ -47,12 +76,37 @@ class AiPolicyController extends AiController
             $this->ensureDefaultExamplePolicy($scope);
             $institute = $scope->selectedInstituteId;
 
-            $rows = DB::table('ai_policies as p')
+            $moduleKey = trim((string) $request->input('module_key', ''));
+            $moduleIds = $moduleKey === '' ? [] : $this->moduleIds($moduleKey, $institute);
+
+            $query = DB::table('ai_policies as p')
                 ->where(function ($query) use ($institute) {
                     $query->where('p.sub_institute_id', $institute)
                         ->orWhereNull('p.sub_institute_id');
-                })
-                ->orderByDesc('p.updated_at')
+                });
+
+            if ($moduleKey !== '') {
+                // No `ai_modules` row for that key means no policy can be scoped to it.
+                // Returning an empty list is the honest answer; falling through to
+                // every policy would quietly show another module's configuration.
+                if ($moduleIds === []) {
+                    return $this->success('AI policies resolved.', [
+                        'sub_institute_id' => $institute,
+                        'module_key' => $moduleKey,
+                        'module_ids' => [],
+                        'policies' => [],
+                    ]);
+                }
+
+                $query->whereExists(function ($exists) use ($moduleIds) {
+                    $exists->from('ai_policy_assignments as a')
+                        ->whereColumn('a.policy_id', 'p.id')
+                        ->where('a.scope_type', 'module')
+                        ->whereIn('a.scope_id', $moduleIds);
+                });
+            }
+
+            $rows = $query->orderByDesc('p.updated_at')
                 ->orderByDesc('p.id')
                 ->get()
                 ->all();
@@ -64,6 +118,8 @@ class AiPolicyController extends AiController
 
             return $this->success('AI policies resolved.', [
                 'sub_institute_id' => $institute,
+                'module_key' => $moduleKey === '' ? null : $moduleKey,
+                'module_ids' => array_values($moduleIds),
                 'policies' => $policies,
             ]);
         } catch (Throwable $exception) {
@@ -194,16 +250,7 @@ class AiPolicyController extends AiController
     private function validatedPolicy(Request $request, bool $isCreate = true): array
     {
         $policyTypes = array_column($this->resolver->policyTypeOptions(), 'value');
-        $scopeTypes = array_column([
-            ['value' => 'global'],
-            ['value' => 'academic_year'],
-            ['value' => 'grade'],
-            ['value' => 'course'],
-            ['value' => 'class'],
-            ['value' => 'assignment'],
-            ['value' => 'assessment'],
-            ['value' => 'activity'],
-        ], 'value');
+        $scopeTypes = array_column(self::SCOPE_TYPES, 'value');
 
         $rules = [
             'name' => 'required|string|max:191',
@@ -292,6 +339,102 @@ class AiPolicyController extends AiController
         $this->saveAssignments($exampleId, [], $scope->selectedInstituteId, $scope->userId);
     }
 
+    /**
+     * The modules a policy can be scoped to, newest definition of each key winning.
+     *
+     * A school's own `ai_modules` row shadows the platform one with the same key, which
+     * is the same precedence every other reader of that table uses.
+     *
+     * @return array<int, array{id:int, key:string, label:string}>
+     */
+    private function moduleOptions(int|string|null $institute): array
+    {
+        if (! Schema::hasTable('ai_modules')) {
+            return [];
+        }
+
+        $rows = DB::table('ai_modules')
+            ->where(function ($query) use ($institute) {
+                $query->where('sub_institute_id', $institute)
+                    ->orWhereNull('sub_institute_id');
+            })
+            ->where('status', 1)
+            // Platform rows first so an institute row overwrites them below.
+            ->orderByRaw('sub_institute_id IS NULL DESC')
+            ->orderBy('sort_order')
+            ->get(['id', 'module_key', 'label']);
+
+        $options = [];
+
+        foreach ($rows as $row) {
+            $options[(string) $row->module_key] = [
+                'id' => (int) $row->id,
+                'key' => (string) $row->module_key,
+                'label' => (string) $row->label,
+            ];
+        }
+
+        return array_values($options);
+    }
+
+    /**
+     * Every `ai_modules` id this school resolves for one module key.
+     *
+     * Plural because a key can exist at both platform and institute scope, and a
+     * policy assignment may name either. Matching only one would hide policies that
+     * were saved against the other.
+     *
+     * @return array<int, int>
+     */
+    private function moduleIds(string $moduleKey, int|string|null $institute): array
+    {
+        if (! Schema::hasTable('ai_modules')) {
+            return [];
+        }
+
+        return DB::table('ai_modules')
+            ->where('module_key', $moduleKey)
+            ->where(function ($query) use ($institute) {
+                $query->where('sub_institute_id', $institute)
+                    ->orWhereNull('sub_institute_id');
+            })
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+    }
+
+    /**
+     * The module keys a policy's `module` assignments point at.
+     *
+     * Resolved for the reader's benefit: an assignment stores an id, and a screen that
+     * had to translate ids itself would need the module table too.
+     *
+     * @param array<int, array<string, mixed>> $assignments
+     * @return array<int, string>
+     */
+    private function assignedModuleKeys(array $assignments): array
+    {
+        $ids = [];
+
+        foreach ($assignments as $assignment) {
+            if (($assignment['scope_type'] ?? '') === 'module' && $assignment['scope_id'] !== null) {
+                $ids[] = (int) $assignment['scope_id'];
+            }
+        }
+
+        if ($ids === [] || ! Schema::hasTable('ai_modules')) {
+            return [];
+        }
+
+        return array_values(array_unique(
+            DB::table('ai_modules')
+                ->whereIn('id', $ids)
+                ->pluck('module_key')
+                ->map(fn ($key) => (string) $key)
+                ->all()
+        ));
+    }
+
     private function policyDetail(int $id, int|string|null $institute): ?array
     {
         $row = DB::table('ai_policies')->where('id', $id)->first();
@@ -344,6 +487,10 @@ class AiPolicyController extends AiController
             'updated_at' => $row->updated_at,
             'rules' => $rules,
             'assignments' => $assignments,
+            // Which modules this policy governs, as keys rather than ids. Empty means
+            // it is not scoped to any module — it applies wherever its other
+            // assignments say, which for a policy with none at all is everywhere.
+            'module_keys' => $this->assignedModuleKeys($assignments),
             'institute_scope' => $institute,
         ];
     }

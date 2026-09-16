@@ -123,6 +123,39 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             Route::delete('/templates/{id}', [AiTemplateController::class, 'destroy'])
                 ->where('id', '[0-9]+');
 
+            /*
+            | One module's own AI usage and guardrails.
+            |
+            | Both are reads, and both answer a question the capability routes above
+            | cannot: not "how much of this does the school have" but "how much of it
+            | was Fees". The module dimension comes from columns that already exist —
+            | `ai_conversations.module_key`, `ai_templates.module_key`,
+            | `ai_api_keys.ai_module` — so nothing was added to the schema to serve a
+            | module's AI Stack screens. See AiModuleController.
+            |
+            | Registered before `/policies` and the rest so the `{module}` segment can
+            | never shadow a fixed path; the constraint keeps it to a module key shape.
+            */
+            Route::get('/modules/{module}/usage', [\App\Http\Controllers\AI\AiModuleController::class, 'usage'])
+                ->where('module', '[a-z0-9_\-]+');
+            Route::get('/modules/{module}/guardrails', [\App\Http\Controllers\AI\AiModuleController::class, 'guardrails'])
+                ->where('module', '[a-z0-9_\-]+');
+
+            /*
+            | The module execution ledger.
+            |
+            | `activity` reads what a module's AI has done; the POST writes one entry.
+            | Both are `ai_audit_logs` rows under an event type of
+            | `module.<module>.<operation>` — the same table the agent runs, generation
+            | requests and governance refusals already write to, so one investigation
+            | reads them together instead of joining two vocabularies. Nothing was added
+            | to the schema to hold a module's activity.
+            */
+            Route::get('/modules/{module}/activity', [\App\Http\Controllers\AI\AiModuleController::class, 'activity'])
+                ->where('module', '[a-z0-9_\-]+');
+            Route::post('/modules/{module}/activity', [\App\Http\Controllers\AI\AiModuleController::class, 'recordActivity'])
+                ->where('module', '[a-z0-9_\-]+');
+
             Route::get('/policies/options', [\App\Http\Controllers\AI\AiPolicyController::class, 'options']);
             Route::get('/policies', [\App\Http\Controllers\AI\AiPolicyController::class, 'index']);
             Route::post('/policies', [\App\Http\Controllers\AI\AiPolicyController::class, 'store']);
