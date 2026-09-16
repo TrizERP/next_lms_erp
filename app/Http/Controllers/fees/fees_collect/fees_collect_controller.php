@@ -2205,7 +2205,7 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
     // function is used into getBk function to get data according to syear
     public function get_syear_data($syear,$sub_institute_id,$student_id, $fees_join, $paid_other_join,$std='',$marking_period_id=''){
         
-        $termIdQuery = DB::table(function ($query) use ($syear,$sub_institute_id, $student_id, $fees_join, $paid_other_join,$std,$marking_period_id) {
+        $termIdQuery = DB::query()->fromSub(function ($query) use ($syear,$sub_institute_id, $student_id, $fees_join, $paid_other_join,$std,$marking_period_id) {
             $query->selectRaw('SUM(fc.amount) as amount, fc.term_id,SUM(fc.fees_discount) as fees_discount,SUM(fc.fine) as fees_fine')
                 ->from('tblstudent as s')
                 ->join('tblstudent_enrollment as se',function($join) use($syear){
@@ -2281,9 +2281,9 @@ uksort($other_bk_off_month_head_wise, function($a, $b) {
         $sub_institute_id = session()->get('sub_institute_id');
         $syear = session()->get('syear');
         $last_syear = (session()->get('syear') - 1);
-        if($request->type=="API"){
+        if($request->input('type')=="API"){
             // sub_institute_id now always comes from the verified session, never the client.
-            $syear = $request->syear;
+            $syear = $request->input('syear') ?: session()->get('syear');
             $last_syear= ($syear-1);
         }
         $stu_arr = [
@@ -3473,12 +3473,12 @@ if (!empty($fees_data['previous_fees']['Previous Fees'])
         }
 
 
-        $data = DB::table(function ($query) use ($sub_institute_id, $syear, $extra_fo, $extra_fp) {
+        $data = DB::query()->fromSub(function ($query) use ($sub_institute_id, $syear, $extra_fo, $extra_fp) {
             $query->selectRaw('t.id as student_id, t.enrollment_no, te.roll_no, t.uniqueid, t.place_of_birth, '
-                . DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name") . ', g.title as grade, s.name as standard_name, d.name as division_name, fp.created_date, '
-                . DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, GROUP_CONCAT(fp.term_id) AS term_id, fp.receiptdate, fp.receipt_no, fp.payment_mode, '
+            . "CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name" . ', g.title as grade, s.name as standard_name, d.name as division_name, fp.created_date, '
+            . 'CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, GROUP_CONCAT(fp.term_id) AS term_id, fp.receiptdate, fp.receipt_no, fp.payment_mode, '
                 . 'fp.cheque_bank_name, fp.bank_branch, fp.cheque_no, fp.cheque_date, b.title as batch, sq.title as quota, '
-                . 'SUM(IFNULL(fp.amount, 0)) AS actual_amountpaid,SUM(IFNULL(fp.fees_discount, 0)) as discount,fp.remarks,GROUP_CONCAT(DISTINCT fp.bank_name ORDER BY fp.bank_name SEPARATOR "/ ") as bank_name'))
+                . 'SUM(IFNULL(fp.amount, 0)) AS actual_amountpaid,SUM(IFNULL(fp.fees_discount, 0)) as discount,fp.remarks,GROUP_CONCAT(DISTINCT fp.bank_name ORDER BY fp.bank_name SEPARATOR "/ ") as bank_name')
                 ->from('tblstudent as t')
                 ->join('tblstudent_enrollment as te', function ($join) use($syear){
                     $join->on('te.student_id', '=', 't.id')->where('te.syear',$syear);
@@ -3502,10 +3502,10 @@ if (!empty($fees_data['previous_fees']['Previous Fees'])
 
                 ->unionAll(function ($query) use ($sub_institute_id, $syear, $extra_fo, $extra_fp) {
                     $query->selectRaw('t.id as student_id, t.enrollment_no, te.roll_no, t.uniqueid, t.place_of_birth, '
-                        . DB::raw("CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name") . ', g.title as grade, s.name as standard_name, d.name as division_name, NULL AS created_date, '
-                        . DB::raw('CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fo.month_id AS term_id, fo.receiptdate AS receiptdate, fo.reciept_id AS receipt_no, fo.payment_mode AS payment_mode, '
+                        . "CONCAT_WS(' ', t.first_name, t.middle_name, t.last_name) as student_name" . ', g.title as grade, s.name as standard_name, d.name as division_name, NULL AS created_date, '
+                        . 'CONCAT_WS(" ", u.first_name, u.last_name) AS user_name, fo.month_id AS term_id, fo.receiptdate AS receiptdate, fo.reciept_id AS receipt_no, fo.payment_mode AS payment_mode, '
                         . 'fo.bank_name as cheque_bank_name, fo.bank_branch, fo.cheque_dd_no as cheque_no, fo.cheque_dd_date AS cheque_date, b.title as batch, sq.title as quota, '
-                        . 'SUM(IFNULL(fo.actual_amountpaid, 0)) AS actual_amountpaid,IFNULL(fo.fees_discount, 0) as discount,fo.remarks').'," " as bank_name')
+                        . 'SUM(IFNULL(fo.actual_amountpaid, 0)) AS actual_amountpaid,IFNULL(fo.fees_discount, 0) as discount,fo.remarks, " " as bank_name')
                         ->from('tblstudent as t')
                         ->join('tblstudent_enrollment as te', function ($join) use($syear){
                             $join->on('te.student_id', '=', 't.id')->where('te.syear',$syear);
@@ -3528,7 +3528,7 @@ if (!empty($fees_data['previous_fees']['Previous Fees'])
                 ->groupBy('fo.reciept_id')
                 ;
                 });
-        })
+        }, 'fees_breakoff')
             ->selectRaw('student_id, enrollment_no, roll_no, IFNULL(uniqueid,"-") as uniqueid, place_of_birth, student_name, grade,standard_name, division_name,created_date, user_name, GROUP_CONCAT(term_id) AS term_ids, receiptdate, receipt_no,  payment_mode, cheque_bank_name, bank_branch, cheque_no, cheque_date, batch,  quota,   SUM(IFNULL(actual_amountpaid, 0)) AS actual_amountpaid,SUM(IFNULL(discount, 0)) as discount,remarks,bank_name')
             ->groupBy('receipt_no');
 

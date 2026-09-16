@@ -14,6 +14,28 @@ use function App\Helpers\is_mobile;
 
 class feesCircularMasterController extends Controller
 {
+    /**
+     * Columns save/update may take from the request.
+     *
+     * saveData/updateData previously copied EVERY request key into the row,
+     * skipping only _method/_token/submit/grade/standard. That works for the
+     * blade form, which posts nothing else, but any other caller breaks it:
+     * a type=API request tries to INSERT a `type` column that does not exist,
+     * as do sub_institute_id/syear/user_id overrides arriving as request input.
+     * Whitelisting the real columns keeps the blade behaviour identical while
+     * making the endpoints usable from the Next.js frontend.
+     */
+    private const EDITABLE_COLUMNS = [
+        'bank_name',
+        'address_line1',
+        'address_line2',
+        'account_no',
+        'paid_collection',
+        'shift',
+        'form_no',
+        'branch',
+    ];
+
     private function seedRequestSession(Request $request): void
     {
         $termId = $request->input('term_id', $request->input('marking_period_id'));
@@ -123,13 +145,13 @@ class feesCircularMasterController extends Controller
         $finalArray['created_on'] = $created_on;
         $finalArray['created_ip_address'] = $created_ip_address;
 
-        foreach ($newRequest as $key => $value) {
-            if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'grade' && $key != 'standard') {
-                if (is_array($value)) {
-                    $value = implode(",", $value);
-                }
-                $finalArray[$key] = $value;
+        foreach (self::EDITABLE_COLUMNS as $column) {
+            if (!array_key_exists($column, $newRequest)) {
+                continue;
             }
+
+            $value = $newRequest[$column];
+            $finalArray[$column] = is_array($value) ? implode(",", $value) : $value;
         }
         feesCircularMasterModel::insert($finalArray);
 
@@ -150,13 +172,13 @@ class feesCircularMasterController extends Controller
         $finalArray['updated_by'] = $user_id;
         $finalArray['updated_on'] = $updated_on;
 
-        foreach ($newRequest as $key => $value) {
-            if ($key != '_method' && $key != '_token' && $key != 'submit' && $key != 'id' && $key != 'grade' && $key != 'standard') {
-                if (is_array($value)) {
-                    $value = implode(",", $value);
-                }
-                $finalArray[$key] = $value;
+        foreach (self::EDITABLE_COLUMNS as $column) {
+            if (!array_key_exists($column, $newRequest)) {
+                continue;
             }
+
+            $value = $newRequest[$column];
+            $finalArray[$column] = is_array($value) ? implode(",", $value) : $value;
         }
 
         return feesCircularMasterModel::where(['id' => $id])->update($finalArray);

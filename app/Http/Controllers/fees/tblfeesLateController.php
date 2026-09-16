@@ -16,9 +16,17 @@ use function App\Helpers\is_mobile;
 use function App\Helpers\get_map_month;
 use function App\Helpers\FeeMonthId;
 use Validator;
+use GenTux\Jwt\GetsJwtToken;
 
 class tblfeesLateController extends Controller
 {
+    // create/store/edit/update all call $this->jwtToken(), which lives in this
+    // trait. Without it every type=API call to those four 401'd with
+    // "Method ...::jwtToken does not exist" - their own catch block turned the
+    // BadMethodCallException into a token failure. index/destroy never call it,
+    // which is why listing worked while the option loads and saves did not.
+    use GetsJwtToken;
+
     /**
      * Display a listing of the resource.
      *

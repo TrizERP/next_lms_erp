@@ -15,9 +15,12 @@ class tblfeesLateModel extends Model
         'late_date',
         'standard_id',
         'syear',
-        'term_id',
+        'month_id',
+        'fine_type',
+        'status',
         'sub_institute_id',
         'created_by',
-        'created_on'
+        'created_on',
+        'updated_on'
     ];
 }

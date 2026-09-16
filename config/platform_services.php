@@ -427,6 +427,11 @@ return [
             'audience' => ['Parent', 'Accounts'],
             'defaults' => ['web' => 'on', 'email' => 'on', 'mobile' => 'on', 'sms' => 'on'],
         ],
+        'fees.collection.weekly_report' => [
+            'label' => 'Weekly fees collection report', 'description' => 'A scheduled summary of fees collected during the week.',
+            'audience' => ['Admin', 'Trustee', 'Principal'],
+            'defaults' => ['web' => 'on', 'email' => 'on'],
+        ],
         'fees.receipt.issued' => [
             'label' => 'Receipt issued', 'description' => 'The durable receipt, with its reference number.',
             'audience' => ['Parent'], 'mandatory' => true,
@@ -437,8 +442,18 @@ return [
             'audience' => ['Parent'],
             'defaults' => ['web' => 'on', 'email' => 'on', 'mobile' => 'on', 'sms' => 'on', 'whatsapp' => 'on'],
         ],
+        'fees.defaulter.due_date_reminder' => [
+            'label' => 'Fee due date reminder', 'description' => 'An automatic reminder before a fee payment is due.',
+            'audience' => ['Parent', 'Accounts'],
+            'defaults' => ['web' => 'on', 'email' => 'on', 'mobile' => 'on', 'sms' => 'on', 'whatsapp' => 'on'],
+        ],
         'fees.defaulter.overdue' => [
             'label' => 'Instalment overdue', 'description' => 'The due date has passed with the amount unpaid.',
+            'audience' => ['Parent', 'Accounts'],
+            'defaults' => ['web' => 'on', 'email' => 'on', 'mobile' => 'on', 'sms' => 'on', 'whatsapp' => 'on'],
+        ],
+        'fees.defaulter.pending_statement' => [
+            'label' => 'Pending fee statement', 'description' => 'An automatic statement of outstanding fee balances.',
             'audience' => ['Parent', 'Accounts'],
             'defaults' => ['web' => 'on', 'email' => 'on', 'mobile' => 'on', 'sms' => 'on', 'whatsapp' => 'on'],
         ],
