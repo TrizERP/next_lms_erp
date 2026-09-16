@@ -52,6 +52,7 @@ class DeterministicPlanner implements Planner
         'reject_recommendation',
         'workflow_status',
         'outcome_status',
+        'fees_query',
     ];
 
     public function plan(StageContext $context): ?Plan
@@ -207,6 +208,7 @@ class DeterministicPlanner implements Planner
             'workflow_status' => 'workflow_read',
             'outcome_status' => 'outcome_read',
             'learning_effectiveness' => 'effectiveness_read',
+            'fees_query' => 'fees_mcp_tools',
             'admission_enquiry_list' => 'mcp_tools',
             'admission_confirm' => 'admissions_flow',
             // Both selection routes answer from the previous turn's rows. `record_detail`
@@ -262,6 +264,7 @@ class DeterministicPlanner implements Planner
             'admission_confirm' => 'Collect whatever the admission still needs, then put the confirmation to a person.',
             'record_detail' => 'Open the row the previous answer listed and show everything held about it.',
             'record_filter' => 'Narrow the previous answer to the rows that match, without re-querying.',
+            'fees_query' => 'Answer a fee query using real fees data — pending fees, student balances, or collection summary.',
             default => $label,
         };
     }
@@ -327,16 +330,6 @@ class DeterministicPlanner implements Planner
                 ['read_enquiries', 'Load the admission enquiries in scope.', 'admissions.listEnquiries'],
                 ['report', 'Return the enquiries and which are still pending.'],
             ],
-            // `fees_query` is intentionally not deterministic. The classifier recognises
-            // that a question belongs to the fees module, but the exact MCP tool depends
-            // on the wording of the question itself — whether it asks for a cohort,
-            // one student's pending balance, or a collection report. Letting the
-            // generic module-tool planner handle it preserves the existing fee tools and
-            // avoids a brittle one-off route for every fee phrase.
-            // Replaced wholesale by detailSteps() when the module binds a lookup tool.
-            // This is the shape when it does not: the row the reader was shown is still a
-            // real record read from the database a turn ago, and reporting it is a better
-            // answer than refusing because no deeper lookup happens to be bound.
             'record_detail' => [
                 ['resolve_record', 'Identify which row of the previous answer this refers to.'],
                 ['report', 'Return what is held about that record, and what it is missing.'],
@@ -350,6 +343,11 @@ class DeterministicPlanner implements Planner
                 ['validate', 'Check what the admission still needs.', 'admissions.validateConfirmation'],
                 ['collect', 'Ask the user for anything missing, across as many turns as it takes.'],
                 ['approve', 'Put the confirmation to a person — this creates a student enrolment.'],
+            ],
+            'fees_query' => [
+                ['resolve_query', 'Identify what the fee question is about — a student, cohort, or summary.'],
+                ['read_fees', 'Load the relevant fee data using the fees module MCP tools.', 'fees.getPending'],
+                ['report', 'Return actual fee data — amounts, counts, and status.'],
             ],
             default => null,
         };

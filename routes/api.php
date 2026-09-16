@@ -20,6 +20,7 @@ use App\Http\Controllers\api\ClassTeacherApiController;
 use App\Http\Controllers\api\AcademicSetupApiController;
 use App\Http\Controllers\api\TransportationApiController;
 use App\Http\Controllers\api\GeneralSetupApiController;
+use App\Http\Controllers\api\QuestionPaperTemplateApiController;
 use App\Http\Controllers\api\TeacherDailyReportApiController;
 use App\Http\Controllers\api\UserLogReportApiController;
 use App\Http\Controllers\api\InventoryApiController;
@@ -426,6 +427,18 @@ Route::post('inventory/receivables/multiple', [InventoryApiController::class, 's
 Route::match(['put', 'patch'], 'inventory/{module}/{id}', [InventoryApiController::class, 'update'])->where('module', '^(?!reports$).+');
 Route::delete('inventory/{module}/{id}', [InventoryApiController::class, 'destroy'])->where('module', '^(?!reports$).+');
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
+
+// Question paper templates -- the reusable layouts behind LMS > Exam >
+// "Question paper templates". Blueprints are stored per school in
+// `template_master`; `.../paper/{id}` is the render feed (paper + questions +
+// type names + options). The `paper/` route is declared before `{id}` so it is
+// not swallowed by it, and ApiQuestionPaperController is left untouched.
+Route::get('question-paper-templates/paper/{paperId}', [QuestionPaperTemplateApiController::class, 'paper']);
+Route::get('question-paper-templates', [QuestionPaperTemplateApiController::class, 'index']);
+Route::get('question-paper-templates/{id}', [QuestionPaperTemplateApiController::class, 'show']);
+Route::post('question-paper-templates', [QuestionPaperTemplateApiController::class, 'store']);
+Route::match(['put', 'patch', 'post'], 'question-paper-templates/{id}', [QuestionPaperTemplateApiController::class, 'update']);
+Route::delete('question-paper-templates/{id}', [QuestionPaperTemplateApiController::class, 'destroy']);
 // check_permissions reads session()->get('user_profile_id'/'sub_institute_id'/'user_id'),
 // so api.session (JWT-hydrated session) must run first for type=API requests.
 Route::middleware(['api.session', 'check_permissions'])->post('fees-cancel/search', [feesCancelController::class, 'search']);

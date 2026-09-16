@@ -361,7 +361,9 @@ return [
             ],
 
             'fees' => [
+                'agent_key' => 'k12_fees',
                 'workflow_key' => 'fees_collection',
+                'case_type' => 'fee_collection',
                 'detail_tools' => ['student_id' => 'fees.getPending'],
                 'mcp_tools' => [
                     'fees.getPending',
