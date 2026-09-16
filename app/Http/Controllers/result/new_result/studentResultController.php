@@ -3964,8 +3964,23 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
         $exam_marks = $this->get_exam_marks($sub_institute_id, $student_id, 'best_of_2');
         // echo "<pre>";print_r($exam_name);
 
+        // Added by Rajesh 16-09-2026 - the R3 exam master, its exam and its marks are not printed in
+        // the scholastic subject result, they are printed in the separate R3 block below the table
+        $is_r3_exam = function ($value) {
+            return strtoupper(trim($value->ExamTitle)) == 'R3';
+        };
+        // R3 exam, kept aside for the R3 block and removed from the scholastic exam list
+        $r3_exam_name = array_filter($exam_name, $is_r3_exam);
+        $exam_name = array_filter($exam_name, function ($value) use ($is_r3_exam) {
+            return !$is_r3_exam($value);
+        });
+        // the R3 exam must not print a heading on the scholastic table
+        $exam_title = array_filter($exam_title, function ($value) use ($is_r3_exam) {
+            return !$is_r3_exam($value);
+        });
+
         // Added by Rajesh 14-09-2026 - the optional subject mapped on level 6 is not printed in the
-        // normal subject result, it is printed in its own TERM-1 - R3 block below the table
+        // normal subject result, its marks are printed in the R3 block below the table
         $level6_subject_ids = DB::table('student_optional_subject')
             ->where([
                 'sub_institute_id' => $sub_institute_id,
@@ -3975,21 +3990,14 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
             ])
             ->pluck('subject_id')->toArray();
 
-        $level6_subjects = $level6_exam_name = [];
+        // only the level 6 subject is eligible for the R3 block, a subject mapped on any other level
+        // stays in the scholastic subject result and is never printed in the R3 block
+        $r3_subject = [];
         if (!empty($level6_subject_ids)) {
-            // level 6 subject, kept aside and removed from the printed subject result
-            $level6_subjects = array_filter($get_subject, function ($value) use ($level6_subject_ids) {
+            $r3_subject = array_filter($get_subject, function ($value) use ($level6_subject_ids) {
                 return in_array($value->subject_id, $level6_subject_ids);
             });
             $get_subject = array_filter($get_subject, function ($value) use ($level6_subject_ids) {
-                return !in_array($value->subject_id, $level6_subject_ids);
-            });
-
-            // exam of the level 6 subject, kept aside and removed from the scholastic exam list
-            $level6_exam_name = array_filter($exam_name, function ($value) use ($level6_subject_ids) {
-                return in_array($value->subject_id, $level6_subject_ids);
-            });
-            $exam_name = array_filter($exam_name, function ($value) use ($level6_subject_ids) {
                 return !in_array($value->subject_id, $level6_subject_ids);
             });
         }
@@ -4228,58 +4236,75 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
             $table .= '<p style="margin:5px 0;"><b></b>* Student has Successfully cleared The Advance level of ' . implode(' & ', $advance_cleared) . '.</p>';
         }
 
-        // Added by Rajesh 14-09-2026 - separate TERM-1 - R3 block for the level 6 optional subject,
-        // it prints its own exam heading and the marks obtained in that exam
-        if (!empty($level6_subjects)) {
-            $level6_head = $level6_row = [];
-            foreach ($level6_subjects as $l6_sub) {
-                $level6_row[$l6_sub->subject_id] = ['subject_name' => $l6_sub->subject_name, 'marks' => []];
+        // Added by Rajesh 16-09-2026 - separate R3 block, it prints only the exam of the R3 exam
+        // master and only the exam for which the marks of the student have been entered
+        if (!empty($r3_exam_name)) {
+            $r3_head = $r3_row = $r3_marked_head = [];
+            // the heading order comes from the exam itself, not from the subject that has the marks,
+            // the block prints the created exam title, not the exam master title
+            $r3_all_head = $r3_head_order = [];
+            foreach ($term_name as $keys => $terms) {
+                foreach ($r3_exam_name as $key => $title) {
+                    if ($title->term_id != $terms->term_id) {
+                        continue;
+                    }
+                    if (!isset($r3_all_head[$title->title])) {
+                        $r3_all_head[$title->title] = $title->title . '<br/>(' . (float) $title->points . ')';
+                        $r3_head_order[$title->title] = $title->id;
+                    }
+                    // the exam created first decides where its heading is printed
+                    $r3_head_order[$title->title] = min($r3_head_order[$title->title], $title->id);
+                }
+            }
+            asort($r3_head_order);
+            $r3_all_head = array_replace($r3_head_order, array_intersect_key($r3_all_head, $r3_head_order));
+            foreach ($r3_subject as $r3_sub) {
+                $r3_sub_marks = [];
                 // get term wise exam and marks
                 foreach ($term_name as $keys => $terms) {
-                    foreach ($level6_exam_name as $key => $title) {
-                        if ($title->subject_id != $l6_sub->subject_id || $title->term_id != $terms->term_id) {
+                    foreach ($r3_exam_name as $key => $title) {
+                        if ($title->subject_id != $r3_sub->subject_id || $title->term_id != $terms->term_id) {
                             continue;
                         }
-                        // the block prints the created exam title, not the exam master title,
-                        // so each exam of the level 6 subject gets its own heading
-                        $head_key = $title->title;
-                        if (!isset($level6_head[$head_key])) {
-                            $level6_head[$head_key] = $title->title . '<br/>(' . (float) $title->con_point . ')';
-                        }
-                        // obtained marks of that exam
-                        $l6_mark = '';
+                        // the exam is printed only when the marks of that exam have been entered
                         foreach ($exam_marks as $index => $marks) {
                             if ($title->id == $marks->exam_id) {
                                 // for AB,NA,EX
-                                $l6_mark = ($marks->is_absent != "")
+                                $r3_sub_marks[$title->title] = ($marks->is_absent != "")
                                     ? $marks->is_absent
                                     : rtrim(rtrim(number_format($marks->points, 2, '.', ''), '0'), '.');
+                                $r3_marked_head[$title->title] = true;
                                 break;
                             }
                         }
-                        $level6_row[$l6_sub->subject_id]['marks'][$head_key] = ($l6_mark === '') ? '-' : $l6_mark;
                     }
                 }
+                // the subject is printed only when it has marks on an R3 exam
+                if (!empty($r3_sub_marks)) {
+                    $r3_row[$r3_sub->subject_id] = ['subject_name' => $r3_sub->subject_name, 'marks' => $r3_sub_marks];
+                }
             }
-            // level 6 table started
-            if (!empty($level6_head)) {
+            // only the exam having marks keeps its heading
+            $r3_head = array_intersect_key($r3_all_head, $r3_marked_head);
+            // R3 table started
+            if (!empty($r3_head) && !empty($r3_row)) {
                 $table .= '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
                 <thead>
                     <tr>
                         <th><b>R3</b></th>
-                        <th colspan="' . count($level6_head) . '"></th>
+                        <th colspan="' . count($r3_head) . '"></th>
                     </tr>
                     <tr><th></th>';//style="background:black;color:white"
-                foreach ($level6_head as $l6_head) {
-                    $table .= '<th class="data_center"><b>' . $l6_head . '</b></th>';
+                foreach ($r3_head as $r3_title) {
+                    $table .= '<th class="data_center"><b>' . $r3_title . '</b></th>';
                 }
                 $table .= '</tr>
                     </thead>
                     <tbody>';
-                foreach ($level6_row as $l6_row) {
-                    $table .= '<tr><td>' . $l6_row['subject_name'] . '</td>';
-                    foreach ($level6_head as $l6_key => $l6_head) {
-                        $table .= '<td class="data_center">' . ($l6_row['marks'][$l6_key] ?? '-') . '</td>';
+                foreach ($r3_row as $r3_data) {
+                    $table .= '<tr><td>' . $r3_data['subject_name'] . '</td>';
+                    foreach ($r3_head as $r3_key => $r3_title) {
+                        $table .= '<td class="data_center">' . ($r3_data['marks'][$r3_key] ?? '-') . '</td>';
                     }
                     $table .= '</tr>';
                 }
