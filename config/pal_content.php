@@ -240,6 +240,64 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Video for the reteach step
+    |--------------------------------------------------------------------------
+    |
+    | Variant 2 is `video` and has always been the first re-route after text
+    | fails — but the projector emits an authoring SPECIFICATION, so the slot
+    | has never carried a real asset. These settings govern the tier that
+    | fills it from the institute's own library and from an external search.
+    |
+    | `min_match_score` is the gate that decides whether a chapter's video is
+    | actually about THIS concept. It is deliberately strict: serving a
+    | loosely-related video to a student who has just failed a check wastes
+    | the one moment they are most willing to spend on remediation. Below the
+    | gate we serve nothing and let the ladder continue.
+    |
+    */
+    'video' => [
+        'enabled'         => env('PAL_VIDEO_ENABLED', true),
+        'min_match_score' => (float) env('PAL_VIDEO_MIN_SCORE', 0.55),
+
+        // Below this pool size chapter-local IDF is meaningless (see
+        // ConceptVideoRelevanceScorer::score()), so the bar goes up instead.
+        'small_pool_score' => 0.65,
+        'small_pool_size'  => 3,
+
+        'categories' => ['Recorded Videos', 'Videos'],
+        'extensions' => ['mp4', 'webm', 'ogg', 'm4v', 'mov'],
+
+        'candidate_limit' => 40,
+
+        // An https page silently blocks an http <video src>.
+        'require_https' => true,
+
+        // content_master.topic_id: keep to chapter-level rows, matching the
+        // existing suggested-content surface.
+        'chapter_level_only' => true,
+
+        'external' => [
+            'enabled' => env('PAL_VIDEO_EXTERNAL_ENABLED', false),
+
+            // Falls back to the key the LMS content authoring screen already
+            // uses, so this can be piloted without provisioning a new secret.
+            'api_key' => env('YOUTUBE_API_KEY', env('GOOGLE_API_KEY')),
+
+            'max_results'        => 5,
+            'timeout'            => 6,
+            'safe_search'        => 'strict',
+            'video_duration'     => 'medium',
+            'relevance_language' => 'en',
+            'region_code'        => 'IN',
+
+            // search.list costs 100 of the 10,000 daily quota units.
+            'daily_search_cap' => 90,
+            'cache_hours'      => 168,
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | QA pipeline — spec §7.1
     |--------------------------------------------------------------------------
     |
