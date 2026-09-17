@@ -609,7 +609,6 @@ class ApiLmsCourseController extends Controller
                     $query->where('content_master.sub_institute_id', $sub_institute_id);
                 }
             })
-            ->where('content_master.show_hide', '<>', 0)
             ->where('content_master.subject_id', $subject_id)
             ->where('content_master.standard_id', $standard_id)
             ->where('content_master.chapter_id', $chapter_id)
