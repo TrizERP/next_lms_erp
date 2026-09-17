@@ -19,6 +19,8 @@
                 @method('PUT')
                 @include('communication.email_template._form')
             </form>
+            {{-- See add.blade.php: footerJs has colliding input names. --}}
+            @include('communication.email_template._scripts')
         </div>
     </div>
 </div>

@@ -35,6 +35,7 @@ return [
         'trim',
         explode(',', (string) env('CORS_ALLOWED_ORIGINS', implode(',', [
             'https://lms-k12.vercel.app',
+            'https://k12.scholarclone.com',
             'https://dev.triz.co.in',
             'http://localhost:3000',
             'http://127.0.0.1:3000',
