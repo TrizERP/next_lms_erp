@@ -127,7 +127,13 @@ class GenerationService
             return GenerationResult::failure($exception->getMessage(), $requestId);
         }
 
-        $requestId = $this->recordRequest($request, $template, $rendered, $scope, 'running');
+        // Resolved once and passed down, so the row recorded against this request names
+        // the same provider and model the call actually used. Resolving twice would let
+        // a configuration saved mid-request produce an audit row that disagrees with
+        // what happened.
+        $configuration = $this->clients->configurationFor(self::MODULE, $scope->selectedInstituteId);
+
+        $requestId = $this->recordRequest($request, $template, $rendered, $scope, 'running', null, $configuration);
 
         $this->audit->record(AiAuditLogger::GENERATION_REQUESTED, $scope, [
             'actor_type' => 'system',
@@ -139,12 +145,6 @@ class GenerationService
         ]);
 
         $startedAt = microtime(true);
-
-        // Resolved once and passed down, so the row recorded against this request names
-        // the same provider and model the call actually used. Resolving twice would let
-        // a configuration saved mid-request produce an audit row that disagrees with
-        // what happened.
-        $configuration = $this->clients->configurationFor(self::MODULE, $scope->selectedInstituteId);
 
         // A template that pins a model still wins. Prompts are written against a
         // specific model's behaviour, and a settings screen should not silently
@@ -175,7 +175,10 @@ class GenerationService
             $content,
             $validation,
             $outputSafety,
-            $template->provider ?? 'openrouter',
+            // Same rule as the request row: the provider that was actually called, which is
+            // the template's when it pins one and the resolved configuration's otherwise.
+            // A literal 'openrouter' here labelled every Gemini call as OpenRouter.
+            $template->provider ?? $configuration->provider,
             $model,
             $latencyMs,
             $scope
@@ -199,7 +202,7 @@ class GenerationService
             structured: $validation['data'],
             requestId: $requestId,
             outputId: $outputId,
-            provider: $template->provider ?? 'openrouter',
+            provider: $template->provider ?? $configuration->provider,
             model: $model,
             schemaValid: $validation['valid'],
             schemaErrors: $validation['errors'],
@@ -293,7 +296,8 @@ class GenerationService
         ?array $rendered,
         McpRequestContext $scope,
         string $status,
-        ?string $error = null
+        ?string $error = null,
+        ?ResolvedAiConfiguration $configuration = null
     ): ?int {
         if (! Schema::hasTable('ai_generation_requests')) {
             return null;
@@ -315,7 +319,18 @@ class GenerationService
             'prompt_hash' => $resolved ? hash('sha256', $resolved) : null,
             // Was hard-coded to 'openrouter', which mislabelled every row once the
             // estate moved to Gemini. The resolved provider is what was actually called.
-            'provider' => $template?->provider ?? $configuration->provider,
+            //
+            // `$configuration` is null on every path that refuses before a model is
+            // reached — prompt safety, grounding, a template that would not render.
+            // Those rows still need a provider name, and the honest one is what the
+            // call would have used, so it is resolved here rather than left undefined.
+            // It was left undefined: this line read `$configuration->provider` against a
+            // variable that only existed further down `generate()`, so every refusal of a
+            // template with no pinned provider raised "Undefined variable $configuration"
+            // and the workspace Create tab answered 500 instead of saying why it refused.
+            'provider' => $template?->provider
+                ?? $configuration?->provider
+                ?? $this->clients->configurationFor(self::MODULE, $scope->selectedInstituteId)->provider,
             'model' => $request->modelOverride ?? $template?->model ?? $this->client->defaultModel(),
             'subject_entity_key' => $request->subjectEntityKey,
             'subject_id' => is_numeric($request->subjectId) ? (int) $request->subjectId : null,

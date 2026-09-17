@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -174,7 +175,13 @@ class QuestionPaperTemplateApiController extends Controller
         $questions = [];
 
         if ($questionIds->isNotEmpty()) {
-            $rows = DB::table('lms_question_master as q')
+            // Only the columns a student is meant to read. `description`,
+            // `concept`, `hint_text` and `learning_outcome` are the authoring
+            // side of the row -- the generator writes a teacher-facing
+            // rationale into `description` (Bloom level, ability reference, the
+            // misconception each distractor targets) -- and none of that
+            // belongs on a printed exam paper, so it is never sent.
+            $query = DB::table('lms_question_master as q')
                 ->leftJoin('question_type_master as qt', 'qt.id', '=', 'q.question_type_id')
                 ->leftJoin('chapter_master as ch', 'ch.id', '=', 'q.chapter_id')
                 ->whereIn('q.id', $questionIds)
@@ -182,24 +189,36 @@ class QuestionPaperTemplateApiController extends Controller
                     'q.id',
                     'q.question_type_id',
                     'q.question_title',
-                    'q.description',
                     'q.points',
                     'q.multiple_answer',
                     'q.chapter_id',
-                    'q.concept',
-                    'q.hint_text',
-                    'q.learning_outcome',
                     'qt.question_type',
                     'ch.chapter_name'
-                )
-                ->get()
-                ->keyBy('id');
+                );
+
+            // The catalogue form this question was ingested under, so a section
+            // pointed at a `question_type_catalog` code collects it. Joined
+            // only where both tables exist; an install without the extraction
+            // sidecar still renders on the grading type alone.
+            if ($this->hasQuestionTypeCatalogue()) {
+                $query
+                    ->leftJoin('lms_question_extraction as qx', 'qx.question_id', '=', 'q.id')
+                    ->leftJoin('question_type_catalog as qtc', 'qtc.code', '=', 'qx.question_type_code')
+                    ->addSelect(
+                        'qx.question_type_code as question_type_code',
+                        'qtc.label as question_type_label'
+                    );
+            }
+
+            $rows = $query->get()->keyBy('id');
 
             $options = DB::table('answer_master')
                 ->whereIn('question_id', $questionIds)
                 ->orderBy('id')
                 ->get(['id', 'question_id', 'answer', 'correct_answer'])
                 ->groupBy('question_id');
+
+            $figures = $this->figuresFor($questionIds->all());
 
             // Keep the order the paper was built in -- `question_ids` is the
             // teacher's chosen sequence and whereIn() does not preserve it.
@@ -214,15 +233,14 @@ class QuestionPaperTemplateApiController extends Controller
                     'id' => (int) $row->id,
                     'question_type_id' => (int) $row->question_type_id,
                     'question_type' => (string) ($row->question_type ?? ''),
+                    'question_type_code' => trim((string) ($row->question_type_code ?? '')),
+                    'question_type_label' => trim((string) ($row->question_type_label ?? '')),
                     'question_title' => (string) ($row->question_title ?? ''),
-                    'description' => (string) ($row->description ?? ''),
                     'points' => (float) ($row->points ?? 0),
                     'multiple_answer' => (int) ($row->multiple_answer ?? 0),
                     'chapter_id' => $row->chapter_id === null ? null : (int) $row->chapter_id,
                     'chapter_name' => (string) ($row->chapter_name ?? ''),
-                    'concept' => (string) ($row->concept ?? ''),
-                    'hint_text' => (string) ($row->hint_text ?? ''),
-                    'learning_outcome' => (string) ($row->learning_outcome ?? ''),
+                    'figures' => $figures[$questionId] ?? [],
                     'options' => collect($options->get($questionId, []))
                         ->map(fn ($option) => [
                             'id' => (int) $option->id,
@@ -367,27 +385,124 @@ class QuestionPaperTemplateApiController extends Controller
     }
 
     /**
-     * The question forms a section can be pointed at by name -- so a template
-     * says "put the multiple-choice questions in Section A" rather than the
+     * The diagrams, maps and figures attached to these questions, keyed by
+     * question id and in the order the extraction recorded them.
+     *
+     * A figure is exam content -- on a map-reading or circuit question the
+     * image *is* the question -- so the paper is wrong without it. Read from
+     * `lms_question_asset`, the same source the question bank card renders
+     * from, so the figure a teacher saw when picking the question is the one
+     * that prints.
+     *
+     * Only what the paper needs: the url, the intrinsic size (so the sheet can
+     * hold the aspect ratio) and the alt text. The extraction metadata stored
+     * alongside -- `ocr_text`, `asset_sha256`, `source_page` -- is authoring
+     * data and stays off the paper.
+     *
+     * A question with no figure gets an empty list and nothing is printed in
+     * its place; a placeholder box on a real exam paper reads as a printing
+     * fault.
+     */
+    private function figuresFor(array $questionIds): array
+    {
+        if ($questionIds === [] || ! Schema::hasTable('lms_question_asset')) {
+            return [];
+        }
+
+        $byQuestion = [];
+
+        $rows = DB::table('lms_question_asset')
+            ->whereIn('question_id', $questionIds)
+            ->orderBy('ordinal')
+            ->get(['question_id', 'stored_url', 'width', 'height', 'alt_text']);
+
+        foreach ($rows as $row) {
+            $url = trim((string) ($row->stored_url ?? ''));
+
+            if ($url === '') {
+                continue;
+            }
+
+            $byQuestion[(int) $row->question_id][] = [
+                'url' => $url,
+                'width' => $row->width !== null ? (int) $row->width : null,
+                'height' => $row->height !== null ? (int) $row->height : null,
+                'caption' => trim((string) ($row->alt_text ?? '')),
+            ];
+        }
+
+        return $byQuestion;
+    }
+
+    /**
+     * Whether a question's catalogue form can be resolved at all: the
+     * catalogue itself plus the extraction sidecar that ties a question to a
+     * code. Cached per request -- `paper()` would otherwise ask twice.
+     */
+    private function hasQuestionTypeCatalogue(): bool
+    {
+        static $has = null;
+
+        if ($has === null) {
+            $has = Schema::hasTable('question_type_catalog')
+                && Schema::hasTable('lms_question_extraction');
+        }
+
+        return $has;
+    }
+
+    /**
+     * The question forms a section can be pointed at -- so a template says
+     * "put the multiple-choice questions in Section A" rather than the
      * frontend shipping a hardcoded list.
      *
-     * question_type_master is the grading engine's shared rows, not per-school
-     * data (ApiQuestionBankController reads it the same way), so it is filtered
-     * on status alone. These are the names `paper()` resolves onto each
-     * question, which is what makes the two sides match.
+     * question_type_catalog is the authority: it is the rich vocabulary the
+     * extraction pipeline classifies against (MCQ, assertion-reason, case
+     * study, plus whatever a publisher invented) and it carries the `label` a
+     * school has configured for each `code`. The editor shows those labels and
+     * stores the codes, and `paper()` resolves the same code onto every
+     * question, which is what makes the two sides agree.
+     *
+     * question_type_master remains the fallback for an install whose catalogue
+     * has not been populated yet -- those eight grading rows are better than an
+     * empty dropdown, and the renderer matches either spelling.
      */
     private function questionTypes(): array
     {
+        if (Schema::hasTable('question_type_catalog')) {
+            $catalogue = DB::table('question_type_catalog')
+                ->where('status', 1)
+                // Standard forms first, then alphabetical -- the same order the
+                // question bank's own filter uses.
+                ->orderByDesc('is_standard')
+                ->orderBy('label')
+                ->get(['id', 'code', 'label'])
+                ->map(fn ($row) => [
+                    'id' => (int) $row->id,
+                    'code' => trim((string) $row->code),
+                    'label' => trim((string) $row->label) ?: trim((string) $row->code),
+                ])
+                ->filter(fn ($row) => $row['code'] !== '')
+                ->unique('code')
+                ->values()
+                ->all();
+
+            if ($catalogue !== []) {
+                return $catalogue;
+            }
+        }
+
         return DB::table('question_type_master')
             ->where('status', 1)
             ->orderBy('question_type')
             ->get(['id', 'question_type'])
             ->map(fn ($row) => [
                 'id' => (int) $row->id,
-                'name' => (string) $row->question_type,
+                'code' => trim((string) $row->question_type),
+                'label' => trim((string) $row->question_type),
             ])
-            ->filter(fn ($row) => $row['name'] !== '')
-            ->unique('name')
+            ->filter(fn ($row) => $row['code'] !== '')
+            ->unique('code')
             ->values()
             ->all();
     }

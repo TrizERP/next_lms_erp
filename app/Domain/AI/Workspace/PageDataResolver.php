@@ -23,6 +23,10 @@ use Illuminate\Support\Facades\Schema;
  */
 class PageDataResolver
 {
+    public function __construct(private readonly ModuleToolData $moduleTools)
+    {
+    }
+
     /** Matches PageSnapshot::MAX_RECORDS — these land in a prompt, not a report. */
     private const MAX_RECORDS = 25;
 
@@ -53,8 +57,16 @@ class PageDataResolver
         }
 
         return match ($context->moduleKey) {
+            // Kept hand-written. A "course" in this estate is a subject-to-grade mapping,
+            // and the useful shape is one row per subject listing its grades — a grouping
+            // no generic reader could infer from the rows, and 208 raw mappings in a
+            // prompt is worse than none.
             'course-master' => $this->courseCatalog($context),
-            default => $empty,
+            // Every other module: read what it is bound to. Fees resolves through
+            // `fees.arrears` and `fees.collection_report`, attendance through
+            // `attendance.overview`, and a module added tomorrow through whatever it
+            // binds — without an arm being added here. See ModuleToolData.
+            default => $this->moduleTools->resolve($context),
         };
     }
 
