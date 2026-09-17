@@ -104,6 +104,8 @@ class emailTemplateController extends Controller
         ]);
 
         if ($validator->fails()) {
+            $request->flash();
+
             $res['status_code'] = 0;
             $res['message'] = $validator->messages()->first();
 
@@ -192,10 +194,17 @@ class emailTemplateController extends Controller
         ]);
 
         if ($validator->fails()) {
+            $request->flash();
+
             $res['status_code'] = 0;
             $res['message'] = $validator->messages()->first();
 
-            return is_mobile($type, 'email_template.index', $res, 'redirect');
+            if (in_array($type, ['API', 'JSON'], true)) {
+                return is_mobile($type, 'email_template.index', $res, 'redirect');
+            }
+
+            // Back to the same template, not the list, so the edit is not lost.
+            return redirect()->route('email_template.edit', $id)->with(['data' => $res]);
         }
 
         $old = $template->toArray();

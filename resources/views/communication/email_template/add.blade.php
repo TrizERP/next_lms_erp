@@ -18,6 +18,10 @@
                 @csrf
                 @include('communication.email_template._form')
             </form>
+            {{-- Kept outside the form: includes.footerJs carries an email modal
+                 with its own name/email/subject inputs, which would otherwise be
+                 submitted as part of this form and blank out these fields. --}}
+            @include('communication.email_template._scripts')
         </div>
     </div>
 </div>
