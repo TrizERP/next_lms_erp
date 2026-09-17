@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\api;
 
+use Illuminate\Http\Request;
+
 /**
  * Teach/Learn's category navigation feed for the Teach/Learn level-3 menu
  * bar — the same pattern as FeesMenuCategoryApiController, over the same
@@ -13,7 +15,7 @@ namespace App\Http\Controllers\api;
  */
 class TeachLearnMenuCategoryApiController extends AbstractMenuCategoryApiController
 {
-    protected function moduleName(): string
+    protected function resolveModuleName(Request $request): string
     {
         return 'teach_learn';
     }

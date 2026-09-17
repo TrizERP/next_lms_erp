@@ -158,6 +158,14 @@ Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 
 // shared tables (module_name = 'teach_learn') — see TeachLearnMenuCategoryApiController.
 Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 'teach-learn/menu-categories', [App\Http\Controllers\api\TeachLearnMenuCategoryApiController::class, 'index']);
 
+// Every other module's category bar, from one endpoint rather than 62 copies of
+// the two routes above — see ModuleMenuCategoryApiController. The caller names the
+// module by its level-2 tblmenumaster id (preferred; menu names are not unique) or
+// by its slug. The registry route lists which modules have a bar at all, so the
+// frontend never carries a hardcoded module list that could drift from the rows.
+Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 'modules/menu-categories', [App\Http\Controllers\api\ModuleMenuCategoryApiController::class, 'index']);
+Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 'modules/menu-categories/registry', [App\Http\Controllers\api\ModuleMenuCategoryApiController::class, 'registry']);
+
 // GET is accepted alongside POST so these can be opened in a browser or curled without
 // a body — the handlers read their parameters through $request->input(), which covers
 // the query string as well. POST is unchanged, so existing callers are unaffected.

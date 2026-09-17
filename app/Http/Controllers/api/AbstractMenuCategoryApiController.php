@@ -22,7 +22,17 @@ use Illuminate\Support\Facades\Schema;
  */
 abstract class AbstractMenuCategoryApiController extends Controller
 {
-    abstract protected function moduleName(): string;
+    /**
+     * Which module's rows this request wants.
+     *
+     * Takes the request because a module is no longer always a property of the
+     * class: the per-module subclasses answer with a constant, while
+     * ModuleMenuCategoryApiController serves all 62 remaining modules from one
+     * endpoint and has to read it off the request. Returning '' means the
+     * module could not be resolved, and index() answers with an empty bar
+     * rather than guessing.
+     */
+    abstract protected function resolveModuleName(Request $request): string;
 
     public function index(Request $request): JsonResponse
     {
@@ -40,8 +50,14 @@ abstract class AbstractMenuCategoryApiController extends Controller
             return response()->json(['status' => 1, 'data' => ['categories' => []]]);
         }
 
+        $moduleName = $this->resolveModuleName($request);
+
+        if ($moduleName === '') {
+            return response()->json(['status' => 1, 'data' => ['categories' => []]]);
+        }
+
         $categoryRows = DB::table('fees_menu_categories')
-            ->where('module_name', $this->moduleName())
+            ->where('module_name', $moduleName)
             ->where('status', 1)
             ->orderBy('sort_order')
             ->orderBy('id')
@@ -52,6 +68,7 @@ abstract class AbstractMenuCategoryApiController extends Controller
         }
 
         $itemsByCategory = $this->visibleItemsByCategory(
+            $moduleName,
             $subInstituteId,
             $userId,
             (string) $request->input('user_profile_name', '')
@@ -83,8 +100,12 @@ abstract class AbstractMenuCategoryApiController extends Controller
      *
      * @return array<string,list<array{id:int,label:string,link:string}>>
      */
-    private function visibleItemsByCategory(string $subInstituteId, string $userId, string $userProfileName): array
-    {
+    private function visibleItemsByCategory(
+        string $moduleName,
+        string $subInstituteId,
+        string $userId,
+        string $userProfileName
+    ): array {
         $permittedMenuIds = $this->permittedMenuIds($subInstituteId, $userId, $userProfileName);
         if ($permittedMenuIds === []) {
             return [];
@@ -92,7 +113,7 @@ abstract class AbstractMenuCategoryApiController extends Controller
 
         $rows = DB::table('fees_menu_category_items as c')
             ->join('tblmenumaster as m', 'm.id', '=', 'c.menu_id')
-            ->where('c.module_name', $this->moduleName())
+            ->where('c.module_name', $moduleName)
             ->where('c.status', 1)
             ->where('m.status', 1)
             ->whereIn('m.id', $permittedMenuIds)
