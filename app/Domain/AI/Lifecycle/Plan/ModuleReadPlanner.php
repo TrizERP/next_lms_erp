@@ -3,7 +3,7 @@
 namespace App\Domain\AI\Lifecycle\Plan;
 
 use App\Domain\AI\Lifecycle\StageContext;
-use App\Mcp\ToolRegistry;
+use App\Domain\AI\Modules\ModuleReadTools;
 
 /**
  * The last resort that still answers: read the module the user is looking at.
@@ -33,13 +33,11 @@ use App\Mcp\ToolRegistry;
  *
  * TWO RULES DECIDE WHICH TOOLS ARE USABLE
  *
- *   1. **Read-only.** A fallback runs when the system is least sure what was meant, so
- *      it must never reach a tool that changes a record. `admissions.confirm` and
- *      `ai.templates.generate` are both bound to modules and both excluded here.
- *   2. **No unsatisfiable required argument.** `fees.getPending` requires a
- *      `student_id`; on a page-level question there is no student, so calling it can
- *      only fail. A tool whose required arguments cannot be filled from the page context
- *      is skipped rather than called and reported as an error.
+ * Read-only, and no required argument a page-level question cannot supply.
+ *
+ * Both rules live in `ModuleReadTools` rather than here, because the workspace's Create
+ * and Analyse tabs need the same answer when they resolve the data a template is about.
+ * The chat and the report must not disagree about which of a module's tools may be read.
  *
  * WHAT IT DELIBERATELY DOES NOT DO
  *
@@ -62,25 +60,13 @@ class ModuleReadPlanner implements Planner
     private const MAX_TOOLS = 2;
 
     /**
-     * The registry is resolved per call rather than injected.
-     *
-     * Building `ToolRegistry` instantiates every registered tool, which needs the MCP
-     * bindings. Taking it as a constructor argument made this planner unconstructable
-     * in a plain unit test — `LifecyclePipelineTest` builds a `HybridPlanner` by hand to
-     * assert which planner a sentence reaches, and it should not have to stand up the
-     * whole tool layer to do that. Resolving on demand keeps the planner cheap to
-     * construct and the registry a singleton either way.
+     * Constructed on demand rather than injected, so `new ModuleReadPlanner()` keeps
+     * working in the unit tests that build a `HybridPlanner` by hand — see the note in
+     * `ModuleReadTools` about why the tool registry cannot be a constructor argument.
      */
-    private function registry(): ?ToolRegistry
+    private function tools(): ModuleReadTools
     {
-        try {
-            return app(ToolRegistry::class);
-        } catch (\Throwable) {
-            // No container, or no tool layer bound in it. There is then nothing to fall
-            // back to, and this planner's whole contract is "propose a read or propose
-            // nothing" — so it proposes nothing rather than taking the turn down with it.
-            return null;
-        }
+        return new ModuleReadTools();
     }
 
     public function plan(StageContext $context): ?Plan
@@ -144,53 +130,6 @@ class ModuleReadPlanner implements Planner
      */
     private function readableTools(array $bound): array
     {
-        $registry = $this->registry();
-
-        if ($registry === null) {
-            return [];
-        }
-
-        $usable = [];
-
-        foreach ($bound as $name) {
-            $tool = $registry->tool($name);
-
-            if ($tool === null) {
-                continue;
-            }
-
-            $definition = $tool->definition();
-
-            if (($definition['annotations']['read_only'] ?? false) !== true) {
-                continue;
-            }
-
-            if ($this->needsArgumentsWeDoNotHave($definition['input_schema'] ?? [])) {
-                continue;
-            }
-
-            $usable[] = $name;
-
-            if (count($usable) >= self::MAX_TOOLS) {
-                break;
-            }
-        }
-
-        return $usable;
-    }
-
-    /**
-     * Whether a tool demands something a page-level question cannot supply.
-     *
-     * Only the tool's own `required` list is consulted. An optional filter is fine —
-     * omitting it means "no filter", which is exactly what a general question wants.
-     *
-     * @param  array<string, mixed>  $schema
-     */
-    private function needsArgumentsWeDoNotHave(array $schema): bool
-    {
-        $required = $schema['required'] ?? [];
-
-        return is_array($required) && $required !== [];
+        return $this->tools()->select($bound, self::MAX_TOOLS);
     }
 }
