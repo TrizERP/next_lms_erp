@@ -235,14 +235,20 @@ class EmailTemplateService
             return null;
         }
 
-        // Swap every rendering of a sentinel date/time back to its placeholder.
+        // Swap every rendering of a sentinel date/time back to its placeholder,
+        // carrying the format the blade used so the imported template still
+        // prints "08-04-2026" rather than the raw "2026-04-08".
         foreach (self::IMPORT_SENTINELS as $key => $sentinel) {
             $formats = $key === 'parent_time'
-                ? ['H:i', 'h:i a', 'h:i A', 'g:i a']
-                : ['d-m-Y', 'd/m/Y', 'Y-m-d', 'd M Y'];
+                ? ['h:i a', 'h:i A', 'g:i a', 'H:i']
+                : ['d-m-Y', 'd/m/Y', 'd M Y', 'Y-m-d'];
 
             foreach ($formats as $format) {
-                $html = str_replace(date($format, strtotime($sentinel)), self::wrap($key), $html);
+                $html = str_replace(
+                    date($format, strtotime($sentinel)),
+                    self::wrap($key . ' | date:' . $format),
+                    $html
+                );
             }
         }
 
@@ -259,11 +265,17 @@ class EmailTemplateService
             return '';
         }
 
-        $open = preg_quote(config('email_templates.placeholder_open', '<<'), '/');
-        $close = preg_quote(config('email_templates.placeholder_close', '>>'), '/');
+        $openRaw = config('email_templates.placeholder_open', '<<');
+        $closeRaw = config('email_templates.placeholder_close', '>>');
+
+        // A rich-text editor serialises "<<" as "&lt;&lt;", so a template typed
+        // in the WYSIWYG stores escaped delimiters. Match either form, otherwise
+        // the token would go out to parents as literal text.
+        $open = '(?:' . preg_quote($openRaw, '/') . '|' . preg_quote(htmlspecialchars($openRaw), '/') . ')';
+        $close = '(?:' . preg_quote($closeRaw, '/') . '|' . preg_quote(htmlspecialchars($closeRaw), '/') . ')';
 
         return preg_replace_callback(
-            '/' . $open . '\s*([a-zA-Z0-9_\.]+)\s*(?:\|\s*date\s*:\s*([^>|]+?)\s*)?' . $close . '/',
+            '/' . $open . '\s*([a-zA-Z0-9_\.]+)\s*(?:\|\s*date\s*:\s*([^>|&]+?)\s*)?' . $close . '/',
             static function ($matches) use ($vars) {
                 $value = Arr::get($vars, $matches[1]);
 

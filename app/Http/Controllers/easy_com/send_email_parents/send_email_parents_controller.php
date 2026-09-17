@@ -145,6 +145,10 @@ class send_email_parents_controller extends Controller
             $mail = new PHPMailer\PHPMailer();
             $mail->IsSMTP();
             $mail->isHTML(true);
+            // Without this PHPMailer labels the body iso-8859-1, so UTF-8
+            // characters such as the rupee sign arrive as mojibake.
+            $mail->CharSet = 'UTF-8';
+            $mail->Encoding = 'base64';
             $mail->SMTPDebug = 0;
             $mail->SMTPAuth = true;
             $mail->SMTPSecure = "ssl";

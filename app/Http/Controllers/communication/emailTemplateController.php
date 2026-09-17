@@ -104,8 +104,6 @@ class emailTemplateController extends Controller
         ]);
 
         if ($validator->fails()) {
-            $request->flash();
-
             $res['status_code'] = 0;
             $res['message'] = $validator->messages()->first();
 
@@ -124,8 +122,8 @@ class emailTemplateController extends Controller
             'module'           => EmailTemplateService::event($request->get('event_key'))['module'] ?? 'admission',
             'event_key'        => $request->get('event_key'),
             'name'             => $request->get('name'),
-            'subject'          => $request->get('subject'),
-            'html_content'     => $request->get('html_content'),
+            'subject'          => $this->normalizeTokens($request->get('subject')),
+            'html_content'     => $this->normalizeTokens($request->get('html_content')),
             'standard_ids'     => $this->normalizeStandardIds($request->get('standard_ids')),
             'status_code'      => $request->get('status_code') ?: null,
             'remarks'          => $request->get('remarks'),
@@ -194,25 +192,18 @@ class emailTemplateController extends Controller
         ]);
 
         if ($validator->fails()) {
-            $request->flash();
-
             $res['status_code'] = 0;
             $res['message'] = $validator->messages()->first();
 
-            if (in_array($type, ['API', 'JSON'], true)) {
-                return is_mobile($type, 'email_template.index', $res, 'redirect');
-            }
-
-            // Back to the same template, not the list, so the edit is not lost.
-            return redirect()->route('email_template.edit', $id)->with(['data' => $res]);
+            return is_mobile($type, 'email_template.index', $res, 'redirect');
         }
 
         $old = $template->toArray();
 
         $template->update([
             'name'         => $request->get('name'),
-            'subject'      => $request->get('subject'),
-            'html_content' => $request->get('html_content'),
+            'subject'      => $this->normalizeTokens($request->get('subject')),
+            'html_content' => $this->normalizeTokens($request->get('html_content')),
             'standard_ids' => $this->normalizeStandardIds($request->get('standard_ids')),
             'status_code'  => $request->get('status_code') ?: null,
             'remarks'      => $request->get('remarks'),
@@ -407,6 +398,19 @@ class emailTemplateController extends Controller
         }
 
         return $vars;
+    }
+
+    /**
+     * A WYSIWYG editor stores "<<" as "&lt;&lt;". Put the delimiters back so the
+     * saved template holds real tokens rather than escaped text.
+     */
+    private function normalizeTokens($value): string
+    {
+        return str_replace(
+            ['&lt;&lt;', '&gt;&gt;', '&amp;lt;&amp;lt;', '&amp;gt;&amp;gt;'],
+            ['<<', '>>', '<<', '>>'],
+            (string) $value
+        );
     }
 
     private function normalizeStandardIds($value): ?string
