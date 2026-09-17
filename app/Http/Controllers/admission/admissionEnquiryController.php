@@ -22,6 +22,7 @@ use App\Http\Controllers\admission\admissionRegistrationHillController;
 use GenTux\Jwt\GetsJwtToken;
 use Carbon\Carbon;
 use App\Models\settings\masterFieldModel;
+use App\Services\EmailTemplateService;
 use App\Models\settings\masterFieldInstituteModel;
 
 class admissionEnquiryController extends Controller
@@ -864,40 +865,39 @@ class admissionEnquiryController extends Controller
                 }
             }
 
-            if ($standard_id == 3291) {
-                $htmlContent = view('admission.registrationHills.sendConfirmEmail', [
-                    'page_type'=>'parent',
-                    'parent_date' => $activityDate ?? '',
-                    'parent_time' => $activityTime,
-                    'aca_year'    => $syear.'-'.$nextYear,
-                    'admission_std'    => $getStandard->name ?? '-',
-                ])->render();
-            } else {
-                $htmlContent = view('admission.registrationHills.admissionEnquiryStd2to9', [
-                    'page_type'=>'parent',
-                    'parent_date' => $activityDate ?? '',
-                    'parent_time' => $activityTime,
-                    'aca_year'    => $syear.'-'.$nextYear,
-                    'admission_std'    => $getStandard->name ?? '-',
-                ])->render();   
+            // Layout comes from Settings > Email Templates when configured,
+            // otherwise the legacy blade for this event is rendered.
+            $rendered = EmailTemplateService::render((int) $sub_institute_id, 'admission_activity_invite', [
+                'page_type'     => 'parent',
+                'parent_date'   => $activityDate ?? '',
+                'parent_time'   => $activityTime,
+                'aca_year'      => $syear.'-'.$nextYear,
+                'admission_std' => $getStandard->name ?? '-',
+                'medium'        => $getStandard->medium ?? '-',
+                'enquiry_no'    => $data['enquiry_no'] ?? '',
+                'student_name'  => trim(implode(' ', array_filter([
+                    $data['first_name'] ?? null,
+                    $data['middle_name'] ?? null,
+                    $data['last_name'] ?? null,
+                ]))),
+            ], $standard_id);
+
+            if (!empty($rendered) && !empty($rendered['body'])) {
+                $emailRequest = new Request([
+                    'type' => 'webForm',
+                    'teacher_id' => $user_id,
+                    'sub_institute_id' =>$sub_institute_id,
+                    'token' => $_REQUEST['_token'],
+                    'all_email' => $data['email'],
+                    'subject' => $rendered['subject'],
+                    'syear' => $syear,
+                    'example_subject' => $rendered['subject'],
+                    'content' => $rendered['body']
+                ]);
+                // send email from here
+                $sendController = new admissionRegistrationHillController;
+                $sendEmail = $sendController->sendEmail($emailRequest);
             }
-
-
-            $emailRequest = new Request([
-                'type' => 'webForm',
-                'teacher_id' => $user_id,
-                'sub_institute_id' =>$sub_institute_id,
-                'token' => $_REQUEST['_token'],
-                'all_email' => $data['email'],
-                'subject' => 'ADMISSION PROCEDURE',
-                'syear' => $syear,
-                'example_subject' => 'ADMISSION PROCEDURE',
-                'content' => $htmlContent
-            ]);
-            // send email from here
-            $sendController = new admissionRegistrationHillController;
-            $sendEmail = $sendController->sendEmail($emailRequest);
-            //echo "<pre>";print_r($sendEmail);exit;
         }
         $res['status_code'] = "1";
         $res['message'] = "Updated successfully";
