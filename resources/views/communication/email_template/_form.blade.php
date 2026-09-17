@@ -28,6 +28,12 @@
 @endphp
 
 <link href="{{ asset('/plugins/bower_components/summernote/dist/summernote.css') }}" rel="stylesheet">
+<style>
+    /* Same sidebar offset as the list screen - see show.blade.php. */
+    @media (min-width: 768px) {
+        #page-wrapper { margin-left: 121px; }
+    }
+</style>
 
 <div class="row">
     <div class="col-md-4 form-group">

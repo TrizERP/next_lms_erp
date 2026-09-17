@@ -1,18 +1,28 @@
 @extends('layout')
 @section('container')
 <style>
-    #email_template_table { table-layout: fixed; width: 100%; }
-    #email_template_table td, #email_template_table th { vertical-align: middle; word-wrap: break-word; }
-    #email_template_table .col-sr      { width: 44px; }
+    /* .left-sidebar is position:fixed (100px block + 20px padding + 1px border)
+       and #content carries no left offset, so page content would start at x=0
+       underneath it. Dropped below 768px, where the sidebar stops being fixed. */
+    @media (min-width: 768px) {
+        #page-wrapper { margin-left: 121px; }
+    }
+
+    /* Every column is a percentage: mixing px widths with percentages made the
+       table wider than its container and pushed the page under the sidebar. */
+    .email-template-wrap { width: 100%; overflow-x: auto; }
+    #email_template_table { table-layout: fixed; width: 100%; max-width: 100%; }
+    #email_template_table td, #email_template_table th { vertical-align: middle; word-wrap: break-word; overflow-wrap: anywhere; }
+    #email_template_table .col-sr      { width: 4%; }
     #email_template_table .col-event   { width: 17%; }
-    #email_template_table .col-name    { width: 22%; }
-    #email_template_table .col-subject { width: 20%; }
-    #email_template_table .col-std     { width: 14%; }
-    #email_template_table .col-status  { width: 8%; }
-    #email_template_table .col-state   { width: 9%; }
-    #email_template_table .col-action  { width: 110px; white-space: nowrap; }
+    #email_template_table .col-name    { width: 23%; }
+    #email_template_table .col-subject { width: 17%; }
+    #email_template_table .col-std     { width: 13%; }
+    #email_template_table .col-status  { width: 9%; }
+    #email_template_table .col-state   { width: 8%; }
+    #email_template_table .col-action  { width: 9%; white-space: nowrap; }
     #email_template_table .tpl-file    { color: #98a6ad; font-size: 11px; display: block; margin-top: 2px; }
-    #email_template_table .btn-outline { margin-right: 3px; }
+    #email_template_table .btn-outline { margin-right: 3px; padding: 4px 8px; }
 </style>
 <div id="page-wrapper">
     <div class="container-fluid">
@@ -33,7 +43,7 @@
                     <a href="{{ route('email_template.create') }}" class="btn btn-info add-new"><i class="fa fa-plus"></i> Add New Template</a>
                 </div>
                 <div class="col-lg-12 col-sm-12 col-xs-12">
-                    <div class="table-responsive">
+                    <div class="table-responsive email-template-wrap">
                         <table id="email_template_table" class="table table-striped">
                             <thead>
                                 <tr>
@@ -85,13 +95,13 @@
                                     </td>
                                     <td class="col-action">
                                         <a href="{{ route('email_template.edit', $row['id']) }}" class="btn btn-info btn-outline" title="Edit">
-                                            <i class="ti-pencil-alt"></i>
+                                            <i class="fa fa-pencil"></i>
                                         </a>
                                         <form action="{{ route('email_template.destroy', $row['id']) }}" method="post" class="d-inline">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" onclick="return confirm('Delete this email template?');" class="btn btn-info btn-outline-danger" title="Delete">
-                                                <i class="ti-trash"></i>
+                                                <i class="fa fa-trash"></i>
                                             </button>
                                         </form>
                                     </td>
@@ -108,7 +118,7 @@
                                     <td>
                                         <span class="label label-warning">Blade</span>
                                         {{ $fileName }}
-                                        <small class="tpl-file" title="{{ $row['file'] }}">{{ $row['file'] }}</small>
+                                        <small class="tpl-file" title="{{ $row['file'] }}">{{ \Illuminate\Support\Str::after($row['file'], 'resources/views/') }}</small>
                                     </td>
                                     <td>{{ $row['default_subject'] }}</td>
                                     <td title="{{ $row['standard_ids'] ?: 'All' }}">{{ $shortStandards($row['standard_ids']) }}</td>
@@ -129,7 +139,7 @@
                                                 'name'         => $fileName,
                                                 'import'       => 1,
                                            ]) }}">
-                                            <i class="ti-import"></i>
+                                            <i class="fa fa-download"></i>
                                         </a>
                                         <a class="btn btn-info btn-outline" target="_blank"
                                            title="Preview the current layout"
@@ -137,7 +147,7 @@
                                                 'event_key'    => $row['event_key'],
                                                 'standard_ids' => $row['standard_ids'],
                                            ]) }}">
-                                            <i class="ti-eye"></i>
+                                            <i class="fa fa-eye"></i>
                                         </a>
                                     </td>
                                 </tr>
