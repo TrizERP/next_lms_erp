@@ -1766,7 +1766,17 @@ $restrict_date = $request->input('restrict_date');
             ->join('question_type_master', 'question_type_master.id', '=', 'lms_question_master.question_type_id')
             ->leftJoin('chapter_master', 'chapter_master.id', '=', 'lms_question_master.chapter_id')
             ->leftJoin('lms_question_extraction', 'lms_question_extraction.question_id', '=', 'lms_question_master.id')
-            ->leftJoin('question_type_catalog', 'question_type_catalog.code', '=', 'lms_question_extraction.question_type_code')
+            // Resolve the catalog form from the sidecar where one exists, and
+            // otherwise from the derived tag on the question itself. Joining the
+            // sidecar alone meant the ~3k generated questions -- which have no
+            // sidecar at all -- every one matched nothing and displayed as the
+            // coarse "narrative", so the form dropdown could not see them.
+            ->leftJoin('question_type_catalog', function ($join) {
+                $join->on('question_type_catalog.code', '=', DB::raw(
+                    'COALESCE(lms_question_extraction.question_type_code, '
+                    . 'lms_question_master.g_qtype_code)'
+                ));
+            })
             ->leftJoin('question_publisher', 'question_publisher.id', '=', 'lms_question_extraction.publisher_id')
             ->select(
                 'lms_question_master.id',
@@ -1784,6 +1794,7 @@ $restrict_date = $request->input('restrict_date');
                 // -- which then loses its options on the next save.
                 'question_type_master.question_type as lms_question_type',
                 'lms_question_extraction.question_type_code as question_type_code',
+                'lms_question_master.g_qtype_code as derived_type_code',
                 'lms_question_extraction.exam_section',
                 'lms_question_extraction.item_number',
                 'lms_question_extraction.attribution',
@@ -1924,6 +1935,12 @@ $restrict_date = $request->input('restrict_date');
                 true
             ) ? 'MCQ' : 'Narrative';
 
+            // Sidecar code first -- that one was read off the source document --
+            // then the tag derived from the stem. Null only when neither exists,
+            // which is now just the untagged legacy estate.
+            $resolvedTypeCode = $question['question_type_code'] ?? $question['derived_type_code'] ?? null;
+            $resolvedTypeCode = $resolvedTypeCode !== null ? (string) $resolvedTypeCode : null;
+
             $data[] = [
                 'id' => (int) $question['id'],
                 'chapter_id' => (int) $question['chapter_id'],
@@ -1943,14 +1960,12 @@ $restrict_date = $request->input('restrict_date');
                 // question_type_master's own spelling -- otherwise the bank's
                 // type dropdown lists "multiple" and "narrative" next to
                 // "Multiple Choice" and "Assertion & Reason".
-                'question_type_raw' => $question['question_type_code'] !== null
+                'question_type_raw' => $resolvedTypeCode !== null
                     ? trim((string) ($question['question_type'] ?? ''))
                     : $questionTypeLabel,
                 // Stable machine code to filter on. A label can be reworded;
                 // this cannot.
-                'question_type_code' => $question['question_type_code'] !== null
-                    ? (string) $question['question_type_code']
-                    : null,
+                'question_type_code' => $resolvedTypeCode,
                 'options' => $optionsByQuestion[$qid] ?? [],
                 'model_answer' => $this->readableModelAnswer($question['model_answer'] ?? null),
                 'marks' => (int) ($question['marks'] ?? 1),
