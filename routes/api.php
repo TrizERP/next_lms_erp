@@ -570,6 +570,39 @@ Route::match(['GET', 'POST'], 'lms/concept-intelligence/tab-labels', [\App\Http\
 Route::post('lms/concept-intelligence/tab-labels/update', [\App\Http\Controllers\api\lms\ConceptIntelligenceTabLabelApiController::class, 'update']);
 Route::post('lms/concept-intelligence/tab-labels/reset', [\App\Http\Controllers\api\lms\ConceptIntelligenceTabLabelApiController::class, 'reset']);
 
+/*
+| Coherence Map - the curriculum graph for the Next.js authoring screen.
+|
+| Unit -> Chapter -> Topic -> Concept read straight out of MariaDB, plus the
+| prerequisite edges between concepts (pal_concept_relations) and between the other
+| levels (pal_learning_relations).
+|
+| NOT the same surface as /api/pal/coherence/*: that one reads Neo4j for the PAL
+| learner experience and its node shape is frozen by six shipped call sites. Neo4j
+| also carries no Unit and no Topic, which is two of the four levels this screen
+| exists to show. See CoherenceMapApiController's docblock.
+|
+| Reads are gated by `lms.auth` because the tenant must come from the verified token
+| (G-SEC-29) rather than a request parameter naming any institute. Writes add
+| `perm:lms.curriculum,update` - approving a `requires` edge changes what the ESO
+| prerequisite gate lets a learner reach, so it is a curriculum-authoring right and
+| not a content-upload one.
+*/
+Route::middleware('lms.auth')->group(function () {
+    Route::get('lms/coherence-map', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'show']);
+
+    Route::middleware('perm:lms.curriculum,update')->group(function () {
+        // Literal segment before the {source}/{id} pair, so "bulk" is never parsed
+        // as a relation source.
+        Route::post('lms/coherence-map/relations/bulk', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'bulkReview']);
+        Route::post('lms/coherence-map/relations', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'storeRelation']);
+        Route::patch('lms/coherence-map/relations/{source}/{id}', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'reviewRelation'])
+            ->where(['source' => 'concept|learning', 'id' => '[0-9]+']);
+        Route::delete('lms/coherence-map/relations/{source}/{id}', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'destroyRelation'])
+            ->where(['source' => 'concept|learning', 'id' => '[0-9]+']);
+    });
+});
+
 Route::get('/departments', [\App\Http\Controllers\HRMS\departmentController::class, 'index']);
 Route::get('/departments/create', [\App\Http\Controllers\HRMS\departmentController::class, 'create']);
 Route::get('/department-employee-lists', [\App\Http\Controllers\HRMS\departmentController::class, 'departmentEmpLists']);

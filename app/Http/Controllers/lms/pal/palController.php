@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
 use function App\Helpers\neo4jCreateNode;
 use function App\Helpers\neo4jCreateRelationship;
+use App\Services\PAL\Questions\ServableQuestions;
 
 class palController extends Controller
 {
@@ -1054,8 +1055,13 @@ public function generateMisconceptionContent(Request $request)
             ->where('lqm.sub_institute_id', $subInstituteId)
             ->where('lqm.standard_id', $standardId)
             ->where('lqm.subject_id', $subjectId)
-            ->where('lqm.chapter_id', $chapterId)
-            ->where('lqm.question_type_id', 1);
+            ->where('lqm.chapter_id', $chapterId);
+
+        // Answerability, not the type label, decides what PAL may serve: this
+        // admits assertion & reason and CBE items (4 options, 1 marked answer)
+        // that the old `question_type_id = 1` test hid, and excludes type-1 rows
+        // that have a single option and nothing to choose between.
+        ServableQuestions::constrain($query, 'lqm.id');
 
         if (!empty($levelIds)) {
             $query->join('lms_question_mapping as lm', 'lqm.id', '=', 'lm.questionmaster_id')
@@ -2514,6 +2520,287 @@ public function getData($request)
         // echo "<pre>";print_r($data);exit;
         return is_mobile($type, 'lms/online_exam_result', $data, "view");
     }
+
+    // =========================================================================
+    // PAL SUBJECT DIAGNOSTIC (Web Flow)
+    // =========================================================================
+
+    /**
+     * Show subjects available for diagnostic.
+     */
+    public function diagnosticSubjects(Request $request)
+    {
+        $type = $request->input('type');
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+        $subInstituteId = $ctx['sub_institute_id'];
+        $syear = $ctx['syear'];
+
+        // Get subjects that have MCQ questions in this tenant's bank
+        $subjects = DB::table('lms_question_master as q')
+            ->join('subject as s', 's.id', '=', 'q.subject_id')
+            ->whereNull('q.deleted_at')
+            ->where('q.status', 1)
+            ->whereIn('q.sub_institute_id', [$subInstituteId, 0])
+            ->where('s.status', 1)
+            ->distinct()
+            ->select('s.id as subject_id', 's.subject_name')
+            ->orderBy('s.subject_name')
+            ->get();
+
+        // Get latest diagnostic attempt for each subject
+        $latestAttempts = DB::table('pal_diagnostic_attempt')
+            ->where('student_id', $studentId)
+            ->where('status', 'submitted')
+            ->orderByDesc('id')
+            ->get()
+            ->unique('subject_id')
+            ->keyBy('subject_id');
+
+        $subjectsData = $subjects->map(function ($subject) use ($latestAttempts) {
+            $attempt = $latestAttempts[$subject->subject_id] ?? null;
+            return [
+                'subject_id' => $subject->subject_id,
+                'name' => $subject->subject_name,
+                'has_diagnostic' => $attempt !== null,
+                'level' => $attempt?->level,
+                'percentage' => $attempt !== null ? (float) $attempt->percentage : null,
+                'last_attempt_id' => $attempt?->id,
+                'last_attempted_at' => $attempt?->submitted_at,
+            ];
+        })->values();
+
+        $res = [
+            'status_code' => 1,
+            'message' => 'Success',
+            'subjects' => $subjectsData,
+            'student_id' => $studentId,
+        ];
+
+        return is_mobile($type, 'lms/pal/diagnostic-subjects', $res, 'view');
+    }
+
+    /**
+     * Start a diagnostic attempt for a subject.
+     */
+    public function diagnosticStart(Request $request, $subjectId)
+    {
+        $type = $request->input('type');
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+        $subInstituteId = $ctx['sub_institute_id'];
+        $syear = $ctx['syear'];
+        $standardId = $request->input('standard_id');
+
+        // Use the DiagnosticService via the API controller logic
+        $diagnosticService = app(\App\Services\PAL\Diagnostic\DiagnosticService::class);
+        $result = $diagnosticService->start($studentId, (int) $subjectId, $standardId, $subInstituteId, $syear);
+
+        if ($result['attempt_id'] === null) {
+            return redirect()->route('pal.diagnostic.subjects')
+                ->with('error', $result['reason'] === 'no_mcq_questions_available'
+                    ? 'There are no multiple-choice questions available for this subject yet.'
+                    : 'Could not start diagnostic.');
+        }
+
+        // Render the diagnostic exam view
+        $res = [
+            'status_code' => 1,
+            'message' => 'Success',
+            'attempt_id' => $result['attempt_id'],
+            'subject_id' => $subjectId,
+            'questions' => $result['questions'],
+            'selection_report' => $result['selection_report'],
+            'student_id' => $studentId,
+            'time_allowed' => 30, // minutes for 15 questions
+        ];
+
+        return is_mobile($type, 'lms/pal/diagnostic-exam', $res, 'view');
+    }
+
+    /**
+     * Submit a diagnostic attempt.
+     */
+    public function diagnosticSubmit(Request $request, $attemptId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+
+        $attempt = \App\Models\PAL\DiagnosticAttempt::find($attemptId);
+        if (!$attempt || $attempt->student_id !== $studentId) {
+            abort(403, 'Unauthorized');
+        }
+
+        $answers = $request->input('answers', []);
+        $diagnosticService = app(\App\Services\PAL\Diagnostic\DiagnosticService::class);
+        $result = $diagnosticService->submit($attempt, $answers);
+
+        return redirect()->route('pal.diagnostic.result', ['attemptId' => $attemptId]);
+    }
+
+    /**
+     * Show diagnostic result.
+     */
+    public function diagnosticResult(Request $request, $attemptId)
+    {
+        $type = $request->input('type');
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+
+        $attempt = \App\Models\PAL\DiagnosticAttempt::with('responses')->find($attemptId);
+        if (!$attempt || $attempt->student_id !== $studentId) {
+            abort(403, 'Unauthorized');
+        }
+
+        $diagnosticService = app(\App\Services\PAL\Diagnostic\DiagnosticService::class);
+        $result = $diagnosticService->result($attempt);
+
+        $res = [
+            'status_code' => 1,
+            'message' => 'Success',
+            'attempt' => $attempt,
+            'result' => $result,
+            'student_id' => $studentId,
+        ];
+
+        return is_mobile($type, 'lms/pal/diagnostic-result', $res, 'view');
+    }
+
+    /**
+     * Show diagnostic history for a subject.
+     */
+    public function diagnosticHistory(Request $request, $subjectId)
+    {
+        $type = $request->input('type');
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+
+        $attempts = \App\Models\PAL\DiagnosticAttempt::query()
+            ->forStudent($studentId)
+            ->forSubject($subjectId)
+            ->submitted()
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get();
+
+        $subject = DB::table('subject')->where('id', $subjectId)->first();
+
+        $res = [
+            'status_code' => 1,
+            'message' => 'Success',
+            'subject_id' => $subjectId,
+            'subject_name' => $subject->subject_name ?? 'Subject ' . $subjectId,
+            'attempts' => $attempts,
+            'student_id' => $studentId,
+        ];
+
+        return is_mobile($type, 'lms/pal/diagnostic-history', $res, 'view');
+    }
+
+    // =========================================================================
+    // PAL ADAPTIVE LEARNING (Web Flow)
+    // =========================================================================
+
+    /**
+     * Show concepts available for adaptive learning for a subject.
+     */
+    public function adaptiveConcepts(Request $request, $subjectId)
+    {
+        $type = $request->input('type');
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+        $subInstituteId = $ctx['sub_institute_id'];
+
+        $analyzer = app(\App\Services\PAL\Adaptive\ConceptPerformanceAnalyzer::class);
+        $result = $analyzer->forSubject($studentId, (int) $subjectId, $subInstituteId);
+
+        $subject = DB::table('subject')->where('id', $subjectId)->first();
+        $latestAttempt = $analyzer->latestAttempt($studentId, (int) $subjectId);
+
+        $res = [
+            'status_code' => 1,
+            'message' => 'Success',
+            'subject_id' => $subjectId,
+            'subject_name' => $subject->subject_name ?? 'Subject ' . $subjectId,
+            'concepts' => $result['concepts'],
+            'has_diagnostic' => $result['has_diagnostic'],
+            'diagnostic_level' => $result['level'],
+            'attempt_id' => $result['attempt_id'],
+            'availability' => $result['availability'],
+            'student_id' => $studentId,
+        ];
+
+        return is_mobile($type, 'lms/pal/adaptive-concepts', $res, 'view');
+    }
+
+    /**
+     * Show adaptive questions for a concept.
+     */
+    public function adaptiveQuestions(Request $request, $conceptId)
+    {
+        $type = $request->input('type');
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+        $subInstituteId = $ctx['sub_institute_id'];
+        $limit = $request->input('limit', 5);
+
+        $adaptiveService = app(\App\Services\PAL\Adaptive\AdaptiveLearningService::class);
+        $result = $adaptiveService->questions($studentId, (int) $conceptId, $subInstituteId, $limit);
+
+        if (($result['reason'] ?? null) === 'unknown_concept') {
+            abort(404, 'Unknown concept.');
+        }
+
+        $concept = DB::table('lms_concept')->where('id', $conceptId)->first();
+
+        $res = [
+            'status_code' => 1,
+            'message' => 'Success',
+            'concept_id' => $conceptId,
+            'concept_name' => $concept->name ?? 'Concept ' . $conceptId,
+            'items' => $result['items'],
+            'difficulty' => $result['difficulty'],
+            'exhausted' => $result['exhausted'],
+            'progress' => $result['progress'],
+            'student_id' => $studentId,
+        ];
+
+        return is_mobile($type, 'lms/pal/adaptive-exam', $res, 'view');
+    }
+
+    /**
+     * Submit an adaptive answer.
+     */
+    public function adaptiveAnswer(Request $request)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+        $subInstituteId = $ctx['sub_institute_id'];
+
+        $conceptId = $request->input('concept_id');
+        $questionId = $request->input('question_id');
+        $answerMasterId = $request->input('answer_master_id');
+
+        $adaptiveService = app(\App\Services\PAL\Adaptive\AdaptiveLearningService::class);
+        $result = $adaptiveService->recordAnswer($studentId, (int) $conceptId, $subInstituteId, (int) $questionId, $answerMasterId ? (int) $answerMasterId : null);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Show adaptive progress for a concept.
+     */
+    public function adaptiveProgress(Request $request, $conceptId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+
+        $adaptiveService = app(\App\Services\PAL\Adaptive\AdaptiveLearningService::class);
+        $result = $adaptiveService->progress($studentId, (int) $conceptId);
+
+        return response()->json($result);
+    }
+
     public function palreport(Request $request){
         $type = $request->type;
         $ctx = $this->resolveAuthorizedContext($request);

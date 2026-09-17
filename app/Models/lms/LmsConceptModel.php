@@ -26,6 +26,11 @@ class LmsConceptModel extends Model
         'subject_id',
         'standard_id',
         'chapter_id',
+        // The concept -> topic_master link. Live on this estate but created by hand;
+        // 2026_09_16_100200 brings it under migration control. It was missing here,
+        // so every mass-assigned write silently discarded it - which is why
+        // lms:backfill-concept-topics updates the column explicitly.
+        'topic_id',
         'sub_institute_id',
         'difficulty_level',
         'bloom_level',
@@ -36,6 +41,7 @@ class LmsConceptModel extends Model
     ];
 
     protected $casts = [
+        'topic_id' => 'integer',
         'difficulty_level' => 'integer',
         'mastery_threshold' => 'float',
         'estimated_mastery_minutes' => 'integer',

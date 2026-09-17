@@ -74,22 +74,37 @@ class EsoPalRenderer
      */
     protected static function learningMaterialLine(?array $content): string
     {
-        $body = trim((string) ($content['body'] ?? ''));
-        if ($content === null || $body === '') {
+        if ($content === null) {
             return '';
         }
 
-        $line = 'Base the explanation ONLY on this approved material for the concept, and do not add facts it does not contain: '
-            . strip_tags($body);
+        $body = trim((string) ($content['body'] ?? ''));
+        $mediaUrl = $content['media_url'] ?? null;
 
-        // An authored asset is shown to the student alongside the text, so Pal
-        // must introduce it rather than duplicate what it contains.
-        if (($content['media_url'] ?? null) !== null) {
-            $line .= ' The student is also being shown a ' . ($content['format_label'] ?? 'resource')
-                . ' alongside this — point them at it briefly, do not describe its contents.';
+        // The two clauses are independent. They used to share a single early
+        // return on an empty body, which meant a media-only payload — a video
+        // with no accompanying text, the common shape now that the reteach
+        // step can serve one — told Pal nothing at all. Pal would then explain
+        // in text as though no player were on screen, talking over it.
+        $parts = [];
+
+        if ($body !== '') {
+            $parts[] = 'Base the explanation ONLY on this approved material for the concept, and do not add facts it does not contain: '
+                . strip_tags($body);
         }
 
-        return $line;
+        if ($mediaUrl !== null) {
+            $label = $content['format_label'] ?? 'resource';
+
+            $parts[] = $body !== ''
+                ? 'The student is also being shown a ' . $label
+                    . ' alongside this — point them at it briefly, do not describe its contents.'
+                : 'The student is being shown a ' . $label
+                    . ' on this screen — point them at it briefly and let it do the explaining, '
+                    . 'do not describe its contents or re-teach the material in text.';
+        }
+
+        return implode(' ', $parts);
     }
 
     /**

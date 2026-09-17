@@ -9,11 +9,13 @@ use App\Models\PAL\ConceptNode;
 use App\Models\PAL\ConceptRelation;
 use App\Models\PAL\MisconceptionLibrary;
 use App\Models\PAL\QuestionMetadata;
+use App\Services\Eso\EsoConceptVideoResolver;
 use App\Services\PAL\Content\MisconceptionLibraryService;
 use App\Services\PAL\Gamification\BadgeService;
 use App\Services\PAL\Gamification\StreakService;
 use App\Services\PAL\Runtime\PalEvidenceRepository;
 use Illuminate\Support\Collection;
+use App\Services\PAL\Questions\ServableQuestions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -184,6 +186,7 @@ class EsoPolicyService
         protected BadgeService $badges,
         protected StreakService $streaks,
         protected EsoLearningContentResolver $learningContent,
+        protected EsoConceptVideoResolver $videos,
         protected EsoEvidenceBridge $evidenceBridge,
         protected EsoEnrichmentResolver $enrichment,
     ) {
@@ -252,10 +255,11 @@ class EsoPolicyService
      *
      * Fetches every servable candidate per node and shuffles/hydrates in PHP
      * (matching practiceItem()'s pattern) rather than a DB-level
-     * `limit($perNode)` sample — a node's tagged pool is a mix of MCQ and
-     * narrative items (hydrateQuestion() only returns MCQ), and a narrow
-     * pre-hydration sample can land entirely on narrative ids, silently
-     * yielding fewer items than intended for that node, or none.
+     * `limit($perNode)` sample — a node's tagged pool is a mix of answerable
+     * and unanswerable items (hydrateQuestion() only returns items with real
+     * options and a marked answer), and a narrow pre-hydration sample can land
+     * entirely on narrative ids, silently yielding fewer items than intended
+     * for that node, or none.
      */
     /**
      * The diagnostic's three authored groups — prerequisite, adaptive and
@@ -308,7 +312,7 @@ class EsoPolicyService
                 continue;
             }
 
-            // hydrateQuestion() enforces MCQ-only and strips the answer key.
+            // hydrateQuestion() enforces answerable options and strips the answer key.
             $hydrated = $this->hydrateQuestion((int) $row->question_id);
             if ($hydrated === null || $hydrated['options'] === []) {
                 continue;
@@ -567,15 +571,17 @@ class EsoPolicyService
 
     /**
      * One practice question for a node the student has not already answered
-     * correctly, for the "teach"/"practice" step of nextAction(). Only MCQ
-     * items (question_type_id = 1) are servable here — D3's distractor-based
-     * misconception detection is inherently MCQ-only (§Phase 0 tagging scope
-     * for Chapter 3: 50 of 220 questions), and scoring a free-text answer
-     * server-side is out of v1 scope.
+     * correctly, for the "teach"/"practice" step of nextAction(). Servable
+     * means the item has real options with a marked answer - see
+     * ServableQuestions - not that it carries a particular question_type_id.
+     * D3's distractor-based misconception detection needs discrete options,
+     * which every servable item has by definition; scoring a free-text answer
+     * server-side remains out of scope, and such items are excluded because
+     * they have no options, not because of their type label.
      */
     public function practiceItem(int $nodeId, int $subInstituteId, ?LearnerNodeState $state = null): ?array
     {
-        // v1 picks any tagged, servable MCQ for the node rather than tracking
+        // v1 picks any tagged, servable item for the node rather than tracking
         // per-student exposure — the pilot's tagged pool per node is small, and
         // an occasional repeat beats a "no items left" dead end. Ordering is
         // difficulty-aware when the caller passes the learner's state (see
@@ -586,7 +592,7 @@ class EsoPolicyService
             ->get(['question_id', 'difficulty_1_to_5']);
 
         foreach ($this->orderCandidatesByDifficulty($candidates, $state) as $questionId) {
-            // hydrateQuestion() itself enforces MCQ-only and non-empty options.
+            // hydrateQuestion() itself enforces answerable options and a marked answer.
             $hydrated = $this->hydrateQuestion((int) $questionId);
             if ($hydrated !== null && $hydrated['options'] !== []) {
                 return array_merge($hydrated, ['node_id' => $nodeId]);
@@ -640,31 +646,20 @@ class EsoPolicyService
      * leak. Correctness is always determined server-side from
      * `answer_master_id` (see isAnswerCorrect()), never trusted from the client.
      *
-     * MCQ only (question_type_id = 1) — narrative/free-text items
-     * (question_type_id = 2) have no discrete `answer_master` options, so
-     * "hydrating" one would silently produce a question with zero answerable
-     * options. Every caller (diagnostic, practice, retrieval) needs a
-     * question the student can actually click an answer for, so this is
-     * enforced once, here, rather than per call site.
+     * Servable items only. This used to mean `question_type_id = 1`, which
+     * asked what a question is CALLED rather than whether a student can answer
+     * it - so it hid 214 measured assertion & reason / CBE / ncert items that
+     * have four options and a marked answer, while admitting type-1 rows with a
+     * single option and nothing to choose between. ServableQuestions asks about
+     * the options instead. See that class for the measurements.
+     *
+     * Every caller (diagnostic, practice, retrieval) needs a question the
+     * student can actually click an answer for, so this stays enforced once,
+     * here, rather than per call site.
      */
     protected function hydrateQuestion(int $questionId): ?array
     {
-        $question = DB::table('lms_question_master')->where('id', $questionId)->first(['id', 'question_title', 'question_type_id']);
-        if ($question === null || (int) $question->question_type_id !== 1) {
-            return null;
-        }
-
-        $options = DB::table('answer_master')
-            ->where('question_id', $questionId)
-            ->get(['id', 'answer'])
-            ->map(fn ($row) => ['id' => (int) $row->id, 'answer' => $row->answer])
-            ->all();
-
-        return [
-            'question_id' => (int) $question->id,
-            'title' => $question->question_title,
-            'options' => $options,
-        ];
+        return ServableQuestions::hydrate($questionId);
     }
 
     /**
@@ -1526,8 +1521,10 @@ class EsoPolicyService
     protected function teachAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
     {
         // The richest learning object that genuinely exists for this concept,
-        // or null — in which case teaching stays exactly as it was.
-        $content = $this->learningContent->forNode($node, $state, $subInstituteId);
+        // or null — in which case teaching stays exactly as it was. The Learn
+        // stage covers teach as well as reteach, so a first look leads with a
+        // video wherever an approved one matches this concept.
+        $content = $this->learningContent->forTeach($node, $state, $subInstituteId);
         $instruction = EsoPalRenderer::teachInstruction($node, $state, $this->priorNodeLabels($node), $content);
 
         if (! $silent) {
@@ -1580,7 +1577,7 @@ class EsoPolicyService
         // text+diagram, then video, then story/audio — rather than the same
         // words again. Null whenever nothing else is authored, which is the
         // common case today.
-        $content = $retry ? $this->learningContent->forNode($node, $state, $subInstituteId) : null;
+        $content = $retry ? $this->learningContent->forReteach($node, $state, $subInstituteId) : null;
 
         // A second pass at the gate means the first explanation did not land,
         // so re-explain differently before checking again rather than serving
@@ -1595,7 +1592,14 @@ class EsoPolicyService
                 $conceptId,
                 $node->id,
                 $subInstituteId,
-                ['cfu_attempts' => (int) $state->cfu_attempts, 'mastery_estimate' => $state->mastery_estimate],
+                [
+                    'cfu_attempts' => (int) $state->cfu_attempts,
+                    'mastery_estimate' => $state->mastery_estimate,
+                    // Without these the video relevance threshold can only
+                    // ever be tuned by guesswork.
+                    'video_source' => $content['source'] ?? null,
+                    'video_match_score' => $content['match_score'] ?? null,
+                ],
                 $retry
                     ? sprintf('D1-CFU: check not passed (%d attempt(s)), re-explaining differently', (int) $state->cfu_attempts)
                     : 'D1-CFU: node taught, understanding not yet checked',
@@ -1678,7 +1682,7 @@ class EsoPolicyService
      * The 1-CFU_ITEM_COUNT questions for a node's check of understanding.
      *
      * Reuses exactly the same servable-item machinery as practiceItem() and
-     * retrievalItems() — the same tagged pool, the same MCQ-only hydration —
+     * retrievalItems() — the same tagged pool, the same servable-item hydration —
      * rather than requiring a separate authored "CFU question" content type
      * that nothing in the catalogue has. Shuffled so a reteach cycle does not
      * hand back the identical pair the student just failed.
@@ -2451,7 +2455,7 @@ class EsoPolicyService
 
         $items = [];
         foreach ($candidates as $questionId) {
-            // hydrateQuestion() itself enforces MCQ-only and non-empty options.
+            // hydrateQuestion() itself enforces answerable options and a marked answer.
             $hydrated = $this->hydrateQuestion((int) $questionId);
             if ($hydrated !== null && $hydrated['options'] !== []) {
                 $items[] = array_merge($hydrated, ['node_id' => $nodeId]);
@@ -2724,6 +2728,13 @@ class EsoPolicyService
             $subInstituteId
         );
 
+        // Which concepts in the plan have an approved video, so every concept
+        // tile can show a video indicator without its own query.
+        $videoConcepts = $this->videos->hasVideoForConcepts(
+            $readyConcepts->flatten(1)->pluck('id')->map(fn ($id) => (int) $id)->all(),
+            $subInstituteId
+        );
+
         $chapters = [];
         $currentChapterId = null;
         $currentConceptId = null;
@@ -2745,6 +2756,10 @@ class EsoPolicyService
                     'concept_id' => $conceptId,
                     'name' => $concept->name,
                     'status' => $classification['status'],
+                    // Whether an approved, relevant video is available for this
+                    // concept — so the Learn plan can surface video coverage at a
+                    // glance across the whole curriculum.
+                    'has_video' => $videoConcepts[$conceptId] ?? false,
                     'mastered' => $classification['mastered'] ?? false,
                     'stale' => $classification['stale'] ?? false,
                 ];
@@ -2799,6 +2814,9 @@ class EsoPolicyService
                 // The rule that chose it. A plan that shows the sequence without
                 // saying why the next step is next is a list, not a plan.
                 'rule_fired' => $action['rule_fired'] ?? null,
+                // Surface learning content (which may carry a relevant video) on
+                // the plan screen so a video can be previewed before entering.
+                'learning_content' => $action['learning_content'] ?? null,
             ];
         }
 
@@ -2843,6 +2861,13 @@ class EsoPolicyService
         // per-concept accessors already use — no behaviour depends on it.
         $this->primeConceptContent($readyConcepts->pluck('id')->all(), $subInstituteId);
 
+        // Which concepts in this chapter have an approved video, so every
+        // concept tile can show a video indicator without its own query.
+        $videoConcepts = $this->videos->hasVideoForConcepts(
+            $readyConcepts->pluck('id')->map(fn ($id) => (int) $id)->all(),
+            $subInstituteId
+        );
+
         $sections = [];
         $currentConceptId = null;
 
@@ -2854,6 +2879,10 @@ class EsoPolicyService
                 'concept_id' => $conceptId,
                 'name' => $concept->name,
                 'status' => $classification['status'],
+                // Whether an approved, relevant video is available for this
+                // concept — so the Learn page can surface video coverage at a
+                // glance across the whole chapter.
+                'has_video' => $videoConcepts[$conceptId] ?? false,
                 // Carried separately so a teacher/admin surface can show
                 // "mastered, needs verifying" rather than having to infer it
                 // from the status label alone.
@@ -2894,6 +2923,10 @@ class EsoPolicyService
                     'action' => $action['action'],
                     'rule_fired' => $action['rule_fired'],
                     'has_evidence' => $responsesOnCurrentConcept > 0,
+                    // Include the learning content (which may carry a relevant
+                    // video via media_url) so the Learn page can show a preview
+                    // before the student starts, rather than after.
+                    'learning_content' => $action['learning_content'] ?? null,
                 ]
             );
             $masterySignals = $this->masterySignals($studentId, $currentConceptId, $subInstituteId);

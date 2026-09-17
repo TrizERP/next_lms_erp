@@ -3637,4 +3637,346 @@ class EsoPolicyServiceTest extends TestCase
             'An item everyone answers the same way separates nobody, whatever its response count.'
         );
     }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Video on the reteach step
+    // ══════════════════════════════════════════════════════════════════════
+
+    /** A concept video row, draft unless told otherwise. */
+    private function seedConceptVideo(array $overrides = []): int
+    {
+        return (int) DB::table('pal_concept_video')->insertGetId($overrides + [
+            'concept_id' => $this->conceptId,
+            'chapter_id' => $this->chapterId,
+            'sub_institute_id' => $this->subInstituteId,
+            'source' => 'institute',
+            'provider' => 'upload',
+            'media_url' => 'https://cdn.example.test/eso-test-concept.mp4',
+            'title' => 'ESO Test Concept explained',
+            'match_score' => 0.9,
+            'quality_status' => 'draft',
+            'tagged_by' => 'ai',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    /** Put the node in the state the engine reads as "reteach". */
+    private function readyForReteach(int $cfuAttempts = 1): LearnerNodeState
+    {
+        $state = $this->setUntaught($this->kNodeId, 0.4);
+        $state->taught_at = now();
+        $state->cfu_attempts = $cfuAttempts;
+        $state->save();
+
+        return $state;
+    }
+
+    private function reteachContent(): ?array
+    {
+        $resolver = app(\App\Services\Eso\EsoLearningContentResolver::class);
+        $node = \App\Models\PAL\ConceptNode::find($this->kNodeId);
+
+        return $resolver->forReteach($node, $this->readyForReteach(), $this->subInstituteId);
+    }
+
+    /**
+     * The headline case, and the reason the video tier is not part of
+     * EsoLearningContentResolver's own ladder: there is NO semantic_intelligence
+     * row here. Most chapters carrying concepts have never been extracted, so a
+     * video tier that needed one would reach almost nobody.
+     */
+    public function test_a_reteach_serves_an_approved_video_even_when_the_chapter_was_never_extracted(): void
+    {
+        $this->seedConceptVideo(['quality_status' => 'approved']);
+
+        $content = $this->reteachContent();
+
+        $this->assertNotNull($content, 'An approved video must reach the reteach step.');
+        $this->assertSame('video', $content['format']);
+        $this->assertSame('institute_video', $content['source']);
+        $this->assertSame('https://cdn.example.test/eso-test-concept.mp4', $content['media_url']);
+        $this->assertSame(2, $content['variant'], 'Video is the content model variant 2 slot.');
+    }
+
+    /** CONTENT LAW C4. The whole approval gate is worth exactly one test. */
+    public function test_a_draft_video_is_never_served_to_a_student(): void
+    {
+        $this->seedConceptVideo(['quality_status' => 'draft']);
+
+        $this->assertNull($this->reteachContent(), 'Unreviewed video must never reach a student.');
+    }
+
+    public function test_a_deprecated_video_is_never_served_to_a_student(): void
+    {
+        $this->seedConceptVideo(['quality_status' => 'deprecated']);
+
+        $this->assertNull($this->reteachContent());
+    }
+
+    public function test_another_institutes_video_is_never_served(): void
+    {
+        $this->seedConceptVideo([
+            'quality_status' => 'approved',
+            'sub_institute_id' => $this->subInstituteId + 12345,
+        ]);
+
+        $this->assertNull($this->reteachContent(), 'Video must be scoped to the learner\'s institute.');
+    }
+
+    /**
+     * R1: a human deliberately attached an asset to this node, and a
+     * discovered video does not overrule a decision someone actually made.
+     */
+    public function test_an_approved_authored_override_still_outranks_a_video(): void
+    {
+        $projector = app(\App\Services\PAL\ContentModel\ContentModelProjector::class);
+        $repo = app(\App\Services\PAL\ContentModel\SemanticSourceRepository::class);
+
+        $conceptName = (string) DB::table('lms_concept')->where('id', $this->conceptId)->value('name');
+        $semanticId = $this->seedExtraction($conceptName, [
+            'concept' => ['definition' => 'Metals conduct heat and electricity.'],
+        ]);
+
+        DB::table('pal_cm_node_overrides')->insert([
+            'node_key' => $projector->nodeKey('concept', $semanticId, $repo->slug($conceptName), 'V1'),
+            'sub_institute_id' => $this->subInstituteId,
+            'semantic_id' => $semanticId,
+            'content_type' => 'concept',
+            'body' => 'The authored explanation.',
+            'media_url' => 'https://cdn.example.test/authored.mp4',
+            'quality_status' => 'approved',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->seedConceptVideo(['quality_status' => 'approved']);
+
+        $content = $this->reteachContent();
+
+        $this->assertNotNull($content);
+        $this->assertSame('authored', $content['source']);
+        $this->assertSame('https://cdn.example.test/authored.mp4', $content['media_url']);
+    }
+
+    /**
+     * Extracted text is supporting copy under the player, not something to
+     * throw away — the student gets both the explanation and the video.
+     */
+    public function test_extracted_text_survives_as_supporting_copy_under_the_video(): void
+    {
+        $conceptName = (string) DB::table('lms_concept')->where('id', $this->conceptId)->value('name');
+        $this->seedExtraction($conceptName, [
+            'concept' => ['definition' => 'Metals conduct heat and electricity.'],
+        ]);
+
+        $this->seedConceptVideo(['quality_status' => 'approved']);
+
+        $content = $this->reteachContent();
+
+        $this->assertNotNull($content);
+        $this->assertSame('video', $content['format']);
+        $this->assertStringContainsString('Metals conduct heat', (string) $content['body']);
+    }
+
+    /**
+     * CONTENT LAW C7 — a re-explanation must not replay what just failed. The
+     * rotation is driven by cfu_attempts, so it needs no new learner state.
+     */
+    public function test_each_failed_check_steps_further_down_the_video_list(): void
+    {
+        $this->seedConceptVideo(['quality_status' => 'approved', 'match_score' => 0.9]);
+        $this->seedConceptVideo([
+            'quality_status' => 'approved',
+            'match_score' => 0.6,
+            'media_url' => 'https://cdn.example.test/second.mp4',
+        ]);
+        $this->seedConceptVideo([
+            'quality_status' => 'approved',
+            'match_score' => 0.58,
+            'media_url' => 'https://cdn.example.test/third.mp4',
+        ]);
+
+        $resolver = app(\App\Services\Eso\EsoLearningContentResolver::class);
+        $node = \App\Models\PAL\ConceptNode::find($this->kNodeId);
+
+        // Teach took rank 0, so the reteach ladder starts at rank 1.
+        $first = $resolver->forReteach($node, $this->readyForReteach(1), $this->subInstituteId);
+        $this->assertSame('https://cdn.example.test/second.mp4', $first['media_url']);
+
+        $second = $resolver->forReteach($node, $this->readyForReteach(2), $this->subInstituteId);
+        $this->assertSame('https://cdn.example.test/third.mp4', $second['media_url']);
+
+        // Past the end of the list, the best video comes back rather than a
+        // blank screen — see withVideo().
+        $exhausted = $resolver->forReteach($node, $this->readyForReteach(3), $this->subInstituteId);
+        $this->assertSame('https://cdn.example.test/eso-test-concept.mp4', $exhausted['media_url']);
+    }
+
+    /**
+     * The Learn stage is ['teach', 'reteach'], and a concept's FIRST
+     * explanation is where a good video earns the most — the student has no
+     * prior model to fall back on.
+     */
+    public function test_the_teach_step_leads_with_an_approved_video(): void
+    {
+        $this->seedConceptVideo(['quality_status' => 'approved']);
+
+        // Enough evidence on the concept that D0 does not divert to a
+        // diagnostic before the K node is ever taught.
+        $this->setUntaught($this->kNodeId);
+        $this->setMastery($this->aNodeId, 0.2);
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId, true);
+
+        $this->assertSame('teach', $action['action']);
+        $this->assertNotNull($action['learning_content']);
+        $this->assertSame('video', $action['learning_content']['format']);
+        $this->assertSame('https://cdn.example.test/eso-test-concept.mp4', $action['learning_content']['media_url']);
+    }
+
+    /**
+     * forNode() still drives the D5 retrieval refresher, which is a memory jog
+     * before a check rather than a teaching screen. It must not acquire a
+     * video just because the Learn stage did.
+     */
+    public function test_the_raw_content_model_resolver_is_unchanged_by_the_video_tier(): void
+    {
+        $this->seedConceptVideo(['quality_status' => 'approved']);
+
+        $resolver = app(\App\Services\Eso\EsoLearningContentResolver::class);
+        $node = \App\Models\PAL\ConceptNode::find($this->kNodeId);
+
+        $this->assertNull(
+            $resolver->forNode($node, $this->setUntaught($this->kNodeId), $this->subInstituteId),
+            'forNode() must keep its existing behaviour; video is composed on top of it.'
+        );
+    }
+
+    /**
+     * The promise of "a different way" is only kept if the reteach is not the
+     * video the student just watched on the teach screen.
+     */
+    public function test_a_reteach_does_not_replay_the_video_shown_at_teach(): void
+    {
+        $this->seedConceptVideo(['quality_status' => 'approved', 'match_score' => 0.9]);
+        $this->seedConceptVideo([
+            'quality_status' => 'approved',
+            'match_score' => 0.6,
+            'media_url' => 'https://cdn.example.test/second.mp4',
+        ]);
+
+        $resolver = app(\App\Services\Eso\EsoLearningContentResolver::class);
+        $node = \App\Models\PAL\ConceptNode::find($this->kNodeId);
+
+        $taught = $resolver->forTeach($node, $this->setUntaught($this->kNodeId), $this->subInstituteId);
+        $this->assertSame('https://cdn.example.test/eso-test-concept.mp4', $taught['media_url']);
+
+        $reteach = $resolver->forReteach($node, $this->readyForReteach(1), $this->subInstituteId);
+        $this->assertSame(
+            'https://cdn.example.test/second.mp4',
+            $reteach['media_url'],
+            'The reteach must move past the video the teach step already showed.'
+        );
+    }
+
+    /**
+     * With only one approved video, re-showing it beats dropping to a blank
+     * screen — which on this estate is what "no video" usually means, since
+     * most chapters have no extraction behind them either.
+     */
+    public function test_a_single_video_concept_still_shows_it_on_a_reteach(): void
+    {
+        $this->seedConceptVideo(['quality_status' => 'approved']);
+
+        $resolver = app(\App\Services\Eso\EsoLearningContentResolver::class);
+        $node = \App\Models\PAL\ConceptNode::find($this->kNodeId);
+
+        $reteach = $resolver->forReteach($node, $this->readyForReteach(1), $this->subInstituteId);
+
+        $this->assertNotNull($reteach);
+        $this->assertSame('https://cdn.example.test/eso-test-concept.mp4', $reteach['media_url']);
+    }
+
+    /** The end-to-end payload the frontend actually renders. */
+    public function test_the_reteach_action_payload_carries_the_video(): void
+    {
+        $this->seedConceptVideo(['quality_status' => 'approved', 'attribution' => 'Khan Academy']);
+
+        [, $correctId, $wrongId] = $this->makeCfuQuestion($this->kNodeId);
+
+        $state = $this->setUntaught($this->kNodeId, 0.4);
+        $state->taught_at = now();
+        $state->save();
+        $this->setMastery($this->aNodeId, 0.2);
+
+        $this->policy->recordCheckUnderstanding(
+            $this->studentId,
+            $this->kNodeId,
+            $this->conceptId,
+            $this->subInstituteId,
+            [['answer_master_id' => $correctId], ['answer_master_id' => $wrongId]]
+        );
+
+        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId, true);
+
+        $this->assertSame('reteach', $action['action']);
+        $this->assertNotNull($action['learning_content']);
+        $this->assertSame('video', $action['learning_content']['format']);
+        $this->assertSame('Khan Academy', $action['learning_content']['attribution']);
+
+        // The blueprint calls variant 2 "Video + interactive pauses", but we
+        // serve a plain player and this label is fed verbatim to Pal.
+        $this->assertSame('Video', $action['learning_content']['format_label']);
+    }
+
+    /**
+     * Pins the architecture rather than a behaviour: discovery belongs to the
+     * harvest command, and the student's request path may never wait on a
+     * third-party API. Easy to break by "just searching if we have nothing".
+     */
+    public function test_resolving_a_reteach_never_calls_an_external_service(): void
+    {
+        \Illuminate\Support\Facades\Http::fake();
+
+        config([
+            'pal_content.video.external.enabled' => true,
+            'pal_content.video.external.api_key' => 'test-key',
+        ]);
+
+        // Nothing approved, nothing extracted — the exact situation in which a
+        // live search would be tempting.
+        $this->assertNull($this->reteachContent());
+
+        \Illuminate\Support\Facades\Http::assertNothingSent();
+    }
+
+    /**
+     * The renderer used to bail on an empty body before it reached the media
+     * clause, so a video-only payload told Pal nothing and it would talk over
+     * the player.
+     */
+    public function test_pal_is_told_a_player_is_on_screen_even_with_no_accompanying_text(): void
+    {
+        $node = \App\Models\PAL\ConceptNode::find($this->kNodeId);
+
+        $instruction = \App\Services\Eso\EsoPalRenderer::reteachInstruction(
+            $node,
+            collect(),
+            1,
+            [
+                'variant' => 2,
+                'format' => 'video',
+                'format_label' => 'Video',
+                'title' => 'Extraction of metals',
+                'body' => null,
+                'media_url' => 'https://cdn.example.test/eso-test-concept.mp4',
+                'source' => 'institute_video',
+            ]
+        );
+
+        $this->assertStringContainsString('Video', $instruction);
+        $this->assertStringContainsString('being shown', $instruction);
+        $this->assertStringContainsString('do not describe its contents', $instruction);
+    }
 }

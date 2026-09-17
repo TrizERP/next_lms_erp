@@ -156,6 +156,18 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::get('pedagogy-suggested-content', [palController::class, 'getPedagogySuggestedContent'])->name('pal.pedagogySuggestedContent');
     Route::post('misconception/generate-content', [palController::class, 'generateMisconceptionContent'])->name('pal.misconception.generateContent');
 
+    // PAL Subject Diagnostic → Adaptive Learning (Web Routes)
+    Route::get('pal/diagnostic', [palController::class, 'diagnosticSubjects'])->name('pal.diagnostic.subjects');
+    Route::get('pal/diagnostic/{subjectId}', [palController::class, 'diagnosticStart'])->name('pal.diagnostic.start');
+    Route::post('pal/diagnostic/attempt/{attemptId}/submit', [palController::class, 'diagnosticSubmit'])->name('pal.diagnostic.submit');
+    Route::get('pal/diagnostic/attempt/{attemptId}/result', [palController::class, 'diagnosticResult'])->name('pal.diagnostic.result');
+    Route::get('pal/diagnostic/history/{subjectId}', [palController::class, 'diagnosticHistory'])->name('pal.diagnostic.history');
+
+    Route::get('pal/adaptive/{subjectId}', [palController::class, 'adaptiveConcepts'])->name('pal.adaptive.concepts');
+    Route::get('pal/adaptive/concept/{conceptId}', [palController::class, 'adaptiveQuestions'])->name('pal.adaptive.questions');
+    Route::post('pal/adaptive/answer', [palController::class, 'adaptiveAnswer'])->name('pal.adaptive.answer');
+    Route::get('pal/adaptive/progress/{conceptId}', [palController::class, 'adaptiveProgress'])->name('pal.adaptive.progress');
+
     // PAL V4 Content Intelligence Layer — authoring / review screens.
     // Session-based twin of the JWT API in routes/pal_api.php; both write through
     // ContentMetadataService, so the CONTENT LAW checks are identical either way.
