@@ -2024,8 +2024,17 @@ public function generateGammaPDF(Request $request)
                 }
             }
 
+            // Both columns must carry the DURABLE share link, never the export
+            // asset link. Gamma returns two URLs: a share URL of the form
+            // https://gamma.app/docs/<id>, which keeps working, and an
+            // exportUrl under assets.api.gamma.app, which is a credentialed
+            // asset link that answers 403 Access Denied to anyone opening it
+            // later. `url` is the column the Classroom Resource and Teacher
+            // Resource libraries render as the clickable link, so preferring
+            // the export URL here is what made every generated resource
+            // unopenable. 36 stored rows had to be rewritten to undo it.
             $gammaUrl = $url ?: $pdfUrl;
-            $fileUrl = $pdfUrl ?: $url;
+            $fileUrl = $url ?: $pdfUrl;
 
             $content = [
                 'grade_id' => $gradeId,

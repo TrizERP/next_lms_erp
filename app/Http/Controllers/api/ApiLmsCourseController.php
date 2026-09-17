@@ -451,8 +451,8 @@ class ApiLmsCourseController extends Controller
             ->where(function ($query) {
                 $query->whereNull('content_master.topic_id')
                     ->orWhere('content_master.topic_id', '0');
-            })
-            ->get();
+            });
+        $contentRows = $this->applyVisibilityFilter($contentRows)->get();
 
         $contentByChapter = [];
         foreach ($contentRows as $content) {
@@ -561,6 +561,26 @@ class ApiLmsCourseController extends Controller
     }
 
     /**
+     * Drop hidden rows from a content_master query.
+     *
+     * content_master.show_hide has always been written by the hide action in
+     * CourseBuilderController but was never read back here, so hiding a row had
+     * no effect on either library. This is what makes it take effect.
+     *
+     * The test is "not 0", never "= 1": show_hide is NULL on 5,205 rows,
+     * 4,896 of them Teacher Training. Those predate the flag and are live
+     * content, so `where('show_hide', 1)` would empty most of the Teacher
+     * Workspace. Only an explicit 0 means hidden.
+     */
+    private function applyVisibilityFilter($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('content_master.show_hide')
+                ->orWhere('content_master.show_hide', '<>', 0);
+        });
+    }
+
+    /**
      * The concept a generated content row was built for, read from its description.
      *
      * The Generate Content flow writes a "Concept Data Block" into the description
@@ -618,7 +638,9 @@ class ApiLmsCourseController extends Controller
                     ->orWhere('content_master.topic_id', '0');
             });
 
-        $content_data = $this->applyContentSourceFilter($content_query, $source)
+        $content_data = $this->applyVisibilityFilter(
+            $this->applyContentSourceFilter($content_query, $source)
+        )
             ->get()
             ->toArray();
 
