@@ -56,12 +56,21 @@ abstract class AbstractMenuCategoryApiController extends Controller
             return response()->json(['status' => 1, 'data' => ['categories' => []]]);
         }
 
+        // `onboarding_module_key` arrived with the onboarding rollout, so it is
+        // selected only where it exists rather than making this feed — which
+        // every module's navigation depends on — fail on an installation that
+        // has not run that migration yet.
+        $hasOnboardingKey = Schema::hasColumn('fees_menu_categories', 'onboarding_module_key');
+
         $categoryRows = DB::table('fees_menu_categories')
             ->where('module_name', $moduleName)
             ->where('status', 1)
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->get(['category_key', 'label', 'description', 'route']);
+            ->get(array_merge(
+                ['category_key', 'label', 'description', 'route'],
+                $hasOnboardingKey ? ['onboarding_module_key'] : []
+            ));
 
         if ($categoryRows->isEmpty()) {
             return response()->json(['status' => 1, 'data' => ['categories' => []]]);
@@ -81,6 +90,11 @@ abstract class AbstractMenuCategoryApiController extends Controller
             // The category's own page. The level-3 bar links here; the page
             // itself renders the items below as its horizontal tab bar.
             'route' => (string) ($category->route ?? ''),
+            // Set on the Onboarding category only: the onboarding journey this
+            // module shows, from onboarding_module.module_key. Empty means the
+            // category renders its menus like any other — or, for Onboarding,
+            // that this bar has no single journey to show.
+            'onboarding_module_key' => (string) ($category->onboarding_module_key ?? ''),
             'items' => $itemsByCategory[$category->category_key] ?? [],
         ])->all();
 
