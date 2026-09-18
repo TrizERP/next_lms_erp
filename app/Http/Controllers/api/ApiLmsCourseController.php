@@ -1800,12 +1800,20 @@ $restrict_date = $request->input('restrict_date');
                 ));
             })
             ->leftJoin('question_publisher', 'question_publisher.id', '=', 'lms_question_extraction.publisher_id')
+            // lms_question_master.concept is a legacy free-text column. The
+            // extraction pipeline sets concept_id - the real foreign key - and
+            // leaves that text NULL, so reading the text alone reported every
+            // one of the 1,147 extracted Class 10 Science questions as having
+            // no concept while each in fact pointed at a concept of its own
+            // chapter. Joining the concept row is what makes the mapping show.
+            ->leftJoin('lms_concept', 'lms_concept.id', '=', 'lms_question_master.concept_id')
             ->select(
                 'lms_question_master.id',
                 'lms_question_master.chapter_id',
                 'lms_question_master.topic_id',
                 'lms_question_master.concept_id',
-                'lms_question_master.concept',
+                'lms_question_master.concept as concept_text',
+                'lms_concept.name as concept_name',
                 'lms_question_master.standard_id',
                 'lms_question_master.subject_id',
                 'lms_question_master.question_title',
@@ -1969,7 +1977,11 @@ $restrict_date = $request->input('restrict_date');
                 'chapter_name' => $question['chapter_name'] !== null ? (string) $question['chapter_name'] : null,
                 'topic_id' => $question['topic_id'] !== null ? (int) $question['topic_id'] : null,
                 'concept_id' => $question['concept_id'] !== null ? (int) $question['concept_id'] : null,
-                'concept' => $question['concept'] !== null ? (string) $question['concept'] : null,
+                // The mapped concept's name wins; the legacy free-text column is
+                // the fallback for rows that predate concept_id.
+                'concept' => $question['concept_name'] ?? ($question['concept_text'] !== null
+                    ? (string) $question['concept_text']
+                    : null),
                 'standard_id' => $question['standard_id'] !== null ? (int) $question['standard_id'] : null,
                 'subject_id' => $question['subject_id'] !== null ? (int) $question['subject_id'] : null,
                 'category' => $question['category'] !== null ? (string) $question['category'] : null,
