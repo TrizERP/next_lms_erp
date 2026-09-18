@@ -472,26 +472,26 @@ class QuestionRoutingTest extends TestCase
         // it mentions fees and risk, and the intelligence layer used to claim it as an
         // academic-risk case and answer it as a risk explanation.
         //
-        // The guard survived the move, but it moved: the classifier still reads this as
-        // a risk scan, and the *module* is what stops it. Fees binds no agent, so an
-        // agent route cannot be planned and the question goes to the model, which can
-        // actually answer it from the fees tools.
+        // The guard survived the move, but it moved: the classifier reads this as
+        // a fees_risk_scan, and the Fees module now has its own agent (k12_fees) that
+        // handles fee risk analysis. This test ensures it routes to Fees and NOT to
+        // the academic-risk agent.
         $question = 'Analyze the students with pending fees, identify the highest payment risk, '
             . 'explain the reasons, group them by priority, and prepare a parent follow-up message.';
 
         $module = $this->resolveModule($question);
 
         $this->assertSame('fees', $module->key);
-        $this->assertFalse($module->hasAgent());
-        $this->assertSame('fees_query', app(IntentClassifier::class)->classify($question)->key);
+        $this->assertTrue($module->hasAgent(), 'Fees now has its own agent (k12_fees) for fee risk analysis');
+        $this->assertSame('fees_risk_scan', app(IntentClassifier::class)->classify($question)->key,
+            'Question with fees + risk should classify as fees_risk_scan, not academic risk');
 
         $context = new StageContext($question, $this->scope(), $module);
         $context->intent = app(IntentClassifier::class)->classify($question);
 
-        $this->assertNull(
-            app(DeterministicPlanner::class)->plan($context),
-            'An agent route at a module with no agent must be declined, not planned.'
-        );
+        $plan = app(DeterministicPlanner::class)->plan($context);
+        $this->assertNotNull($plan, 'An agent route at Fees should now be planned');
+        $this->assertSame('agent_runner', $plan->route ?? '', 'Should route to agent runner');
     }
 
     public function test_an_attendance_comparison_is_still_claimed_as_a_stored_case_read(): void

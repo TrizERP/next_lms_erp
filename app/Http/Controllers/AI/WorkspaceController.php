@@ -10,6 +10,7 @@ use App\Domain\AI\Workspace\OntologyViewResolver;
 use App\Domain\AI\Workspace\PageDataResolver;
 use App\Domain\GenerativeAI\GenerationRequest;
 use App\Domain\GenerativeAI\GenerationService;
+use App\Services\Mcp\AiReportGenerator;
 use App\Domain\Workflow\WorkflowEngine;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -36,6 +37,7 @@ class WorkspaceController extends AiController
         private readonly FlowStateResolver $flow,
         private readonly OntologyViewResolver $ontologyViews,
         private readonly PageDataResolver $pageData,
+        private readonly AiReportGenerator $reports,
         private readonly AgentRunner $agents,
         private readonly WorkflowEngine $workflows,
         private readonly GenerationService $generation,
@@ -272,6 +274,56 @@ class WorkspaceController extends AiController
             }
 
             return $this->success('Content generated.', $result->toArray());
+        } catch (Throwable $exception) {
+            return $this->handle($exception);
+        }
+    }
+
+    /**
+     * Build a saved report for the module on screen.
+     *
+     * Distinct from `generate()`, which writes prose for someone to read and copy.
+     * This writes a *document*: a row with an id, a title and an HTML table of live
+     * figures, which `/ai-reports/{id}` then previews, edits, refreshes, prints and
+     * sends. Those four actions were already built on that page and were unreachable
+     * from the assistant, because nothing in the panel ever produced a report to open.
+     *
+     * Nothing new decides what a report contains: `AiReportGenerator` resolves the
+     * module's published layout and reads its rows through the module's own tool, the
+     * same way the generate tool does when the chat calls it.
+     */
+    public function report(Request $request)
+    {
+        try {
+            $scope = $this->scope($request);
+
+            $validated = $request->validate([
+                'route' => 'required|string|max:500',
+                // Optional filters the layout understands. Omitted means the default view.
+                'arguments' => 'nullable|array',
+            ]);
+
+            $context = $this->contextService->resolve($validated['route'], $scope, $validated);
+            $module = $context->moduleKey;
+
+            if ($module === null || $module === 'general') {
+                return $this->failure('This page is not a module a report can be built from.', 422);
+            }
+
+            $result = $this->reports->generate($scope, array_merge(
+                (array) ($validated['arguments'] ?? []),
+                ['module' => $module]
+            ));
+
+            if (($result['success'] ?? false) !== true) {
+                return $this->failure(
+                    (string) ($result['message'] ?? 'The report could not be built.'),
+                    422,
+                    $result['error'] ?? null
+                );
+            }
+
+            return $this->success((string) $result['message'], $result['data'] ?? []);
         } catch (Throwable $exception) {
             return $this->handle($exception);
         }

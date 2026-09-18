@@ -212,6 +212,45 @@ class IntentClassifier
             'slots' => ['case'],
         ],
 
+        /*
+        | A fee question that wants the agent, not a table read.
+        |
+        | Deliberately a separate key rather than a mode of `fees_query`. `fees_query`
+        | routes to the module's own read tools and must keep doing so — a question like
+        | "who owes money" is answered by reading `fees.arrears`, and making it claim an
+        | agent run would drop those tools and answer worse. This key exists for the other
+        | kind of fee question: the one that asks the platform to *analyse* rather than
+        | list, and so needs a case opened, evidence cited and a recommendation drafted.
+        |
+        | It is also what stops such a question being claimed by `student_risk_scan`.
+        | "Which students are at risk of non-payment?" scores highly for the student
+        | module on the bare word "students", and used to resolve there — running the
+        | academic-risk agent, whose detectors know nothing about money, against a
+        | question about fees. Every anchor here names money, so the fees module wins the
+        | sentence outright.
+        */
+        'fees_risk_scan' => [
+            'label' => 'Analyse fee payment risk',
+            'description' => 'Runs the fees agent across the students in scope: opens a case per '
+                . 'student carrying arrears, cites the unpaid heads, and drafts a collection review.',
+            'anchors' => ['fee', 'fees', 'payment', 'payments', 'defaulter', 'defaulters', 'arrears', 'dues'],
+            'signals' => [
+                'payment risk' => 5.0, 'non-payment' => 5.0, 'non payment' => 5.0,
+                'fee risk' => 5.0, 'defaulter analysis' => 5.0, 'defaulter report' => 4.0,
+                'analyse' => 2.5, 'analyze' => 2.5, 'assess' => 2.5, 'scan' => 2.5,
+                'at risk' => 3.5, 'at-risk' => 3.5, 'likely to default' => 4.5,
+                'will default' => 4.0, 'highest risk' => 3.5, 'collection review' => 4.0,
+                'review' => 1.5, 'identify' => 1.5, 'which' => 1.0, 'who' => 1.0,
+            ],
+            'patterns' => [
+                '/\b(analyse|analyze|assess|scan|review)\b.{0,40}\b(fee|fees|defaulters?|arrears|payment)\b/i',
+                '/\b(fee|fees|payment)\b.{0,20}\brisk\b/i',
+                '/\brisk of (non[\s-]?payment|default)\b/i',
+                '/\b(likely to|will) default\b/i',
+                '/\b(fee|fees)\b.{0,30}\bcollection review\b/i',
+            ],
+            'slots' => [],
+        ],
         'fees_query' => [
             'label' => 'Answer a fee query',
             'description' => 'Recognises fees, pending payments, defaulters, fee collection, reminders, and fee summary questions.',

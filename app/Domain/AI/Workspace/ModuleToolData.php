@@ -147,6 +147,11 @@ class ModuleToolData
                 // things, and a template would summarise it as though they did not.
                 $records = array_slice($rows, 0, self::MAX_RECORDS);
                 $recordCount = $this->totalFor($data, count($rows));
+            } elseif ($rows === [] && $recordCount === 0) {
+                // No rows returned (e.g. no defaulters), but the tool may still report
+                // a cohort total (cohort_size, total, count). Capture it so the template
+                // knows the real scope rather than seeing "0 of 0".
+                $recordCount = $this->totalFor($data, 0);
             }
 
             $metrics = array_merge($metrics, $this->metrics($data));
