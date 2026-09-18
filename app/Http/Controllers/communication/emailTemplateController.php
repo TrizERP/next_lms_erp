@@ -35,12 +35,14 @@ class emailTemplateController extends Controller
             ->get();
 
         $events = EmailTemplateService::events();
+        $standardNames = $this->standardNameMap($sub_institute_id);
 
         $res['status_code'] = 1;
         $res['message'] = 'SUCCESS';
-        $res['data'] = $templates->map(function ($template) use ($events) {
+        $res['data'] = $templates->map(function ($template) use ($events, $standardNames) {
             $row = $template->toArray();
             $row['event_label'] = $events[$template->event_key]['label'] ?? $template->event_key;
+            $row['standard_names'] = $this->standardNames($template->standard_ids, $standardNames);
 
             return $row;
         })->toArray();
@@ -52,11 +54,12 @@ class emailTemplateController extends Controller
             ->when($request->filled('event_key'), function ($rows) use ($request) {
                 return $rows->where('event_key', $request->input('event_key'));
             })
-            ->map(function ($row) use ($templates) {
+            ->map(function ($row) use ($templates, $standardNames) {
                 $row['overridden'] = $templates
                     ->where('event_key', $row['event_key'])
                     ->where('status', 1)
                     ->isNotEmpty();
+                $row['standard_names'] = $this->standardNames($row['standard_ids'], $standardNames);
 
                 return $row;
             })
@@ -76,6 +79,7 @@ class emailTemplateController extends Controller
         $res['message'] = 'SUCCESS';
         $res['events'] = EmailTemplateService::events();
         $res['standards'] = $this->standards($request);
+        $res['letterTemplates'] = $this->letterTemplates($request);
 
         // Set when arriving from "Import & Edit" on a blade-backed row: the form
         // preselects the event and pulls the existing layout into the editor.
@@ -124,6 +128,9 @@ class emailTemplateController extends Controller
             'name'             => $request->get('name'),
             'subject'          => $this->normalizeTokens($request->get('subject')),
             'html_content'     => $this->normalizeTokens($request->get('html_content')),
+            'attach_as_pdf'    => (int) $request->get('attach_as_pdf', 0),
+            'pdf_template_id'  => $request->get('pdf_template_id') ?: null,
+            'pdf_filename'     => $request->get('pdf_filename') ?: null,
             'standard_ids'     => $this->normalizeStandardIds($request->get('standard_ids')),
             'status_code'      => $request->get('status_code') ?: null,
             'remarks'          => $request->get('remarks'),
@@ -166,6 +173,7 @@ class emailTemplateController extends Controller
         $res['data'] = $template->toArray();
         $res['events'] = EmailTemplateService::events();
         $res['standards'] = $this->standards($request);
+        $res['letterTemplates'] = $this->letterTemplates($request, $id);
 
         return is_mobile($type, 'communication/email_template/edit', $res, 'view');
     }
@@ -204,6 +212,9 @@ class emailTemplateController extends Controller
             'name'         => $request->get('name'),
             'subject'      => $this->normalizeTokens($request->get('subject')),
             'html_content' => $this->normalizeTokens($request->get('html_content')),
+            'attach_as_pdf' => (int) $request->get('attach_as_pdf', 0),
+            'pdf_template_id' => $request->get('pdf_template_id') ?: null,
+            'pdf_filename' => $request->get('pdf_filename') ?: null,
             'standard_ids' => $this->normalizeStandardIds($request->get('standard_ids')),
             'status_code'  => $request->get('status_code') ?: null,
             'remarks'      => $request->get('remarks'),
@@ -350,27 +361,71 @@ class emailTemplateController extends Controller
             return response()->json(['status' => 0, 'message' => $validator->messages()->first()]);
         }
 
-        $event = EmailTemplateService::event($request->input('event_key'));
+        $eventKey = $request->input('event_key');
+        $event = EmailTemplateService::event($eventKey);
         $vars = $this->sampleVars($event);
+        $subject = EmailTemplateService::replace($request->input('subject'), $vars);
+
+        // Mirror what a real send does, attachment included, so the test proves
+        // the whole mail rather than just the body.
+        $attachment = null;
+
+        if ($request->input('attach_as_pdf')) {
+            $attachment = EmailTemplateService::buildPdfAttachment(
+                new EmailTemplate([
+                    'attach_as_pdf'   => 1,
+                    'pdf_template_id' => $request->input('pdf_template_id') ?: null,
+                    'pdf_filename'    => $request->input('pdf_filename') ?: 'attachment.pdf',
+                ]),
+                (int) $this->subInstituteId($request),
+                $eventKey,
+                $vars,
+                $this->firstStandardId($request->input('standard_ids')),
+                $request->input('status_code')
+            );
+        }
 
         $mailRequest = new Request([
             'type'             => 'JSON',
             'all_email'        => $request->input('to'),
-            'subject'          => EmailTemplateService::replace($request->input('subject'), $vars),
-            'example_subject'  => EmailTemplateService::replace($request->input('subject'), $vars),
+            'subject'          => $subject,
+            'example_subject'  => $subject,
             'content'          => EmailTemplateService::replace($request->input('html_content'), $vars),
             'sub_institute_id' => $this->subInstituteId($request),
             'syear'            => $request->session()->get('syear'),
             'teacher_id'       => $request->session()->get('user_id'),
+            'attachment_path'  => $attachment,
         ]);
         $mailRequest->setLaravelSession($request->session());
 
-        (new send_email_parents_controller)->sendEmail($mailRequest);
+        try {
+            // This mailer reads the Request object; send_email_parents_controller
+            // reads $_REQUEST, which a synthetic Request does not populate.
+            (new \App\Http\Controllers\admission\admissionRegistrationHillController)->sendEmail($mailRequest);
+        } finally {
+            if ($attachment && is_file($attachment)) {
+                @unlink($attachment);
+            }
+        }
 
         return response()->json([
             'status'  => 1,
-            'message' => 'Test email queued to ' . $request->input('to'),
+            'message' => 'Test email queued to ' . $request->input('to')
+                . ($attachment ? ' (with PDF attachment)' : ''),
         ]);
+    }
+
+    private function firstStandardId($value)
+    {
+        if (is_array($value)) {
+            return $value[0] ?? null;
+        }
+
+        if (is_string($value) && $value !== '') {
+            return explode(',', $value)[0];
+        }
+
+        return null;
     }
 
     private function sampleVars(?array $event): array
@@ -426,6 +481,61 @@ class emailTemplateController extends Controller
         $ids = array_values(array_filter(array_map('intval', $ids)));
 
         return empty($ids) ? null : implode(',', $ids);
+    }
+
+    /**
+     * Saved templates that can be attached as the PDF letter. The template being
+     * edited is excluded so it cannot reference itself.
+     */
+    private function letterTemplates(Request $request, $excludeId = null): array
+    {
+        return EmailTemplate::where('sub_institute_id', $this->subInstituteId($request))
+            ->when($excludeId, function ($q) use ($excludeId) {
+                $q->where('id', '!=', $excludeId);
+            })
+            ->orderBy('name')
+            ->get(['id', 'name', 'event_key'])
+            ->toArray();
+    }
+
+    /**
+     * id => display name for every standard of the institute.
+     */
+    private function standardNameMap($subInstituteId): array
+    {
+        return DB::table('standard')
+            ->where('sub_institute_id', $subInstituteId)
+            ->get(['id', 'name', 'medium'])
+            ->mapWithKeys(function ($standard) {
+                $name = $standard->name;
+
+                if (!empty($standard->medium)) {
+                    $name .= ' (' . $standard->medium . ')';
+                }
+
+                return [(int) $standard->id => $name];
+            })
+            ->toArray();
+    }
+
+    /**
+     * Turn a stored "3300,3306" into readable names. Ids that belong to another
+     * institute (the blade catalog is hardcoded for Hills High) fall back to the
+     * raw id rather than disappearing.
+     *
+     * @return array<int,string>
+     */
+    private function standardNames($csv, array $map): array
+    {
+        if (empty($csv)) {
+            return [];
+        }
+
+        return array_map(function ($id) use ($map) {
+            $id = (int) trim($id);
+
+            return $map[$id] ?? ('#' . $id);
+        }, explode(',', $csv));
     }
 
     private function standards(Request $request): array
