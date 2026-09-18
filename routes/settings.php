@@ -10,6 +10,8 @@ use App\Http\Controllers\settings\announcementController;
 use App\Http\Controllers\settings\masterSetupSelectController;
 use App\Http\Controllers\settings\TrizSkillsController;
 use App\Http\Controllers\settings\configurationController;
+use App\Http\Controllers\settings\organizationDetailsController;
+use App\Http\Controllers\communication\emailTemplateController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -34,6 +36,17 @@ Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRo
     Route::post('update-rights-order',[configurationController::class,'updateMenuSortOrder'])->name('updateMenuSortOrder');
     Route::get('getFeildLists',[configurationController::class,'getFeildLists'])->name('getFeildLists');
     Route::post('restoreData',[configurationController::class,'restoreData'])->name('restoreData');
+
+
+    // Institute / Organization Profile - ported from hp_erp as-is.
+    Route::resource('organization_data', organizationDetailsController::class);
+
+    // Frontend-managed transactional email layouts (replaces hardcoded blades).
+    Route::get('email_template/import_legacy', [emailTemplateController::class, 'importLegacy'])->name('email_template.import_legacy');
+    Route::get('email_template/preview_legacy', [emailTemplateController::class, 'previewLegacy'])->name('email_template.preview_legacy');
+    Route::post('email_template/preview', [emailTemplateController::class, 'preview'])->name('email_template.preview');
+    Route::post('email_template/send_test', [emailTemplateController::class, 'sendTest'])->name('email_template.send_test');
+    Route::resource('email_template', emailTemplateController::class)->except(['show']);
 
 });
 // no permisson check
