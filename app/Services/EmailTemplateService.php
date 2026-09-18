@@ -50,9 +50,25 @@ class EmailTemplateService
      */
     public static function resolve(int $subInstituteId, string $eventKey, $standardId = null, $statusCode = null): ?EmailTemplate
     {
+        // Templates that exist only to be attached as the PDF letter never act
+        // as the mail body, or a letter scoped to a standard would outrank the
+        // covering note and go out inline with no attachment.
+        $letterIds = EmailTemplate::where('sub_institute_id', $subInstituteId)
+            ->whereNotNull('pdf_template_id')
+            ->pluck('pdf_template_id')
+            ->filter()
+            ->unique()
+            ->all();
+
         $candidates = EmailTemplate::where('sub_institute_id', $subInstituteId)
             ->where('event_key', $eventKey)
             ->where('status', 1)
+            ->where(function ($q) {
+                $q->where('is_letter', 0)->orWhereNull('is_letter');
+            })
+            ->when(!empty($letterIds), function ($q) use ($letterIds) {
+                $q->whereNotIn('id', $letterIds);
+            })
             ->get();
 
         if ($candidates->isEmpty()) {

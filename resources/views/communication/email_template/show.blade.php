@@ -81,7 +81,11 @@
                                     <td>{{ $j++ }}</td>
                                     <td>{{ $row['event_label'] }}</td>
                                     <td>
-                                        <span class="label label-success">Editable</span>
+                                        @if(!empty($row['is_letter']))
+                                            <span class="label label-primary" title="Attached as a PDF letter only - never sent as the mail body">Letter</span>
+                                        @else
+                                            <span class="label label-success">Editable</span>
+                                        @endif
                                         @if(!empty($row['attach_as_pdf']))
                                             <span class="label label-info" title="The letter is attached as a PDF">PDF</span>
                                         @endif

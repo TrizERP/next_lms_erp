@@ -118,6 +118,18 @@
 @endphp
 <div class="row">
     <div class="col-md-4 form-group">
+        <label>Template Purpose</label>
+        <select name="is_letter" id="is_letter" class="form-control">
+            <option value="0" {{ (int) old('is_letter', $template['is_letter'] ?? 0) === 0 ? 'selected' : '' }}>Email body</option>
+            <option value="1" {{ (int) old('is_letter', $template['is_letter'] ?? 0) === 1 ? 'selected' : '' }}>PDF letter only (never sent as the body)</option>
+        </select>
+        <small class="text-muted">
+            Pick <strong>PDF letter only</strong> for a layout you import purely to attach &mdash; otherwise it competes
+            to become the mail body and the attachment is skipped.
+        </small>
+    </div>
+
+    <div class="col-md-4 form-group body-option">
         <label>Send Letter As PDF Attachment</label>
         <select name="attach_as_pdf" id="attach_as_pdf" class="form-control">
             <option value="0" {{ $attachAsPdf === 0 ? 'selected' : '' }}>No - the body above is the whole mail</option>

@@ -16,6 +16,7 @@ class EmailTemplate extends Model
         'subject',
         'html_content',
         'attach_as_pdf',
+        'is_letter',
         'pdf_template_id',
         'pdf_filename',
         'standard_ids',

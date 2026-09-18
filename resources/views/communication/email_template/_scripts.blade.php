@@ -94,10 +94,15 @@ $(function () {
     renderEventMeta();
 
     function togglePdfOptions() {
-        $('.pdf-option').toggle($('#attach_as_pdf').val() === '1');
+        var isLetter = $('#is_letter').val() === '1';
+
+        // A letter-only template is never a body, so the attachment settings
+        // that belong to a body do not apply to it.
+        $('.body-option').toggle(!isLetter);
+        $('.pdf-option').toggle(!isLetter && $('#attach_as_pdf').val() === '1');
     }
 
-    $('#attach_as_pdf').on('change', togglePdfOptions);
+    $('#attach_as_pdf, #is_letter').on('change', togglePdfOptions);
     togglePdfOptions();
 
     function importLegacyLayout(silent) {
