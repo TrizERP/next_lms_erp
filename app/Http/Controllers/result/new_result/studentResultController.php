@@ -4240,6 +4240,14 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
         // master and only the exam for which the marks of the student have been entered
         if (!empty($r3_exam_name)) {
             $r3_head = $r3_row = $r3_marked_head = [];
+            // the exam of the R3 exam master is printed in the sort order given to it on the exam,
+            // get_exam_name does not select it so it is read here for the R3 exam only
+            $r3_exam_sort = DB::table('result_create_exam')
+                ->whereIn('id', array_map(function ($value) {
+                    return $value->id;
+                }, $r3_exam_name))
+                ->pluck('sort_order', 'id')->toArray();
+
             // the heading order comes from the exam itself, not from the subject that has the marks,
             // the block prints the created exam title, not the exam master title
             $r3_all_head = $r3_head_order = [];
@@ -4248,12 +4256,13 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
                     if ($title->term_id != $terms->term_id) {
                         continue;
                     }
+                    // sort order first, the exam created first breaks a tie
+                    $sort_key = sprintf('%011d-%011d', $r3_exam_sort[$title->id] ?? 0, $title->id);
                     if (!isset($r3_all_head[$title->title])) {
                         $r3_all_head[$title->title] = $title->title . '<br/>(' . (float) $title->points . ')';
-                        $r3_head_order[$title->title] = $title->id;
+                        $r3_head_order[$title->title] = $sort_key;
                     }
-                    // the exam created first decides where its heading is printed
-                    $r3_head_order[$title->title] = min($r3_head_order[$title->title], $title->id);
+                    $r3_head_order[$title->title] = min($r3_head_order[$title->title], $sort_key);
                 }
             }
             asort($r3_head_order);
@@ -4290,11 +4299,7 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
             if (!empty($r3_head) && !empty($r3_row)) {
                 $table .= '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
                 <thead>
-                    <tr>
-                        <th><b>R3</b></th>
-                        <th colspan="' . count($r3_head) . '"></th>
-                    </tr>
-                    <tr><th></th>';//style="background:black;color:white"
+                    <tr><th><b>R3</b></th>';//style="background:black;color:white"
                 foreach ($r3_head as $r3_title) {
                     $table .= '<th class="data_center"><b>' . $r3_title . '</b></th>';
                 }
