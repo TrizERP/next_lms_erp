@@ -147,7 +147,22 @@ class EvidenceStore
             $query->where('kind', $kind);
         }
 
-        return $query->orderByDesc('observed_at')
+        // Ordered by when the evidence was observed, falling back to when it was
+        // recorded — never by `observed_at` alone.
+        //
+        // `observed_at` is nullable, and MySQL sorts NULLs last under DESC. A
+        // collector that does not stamp it therefore writes rows that sink to the
+        // bottom of this list, and once a subject has accumulated more rows than
+        // `$limit` they fall outside the window entirely — unreachable, even though
+        // they are the newest evidence there is.
+        //
+        // That is not a theoretical ordering nicety. It is what made a fee case
+        // refuse: `AgentContext::evidenceFor()` reads this list to decide what a
+        // claim may cite, a student with 125 evidence rows pushed the two fee rows
+        // just written past the limit, no claim could cite anything, and the
+        // explanation was refused with "no claim had citable evidence behind it" —
+        // while the Evidence stage above it displayed both rows as verified.
+        return $query->orderByRaw('COALESCE(observed_at, created_at) DESC')
             ->orderByDesc('id')
             ->limit($limit)
             ->get()

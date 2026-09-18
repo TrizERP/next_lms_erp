@@ -267,15 +267,61 @@ class McpToolCaller
      *
      * @param  array<string, mixed>  $payload
      */
+    /**
+     * How many rows a tool returned, for the trace line the reader actually sees.
+     *
+     * Two rules, and both were learned the hard way. It looks inside `data` first,
+     * because a `ToolResult` envelope wraps the rows there alongside `success`,
+     * `message`, `error`, `conversationPatch` and `uiAction` — and it skips *empty*
+     * lists, because `array_is_list([])` is true. Together those produced the wrong
+     * answer in the most visible place: `fees.arrears` returned two students with
+     * arrears, and the trace said "Read 0 rows from live records" because
+     * `conversationPatch => []` came first in the envelope and won. The answer above it
+     * named both students and their balances, so the trace contradicted the reply it
+     * was describing — which is worse than saying nothing, since the trace is what a
+     * reader checks when they doubt the answer.
+     *
+     * A tool that genuinely returns an empty list still reports 0, because the fallback
+     * below only counts a non-empty payload as one row.
+     */
     private function countOf(array $payload): int
     {
-        foreach ($payload as $value) {
-            if (is_array($value) && array_is_list($value)) {
-                return count($value);
-            }
+        $rows = $this->firstListCount(
+            is_array($payload['data'] ?? null) ? $payload['data'] : $payload
+        );
+
+        if ($rows !== null) {
+            return $rows;
         }
 
+        // No list anywhere. A payload that holds something is one record; an empty one
+        // is none.
         return $payload === [] ? 0 : 1;
+    }
+
+    /**
+     * The size of the first non-empty list in an array, or null when there is none.
+     */
+    private function firstListCount(array $payload): ?int
+    {
+        $sawEmptyList = false;
+
+        foreach ($payload as $value) {
+            if (! is_array($value) || ! array_is_list($value)) {
+                continue;
+            }
+
+            if ($value === []) {
+                $sawEmptyList = true;
+
+                continue;
+            }
+
+            return count($value);
+        }
+
+        // Every list was empty: that is a real zero, not an absence of rows to count.
+        return $sawEmptyList ? 0 : null;
     }
 
     private function elapsed(float $startedAt): int

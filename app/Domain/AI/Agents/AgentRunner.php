@@ -342,17 +342,31 @@ class AgentRunner
         ];
     }
 
+    /**
+     * The next run reference for this year.
+     *
+     * Derived from the highest *sequence* in use, not from the newest row by id. Those
+     * are the same number only while every insert lands in order and no row is ever
+     * removed — and neither holds. Two runs starting together both read the same newest
+     * row and computed the same sequence; the first inserted it, and the second crashed
+     * on the unique index with "Duplicate entry 'RUN-2026-000213'", taking an agent run
+     * down for a reason that had nothing to do with the analysis it was performing.
+     *
+     * `MAX(CAST(suffix))` closes that off for the ordinary case, and the caller retries
+     * on the genuine race, because two processes can still read the same maximum before
+     * either writes. Reserving the number through a sequence table would be the airtight
+     * fix; it would also mean a new table, and this is a reference string, not a ledger
+     * entry.
+     */
     private function nextReference(): string
     {
         $prefix = sprintf('RUN-%d-', now()->year);
 
-        $last = DB::table('ai_agent_runs')
+        $highest = (int) DB::table('ai_agent_runs')
             ->where('run_reference', 'like', $prefix . '%')
-            ->orderByDesc('id')
-            ->value('run_reference');
+            ->selectRaw('MAX(CAST(SUBSTRING(run_reference, ?) AS UNSIGNED)) as seq', [strlen($prefix) + 1])
+            ->value('seq');
 
-        $sequence = $last ? ((int) substr($last, strlen($prefix))) + 1 : 1;
-
-        return $prefix . str_pad((string) $sequence, 6, '0', STR_PAD_LEFT);
+        return $prefix . str_pad((string) ($highest + 1), 6, '0', STR_PAD_LEFT);
     }
 }

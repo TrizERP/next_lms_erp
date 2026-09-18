@@ -2,6 +2,7 @@
 
 namespace App\Services\Mcp;
 
+use App\Domain\AI\Templates\GeneratedReportStore;
 use App\Mail\StudentReportNotice;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -48,8 +49,10 @@ class ReportSender
     /** Row keys that identify a record to the system rather than describing it to a reader. */
     private const INTERNAL_KEYS = ['student_id', 'enquiry_id', 'id', 'sub_institute_id', 'syear'];
 
-    public function __construct(private readonly AiReportGenerator $reports)
-    {
+    public function __construct(
+        private readonly AiReportGenerator $reports,
+        private readonly GeneratedReportStore $store,
+    ) {
     }
 
     /**
@@ -215,11 +218,16 @@ class ReportSender
      */
     private function resolve(McpRequestContext $context, int $reportId): array
     {
-        $report = DB::table('template_master')
-            ->where('id', $reportId)
-            ->where('module_name', AiTemplateService::AI_MODULE)
-            ->where('sub_institute_id', $context->selectedInstituteId)
-            ->first();
+        // The same lookup the report *page* uses, not a second one.
+        //
+        // This read `template_master` directly, which is the legacy table.
+        // `GeneratedReportStore::find()` checks `ai_generated_reports` first and falls
+        // back to the legacy one — so every report written since that table arrived
+        // opened fine under `show()` and then answered "That report could not be found"
+        // the moment somebody pressed Send. Preview and Send disagreeing about whether
+        // a document exists is the worst shape for this to fail in: the operator is
+        // looking at the thing they are told does not exist.
+        $report = $this->store->find($context, $reportId);
 
         if (! $report) {
             return ToolResult::failure('ai.reports.send', 'That report could not be found.', 'report_not_found');

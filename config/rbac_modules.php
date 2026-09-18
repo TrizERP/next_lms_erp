@@ -100,6 +100,29 @@ return [
         | screens read and refuse to save, which is the correct failure and not a
         | bug to work around here. This file grants nothing.
         */
+        /*
+        | AI agents — who may enable and run them, per module.
+        |
+        | The Automations tab asks for `agents.<module>` and this key was absent, so
+        | `PermissionService::check()` could not resolve it, `allow_when_unresolved`
+        | denied everybody, and the screen told people to ask an administrator for a
+        | right that did not exist. Registering it here creates nothing and grants
+        | nobody anything; it only names the menu row a grant is stored on.
+        |
+        | Per module rather than one key for all agents, because the screen is per
+        | module: a school can let a fees clerk switch on a fees agent without also
+        | letting them switch on agents elsewhere. `ai_agents` is the fallback for a
+        | school that does not want that distinction and grants once at the parent —
+        | the same shape platform.eventbus already uses.
+        |
+        | The rows are created by
+        | database/migrations/2026_09_18_130000_add_ai_agents_menu_rows_for_rights.php.
+        */
+        'agents.fees' => [
+            'label' => 'AI agents — Fees',
+            'links' => ['ai_agents.fees', 'ai_agents'],
+        ],
+
         'platform.notification' => [
             'label' => 'Platform services — Communication',
             'links' => ['platform_services.notification', 'platform_services'],
