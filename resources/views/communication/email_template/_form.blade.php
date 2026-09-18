@@ -79,7 +79,10 @@
                 </option>
             @endforeach
         </select>
-        <small class="text-muted">Leave empty to use this template for every {{ App\Helpers\get_string('standard','request') }}.</small>
+        <small class="text-muted">
+            Scopes <em>this body text</em> only. Leave empty to use it for every {{ App\Helpers\get_string('standard','request') }}
+            &mdash; the attached PDF letter is still picked per {{ App\Helpers\get_string('standard','request') }}.
+        </small>
     </div>
 </div>
 
@@ -106,6 +109,44 @@
         <div id="summernote_wrap" style="display:none;">
             <textarea id="summernote"></textarea>
         </div>
+    </div>
+</div>
+
+@php
+    $letterTemplates = $data['letterTemplates'] ?? [];
+    $attachAsPdf = (int) old('attach_as_pdf', $template['attach_as_pdf'] ?? 0);
+@endphp
+<div class="row">
+    <div class="col-md-4 form-group">
+        <label>Send Letter As PDF Attachment</label>
+        <select name="attach_as_pdf" id="attach_as_pdf" class="form-control">
+            <option value="0" {{ $attachAsPdf === 0 ? 'selected' : '' }}>No - the body above is the whole mail</option>
+            <option value="1" {{ $attachAsPdf === 1 ? 'selected' : '' }}>Yes - attach the letter, body is the covering note</option>
+        </select>
+        <small class="text-muted">Use this when the body is a short note and the full letter should travel as a PDF.</small>
+    </div>
+
+    <div class="col-md-4 form-group pdf-option">
+        <label>PDF Letter</label>
+        <select name="pdf_template_id" class="form-control">
+            <option value="">Per {{ App\Helpers\get_string('standard','request') }} (recommended)</option>
+            @foreach($letterTemplates as $letter)
+                <option value="{{ $letter['id'] }}" {{ (string) old('pdf_template_id', $template['pdf_template_id'] ?? '') === (string) $letter['id'] ? 'selected' : '' }}>
+                    Always use: {{ $letter['name'] }}
+                </option>
+            @endforeach
+        </select>
+        <small class="text-muted">
+            Default attaches the letter mapped to the student's own {{ App\Helpers\get_string('standard','request') }},
+            so each one keeps its own fee structure. Pick a named template only to force the same letter for everyone.
+        </small>
+    </div>
+
+    <div class="col-md-4 form-group pdf-option">
+        <label>PDF File Name</label>
+        <input type="text" name="pdf_filename" class="form-control"
+               value="{{ old('pdf_filename', $template['pdf_filename'] ?? 'Admission_Letter_<< enquiry_no >>.pdf') }}">
+        <small class="text-muted">Placeholders work here too.</small>
     </div>
 </div>
 

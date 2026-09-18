@@ -93,6 +93,13 @@ $(function () {
     $('#event_key').on('change', renderEventMeta);
     renderEventMeta();
 
+    function togglePdfOptions() {
+        $('.pdf-option').toggle($('#attach_as_pdf').val() === '1');
+    }
+
+    $('#attach_as_pdf').on('change', togglePdfOptions);
+    togglePdfOptions();
+
     function importLegacyLayout(silent) {
         var standards = $('select[name="standard_ids[]"]').val() || [];
 
@@ -179,7 +186,12 @@ $(function () {
             event_key: $('#event_key').val(),
             to: to,
             subject: $('#subject').val(),
-            html_content: $('#html_content').val()
+            html_content: $('#html_content').val(),
+            attach_as_pdf: $('#attach_as_pdf').val(),
+            pdf_template_id: $('select[name="pdf_template_id"]').val(),
+            pdf_filename: $('input[name="pdf_filename"]').val(),
+            status_code: $('#status_code').val(),
+            standard_ids: ($('select[name="standard_ids[]"]').val() || []).join(',')
         }, function (res) {
             alert(res.message);
         });
