@@ -43,7 +43,7 @@ class chapterMasterController extends Controller
         //    v3: chapters now carry their topic_master rows, and each concept
         //    carries the topic it belongs to, so the UI can render
         //    chapter -> topic -> concept.
-        $cacheKey = "chapters_v3_{$subInstituteId}_{$standardId}_{$subjectId}_page_{$page}_limit_{$perPage}";
+        $cacheKey = "chapters_v4_{$subInstituteId}_{$standardId}_{$subjectId}_page_{$page}_limit_{$perPage}";
         
         return Cache::remember($cacheKey, 3600, function () use ($subInstituteId, $standardId, $subjectId, $perPage) {
             
@@ -53,6 +53,12 @@ class chapterMasterController extends Controller
                 ->where('sub_institute_id', $subInstituteId)
                 ->where('standard_id', $standardId)
                 ->where('subject_id', $subjectId)
+                // Hidden chapters must not reach the UI. The test is "not 0"
+                // rather than "= 1" because show_hide is NULL on 44 chapters
+                // that predate the flag and are live content.
+                ->where(function ($q) {
+                    $q->whereNull('show_hide')->orWhere('show_hide', '<>', 0);
+                })
                 ->paginate($perPage);
 
             $chapterIds = collect($paginatedChapters->items())->pluck('chapter_id')->toArray();
@@ -76,6 +82,10 @@ class chapterMasterController extends Controller
                 $concepts = DB::table('lms_concept')
                     ->select('id as concept_id', 'chapter_id', 'topic_id', 'name as concept_name', 'description as concept_description')
                     ->whereIn('chapter_id', $chapterIds)
+                    ->where(function ($q) {
+                        $q->whereNull('concept_show_hide')
+                          ->orWhere('concept_show_hide', '<>', 0);
+                    })
                     ->get();
 
                 // 6b. Fetch the topics these chapters are split into. topic_master is
@@ -92,6 +102,10 @@ class chapterMasterController extends Controller
                         'topic_show_hide'
                     )
                     ->whereIn('chapter_id', $chapterIds)
+                    ->where(function ($q) {
+                        $q->whereNull('topic_show_hide')
+                          ->orWhere('topic_show_hide', '<>', 0);
+                    })
                     ->orderBy('topic_sort_order')
                     ->orderBy('id')
                     ->get();
