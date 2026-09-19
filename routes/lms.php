@@ -60,6 +60,7 @@ use App\Http\Controllers\lms\h5p\H5PScenarioController;
 use App\Http\Controllers\lms\h5p\H5PMCQController;
 use App\Http\Controllers\lms\h5p\H5PInteractiveVideoController;
 use App\Http\Controllers\lms\h5p\H5pFlashcardController;
+use App\Http\Controllers\lms\h5p\H5PDragDropController;
 use App\Http\Controllers\lms\nextAPI\chapterMasterController;
 use App\Http\Controllers\lms\nextAPI\lmsCurriculumController as newCurricuumController;
 
@@ -384,6 +385,19 @@ Route::prefix('h5p')->middleware(['session', 'menu', 'logRoute', 'check_permissi
     Route::resource('h5p_mcq',H5PMCQController::class);
     Route::resource('h5p_interactive_video',H5PInteractiveVideoController::class);
     Route::resource('h5p_flashacard',H5pFlashcardController::class);
+
+    // Drag and Drop (H5P.DragQuestion).
+    //
+    // The four routes below are declared BEFORE the resource on purpose: the
+    // resource's `show` is GET h5p_drag_drop/{id}, which would otherwise
+    // swallow `import` and `media` as ids named "import" and "media".
+    Route::post('h5p_drag_drop/import', [H5PDragDropController::class, 'import'])->name('h5p_drag_drop.import');
+    Route::post('h5p_drag_drop/media', [H5PDragDropController::class, 'media'])->name('h5p_drag_drop.media');
+    Route::get('h5p_drag_drop/{id}/export', [H5PDragDropController::class, 'export'])
+        ->whereNumber('id')->name('h5p_drag_drop.export');
+    Route::post('h5p_drag_drop/{id}/publish', [H5PDragDropController::class, 'publish'])
+        ->whereNumber('id')->name('h5p_drag_drop.publish');
+    Route::resource('h5p_drag_drop', H5PDragDropController::class);
 });
 Route::post('get-h5p-ai-output', [H5PIndexController::class, 'getH5pAIOutput'])->name('get-h5p-ai-output');
 Route::post('get-h5p-ai-scenario', [H5PScenarioController::class, 'getH5pAIScenario'])->name('get-h5p-ai-scenario');

@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Schema;
  *   - content_master has ZERO H5P rows. Its file_type values are pdf 15,460 /
  *     link 13,683 / mp4 1,921 / pptx 183 / jpg 99 / docx 9 - no h5p anywhere.
  *   - The real H5P estate is 3 separate tables holding 11 items in total
- *     (h5p_scenarios 11, h5p_interactive_video 0, h5p_flashcard 0).
+ *     (h5p_scenarios 11, h5p_interactive_video 0, h5p_flashcard 0); h5p_drag_drop was added later and is the fourth.
  * So there is nothing in the content list to filter FOR until H5P is joined in.
  *
  * Three options were considered:
@@ -58,7 +58,7 @@ use Illuminate\Support\Facades\Schema;
 class H5PContentAdapter
 {
     /**
-     * The three H5P estates, and how each maps into a content asset.
+     * The H5P estates, and how each maps into a content asset.
      *
      * `route` is the Next.js editor the item deep-links to. Those routes already
      * exist and hold the CRUD, which is what makes demoting the top-level button
@@ -86,6 +86,18 @@ class H5PContentAdapter
             'route' => '/h5p/h5p_flashacard', // route spelling is the legacy one; kept verbatim
             'label' => 'H5P flashcard',
             'h5p_type' => 'flashcards',
+        ],
+        'drag_drop' => [
+            'table' => 'h5p_drag_drop',
+            'title' => 'title',
+            'route' => '/h5p/h5p_drag_drop',
+            'label' => 'H5P drag and drop',
+            'h5p_type' => 'drag_and_drop',
+            // The only source with a draft state. A draft is authored work
+            // in progress, not content -- surfacing it in the chapter list
+            // would put it in front of students through every consumer of
+            // that list at once.
+            'published_only' => true,
         ],
     ];
 
@@ -132,6 +144,13 @@ class H5PContentAdapter
 
             if (Schema::hasColumn($spec['table'], 'deleted_at')) {
                 $query->whereNull('deleted_at');
+            }
+
+            // Schema::hasColumn guards the column too, so a deployment that
+            // has the table but not yet the migration adding `status` keeps
+            // working instead of erroring on an unknown column.
+            if (($spec['published_only'] ?? false) && Schema::hasColumn($spec['table'], 'status')) {
+                $query->where('status', 'published');
             }
 
             foreach ($query->get() as $row) {

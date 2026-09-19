@@ -180,7 +180,37 @@ return [
             'retry_allowed' => true,
             'offline_compatible' => true,
             'mobile_optimised' => true,
-            'implementation' => ['status' => 'planned'],
+            'implementation' => [
+                'status' => 'native',
+                'source_table' => 'h5p_drag_drop',
+                'child_table' => 'h5p_drag_drop_zones',
+                'child_foreign_key' => 'drag_drop_id',
+                'child_label' => 'drop zone',
+                'columns' => [
+                    'id' => 'id',
+                    'title' => 'title',
+                    'body' => 'task_description',
+                    'media' => 'background_image',
+                    'chapter' => 'chapter_id',
+                    'subject' => 'subject_id',
+                    'standard' => 'standard_id',
+                    'tenant' => 'sub_institute_id',
+                    'created_by' => 'created_by',
+                    'created_at' => 'created_at',
+                    'soft_delete' => 'deleted_at',
+                ],
+                'route' => 'h5p_drag_drop.index',
+                'module_title' => 'Drag and Drop',
+                'module_description' => 'Learners can drag text or images into correct drop zones.',
+                'icon' => 'mdi mdi-drag-variant',
+                'sort_order' => 5,
+                // The only native type that is also exchangeable as a real
+                // .h5p package. The machine name is the official one, and
+                // its dependency closure lives in config/h5p_libraries.php.
+                'h5p_library' => 'H5P.DragQuestion',
+                'category' => 'assessment',
+                'supports_package_exchange' => true,
+            ],
         ],
         'multiple_choice' => [
             'label' => 'Multiple Choice',
