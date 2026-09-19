@@ -95,7 +95,8 @@ class StudentHomeworkApiController extends Controller
         $validator = Validator::make($request->all(), [
             'sub_institute_id' => 'required|numeric',
             'syear' => 'required|numeric',
-            'students' => 'required',
+            'students' => 'required_unless:assign_mode,all',
+            'assign_mode' => 'nullable|string|in:selected,all',
             'title' => 'required|string',
             'description' => 'nullable|string',
             'standard_id' => 'required|numeric',
@@ -113,7 +114,18 @@ class StudentHomeworkApiController extends Controller
 
         $sub_institute_id = $request->input('sub_institute_id');
         $syear = $request->input('syear');
-        $students = $this->parseCsvIds($request->input('students'));
+        // Who the homework goes to. 'selected' is the screen's original
+        // behaviour -- the ids the teacher ticked -- and stays the default, so
+        // a request that never mentions assign_mode behaves exactly as before.
+        // 'all' ignores the posted ids and resolves every currently enrolled
+        // student of the chosen section/standard/division here, on the server,
+        // so the class roster is read at assign time rather than trusted from
+        // the browser. Past this line the two modes are indistinguishable:
+        // both hand the same array of ids to getStudents() below.
+        $assign_mode = $request->input('assign_mode') === 'all' ? 'all' : 'selected';
+        $students = $assign_mode === 'all'
+            ? $this->classStudentIds($request)
+            : $this->parseCsvIds($request->input('students'));
         $title = $request->input('title');
         $description = $request->input('description');
         $standard_id = $request->input('standard_id');
@@ -144,6 +156,15 @@ class StudentHomeworkApiController extends Controller
                     $questionIds = $paperQuestionIds;
                 }
             }
+        }
+
+        if (empty($students)) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => $assign_mode === 'all'
+                    ? 'No students are enrolled in the selected class.'
+                    : 'Select at least one student.',
+            ], 422);
         }
 
         $student_details = getStudents($students, $sub_institute_id, $syear);
@@ -1197,6 +1218,43 @@ class StudentHomeworkApiController extends Controller
         $parts = array_filter(array_map('trim', explode(',', $value)), fn ($part) => $part !== '');
 
         return array_values(array_filter(array_map('intval', $parts), fn ($id) => $id > 0));
+    }
+
+    /**
+     * Every enrolled student of the posted section/standard/division.
+     *
+     * The same filters studentsList() serves the picker table from, so "all
+     * students" means exactly the rows the teacher would have seen had they
+     * searched -- without the browser having to send them back, and read at
+     * assign time so a student enrolled since the search is included.
+     */
+    private function classStudentIds(Request $request): array
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+        $grade = $request->input('grade');
+        $standard = $request->input('standard_id');
+        $division = $request->input('division_id');
+
+        $query = DB::table('tblstudent as s')
+            ->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw('se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id');
+            })
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->where('se.syear', $syear)
+            ->whereNull('se.end_date');
+
+        if ($grade) {
+            $query->where('se.grade_id', $grade);
+        }
+        if ($standard) {
+            $query->where('se.standard_id', $standard);
+        }
+        if ($division) {
+            $query->where('se.section_id', $division);
+        }
+
+        return array_values(array_unique(array_map('intval', $query->pluck('s.id')->all())));
     }
 
     public function getChapters(Request $request): JsonResponse
