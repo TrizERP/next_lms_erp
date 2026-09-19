@@ -204,6 +204,7 @@ class DeterministicPlanner implements Planner
             // this table's business. Asked on Fees it is the fees agent; the guard in
             // plan() still declines the route entirely where the module has no agent.
             'fees_risk_scan' => 'agent_runner',
+            'attendance_risk_scan' => 'agent_runner',
             'student_risk_explain' => 'stored_case_read',
             'evidence_inspect' => 'stored_evidence_read',
             'recommendation_advice' => 'stored_recommendation_read',
@@ -268,6 +269,8 @@ class DeterministicPlanner implements Planner
             'record_filter' => 'Narrow the previous answer to the rows that match, without re-querying.',
             'fees_risk_scan' => 'Find who is carrying unpaid fees, evidence it from the ledger, and put a '
                 . 'collection review to a person.',
+            'attendance_risk_scan' => 'Find who is attending below the school bar, evidence it from the '
+                . 'marked register, and put a follow-up to a person.',
             default => $label,
         };
     }
@@ -341,6 +344,15 @@ class DeterministicPlanner implements Planner
                 ['analyse', 'Open a case for each student carrying a balance, citing the unpaid heads.'],
                 ['recommend', 'Draft a fees collection review for each case.'],
                 ['report', 'Return who owes what, and what is now waiting for approval.'],
+            ],
+            // The same four rungs over the register rather than the ledger. The wording of
+            // `detect` matters: the agent reads what has been *marked*, and a student
+            // nobody has marked is not a student who does not attend.
+            'attendance_risk_scan' => [
+                ['detect', 'Read attendance for the students in scope through the marked register.'],
+                ['analyse', 'Open a case for each student below the bar, citing the days they were absent.'],
+                ['recommend', 'Draft an attendance follow-up for each case.'],
+                ['report', 'Return who is attending least, and what is now waiting for approval.'],
             ],
             // `fees_query` is intentionally not deterministic. The classifier recognises
             // that a question belongs to the fees module, but the exact MCP tool depends

@@ -116,11 +116,24 @@ return [
         | the same shape platform.eventbus already uses.
         |
         | The rows are created by
-        | database/migrations/2026_09_18_130000_add_ai_agents_menu_rows_for_rights.php.
+        | database/migrations/2026_09_18_130000_add_ai_agents_menu_rows_for_rights.php
+        | and, for attendance,
+        | database/migrations/2026_09_19_100100_add_attendance_ai_agent_menu_row.php.
+        |
+        | ADDING A MODULE HERE IS HALF THE JOB. A key registered here with no
+        | `tblmenumaster` row behind it resolves to null and denies everybody — which is
+        | exactly the failure the Fees screen shipped with. Each entry below must have a
+        | migration that creates its `ai_agents.<module>` row, or the parent `ai_agents`
+        | row it falls through to must already exist.
         */
         'agents.fees' => [
             'label' => 'AI agents — Fees',
             'links' => ['ai_agents.fees', 'ai_agents'],
+        ],
+
+        'agents.attendance' => [
+            'label' => 'AI agents — Attendance',
+            'links' => ['ai_agents.attendance', 'ai_agents'],
         ],
 
         'platform.notification' => [

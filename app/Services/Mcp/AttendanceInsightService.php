@@ -96,6 +96,12 @@ class AttendanceInsightService
                 'absent_days' => (int) $row->absent_days,
                 'uncoded_days' => (int) $row->other_days,
                 'attendance_rate' => round((int) $row->present_days / $counted, 4),
+                // The same figure a person would read aloud. Added beside the fraction
+                // rather than replacing it: `attendance_rate` is what detectors and
+                // callers compare against a threshold, and a report layout printing
+                // "0.7069" in a column headed Rate is not a report anybody would send
+                // home. Both are derived from the same division, so they cannot disagree.
+                'attendance_percent' => number_format(((int) $row->present_days / $counted) * 100, 1) . '%',
             ];
         }
 
@@ -110,6 +116,7 @@ class AttendanceInsightService
             'since' => $since,
             'academic_year' => $context->academicYear,
             'cohort_attendance_rate' => $cohortRate,
+            'cohort_attendance_percent' => $cohortRate === null ? null : number_format($cohortRate * 100, 1) . '%',
             'students_judged' => count($judged),
             'students_with_insufficient_data' => $insufficient,
             'count' => min(count($judged), $limit),
@@ -189,6 +196,12 @@ class AttendanceInsightService
                 'absent_days' => $absent,
                 'uncoded_days' => $records->count() - $counted,
                 'attendance_rate' => $counted >= self::MIN_RECORDS ? round($present / $counted, 4) : null,
+                // Null, not "0.0%", when there are too few days to state a rate — see the
+                // note in overview(). A readable figure must not make an unjudgeable
+                // student look like a judged one.
+                'attendance_percent' => $counted >= self::MIN_RECORDS
+                    ? number_format(($present / $counted) * 100, 1) . '%'
+                    : null,
                 'absence_dates' => $absences,
                 'judgeable' => $counted >= self::MIN_RECORDS,
                 'note' => $counted >= self::MIN_RECORDS
