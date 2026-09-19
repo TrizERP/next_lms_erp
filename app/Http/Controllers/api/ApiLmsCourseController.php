@@ -1793,12 +1793,14 @@ $restrict_date = $request->input('restrict_date');
             // sidecar alone meant the ~3k generated questions -- which have no
             // sidecar at all -- every one matched nothing and displayed as the
             // coarse "narrative", so the form dropdown could not see them.
-            ->leftJoin('question_type_catalog', function ($join) {
-                $join->on('question_type_catalog.code', '=', DB::raw(
-                    'COALESCE(lms_question_extraction.question_type_code, '
-                    . 'lms_question_master.g_qtype_code)'
-                ));
-            })
+            // NOT a join. question_type_catalog is per-publisher: 'case_study'
+            // exists once for KVS and once for NODIA, so joining on code alone
+            // returned every case-study question TWICE - 1,211 rows for 1,198
+            // questions, and the same question drawn twice in the UI. A
+            // correlated subquery is single-valued by construction, so no
+            // catalog row can ever multiply a question again. It prefers the
+            // row belonging to the question's own publisher and falls back to
+            // the oldest, which is the shared/standard one.
             ->leftJoin('question_publisher', 'question_publisher.id', '=', 'lms_question_extraction.publisher_id')
             // lms_question_master.concept is a legacy free-text column. The
             // extraction pipeline sets concept_id - the real foreign key - and
@@ -1817,7 +1819,15 @@ $restrict_date = $request->input('restrict_date');
                 'lms_question_master.standard_id',
                 'lms_question_master.subject_id',
                 'lms_question_master.question_title',
-                DB::raw('COALESCE(question_type_catalog.label, question_type_master.question_type) as question_type'),
+                DB::raw(
+                    'COALESCE(('
+                    . ' SELECT c.label FROM question_type_catalog c'
+                    . '  WHERE c.code = COALESCE(lms_question_extraction.question_type_code,'
+                    . '                          lms_question_master.g_qtype_code)'
+                    . '  ORDER BY (c.publisher_id <=> lms_question_extraction.publisher_id) DESC, c.id'
+                    . '  LIMIT 1'
+                    . '), question_type_master.question_type) as question_type'
+                ),
                 // The grading engine's own spelling, kept separately: the
                 // COALESCE above is a DISPLAY label, and classifying MCQ from
                 // it silently turns a "True / False" item into a Narrative one
