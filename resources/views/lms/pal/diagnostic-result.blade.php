@@ -204,10 +204,10 @@
                 <a href="{{ route('pal.diagnostic.subjects') }}" class="btn btn-outline-secondary mr-2">
                     <i class="mdi mdi-arrow-left mr-1"></i> Back to Subjects
                 </a>
-                <a href="{{ route('pal.diagnostic.history', ['subjectId' => $attempt->subject_id]) }}" class="btn btn-outline-primary mr-2">
+                <a href="{{ route('pal.diagnostic.history', ['chapterId' => $attempt->chapter_id]) }}" class="btn btn-outline-primary mr-2">
                     <i class="mdi mdi-history mr-1"></i> View History
                 </a>
-                <a href="{{ route('pal.adaptive.concepts', ['subjectId' => $attempt->subject_id]) }}" class="btn btn-success">
+                <a href="{{ route('pal.adaptive.concepts', ['chapterId' => $attempt->chapter_id]) }}" class="btn btn-success">
                     <i class="mdi mdi-brain mr-1"></i> Start Adaptive Learning
                 </a>
             </div>

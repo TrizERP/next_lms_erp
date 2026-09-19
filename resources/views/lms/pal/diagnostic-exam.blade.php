@@ -17,7 +17,7 @@
             @csrf
 
             <input type="hidden" name="attempt_id" value="{{ $attempt_id }}">
-            <input type="hidden" name="subject_id" value="{{ $subject_id }}">
+            <input type="hidden" name="chapter_id" value="{{ $chapter_id }}">
 
             <div class="row">
                 <div class="col-md-8">
@@ -34,7 +34,8 @@
                                                    href="#question-{{ $question['question_id'] }}-tab" 
                                                    data-toggle="pill" 
                                                    role="tab"
-                                                   data-question-id="{{ $question['question_id'] }}">
+                                                   data-question-id="{{ $question['question_id'] }}"
+                                                   data-index="{{ $i }}">
                                                     {{ $i++ }}
                                                 </a>
                                             </li>
@@ -127,7 +128,7 @@
                                        href="#question-{{ $question['question_id'] }}-tab" 
                                        data-toggle="pill" 
                                        role="tab"
-                                       data-question-id="{{ $question['question_id'] }"
+                                       data-question-id="{{ $question['question_id'] }}"
                                        data-index="{{ $j }}">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <span>Q{{ $j++ }}</span>

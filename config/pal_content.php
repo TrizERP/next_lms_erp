@@ -255,6 +255,76 @@ return [
     | gate we serve nothing and let the ladder continue.
     |
     */
+    /*
+    |--------------------------------------------------------------------------
+    | Learn stage — which content_master categories a STUDENT may see
+    |--------------------------------------------------------------------------
+    |
+    | content_master has no student/teacher flag. `show_hide` is visible/hidden
+    | only (1 on 28,497 rows, 0 on 2,834), and `user_profile_name` is the
+    | UPLOADER, populated on 54 rows of 31,331. So the audience split can only
+    | come from `content_category`, and it has to be an explicit closed list:
+    | an unrecognised category is filed under `other`, never silently shown as
+    | if it were vetted for students.
+    |
+    | Matched case-INSENSITIVELY. The estate genuinely contains both
+    | "Classroom Presentation" (2,395 rows) and "Classroom presentation"
+    | (1 row — and that one is on chapter 8677, the pilot chapter), so a
+    | case-sensitive map would drop it.
+    |
+    | Ordering of the keys IS the display order of the Learn sections.
+    |
+    */
+    'learn_sections' => [
+        'video' => [
+            'label' => 'Video',
+            'categories' => ['recorded videos', 'videos'],
+        ],
+        'presentation' => [
+            'label' => 'Presentation',
+            'categories' => ['classroom presentation'],
+        ],
+        'notes' => [
+            'label' => 'Notes and study material',
+            'categories' => ['revision notes', 'worksheet', 'mindmap'],
+        ],
+        'classroom' => [
+            'label' => 'Classroom resources',
+            'categories' => ['classroom activity', 'remedial class', 'virtual link'],
+        ],
+        'other' => [
+            'label' => 'More material',
+            'categories' => ['my course', 'sel', 'misconception content', 'triz'],
+        ],
+    ],
+
+    /*
+    | Teacher-facing categories. Never served to a student, whatever show_hide
+    | says — these are lesson plans and staff training, and a learner opening
+    | one is a privacy/appropriateness problem, not a content bonus.
+    |
+    | `lms_teacher_resource` (2,605 rows) is excluded wholesale for the same
+    | reason and is not read by the Learn stage at all.
+    */
+    'learn_teacher_only_categories' => [
+        'teacher training',
+        'teacher training presentation',
+        'lesson plan',
+    ],
+
+    /*
+    | Public base for reconstructing a content_master file URL.
+    |
+    | The estate's own rule, from lms_apiController.php:444:
+    |   file_type = 'link'  -> `filename` is already absolute
+    |   otherwise           -> {base}public{file_folder}/{filename}
+    | Verified against live files on chapter 8677: all HTTP 200.
+    |
+    | Read from config rather than env() at the call site, because env() returns
+    | null once config is cached.
+    */
+    'public_base' => env('DO_PATH', 'https://s3-triz.fra1.digitaloceanspaces.com/'),
+
     'video' => [
         'enabled'         => env('PAL_VIDEO_ENABLED', true),
         'min_match_score' => (float) env('PAL_VIDEO_MIN_SCORE', 0.55),
