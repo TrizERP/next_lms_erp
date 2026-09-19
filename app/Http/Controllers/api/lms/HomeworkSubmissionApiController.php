@@ -170,13 +170,14 @@ class HomeworkSubmissionApiController extends Controller
 
         $server = $request->getSchemeAndHttpHost();
 
-        // Question-bank-sourced homework carries its selected questions as a
+        // Question-carrying homework - picked out of the question bank, or taken
+        // whole from a homework exam paper - keeps its questions as a
         // comma-separated `question_ids` list on the `homework` row (see
-        // StudentHomeworkApiController::store()) instead of an attachment.
-        // Attachment-sourced homework keeps getting an empty array.
+        // StudentHomeworkApiController::store()) alongside the generated
+        // reference PDF. Attachment-sourced homework keeps getting an empty array.
         $sourceType = $homework->source_type ?? 'attachment';
         $questions = [];
-        if ($sourceType === 'question_bank' && !empty($homework->question_ids)) {
+        if (in_array($sourceType, ['question_bank', 'exam_paper'], true) && !empty($homework->question_ids)) {
             $questionIds = array_values(array_filter(array_map(
                 'intval',
                 explode(',', $homework->question_ids)

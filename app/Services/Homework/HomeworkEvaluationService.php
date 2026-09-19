@@ -31,6 +31,11 @@ class HomeworkEvaluationService
                 'maxOutputTokens' => 8000,
                 'responseMimeType' => 'application/json',
             ]);
+        } catch (\RuntimeException $exception) {
+            // The client already says what went wrong in words a teacher can act
+            // on, and `ai_failure_reason` keeps only the first 250 characters -
+            // so prefixing it with plumbing pushes the useful half off the end.
+            throw new EvaluationException($exception->getMessage(), 0, $exception);
         } catch (\Throwable $exception) {
             throw new EvaluationException('Gemini evaluation call failed: ' . $exception->getMessage(), 0, $exception);
         }

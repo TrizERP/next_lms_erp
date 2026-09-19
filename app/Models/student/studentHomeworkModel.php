@@ -49,6 +49,7 @@ class studentHomeworkModel extends Model {
         'evaluated_at',
         'source_type',
         'question_ids',
+        'exam_paper_id',
         'status',
         'submission_files',
         'teacher_remarks',
