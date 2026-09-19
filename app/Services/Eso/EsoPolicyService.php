@@ -179,6 +179,17 @@ class EsoPolicyService
      */
     public const CONCEPT_STATUS_STALE_MASTERY = 'stale_mastery';
 
+    /**
+     * Distinct servable pool size per node id, for this request only.
+     *
+     * Not a cache with a lifetime - the node loop simply asks the same question
+     * about the same node more than once inside one resolve, and the answer
+     * cannot change mid-resolve.
+     *
+     * @var array<int,int>
+     */
+    protected array $practicePoolSizes = [];
+
     public function __construct(
         protected MisconceptionLibraryService $misconceptions,
         protected PalEvidenceRepository $evidence,
@@ -581,17 +592,40 @@ class EsoPolicyService
      */
     public function practiceItem(int $nodeId, int $subInstituteId, ?LearnerNodeState $state = null): ?array
     {
-        // v1 picks any tagged, servable item for the node rather than tracking
-        // per-student exposure — the pilot's tagged pool per node is small, and
-        // an occasional repeat beats a "no items left" dead end. Ordering is
-        // difficulty-aware when the caller passes the learner's state (see
-        // orderCandidatesByDifficulty()); random otherwise.
         $candidates = QuestionMetadata::forNode($nodeId)
             ->forTenant($subInstituteId)
             ->forPal()
             ->get(['question_id', 'difficulty_1_to_5']);
 
-        foreach ($this->orderCandidatesByDifficulty($candidates, $state) as $questionId) {
+        if ($candidates->isEmpty()) {
+            return null;
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // EXPOSURE, WITHIN THIS PRACTICE PHASE
+        // ─────────────────────────────────────────────────────────────────
+        // This used to pick ANY tagged servable item, tracking no exposure at
+        // all, on the reasoning that an occasional repeat beats a dead end.
+        // That reasoning does not survive contact with how practice is
+        // measured: evidenceByNode() counts DISTINCT question ids, so a
+        // learner re-served the same question answers it, the count does not
+        // move, practiceComplete() stays false, and the same question comes
+        // back. Reported from QA as having to submit the same question over
+        // and over on a three-question phase that never ended.
+        //
+        // So questions already answered SINCE `taught_at` are held back. The
+        // window is the practice phase, not all time, for the same reason
+        // practiceComplete() measures from there: a re-teach starts a fresh
+        // cycle and the pool is allowed to come round again.
+        $seen = $this->practiceQuestionsAnsweredThisPhase($nodeId, $state);
+
+        // Unanswered first, already-answered only as a last resort — a repeat
+        // still beats a blank screen for a node whose pool is thinner than its
+        // floor, which practiceComplete()'s stock cap already tolerates.
+        [$fresh, $repeat] = $this->orderCandidatesByDifficulty($candidates, $state)
+            ->partition(fn ($questionId) => ! isset($seen[(int) $questionId]));
+
+        foreach ($fresh->concat($repeat) as $questionId) {
             // hydrateQuestion() itself enforces answerable options and a marked answer.
             $hydrated = $this->hydrateQuestion((int) $questionId);
             if ($hydrated !== null && $hydrated['options'] !== []) {
@@ -603,6 +637,39 @@ class EsoPolicyService
     }
 
     /**
+     * Question ids this learner has already answered on this node since it was
+     * last taught, keyed for isset().
+     *
+     * Reads exactly the response rows evidenceByNode() counts as practice
+     * evidence — same mode exclusions, same `taught_at` cutoff — so "already
+     * served this phase" and "already counted this phase" can never disagree.
+     *
+     * @return array<int,int>
+     */
+    protected function practiceQuestionsAnsweredThisPhase(int $nodeId, ?LearnerNodeState $state): array
+    {
+        if ($state === null || $state->student_id === null || $state->taught_at === null) {
+            return [];
+        }
+
+        $ids = ResponseLog::forStudent((int) $state->student_id)
+            ->where('node_id', $nodeId)
+            ->whereNotNull('question_id')
+            ->whereNotNull('mode')
+            ->whereNotIn('mode', [
+                self::RESPONSE_MODE_CFU,
+                self::RESPONSE_MODE_DIAGNOSTIC,
+                self::RESPONSE_MODE_RETRIEVAL,
+            ])
+            ->where('created_at', '>=', $state->taught_at)
+            ->pluck('question_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return array_flip($ids);
+    }
+
+    /**
      * Order a node's servable candidates so practice climbs in difficulty as
      * the student's correct-streak grows, instead of sampling uniformly at
      * random forever.
@@ -611,17 +678,40 @@ class EsoPolicyService
      * `consecutive_correct` (the same field that already advances guided →
      * independent practice at CONSECUTIVE_CORRECT_TO_ADVANCE) and
      * `pal_question_metadata.difficulty_1_to_5`. Items in the preferred band
-     * come first, everything else follows in random order — so a node whose
-     * pool has no difficulty tagging, or nothing in the preferred band, still
-     * serves an item instead of dead-ending.
+     * come first, everything else follows — so a node whose pool has no
+     * difficulty tagging, or nothing in the preferred band, still serves an
+     * item instead of dead-ending.
+     *
+     * ---------------------------------------------------------------------
+     * WHY THE ORDER IS STABLE AND NOT SHUFFLED
+     * ---------------------------------------------------------------------
+     * Both halves used to be shuffle()d, which made this method answer
+     * DIFFERENTLY every time it was asked the same question. The client
+     * fetches the practice item once per step, but React re-runs that effect
+     * in development and any retry or double render asks again — and with a
+     * fresh shuffle the second answer was a different question, which arrived
+     * a second or two later and silently replaced the one already on screen.
+     * Reported from QA as questions changing by themselves after two or three
+     * seconds.
+     *
+     * stableOrder() below keeps the variety (each learner walks their node's
+     * pool in their own order) without the instability (that order is the same
+     * every time it is computed). Which item is served still changes as the
+     * learner progresses — the preferred band moves with their streak, and
+     * practiceItem() holds back what they have already answered this phase.
      *
      * @param  Collection<int, object>  $candidates
      * @return Collection<int, int> question ids, best-fit first
      */
     protected function orderCandidatesByDifficulty(Collection $candidates, ?LearnerNodeState $state): Collection
     {
+        $ordered = $this->stableOrder(
+            $candidates,
+            $state === null ? '' : ((int) $state->student_id . ':' . (int) $state->node_id)
+        );
+
         if ($state === null) {
-            return $candidates->shuffle()->pluck('question_id');
+            return $ordered->pluck('question_id');
         }
 
         // 0-1 correct in a row → foundational (1-2); 2-3 → middle (3);
@@ -633,11 +723,31 @@ class EsoPolicyService
             default => [1, 2],
         };
 
-        [$inBand, $rest] = $candidates->shuffle()->partition(
+        [$inBand, $rest] = $ordered->partition(
             fn ($row) => $row->difficulty_1_to_5 !== null && in_array((int) $row->difficulty_1_to_5, $preferred, true)
         );
 
         return $inBand->concat($rest)->pluck('question_id');
+    }
+
+    /**
+     * An ordering of a candidate pool that is the same every time it is
+     * computed for the same seed.
+     *
+     * The hash is the whole trick: it spreads the pool as a shuffle would, but
+     * from a seed that does not change between calls, so two learners on one
+     * node see different orders while one learner sees a stable one. Callers
+     * choose what the seed means — practice seeds on learner+node, the check
+     * of understanding adds the cycle count so a re-check rotates the pair.
+     *
+     * @param  Collection<int, object>  $candidates
+     * @return Collection<int, object>
+     */
+    protected function stableOrder(Collection $candidates, string $seed): Collection
+    {
+        return $candidates
+            ->sortBy(fn ($row) => md5($seed . ':' . (int) $row->question_id))
+            ->values();
     }
 
     /**
@@ -701,6 +811,13 @@ class EsoPolicyService
             'correct' => $correct,
             'hint_used' => $hintUsed,
             'mode' => $mode,
+            // Stamped from the APPLICATION clock, not left to the column's
+            // DEFAULT current_timestamp(). The database host runs 2.5 hours
+            // behind PHP here, and practiceComplete() compares this value
+            // against taught_at, which PHP writes — so a DB-stamped row landed
+            // permanently "before" the teaching that preceded it and never
+            // counted. See the note on ResponseLog::$fillable.
+            'created_at' => now(),
         ]);
     }
 
@@ -744,7 +861,28 @@ class EsoPolicyService
                 $evidence[] = ['question_id' => $questionId, 'correct' => $correct];
             }
 
+            // The estimate alone is not enough to suppress teaching.
+            //
+            // applyUpdate() runs at weight 2.0 here, so TWO correct diagnostic
+            // answers reach SKIP_THRESHOLD from zero — and the chapter
+            // diagnostic serves roughly ONE question per concept. Without a
+            // floor, a learner who happened to get a couple of items right had
+            // `taught_at` and `cfu_passed_at` stamped below and could never be
+            // shown the lesson for that concept again, because `taught_at` is a
+            // one-way latch. That is precisely the "Learn it opens practice"
+            // defect.
+            //
+            // MIN_EVENTS_K is the same item floor the clean-sweep path below
+            // already applies, and the same one ADR-001 §4.2 introduced for
+            // exactly this arithmetic. It was simply never applied to `$skip`.
             $skip = $state->mastery_estimate >= self::SKIP_THRESHOLD;
+
+            // Skip-ELIGIBLE (`$skip`) and actually-skip-the-lesson
+            // (`$skipInstruction`) are deliberately different things: the
+            // returned 'skip' key and $cleanSweep below both still mean "the
+            // estimate cleared the threshold", while only this decides whether
+            // the learner loses their lesson.
+            $skipInstruction = $skip && count(array_unique($askedQuestionIds)) >= self::MIN_EVENTS_K;
 
             // A CLEAN SWEEP may master the node outright, without practice.
             //
@@ -781,12 +919,21 @@ class EsoPolicyService
                 ? LearnerNodeState::STATUS_MASTERED
                 : LearnerNodeState::STATUS_LEARNING;
 
-            if ($skip) {
-                // Skip the teach/CFU phases too: the learner has demonstrated
-                // enough to go straight to practice, which is where the valid
-                // evidence the floor requires actually gets recorded.
+            // "Do not teach this" needs the same item floor a clean sweep needs.
+            // See the $skip comment above: two correct answers reach the
+            // threshold at weight 2.0, and the chapter diagnostic serves about
+            // one item per concept, so the estimate alone was suppressing the
+            // Learn lesson on evidence that cannot support it.
+            if ($skipInstruction) {
+                // Skips the LESSON only.
+                //
+                // `cfu_passed_at` is deliberately NOT stamped any more. Under
+                // Learn -> Practice -> Check the check is the gate at the END
+                // of the cycle; a diagnostic has not sat it, and stamping it
+                // here would let a diagnostic waive it entirely - exactly the
+                // "a diagnostic informs state but cannot complete mastery"
+                // line ADR-001 §4.1 draws.
                 $state->taught_at ??= now();
-                $state->cfu_passed_at ??= now();
             }
 
             if ($cleanSweep) {
@@ -815,12 +962,27 @@ class EsoPolicyService
                         self::SKIP_THRESHOLD,
                         count(array_unique($askedQuestionIds))
                     ),
-                    $skip => sprintf('D1: node mastery %.2f >= %.2f, skip-eligible', $state->mastery_estimate, self::SKIP_THRESHOLD),
+                    $skipInstruction => sprintf(
+                        'D1: node mastery %.2f >= %.2f on %d items, skipping instruction',
+                        $state->mastery_estimate,
+                        self::SKIP_THRESHOLD,
+                        count(array_unique($askedQuestionIds))
+                    ),
+                    // Over the threshold but under the item floor: the estimate
+                    // says "probably knows it", the evidence does not support
+                    // taking the lesson away. Logged distinctly so the two are
+                    // tellable apart in the decision log.
+                    $skip => sprintf(
+                        'D1: node mastery %.2f >= %.2f on only %d item(s), teaching anyway',
+                        $state->mastery_estimate,
+                        self::SKIP_THRESHOLD,
+                        count(array_unique($askedQuestionIds))
+                    ),
                     default => sprintf('D1: node mastery %.2f < %.2f, needs instruction', $state->mastery_estimate, self::SKIP_THRESHOLD),
                 },
                 match (true) {
                     $cleanSweep => 'mastered_on_diagnostic',
-                    $skip => 'skip_instruction',
+                    $skipInstruction => 'skip_instruction',
                     default => 'needs_instruction',
                 }
             );
@@ -922,6 +1084,10 @@ class EsoPolicyService
             }
         }
 
+        // The first node that wanted to serve but had no content. Held back so a
+        // servable sibling wins, and only returned if none exists.
+        $blocked = null;
+
         foreach ($nodes as $node) {
             $state = $states->get($node->id) ?? $this->stateFor($studentId, $node->id, $subInstituteId);
 
@@ -965,12 +1131,45 @@ class EsoPolicyService
             // This does not reopen the deadlock hasSatisfiedOwnThreshold() was
             // written to close: a node that reached its threshold THROUGH
             // practice already carries those events, so it is still skipped.
+            // The checkSettled() clause is what makes the reorder real. With the
+            // check now AFTER practice, a node that practises its way to
+            // threshold arrives here with its check still open - and without
+            // this clause it would be passed straight to the D4 verdict and the
+            // check would never be served at all. checkSettled() is satisfied by
+            // a pass, by the spent loop guard, or by there being no check item
+            // authored, so it can never deadlock a node on a missing question.
             if ($state->isMastered()
-                || ($this->hasSatisfiedOwnThreshold($node, $state) && $this->nodeMeetsEvidenceFloor($node, $nodeEvidence))) {
+                || ($this->hasSatisfiedOwnThreshold($node, $state)
+                    && $this->nodeMeetsEvidenceFloor($node, $nodeEvidence)
+                    && $this->checkSettled($node, $state, $subInstituteId))) {
                 continue;
             }
 
-            return $this->teachOrPracticeAction($studentId, $conceptId, $node, $state, $subInstituteId, $silent);
+            $resolved = $this->teachOrPracticeAction($studentId, $conceptId, $node, $state, $subInstituteId, $nodeEvidence, $silent);
+
+            // A node with no answerable item must not hold the whole concept
+            // hostage. It cannot accumulate evidence, so it can never clear the
+            // floor above and would be re-selected on every call for ever,
+            // starving every sibling behind it — the S-node case in
+            // docs/CHAPTER_1014_NODE_CONTENT_HEALTH_REPORT.md.
+            //
+            // Remember the first one and carry on looking. It is only returned
+            // if NO node in the concept can be served, so the learner still gets
+            // an honest explanation rather than a blank screen.
+            if (($resolved['action'] ?? null) === 'content_unavailable') {
+                $blocked ??= $resolved;
+
+                continue;
+            }
+
+            return $resolved;
+        }
+
+        // Nothing servable anywhere in the concept, but something was waiting on
+        // content. Say so, rather than reporting a mastery verdict the learner
+        // was never given the means to earn.
+        if ($blocked !== null) {
+            return $blocked;
         }
 
         // Every node mastered or retained: run the concept-level D4 verdict
@@ -1056,6 +1255,213 @@ class EsoPolicyService
         $seen = $evidence[$node->id] ?? ['events' => 0, 'independent' => 0];
 
         return $seen['events'] >= $required && $seen['independent'] >= self::MIN_INDEPENDENT;
+    }
+
+    /**
+     * Practice items required on a node, since it was last taught, before the
+     * engine will check understanding on it.
+     *
+     * Deliberately the SAME numbers as the mastery evidence floor rather than a
+     * new constant. A check arriving earlier than the floor could possibly be
+     * met would gate on evidence that cannot exist yet; one arriving later would
+     * make the floor, not the check, the thing that ends practice.
+     *
+     * S has no floor in masteryVerdict(), so one transfer attempt is its
+     * demonstration - the same rule hasSatisfiedOwnThreshold() applies to S.
+     */
+    protected function practiceItemsRequired(ConceptNode $node): int
+    {
+        return match ($node->node_type) {
+            'K' => self::MIN_EVENTS_K,
+            'A' => self::MIN_EVENTS_A,
+            default => 1,
+        };
+    }
+
+    /**
+     * Has this node had enough practice SINCE IT WAS LAST TAUGHT to be worth
+     * checking?
+     *
+     * ---------------------------------------------------------------------
+     * WHY "SINCE IT WAS LAST TAUGHT" IS THE WHOLE TRICK
+     * ---------------------------------------------------------------------
+     * There is deliberately no `practice_done_at` column. The response log is
+     * already the authority, a column would have to be reset by every write
+     * path - and, critically, this derivation resets ITSELF.
+     *
+     * A failed check re-opens Learn by nulling `taught_at`. The next teach
+     * re-stamps it to now, which puts every practice event already on file
+     * behind this cutoff. That is what makes Learn -> Practice -> Check a
+     * genuine repeat rather than a bounce straight back to the check.
+     *
+     * Counts VOLUME only - no correctness term and no independence term. Those
+     * are mastery rules and belong to masteryVerdict(). Requiring an
+     * independent, hint-free event here would trap the exact learner this
+     * ordering exists for: practice_mode only advances after two consecutive
+     * correct, so someone who keeps getting it wrong would never reach the
+     * check and so never be re-taught.
+     *
+     * @param  array<int, array<string,mixed>>  $evidence  from evidenceByNode()
+     */
+    protected function practiceComplete(ConceptNode $node, LearnerNodeState $state, array $evidence): bool
+    {
+        if ($state->taught_at === null) {
+            return false;
+        }
+
+        $done = $this->practiceEventsSinceTaught($node, $state, $evidence);
+
+        if ($done >= $this->practiceItemsRequired($node)) {
+            return true;
+        }
+
+        // ─────────────────────────────────────────────────────────────────
+        // THIN POOL — the floor must not exceed what has been authored.
+        // ─────────────────────────────────────────────────────────────────
+        // The count above is of DISTINCT questions (evidenceByNode() de-dupes
+        // by question_id), so a node whose servable pool is smaller than its
+        // floor can never satisfy it: the learner answers, the phase does not
+        // end, and practice is served for ever. Measured on this estate, 7 of
+        // 109 tagged nodes — 6.4%.
+        //
+        // Capped at real stock, on exactly the reasoning checkSettled() already
+        // applies to a node with no authored check question, and MasteryLadder
+        // applies to a band with no stock: a bar nobody can clear is not a
+        // standard, it is a dead end.
+        //
+        // This grants NOTHING. It ends the practice PHASE only. masteryVerdict()
+        // keeps its own thresholds and its own evidence floor, so a thin node
+        // still cannot be called mastered on thin evidence — it just stops
+        // trapping the learner on the way there.
+        $stock = $this->practicePoolSize($node, $state);
+
+        return $stock > 0 && $done >= $stock;
+    }
+
+    /**
+     * The practice target actually in force for this node.
+     *
+     * The floor, capped at real stock — the same number practiceComplete()
+     * gates on. Shown to the learner as `practice_progress.needed`, so a node
+     * with two questions says "of 2" rather than parking the meter on an
+     * unreachable "of 3".
+     */
+    protected function practiceTarget(ConceptNode $node, LearnerNodeState $state): int
+    {
+        $required = $this->practiceItemsRequired($node);
+        $stock = $this->practicePoolSize($node, $state);
+
+        return $stock > 0 ? min($required, $stock) : $required;
+    }
+
+    /**
+     * How many distinct servable questions this node actually has.
+     *
+     * Consulted only when a node is SHORT of its floor — the one case where the
+     * answer can change a decision — and memoised per request, because the node
+     * loop revisits the same nodes within a single resolve.
+     */
+    protected function practicePoolSize(ConceptNode $node, LearnerNodeState $state): int
+    {
+        $key = (int) $node->id;
+
+        if (! array_key_exists($key, $this->practicePoolSizes)) {
+            $this->practicePoolSizes[$key] = (int) QuestionMetadata::forNode($node->id)
+                ->forTenant((int) $state->sub_institute_id)
+                ->forPal()
+                ->distinct()
+                ->count('question_id');
+        }
+
+        return $this->practicePoolSizes[$key];
+    }
+
+    /**
+     * How many scored events this node has had since it was last taught.
+     *
+     * Extracted so practiceComplete() and practiceAction()'s `practice_progress`
+     * read the SAME number. When the gate and the progress meter shown to the
+     * learner are computed separately they drift, and the learner is told "one
+     * more to go" on a screen that then does not advance - which is precisely
+     * the class of bug practice_progress was added to explain away.
+     *
+     * @param  array<int, array<string,mixed>>  $evidence  from evidenceByNode()
+     */
+    protected function practiceEventsSinceTaught(ConceptNode $node, LearnerNodeState $state, array $evidence): int
+    {
+        if ($state->taught_at === null) {
+            return 0;
+        }
+
+        $since = 0;
+
+        foreach ($evidence[$node->id]['event_times'] ?? [] as $at) {
+            if ($at !== null && $at->gte($state->taught_at)) {
+                $since++;
+            }
+        }
+
+        return $since;
+    }
+
+    /**
+     * Is the check of understanding finished with this node, one way or another?
+     *
+     * Three ways it can be settled, and only the first is a pass:
+     *   1. it was passed (`cfu_passed_at`);
+     *   2. the loop guard is spent (CFU_MAX_CYCLES failed cycles) - a loop
+     *      guard, never a mastery rule;
+     *   3. the node has no servable check item authored at all, so there is no
+     *      check to sit. Skipping a screen nobody wrote grants nothing:
+     *      masteryVerdict()'s thresholds and evidence floor still apply. The
+     *      alternative - dead-ending on a missing question - is the same defect
+     *      the practice guard exists to close.
+     *
+     * (3) is tested last so it only costs a query for a node that has already
+     * practised its way to the check.
+     */
+    protected function checkSettled(ConceptNode $node, LearnerNodeState $state, int $subInstituteId): bool
+    {
+        if ($state->cfu_passed_at !== null) {
+            return true;
+        }
+
+        if ((int) $state->cfu_attempts >= self::CFU_MAX_CYCLES) {
+            return true;
+        }
+
+        return $this->checkUnderstandingItems((int) $node->id, $subInstituteId, $state) === [];
+    }
+
+    /**
+     * Which of the three screens this node is on: teach | practice | check.
+     *
+     * Pure - reads state, writes nothing - so the node loop can ask without
+     * side effects. Learn -> Practice -> Check, in that order.
+     *
+     * @param  array<int, array<string,mixed>>  $evidence
+     */
+    protected function phaseFor(ConceptNode $node, LearnerNodeState $state, array $evidence, int $subInstituteId): string
+    {
+        // LEARN - never taught, or a failed check sent them back for another look.
+        if ($state->taught_at === null) {
+            return 'teach';
+        }
+
+        // PRACTICE - not enough practice on this node since it was last taught.
+        if (! $this->practiceComplete($node, $state, $evidence)) {
+            return 'practice';
+        }
+
+        // CHECK - practice done and the check is still open.
+        if (! $this->checkSettled($node, $state, $subInstituteId)) {
+            return 'check';
+        }
+
+        // Check settled, but the node has not satisfied its own threshold or
+        // floor - which is why the loop did not pass over it. More practice is
+        // the only thing left that can move it.
+        return 'practice';
     }
 
     // ── D2: prerequisite gate ────────────────────────────────────────────
@@ -1434,7 +1840,13 @@ class EsoPolicyService
             $state->status = LearnerNodeState::STATUS_LEARNING;
             $state->save();
 
-            return $this->teachOrPracticeAction($studentId, $conceptId, $node, $state, $subInstituteId, $silent);
+            // Resolved for this one node rather than passed an empty array:
+            // teachOrPracticeAction() reads the floor to decide practice vs
+            // check, and an empty array would claim "never practised" and send
+            // an experienced learner back to practice on a defensive path.
+            $evidence = $this->evidenceByNode($studentId, collect([$node]));
+
+            return $this->teachOrPracticeAction($studentId, $conceptId, $node, $state, $subInstituteId, $evidence, $silent);
         }
 
         return $this->contrastPairAction($studentId, $conceptId, $node, (int) $state->active_misconception_id, $subInstituteId, firstFlag: false, silent: $silent);
@@ -1480,7 +1892,7 @@ class EsoPolicyService
     // ── D4: practice gating + mastery verdict ───────────────────────────
 
     /**
-     * The teach → check-understanding → practice phase machine for one node.
+     * The learn → practice → check phase machine for one node.
      *
      * This is the ONLY branch point that decides between those three screens,
      * which is why the CFU gate is inserted here and nowhere else: the D2
@@ -1494,44 +1906,99 @@ class EsoPolicyService
      * practice almost unreachable — scoreDiagnostic() calls applyUpdate(), so
      * any node covered by a diagnostic already had attempts >= 1 and skipped
      * teaching entirely.
+     *
+     * ---------------------------------------------------------------------
+     * WHY PRACTICE NOW SITS BEFORE THE CHECK
+     * ---------------------------------------------------------------------
+     * This order was previously teach -> check -> practice: the CFU was an
+     * ungraded "did that land?" gate immediately after teaching, and practice
+     * was the fluency work that followed it.
+     *
+     * It is now teach -> practice -> check, as an explicit product decision:
+     * the learner reads the explanation, rehearses it, and only then is asked
+     * to demonstrate that it stuck. The check therefore arrives as a verdict on
+     * work already done rather than as a quiz on something just read.
+     *
+     * The CFU itself is unchanged in every other respect — it is still
+     * ungraded, still never mastery evidence (see recordCheckUnderstanding),
+     * and still bounded by CFU_MAX_CYCLES.
+     *
+     * ---------------------------------------------------------------------
+     * "PRACTICE IS DONE" IS DERIVED, NOT STORED
+     * ---------------------------------------------------------------------
+     * There is deliberately no `practice_done_at` column — see
+     * practiceComplete(), which counts practice recorded SINCE `taught_at` and
+     * therefore resets itself when a failed check re-opens Learn.
+     *
+     * Note what reaching the check implies: branch 6 skips any node that has BOTH
+     * satisfied its threshold and met the floor. So a node arriving here with the
+     * floor met is one that has practised enough and is STILL short of threshold
+     * — precisely the learner worth checking, and the one the reteach loop exists
+     * for.
+     *
+     * @param  array<int,array{events:int,independent:int}>  $nodeEvidence  from evidenceByNode()
      */
-    protected function teachOrPracticeAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
+    protected function teachOrPracticeAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, ?array $nodeEvidence = null, bool $silent = false): array
     {
-        if ($state->taught_at === null) {
-            return $this->teachAction($studentId, $conceptId, $node, $state, $subInstituteId, $silent);
-        }
+        // Resolved lazily only for the defensive call from
+        // reserveContrastPairAction(); the node loop threads its own single
+        // evidenceByNode() result through so this never re-queries per node.
+        $nodeEvidence ??= $this->evidenceByNode($studentId, collect([$node]));
 
-        // Taught, but the check of understanding has not been passed yet — and
-        // the reteach loop guard has not been spent. See CFU_MAX_CYCLES.
-        if ($state->cfu_passed_at === null && (int) $state->cfu_attempts < self::CFU_MAX_CYCLES) {
-            return $this->checkUnderstandingAction($studentId, $conceptId, $node, $state, $subInstituteId, $silent);
-        }
-
-        return $this->practiceAction($studentId, $conceptId, $node, $state, $subInstituteId, $silent);
+        return match ($this->phaseFor($node, $state, $nodeEvidence, $subInstituteId)) {
+            'teach' => $this->teachAction($studentId, $conceptId, $node, $state, $subInstituteId, $silent),
+            'check' => $this->checkUnderstandingAction($studentId, $conceptId, $node, $state, $subInstituteId, $silent),
+            default => $this->practiceAction($studentId, $conceptId, $node, $state, $subInstituteId, $nodeEvidence, $silent),
+        };
     }
 
     /**
-     * Serve the explanation for a node the student has not been taught yet.
+     * Serve the explanation for a node the student has not been taught yet —
+     * or is being re-taught after a failed check.
      *
-     * Unlike the old combined teach/practice screen this carries NO scored
-     * question — `expects: acknowledge` tells the UI to show a "ready to be
-     * checked" affordance instead of an answer form. That separation is the
-     * whole point of the CFU step: teaching is no longer practice attempt #1.
+     * Carries NO scored question: `expects: acknowledge` tells the UI to show a
+     * "ready to be checked" affordance instead of an answer form. Teaching is
+     * not practice attempt #1.
+     *
+     * ---------------------------------------------------------------------
+     * RETEACH LIVES HERE NOW
+     * ---------------------------------------------------------------------
+     * `reteach` used to be emitted by checkUnderstandingAction(), because the
+     * old order put the check immediately after teaching and a failure simply
+     * re-served that same gate with different wording.
+     *
+     * With Learn -> Practice -> Check, a failed check re-opens Learn
+     * (recordCheckUnderstanding nulls `taught_at`), so the re-explanation is
+     * the LEARN screen and belongs here. `cfu_attempts > 0` is what marks a
+     * repeat pass, and it drives the content model's re-route ladder so
+     * "explain it differently" can mean a genuinely different FORMAT rather
+     * than the same words again.
      */
     protected function teachAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
     {
+        // A repeat pass: an earlier check failed, so the first explanation did
+        // not land. Walk the re-route ladder instead of repeating ourselves.
+        $retry = (int) $state->cfu_attempts > 0;
+
         // The richest learning object that genuinely exists for this concept,
-        // or null — in which case teaching stays exactly as it was. The Learn
-        // stage covers teach as well as reteach, so a first look leads with a
-        // video wherever an approved one matches this concept.
-        $content = $this->learningContent->forTeach($node, $state, $subInstituteId);
-        $instruction = EsoPalRenderer::teachInstruction($node, $state, $this->priorNodeLabels($node), $content);
+        // or null — in which case teaching stays exactly as it was.
+        $content = $retry
+            ? $this->learningContent->forReteach($node, $state, $subInstituteId)
+            : $this->learningContent->forTeach($node, $state, $subInstituteId);
+
+        $instruction = $retry
+            ? EsoPalRenderer::reteachInstruction($node, $this->priorNodeLabels($node), (int) $state->cfu_attempts, $content)
+            : EsoPalRenderer::teachInstruction($node, $state, $this->priorNodeLabels($node), $content);
 
         if (! $silent) {
             // Stamped on delivery, and only on a real (non-silent) resolve —
             // dashboards call nextAction(silent: true) purely to display a
             // next step and must never advance the student's phase. Idempotent:
             // re-polling the same action does not re-stamp.
+            //
+            // Re-stamping on a retry is deliberate: it moves the cutoff
+            // practiceComplete() measures from, so the learner practises again
+            // before the next check instead of bouncing Learn -> Check.
             $state->taught_at = now();
             $state->save();
 
@@ -1540,15 +2007,17 @@ class EsoPolicyService
                 $conceptId,
                 $node->id,
                 $subInstituteId,
-                ['mastery_estimate' => $state->mastery_estimate, 'attempts' => $state->attempts],
-                'D1: node not yet taught',
-                'teach',
+                ['mastery_estimate' => $state->mastery_estimate, 'attempts' => $state->attempts, 'cfu_attempts' => (int) $state->cfu_attempts],
+                $retry
+                    ? sprintf('D1: check not passed (%d cycle(s)), re-teaching differently', (int) $state->cfu_attempts)
+                    : 'D1: node not yet taught',
+                $retry ? 'reteach' : 'teach',
                 $instruction
             );
         }
 
         return [
-            'action' => 'teach',
+            'action' => $retry ? 'reteach' : 'teach',
             'node_id' => $node->id,
             'concept_id' => $conceptId,
             'practice_mode' => $state->practice_mode,
@@ -1563,28 +2032,28 @@ class EsoPolicyService
     }
 
     /**
-     * The Check-For-Understanding gate. Sits between teaching and scored
-     * practice; its answers are graded but are NOT mastery evidence (see
-     * recordCheckUnderstanding()).
+     * The Check-For-Understanding gate.
+     *
+     * Now sits AFTER scored practice rather than before it: the learner has
+     * read the explanation and rehearsed it, and this asks them to show it
+     * stuck. Its answers are graded but are still NOT mastery evidence (see
+     * recordCheckUnderstanding()) — a pass routes onward, it does not grant.
+     *
+     * The `reteach` variant used to be emitted here. It now belongs to
+     * teachAction(), because a failed check re-opens Learn rather than
+     * re-serving this gate, so by the time this is reached again the learner
+     * has been re-taught and re-practised.
+     *
+     * NO llm_instruction. This step used to open with a Pal-rendered preamble
+     * telling the learner it was "a quick check, not a graded test" that did
+     * not count either way; that framing was removed as a product decision
+     * (see the note where EsoPalRenderer::checkUnderstandingInstruction() used
+     * to be). The gate itself is untouched — its answers are still not mastery
+     * evidence — the engine simply no longer narrates that to the learner.
      */
     protected function checkUnderstandingAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
     {
-        $retry = (int) $state->cfu_attempts > 0;
-
-        // On a retry the content resolver walks the content model's own
-        // re-route ladder (see EsoLearningContentResolver::ladderFrom()), so
-        // "explain it a different way" can mean a genuinely different FORMAT —
-        // text+diagram, then video, then story/audio — rather than the same
-        // words again. Null whenever nothing else is authored, which is the
-        // common case today.
-        $content = $retry ? $this->learningContent->forReteach($node, $state, $subInstituteId) : null;
-
-        // A second pass at the gate means the first explanation did not land,
-        // so re-explain differently before checking again rather than serving
-        // the identical teach text and the identical questions.
-        $instruction = $retry
-            ? EsoPalRenderer::reteachInstruction($node, $this->priorNodeLabels($node), (int) $state->cfu_attempts, $content)
-            : EsoPalRenderer::checkUnderstandingInstruction($node, self::CFU_ITEM_COUNT);
+        $instruction = null;
 
         if (! $silent) {
             $this->log(
@@ -1595,28 +2064,22 @@ class EsoPolicyService
                 [
                     'cfu_attempts' => (int) $state->cfu_attempts,
                     'mastery_estimate' => $state->mastery_estimate,
-                    // Without these the video relevance threshold can only
-                    // ever be tuned by guesswork.
-                    'video_source' => $content['source'] ?? null,
-                    'video_match_score' => $content['match_score'] ?? null,
                 ],
-                $retry
-                    ? sprintf('D1-CFU: check not passed (%d attempt(s)), re-explaining differently', (int) $state->cfu_attempts)
-                    : 'D1-CFU: node taught, understanding not yet checked',
-                $retry ? 'reteach' : 'check_understanding',
+                'D1-CFU: practice complete, checking understanding',
+                'check_understanding',
                 $instruction
             );
         }
 
         return [
-            'action' => $retry ? 'reteach' : 'check_understanding',
+            'action' => 'check_understanding',
             'node_id' => $node->id,
             'concept_id' => $conceptId,
             'practice_mode' => $state->practice_mode,
             'rule_fired' => 'D1-CFU',
             'llm_instruction' => $instruction,
             'expects' => 'check_understanding',
-            'learning_content' => $content,
+            'learning_content' => null,
             'cfu_item_count' => self::CFU_ITEM_COUNT,
             'cfu_attempts' => (int) $state->cfu_attempts,
             'motivation_instruction' => null,
@@ -1628,9 +2091,57 @@ class EsoPolicyService
      * Scored practice — the pre-existing D4 behaviour, unchanged apart from
      * having been split out of the old combined method.
      */
-    protected function practiceAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
+    protected function practiceAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, ?array $nodeEvidence = null, bool $silent = false): array
     {
+        // ─────────────────────────────────────────────────────────────────
+        // CONTENT GUARD — this method used to promise a question it had never
+        // checked for.
+        //
+        // It returned `expects: answer` unconditionally; the client then called
+        // the practice-item endpoint, which 404s when practiceItem() finds no
+        // answerable tagged question for the node. The student was left on a
+        // screen with nothing to answer — and because no attempt could be
+        // recorded, nodeMeetsEvidenceFloor() could never be satisfied, so
+        // nextAction() re-served `practice` on every subsequent call. An
+        // infinite loop by construction, not a UI glitch. Recorded live in
+        // docs/CHAPTER_1014_NODE_CONTENT_HEALTH_REPORT.md for nodes 195/196.
+        //
+        // Answering that honestly is the same thing retrievalDueAction() already
+        // does for a missing retrieval item, so it reuses that action verbatim
+        // and the existing client branch renders it with working exits.
+        // ─────────────────────────────────────────────────────────────────
+        if ($this->practiceItem($node->id, $subInstituteId, $state) === null) {
+            if (! $silent) {
+                $this->log(
+                    $studentId,
+                    $conceptId,
+                    $node->id,
+                    $subInstituteId,
+                    ['mastery_estimate' => $state->mastery_estimate, 'attempts' => $state->attempts],
+                    'D4: no answerable practice item tagged for this node',
+                    'content_unavailable'
+                );
+            }
+
+            return [
+                'action' => 'content_unavailable',
+                'node_id' => $node->id,
+                'concept_id' => $conceptId,
+                'rule_fired' => 'D4',
+                'llm_instruction' => null,
+                'needed' => 'practice_item',
+                // Nothing the learner did is at fault, and nothing they have
+                // earned is withdrawn — this is our content gap.
+                'mastery_retained' => true,
+            ];
+        }
+
         $instruction = EsoPalRenderer::teachInstruction($node, $state, $this->priorNodeLabels($node));
+
+        // Resolved once, and used both for the decision below and for the meter
+        // returned at the bottom, so the two cannot disagree.
+        $practiceDone = $this->practiceEventsSinceTaught($node, $state, $nodeEvidence ?? []);
+        $practiceNeeded = $this->practiceTarget($node, $state);
 
         $action = 'practice';
         $rule = sprintf('D4: mastery %.2f, mode=%s, continue practice', $state->mastery_estimate, $state->practice_mode);
@@ -1675,6 +2186,30 @@ class EsoPolicyService
             // when the concept has no relevance data to draw on honestly.
             'motivation_instruction' => $motivation,
             'motivation_fallback' => $motivationFallback,
+            // How far through the practice phase this node is, so the client can
+            // show that submitting moved something. Three consecutive practice
+            // questions are otherwise indistinguishable, which reads as a frozen
+            // screen.
+            //
+            // Both numbers are the engine's: `done` is the SAME count
+            // practiceComplete() gates on, and `needed` is practiceItemsRequired().
+            // The client must never derive either - it does not own MIN_EVENTS_K
+            // and must not appear to.
+            //
+            // NULL once the phase requirement is already met. phaseFor() has a
+            // second route to practice: check settled, but the node still short
+            // of its own threshold, so practice is the only thing left that can
+            // move it. That is the ordinary state after a first passed check -
+            // three correct answers leave a K node at 0.60 against a 0.80
+            // threshold - and it is NOT a countdown. Reported as one, the meter
+            // sat pinned at "Question 3 of 3" with "Next up: the check" under
+            // it while the learner answered a fourth, fifth and sixth question,
+            // which is what made practice feel like it was asking for the same
+            // submission over and over. Saying nothing is the honest answer;
+            // the client already renders no counter when this is absent.
+            'practice_progress' => $practiceDone < $practiceNeeded
+                ? ['done' => $practiceDone, 'needed' => $practiceNeeded]
+                : null,
         ];
     }
 
@@ -1684,18 +2219,29 @@ class EsoPolicyService
      * Reuses exactly the same servable-item machinery as practiceItem() and
      * retrievalItems() — the same tagged pool, the same servable-item hydration —
      * rather than requiring a separate authored "CFU question" content type
-     * that nothing in the catalogue has. Shuffled so a reteach cycle does not
-     * hand back the identical pair the student just failed.
+     * that nothing in the catalogue has.
+     *
+     * The order rotates per CHECK CYCLE rather than per call. It used to be a
+     * plain shuffle(), which achieved the same "a reteach must not hand back
+     * the pair they just failed" goal but also meant two requests within one
+     * cycle returned different questions — so a re-render mid-check swapped
+     * the questions under the learner, exactly as it did in practice (see
+     * orderCandidatesByDifficulty()). Seeding on `cfu_attempts` keeps the
+     * rotation and drops the instability.
      *
      * @return array<int, array<string, mixed>>
      */
-    public function checkUnderstandingItems(int $nodeId, int $subInstituteId): array
+    public function checkUnderstandingItems(int $nodeId, int $subInstituteId, ?LearnerNodeState $state = null): array
     {
-        $candidates = QuestionMetadata::forNode($nodeId)
-            ->forTenant($subInstituteId)
-            ->forPal()
-            ->pluck('question_id')
-            ->shuffle();
+        $candidates = $this->stableOrder(
+            QuestionMetadata::forNode($nodeId)
+                ->forTenant($subInstituteId)
+                ->forPal()
+                ->get(['question_id']),
+            $state === null
+                ? 'cfu:' . $nodeId
+                : sprintf('cfu:%d:%d:%d', (int) $state->student_id, (int) $state->node_id, (int) $state->cfu_attempts)
+        )->pluck('question_id');
 
         $items = [];
         foreach ($candidates as $questionId) {
@@ -1770,6 +2316,24 @@ class EsoPolicyService
 
         $state->cfu_attempts = (int) $state->cfu_attempts + 1;
         $state->last_seen_at = now();
+
+        // Re-open Learn: check failed -> back to Learn -> Practice -> Check.
+        //
+        // `taught_at` is a PHASE MARKER, not a historical record - the history
+        // is `cfu_attempts`, which only ever increases and is what bounds this
+        // loop. Nulling it does two things at once, which is why no
+        // `practice_done_at` column is needed: it routes phaseFor() back to
+        // 'teach', and because the next teach re-stamps `taught_at` to now,
+        // every practice event already on file falls behind
+        // practiceComplete()'s cutoff - so the learner must practise again
+        // before the next check rather than bouncing Learn -> Check.
+        //
+        // Not re-opened once the guard is spent: that would be an unbounded
+        // Learn/Practice cycle with no exit.
+        if ((int) $state->cfu_attempts < self::CFU_MAX_CYCLES) {
+            $state->taught_at = null;
+        }
+
         $state->save();
 
         // D3 first — an identified misconception is a more specific diagnosis
@@ -1789,8 +2353,8 @@ class EsoPolicyService
             $subInstituteId,
             ['cfu_attempts' => (int) $state->cfu_attempts],
             (int) $state->cfu_attempts >= self::CFU_MAX_CYCLES
-                ? sprintf('D1-CFU: check not passed after %d cycle(s), releasing to guided practice', self::CFU_MAX_CYCLES)
-                : 'D1-CFU: check of understanding not passed, re-explaining',
+                ? sprintf('D1-CFU: check not passed after %d Learn -> Practice -> Check cycle(s), releasing to ordinary practice', self::CFU_MAX_CYCLES)
+                : 'D1-CFU: check of understanding not passed, re-opening Learn',
             'not_understood'
         );
 
@@ -2116,7 +2680,7 @@ class EsoPolicyService
      * with scaffolding" and "can do it".
      *
      * @param  Collection<int, ConceptNode>  $nodes
-     * @return array<int, array{events:int, independent:int, last_at:?\Illuminate\Support\Carbon}>
+     * @return array<int, array{events:int, independent:int, last_at:?\Illuminate\Support\Carbon, event_times:array}>
      */
     protected function evidenceByNode(int $studentId, Collection $nodes): array
     {
@@ -2138,7 +2702,7 @@ class EsoPolicyService
 
         $profile = [];
         foreach ($nodeIds as $id) {
-            $profile[$id] = ['events' => 0, 'independent' => 0, 'last_at' => null];
+            $profile[$id] = ['events' => 0, 'independent' => 0, 'last_at' => null, 'event_times' => []];
         }
 
         foreach ($rows->groupBy('node_id') as $nodeId => $nodeRows) {
@@ -2147,12 +2711,26 @@ class EsoPolicyService
             // silently inflating the count.
             $distinct = $nodeRows->unique(fn ($r) => $r->question_id ?? 'unknown');
 
+            // WHEN each distinct question was last answered, collapsed by the
+            // same rule as `events` so count($event_times) === $events always.
+            //
+            // Carried so practiceComplete() can ask "how much of this happened
+            // SINCE the last time we taught it" without a second query per
+            // node. max() rather than first(): a question re-answered after a
+            // reteach belongs to the NEW cycle, not pinned to its first sitting.
+            $times = $nodeRows
+                ->groupBy(fn ($r) => $r->question_id ?? 'unknown')
+                ->map(fn ($group) => $group->max('created_at'))
+                ->values()
+                ->all();
+
             $profile[(int) $nodeId] = [
                 'events' => $distinct->count(),
                 'independent' => $distinct
                     ->filter(fn ($r) => $r->mode === LearnerNodeState::MODE_INDEPENDENT && ! $r->hint_used)
                     ->count(),
                 'last_at' => $nodeRows->max('created_at'),
+                'event_times' => $times,
             ];
         }
 

@@ -107,24 +107,23 @@ class EsoPalRenderer
         return implode(' ', $parts);
     }
 
-    /**
-     * The Check-For-Understanding gate, served immediately after teaching and
-     * before any scored practice.
+    /*
+     * There is deliberately NO checkUnderstandingInstruction() any more.
      *
-     * This is deliberately framed as a check, not as practice: the answers do
-     * not move mastery_estimate, attempts or consecutive_correct (see
-     * EsoPolicyService::recordCheckUnderstanding()), so Pal must not present
-     * it as a test the student can fail their way out of the concept with.
+     * The Check step used to open with a Pal-rendered preamble built from an
+     * instruction that asked the model to say, in so many words, that this was
+     * "a quick check to see whether the explanation landed, not a graded test"
+     * and that getting one wrong was no problem. Removed as a product decision:
+     * the check now sits AFTER practice (see EsoPolicyService's note on
+     * teachOrPracticeAction), so it is a verdict on work already done, and
+     * telling the learner up front that it does not count invited them to
+     * coast through the one step that decides whether they are re-taught.
+     *
+     * Nothing about the MECHANISM changed - recordCheckUnderstanding() still
+     * records no mastery evidence - only that the engine no longer narrates it.
+     * checkUnderstandingAction() now returns a null llm_instruction, which the
+     * client already handles by rendering no preamble at all.
      */
-    public static function checkUnderstandingInstruction(ConceptNode $node, int $itemCount): string
-    {
-        $lines = [];
-        $lines[] = sprintf('The student has just been taught %s: %s and is about to answer a short check of understanding (%d question(s)).', $node->node_type, $node->label, $itemCount);
-        $lines[] = 'In one or two sentences, tell them this is a quick check to see whether the explanation landed, not a graded test, and that getting one wrong just means we explain it a different way.';
-        $lines[] = 'Do not re-teach the material here, and do not reveal or hint at any answer.';
-
-        return implode(' ', $lines);
-    }
 
     /**
      * The "not understood" branch of CFU: re-explain the SAME node a different

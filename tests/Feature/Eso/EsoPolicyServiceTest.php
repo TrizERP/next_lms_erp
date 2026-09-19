@@ -257,11 +257,14 @@ class EsoPolicyServiceTest extends TestCase
 
     public function test_a_student_who_diagnoses_above_the_skip_threshold_skips_teaching_without_being_marked_mastered(): void
     {
-        $rightAnswer = $this->makeAnswer(true);
-
+        // Enough DISTINCT items to clear the lesson-skip floor, but NOT a clean
+        // sweep: one wrong answer keeps this on the skip path rather than the
+        // mastered-on-diagnostic path. 3 correct - 1 wrong = 0.80 at weight 2.0.
         $results = $this->policy->scoreDiagnostic($this->studentId, $this->conceptId, $this->subInstituteId, [
-            ['node_id' => $this->kNodeId, 'answer_master_id' => $rightAnswer],
-            ['node_id' => $this->kNodeId, 'answer_master_id' => $rightAnswer], // +0.4 x2 diagnostic weight = 0.8, clamped, >= 0.80
+            ['node_id' => $this->kNodeId, 'answer_master_id' => $this->makeAnswer(true)],
+            ['node_id' => $this->kNodeId, 'answer_master_id' => $this->makeAnswer(true)],
+            ['node_id' => $this->kNodeId, 'answer_master_id' => $this->makeAnswer(false)],
+            ['node_id' => $this->kNodeId, 'answer_master_id' => $this->makeAnswer(true)],
         ]);
 
         $kResult = collect($results)->firstWhere('node_id', $this->kNodeId);
@@ -275,15 +278,53 @@ class EsoPolicyServiceTest extends TestCase
         $this->assertSame(LearnerNodeState::STATUS_LEARNING, $state->status);
         $this->assertNull($state->next_review_at, 'Retention belongs to the D4 verdict, not to a diagnostic skip.');
 
-        // The skip still does its job: teaching and the CFU gate are passed
-        // over, so the learner goes straight to the practice that produces
-        // valid mastery evidence.
+        // The skip still does its job: the lesson is passed over, so the
+        // learner goes straight to the practice that produces valid evidence.
         $this->assertNotNull($state->taught_at);
-        $this->assertNotNull($state->cfu_passed_at);
+
+        // But the CHECK is NOT waived. Under Learn -> Practice -> Check it is
+        // the gate at the end of the cycle, and a diagnostic has not sat it.
+        $this->assertNull(
+            $state->cfu_passed_at,
+            'A diagnostic may skip the lesson, but it cannot pass the check of understanding for the student.'
+        );
 
         $log = DecisionLog::forStudent($this->studentId)->where('node_id', $this->kNodeId)->latest()->first();
         $this->assertStringContainsString('D1', $log->rule_fired);
         $this->assertSame('skip_instruction', $log->action);
+    }
+
+    public function test_a_thin_diagnostic_cannot_take_the_lesson_away(): void
+    {
+        // The real shape of the chapter diagnostic: roughly ONE item per
+        // concept. Two answers to the same question clear 0.80 at weight 2.0,
+        // which used to stamp taught_at and make the Learn lesson permanently
+        // unreachable — `taught_at` is a one-way latch. That was the bug behind
+        // "Learn it opens practice".
+        $rightAnswer = $this->makeAnswer(true);
+
+        $results = $this->policy->scoreDiagnostic($this->studentId, $this->conceptId, $this->subInstituteId, [
+            ['node_id' => $this->kNodeId, 'answer_master_id' => $rightAnswer],
+            ['node_id' => $this->kNodeId, 'answer_master_id' => $rightAnswer],
+        ]);
+
+        $kResult = collect($results)->firstWhere('node_id', $this->kNodeId);
+        $this->assertTrue($kResult['skip'], 'The estimate did clear the threshold, so the node is still reported skip-eligible.');
+
+        $state = LearnerNodeState::where('student_id', $this->studentId)->where('node_id', $this->kNodeId)->first();
+
+        $this->assertNull($state->taught_at, 'One distinct item is not enough evidence to take the lesson away.');
+        $this->assertNull($state->cfu_passed_at);
+
+        // Read before nextAction(), which writes its own row on top.
+        $log = DecisionLog::forStudent($this->studentId)->where('node_id', $this->kNodeId)->latest()->first();
+        $this->assertSame('needs_instruction', $log->action);
+
+        $this->assertSame(
+            'teach',
+            $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId)['action'],
+            'The learner must still be able to reach the lesson.'
+        );
     }
 
     // ── TEST 2: Weak prerequisite → D2 remediation ──────────────────────
@@ -477,6 +518,10 @@ class EsoPolicyServiceTest extends TestCase
         DB::table('lms_concept')->where('id', $this->conceptId)
             ->update(['description' => 'A worked description of the test concept.']);
 
+        // practiceAction() refuses to promise a question that does not exist,
+        // so the node needs a real servable item before it can reach practice.
+        $this->makeServableQuestion($this->kNodeId);
+
         // Never taught → this node resolves to 'teach', not practice yet.
         $state = $this->setUntaught($this->kNodeId);
         $this->setMastery($this->aNodeId, 0.2);
@@ -485,11 +530,11 @@ class EsoPolicyServiceTest extends TestCase
         $this->assertSame('teach', $teach['action']);
         $this->assertNull($teach['motivation_instruction'] ?? null, 'Nothing to activate yet — they have not understood it once.');
 
-        // Taught and check-of-understanding passed, one attempt on file → the
-        // first time this node resolves to practice.
+        // Taught, one attempt on file → practice. Under Learn → Practice →
+        // Check the node reaches practice WITHOUT the check having been passed;
+        // that is the point of the reorder.
         $state->refresh();
         $state->attempts = 1;
-        $state->cfu_passed_at = now();
         $state->save();
 
         $firstPractice = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
@@ -516,6 +561,9 @@ class EsoPolicyServiceTest extends TestCase
         // outcome is silence, not padded filler. (This is Concept 114's real
         // situation for the real-world slice, which is why it matters.)
         DB::table('lms_concept')->where('id', $this->conceptId)->update(['description' => null]);
+
+        // A servable item, so practice is genuinely reachable.
+        $this->makeServableQuestion($this->kNodeId);
 
         $state = $this->setMastery($this->kNodeId, 0.2);
         $state->attempts = 1;
@@ -670,21 +718,390 @@ class EsoPolicyServiceTest extends TestCase
         $this->assertSame(0.2, round($state->mastery_estimate, 2), 'Being taught must not move mastery.');
     }
 
-    public function test_a_taught_node_routes_to_check_understanding_before_any_practice(): void
+    /**
+     * The practice meter must track the gate, not merely resemble it.
+     *
+     * `practice_progress` exists so the learner can see that answering moved
+     * something. If it counted separately from practiceComplete() it would
+     * eventually say "one more to go" on a screen that then refuses to advance
+     * - which is the exact bug it was added to explain away.
+     */
+    public function test_practice_progress_counts_what_the_gate_counts(): void
     {
+        $questionId = $this->makeServableQuestion($this->kNodeId);
+        // Enough distinct stock that the floor, not the pool, is what binds.
+        $this->makeServableQuestion($this->kNodeId);
+        $this->makeServableQuestion($this->kNodeId);
         $this->setUntaught($this->kNodeId);
         $this->setMastery($this->aNodeId, 0.2);
 
-        // First resolve teaches...
+        $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId); // teach
+
+        $practice = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+        $this->assertSame('practice', $practice['action']);
+        $this->assertSame(
+            ['done' => 0, 'needed' => EsoPolicyService::MIN_EVENTS_K],
+            $practice['practice_progress'],
+            'A node that has been taught but not practised starts at zero.'
+        );
+
+        for ($i = 0; $i < EsoPolicyService::MIN_EVENTS_K - 1; $i++) {
+            DB::table('eso_response_log')->insert([
+                'student_id' => $this->studentId,
+                'concept_id' => $this->conceptId,
+                'node_id' => $this->kNodeId,
+                'sub_institute_id' => $this->subInstituteId,
+                'question_id' => $questionId + $i,
+                'correct' => 1,
+                'hint_used' => 0,
+                'mode' => LearnerNodeState::MODE_INDEPENDENT,
+                'created_at' => now(),
+            ]);
+
+            $next = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+            $this->assertSame('practice', $next['action'], 'Still short of the floor, so still practice.');
+            $this->assertSame(
+                $i + 1,
+                $next['practice_progress']['done'],
+                'The meter moves with every distinct answer.'
+            );
+            $this->assertSame(EsoPolicyService::MIN_EVENTS_K, $next['practice_progress']['needed']);
+        }
+
+        // The last one the meter asked for must be the one that ends the phase.
+        DB::table('eso_response_log')->insert([
+            'student_id' => $this->studentId,
+            'concept_id' => $this->conceptId,
+            'node_id' => $this->kNodeId,
+            'sub_institute_id' => $this->subInstituteId,
+            'question_id' => $questionId + EsoPolicyService::MIN_EVENTS_K - 1,
+            'correct' => 1,
+            'hint_used' => 0,
+            'mode' => LearnerNodeState::MODE_INDEPENDENT,
+            'created_at' => now(),
+        ]);
+
+        $this->assertNotSame(
+            'practice',
+            $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId)['action'],
+            'Reaching `needed` must end the practice phase, or the meter was lying.'
+        );
+    }
+
+    /**
+     * A node with fewer servable questions than its floor must not trap anyone.
+     *
+     * practiceComplete() counts DISTINCT questions, so a pool of two could never
+     * reach a floor of three: the learner answered, the phase never ended, and
+     * practice was served for ever. The floor is therefore capped at real stock
+     * - the same thing checkSettled() does for a node with no authored check,
+     * and MasteryLadder does for a band with no stock.
+     */
+    public function test_a_node_with_fewer_questions_than_its_floor_still_finishes_practising(): void
+    {
+        // Two servable items against a floor of three.
+        $first = $this->makeServableQuestion($this->kNodeId);
+        $second = $this->makeServableQuestion($this->kNodeId);
+        $this->assertLessThan(
+            EsoPolicyService::MIN_EVENTS_K,
+            2,
+            'This test is only meaningful while the floor exceeds the pool.'
+        );
+
+        $this->setUntaught($this->kNodeId);
+        $this->setMastery($this->aNodeId, 0.2);
+
+        $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId); // teach
+
+        $practice = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+        $this->assertSame('practice', $practice['action']);
+        $this->assertSame(
+            2,
+            $practice['practice_progress']['needed'],
+            'The target shown is the one actually in force — the pool, not the unreachable floor.'
+        );
+
+        foreach ([$first, $second] as $questionId) {
+            DB::table('eso_response_log')->insert([
+                'student_id' => $this->studentId,
+                'concept_id' => $this->conceptId,
+                'node_id' => $this->kNodeId,
+                'sub_institute_id' => $this->subInstituteId,
+                'question_id' => $questionId,
+                'correct' => 1,
+                'hint_used' => 0,
+                'mode' => LearnerNodeState::MODE_INDEPENDENT,
+                'created_at' => now(),
+            ]);
+        }
+
+        $after = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+        $this->assertNotSame(
+            'practice',
+            $after['action'],
+            'Every question that exists has been answered; demanding a third is a dead end.'
+        );
+
+        // Ending the PHASE grants nothing. masteryVerdict() keeps its own
+        // thresholds and its own evidence floor.
+        $this->assertNotSame('mastered_stop_practice', $after['action']);
+        $this->assertDatabaseMissing('learner_node_state', [
+            'student_id' => $this->studentId,
+            'node_id' => $this->kNodeId,
+            'status' => 'mastered',
+        ]);
+    }
+
+    public function test_a_taught_node_routes_to_practice_before_any_check(): void
+    {
+        // The order is Learn -> Practice -> Check. This test pins it.
+        $questionId = $this->makeServableQuestion($this->kNodeId);
+        $this->setUntaught($this->kNodeId);
+        $this->setMastery($this->aNodeId, 0.2);
+
+        // 1. LEARN.
         $this->assertSame('teach', $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId)['action']);
 
-        // ...the next one must be the CFU gate, NOT practice.
+        // 2. PRACTICE — not the check. The learner rehearses before being asked
+        //    to demonstrate.
+        $practice = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+        $this->assertSame('practice', $practice['action'], 'Practice comes before the check.');
+        $this->assertSame($this->kNodeId, $practice['node_id']);
+
+        // Record the practice the floor asks for, on distinct questions and
+        // after taught_at, which is what practiceComplete() measures.
+        for ($i = 0; $i < EsoPolicyService::MIN_EVENTS_K; $i++) {
+            DB::table('eso_response_log')->insert([
+                'student_id' => $this->studentId,
+                'concept_id' => $this->conceptId,
+                'node_id' => $this->kNodeId,
+                'sub_institute_id' => $this->subInstituteId,
+                'question_id' => $questionId + $i,
+                'correct' => 1,
+                'hint_used' => 0,
+                'mode' => LearnerNodeState::MODE_INDEPENDENT,
+                'created_at' => now(),
+            ]);
+        }
+
+        // 3. CHECK — only now.
         $cfu = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
 
         $this->assertSame('check_understanding', $cfu['action']);
         $this->assertSame('D1-CFU', $cfu['rule_fired']);
         $this->assertSame($this->kNodeId, $cfu['node_id']);
         $this->assertSame(EsoPolicyService::CFU_ITEM_COUNT, $cfu['cfu_item_count']);
+    }
+
+    /**
+     * Asking for the same practice item twice must give the same question.
+     *
+     * The selection used to shuffle() on every call, so it did not. The client
+     * fetches this once per step, but React re-runs effects in development and
+     * any retry asks again — and a second, different question arriving a second
+     * or two later silently replaced the one the learner was reading. Reported
+     * as questions changing by themselves after two or three seconds.
+     */
+    public function test_the_same_practice_item_is_served_until_it_is_answered(): void
+    {
+        // Several candidates, so a stable answer is a real property and not an
+        // accident of there being only one question to pick.
+        foreach (range(1, 4) as $ignored) {
+            $this->makeServableQuestion($this->kNodeId);
+        }
+
+        $this->setUntaught($this->kNodeId);
+        $this->setMastery($this->aNodeId, 0.2);
+
+        $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId); // teach
+        $state = $this->kNodeState();
+
+        $first = $this->policy->practiceItem($this->kNodeId, $this->subInstituteId, $state);
+        $this->assertNotNull($first);
+
+        foreach (range(1, 3) as $ignored) {
+            $this->assertSame(
+                $first['question_id'],
+                $this->policy->practiceItem($this->kNodeId, $this->subInstituteId, $state)['question_id'],
+                'Re-asking for the practice item must not swap the question under the learner.'
+            );
+        }
+    }
+
+    /**
+     * A question already answered in this practice phase must not come back.
+     *
+     * evidenceByNode() counts DISTINCT question ids, so re-serving one that has
+     * already been answered cannot move practiceComplete() — the learner
+     * submits, the meter does not move, and the same question is served again.
+     */
+    public function test_practice_does_not_re_serve_a_question_already_answered_this_phase(): void
+    {
+        $pool = [
+            $this->makeServableQuestion($this->kNodeId),
+            $this->makeServableQuestion($this->kNodeId),
+        ];
+
+        $this->setUntaught($this->kNodeId);
+        $this->setMastery($this->aNodeId, 0.2);
+
+        $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId); // teach
+        $state = $this->kNodeState();
+
+        $served = (int) $this->policy->practiceItem($this->kNodeId, $this->subInstituteId, $state)['question_id'];
+        $this->assertContains($served, $pool);
+
+        DB::table('eso_response_log')->insert([
+            'student_id' => $this->studentId,
+            'concept_id' => $this->conceptId,
+            'node_id' => $this->kNodeId,
+            'sub_institute_id' => $this->subInstituteId,
+            'question_id' => $served,
+            'correct' => 1,
+            'hint_used' => 0,
+            'mode' => LearnerNodeState::MODE_INDEPENDENT,
+            'created_at' => now(),
+        ]);
+
+        $this->assertNotSame(
+            $served,
+            (int) $this->policy->practiceItem($this->kNodeId, $this->subInstituteId, $state)['question_id'],
+            'A question answered in this phase must not be served again while unanswered ones remain.'
+        );
+    }
+
+    /**
+     * The whole practice run, end to end: three questions, three DIFFERENT
+     * questions, a meter that moves with each one, and the check at the end.
+     *
+     * This is the sequence the product asks for — Learn -> Practice (3) ->
+     * Check — asserted as one journey rather than as three separate rules,
+     * because every defect it guards against was in how the rules composed.
+     */
+    public function test_a_practice_run_is_three_distinct_questions_and_then_the_check(): void
+    {
+        // More stock than the floor, so serving three DIFFERENT questions is a
+        // choice the engine makes rather than the only thing it could do.
+        foreach (range(1, 5) as $ignored) {
+            $this->makeServableQuestion($this->kNodeId);
+        }
+
+        $this->setUntaught($this->kNodeId);
+        $this->setMastery($this->aNodeId, 0.2);
+
+        $this->assertSame('teach', $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId)['action']);
+
+        $served = [];
+
+        for ($answered = 0; $answered < EsoPolicyService::MIN_EVENTS_K; $answered++) {
+            $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
+
+            $this->assertSame('practice', $action['action'], 'Practice runs until the floor is met.');
+            $this->assertSame(
+                ['done' => $answered, 'needed' => EsoPolicyService::MIN_EVENTS_K],
+                $action['practice_progress'],
+                'The meter must move by exactly one per answered question.'
+            );
+
+            $item = $this->policy->practiceItem($this->kNodeId, $this->subInstituteId, $this->kNodeState());
+            $served[] = (int) $item['question_id'];
+
+            $this->policy->recordAttempt($this->studentId, $this->kNodeId, $this->conceptId, $this->subInstituteId, [
+                'answer_master_id' => $this->correctAnswerFor((int) $item['question_id']),
+                'mode' => LearnerNodeState::MODE_INDEPENDENT,
+            ]);
+        }
+
+        $this->assertCount(
+            EsoPolicyService::MIN_EVENTS_K,
+            array_unique($served),
+            'Each question in a practice run must be a different one, or the floor can never be met.'
+        );
+
+        $this->assertSame(
+            'check_understanding',
+            $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId)['action'],
+            'The run ends at the check, not at more practice.'
+        );
+    }
+
+    /** The learner's live state for the K node, as the resolver would read it. */
+    private function kNodeState(): LearnerNodeState
+    {
+        return LearnerNodeState::forStudent($this->studentId)
+            ->where('node_id', $this->kNodeId)
+            ->firstOrFail();
+    }
+
+    /** The marked-correct option of a question built by makeServableQuestion(). */
+    private function correctAnswerFor(int $questionId): int
+    {
+        return (int) DB::table('answer_master')
+            ->where('question_id', $questionId)
+            ->where('correct_answer', 1)
+            ->value('id');
+    }
+
+    public function test_a_failed_check_reopens_learn_and_requires_practice_again(): void
+    {
+        // The repeat loop the owner asked for: Learn -> Practice -> Check, and
+        // on a failure back to Learn rather than onward to more practice.
+        $questionId = $this->makeServableQuestion($this->kNodeId);
+        $state = $this->setUntaught($this->kNodeId);
+        $this->setMastery($this->aNodeId, 0.2);
+
+        $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId); // teach
+        $state->refresh();
+        $firstTaughtAt = $state->taught_at;
+        $this->assertNotNull($firstTaughtAt);
+
+        for ($i = 0; $i < EsoPolicyService::MIN_EVENTS_K; $i++) {
+            DB::table('eso_response_log')->insert([
+                'student_id' => $this->studentId,
+                'concept_id' => $this->conceptId,
+                'node_id' => $this->kNodeId,
+                'sub_institute_id' => $this->subInstituteId,
+                'question_id' => $questionId + $i,
+                'correct' => 1,
+                'hint_used' => 0,
+                'mode' => LearnerNodeState::MODE_INDEPENDENT,
+                'created_at' => now(),
+            ]);
+        }
+
+        $this->assertSame('check_understanding', $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId)['action']);
+
+        // Both teaches would otherwise land in the same second, and the cutoff
+        // assertion below is about ordering, not about clock resolution.
+        $this->travel(2)->seconds();
+
+        // Fail it. recordCheckUnderstanding() ends by re-resolving, so the
+        // action it hands back IS the next screen: back to Learn, as a reteach.
+        $wrongId = $this->makeAnswer(false);
+        $outcome = $this->policy->recordCheckUnderstanding(
+            $this->studentId, $this->kNodeId, $this->conceptId, $this->subInstituteId,
+            [['answer_master_id' => $wrongId]]
+        );
+
+        $this->assertSame('reteach', $outcome['action'], 'A failed check sends the learner back to Learn.');
+
+        $state->refresh();
+        $this->assertSame(1, (int) $state->cfu_attempts);
+
+        // The re-teach re-stamped taught_at, which moves the cutoff
+        // practiceComplete() measures from — so the practice already on file no
+        // longer counts and the learner must practise again before the next
+        // check, rather than bouncing Learn -> Check.
+        $this->assertNotNull($state->taught_at);
+        $this->assertTrue($state->taught_at->gt($firstTaughtAt), 'Re-teaching moves the practice cutoff forward.');
+
+        $this->assertSame(
+            'practice',
+            $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId)['action'],
+            'After a reteach the learner must practise again, not go straight back to the check.'
+        );
     }
 
     public function test_a_silent_resolve_never_advances_the_student_past_the_teach_phase(): void
@@ -3360,6 +3777,12 @@ class EsoPolicyServiceTest extends TestCase
         $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
         $this->assertSame('diagnostic', $action['action']);
 
+        // Both nodes need a servable item: practiceAction() now refuses to
+        // promise a question that does not exist, and this test is about the
+        // instruction being deterministic, not about content gaps.
+        $this->makeServableQuestion($this->kNodeId);
+        $this->makeServableQuestion($this->aNodeId);
+
         $this->setMastery($this->kNodeId, 0.3);
         $teach = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId);
 
@@ -3910,15 +4333,16 @@ class EsoPolicyServiceTest extends TestCase
         $state->save();
         $this->setMastery($this->aNodeId, 0.2);
 
-        $this->policy->recordCheckUnderstanding(
+        // The failed check re-opens Learn and re-resolves, so the action it
+        // returns IS the reteach screen. Re-asking nextAction() afterwards
+        // would show the practice that follows it, not the reteach itself.
+        $action = $this->policy->recordCheckUnderstanding(
             $this->studentId,
             $this->kNodeId,
             $this->conceptId,
             $this->subInstituteId,
             [['answer_master_id' => $correctId], ['answer_master_id' => $wrongId]]
         );
-
-        $action = $this->policy->nextAction($this->studentId, $this->conceptId, $this->subInstituteId, true);
 
         $this->assertSame('reteach', $action['action']);
         $this->assertNotNull($action['learning_content']);
