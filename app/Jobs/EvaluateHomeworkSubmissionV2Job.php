@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\student\studentHomeworkModel;
 use App\Services\Homework\Exceptions\DocumentExtractionException;
 use App\Services\Homework\Exceptions\EvaluationException;
+use App\Services\Homework\Exceptions\ProviderBusyException;
 use App\Services\Homework\HomeworkAnnotatedPdfService;
 use App\Services\Homework\HomeworkAnswerLocatorService;
 use App\Services\Homework\HomeworkDocumentExtractionService;
@@ -96,6 +97,7 @@ class EvaluateHomeworkSubmissionV2Job implements ShouldQueue
         }
 
         $answerTexts = [];
+        $lastFileFailure = null;
         $firstLocated = null;
         $firstFilePath = null;
         $firstFileMime = null;
@@ -123,6 +125,7 @@ class EvaluateHomeworkSubmissionV2Job implements ShouldQueue
                     }
                 }
             } catch (DocumentExtractionException $exception) {
+                $lastFileFailure = $exception;
                 Log::warning('Homework submission (v2) answer OCR/extraction failed for one file', [
                     'homework_id' => $this->homeworkId,
                     'file_index' => $index,
@@ -134,8 +137,23 @@ class EvaluateHomeworkSubmissionV2Job implements ShouldQueue
         }
 
         if (empty($answerTexts)) {
-            $this->logAiInteraction($homework, null, 'OCR failed: none of the submitted files could be read.');
-            $this->markFailed($homework, 'OCR Failed', 'None of the submitted files could be read.');
+            // Say why, rather than blaming the upload for the provider's weather.
+            // Each file's real reason was logged and then dropped, and every
+            // failure - a 503 after four attempts as much as a corrupt scan -
+            // was recorded as "None of the submitted files could be read", which
+            // sent a teacher looking for a fault in a PDF that was perfectly fine.
+            $providerWasBusy = $lastFileFailure?->getPrevious() instanceof ProviderBusyException;
+            $reason = $lastFileFailure?->getMessage() ?: 'None of the submitted files could be read.';
+
+            $this->logAiInteraction($homework, null, "OCR failed: {$reason}");
+            $this->markFailed(
+                $homework,
+                // An unreadable file and a busy model are different problems with
+                // different remedies: one needs a better scan, the other needs
+                // only a few minutes.
+                $providerWasBusy ? 'Evaluation Failed' : 'OCR Failed',
+                $reason
+            );
             return;
         }
 

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use function App\Helpers\getStudents;
 use App\Models\school_setup\subjectModel;
@@ -121,7 +122,29 @@ class StudentHomeworkApiController extends Controller
         $submission_date = $request->input('submission_date');
         $teacher_id = $request->input('teacher_id');
         $sourceType = $request->input('source_type', 'attachment');
-        $questionIds = $request->input('question_ids', []);
+        $questionIds = $this->parseCsvIds($request->input('question_ids', []));
+        $examPaperId = (int) $request->input('exam_paper_id', 0);
+        $examPaperName = '';
+
+        // Exam-paper homework takes its questions from the paper itself rather
+        // than from whatever the client posted: `question_paper.question_ids`
+        // is the teacher's chosen sequence, and reading it here keeps the
+        // homework and the paper from disagreeing. The posted ids remain the
+        // fallback for a paper row this tenant cannot read.
+        if ($sourceType === 'exam_paper' && $examPaperId > 0) {
+            $paper = DB::table('question_paper')
+                ->where('id', $examPaperId)
+                ->where('sub_institute_id', $sub_institute_id)
+                ->first(['paper_name', 'paper_desc', 'question_ids']);
+
+            if ($paper) {
+                $examPaperName = trim(($paper->paper_name ?? '') . ' ' . ($paper->paper_desc ?? ''));
+                $paperQuestionIds = $this->parseCsvIds($paper->question_ids);
+                if (!empty($paperQuestionIds)) {
+                    $questionIds = $paperQuestionIds;
+                }
+            }
+        }
 
         $student_details = getStudents($students, $sub_institute_id, $syear);
 
@@ -151,16 +174,21 @@ class StudentHomeworkApiController extends Controller
         // EvaluateHomeworkSubmissionV2Job's reference-file resolution) keeps
         // working unchanged. Generated once for the whole batch since the
         // same question set applies to every selected student.
-        if ($sourceType === 'question_bank' && !empty($questionIds) && $file_name === '') {
+        if (in_array($sourceType, ['question_bank', 'exam_paper'], true) && !empty($questionIds) && $file_name === '') {
             try {
-                $generated = $this->generateQuestionBankPdf($questionIds);
+                $generated = $this->generateQuestionBankPdf(
+                    $questionIds,
+                    $examPaperName !== '' ? $examPaperName : 'Homework Questions'
+                );
                 if ($generated !== null) {
                     $file_name = $generated['file_name'];
                     $file_size = $generated['file_size'];
                     $ext = 'pdf';
                 }
             } catch (\Throwable $exception) {
-                Log::warning('Question-bank homework PDF generation failed — leaving image empty', [
+                Log::warning('Homework question PDF generation failed — leaving image empty', [
+                    'source_type' => $sourceType,
+                    'exam_paper_id' => $examPaperId,
                     'question_ids' => $questionIds,
                     'message' => $exception->getMessage(),
                 ]);
@@ -216,6 +244,14 @@ class StudentHomeworkApiController extends Controller
                 'source_type' => $sourceType,
                 'question_ids' => !empty($questionIds) ? implode(',', $questionIds) : null,
             ];
+
+            // The paper a homework came from is provenance, and the questions
+            // themselves are already in `question_ids`, so a deployment that has
+            // not run the `exam_paper_id` migration yet still assigns homework
+            // rather than failing on an unknown column.
+            if ($examPaperId > 0 && $this->homeworkHasExamPaperColumn()) {
+                $addhomeworkArray['exam_paper_id'] = $examPaperId;
+            }
 
             $insertedId = studentHomeworkModel::insertGetId($addhomeworkArray);
             $inserted_ids[] = $insertedId;
@@ -1059,7 +1095,7 @@ class StudentHomeworkApiController extends Controller
      * A question renders as a lettered A/B/C/D list when it has any
      * answer_master rows, otherwise as plain descriptive text.
      */
-    private function generateQuestionBankPdf(array $questionIds): ?array
+    private function generateQuestionBankPdf(array $questionIds, string $heading = 'Homework Questions'): ?array
     {
         $questions = \App\Models\lms\lmsQuestionMasterModel::whereIn('id', $questionIds)
             ->get(['id', 'question_title', 'description']);
@@ -1067,6 +1103,14 @@ class StudentHomeworkApiController extends Controller
         if ($questions->isEmpty()) {
             return null;
         }
+
+        // whereIn() does not preserve the order of the ids it was given, and for
+        // an exam paper that order is the paper's own question sequence, so the
+        // rows are put back into it before they are printed.
+        $order = array_flip(array_values($questionIds));
+        $questions = $questions
+            ->sortBy(fn ($question) => $order[$question->id] ?? PHP_INT_MAX)
+            ->values();
 
         $optionsByQuestion = DB::table('answer_master')
             ->whereIn('question_id', $questionIds)
@@ -1082,7 +1126,7 @@ class StudentHomeworkApiController extends Controller
             . '.options{margin:4px 0 0 18px;padding:0;list-style:none;}'
             . '.options li{margin-bottom:2px;}'
             . '</style></head><body>'
-            . '<h3>Homework Questions</h3>';
+            . '<h3>' . e($heading) . '</h3>';
 
         foreach ($questions as $index => $question) {
             $number = $index + 1;
@@ -1125,6 +1169,18 @@ class StudentHomeworkApiController extends Controller
             'file_name' => $file_name,
             'file_size' => strlen($binary),
         ];
+    }
+
+    /** `homework.exam_paper_id`, which only exists once its migration has run. */
+    private function homeworkHasExamPaperColumn(): bool
+    {
+        static $has = null;
+
+        if ($has === null) {
+            $has = Schema::hasColumn('homework', 'exam_paper_id');
+        }
+
+        return $has;
     }
 
     private function parseCsvIds($value): array
