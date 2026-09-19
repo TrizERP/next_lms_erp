@@ -70,11 +70,34 @@ class AgentController extends AiController
         try {
             $scope = $this->scope($request);
 
+            /*
+            | The cohort an agent run is scoped to.
+            |
+            | `subject_id`, `student_ids` and `limit` are the original four and are
+            | unchanged. The rest are ADDITIVE and all nullable: an existing caller that
+            | sends none of them produces exactly the request it produced before, and the
+            | agents that do not read them ignore them.
+            |
+            | They exist because a run launched from a module's AI Stack has filters on
+            | screen and had no way to send them. The Attendance agent in particular reads
+            | a window of the register, and without `days` every run from the console used
+            | the detector's own default — which on an estate whose marking is sparse
+            | meant a sweep that could detect a student but never gather enough marked days
+            | to support a recommendation, so nothing ever reached the approval queue.
+            |
+            | Bounded here rather than trusted: `days` cannot exceed a year, and the
+            | institute and academic year still come from the token and are not parameters
+            | at all.
+            */
             $validated = $request->validate([
                 'subject_id' => 'nullable|integer|min:1',
                 'student_ids' => 'nullable|array|max:200',
                 'student_ids.*' => 'integer|min:1',
                 'limit' => 'nullable|integer|min:1|max:200',
+                'days' => 'nullable|integer|min:1|max:365',
+                'standard_id' => 'nullable|integer|min:1',
+                'division_id' => 'nullable|integer|min:1',
+                'min_attendance_rate' => 'nullable|numeric|min:0|max:100',
             ]);
 
             $result = $this->runner->run(
