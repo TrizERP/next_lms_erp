@@ -74,6 +74,18 @@ class EmailTemplateService
             })
             ->get();
 
+        return self::pickBest($candidates, $standardId, $statusCode);
+    }
+
+    /**
+     * Most specific match wins: standard + status > standard > status > generic.
+     * On a tie the newest row wins, so a freshly edited template takes effect
+     * rather than an older duplicate quietly continuing to be used.
+     *
+     * @param \Illuminate\Support\Collection<int,EmailTemplate> $candidates
+     */
+    private static function pickBest($candidates, $standardId, $statusCode): ?EmailTemplate
+    {
         if ($candidates->isEmpty()) {
             return null;
         }
@@ -90,13 +102,13 @@ class EmailTemplateService
                 continue;
             }
 
-            if ($hasStatus && (string) $template->status_code !== (string) $statusCode) {
+            if ($hasStatus && trim((string) $template->status_code) !== trim((string) $statusCode)) {
                 continue;
             }
 
             $score = ($hasStandard ? 2 : 0) + ($hasStatus ? 1 : 0);
 
-            if ($score > $bestScore) {
+            if ($score > $bestScore || ($score === $bestScore && $best && $template->id > $best->id)) {
                 $best = $template;
                 $bestScore = $score;
             }
@@ -121,6 +133,15 @@ class EmailTemplateService
         $template = self::resolve($subInstituteId, $eventKey, $standardId, $statusCode);
 
         if ($template) {
+            // Logged so a wrong-template report can be traced to a row id.
+            Log::info('Email body template resolved', [
+                'template' => $template->id,
+                'name'     => $template->name,
+                'event'    => $eventKey,
+                'standard' => $standardId,
+                'status'   => $statusCode,
+            ]);
+
             $attachment = empty($template->attach_as_pdf)
                 ? null
                 : self::buildPdfAttachment($template, $subInstituteId, $eventKey, $vars, $standardId, $statusCode);
@@ -170,17 +191,57 @@ class EmailTemplateService
      * The letter that goes out as a PDF: an explicitly chosen template, or the
      * blade layout already registered for this event + standard.
      */
-    public static function letterHtml(int $subInstituteId, string $eventKey, array $vars, $standardId = null, $pdfTemplateId = null): ?string
+    public static function letterHtml(int $subInstituteId, string $eventKey, array $vars, $standardId = null, $pdfTemplateId = null, $statusCode = null): ?string
     {
+        // 1. A letter the body template names explicitly.
         if ($pdfTemplateId) {
             $letter = EmailTemplate::where('sub_institute_id', $subInstituteId)->find($pdfTemplateId);
 
             if ($letter) {
+                Log::info('Email letter resolved', ['source' => 'explicit', 'template' => $letter->id]);
+
                 return self::replace($letter->html_content, $vars);
             }
         }
 
+        // 2. A saved letter scoped to this standard/status. Without this step an
+        //    edited Letter template was silently ignored and the blade below won,
+        //    so wording changes never reached the PDF.
+        $letter = self::resolveLetter($subInstituteId, $eventKey, $standardId, $statusCode);
+
+        if ($letter) {
+            Log::info('Email letter resolved', [
+                'source'   => 'database',
+                'template' => $letter->id,
+                'standard' => $standardId,
+                'status'   => $statusCode,
+            ]);
+
+            return self::replace($letter->html_content, $vars);
+        }
+
+        // 3. Nothing saved yet - fall back to the layout still in the blade file.
+        Log::info('Email letter resolved', [
+            'source'   => 'blade',
+            'view'     => self::legacyView($eventKey, $standardId),
+            'standard' => $standardId,
+        ]);
+
         return self::renderLegacy($eventKey, $vars, $standardId);
+    }
+
+    /**
+     * Best matching saved letter (is_letter = 1) for an event.
+     */
+    public static function resolveLetter(int $subInstituteId, string $eventKey, $standardId = null, $statusCode = null): ?EmailTemplate
+    {
+        $candidates = EmailTemplate::where('sub_institute_id', $subInstituteId)
+            ->where('event_key', $eventKey)
+            ->where('status', 1)
+            ->where('is_letter', 1)
+            ->get();
+
+        return self::pickBest($candidates, $standardId, $statusCode);
     }
 
     /**
@@ -188,7 +249,7 @@ class EmailTemplateService
      */
     public static function buildPdfAttachment(EmailTemplate $template, int $subInstituteId, string $eventKey, array $vars, $standardId = null, $statusCode = null): ?string
     {
-        $html = self::letterHtml($subInstituteId, $eventKey, $vars, $standardId, $template->pdf_template_id);
+        $html = self::letterHtml($subInstituteId, $eventKey, $vars, $standardId, $template->pdf_template_id, $statusCode);
 
         if (empty($html)) {
             Log::warning('Email template marked attach_as_pdf but no letter layout was found', [
