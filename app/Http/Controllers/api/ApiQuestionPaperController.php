@@ -554,6 +554,82 @@ class ApiQuestionPaperController extends Controller
     }
 
     /**
+     * The roots a stored paper can legitimately live under.
+     *
+     * Two writers put files in "QuestionPaper", and they name the same
+     * directory only on a host where `php artisan storage:link` has been run.
+     * `questionpaperController::generatePDF` (and `lms:backfill-question-pdfs`)
+     * write through `public_path('storage/...')`;
+     * `LmsAssignmentApiController::uploadHomework` writes through
+     * `storeAs('public/QuestionPaper', ...)`, i.e. `storage/app/public/...`. On
+     * a developer machine the symlink exists, so both names resolve to one
+     * directory and every paper is found. On a server deployed without it they
+     * are two directories, and a reader that knows only one of them reports a
+     * present file as missing -- which is exactly why this endpoint answered
+     * "No PDF is stored for this question paper." in production while the same
+     * paper opened locally.
+     *
+     * Reading from both roots is safe in a way that writing to both would not
+     * be: what is served is still the stored original, byte for byte.
+     */
+    private static function paperRoots(): array
+    {
+        $roots = [
+            public_path('storage/QuestionPaper'),
+            storage_path('app/public/QuestionPaper'),
+        ];
+
+        // Where the symlink does exist the two paths are the same directory;
+        // keep one entry rather than stat it twice.
+        $unique = [];
+        foreach ($roots as $root) {
+            $key = is_dir($root) ? (realpath($root) ?: $root) : $root;
+            $unique[$key] = $root;
+        }
+
+        return array_values($unique);
+    }
+
+    /**
+     * Where `$filename` actually is, or null when no root holds it.
+     *
+     * The second pass is a case-insensitive scan. The name itself is built from
+     * the row's own columns so its case is fixed, but the directory it landed
+     * in was created by whichever writer got there first, and Linux -- unlike
+     * the Windows machines these papers are authored on -- distinguishes
+     * `QuestionPaper` from `questionpaper`. A file found under a differently
+     * cased name is still the stored original and is served as such.
+     */
+    private function locateStoredPaper(string $filename): ?string
+    {
+        $roots = self::paperRoots();
+
+        foreach ($roots as $root) {
+            $path = $root.DIRECTORY_SEPARATOR.$filename;
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+
+        $wanted = strtolower($filename);
+
+        foreach ($roots as $root) {
+            if (!is_dir($root)) {
+                continue;
+            }
+
+            foreach ((scandir($root) ?: []) as $entry) {
+                $path = $root.DIRECTORY_SEPARATOR.$entry;
+                if (strtolower($entry) === $wanted && is_file($path)) {
+                    return $path;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * The stored PDF of one question paper, served byte for byte.
      *
      * This is a file server and nothing else. The bytes on disk are what the
@@ -587,13 +663,17 @@ class ApiQuestionPaperController extends Controller
         // The same name the assign flow records in `lms_assignment.exam_pdf`, so
         // the file a teacher previews here is the file a student later opens.
         $filename = "{$paper->id}_{$paper->sub_institute_id}_{$paper->syear}.pdf";
-        $path = public_path('storage/QuestionPaper/'.$filename);
+        $path = $this->locateStoredPaper($filename);
 
-        if (!is_file($path)) {
+        if ($path === null) {
             return response()->json([
                 'status_code' => 0,
                 'message' => 'No PDF is stored for this question paper.',
                 'file' => 'QuestionPaper/'.$filename,
+                // Which directories were actually looked in, so a deployment
+                // that is missing the storage symlink is diagnosable from the
+                // response instead of only from a shell on the server.
+                'searched' => self::paperRoots(),
             ], 404);
         }
 
