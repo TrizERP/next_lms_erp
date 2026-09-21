@@ -93,10 +93,42 @@ class H5PContentAdapter
             'route' => '/h5p/h5p_drag_drop',
             'label' => 'H5P drag and drop',
             'h5p_type' => 'drag_and_drop',
-            // The only source with a draft state. A draft is authored work
+            // The first source with a draft state. A draft is authored work
             // in progress, not content -- surfacing it in the chapter list
             // would put it in front of students through every consumer of
             // that list at once.
+            'published_only' => true,
+        ],
+
+        // The three text-passage types share one table, so each carries a
+        // `where` discriminator. Without it all three would surface the same
+        // rows three times over, each under the wrong label and deep-linking
+        // to an editor that would 404 on the id.
+        'drag_text' => [
+            'table' => 'h5p_text_activity',
+            'title' => 'title',
+            'where' => ['content_type' => 'drag_text'],
+            'route' => '/h5p/h5p_drag_text',
+            'label' => 'H5P drag the words',
+            'h5p_type' => 'drag_text',
+            'published_only' => true,
+        ],
+        'blanks' => [
+            'table' => 'h5p_text_activity',
+            'title' => 'title',
+            'where' => ['content_type' => 'fill_in_the_blanks'],
+            'route' => '/h5p/h5p_blanks',
+            'label' => 'H5P fill in the blanks',
+            'h5p_type' => 'fill_in_the_blanks',
+            'published_only' => true,
+        ],
+        'mark_the_words' => [
+            'table' => 'h5p_text_activity',
+            'title' => 'title',
+            'where' => ['content_type' => 'mark_the_words'],
+            'route' => '/h5p/h5p_mark_the_words',
+            'label' => 'H5P mark the words',
+            'h5p_type' => 'mark_the_words',
             'published_only' => true,
         ],
     ];
@@ -141,6 +173,14 @@ class H5PContentAdapter
             $query = DB::table($spec['table'])
                 ->where('chapter_id', $chapterId)
                 ->whereIn('sub_institute_id', $tenants);
+
+            // Discriminator for a source that shares its table with its
+            // siblings -- see the three text-passage entries in SOURCES.
+            foreach ((array) ($spec['where'] ?? []) as $column => $value) {
+                if (Schema::hasColumn($spec['table'], $column)) {
+                    $query->where($column, $value);
+                }
+            }
 
             if (Schema::hasColumn($spec['table'], 'deleted_at')) {
                 $query->whereNull('deleted_at');
