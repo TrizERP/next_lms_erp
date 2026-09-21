@@ -61,18 +61,17 @@
                             @php
                                 $j = 1;
 
-                                // Long id lists blow the column out; show a few and
-                                // keep the rest in the tooltip.
-                                $shortStandards = function ($csv) {
-                                    if (empty($csv)) {
+                                // Long lists blow the column out; show the first
+                                // few names and keep the rest in the tooltip.
+                                $shortStandards = function (array $names) {
+                                    if (empty($names)) {
                                         return 'All';
                                     }
-                                    $ids = explode(',', $csv);
-                                    if (count($ids) <= 3) {
-                                        return implode(', ', $ids);
+                                    if (count($names) <= 2) {
+                                        return implode(', ', $names);
                                     }
 
-                                    return implode(', ', array_slice($ids, 0, 3)) . ' +' . (count($ids) - 3);
+                                    return implode(', ', array_slice($names, 0, 2)) . ' +' . (count($names) - 2) . ' more';
                                 };
                             @endphp
 
@@ -82,11 +81,23 @@
                                     <td>{{ $j++ }}</td>
                                     <td>{{ $row['event_label'] }}</td>
                                     <td>
-                                        <span class="label label-success">Editable</span>
+                                        @if(!empty($row['is_letter']))
+                                            <span class="label label-primary" title="Attached as a PDF letter only - never sent as the mail body">Letter</span>
+                                        @else
+                                            <span class="label label-success">Editable</span>
+                                        @endif
+                                        @if(!empty($row['attach_as_pdf']))
+                                            <span class="label label-info" title="The letter is attached as a PDF">PDF</span>
+                                        @endif
                                         {{ $row['name'] }}
                                     </td>
                                     <td>{{ $row['subject'] }}</td>
-                                    <td title="{{ $row['standard_ids'] ?: 'All' }}">{{ $shortStandards($row['standard_ids']) }}</td>
+                                    <td title="{{ !empty($row['standard_names']) ? implode(', ', $row['standard_names']) : 'All' }}">
+                                        {{ $shortStandards($row['standard_names'] ?? []) }}
+                                        @if(!empty($row['attach_as_pdf']) && empty($row['pdf_template_id']))
+                                            <small class="tpl-file">PDF letter: per {{ App\Helpers\get_string('standard','request') }}</small>
+                                        @endif
+                                    </td>
                                     <td>{{ $row['status_code'] ?: 'Any' }}</td>
                                     <td>
                                         <span class="label {{ $row['status'] ? 'label-success' : 'label-default' }}">
@@ -121,7 +132,7 @@
                                         <small class="tpl-file" title="{{ $row['file'] }}">{{ \Illuminate\Support\Str::after($row['file'], 'resources/views/') }}</small>
                                     </td>
                                     <td>{{ $row['default_subject'] }}</td>
-                                    <td title="{{ $row['standard_ids'] ?: 'All' }}">{{ $shortStandards($row['standard_ids']) }}</td>
+                                    <td title="{{ !empty($row['standard_names']) ? implode(', ', $row['standard_names']) : 'All' }}">{{ $shortStandards($row['standard_names'] ?? []) }}</td>
                                     <td>{{ !empty($row['status_codes']) ? implode(', ', $row['status_codes']) : 'Any' }}</td>
                                     <td>
                                         @if($row['overridden'])

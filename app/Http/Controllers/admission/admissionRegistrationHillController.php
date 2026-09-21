@@ -281,9 +281,17 @@ class admissionRegistrationHillController extends Controller
             'syear'            => $syear,
             'example_subject'  => $rendered['subject'],
             'content'          => $rendered['body'],
+            // Set when the template sends its letter as a PDF instead of inline.
+            'attachment_path'  => $rendered['attachment'] ?? null,
         ]);
 
-        return $this->sendEmail($emailRequest);
+        try {
+            return $this->sendEmail($emailRequest);
+        } finally {
+            if (!empty($rendered['attachment']) && is_file($rendered['attachment'])) {
+                @unlink($rendered['attachment']);
+            }
+        }
     }
 
     private function studentName(array $data): string
@@ -404,6 +412,11 @@ class admissionRegistrationHillController extends Controller
         if ($path != "") {
             $filePath = storage_path()."/app/".$path;
             $path = $filePath;
+        }
+
+        // A template that sends its letter as a PDF passes an absolute path.
+        if ($path == "" && $request->filled('attachment_path') && is_file($request->get('attachment_path'))) {
+            $path = $request->get('attachment_path');
         }
 
         $where_arr = [
