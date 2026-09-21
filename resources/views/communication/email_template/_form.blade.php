@@ -157,7 +157,7 @@
     <div class="col-md-4 form-group pdf-option">
         <label>PDF File Name</label>
         <input type="text" name="pdf_filename" class="form-control"
-               value="{{ old('pdf_filename', $template['pdf_filename'] ?? 'Admission_Letter_<< enquiry_no >>.pdf') }}">
+               value="{{ old('pdf_filename', $template['pdf_filename'] ?? 'Admission Confirmation.pdf') }}">
         <small class="text-muted">Placeholders work here too.</small>
     </div>
 </div>

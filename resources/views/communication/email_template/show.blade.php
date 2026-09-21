@@ -108,6 +108,13 @@
                                         <a href="{{ route('email_template.edit', $row['id']) }}" class="btn btn-info btn-outline" title="Edit">
                                             <i class="fa fa-pencil"></i>
                                         </a>
+                                        @if(!empty($row['attach_as_pdf']) || !empty($row['is_letter']))
+                                            <a href="{{ route('email_template.preview_pdf', $row['id']) }}" target="_blank"
+                                               class="btn btn-warning btn-outline"
+                                               title="Open the PDF exactly as it will be attached">
+                                                <i class="fa fa-file-pdf-o"></i>
+                                            </a>
+                                        @endif
                                         <form action="{{ route('email_template.destroy', $row['id']) }}" method="post" class="d-inline">
                                             @csrf
                                             @method('DELETE')
