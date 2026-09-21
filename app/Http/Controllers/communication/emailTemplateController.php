@@ -547,11 +547,15 @@ class emailTemplateController extends Controller
      */
     private function normalizeTokens($value): string
     {
-        return str_replace(
+        $value = str_replace(
             ['&lt;&lt;', '&gt;&gt;', '&amp;lt;&amp;lt;', '&amp;gt;&amp;gt;'],
             ['<<', '>>', '<<', '>>'],
             (string) $value
         );
+
+        // The editor treats a placeholder as code and wraps it in a monospace
+        // tag, which the merged value would then inherit in the sent mail.
+        return EmailTemplateService::stripPlaceholderFormatting($value);
     }
 
     private function normalizeStandardIds($value): ?string
