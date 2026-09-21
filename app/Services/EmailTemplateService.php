@@ -563,6 +563,39 @@ class EmailTemplateService
         }
     }
 
+    /**
+     * Remove monospace wrapping a rich-text editor puts around a placeholder.
+     *
+     * Typing "<< session >>" into the WYSIWYG makes it look like code, so the
+     * editor wraps it in <code>/<tt>/a monospace span. The merged value then
+     * inherits that font and the word lands in the mail in a different typeface
+     * from the sentence around it.
+     */
+    public static function stripPlaceholderFormatting(?string $html): string
+    {
+        if ($html === null || $html === '') {
+            return '';
+        }
+
+        $open = preg_quote(config('email_templates.placeholder_open', '<<'), '/');
+        $close = preg_quote(config('email_templates.placeholder_close', '>>'), '/');
+        $token = $open . '\s*[a-zA-Z0-9_\.]+\s*(?:\|[^>|]*?)?\s*' . $close;
+
+        // <code>, <tt>, <samp>, <kbd>, <pre> holding nothing but a placeholder.
+        $html = preg_replace(
+            '/<(code|tt|samp|kbd|pre)\b[^>]*>\s*(' . $token . ')\s*<\/\1>/i',
+            '$2',
+            $html
+        );
+
+        // <span style="font-family: monospace"> holding nothing but a placeholder.
+        return preg_replace(
+            '/<span\b[^>]*font-family\s*:\s*[^;"\']*mono[^>]*>\s*(' . $token . ')\s*<\/span>/i',
+            '$1',
+            $html
+        );
+    }
+
     public static function wrap(string $key): string
     {
         return config('email_templates.placeholder_open', '<<') . ' ' . $key . ' ' . config('email_templates.placeholder_close', '>>');
