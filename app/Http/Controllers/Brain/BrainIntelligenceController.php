@@ -333,6 +333,53 @@ class BrainIntelligenceController extends Controller
     }
 
     /**
+     * The noun the originating finding measured itself in.
+     *
+     * `ModuleSignalBridge` carries each module's own impact label on the
+     * signal's metadata — "students", "arrangements", "titles" — because Fees
+     * measures impact in rupees and no other module does. Hard-coding INR here
+     * was correct while Fees was the only module whose findings reached an
+     * outcome; it now labels a transport outcome measured in vehicles as a
+     * balance in rupees, which is the unit confusion `payload.ts` exists to
+     * prevent.
+     *
+     * Returns null when the signal named no unit. A guessed noun is worse than
+     * none, and the caller words the basis without one.
+     */
+    private function measuredUnitFor(string $tenant, string $decisionId): ?string
+    {
+        if ($decisionId === '' || ! SchemaCache::hasTable('hpbrain_signals')) {
+            return null;
+        }
+
+        $metadata = DB::table('hpbrain_decisions as d')
+            ->join('hpbrain_recommendations as r', 'r.id', '=', 'd.recommendation_id')
+            ->join('hpbrain_reasoning_steps as s', 's.id', '=', 'r.reasoning_step_id')
+            ->join('hpbrain_signals as sg', 'sg.id', '=', 's.signal_id')
+            ->where('d.tenant_id', $tenant)
+            ->where('d.id', $decisionId)
+            ->value('sg.metadata');
+
+        if ($metadata === null) {
+            return null;
+        }
+
+        $decoded = json_decode((string) $metadata, true);
+        if (! is_array($decoded)) {
+            return null;
+        }
+
+        // A module finding names its own noun; a fee finding carries an amount
+        // and is measured in rupees.
+        $label = $decoded['impactLabel'] ?? null;
+        if (is_string($label) && trim($label) !== '') {
+            return trim($label);
+        }
+
+        return isset($decoded['impactAmount']) ? 'INR' : null;
+    }
+
+    /**
      * Report back on an authorised execution, and capture the outcome.
      *
      * The outcome is what closes the loop: hpbrain_outcomes is what a later run
@@ -394,6 +441,12 @@ class BrainIntelligenceController extends Controller
              * figure is missing the delta is NULL rather than zero, because
              * "not measured" and "no change" are different outcomes.
              */
+            // The noun the originating finding measured itself in — "students",
+            // "arrangements", "titles" — carried on the signal's metadata by
+            // ModuleSignalBridge, or the fee module's rupees where it came from
+            // there.
+            $measuredUnit = $this->measuredUnitFor($tenant, (string) $execution->decision_id);
+
             $before = $request->input('measured_before');
             $after = $request->input('measured_after');
             $measured = is_numeric($before) && is_numeric($after);
@@ -404,8 +457,17 @@ class BrainIntelligenceController extends Controller
                 'accountsAffected' => $request->filled('accounts_affected')
                     ? (int) $request->input('accounts_affected')
                     : null,
-                'unit' => 'INR',
-                'basis' => 'Outstanding balance recorded by the person reporting the outcome.',
+                // The unit and the wording follow the SIGNAL'S OWN module.
+                // Hard-coding rupees and "outstanding balance" was correct while
+                // Fees was the only module that reached an outcome; it now
+                // labels a transport outcome measured in vehicles as a balance
+                // in INR, which is the unit confusion `payload.ts` exists to
+                // prevent. Null where the signal did not name a unit, because a
+                // guessed noun is worse than none.
+                'unit' => $measuredUnit,
+                'basis' => $measuredUnit === null
+                    ? 'Recorded by the person reporting the outcome.'
+                    : 'Change in '.$measuredUnit.', recorded by the person reporting the outcome.',
             ];
 
             DB::table('hpbrain_outcomes')->insert(SchemaCache::only('hpbrain_outcomes', [

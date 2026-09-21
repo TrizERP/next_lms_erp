@@ -81,9 +81,14 @@ abstract class AbstractMenuCategoryApiController extends Controller
      * configuration tables only say where a menu belongs, never whether it is
      * allowed to be seen.
      *
+     * `protected` rather than `private` so ModuleMenuCategoryApiController —
+     * which serves the same feed for a module named in the request rather than
+     * in a subclass — reuses this exact query instead of carrying a third copy
+     * of the rights join. Behaviour is unchanged for Fees and Teach/Learn.
+     *
      * @return array<string,list<array{id:int,label:string,link:string}>>
      */
-    private function visibleItemsByCategory(string $subInstituteId, string $userId, string $userProfileName): array
+    protected function visibleItemsByCategory(string $subInstituteId, string $userId, string $userProfileName): array
     {
         $permittedMenuIds = $this->permittedMenuIds($subInstituteId, $userId, $userProfileName);
         if ($permittedMenuIds === []) {
@@ -121,9 +126,11 @@ abstract class AbstractMenuCategoryApiController extends Controller
      * that controller stays untouched. Students resolve through tblstudent,
      * every other profile through tbluser, exactly as it does.
      *
+     * `protected` for the same reason as visibleItemsByCategory() above.
+     *
      * @return list<int>
      */
-    private function permittedMenuIds(string $subInstituteId, string $userId, string $userProfileName): array
+    protected function permittedMenuIds(string $subInstituteId, string $userId, string $userProfileName): array
     {
         $isStudent = strtolower(trim($userProfileName)) === 'student';
         $userTable = $isStudent ? 'tblstudent' : 'tbluser';

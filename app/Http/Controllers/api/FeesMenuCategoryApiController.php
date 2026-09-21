@@ -123,7 +123,7 @@ class FeesMenuCategoryApiController extends AbstractMenuCategoryApiController
      *
      * @return array<string,list<array{id:int,label:string,link:string}>>
      */
-    private function visibleItemsByCategory(
+    protected function visibleItemsByCategory(
         string $subInstituteId,
         string $userId,
         string $userProfileName,
@@ -171,7 +171,7 @@ class FeesMenuCategoryApiController extends AbstractMenuCategoryApiController
      *
      * @return list<int>
      */
-    private function permittedMenuIds(string $subInstituteId, string $userId, string $userProfileName): array
+    protected function permittedMenuIds(string $subInstituteId, string $userId, string $userProfileName): array
     {
         $isStudent = strtolower(trim($userProfileName)) === 'student';
         $userTable = $isStudent ? 'tblstudent' : 'tbluser';
