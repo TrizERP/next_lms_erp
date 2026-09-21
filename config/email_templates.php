@@ -43,10 +43,16 @@ return [
             'module'          => 'admission',
             'default_subject' => 'ADMISSION PROCEDURE',
             'status_codes'    => ['C', 'C/A'],
+            // Lets one template serve both statuses: << session >> resolves to
+            // the right word, so C and C/A share a single editable layout.
+            'status_labels'   => [
+                'session' => ['C' => 'Morning', 'C/A' => 'Afternoon'],
+            ],
             'placeholders'    => [
                 'aca_year'      => 'Academic year, e.g. 2025-26',
                 'conf_date'     => 'Confirmation date',
                 'conf'          => 'Confirmation status code',
+                'session'       => 'Morning for C, Afternoon for C/A - use this to share one template across both',
                 'parent_time'   => 'Reporting time / time window',
                 'admission_std' => 'Standard name',
                 'medium'        => 'Standard medium',
