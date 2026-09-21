@@ -59,6 +59,9 @@ use App\Http\Controllers\lms\h5p\H5PIndexController;
 use App\Http\Controllers\lms\h5p\H5PScenarioController;
 use App\Http\Controllers\lms\h5p\H5PMCQController;
 use App\Http\Controllers\lms\h5p\H5PInteractiveVideoController;
+use App\Http\Controllers\lms\h5p\H5PBlanksController;
+use App\Http\Controllers\lms\h5p\H5PDragTextController;
+use App\Http\Controllers\lms\h5p\H5PMarkTheWordsController;
 use App\Http\Controllers\lms\h5p\H5pFlashcardController;
 use App\Http\Controllers\lms\h5p\H5PDragDropController;
 use App\Http\Controllers\lms\nextAPI\chapterMasterController;
@@ -398,6 +401,32 @@ Route::prefix('h5p')->middleware(['session', 'menu', 'logRoute', 'check_permissi
     Route::post('h5p_drag_drop/{id}/publish', [H5PDragDropController::class, 'publish'])
         ->whereNumber('id')->name('h5p_drag_drop.publish');
     Route::resource('h5p_drag_drop', H5PDragDropController::class);
+
+    // Text-passage types: Drag the Words, Fill in the Blanks, Mark the Words.
+    //
+    // Same ordering rule as drag and drop above -- the non-id routes are
+    // declared BEFORE each resource, or the resource's `show`
+    // (GET <prefix>/{id}) swallows `import` and `media` as ids named
+    // "import" and "media".
+    //
+    // The three families point at three ten-line subclasses of one controller;
+    // they are separate route names because each is its own list, its own
+    // library and its own card on the H5P hub.
+    foreach ([
+        'h5p_drag_text' => H5PDragTextController::class,
+        'h5p_blanks' => H5PBlanksController::class,
+        'h5p_mark_the_words' => H5PMarkTheWordsController::class,
+    ] as $prefix => $controller) {
+        Route::post($prefix . '/import', [$controller, 'import'])->name($prefix . '.import');
+        Route::post($prefix . '/media', [$controller, 'media'])->name($prefix . '.media');
+        Route::get($prefix . '/{id}/export', [$controller, 'export'])
+            ->whereNumber('id')->name($prefix . '.export');
+        Route::post($prefix . '/{id}/publish', [$controller, 'publish'])
+            ->whereNumber('id')->name($prefix . '.publish');
+        Route::post($prefix . '/{id}/duplicate', [$controller, 'duplicate'])
+            ->whereNumber('id')->name($prefix . '.duplicate');
+        Route::resource($prefix, $controller);
+    }
 });
 Route::post('get-h5p-ai-output', [H5PIndexController::class, 'getH5pAIOutput'])->name('get-h5p-ai-output');
 Route::post('get-h5p-ai-scenario', [H5PScenarioController::class, 'getH5pAIScenario'])->name('get-h5p-ai-scenario');

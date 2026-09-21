@@ -11,8 +11,9 @@
 | the H5P PHP framework (h5p/h5p-core) or the H5P JS player -- neither is in
 | composer.json or package.json, and no h5p_libraries / h5p_contents tables
 | exist. Every "H5P" type this platform ships (image hotspot, interactive
-| video, flash cards, multiple choice, and now drag and drop) is a native
-| implementation over its own tables, rendered by this product's own player.
+| video, flash cards, multiple choice, drag and drop, and now the three
+| text-passage types -- drag the words, fill in the blanks, mark the words) is
+| a native implementation over its own tables, rendered by this product's own player.
 |
 | What this registry is FOR is interoperability at the file boundary:
 |
@@ -73,6 +74,91 @@ return [
             ],
         ],
 
+
+        /*
+        | The three text-passage types below share a storage model and a
+        | builder (H5PTextActivityBuilder), because H5P itself stores all
+        | three the same way: one passage string carrying inline `*answer*`
+        | markup. They are separate libraries all the same -- a host resolves
+        | H5P.Blanks and H5P.DragText independently -- so each declares its
+        | own closure here rather than sharing one.
+        */
+
+        'drag_text' => [
+            'machine_name' => 'H5P.DragText',
+            'title' => 'Drag the Words',
+            'major_version' => 1,
+            'minor_version' => 10,
+            'patch_version' => 17,
+            'runnable' => 1,
+            'embed_types' => ['div'],
+            'license' => 'MIT',
+
+            // Transitive closure, as H5P.DragText 1.10 declares it.
+            'dependencies' => [
+                ['machineName' => 'jQuery.ui', 'majorVersion' => 1, 'minorVersion' => 10],
+                ['machineName' => 'H5P.Question', 'majorVersion' => 1, 'minorVersion' => 5],
+                ['machineName' => 'H5P.JoubelUI', 'majorVersion' => 1, 'minorVersion' => 3],
+                ['machineName' => 'H5P.Transition', 'majorVersion' => 1, 'minorVersion' => 0],
+                ['machineName' => 'H5P.TextUtilities', 'majorVersion' => 1, 'minorVersion' => 3],
+                ['machineName' => 'FontAwesome', 'majorVersion' => 4, 'minorVersion' => 5],
+            ],
+
+            'editor_dependencies' => [
+                ['machineName' => 'H5PEditor.RangeList', 'majorVersion' => 1, 'minorVersion' => 0],
+                ['machineName' => 'H5PEditor.VerticalTabs', 'majorVersion' => 1, 'minorVersion' => 3],
+            ],
+        ],
+
+        'fill_in_the_blanks' => [
+            'machine_name' => 'H5P.Blanks',
+            'title' => 'Fill in the Blanks',
+            'major_version' => 1,
+            'minor_version' => 14,
+            'patch_version' => 11,
+            'runnable' => 1,
+            'embed_types' => ['div'],
+            'license' => 'MIT',
+
+            // Transitive closure, as H5P.Blanks 1.14 declares it.
+            'dependencies' => [
+                ['machineName' => 'H5P.Question', 'majorVersion' => 1, 'minorVersion' => 5],
+                ['machineName' => 'H5P.JoubelUI', 'majorVersion' => 1, 'minorVersion' => 3],
+                ['machineName' => 'H5P.Transition', 'majorVersion' => 1, 'minorVersion' => 0],
+                ['machineName' => 'H5P.TextUtilities', 'majorVersion' => 1, 'minorVersion' => 3],
+                ['machineName' => 'FontAwesome', 'majorVersion' => 4, 'minorVersion' => 5],
+            ],
+
+            'editor_dependencies' => [
+                ['machineName' => 'H5PEditor.RangeList', 'majorVersion' => 1, 'minorVersion' => 0],
+                ['machineName' => 'H5PEditor.VerticalTabs', 'majorVersion' => 1, 'minorVersion' => 3],
+            ],
+        ],
+
+        'mark_the_words' => [
+            'machine_name' => 'H5P.MarkTheWords',
+            'title' => 'Mark the Words',
+            'major_version' => 1,
+            'minor_version' => 11,
+            'patch_version' => 11,
+            'runnable' => 1,
+            'embed_types' => ['div'],
+            'license' => 'MIT',
+
+            // Transitive closure, as H5P.MarkTheWords 1.11 declares it.
+            'dependencies' => [
+                ['machineName' => 'H5P.Question', 'majorVersion' => 1, 'minorVersion' => 5],
+                ['machineName' => 'H5P.JoubelUI', 'majorVersion' => 1, 'minorVersion' => 3],
+                ['machineName' => 'H5P.Transition', 'majorVersion' => 1, 'minorVersion' => 0],
+                ['machineName' => 'H5P.TextUtilities', 'majorVersion' => 1, 'minorVersion' => 3],
+                ['machineName' => 'FontAwesome', 'majorVersion' => 4, 'minorVersion' => 5],
+            ],
+
+            'editor_dependencies' => [
+                ['machineName' => 'H5PEditor.RangeList', 'majorVersion' => 1, 'minorVersion' => 0],
+                ['machineName' => 'H5PEditor.VerticalTabs', 'majorVersion' => 1, 'minorVersion' => 3],
+            ],
+        ],
     ],
 
     /*
@@ -88,7 +174,7 @@ return [
         'language' => 'en',
         'default_license' => 'U',      // Undisclosed -- the H5P default
         'author_role' => 'Author',
-        'extra_title_fallback' => 'Untitled drag and drop',
+        'extra_title_fallback' => 'Untitled activity',
     ],
 
     /*
