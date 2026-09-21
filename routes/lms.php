@@ -64,6 +64,10 @@ use App\Http\Controllers\lms\h5p\H5PDragTextController;
 use App\Http\Controllers\lms\h5p\H5PMarkTheWordsController;
 use App\Http\Controllers\lms\h5p\H5pFlashcardController;
 use App\Http\Controllers\lms\h5p\H5PDragDropController;
+use App\Http\Controllers\lms\h5p\H5PImageHotspotsController;
+use App\Http\Controllers\lms\h5p\H5PMemoryGameController;
+use App\Http\Controllers\lms\h5p\H5PCoursePresentationController;
+use App\Http\Controllers\lms\h5p\H5PArithmeticQuizController;
 use App\Http\Controllers\lms\nextAPI\chapterMasterController;
 use App\Http\Controllers\lms\nextAPI\lmsCurriculumController as newCurricuumController;
 
@@ -459,6 +463,44 @@ Route::prefix('h5p')->middleware(['session', 'menu', 'logRoute', 'check_permissi
             ->whereNumber('id')->name($prefix . '.publish');
         Route::post($prefix . '/{id}/duplicate', [$controller, 'duplicate'])
             ->whereNumber('id')->name($prefix . '.duplicate');
+        Route::resource($prefix, $controller);
+    }
+
+    /*
+    | 2026-09-21 vertical: Image Hotspots, Memory Game, Course Presentation,
+    | Arithmetic Quiz.
+    |
+    | Same ordering rule as every H5P type above -- the non-id routes are
+    | declared BEFORE each resource, or the resource's `show`
+    | (GET <prefix>/{id}) swallows `import` and `media` as ids named
+    | "import" and "media".
+    |
+    | All four share H5PContentTypeController, so the route SHAPE is identical
+    | and is written once. `media` is the one exception: an arithmetic quiz
+    | has no media, so routing an upload endpoint for it would advertise a
+    | capability the controller refuses.
+    */
+    foreach ([
+        'h5p_image_hotspots' => [H5PImageHotspotsController::class, 'media' => true],
+        'h5p_memory_game' => [H5PMemoryGameController::class, 'media' => true],
+        'h5p_course_presentation' => [H5PCoursePresentationController::class, 'media' => true],
+        'h5p_arithmetic_quiz' => [H5PArithmeticQuizController::class, 'media' => false],
+    ] as $prefix => $spec) {
+        $controller = $spec[0];
+
+        Route::post($prefix . '/import', [$controller, 'import'])->name($prefix . '.import');
+
+        if ($spec['media']) {
+            Route::post($prefix . '/media', [$controller, 'media'])->name($prefix . '.media');
+        }
+
+        Route::get($prefix . '/{id}/export', [$controller, 'export'])
+            ->whereNumber('id')->name($prefix . '.export');
+        Route::post($prefix . '/{id}/publish', [$controller, 'publish'])
+            ->whereNumber('id')->name($prefix . '.publish');
+        Route::post($prefix . '/{id}/duplicate', [$controller, 'duplicate'])
+            ->whereNumber('id')->name($prefix . '.duplicate');
+
         Route::resource($prefix, $controller);
     }
 });

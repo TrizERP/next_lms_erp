@@ -159,6 +159,143 @@ return [
                 ['machineName' => 'H5PEditor.VerticalTabs', 'majorVersion' => 1, 'minorVersion' => 3],
             ],
         ],
+        /*
+        | ---------------------------------------------------------------
+        | 2026-09-21 vertical: Image Hotspots, Memory Game, Course
+        | Presentation, Arithmetic Quiz.
+        | ---------------------------------------------------------------
+        |
+        | VERSIONS ARE MANIFEST CLAIMS, NOT INSTALLED CODE. Nothing in this
+        | repository loads these libraries -- see this file's header. The
+        | numbers below are the closures the official library.json files
+        | declare at the versions named, and they are what an exported
+        | package asks an importing host to resolve. When H5P ships a new
+        | minor, this is the one place to bump.
+        */
+
+        'image_hotspots' => [
+            'machine_name' => 'H5P.ImageHotspots',
+            'title' => 'Image Hotspots',
+            'major_version' => 1,
+            'minor_version' => 10,
+            'patch_version' => 6,
+            'runnable' => 1,
+            'embed_types' => ['div'],
+            'license' => 'MIT',
+
+            // H5P.ImageHotspots renders each popup through a sub-content
+            // library, which is why H5P.Image / H5P.AdvancedText / H5P.Video
+            // are dependencies and not optional: a "rich content" hotspot IS
+            // one of those libraries nested in the hotspot's `action`.
+            'dependencies' => [
+                ['machineName' => 'FontAwesome', 'majorVersion' => 4, 'minorVersion' => 5],
+                ['machineName' => 'H5P.Image', 'majorVersion' => 1, 'minorVersion' => 1],
+                ['machineName' => 'H5P.AdvancedText', 'majorVersion' => 1, 'minorVersion' => 1],
+                ['machineName' => 'H5P.Video', 'majorVersion' => 1, 'minorVersion' => 6],
+            ],
+
+            'editor_dependencies' => [
+                ['machineName' => 'H5PEditor.VerticalTabs', 'majorVersion' => 1, 'minorVersion' => 3],
+                ['machineName' => 'H5PEditor.ImageCoordinateSelector', 'majorVersion' => 1, 'minorVersion' => 0],
+            ],
+        ],
+
+        'memory_game' => [
+            'machine_name' => 'H5P.MemoryGame',
+            'title' => 'Memory Game',
+            'major_version' => 1,
+            'minor_version' => 3,
+            'patch_version' => 22,
+            'runnable' => 1,
+            'embed_types' => ['div'],
+            'license' => 'MIT',
+
+            'dependencies' => [
+                ['machineName' => 'H5P.JoubelUI', 'majorVersion' => 1, 'minorVersion' => 3],
+                ['machineName' => 'H5P.Transition', 'majorVersion' => 1, 'minorVersion' => 0],
+                ['machineName' => 'FontAwesome', 'majorVersion' => 4, 'minorVersion' => 5],
+            ],
+
+            'editor_dependencies' => [
+                ['machineName' => 'H5PEditor.VerticalTabs', 'majorVersion' => 1, 'minorVersion' => 3],
+            ],
+        ],
+
+        'course_presentation' => [
+            'machine_name' => 'H5P.CoursePresentation',
+            'title' => 'Course Presentation',
+            'major_version' => 1,
+            'minor_version' => 25,
+            'patch_version' => 9,
+            'runnable' => 1,
+            'embed_types' => ['div'],
+            'license' => 'MIT',
+
+            /*
+            | A Course Presentation is a CONTAINER: every slide element is a
+            | nested library, so the closure has to carry the libraries this
+            | product's authoring UI can place on a slide, not just the ones
+            | the shell needs to boot. Drop one of these and an importing host
+            | resolves the deck but renders an empty box where the question was.
+            |
+            | The interaction libraries below are exactly the ones the slide
+            | editor offers, so this list and H5PCoursePresentationBuilder's
+            | element map are two views of one decision.
+            */
+            'dependencies' => [
+                // Shell.
+                ['machineName' => 'jQuery.ui', 'majorVersion' => 1, 'minorVersion' => 10],
+                ['machineName' => 'H5P.JoubelUI', 'majorVersion' => 1, 'minorVersion' => 3],
+                ['machineName' => 'H5P.Transition', 'majorVersion' => 1, 'minorVersion' => 0],
+                ['machineName' => 'H5P.FontIcons', 'majorVersion' => 1, 'minorVersion' => 0],
+                // The library a 'go to slide' element declares. It is part of
+                // the deck's navigation, not of a slide's content, which is why
+                // it sits with the shell rather than the interactions.
+                ['machineName' => 'H5P.GoToSlide', 'majorVersion' => 1, 'minorVersion' => 3],
+                ['machineName' => 'FontAwesome', 'majorVersion' => 4, 'minorVersion' => 5],
+
+                // Static slide elements.
+                ['machineName' => 'H5P.AdvancedText', 'majorVersion' => 1, 'minorVersion' => 1],
+                ['machineName' => 'H5P.Image', 'majorVersion' => 1, 'minorVersion' => 1],
+                ['machineName' => 'H5P.Video', 'majorVersion' => 1, 'minorVersion' => 6],
+                ['machineName' => 'H5P.Audio', 'majorVersion' => 1, 'minorVersion' => 5],
+
+                // Interactive slide elements.
+                ['machineName' => 'H5P.Question', 'majorVersion' => 1, 'minorVersion' => 5],
+                ['machineName' => 'H5P.MultiChoice', 'majorVersion' => 1, 'minorVersion' => 16],
+                ['machineName' => 'H5P.TrueFalse', 'majorVersion' => 1, 'minorVersion' => 8],
+                ['machineName' => 'H5P.Blanks', 'majorVersion' => 1, 'minorVersion' => 14],
+                ['machineName' => 'H5P.DragQuestion', 'majorVersion' => 1, 'minorVersion' => 14],
+            ],
+
+            'editor_dependencies' => [
+                ['machineName' => 'H5PEditor.CoursePresentation', 'majorVersion' => 1, 'minorVersion' => 25],
+                ['machineName' => 'H5PEditor.VerticalTabs', 'majorVersion' => 1, 'minorVersion' => 3],
+                ['machineName' => 'H5PEditor.Wizard', 'majorVersion' => 1, 'minorVersion' => 2],
+            ],
+        ],
+
+        'arithmetic_quiz' => [
+            'machine_name' => 'H5P.ArithmeticQuiz',
+            'title' => 'Arithmetic Quiz',
+            'major_version' => 1,
+            'minor_version' => 1,
+            'patch_version' => 20,
+            'runnable' => 1,
+            'embed_types' => ['div'],
+            'license' => 'MIT',
+
+            'dependencies' => [
+                ['machineName' => 'H5P.JoubelUI', 'majorVersion' => 1, 'minorVersion' => 3],
+                ['machineName' => 'H5P.Transition', 'majorVersion' => 1, 'minorVersion' => 0],
+                ['machineName' => 'H5P.Timer', 'majorVersion' => 0, 'minorVersion' => 4],
+                ['machineName' => 'FontAwesome', 'majorVersion' => 4, 'minorVersion' => 5],
+            ],
+
+            'editor_dependencies' => [
+                ['machineName' => 'H5PEditor.VerticalTabs', 'majorVersion' => 1, 'minorVersion' => 3],
+            ],
+        ],
     ],
 
     /*

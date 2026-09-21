@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\lms\questionpaperController;
 use App\Models\lms\answermasterModel;
 use App\Models\lms\lmsmappingtypeModel;
 use App\Models\lms\lmsQuestionMappingModel;
@@ -14,6 +15,7 @@ use App\Models\student\tblstudentEnrollmentModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ApiQuestionPaperController extends Controller
 {
@@ -222,6 +224,28 @@ class ApiQuestionPaperController extends Controller
         ];
 
         $questionpaper_id = questionpaperModel::insertGetId($questionpaper);
+
+        // Render and store the paper's PDF, exactly as the legacy web create
+        // flow does. This is the step that brings the stored original into
+        // existence: a paper is authored from its question rows, rendered once
+        // here, and from then on that file *is* the paper -- what a teacher
+        // previews, what a student opens, and what `lms_assignment.exam_pdf`
+        // points at. Without it the row is created with a well-formed PDF name
+        // and no file behind it, so every screen that offers the paper hands out
+        // a dead link; that is why papers created through this API since the
+        // Next frontend took over have none.
+        //
+        // Wrapped, and only logged, for the same reason the web flow wraps it:
+        // a paper the teacher has just authored must not be lost because the
+        // renderer failed. `lms:backfill-question-pdfs` can fill a gap later.
+        try {
+            (new questionpaperController())->generatePDF([
+                'sub_institute_id' => $sub_institute_id,
+                'syear' => $syear,
+            ], $questionpaper_id);
+        } catch (\Throwable $e) {
+            Log::error("ApiQuestionPaperController::store PDF generation failed for paper {$questionpaper_id}: {$e->getMessage()}");
+        }
 
         return response()->json([
             'status_code' => 1,
@@ -527,5 +551,58 @@ class ApiQuestionPaperController extends Controller
             'status_code' => 1,
             'data' => $mapping_types
         ], 200);
+    }
+
+    /**
+     * The stored PDF of one question paper, served byte for byte.
+     *
+     * This is a file server and nothing else. The bytes on disk are what the
+     * caller receives -- no re-render, no conversion, no compression, no
+     * substitution -- so whatever images, tables, signatures or handwriting the
+     * stored file carries arrive exactly as they were saved. A paper whose file
+     * is missing says so; it is never stood in for by a freshly rendered one,
+     * because a paper rebuilt from the question rows is a different document
+     * that merely looks plausible.
+     *
+     * It exists rather than a bare link to `/storage/QuestionPaper/<name>` for
+     * two reasons, neither of which touches the bytes: `lms-assignment/exam-papers`
+     * derives that name from the row's own columns whether or not a file was ever
+     * saved, so the raw path answers a missing file with Laravel's styled HTML 404
+     * page -- which, inside a viewer, reads as a corrupt PDF rather than an absent
+     * one; and the explicit `application/pdf` + `inline` headers are what let a
+     * browser's own viewer open it in place, with its zoom and download controls,
+     * instead of prompting a download.
+     */
+    public function pdf(Request $request, $id)
+    {
+        $paper = questionpaperModel::find($id);
+
+        if (!$paper) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'Question paper not found.',
+            ], 404);
+        }
+
+        // The same name the assign flow records in `lms_assignment.exam_pdf`, so
+        // the file a teacher previews here is the file a student later opens.
+        $filename = "{$paper->id}_{$paper->sub_institute_id}_{$paper->syear}.pdf";
+        $path = public_path('storage/QuestionPaper/'.$filename);
+
+        if (!is_file($path)) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'No PDF is stored for this question paper.',
+                'file' => 'QuestionPaper/'.$filename,
+            ], 404);
+        }
+
+        // Symfony's BinaryFileResponse streams the file untouched and honours
+        // Range requests, which is what lets a viewer page through a large
+        // paper instead of waiting for the whole of it.
+        return response()->file($path, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$filename.'"',
+        ]);
     }
 }

@@ -405,6 +405,10 @@ Route::controller(admissionRegistrationAPIController::class)->group(function () 
 });
 
 
+// Declared before the apiResource so the two-segment PDF route is read on its
+// own terms rather than as a `show` with an odd id. Serves the paper's offline
+// PDF, rendering it on demand when the file was never generated.
+Route::get('question-paper/{id}/pdf', [ApiQuestionPaperController::class, 'pdf']);
 Route::apiResource('question-paper', ApiQuestionPaperController::class);
 Route::apiResource('class-teachers', ClassTeacherApiController::class)->except(['show']);
 Route::get('user-logs/bootstrap', [UserLogReportApiController::class, 'bootstrap']);
