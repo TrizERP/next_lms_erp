@@ -174,6 +174,35 @@ class H5PContentAdapter
             'h5p_type' => 'arithmetic_quiz',
             'published_only' => true,
         ],
+
+        /*
+        | 2026-09-21, second vertical. Both have their own table, so neither
+        | needs a `where` discriminator, and both are `published_only` for the
+        | reason the block above gives: a draft is authored work in progress,
+        | and this list is read by every student-facing surface at once.
+        |
+        | This is the whole of the LMS integration for these two types. A
+        | course, lesson, topic, homework, worksheet or assessment picks its
+        | content from `forChapter()`, so appearing here is what makes them
+        | assignable -- there is no per-consumer registration to do and none
+        | was added.
+        */
+        'single_choice_set' => [
+            'table' => 'h5p_single_choice_set',
+            'title' => 'title',
+            'route' => '/h5p/h5p_single_choice_set',
+            'label' => 'H5P single choice set',
+            'h5p_type' => 'single_choice_set',
+            'published_only' => true,
+        ],
+        'true_false' => [
+            'table' => 'h5p_true_false',
+            'title' => 'title',
+            'route' => '/h5p/h5p_true_false',
+            'label' => 'H5P true or false',
+            'h5p_type' => 'true_false',
+            'published_only' => true,
+        ],
     ];
 
     /**

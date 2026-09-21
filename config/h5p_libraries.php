@@ -296,6 +296,92 @@ return [
                 ['machineName' => 'H5PEditor.VerticalTabs', 'majorVersion' => 1, 'minorVersion' => 3],
             ],
         ],
+
+        /*
+        | ---------------------------------------------------------------
+        | 2026-09-21, second vertical: Single Choice Set, True/False.
+        | ---------------------------------------------------------------
+        |
+        | Both are QUESTION libraries, which is why their closures are
+        | shorter than the container types above: neither nests another
+        | library, so there is no per-element list to keep in step with an
+        | editor's element map. What they do carry is H5P.Question -- the
+        | shared question shell every scored H5P type builds on, providing
+        | the check / retry / show-solution buttons, the score bar and the
+        | feedback area.
+        |
+        | H5P.TrueFalse additionally declares H5P.Image, H5P.Video and
+        | H5P.Audio because its optional `media` slot IS one of those
+        | libraries nested above the statement. Drop them and an importing
+        | host renders the statement with an empty box where the diagram
+        | was, which is worse than no diagram because the question usually
+        | refers to it.
+        |
+        | H5P.TrueFalse 1.8 is ALREADY in the course presentation closure
+        | above, as a slide element. That is not duplication to remove: a
+        | deck asks a host to resolve it as a SUB-library, this entry asks a
+        | host to resolve it as the MAIN one. The version numbers are
+        | deliberately the same, and if one moves the other belongs in the
+        | same edit.
+        */
+
+        'single_choice_set' => [
+            'machine_name' => 'H5P.SingleChoiceSet',
+            'title' => 'Single Choice Set',
+            'major_version' => 1,
+            'minor_version' => 11,
+            'patch_version' => 20,
+            'runnable' => 1,
+            'embed_types' => ['div'],
+            'license' => 'MIT',
+
+            /*
+            | Transitive closure, as H5P.SingleChoiceSet 1.11 declares it.
+            |
+            | H5P.SoundJS is NOT optional despite sound effects being off by
+            | default here: the library loads it to boot, and a host without
+            | it fails to resolve the package rather than running it silent.
+            */
+            'dependencies' => [
+                ['machineName' => 'H5P.JoubelUI', 'majorVersion' => 1, 'minorVersion' => 3],
+                ['machineName' => 'H5P.Question', 'majorVersion' => 1, 'minorVersion' => 5],
+                ['machineName' => 'H5P.Transition', 'majorVersion' => 1, 'minorVersion' => 0],
+                ['machineName' => 'H5P.SoundJS', 'majorVersion' => 1, 'minorVersion' => 0],
+                ['machineName' => 'FontAwesome', 'majorVersion' => 4, 'minorVersion' => 5],
+            ],
+
+            'editor_dependencies' => [
+                ['machineName' => 'H5PEditor.SingleChoiceSetTextualEditor', 'majorVersion' => 1, 'minorVersion' => 0],
+                ['machineName' => 'H5PEditor.VerticalTabs', 'majorVersion' => 1, 'minorVersion' => 3],
+            ],
+        ],
+
+        'true_false' => [
+            'machine_name' => 'H5P.TrueFalse',
+            'title' => 'True/False Question',
+            'major_version' => 1,
+            'minor_version' => 8,
+            'patch_version' => 14,
+            'runnable' => 1,
+            'embed_types' => ['div'],
+            'license' => 'MIT',
+
+            // Transitive closure, as H5P.TrueFalse 1.8 declares it. The three
+            // media libraries are the `media` slot -- see the block header.
+            'dependencies' => [
+                ['machineName' => 'H5P.Question', 'majorVersion' => 1, 'minorVersion' => 5],
+                ['machineName' => 'H5P.JoubelUI', 'majorVersion' => 1, 'minorVersion' => 3],
+                ['machineName' => 'H5P.Transition', 'majorVersion' => 1, 'minorVersion' => 0],
+                ['machineName' => 'H5P.Image', 'majorVersion' => 1, 'minorVersion' => 1],
+                ['machineName' => 'H5P.Video', 'majorVersion' => 1, 'minorVersion' => 6],
+                ['machineName' => 'H5P.Audio', 'majorVersion' => 1, 'minorVersion' => 5],
+                ['machineName' => 'FontAwesome', 'majorVersion' => 4, 'minorVersion' => 5],
+            ],
+
+            'editor_dependencies' => [
+                ['machineName' => 'H5PEditor.VerticalTabs', 'majorVersion' => 1, 'minorVersion' => 3],
+            ],
+        ],
     ],
 
     /*

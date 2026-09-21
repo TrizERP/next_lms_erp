@@ -68,6 +68,8 @@ use App\Http\Controllers\lms\h5p\H5PImageHotspotsController;
 use App\Http\Controllers\lms\h5p\H5PMemoryGameController;
 use App\Http\Controllers\lms\h5p\H5PCoursePresentationController;
 use App\Http\Controllers\lms\h5p\H5PArithmeticQuizController;
+use App\Http\Controllers\lms\h5p\H5PSingleChoiceSetController;
+use App\Http\Controllers\lms\h5p\H5PTrueFalseController;
 use App\Http\Controllers\lms\nextAPI\chapterMasterController;
 use App\Http\Controllers\lms\nextAPI\lmsCurriculumController as newCurricuumController;
 
@@ -485,6 +487,21 @@ Route::prefix('h5p')->middleware(['session', 'menu', 'logRoute', 'check_permissi
         'h5p_memory_game' => [H5PMemoryGameController::class, 'media' => true],
         'h5p_course_presentation' => [H5PCoursePresentationController::class, 'media' => true],
         'h5p_arithmetic_quiz' => [H5PArithmeticQuizController::class, 'media' => false],
+
+        /*
+        | Added in the second 2026-09-21 vertical. They join this loop rather
+        | than getting one of their own because they share the same base
+        | controller and therefore the same route shape exactly -- a second
+        | identical loop would be a second place for the ordering rule above
+        | to be got wrong.
+        |
+        | Single Choice Set has no media: a question is a sentence and a list
+        | of sentences, so routing an upload endpoint would advertise a
+        | capability the controller refuses. True/False does, because a
+        | statement about a diagram needs the diagram.
+        */
+        'h5p_single_choice_set' => [H5PSingleChoiceSetController::class, 'media' => false],
+        'h5p_true_false' => [H5PTrueFalseController::class, 'media' => true],
     ] as $prefix => $spec) {
         $controller = $spec[0];
 
