@@ -13,6 +13,26 @@
     .Absent {
         accent-color: red;
     }
+
+    .attendance-count-row td {
+        background-color: #f5f5f5;
+        border-top: 2px solid #ddd;
+        font-size: 14px;
+        font-weight: 600;
+        vertical-align: middle;
+    }
+
+    .attendance-count-row .count-present {
+        color: #28a745;
+    }
+
+    .attendance-count-row .count-absent {
+        color: #dc3545;
+    }
+
+    .attendance-count-row b {
+        font-size: 16px;
+    }
 </style>
 
 <div id="page-wrapper">
@@ -119,6 +139,17 @@
                                         </tr>
                                     @endforeach
                                 </tbody>
+                                <tfoot>
+                                    <tr class="attendance-count-row">
+                                        @if(isset($data['batch_id']) && !empty($data['batchs']))
+                                        <td colspan="7" class="text-right">Total Students : <b id="total_count">0</b></td>
+                                        @else
+                                        <td colspan="6" class="text-right">Total Students : <b id="total_count">0</b></td>
+                                        @endif
+                                        <td class="count-present"><b id="present_count">0</b></td>
+                                        <td class="text-left count-absent"><b id="absent_count">0</b></td>
+                                    </tr>
+                                </tfoot>
                         </table>
                         <div class="row">
                             <div class="col-md-12 form-group">
@@ -138,26 +169,77 @@
 </div>
 
 @include('includes.footerJs')
+
+{{-- Present / Absent live counter.
+     Kept in its own <script> block and written in plain JS on purpose: this page
+     ends up with jQuery loaded more than once (layout + footerJs), so a plugin
+     call that throws in another block must not take the counter down with it. --}}
+<script>
+    function checkAll(ele, name) {
+        var checkboxes = document.getElementsByClassName(name);
+        for (var i = 0; i < checkboxes.length; i++) {
+            if (checkboxes[i].type == 'radio') {
+                checkboxes[i].checked = ele.checked;
+            }
+        }
+        updateAttendanceCount();
+    }
+
+    function updateAttendanceCount() {
+        var table = document.getElementById('example');
+        var out = document.getElementById('present_count');
+
+        if (!table || !out || !table.tBodies.length) {
+            return;
+        }
+
+        var rows = table.tBodies[0].rows;
+        var present = 0;
+        var absent = 0;
+
+        for (var i = 0; i < rows.length; i++) {
+            var p = rows[i].querySelector('input.Present');
+            var a = rows[i].querySelector('input.Absent');
+
+            if (p && p.checked) {
+                present++;
+            } else if (a && a.checked) {
+                absent++;
+            }
+        }
+
+        document.getElementById('present_count').innerHTML = present;
+        document.getElementById('absent_count').innerHTML = absent;
+        document.getElementById('total_count').innerHTML = rows.length;
+    }
+
+    function bindAttendanceCount() {
+        var table = document.getElementById('example');
+
+        if (!table) {
+            return;
+        }
+
+        // One listener on the table covers every row radio plus the
+        // select-all radios in the header.
+        table.addEventListener('change', function (e) {
+            if (e.target && e.target.type === 'radio') {
+                updateAttendanceCount();
+            }
+        });
+
+        updateAttendanceCount();
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindAttendanceCount);
+    } else {
+        bindAttendanceCount();
+    }
+</script>
+
 <script>
     $(".mydatepicker").datepicker({  maxDate: '0'});
-
-    function checkAll(ele,name) {
-         var checkboxes = document.getElementsByClassName(name);
-         if (ele.checked) {
-             for (var i = 0; i < checkboxes.length; i++) {
-                 if (checkboxes[i].type == 'radio') {
-                     checkboxes[i].checked = true;
-                 }
-             }
-         } else {
-             for (var i = 0; i < checkboxes.length; i++) {
-                 console.log(i)
-                 if (checkboxes[i].type == 'radio') {
-                     checkboxes[i].checked = false;
-                 }
-             }
-         }
-    }
 </script>
 <script>
 function checkIfSunday(input) {

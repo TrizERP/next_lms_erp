@@ -304,6 +304,83 @@ class emailTemplateController extends Controller
     /**
      * Show the layout a blade file currently produces, with sample values.
      */
+    /**
+     * Show the exact PDF a template would attach, resolved the same way a real
+     * send resolves it. Answers "is my edit actually in the attachment?" without
+     * having to send a mail and open the inbox.
+     */
+    public function previewPdf(Request $request, $id)
+    {
+        $sub_institute_id = $this->subInstituteId($request);
+        $template = EmailTemplate::where('sub_institute_id', $sub_institute_id)->find($id);
+
+        if (!$template) {
+            return response('Email Template Not Found', 404);
+        }
+
+        $event = EmailTemplateService::event($template->event_key);
+        $vars = $this->sampleVars($event);
+        $vars = EmailTemplateService::withStatusLabels($template->event_key, $vars, $template->status_code);
+        $vars['student_data'] = [];
+
+        // Which student this preview stands for: an explicit ?standard_id wins,
+        // otherwise the first standard the template is scoped to.
+        $standardId = $request->input('standard_id')
+            ?: $this->firstStandardId($template->standard_ids)
+            // A body scoped to "All" has no standard of its own; a real send
+            // always has the student's, so show a representative one here.
+            ?: EmailTemplateService::firstMappedStandard($template->event_key);
+
+        if ($template->is_letter) {
+            // Previewing a letter directly: render its own content.
+            $html = EmailTemplateService::replace($template->html_content, $vars);
+        } else {
+            $html = EmailTemplateService::letterHtml(
+                (int) $sub_institute_id,
+                $template->event_key,
+                $vars,
+                $standardId,
+                $template->pdf_template_id,
+                $template->status_code
+            );
+        }
+
+        if (empty($html)) {
+            return response('No letter layout resolved for this template.', 404);
+        }
+
+        $draft = new EmailTemplate([
+            'attach_as_pdf'   => 1,
+            'pdf_template_id' => $template->is_letter ? $template->id : $template->pdf_template_id,
+            'pdf_filename'    => $template->pdf_filename ?: EmailTemplateService::DEFAULT_PDF_NAME,
+        ]);
+        $draft->id = $template->id;
+
+        $path = $template->is_letter
+            ? EmailTemplateService::pdfFromHtml($html, EmailTemplateService::attachmentName($draft, $vars))
+            : EmailTemplateService::buildPdfAttachment(
+                $draft,
+                (int) $sub_institute_id,
+                $template->event_key,
+                $vars,
+                $standardId,
+                $template->status_code
+            );
+
+        if (!$path) {
+            return response('Could not generate the PDF.', 500);
+        }
+
+        $contents = file_get_contents($path);
+        $name = basename($path);
+        EmailTemplateService::cleanupAttachment($path);
+
+        return response($contents, 200, [
+            'Content-Type'        => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $name . '"',
+        ]);
+    }
+
     public function previewLegacy(Request $request)
     {
         $eventKey = $request->input('event_key');
@@ -330,6 +407,7 @@ class emailTemplateController extends Controller
     {
         $eventKey = $request->input('event_key');
         $event = EmailTemplateService::event($eventKey);
+        $vars = EmailTemplateService::withStatusLabels($eventKey, $vars, $request->input("status_code"));
         $vars = $this->sampleVars($event);
 
         $html = EmailTemplateService::replace($request->input('html_content'), $vars);
@@ -371,20 +449,25 @@ class emailTemplateController extends Controller
         // Mirror what a real send does, attachment included, so the test proves
         // the whole mail rather than just the body.
         $attachment = null;
+        $attachmentName = null;
 
         if ($request->input('attach_as_pdf')) {
+            $draft = new EmailTemplate([
+                'attach_as_pdf'   => 1,
+                'pdf_template_id' => $request->input('pdf_template_id') ?: null,
+                'pdf_filename'    => $request->input('pdf_filename') ?: EmailTemplateService::DEFAULT_PDF_NAME,
+            ]);
+
             $attachment = EmailTemplateService::buildPdfAttachment(
-                new EmailTemplate([
-                    'attach_as_pdf'   => 1,
-                    'pdf_template_id' => $request->input('pdf_template_id') ?: null,
-                    'pdf_filename'    => $request->input('pdf_filename') ?: 'attachment.pdf',
-                ]),
+                $draft,
                 (int) $this->subInstituteId($request),
                 $eventKey,
                 $vars,
                 $this->firstStandardId($request->input('standard_ids')),
                 $request->input('status_code')
             );
+
+            $attachmentName = $attachment ? EmailTemplateService::attachmentName($draft, $vars) : null;
         }
 
         $mailRequest = new Request([
@@ -397,6 +480,7 @@ class emailTemplateController extends Controller
             'syear'            => $request->session()->get('syear'),
             'teacher_id'       => $request->session()->get('user_id'),
             'attachment_path'  => $attachment,
+            'attachment_name'  => $attachmentName,
         ]);
         $mailRequest->setLaravelSession($request->session());
 
@@ -406,7 +490,7 @@ class emailTemplateController extends Controller
             (new \App\Http\Controllers\admission\admissionRegistrationHillController)->sendEmail($mailRequest);
         } finally {
             if ($attachment && is_file($attachment)) {
-                @unlink($attachment);
+                EmailTemplateService::cleanupAttachment($attachment);
             }
         }
 
