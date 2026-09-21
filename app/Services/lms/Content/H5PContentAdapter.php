@@ -70,7 +70,10 @@ class H5PContentAdapter
             'title' => 'title',
             'route' => '/h5p/scenario_based',
             'label' => 'H5P scenario',
-            'h5p_type' => 'image_hotspots',
+            // The registry code for h5p_scenarios, singular -- see
+            // config/pal_h5p.php. Not to be confused with `image_hotspots`
+            // below, which is the richer H5P.ImageHotspots type on its own table.
+            'h5p_type' => 'image_hotspot',
         ],
         'interactive_video' => [
             'table' => 'h5p_interactive_video',
@@ -129,6 +132,46 @@ class H5PContentAdapter
             'route' => '/h5p/h5p_mark_the_words',
             'label' => 'H5P mark the words',
             'h5p_type' => 'mark_the_words',
+            'published_only' => true,
+        ],
+
+        /*
+        | 2026-09-21 vertical. Each has its own table, so none needs a `where`
+        | discriminator, and all four are `published_only` -- a draft is
+        | authored work in progress, not content, and surfacing it in the
+        | chapter list would put it in front of students through every consumer
+        | of that list at once.
+        */
+        'image_hotspots' => [
+            'table' => 'h5p_image_hotspots',
+            'title' => 'title',
+            'route' => '/h5p/h5p_image_hotspots',
+            'label' => 'H5P image hotspots',
+            'h5p_type' => 'image_hotspots',
+            'published_only' => true,
+        ],
+        'memory_game' => [
+            'table' => 'h5p_memory_game',
+            'title' => 'title',
+            'route' => '/h5p/h5p_memory_game',
+            'label' => 'H5P memory game',
+            'h5p_type' => 'memory_game',
+            'published_only' => true,
+        ],
+        'course_presentation' => [
+            'table' => 'h5p_course_presentation',
+            'title' => 'title',
+            'route' => '/h5p/h5p_course_presentation',
+            'label' => 'H5P course presentation',
+            'h5p_type' => 'course_presentation',
+            'published_only' => true,
+        ],
+        'arithmetic_quiz' => [
+            'table' => 'h5p_arithmetic_quiz',
+            'title' => 'title',
+            'route' => '/h5p/h5p_arithmetic_quiz',
+            'label' => 'H5P arithmetic quiz',
+            'h5p_type' => 'arithmetic_quiz',
             'published_only' => true,
         ],
     ];
