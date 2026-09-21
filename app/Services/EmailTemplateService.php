@@ -22,6 +22,9 @@ use PDF;
  */
 class EmailTemplateService
 {
+    /** Attachment name used when a template does not set its own. */
+    public const DEFAULT_PDF_NAME = 'Admission Confirmation.pdf';
+
     /**
      * Sentinel values used when importing a legacy blade into an editable
      * template: the blade renders real-looking data, which is then swapped back
@@ -118,13 +121,17 @@ class EmailTemplateService
         $template = self::resolve($subInstituteId, $eventKey, $standardId, $statusCode);
 
         if ($template) {
+            $attachment = empty($template->attach_as_pdf)
+                ? null
+                : self::buildPdfAttachment($template, $subInstituteId, $eventKey, $vars, $standardId, $statusCode);
+
             return [
-                'subject'    => self::replace($template->subject ?: ($event['default_subject'] ?? ''), $vars),
-                'body'       => self::replace($template->html_content, $vars),
-                'source'     => 'database',
-                'attachment' => empty($template->attach_as_pdf)
-                    ? null
-                    : self::buildPdfAttachment($template, $subInstituteId, $eventKey, $vars, $standardId, $statusCode),
+                'subject'         => self::replace($template->subject ?: ($event['default_subject'] ?? ''), $vars),
+                'body'            => self::replace($template->html_content, $vars),
+                'source'          => 'database',
+                'attachment'      => $attachment,
+                // The name the recipient sees, independent of the temp path.
+                'attachment_name' => $attachment ? self::attachmentName($template, $vars) : null,
             ];
         }
 
@@ -135,11 +142,28 @@ class EmailTemplateService
         }
 
         return [
-            'subject'    => $event['default_subject'] ?? '',
-            'body'       => $body,
-            'source'     => 'blade',
-            'attachment' => null,
+            'subject'         => $event['default_subject'] ?? '',
+            'body'            => $body,
+            'source'          => 'blade',
+            'attachment'      => null,
+            'attachment_name' => null,
         ];
+    }
+
+    /**
+     * The file name shown on the mail, with placeholders resolved.
+     */
+    public static function attachmentName(EmailTemplate $template, array $vars = []): string
+    {
+        $name = self::replace($template->pdf_filename ?: self::DEFAULT_PDF_NAME, $vars);
+        // Spaces are kept - this is a display name, not a filesystem temp name.
+        $name = trim(preg_replace('/\s+/', ' ', preg_replace('/[^A-Za-z0-9 _\-\.]/', '', $name)));
+
+        if ($name === '' || !Str::endsWith(strtolower($name), '.pdf')) {
+            $name = ($name ?: 'Admission Confirmation') . '.pdf';
+        }
+
+        return $name;
     }
 
     /**
@@ -177,21 +201,19 @@ class EmailTemplateService
             return null;
         }
 
-        $name = self::replace($template->pdf_filename ?: 'attachment.pdf', $vars);
-        $name = trim(preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $name), '_');
-
-        if ($name === '' || !Str::endsWith(strtolower($name), '.pdf')) {
-            $name = ($name ?: 'attachment') . '.pdf';
-        }
+        $name = self::attachmentName($template, $vars);
 
         try {
-            $directory = storage_path('app/email_attachments');
+            // The unique id goes in the directory name, never the file name:
+            // PHPMailer uses the file's basename as the attachment name, so a
+            // uniqid prefix here would show up in the recipient's inbox.
+            $directory = storage_path('app/email_attachments') . DIRECTORY_SEPARATOR . uniqid('mail_', true);
 
             if (!is_dir($directory)) {
                 mkdir($directory, 0775, true);
             }
 
-            $path = $directory . DIRECTORY_SEPARATOR . uniqid('mail_', true) . '_' . $name;
+            $path = $directory . DIRECTORY_SEPARATOR . $name;
 
             $pdf = PDF::loadHTML(self::wrapForPdf($html))->setPaper('a4');
             $pdf->setOptions([
@@ -408,6 +430,24 @@ class EmailTemplateService
             },
             $content
         );
+    }
+
+    /**
+     * Delete a generated attachment and the unique directory holding it.
+     */
+    public static function cleanupAttachment(?string $path): void
+    {
+        if (empty($path) || !is_file($path)) {
+            return;
+        }
+
+        $directory = dirname($path);
+        @unlink($path);
+
+        // Only remove the per-mail directory we created, never a shared folder.
+        if (Str::startsWith(basename($directory), 'mail_')) {
+            @rmdir($directory);
+        }
     }
 
     public static function wrap(string $key): string
