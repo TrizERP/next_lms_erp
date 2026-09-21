@@ -6,6 +6,8 @@ use App\Models\communication\EmailTemplate;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Str;
+use PDF;
 
 /**
  * Resolves and renders frontend-managed email templates.
@@ -48,9 +50,25 @@ class EmailTemplateService
      */
     public static function resolve(int $subInstituteId, string $eventKey, $standardId = null, $statusCode = null): ?EmailTemplate
     {
+        // Templates that exist only to be attached as the PDF letter never act
+        // as the mail body, or a letter scoped to a standard would outrank the
+        // covering note and go out inline with no attachment.
+        $letterIds = EmailTemplate::where('sub_institute_id', $subInstituteId)
+            ->whereNotNull('pdf_template_id')
+            ->pluck('pdf_template_id')
+            ->filter()
+            ->unique()
+            ->all();
+
         $candidates = EmailTemplate::where('sub_institute_id', $subInstituteId)
             ->where('event_key', $eventKey)
             ->where('status', 1)
+            ->where(function ($q) {
+                $q->where('is_letter', 0)->orWhereNull('is_letter');
+            })
+            ->when(!empty($letterIds), function ($q) use ($letterIds) {
+                $q->whereNotIn('id', $letterIds);
+            })
             ->get();
 
         if ($candidates->isEmpty()) {
@@ -87,8 +105,12 @@ class EmailTemplateService
     /**
      * Build the mail body + subject for an event.
      *
-     * @return array{subject:string,body:string,source:string}|null null when
-     *         neither a saved template nor a legacy blade is available.
+     * When the resolved template has attach_as_pdf set, 'attachment' holds the
+     * path to a generated PDF of the letter and the body is only the covering
+     * note. The caller is responsible for deleting the file after sending.
+     *
+     * @return array{subject:string,body:string,source:string,attachment:?string}|null
+     *         null when neither a saved template nor a legacy blade is available.
      */
     public static function render(int $subInstituteId, string $eventKey, array $vars = [], $standardId = null, $statusCode = null): ?array
     {
@@ -97,9 +119,12 @@ class EmailTemplateService
 
         if ($template) {
             return [
-                'subject' => self::replace($template->subject ?: ($event['default_subject'] ?? ''), $vars),
-                'body'    => self::replace($template->html_content, $vars),
-                'source'  => 'database',
+                'subject'    => self::replace($template->subject ?: ($event['default_subject'] ?? ''), $vars),
+                'body'       => self::replace($template->html_content, $vars),
+                'source'     => 'database',
+                'attachment' => empty($template->attach_as_pdf)
+                    ? null
+                    : self::buildPdfAttachment($template, $subInstituteId, $eventKey, $vars, $standardId, $statusCode),
             ];
         }
 
@@ -110,10 +135,112 @@ class EmailTemplateService
         }
 
         return [
-            'subject' => $event['default_subject'] ?? '',
-            'body'    => $body,
-            'source'  => 'blade',
+            'subject'    => $event['default_subject'] ?? '',
+            'body'       => $body,
+            'source'     => 'blade',
+            'attachment' => null,
         ];
+    }
+
+    /**
+     * The letter that goes out as a PDF: an explicitly chosen template, or the
+     * blade layout already registered for this event + standard.
+     */
+    public static function letterHtml(int $subInstituteId, string $eventKey, array $vars, $standardId = null, $pdfTemplateId = null): ?string
+    {
+        if ($pdfTemplateId) {
+            $letter = EmailTemplate::where('sub_institute_id', $subInstituteId)->find($pdfTemplateId);
+
+            if ($letter) {
+                return self::replace($letter->html_content, $vars);
+            }
+        }
+
+        return self::renderLegacy($eventKey, $vars, $standardId);
+    }
+
+    /**
+     * Render the letter to a PDF on disk and return its path, or null on failure.
+     */
+    public static function buildPdfAttachment(EmailTemplate $template, int $subInstituteId, string $eventKey, array $vars, $standardId = null, $statusCode = null): ?string
+    {
+        $html = self::letterHtml($subInstituteId, $eventKey, $vars, $standardId, $template->pdf_template_id);
+
+        if (empty($html)) {
+            Log::warning('Email template marked attach_as_pdf but no letter layout was found', [
+                'template' => $template->id,
+                'event'    => $eventKey,
+                'standard' => $standardId,
+                'status'   => $statusCode,
+            ]);
+
+            return null;
+        }
+
+        $name = self::replace($template->pdf_filename ?: 'attachment.pdf', $vars);
+        $name = trim(preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $name), '_');
+
+        if ($name === '' || !Str::endsWith(strtolower($name), '.pdf')) {
+            $name = ($name ?: 'attachment') . '.pdf';
+        }
+
+        try {
+            $directory = storage_path('app/email_attachments');
+
+            if (!is_dir($directory)) {
+                mkdir($directory, 0775, true);
+            }
+
+            $path = $directory . DIRECTORY_SEPARATOR . uniqid('mail_', true) . '_' . $name;
+
+            $pdf = PDF::loadHTML(self::wrapForPdf($html))->setPaper('a4');
+            $pdf->setOptions([
+                // The letters pull the school logo from an absolute URL.
+                'isRemoteEnabled'      => true,
+                'isHtml5ParserEnabled' => true,
+                // DejaVu Sans carries the rupee sign; dompdf's default serif does not.
+                'defaultFont'          => 'DejaVu Sans',
+            ]);
+
+            file_put_contents($path, $pdf->output());
+
+            return $path;
+        } catch (\Throwable $e) {
+            Log::error('Failed to generate email attachment PDF', [
+                'template' => $template->id,
+                'error'    => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Make the letter safe to render as a PDF.
+     *
+     * The letters declare "font-family: Arial, Helvetica", which dompdf maps to
+     * a core PDF font that has no rupee glyph - the fee table then prints "?".
+     * Render just the symbol in DejaVu Sans (which carries U+20B9) so the rest
+     * of the letter keeps its own typeface.
+     */
+    private static function wrapForPdf(string $html): string
+    {
+        $rupee = '<span style="font-family: \'DejaVu Sans\', sans-serif;">&#x20B9;</span>';
+
+        $html = str_ireplace(['&#x20B9;', '&#8377;', '&#X20B9;'], $rupee, $html);
+        $html = str_replace("\u{20B9}", $rupee, $html);
+
+        if (stripos($html, '<html') !== false) {
+            if (stripos($html, 'charset') === false) {
+                $html = preg_replace('/<head([^>]*)>/i', '<head$1><meta charset="UTF-8">', $html, 1);
+            }
+
+            return $html;
+        }
+
+        return '<!DOCTYPE html><html><head><meta charset="UTF-8">'
+            . '<style>body{font-family:"DejaVu Sans",sans-serif;font-size:12px;}</style>'
+            . '</head><body>' . $html . '</body></html>';
     }
 
     /**
