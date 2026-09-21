@@ -262,8 +262,14 @@ class EmailTemplateService
             return null;
         }
 
-        $name = self::attachmentName($template, $vars);
+        return self::pdfFromHtml($html, self::attachmentName($template, $vars), $template->id);
+    }
 
+    /**
+     * Write HTML to a PDF on disk and return its path, or null on failure.
+     */
+    public static function pdfFromHtml(string $html, string $name, $templateId = null): ?string
+    {
         try {
             // The unique id goes in the directory name, never the file name:
             // PHPMailer uses the file's basename as the attachment name, so a
@@ -290,7 +296,7 @@ class EmailTemplateService
             return $path;
         } catch (\Throwable $e) {
             Log::error('Failed to generate email attachment PDF', [
-                'template' => $template->id,
+                'template' => $templateId,
                 'error'    => $e->getMessage(),
             ]);
 
@@ -385,6 +391,21 @@ class EmailTemplateService
         }
 
         return $catalog;
+    }
+
+    /**
+     * First standard the event maps a letter to. Used when previewing a template
+     * that is not scoped to a standard, so there is still something to show.
+     */
+    public static function firstMappedStandard(string $eventKey)
+    {
+        foreach (Arr::get(self::event($eventKey) ?? [], 'legacy.views', []) as $row) {
+            if (!empty($row['standards'])) {
+                return $row['standards'][0];
+            }
+        }
+
+        return null;
     }
 
     public static function renderLegacy(string $eventKey, array $vars = [], $standardId = null): ?string
