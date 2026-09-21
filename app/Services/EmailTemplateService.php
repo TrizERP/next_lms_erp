@@ -130,6 +130,7 @@ class EmailTemplateService
     public static function render(int $subInstituteId, string $eventKey, array $vars = [], $standardId = null, $statusCode = null): ?array
     {
         $event = self::event($eventKey);
+        $vars = self::withStatusLabels($eventKey, $vars, $statusCode);
         $template = self::resolve($subInstituteId, $eventKey, $standardId, $statusCode);
 
         if ($template) {
@@ -391,6 +392,24 @@ class EmailTemplateService
         }
 
         return $catalog;
+    }
+
+    /**
+     * Add the placeholders an event derives from its status code.
+     *
+     * admission_confirmed maps C to "Morning" and C/A to "Afternoon", so one
+     * template written with << session >> covers both and only has to be edited
+     * once. A value already supplied by the caller is left alone.
+     */
+    public static function withStatusLabels(string $eventKey, array $vars, $statusCode): array
+    {
+        foreach (Arr::get(self::event($eventKey) ?? [], 'status_labels', []) as $key => $map) {
+            if (($vars[$key] ?? '') === '' && $statusCode !== null && isset($map[(string) $statusCode])) {
+                $vars[$key] = $map[(string) $statusCode];
+            }
+        }
+
+        return $vars;
     }
 
     /**

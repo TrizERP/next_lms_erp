@@ -320,6 +320,7 @@ class emailTemplateController extends Controller
 
         $event = EmailTemplateService::event($template->event_key);
         $vars = $this->sampleVars($event);
+        $vars = EmailTemplateService::withStatusLabels($template->event_key, $vars, $template->status_code);
         $vars['student_data'] = [];
 
         // Which student this preview stands for: an explicit ?standard_id wins,
@@ -406,6 +407,7 @@ class emailTemplateController extends Controller
     {
         $eventKey = $request->input('event_key');
         $event = EmailTemplateService::event($eventKey);
+        $vars = EmailTemplateService::withStatusLabels($eventKey, $vars, $request->input("status_code"));
         $vars = $this->sampleVars($event);
 
         $html = EmailTemplateService::replace($request->input('html_content'), $vars);
