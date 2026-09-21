@@ -48,6 +48,15 @@ return [
     */
 
     'channels' => [
+
+        // Dedicated channel for the std-10 chapter/concept remap pipeline.
+        // Kept separate from the app log so one run is auditable on its own.
+        'remap' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/remap.log'),
+            'level' => env('REMAP_LOG_LEVEL', 'debug'),
+            'days' => 30,
+        ],
         'stack' => [
             'driver' => 'stack',
             'channels' => ['daily'],
