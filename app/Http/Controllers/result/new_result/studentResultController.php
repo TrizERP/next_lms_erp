@@ -4159,16 +4159,12 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
                         // convert marks if best of 2
                         if ($standard_id == 3299 || $standard_id == 3965) {
                             if (count($obtained_mark_arr) > 1) {
-                                $convert_mark = max($numeric_marks);
+                                $convert_mark = max($numeric_marks); // get greatest max
                             } else {
-                                $convert_mark = $t_m > 0
-                                    ? (($obtained_mark_sum / $t_m) * $w_m)
-                                    : 0;
+                                $convert_mark = (($obtained_mark_sum / $t_m) * $w_m);// $obtained_mark_sum; // for PT
                             }
                         } else {
-                            $convert_mark = ($t_m > 0)
-                                ? (($obtained_mark_sum / $t_m) * $w_m)
-                                : 0;
+                            $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                         }
 
                         $pt_per = ($convert_mark !== '0.00' && $w_m != 0) ? round(($convert_mark / $w_m) * 100, 0) : 0;
@@ -4301,11 +4297,11 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
             $r3_head = array_intersect_key($r3_all_head, $r3_marked_head);
             // R3 table started
             if (!empty($r3_head) && !empty($r3_row)) {
-                $table .= '<table class="aca-year" style="width: 45%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
+                $table .= '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
                 <thead>
-                    <tr><th width="50%"><b>R3</b></th>';//style="background:black;color:white"
+                    <tr><th><b>R3</b></th>';//style="background:black;color:white"
                 foreach ($r3_head as $r3_title) {
-                    $table .= '<th width="25%" class="data_center"><b>' . $r3_title . '</b></th>';
+                    $table .= '<th class="data_center"><b>' . $r3_title . '</b></th>';
                 }
                 $table .= '</tr>
                     </thead>
