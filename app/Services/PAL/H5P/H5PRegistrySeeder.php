@@ -43,6 +43,11 @@ class H5PRegistrySeeder
         'drag_text',
         'crossword', 'summary', 'audio_recorder',
         'arithmetic_quiz', 'find_the_hotspot', 'image_sequencing',
+
+        // Added 2026-09-21 (second vertical). Neither code existed in the
+        // registry in any form before, so both are genuinely this seeder's to
+        // remove on a prune -- unlike the promoted types above.
+        'single_choice_set', 'true_false',
     ];
 
     /**

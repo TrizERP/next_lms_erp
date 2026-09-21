@@ -678,6 +678,113 @@ return [
                 'supports_package_exchange' => true,
             ],
         ],
+        /*
+        | Added 2026-09-21 (second vertical). Two question types the §8.1
+        | master reference did not carry a row for at all -- unlike
+        | memory_game or arithmetic_quiz, which existed as `planned` and were
+        | promoted. Both are `native` from their first appearance.
+        |
+        | Both sit in the Assessment category and both are `fluency_trackable:
+        | yes`, which is the substantive registry claim here: it is what makes
+        | their attempts count towards a learner's fluency state rather than
+        | only towards completion. A single-choice question answered in three
+        | seconds and one answered after thirty are different evidence, and
+        | both types emit the timing to say so.
+        */
+        'single_choice_set' => [
+            'label' => 'Single Choice Set',
+            'description' => 'A sequence of single-choice questions with instant feedback between them.',
+            'pal_use_cases' => ['Assessment Bank', 'Diagnostic', 'Practice L1–L2', 'Remedial recall'],
+            'bloom_from' => 'recall',
+            'bloom_to' => 'understand',
+            'xapi_events' => ['answered', 'completed'],
+            'fluency_trackable' => 'yes',
+            // Slightly above multiple_choice (0.8): the one-at-a-time rhythm
+            // with feedback between questions holds attention measurably
+            // better than a page of questions with a submit button.
+            'engagement_weight' => 0.9,
+            'social_mode' => 'individual',
+            'gamification_potential' => 'medium',
+            'retry_allowed' => true,
+            'offline_compatible' => true,
+            'mobile_optimised' => true,
+            'implementation' => [
+                'status' => 'native',
+                'source_table' => 'h5p_single_choice_set',
+                'child_table' => 'h5p_single_choice_questions',
+                'child_foreign_key' => 'set_id',
+                'child_label' => 'question',
+                'columns' => [
+                    'id' => 'id',
+                    'title' => 'title',
+                    'body' => 'description',
+                    'chapter' => 'chapter_id',
+                    'subject' => 'subject_id',
+                    'standard' => 'standard_id',
+                    'tenant' => 'sub_institute_id',
+                    'created_by' => 'created_by',
+                    'created_at' => 'created_at',
+                    'soft_delete' => 'deleted_at',
+                ],
+                'route' => 'h5p_single_choice_set.index',
+                'module_title' => 'Single Choice Set',
+                'module_description' => 'Create a sequence of single-choice questions with instant feedback.',
+                'module_category' => 'Assessment',
+                'icon' => 'mdi mdi-format-list-checks',
+                'sort_order' => 13,
+                'h5p_library' => 'H5P.SingleChoiceSet',
+                'category' => 'assessment',
+                'supports_package_exchange' => true,
+            ],
+        ],
+        'true_false' => [
+            'label' => 'True/False',
+            'description' => 'True or false statements with automated scoring and per-statement feedback.',
+            'pal_use_cases' => ['Assessment Bank', 'Diagnostic', 'Misconception sweep', 'Bell-ringer'],
+            'bloom_from' => 'recall',
+            'bloom_to' => 'understand',
+            'xapi_events' => ['answered', 'completed'],
+            'fluency_trackable' => 'yes',
+            // The lowest weight in the registry, and deliberately so: a
+            // two-way question is guessable half the time, so a session on it
+            // is weaker evidence of engagement than any other scored type.
+            // The weight is what stops a term of true/false from reading as a
+            // term of deep work in the engagement figures.
+            'engagement_weight' => 0.7,
+            'social_mode' => 'individual',
+            'gamification_potential' => 'medium',
+            'retry_allowed' => true,
+            'offline_compatible' => true,
+            'mobile_optimised' => true,
+            'implementation' => [
+                'status' => 'native',
+                'source_table' => 'h5p_true_false',
+                'child_table' => 'h5p_true_false_questions',
+                'child_foreign_key' => 'true_false_id',
+                'child_label' => 'statement',
+                'columns' => [
+                    'id' => 'id',
+                    'title' => 'title',
+                    'body' => 'description',
+                    'chapter' => 'chapter_id',
+                    'subject' => 'subject_id',
+                    'standard' => 'standard_id',
+                    'tenant' => 'sub_institute_id',
+                    'created_by' => 'created_by',
+                    'created_at' => 'created_at',
+                    'soft_delete' => 'deleted_at',
+                ],
+                'route' => 'h5p_true_false.index',
+                'module_title' => 'True / False',
+                'module_description' => 'Create true or false questions with automated scoring and feedback.',
+                'module_category' => 'Assessment',
+                'icon' => 'mdi mdi-check-circle-outline',
+                'sort_order' => 14,
+                'h5p_library' => 'H5P.TrueFalse',
+                'category' => 'assessment',
+                'supports_package_exchange' => true,
+            ],
+        ],
         'arithmetic_quiz' => [
             'label' => 'Arithmetic Quiz',
             'description' => 'Timed generated arithmetic drill for automaticity.',
