@@ -630,15 +630,70 @@ class ApiQuestionPaperController extends Controller
     }
 
     /**
+     * Render the paper's missing file, and say what stopped it if anything did.
+     *
+     * Returns null when the render was attempted without throwing; otherwise a
+     * short reason for the caller to put in its 404. Both outcomes are logged,
+     * because a render failing here is a server problem (an unwritable storage
+     * directory, a paper whose question rows are gone) that a teacher staring
+     * at a 404 cannot act on.
+     *
+     * A paper with no `question_ids` is not rendered at all: there is nothing
+     * to put on the page, and an empty PDF served as the paper would be worse
+     * than an honest 404 -- a teacher would assign a blank document to a class.
+     */
+    private function renderMissingPaper($paper): ?string
+    {
+        if (trim((string) $paper->question_ids) === '') {
+            Log::warning("ApiQuestionPaperController::pdf paper {$paper->id} has no stored PDF and no question_ids to render one from.");
+
+            return 'The paper has no questions, so there is nothing to render.';
+        }
+
+        try {
+            (new questionpaperController())->generatePDF([
+                'sub_institute_id' => $paper->sub_institute_id,
+                'syear' => $paper->syear,
+            ], $paper->id);
+        } catch (\Throwable $e) {
+            Log::error("ApiQuestionPaperController::pdf on-demand render failed for paper {$paper->id}: {$e->getMessage()}");
+
+            return $e->getMessage();
+        }
+
+        Log::info("ApiQuestionPaperController::pdf rendered the missing PDF for paper {$paper->id} on demand.");
+
+        return null;
+    }
+
+    /**
      * The stored PDF of one question paper, served byte for byte.
      *
-     * This is a file server and nothing else. The bytes on disk are what the
-     * caller receives -- no re-render, no conversion, no compression, no
+     * When the file exists this is a file server and nothing else. The bytes on
+     * disk are what the caller receives -- no conversion, no compression, no
      * substitution -- so whatever images, tables, signatures or handwriting the
-     * stored file carries arrive exactly as they were saved. A paper whose file
-     * is missing says so; it is never stood in for by a freshly rendered one,
-     * because a paper rebuilt from the question rows is a different document
-     * that merely looks plausible.
+     * stored file carries arrive exactly as they were saved. A stored paper is
+     * never re-rendered on top of.
+     *
+     * When the file does *not* exist it is rendered once, here, and kept. That
+     * is not a substitute document, which an earlier version of this comment
+     * warned against: `{id}_{sub_institute_id}_{syear}.pdf` has exactly one
+     * writer in the whole codebase, `questionpaperController::generatePDF`, and
+     * that renderer reads the same `question_ids` rows it would have read at
+     * create time. Uploads never take this name -- `uploadHomework` names its
+     * files itself -- so there is no hand-made original a render could
+     * displace. Rendering now reproduces the missing original rather than
+     * inventing a plausible one.
+     *
+     * It is needed because papers authored before the create flow started
+     * rendering (and any whose render failed at the time) have a well-formed
+     * file name and no file behind it. That is the whole difference between a
+     * developer machine, where the paper was authored and its file is therefore
+     * on disk, and the server, where the same row has never had one -- the
+     * split that kept paper 7877 opening locally and 404ing in production.
+     * `lms:backfill-question-pdfs` closes the same gap in bulk from a shell;
+     * this closes it for whoever opens the paper first. Only that first request
+     * pays for the render.
      *
      * It exists rather than a bare link to `/storage/QuestionPaper/<name>` for
      * two reasons, neither of which touches the bytes: `lms-assignment/exam-papers`
@@ -664,16 +719,24 @@ class ApiQuestionPaperController extends Controller
         // the file a teacher previews here is the file a student later opens.
         $filename = "{$paper->id}_{$paper->sub_institute_id}_{$paper->syear}.pdf";
         $path = $this->locateStoredPaper($filename);
+        $renderError = null;
+
+        // Missing on this host: render it once, then look again.
+        if ($path === null) {
+            $renderError = $this->renderMissingPaper($paper);
+            $path = $this->locateStoredPaper($filename);
+        }
 
         if ($path === null) {
             return response()->json([
                 'status_code' => 0,
-                'message' => 'No PDF is stored for this question paper.',
+                'message' => 'No PDF is stored for this question paper, and it could not be rendered.',
                 'file' => 'QuestionPaper/'.$filename,
-                // Which directories were actually looked in, so a deployment
-                // that is missing the storage symlink is diagnosable from the
+                // Which directories were looked in, and why the render produced
+                // nothing, so a deployment problem is diagnosable from the
                 // response instead of only from a shell on the server.
                 'searched' => self::paperRoots(),
+                'reason' => $renderError ?? 'The renderer reported success but wrote no file.',
             ], 404);
         }
 
