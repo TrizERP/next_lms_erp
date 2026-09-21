@@ -371,20 +371,25 @@ class emailTemplateController extends Controller
         // Mirror what a real send does, attachment included, so the test proves
         // the whole mail rather than just the body.
         $attachment = null;
+        $attachmentName = null;
 
         if ($request->input('attach_as_pdf')) {
+            $draft = new EmailTemplate([
+                'attach_as_pdf'   => 1,
+                'pdf_template_id' => $request->input('pdf_template_id') ?: null,
+                'pdf_filename'    => $request->input('pdf_filename') ?: EmailTemplateService::DEFAULT_PDF_NAME,
+            ]);
+
             $attachment = EmailTemplateService::buildPdfAttachment(
-                new EmailTemplate([
-                    'attach_as_pdf'   => 1,
-                    'pdf_template_id' => $request->input('pdf_template_id') ?: null,
-                    'pdf_filename'    => $request->input('pdf_filename') ?: 'attachment.pdf',
-                ]),
+                $draft,
                 (int) $this->subInstituteId($request),
                 $eventKey,
                 $vars,
                 $this->firstStandardId($request->input('standard_ids')),
                 $request->input('status_code')
             );
+
+            $attachmentName = $attachment ? EmailTemplateService::attachmentName($draft, $vars) : null;
         }
 
         $mailRequest = new Request([
@@ -397,6 +402,7 @@ class emailTemplateController extends Controller
             'syear'            => $request->session()->get('syear'),
             'teacher_id'       => $request->session()->get('user_id'),
             'attachment_path'  => $attachment,
+            'attachment_name'  => $attachmentName,
         ]);
         $mailRequest->setLaravelSession($request->session());
 
@@ -406,7 +412,7 @@ class emailTemplateController extends Controller
             (new \App\Http\Controllers\admission\admissionRegistrationHillController)->sendEmail($mailRequest);
         } finally {
             if ($attachment && is_file($attachment)) {
-                @unlink($attachment);
+                EmailTemplateService::cleanupAttachment($attachment);
             }
         }
 

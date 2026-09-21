@@ -44,7 +44,7 @@ return new class extends Migration
                 'standard_ids'     => null,
                 'attach_as_pdf'    => 1,
                 'pdf_template_id'  => null,
-                'pdf_filename'     => 'Admission_Letter_<< enquiry_no >>.pdf',
+                'pdf_filename'     => 'Admission Confirmation.pdf',
                 'status'           => 1,
                 'created_at'       => now(),
                 'updated_at'       => now(),
