@@ -319,62 +319,6 @@ final class Narrative
             'matters' => 'A framework nobody is mapped to produces no skills assessment and reveals no gaps.',
             'metric' => 'capabilities unmapped',
         ],
-
-        /* ------------------------------------------------ fee operations ---
-         *
-         * These six rules existed in FeesSignalRules before FRAMES was written
-         * and were never added to it. They only surface once the pipeline has
-         * actually raised them, which is why the gap went unnoticed: the
-         * executive screen showed "4,972 payment attempts failed totalling
-         * ₹3.2Cr across 993 accounts" and had no answer to "why does that
-         * matter". Each `matters` below says what the figure costs the school.
-         */
-        'fee_payment_failures' => [
-            'title' => 'Online fee payments are failing in volume',
-            'what' => ':affected payment attempts failed, covering :impact across the accounts that tried.',
-            'matters' => 'Each failure is a family that tried to pay and could not. The money stays outstanding, the '
-                .'follow-up cost lands on the fee office, and the family is the last to know the attempt did not go '
-                .'through.',
-            'metric' => 'failed payment attempts',
-        ],
-        'fee_gateway_reconciliation_gap' => [
-            'title' => 'Gateway settlements and the fee ledger disagree',
-            'what' => ':affected transactions totalling :impact appear on one side and not the other.',
-            'matters' => 'Until the two sides agree, neither figure can be trusted: a receipt the ledger does not hold '
-                .'looks like arrears to the family, and a settlement the gateway does not hold looks like income the '
-                .'school never received.',
-            'metric' => 'unreconciled transactions',
-        ],
-        'fee_nach_mandate_coverage' => [
-            'title' => 'Most fee accounts have no auto-debit mandate',
-            'what' => ':affected of :total accounts carry no active NACH mandate.',
-            'matters' => 'Every account without a mandate is collected by hand, every cycle. The cost is not the '
-                .'collection rate but the effort behind it, and it recurs for as long as the mandate is missing.',
-            'metric' => 'accounts without a mandate',
-        ],
-        'fee_configured_late_backlog' => [
-            'title' => 'Late fees are configured and accruing',
-            'what' => ':affected accounts have passed a configured late-fee date, carrying :impact.',
-            'matters' => 'A late fee grows the longer it is left and is harder to collect than the amount it was '
-                .'attached to. Families who were merely behind become families who dispute the total.',
-            'metric' => 'accounts past a late-fee date',
-        ],
-        'fee_cancellation_reasons' => [
-            'title' => 'Fee cancellations concentrate in a few reasons',
-            'what' => ':affected cancellations totalling :impact share the same recorded reason.',
-            'matters' => 'A cancellation reason that recurs is usually a process producing it rather than a series of '
-                .'individual decisions. Reading the reason is the cheapest way to find which one.',
-            'metric' => 'cancellations sharing a reason',
-        ],
-        'fee_revision_impact' => [
-            'title' => 'The fee structure was changed mid-session',
-            'what' => ':affected mid-session fee structure modifications were recorded.',
-            'matters' => 'A structure changed after billing means demand, receipts and outstanding were computed '
-                .'against different rules at different points in the year, so any comparison across the year is '
-                .'comparing two things.',
-            'metric' => 'mid-session structure changes',
-        ],
-
     ];
 
     /**
@@ -404,33 +348,11 @@ final class Narrative
             'whatHappened' => $frame
                 ? self::fill($frame['what'], $metadata)
                 : (string) ($metadata['title'] ?? 'A rule matched against the school record.'),
-            // FRAME FIRST, THEN THE SIGNAL'S OWN WORDS, THEN NOTHING.
-            //
-            // `FRAMES` covers the rules that existed when it was written. Six fee
-            // rules and every module rule are absent from it, and they only
-            // surface once the pipeline has actually raised them — which is how
-            // the executive screen came to show "4,972 payment attempts failed
-            // totalling ₹3.2Cr" with no answer to "why does that matter".
-            //
-            // A module rule already carries its own answer on the signal, written
-            // by ModuleSignalBridge from the finding the module's own screen
-            // shows. Reading it here keeps the two screens saying the same thing
-            // instead of one of them saying nothing. Null stays possible: a rule
-            // with neither a frame nor a stated consequence says nothing rather
-            // than having one composed for it.
-            'whyItMatters' => $frame['matters']
-                ?? (isset($metadata['whyItMatters']) && $metadata['whyItMatters'] !== ''
-                    ? (string) $metadata['whyItMatters']
-                    : null),
+            'whyItMatters' => $frame['matters'] ?? null,
             'evidence' => self::evidencePoints($ruleKey, $metadata),
             'likelyCause' => $cause['hypothesis'] ?? null,
             'causeConfirmed' => $cause !== null,
-            // The module's own next step where it stated one; the family-level
-            // standing remedy otherwise. The module wording names the rows the
-            // reader is looking at, which the family wording cannot.
-            'recommendation' => (isset($metadata['recommendedAction']) && $metadata['recommendedAction'] !== ''
-                ? (string) $metadata['recommendedAction']
-                : null) ?? $cause['action'] ?? null,
+            'recommendation' => $cause['action'] ?? null,
             'owner' => self::OWNERS[$cause['family'] ?? ''] ?? 'Principal',
             'priority' => self::priorityLabel($severity, (string) ($signal['priority'] ?? 'normal')),
             'confidence' => [
@@ -440,7 +362,7 @@ final class Narrative
             'affected' => [
                 'count' => $metadata['affectedCount'] ?? null,
                 'total' => $metadata['totalCount'] ?? null,
-                'unit' => $metadata['unit'] ?? $metadata['affectedUnit'] ?? null,
+                'unit' => $metadata['unit'] ?? null,
             ],
             'raisedAt' => (string) ($signal['created_date'] ?? ''),
             // Kept for the engine and for support, never rendered as the primary
