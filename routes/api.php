@@ -482,6 +482,13 @@ Route::delete('exam-evaluation/batches/{id}', [ExamEvaluationApiController::clas
 // the table; `clone` is how a school turns one into something it can edit.
 // `chapters` and `clone` are declared before `{id}` so they are not swallowed.
 Route::get('assessment-blueprints/chapters', [AssessmentBlueprintApiController::class, 'chapters']);
+// A school's own HPC option lists — who may assess, which activity approaches
+// and evidence methods it uses, which Part A sections its cards carry. Absent
+// rows mean "follow the published NCERT list", per option type, so a school
+// only stores the lists it actually decided to change.
+Route::get('assessment-blueprints/hpc-options', [AssessmentBlueprintApiController::class, 'hpcOptions']);
+Route::post('assessment-blueprints/hpc-options', [AssessmentBlueprintApiController::class, 'saveHpcOptions']);
+Route::post('assessment-blueprints/hpc-options/reset', [AssessmentBlueprintApiController::class, 'resetHpcOptions']);
 Route::post('assessment-blueprints/clone', [AssessmentBlueprintApiController::class, 'clone']);
 Route::get('assessment-blueprints', [AssessmentBlueprintApiController::class, 'index']);
 Route::post('assessment-blueprints', [AssessmentBlueprintApiController::class, 'store']);
