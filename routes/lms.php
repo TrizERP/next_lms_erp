@@ -57,6 +57,7 @@ use App\Http\Controllers\lms\library\skillLibraryController;
 use App\Http\Controllers\lms\library\H5PController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\lms\h5p\H5PIndexController;
+use App\Http\Controllers\lms\h5p\H5PQuestionBankController;
 use App\Http\Controllers\lms\h5p\H5PScenarioController;
 use App\Http\Controllers\lms\h5p\H5PMCQController;
 use App\Http\Controllers\lms\h5p\H5PInteractiveVideoController;
@@ -436,6 +437,19 @@ Route::get('/download-File', [contentLibraryController::class, 'downloadFile'])-
 // This group sat outside any session/check_permissions middleware, so
 // type=API callers never got JWT-verified (see HydratesLegacyApiSession).
 Route::prefix('h5p')->middleware(['session', 'menu', 'logRoute', 'check_permissions'])->group(function () {
+    /*
+    | Every H5P type, served its questions from lms_question_master.
+    |
+    | Declared FIRST in this group because it is a literal segment: leaving it
+    | after the resources would let a resource's show route (GET <prefix>/{id})
+    | claim it as an id named "question_bank".
+    |
+    | One endpoint rather than one per type -- which forms a type can carry is
+    | a table in QuestionBankSource, not a controller.
+    */
+    Route::get('question_bank/{h5pType}', [H5PQuestionBankController::class, 'index'])
+        ->name('h5p.question_bank');
+
     Route::resource('html_contents',H5PIndexController::class);
     Route::resource('scenario_based',H5PScenarioController::class);
     Route::resource('h5p_mcq',H5PMCQController::class);
