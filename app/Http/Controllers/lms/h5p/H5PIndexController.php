@@ -102,6 +102,10 @@ class H5PIndexController extends Controller
                 'h5p_type' => $code,
                 'title' => $implementation['module_title'] ?? $type['label'],
                 'description' => $implementation['module_description'] ?? $type['description'],
+                // The hub card's category chip. Null on a type whose
+                // implementation block predates it, which the frontend
+                // renders as no chip rather than as an empty one.
+                'category' => $implementation['module_category'] ?? null,
                 'icon' => $implementation['icon'] ?? 'mdi mdi-shape',
                 'route' => $implementation['route'] ?? null,
                 'available' => true,

@@ -43,6 +43,7 @@ Route::group(['prefix' => 'settings', 'middleware' => ['session', 'menu', 'logRo
     // Frontend-managed transactional email layouts (replaces hardcoded blades).
     Route::get('email_template/import_legacy', [emailTemplateController::class, 'importLegacy'])->name('email_template.import_legacy');
     Route::get('email_template/preview_legacy', [emailTemplateController::class, 'previewLegacy'])->name('email_template.preview_legacy');
+    Route::get('email_template/{id}/preview_pdf', [emailTemplateController::class, 'previewPdf'])->name('email_template.preview_pdf');
     Route::post('email_template/preview', [emailTemplateController::class, 'preview'])->name('email_template.preview');
     Route::post('email_template/send_test', [emailTemplateController::class, 'sendTest'])->name('email_template.send_test');
     Route::resource('email_template', emailTemplateController::class)->except(['show']);

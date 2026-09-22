@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\api\lms;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\EvaluateHomeworkSubmissionJob;
 use App\Jobs\EvaluateHomeworkSubmissionV2Job;
+use App\Services\Evaluation\AnswerSheetScoringService;
 use App\Models\student\studentHomeworkModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -11,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Throwable;
 
 /**
  * Multi-file submission + teacher-review workflow for homework, rebuilt
@@ -132,6 +135,13 @@ class HomeworkSubmissionApiController extends Controller
             'ai_score' => $homework->ai_score,
             'ai_total_questions' => $homework->ai_total_questions,
             'ai_percentage' => $homework->ai_percentage,
+            // Marks, as opposed to the count-based `ai_score` above. Null on
+            // submissions evaluated before the 2026_09_22 migration, which the
+            // frontend falls back from.
+            'ai_marks' => $homework->ai_marks === null ? null : (float) $homework->ai_marks,
+            'teacher_marks' => $homework->teacher_marks === null ? null : (float) $homework->teacher_marks,
+            'max_marks' => $homework->max_marks === null ? null : (float) $homework->max_marks,
+            'evaluation_mode' => $homework->evaluation_mode,
             'reviewed_pdf_path' => $homework->reviewed_pdf_path,
             'evaluated_at' => optional($homework->evaluated_at)->toDateTimeString(),
             'submitted_at' => $homework->submission_date,
@@ -170,13 +180,14 @@ class HomeworkSubmissionApiController extends Controller
 
         $server = $request->getSchemeAndHttpHost();
 
-        // Question-bank-sourced homework carries its selected questions as a
+        // Question-carrying homework - picked out of the question bank, or taken
+        // whole from a homework exam paper - keeps its questions as a
         // comma-separated `question_ids` list on the `homework` row (see
-        // StudentHomeworkApiController::store()) instead of an attachment.
-        // Attachment-sourced homework keeps getting an empty array.
+        // StudentHomeworkApiController::store()) alongside the generated
+        // reference PDF. Attachment-sourced homework keeps getting an empty array.
         $sourceType = $homework->source_type ?? 'attachment';
         $questions = [];
-        if ($sourceType === 'question_bank' && !empty($homework->question_ids)) {
+        if (in_array($sourceType, ['question_bank', 'exam_paper'], true) && !empty($homework->question_ids)) {
             $questionIds = array_values(array_filter(array_map(
                 'intval',
                 explode(',', $homework->question_ids)
@@ -429,6 +440,10 @@ class HomeworkSubmissionApiController extends Controller
                 'homework' => $homework,
                 'submission' => $submission,
                 'files' => $submission['files'],
+                // Per-question marks are staff-only: they carry the teacher's
+                // in-progress figures, which are nobody else's business until
+                // the review is published.
+                'answers' => $this->answersFor((int) $homework->id),
                 // No separate table means no attempt history can be kept --
                 // always empty, but the key stays so the frontend's existing
                 // render logic (which expects it to exist) doesn't break.
@@ -444,6 +459,8 @@ class HomeworkSubmissionApiController extends Controller
             'teacher_remarks' => 'nullable|string',
             'status' => 'required|string|in:Under Review,Reviewed,Rejected',
             'publish' => 'nullable|boolean',
+            'marks' => 'nullable|array',
+            'marks.*.question_no' => 'required_with:marks|numeric',
         ]);
 
         if ($validator->fails()) {
@@ -458,13 +475,29 @@ class HomeworkSubmissionApiController extends Controller
         }
 
         $reviewed_by = $request->input('user_id') ?? $request->input('teacher_id');
+        $status = (string) $request->input('status');
+
+        $this->applyMarks((int) $homework->id, $request->input('marks'));
+
+        // 'Reviewed' is this module's word for approved, and approving is what
+        // turns proposals into marks: every question the teacher did not touch
+        // takes the AI's figure at that moment, so the total stops moving even
+        // if the evaluation is re-run later. The same rule the Exam Evaluation
+        // review screen follows.
+        if ($status === 'Reviewed') {
+            DB::table('homework_evaluation_answer')
+                ->where('homework_id', $homework->id)
+                ->whereNull('teacher_marks')
+                ->update(['teacher_marks' => DB::raw('COALESCE(ai_marks, 0)'), 'updated_at' => now()]);
+        }
 
         $homework->update([
             'teacher_remarks' => $request->input('teacher_remarks'),
-            'status' => $request->input('status'),
+            'status' => $status,
             'reviewed_by' => $reviewed_by,
             'reviewed_at' => now(),
             'feedback_published' => $request->boolean('publish'),
+            'teacher_marks' => $this->teacherTotal((int) $homework->id),
         ]);
 
         $server = $request->getSchemeAndHttpHost();
@@ -475,6 +508,165 @@ class HomeworkSubmissionApiController extends Controller
             'message' => 'Submission reviewed successfully',
             'data' => $this->buildSubmissionEntry($homework, $server),
         ], 200);
+    }
+
+    /**
+     * Re-runs the evaluation on a submission that has already been marked.
+     *
+     * For a scan that came out unreadable, or a homework whose questions were
+     * corrected after the fact. Refused once the review is signed off, because
+     * re-running would replace marks a teacher has already stood behind --
+     * move it back to 'Under Review' first.
+     */
+    public function reviewReprocess(Request $request, $id): JsonResponse
+    {
+        $homework = studentHomeworkModel::where('id', $id)
+            ->when($request->input('sub_institute_id'), fn ($q, $v) => $q->where('sub_institute_id', $v))
+            ->first();
+
+        if (!$homework) {
+            return $this->fail('Submission not found', 404);
+        }
+
+        // Two submission shapes reach this screen: the v2 flow stores its
+        // uploads in `submission_files`, the legacy single-file flow in
+        // `submission_image`. Re-running has to pick the job that matches the
+        // shape, or it reads the wrong field and reports an empty submission.
+        $files = is_array($homework->submission_files) ? $homework->submission_files : [];
+        $isV2 = $files !== [];
+
+        if (! $isV2 && empty($homework->submission_image)) {
+            return $this->fail('There is no submitted file to evaluate.', 422);
+        }
+
+        if ((string) $homework->status === 'Reviewed') {
+            return $this->fail('This submission has been reviewed. Move it back to Under Review before re-running the evaluation.', 422);
+        }
+
+        // The v2 job returns early on an already-evaluated row, so the status
+        // is cleared before dispatch rather than after it.
+        $homework->update(['ai_status' => 'Checking', 'ai_failure_reason' => null]);
+
+        try {
+            $isV2
+                ? EvaluateHomeworkSubmissionV2Job::dispatch(
+                    (int) $homework->id,
+                    (int) $homework->sub_institute_id,
+                    (int) $homework->syear
+                )
+                : EvaluateHomeworkSubmissionJob::dispatch(
+                    (int) $homework->id,
+                    (int) $homework->sub_institute_id,
+                    (int) $homework->syear
+                );
+        } catch (Throwable $exception) {
+            // dispatch() re-throws a job's own exceptions synchronously while
+            // QUEUE_CONNECTION=sync, and the job records its own failure on the
+            // row either way -- so this must not also 500 the request.
+            Log::error('Homework re-evaluation could not be dispatched', [
+                'homework_id' => $homework->id,
+                'message' => $exception->getMessage(),
+            ]);
+        }
+
+        $homework->refresh();
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'Re-evaluation started.',
+            'data' => [
+                'submission' => $this->buildSubmissionEntry($homework, $request->getSchemeAndHttpHost()),
+                'answers' => $this->answersFor((int) $homework->id),
+            ],
+        ], 200);
+    }
+
+    /**
+     * The per-question marks for one submission.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function answersFor(int $homeworkId): array
+    {
+        return DB::table('homework_evaluation_answer')
+            ->where('homework_id', $homeworkId)
+            ->orderBy('question_no')
+            ->get()
+            ->map(fn ($row) => [
+                'id' => (int) $row->id,
+                'question_no' => (int) $row->question_no,
+                'question_id' => $row->question_id ? (int) $row->question_id : null,
+                'question_title' => (string) ($row->question_title ?? ''),
+                'question_type' => (string) ($row->question_type ?? ''),
+                'is_objective' => (bool) $row->is_objective,
+                'detected_answer' => (string) ($row->detected_answer ?? ''),
+                'selected_options' => array_values(array_filter(explode(',', (string) $row->selected_options))),
+                'expected_answer' => (string) ($row->expected_answer ?? ''),
+                'max_marks' => (float) $row->max_marks,
+                'ai_marks' => $row->ai_marks === null ? null : (float) $row->ai_marks,
+                'teacher_marks' => $row->teacher_marks === null ? null : (float) $row->teacher_marks,
+                'status' => (string) $row->status,
+                'ai_confidence' => $row->ai_confidence === null ? null : (float) $row->ai_confidence,
+                'ai_remark' => (string) ($row->ai_remark ?? ''),
+                // A written answer the model was unsure of is the one a teacher
+                // should look at first; an objective mark was checked against
+                // the key and needs no second opinion.
+                'needs_attention' => ! $row->is_objective
+                    && $row->status !== 'unattempted'
+                    && $row->ai_confidence !== null
+                    && (float) $row->ai_confidence < AnswerSheetScoringService::CONFIDENCE_REVIEW_THRESHOLD,
+                'page' => (int) $row->page,
+            ])
+            ->all();
+    }
+
+    /**
+     * Writes the teacher's own marks, clamped to what each question is worth.
+     *
+     * Clamped rather than rejected: a slip in one mark box should land on the
+     * nearest legal mark, not throw away the teacher's whole pass over the
+     * submission.
+     */
+    private function applyMarks(int $homeworkId, mixed $marks): void
+    {
+        if (!is_array($marks)) {
+            return;
+        }
+
+        foreach ($marks as $row) {
+            if (!is_array($row) || !isset($row['question_no'])) {
+                continue;
+            }
+
+            $answer = DB::table('homework_evaluation_answer')
+                ->where('homework_id', $homeworkId)
+                ->where('question_no', (int) $row['question_no'])
+                ->first(['id', 'max_marks']);
+
+            if (!$answer) {
+                continue;
+            }
+
+            $given = $row['teacher_marks'] ?? null;
+            $value = ($given === null || $given === '')
+                ? null
+                : round(max(0.0, min((float) $answer->max_marks, (float) $given)), 2);
+
+            DB::table('homework_evaluation_answer')
+                ->where('id', $answer->id)
+                ->update(['teacher_marks' => $value, 'updated_at' => now()]);
+        }
+    }
+
+    /** Falls back to the AI's figure per question where the teacher left one alone. */
+    private function teacherTotal(int $homeworkId): ?float
+    {
+        $total = DB::table('homework_evaluation_answer')
+            ->where('homework_id', $homeworkId)
+            ->selectRaw('SUM(COALESCE(teacher_marks, ai_marks, 0)) as total')
+            ->value('total');
+
+        return $total === null ? null : round((float) $total, 2);
     }
 
     public function downloadFile(Request $request, $id): JsonResponse

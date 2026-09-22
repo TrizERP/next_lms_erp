@@ -200,6 +200,11 @@ class DeterministicPlanner implements Planner
     {
         return match ($intentKey) {
             'student_risk_scan' => 'agent_runner',
+            // Same route, different agent: which one runs is the module's binding, not
+            // this table's business. Asked on Fees it is the fees agent; the guard in
+            // plan() still declines the route entirely where the module has no agent.
+            'fees_risk_scan' => 'agent_runner',
+            'attendance_risk_scan' => 'agent_runner',
             'student_risk_explain' => 'stored_case_read',
             'evidence_inspect' => 'stored_evidence_read',
             'recommendation_advice' => 'stored_recommendation_read',
@@ -262,6 +267,10 @@ class DeterministicPlanner implements Planner
             'admission_confirm' => 'Collect whatever the admission still needs, then put the confirmation to a person.',
             'record_detail' => 'Open the row the previous answer listed and show everything held about it.',
             'record_filter' => 'Narrow the previous answer to the rows that match, without re-querying.',
+            'fees_risk_scan' => 'Find who is carrying unpaid fees, evidence it from the ledger, and put a '
+                . 'collection review to a person.',
+            'attendance_risk_scan' => 'Find who is attending below the school bar, evidence it from the '
+                . 'marked register, and put a follow-up to a person.',
             default => $label,
         };
     }
@@ -326,6 +335,24 @@ class DeterministicPlanner implements Planner
             'admission_enquiry_list' => [
                 ['read_enquiries', 'Load the admission enquiries in scope.', 'admissions.listEnquiries'],
                 ['report', 'Return the enquiries and which are still pending.'],
+            ],
+            // Mirrors the academic scan's shape because it is the same journey: the
+            // agent detects and opens a case, the case carries the evidence, and the
+            // recommendation it drafts stops at a person rather than acting.
+            'fees_risk_scan' => [
+                ['detect', 'Read arrears for the students in scope through the fee ledger.'],
+                ['analyse', 'Open a case for each student carrying a balance, citing the unpaid heads.'],
+                ['recommend', 'Draft a fees collection review for each case.'],
+                ['report', 'Return who owes what, and what is now waiting for approval.'],
+            ],
+            // The same four rungs over the register rather than the ledger. The wording of
+            // `detect` matters: the agent reads what has been *marked*, and a student
+            // nobody has marked is not a student who does not attend.
+            'attendance_risk_scan' => [
+                ['detect', 'Read attendance for the students in scope through the marked register.'],
+                ['analyse', 'Open a case for each student below the bar, citing the days they were absent.'],
+                ['recommend', 'Draft an attendance follow-up for each case.'],
+                ['report', 'Return who is attending least, and what is now waiting for approval.'],
             ],
             // `fees_query` is intentionally not deterministic. The classifier recognises
             // that a question belongs to the fees module, but the exact MCP tool depends

@@ -36,8 +36,18 @@ class H5PRegistrySeeder
 
     /** H5P type codes §8.1 defines that the registry did not already carry. */
     public const ADDED_H5P_TYPES = [
+        // Added with the text-passage vertical. The other two it needs
+        // (fill_in_the_blanks, mark_the_words) were already registry rows and
+        // were only promoted from 'planned' to 'native', so they are NOT
+        // listed here -- a prune must not delete rows this seeder did not add.
+        'drag_text',
         'crossword', 'summary', 'audio_recorder',
         'arithmetic_quiz', 'find_the_hotspot', 'image_sequencing',
+
+        // Added 2026-09-21 (second vertical). Neither code existed in the
+        // registry in any form before, so both are genuinely this seeder's to
+        // remove on a prune -- unlike the promoted types above.
+        'single_choice_set', 'true_false',
     ];
 
     /**

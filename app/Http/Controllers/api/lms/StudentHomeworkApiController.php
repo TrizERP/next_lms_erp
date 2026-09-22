@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use function App\Helpers\getStudents;
 use App\Models\school_setup\subjectModel;
@@ -94,7 +95,8 @@ class StudentHomeworkApiController extends Controller
         $validator = Validator::make($request->all(), [
             'sub_institute_id' => 'required|numeric',
             'syear' => 'required|numeric',
-            'students' => 'required',
+            'students' => 'required_unless:assign_mode,all',
+            'assign_mode' => 'nullable|string|in:selected,all',
             'title' => 'required|string',
             'description' => 'nullable|string',
             'standard_id' => 'required|numeric',
@@ -112,7 +114,18 @@ class StudentHomeworkApiController extends Controller
 
         $sub_institute_id = $request->input('sub_institute_id');
         $syear = $request->input('syear');
-        $students = $this->parseCsvIds($request->input('students'));
+        // Who the homework goes to. 'selected' is the screen's original
+        // behaviour -- the ids the teacher ticked -- and stays the default, so
+        // a request that never mentions assign_mode behaves exactly as before.
+        // 'all' ignores the posted ids and resolves every currently enrolled
+        // student of the chosen section/standard/division here, on the server,
+        // so the class roster is read at assign time rather than trusted from
+        // the browser. Past this line the two modes are indistinguishable:
+        // both hand the same array of ids to getStudents() below.
+        $assign_mode = $request->input('assign_mode') === 'all' ? 'all' : 'selected';
+        $students = $assign_mode === 'all'
+            ? $this->classStudentIds($request)
+            : $this->parseCsvIds($request->input('students'));
         $title = $request->input('title');
         $description = $request->input('description');
         $standard_id = $request->input('standard_id');
@@ -121,7 +134,38 @@ class StudentHomeworkApiController extends Controller
         $submission_date = $request->input('submission_date');
         $teacher_id = $request->input('teacher_id');
         $sourceType = $request->input('source_type', 'attachment');
-        $questionIds = $request->input('question_ids', []);
+        $questionIds = $this->parseCsvIds($request->input('question_ids', []));
+        $examPaperId = (int) $request->input('exam_paper_id', 0);
+        $examPaperName = '';
+
+        // Exam-paper homework takes its questions from the paper itself rather
+        // than from whatever the client posted: `question_paper.question_ids`
+        // is the teacher's chosen sequence, and reading it here keeps the
+        // homework and the paper from disagreeing. The posted ids remain the
+        // fallback for a paper row this tenant cannot read.
+        if ($sourceType === 'exam_paper' && $examPaperId > 0) {
+            $paper = DB::table('question_paper')
+                ->where('id', $examPaperId)
+                ->where('sub_institute_id', $sub_institute_id)
+                ->first(['paper_name', 'paper_desc', 'question_ids']);
+
+            if ($paper) {
+                $examPaperName = trim(($paper->paper_name ?? '') . ' ' . ($paper->paper_desc ?? ''));
+                $paperQuestionIds = $this->parseCsvIds($paper->question_ids);
+                if (!empty($paperQuestionIds)) {
+                    $questionIds = $paperQuestionIds;
+                }
+            }
+        }
+
+        if (empty($students)) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => $assign_mode === 'all'
+                    ? 'No students are enrolled in the selected class.'
+                    : 'Select at least one student.',
+            ], 422);
+        }
 
         $student_details = getStudents($students, $sub_institute_id, $syear);
 
@@ -151,16 +195,21 @@ class StudentHomeworkApiController extends Controller
         // EvaluateHomeworkSubmissionV2Job's reference-file resolution) keeps
         // working unchanged. Generated once for the whole batch since the
         // same question set applies to every selected student.
-        if ($sourceType === 'question_bank' && !empty($questionIds) && $file_name === '') {
+        if (in_array($sourceType, ['question_bank', 'exam_paper'], true) && !empty($questionIds) && $file_name === '') {
             try {
-                $generated = $this->generateQuestionBankPdf($questionIds);
+                $generated = $this->generateQuestionBankPdf(
+                    $questionIds,
+                    $examPaperName !== '' ? $examPaperName : 'Homework Questions'
+                );
                 if ($generated !== null) {
                     $file_name = $generated['file_name'];
                     $file_size = $generated['file_size'];
                     $ext = 'pdf';
                 }
             } catch (\Throwable $exception) {
-                Log::warning('Question-bank homework PDF generation failed — leaving image empty', [
+                Log::warning('Homework question PDF generation failed — leaving image empty', [
+                    'source_type' => $sourceType,
+                    'exam_paper_id' => $examPaperId,
                     'question_ids' => $questionIds,
                     'message' => $exception->getMessage(),
                 ]);
@@ -216,6 +265,14 @@ class StudentHomeworkApiController extends Controller
                 'source_type' => $sourceType,
                 'question_ids' => !empty($questionIds) ? implode(',', $questionIds) : null,
             ];
+
+            // The paper a homework came from is provenance, and the questions
+            // themselves are already in `question_ids`, so a deployment that has
+            // not run the `exam_paper_id` migration yet still assigns homework
+            // rather than failing on an unknown column.
+            if ($examPaperId > 0 && $this->homeworkHasExamPaperColumn()) {
+                $addhomeworkArray['exam_paper_id'] = $examPaperId;
+            }
 
             $insertedId = studentHomeworkModel::insertGetId($addhomeworkArray);
             $inserted_ids[] = $insertedId;
@@ -1059,7 +1116,7 @@ class StudentHomeworkApiController extends Controller
      * A question renders as a lettered A/B/C/D list when it has any
      * answer_master rows, otherwise as plain descriptive text.
      */
-    private function generateQuestionBankPdf(array $questionIds): ?array
+    private function generateQuestionBankPdf(array $questionIds, string $heading = 'Homework Questions'): ?array
     {
         $questions = \App\Models\lms\lmsQuestionMasterModel::whereIn('id', $questionIds)
             ->get(['id', 'question_title', 'description']);
@@ -1067,6 +1124,14 @@ class StudentHomeworkApiController extends Controller
         if ($questions->isEmpty()) {
             return null;
         }
+
+        // whereIn() does not preserve the order of the ids it was given, and for
+        // an exam paper that order is the paper's own question sequence, so the
+        // rows are put back into it before they are printed.
+        $order = array_flip(array_values($questionIds));
+        $questions = $questions
+            ->sortBy(fn ($question) => $order[$question->id] ?? PHP_INT_MAX)
+            ->values();
 
         $optionsByQuestion = DB::table('answer_master')
             ->whereIn('question_id', $questionIds)
@@ -1082,7 +1147,7 @@ class StudentHomeworkApiController extends Controller
             . '.options{margin:4px 0 0 18px;padding:0;list-style:none;}'
             . '.options li{margin-bottom:2px;}'
             . '</style></head><body>'
-            . '<h3>Homework Questions</h3>';
+            . '<h3>' . e($heading) . '</h3>';
 
         foreach ($questions as $index => $question) {
             $number = $index + 1;
@@ -1127,6 +1192,18 @@ class StudentHomeworkApiController extends Controller
         ];
     }
 
+    /** `homework.exam_paper_id`, which only exists once its migration has run. */
+    private function homeworkHasExamPaperColumn(): bool
+    {
+        static $has = null;
+
+        if ($has === null) {
+            $has = Schema::hasColumn('homework', 'exam_paper_id');
+        }
+
+        return $has;
+    }
+
     private function parseCsvIds($value): array
     {
         if (is_array($value)) {
@@ -1141,6 +1218,43 @@ class StudentHomeworkApiController extends Controller
         $parts = array_filter(array_map('trim', explode(',', $value)), fn ($part) => $part !== '');
 
         return array_values(array_filter(array_map('intval', $parts), fn ($id) => $id > 0));
+    }
+
+    /**
+     * Every enrolled student of the posted section/standard/division.
+     *
+     * The same filters studentsList() serves the picker table from, so "all
+     * students" means exactly the rows the teacher would have seen had they
+     * searched -- without the browser having to send them back, and read at
+     * assign time so a student enrolled since the search is included.
+     */
+    private function classStudentIds(Request $request): array
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+        $grade = $request->input('grade');
+        $standard = $request->input('standard_id');
+        $division = $request->input('division_id');
+
+        $query = DB::table('tblstudent as s')
+            ->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw('se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id');
+            })
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->where('se.syear', $syear)
+            ->whereNull('se.end_date');
+
+        if ($grade) {
+            $query->where('se.grade_id', $grade);
+        }
+        if ($standard) {
+            $query->where('se.standard_id', $standard);
+        }
+        if ($division) {
+            $query->where('se.section_id', $division);
+        }
+
+        return array_values(array_unique(array_map('intval', $query->pluck('s.id')->all())));
     }
 
     public function getChapters(Request $request): JsonResponse

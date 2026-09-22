@@ -52,6 +52,12 @@ Route::middleware(['brain.auth', 'brain.tenant'])->group(function () {
         // Intelligence loop — the real pipeline over vivek_erp.
         Route::get('intelligence', [BrainIntelligenceController::class, 'intelligence'])->middleware('brain.permission:read');
         Route::post('intelligence/run', [BrainIntelligenceController::class, 'intelligenceRun'])->middleware('brain.permission:create');
+
+        // The same loop narrowed to one module, for that module's own
+        // Intelligence tab. Placed before 'intelligence/{anything}' routes would
+        // be, and named by module rather than taking a query parameter, so the
+        // scope is part of the address a screen links to.
+        Route::get('modules/{module}/intelligence', [BrainIntelligenceController::class, 'moduleIntelligence'])->middleware('brain.permission:read');
         Route::get('signals', [BrainIntelligenceController::class, 'signals'])->middleware('brain.permission:read');
         Route::get('signals/{id}', [BrainIntelligenceController::class, 'signalShow'])->middleware('brain.permission:read');
         Route::get('recommendations', [BrainIntelligenceController::class, 'recommendations'])->middleware('brain.permission:read');

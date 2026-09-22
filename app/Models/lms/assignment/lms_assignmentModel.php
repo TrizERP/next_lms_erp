@@ -44,6 +44,7 @@ class lms_assignmentModel extends Model
         'evaluated_at',
         'assignment_source_type',
         'homework_file',
+        'work_type',
     ];
 
     protected $casts = [

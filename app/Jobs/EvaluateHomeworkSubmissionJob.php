@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\student\studentHomeworkModel;
+use App\Services\Evaluation\HomeworkMarkingService;
 use App\Services\Homework\Exceptions\DocumentExtractionException;
 use App\Services\Homework\Exceptions\EvaluationException;
 use App\Services\Homework\HomeworkAnnotatedPdfService;
@@ -20,26 +21,45 @@ use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
- * Queued homework evaluation pipeline: text-extraction of the teacher's
- * assignment file, spatial answer-location + grading of the student's
- * submission, and drawing the verdicts directly onto the STUDENT'S OWN
- * uploaded pages (never a separate typed report — see
- * HomeworkAnnotatedPdfService), then persistence back onto the `homework`
- * row.
+ * Queued homework evaluation: read the student's upload, mark it, draw the
+ * verdicts onto their own pages, and leave the result for a teacher.
  *
- * Dispatched from StudentHomeworkApiController::submissionStore() right
- * after the student's file is saved, so the upload request itself never
- * waits on Gemini/OCR/PDF work. On QUEUE_CONNECTION=sync (this app's
- * current default) it still runs inline within that request; switching
- * QUEUE_CONNECTION to database/redis and running a queue worker makes it
- * fully asynchronous with no code change.
+ * TWO PATHS, one outcome. Homework arrives in two shapes and they cannot be
+ * marked the same way:
+ *
+ *  - ANSWER KEY. The homework carries real questions (`homework.question_ids`,
+ *    set when it was built from the question bank or taken from a homework
+ *    paper). Then a true marking key exists — each question's own `points`, its
+ *    correct options from `answer_master`, its model answer from
+ *    `lms_question_master.answer` — and the submission is marked exactly as an
+ *    exam answer sheet is, through the shared App\Services\Evaluation stack.
+ *    Objective questions are compared to the key in PHP, so an MCQ in a
+ *    homework book scores identically to the same MCQ on an exam paper.
+ *
+ *  - FREE FORM. The homework is an attachment with no questions on the row. The
+ *    teacher's own file is read for the questions and the whole thing is judged
+ *    by the model, one mark per question, which is what this job has always
+ *    done.
+ *
+ * Either way the output is the same: one `homework_evaluation_answer` row per
+ * question. That uniformity is the point — the teacher's review screen does not
+ * need to know which path ran.
+ *
+ * What this job produces is a PROPOSAL. It writes `ai_marks` and never
+ * `teacher_marks`, and it never sets a review status. A teacher approving the
+ * submission is what turns proposals into marks.
+ *
+ * Dispatched right after the student's file is saved, so the upload request
+ * never waits on model work. On QUEUE_CONNECTION=sync it still runs inline;
+ * pointing that at database/redis with a worker makes it asynchronous with no
+ * code change here.
  */
 class EvaluateHomeworkSubmissionJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 2;
-    public int $timeout = 300;
+    public int $timeout = 600;
 
     public function __construct(
         private readonly int $homeworkId,
@@ -52,7 +72,8 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
         HomeworkDocumentExtractionService $extractor,
         HomeworkAnswerLocatorService $locator,
         HomeworkEvaluationService $evaluationService,
-        HomeworkAnnotatedPdfService $annotatedPdfService
+        HomeworkAnnotatedPdfService $annotatedPdfService,
+        HomeworkMarkingService $marking
     ): void {
         $homework = studentHomeworkModel::where([
             'id' => $this->homeworkId,
@@ -64,33 +85,25 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
             return;
         }
 
-        $assignmentPath = $this->localPath($homework->image);
         $submissionPath = $this->localPath($homework->submission_image);
 
-        if (!$assignmentPath || !$submissionPath) {
-            $this->markFailed($homework, 'OCR Failed', 'Assignment or submission file could not be located on disk.');
+        if (!$submissionPath) {
+            $this->markFailed($homework, 'OCR Failed', 'The submitted file could not be located on disk.');
             return;
         }
 
-        $questionsText = '';
         $submissionMime = $this->detectMime($submissionPath, $homework->submission_image_type);
-        $located = null;
-
-        // A Word submission has no page images for the locator's spatial
-        // box_2d lookup to make sense of, so its own text layer (already
-        // clean, never scanned) is read directly and there is nothing to
-        // annotate — see the annotation step below.
-        $submissionIsWord = in_array($submissionMime, HomeworkDocumentExtractionService::WORD_MIME_TYPES, true);
+        $questionIds = $this->questionIds($homework);
 
         try {
-            $questionsText = $extractor->extractText(
-                $assignmentPath,
-                $this->detectMime($assignmentPath, $homework->image_type),
-                'assignment questions'
-            );
-            $located = $submissionIsWord
-                ? ['answers' => [], 'combined_text' => $extractor->extractText($submissionPath, $submissionMime, 'student answers')]
-                : $locator->locateAnswers($submissionPath, $submissionMime);
+            $scored = $questionIds !== []
+                ? $marking->markAgainstAnswerKey(
+                    $questionIds,
+                    (int) $homework->sub_institute_id,
+                    [['path' => $submissionPath, 'mime' => $submissionMime]],
+                    (string) $homework->title
+                )
+                : $this->markFreeForm($homework, $submissionPath, $submissionMime, $extractor, $locator, $evaluationService, $marking);
         } catch (DocumentExtractionException $exception) {
             Log::warning('Homework OCR/extraction failed', [
                 'homework_id' => $this->homeworkId,
@@ -99,86 +112,171 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
             $this->logAiInteraction($homework, null, "OCR failed: {$exception->getMessage()}");
             $this->markFailed($homework, 'OCR Failed', $exception->getMessage());
             return;
-        }
-
-        try {
-            $evaluation = $evaluationService->evaluate($questionsText, $located['combined_text'], $homework->student_level);
         } catch (EvaluationException $exception) {
-            Log::warning('Homework Gemini evaluation failed', [
+            Log::warning('Homework evaluation failed', [
                 'homework_id' => $this->homeworkId,
                 'message' => $exception->getMessage(),
             ]);
             $this->logAiInteraction($homework, null, "Evaluation failed: {$exception->getMessage()}");
             $this->markFailed($homework, 'Evaluation Failed', $exception->getMessage());
             return;
+        } catch (Throwable $exception) {
+            Log::warning('Homework evaluation failed unexpectedly', [
+                'homework_id' => $this->homeworkId,
+                'message' => $exception->getMessage(),
+            ]);
+            $this->markFailed($homework, 'Evaluation Failed', $exception->getMessage());
+            return;
         }
 
-        $evaluatedSubmissionUrl = null;
-        if ($submissionIsWord) {
+        $annotatedUrl = $this->annotate(
+            $annotatedPdfService,
+            $submissionPath,
+            $submissionMime,
+            $marking->annotations($scored['answers'])
+        );
+
+        $this->persist($homework, $scored, $annotatedUrl, $marking);
+        $this->logAiInteraction($homework, $scored, null);
+    }
+
+    // -- Path 2: no questions on the row --------------------------------------
+
+    /**
+     * The original path: read the teacher's attachment for the questions, read
+     * the student's pages for the answers, and let the model judge both.
+     *
+     * Everything is worth one mark, because nothing here knows what any
+     * question was worth -- there is no key, only two documents. The answers are
+     * still written out per question so the review screen is identical.
+     *
+     * @return array{answers: array<int,array<string,mixed>>, ai_marks: float, max_marks: float, mode: string}
+     */
+    private function markFreeForm(
+        studentHomeworkModel $homework,
+        string $submissionPath,
+        string $submissionMime,
+        HomeworkDocumentExtractionService $extractor,
+        HomeworkAnswerLocatorService $locator,
+        HomeworkEvaluationService $evaluationService,
+        HomeworkMarkingService $marking
+    ): array {
+        $assignmentPath = $this->localPath($homework->image);
+
+        if (!$assignmentPath) {
+            throw new DocumentExtractionException('The homework file this submission answers could not be found on disk.');
+        }
+
+        // A Word submission has no page images for the locator's spatial box_2d
+        // lookup to make sense of, so its own text layer is read directly and
+        // there is nothing to annotate.
+        $submissionIsWord = in_array($submissionMime, HomeworkDocumentExtractionService::WORD_MIME_TYPES, true);
+
+        $questionsText = $extractor->extractText(
+            $assignmentPath,
+            $this->detectMime($assignmentPath, $homework->image_type),
+            'assignment questions'
+        );
+
+        $located = $submissionIsWord
+            ? ['answers' => [], 'combined_text' => $extractor->extractText($submissionPath, $submissionMime, 'student answers')]
+            : $locator->locateAnswers($submissionPath, $submissionMime);
+
+        $evaluation = $evaluationService->evaluate($questionsText, $located['combined_text'], $homework->student_level);
+
+        $scored = $marking->answersFromFreeForm($evaluation['results'], $located['answers']);
+
+        if ($scored['answers'] === []) {
+            throw new EvaluationException('The evaluation returned no questions to mark.');
+        }
+
+        return $scored;
+    }
+
+    // -- Shared ----------------------------------------------------------------
+
+    /**
+     * Draws each verdict next to the answer it belongs to on the student's own
+     * page, which is what a teacher does with a red pen and what makes the
+     * result recognisable to a parent.
+     *
+     * @param  array<int,array<string,mixed>>  $annotations  From HomeworkMarkingService::annotations().
+     */
+    private function annotate(
+        HomeworkAnnotatedPdfService $annotatedPdfService,
+        string $submissionPath,
+        string $submissionMime,
+        array $annotations
+    ): ?string {
+        if (in_array($submissionMime, HomeworkDocumentExtractionService::WORD_MIME_TYPES, true)) {
             Log::info('Skipping annotated-submission generation for a Word document submission (no page images to mark up)', [
                 'homework_id' => $this->homeworkId,
             ]);
-        } else {
-            try {
-                $annotations = $this->mergeAnnotations($evaluation['results'], $located['answers']);
-                $pdfBinary = $annotatedPdfService->annotate($submissionPath, $submissionMime, $annotations);
-                $filePath = 'public/homework_evaluated_submissions/evaluated-' . $this->homeworkId . '-' . now()->format('YmdHis') . '.pdf';
-                Storage::disk('digitalocean')->put($filePath, $pdfBinary, 'public');
-                $evaluatedSubmissionUrl = Storage::disk('digitalocean')->url($filePath);
-            } catch (Throwable $exception) {
-                Log::warning('Homework annotated-submission generation/storage failed', [
-                    'homework_id' => $this->homeworkId,
-                    'message' => $exception->getMessage(),
-                ]);
-                // Non-fatal: the structured result is still saved even if the annotated PDF could not be produced.
-            }
+
+            return null;
         }
 
-        $summary = $this->buildTeacherRemarks($evaluation);
+        if ($annotations === []) {
+            return null;
+        }
 
-        $homework->update([
-            'reviewed_pdf_path' => $evaluatedSubmissionUrl,
-            'ai_result_json' => json_encode($evaluation),
-            'ai_score' => $evaluation['overall_score'],
-            'ai_total_questions' => $evaluation['total_questions'],
-            'ai_percentage' => $evaluation['percentage'],
-            'ai_status' => 'Evaluated',
-            'ai_failure_reason' => null,
-            'evaluated_at' => now(),
-            'submission_remarks' => $summary,
-        ]);
+        try {
+            $pdfBinary = $annotatedPdfService->annotate($submissionPath, $submissionMime, $annotations);
+            $filePath = 'public/homework_evaluated_submissions/evaluated-' . $this->homeworkId . '-' . now()->format('YmdHis') . '.pdf';
+            Storage::disk('digitalocean')->put($filePath, $pdfBinary, 'public');
 
-        $this->logAiInteraction($homework, $evaluation, null);
+            return Storage::disk('digitalocean')->url($filePath);
+        } catch (Throwable $exception) {
+            // Non-fatal on purpose: the marks are the result, the marked-up copy
+            // is a convenience. Losing the PDF must not lose the grading.
+            Log::warning('Homework annotated-submission generation/storage failed', [
+                'homework_id' => $this->homeworkId,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
     }
 
-    /**
-     * Joins each graded question (status/remarks/expected_answer, from
-     * HomeworkEvaluationService) with where that answer actually sits on
-     * the student's page (page/box_2d, from HomeworkAnswerLocatorService),
-     * matched by question_no, so the annotator knows both WHAT to draw and
-     * WHERE.
-     */
-    private function mergeAnnotations(array $results, array $located): array
-    {
-        $byQuestion = [];
-        foreach ($located as $answer) {
-            $byQuestion[$answer['question_no']] = $answer;
-        }
+    /** @param array{answers: array<int,array<string,mixed>>, ai_marks: float, max_marks: float, mode: string} $scored */
+    private function persist(
+        studentHomeworkModel $homework,
+        array $scored,
+        ?string $annotatedUrl,
+        HomeworkMarkingService $marking
+    ): void {
+        $now = now();
+        $answers = $scored['answers'];
+        $maxMarks = round((float) $scored['max_marks'], 2);
+        $aiMarks = round((float) $scored['ai_marks'], 2);
+        $totals = $marking->totals($answers, $aiMarks, $maxMarks);
 
-        $annotations = [];
-        foreach ($results as $result) {
-            $location = $byQuestion[$result['question_no']] ?? null;
-            $annotations[] = [
-                'question_no' => $result['question_no'],
-                'status' => $result['status'],
-                'expected_answer' => $result['expected_answer'],
-                'remarks' => $result['remarks'],
-                'page' => $location['page'] ?? 1,
-                'box_2d' => $location['box_2d'] ?? null,
-            ];
-        }
+        $marking->persist((int) $homework->id, (int) $homework->sub_institute_id, $answers);
 
-        return $annotations;
+        $homework->update([
+            'reviewed_pdf_path' => $annotatedUrl,
+            'ai_result_json' => json_encode([
+                'mode' => $scored['mode'],
+                'ai_marks' => $aiMarks,
+                'max_marks' => $maxMarks,
+                'questions' => count($answers),
+            ]),
+            // The count-based fields keep the meaning they have always had, so
+            // nothing already reading them changes behaviour.
+            'ai_score' => $totals['correct'],
+            'ai_total_questions' => $totals['questions'],
+            // Marks where there are marks, counts where there are not. On the
+            // free-form path every question is worth one, so the two coincide
+            // and there is no ambiguity either way.
+            'ai_percentage' => $totals['percentage'],
+            'ai_marks' => $aiMarks,
+            'max_marks' => $maxMarks,
+            'evaluation_mode' => $scored['mode'],
+            'ai_status' => 'Evaluated',
+            'ai_failure_reason' => null,
+            'evaluated_at' => $now,
+            'submission_remarks' => $this->buildTeacherRemarks($answers, $aiMarks, $maxMarks),
+        ]);
     }
 
     public function failed(Throwable $exception): void
@@ -208,20 +306,30 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
         ]);
     }
 
-    private function buildTeacherRemarks(array $evaluation): string
+    /** @param array<int,array<string,mixed>> $answers */
+    private function buildTeacherRemarks(array $answers, float $aiMarks, float $maxMarks): string
     {
-        $score = $evaluation['overall_score'];
-        $total = $evaluation['total_questions'];
-        $percentage = $evaluation['percentage'];
-
-        $weak = array_values(array_filter($evaluation['results'], fn ($row) => $row['status'] !== 'correct'));
-        $weakNumbers = array_map(fn ($row) => (string) $row['question_no'], $weak);
+        $weak = array_values(array_filter($answers, static fn ($answer) => $answer['status'] !== 'correct'));
+        $weakNumbers = array_map(static fn ($answer) => (string) $answer['question_no'], $weak);
 
         $summaryLine = empty($weakNumbers)
             ? 'Student answered all questions correctly.'
             : 'Student understands most concepts but needs improvement in Question ' . implode(' and Question ', $weakNumbers) . '.';
 
-        return "AI Score: {$score}/{$total}\nPercentage: {$percentage}%\n\nSummary:\n{$summaryLine}";
+        $percentage = $maxMarks > 0 ? round($aiMarks / $maxMarks * 100, 1) : 0;
+
+        return "AI Score: {$this->trimNumber($aiMarks)}/{$this->trimNumber($maxMarks)}\n"
+            . "Percentage: {$percentage}%\n\nSummary:\n{$summaryLine}";
+    }
+
+    /** @return array<int,int> */
+    private function questionIds(studentHomeworkModel $homework): array
+    {
+        return collect(explode(',', (string) $homework->question_ids))
+            ->map(static fn ($value) => (int) trim($value))
+            ->filter()
+            ->values()
+            ->all();
     }
 
     private function logAiInteraction(studentHomeworkModel $homework, ?array $evaluation, ?string $errorMessage): void
@@ -285,32 +393,9 @@ class EvaluateHomeworkSubmissionJob implements ShouldQueue
         };
     }
 
-    private function studentName(?int $studentId): string
+    /** 2.00 -> "2", 1.50 -> "1.5" — marks read badly with trailing zeros. */
+    private function trimNumber(float $value): string
     {
-        if (!$studentId) {
-            return '';
-        }
-
-        $student = DB::table('tblstudent')->where('id', $studentId)->first(['first_name', 'middle_name', 'last_name']);
-
-        return $student ? trim("{$student->first_name} {$student->middle_name} {$student->last_name}") : '';
-    }
-
-    private function subjectName(?int $subjectId): string
-    {
-        if (!$subjectId) {
-            return '';
-        }
-
-        return (string) (DB::table('subject')->where('id', $subjectId)->value('subject_name') ?? '');
-    }
-
-    private function standardName(?int $standardId): string
-    {
-        if (!$standardId) {
-            return '';
-        }
-
-        return (string) (DB::table('standard')->where('id', $standardId)->value('name') ?? '');
+        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.') ?: '0';
     }
 }

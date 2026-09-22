@@ -300,7 +300,12 @@ class EsoEngineController extends Controller
             return $this->fail('Unknown learner.', 404);
         }
 
-        $items = $this->policy->checkUnderstandingItems($nodeId, $subInstituteId);
+        // The learner's node state seeds the item order, so the same check
+        // cycle always serves the same questions however many times the client
+        // asks — see EsoPolicyService::checkUnderstandingItems().
+        $state = LearnerNodeState::forStudent($learnerId)->where('node_id', $nodeId)->first();
+
+        $items = $this->policy->checkUnderstandingItems($nodeId, $subInstituteId, $state);
         if ($items === []) {
             return $this->fail('No tagged question is available for this node yet.', 404);
         }
