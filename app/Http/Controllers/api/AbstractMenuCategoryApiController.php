@@ -54,13 +54,30 @@ abstract class AbstractMenuCategoryApiController extends Controller
         }
 
         if (! Schema::hasTable('fees_menu_categories') || ! Schema::hasTable('fees_menu_category_items')) {
-            return response()->json(['status' => 1, 'data' => ['categories' => []]]);
+            return response()->json([
+                'status' => 1,
+                'data' => ['modules' => [], 'module' => null, 'categories' => []],
+            ]);
         }
 
+        // The module directory travels with every response, including the one
+        // that names no module.
+        //
+        // Two callers need it and neither is asking about a module's categories:
+        // the menu tree maps a level-2 menu id to a module slug so each menu item
+        // can carry its own module, and the Intelligence screen needs the
+        // module's own label and legacy link to decide which Intelligence it is.
+        // Both call this endpoint with no module named, which is why the
+        // directory cannot live only on the resolved-module path below.
+        $directory = $this->moduleDirectory();
         $moduleName = $this->resolveModuleName($request);
+        $module = $this->directoryEntry($directory, $moduleName);
 
         if ($moduleName === '') {
-            return response()->json(['status' => 1, 'data' => ['categories' => []]]);
+            return response()->json([
+                'status' => 1,
+                'data' => ['modules' => $directory, 'module' => null, 'categories' => []],
+            ]);
         }
 
         // `onboarding_module_key` arrived with the onboarding rollout, so it is
@@ -95,7 +112,10 @@ abstract class AbstractMenuCategoryApiController extends Controller
             ));
 
         if ($categoryRows->isEmpty()) {
-            return response()->json(['status' => 1, 'data' => ['categories' => []]]);
+            return response()->json([
+                'status' => 1,
+                'data' => ['modules' => $directory, 'module' => $module, 'categories' => []],
+            ]);
         }
 
         $itemsByCategory = $this->visibleItemsByCategory(
@@ -135,10 +155,86 @@ abstract class AbstractMenuCategoryApiController extends Controller
 
         return response()->json([
             'status' => 1,
-            'data' => ['categories' => $categories],
+            'data' => ['modules' => $directory, 'module' => $module, 'categories' => $categories],
         ]);
     }
 
+    /**
+     * Every configured module: its slug, the level-2 menu row it IS, and that
+     * row's own name and legacy link.
+     *
+     * Navigation metadata, identical for every tenant, so it carries no rights
+     * join — the per-module ITEMS are what are rights-filtered, and those go
+     * through visibleItemsByCategory() below. A module whose `level2_menu_id` is
+     * unset is skipped rather than returned with a null id: the callers key on
+     * that id, and an entry that cannot be keyed is not a usable answer.
+     *
+     * @return list<array{module_name:string,level2_menu_id:int,label:string,link:string}>
+     */
+    protected function moduleDirectory(): array
+    {
+        if (! Schema::hasColumn('fees_menu_categories', 'level2_menu_id')) {
+            return [];
+        }
+
+        $rows = DB::table('fees_menu_categories as c')
+            ->leftJoin('tblmenumaster as m', 'm.id', '=', 'c.level2_menu_id')
+            ->where('c.status', 1)
+            ->whereNotNull('c.level2_menu_id')
+            ->orderBy('c.module_name')
+            ->get(['c.module_name', 'c.level2_menu_id', 'm.name as label', 'm.link as link']);
+
+        $byModule = [];
+
+        foreach ($rows as $row) {
+            $moduleName = (string) $row->module_name;
+
+            if ($moduleName === '' || isset($byModule[$moduleName])) {
+                continue;
+            }
+
+            $byModule[$moduleName] = [
+                'module_name' => $moduleName,
+                'level2_menu_id' => (int) $row->level2_menu_id,
+                'label' => (string) ($row->label ?? ''),
+                'link' => (string) ($row->link ?? ''),
+            ];
+        }
+
+        return array_values($byModule);
+    }
+
+    /**
+     * One directory entry by slug, or null when the slug names no module.
+     *
+     * @param  list<array{module_name:string,level2_menu_id:int,label:string,link:string}>  $directory
+     * @return array{module_name:string,level2_menu_id:int,label:string,link:string}|null
+     */
+    protected function directoryEntry(array $directory, string $moduleName): ?array
+    {
+        if ($moduleName === '') {
+            return null;
+        }
+
+        foreach ($directory as $entry) {
+            if ($entry['module_name'] === $moduleName) {
+                return $entry;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Every configured menu the caller may actually see, grouped by category
+     * key and ordered by the configured sort order.
+     *
+     * The join to tblmenumaster is what applies the visibility rules — the
+     * configuration tables only say where a menu belongs, never whether it is
+     * allowed to be seen.
+     *
+     * @return array<string,list<array{id:int,label:string,link:string}>>
+     */
     /**
      * The audit prefixes as a list, from the comma-separated column.
      *
