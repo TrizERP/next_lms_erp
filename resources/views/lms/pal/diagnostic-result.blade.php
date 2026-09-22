@@ -4,10 +4,10 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-12">
-                <h4 class="page-title">Diagnostic Result</h4>
+                <h4 class="page-title">Chapter Diagnostic Result</h4>
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ route('pal.index') }}">PAL Subjects</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('pal.diagnostic.subjects') }}">Take Diagnostic</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('pal.diagnostic.subjects') }}">Take Chapter Diagnostic</a></li>
                     <li class="breadcrumb-item active">Result</li>
                 </ol>
             </div>
@@ -129,7 +129,7 @@
                         @endif
 
                         @if ($strengths->isEmpty() && $weaknesses->isEmpty())
-                            <p class="text-muted text-center py-3">Complete more diagnostics to see concept-wise analysis.</p>
+                            <p class="text-muted text-center py-3">Complete more chapter diagnostics to see concept-wise analysis.</p>
                         @endif
                     </div>
                 </div>
@@ -208,7 +208,7 @@
                     <i class="mdi mdi-history mr-1"></i> View History
                 </a>
                 <a href="{{ route('pal.adaptive.concepts', ['chapterId' => $attempt->chapter_id]) }}" class="btn btn-success">
-                    <i class="mdi mdi-brain mr-1"></i> Start Adaptive Learning
+                    <i class="mdi mdi-brain mr-1"></i> Start Concept Diagnostic
                 </a>
             </div>
         </div>

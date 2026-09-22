@@ -257,10 +257,10 @@
             Suggested Content
         </button>
         <a href="{{ route('pal.diagnostic.start', ['chapterId' => $chapter_id]) }}" class="btn btn-info btn-sm ml-1">
-            <i class="mdi mdi-play-circle mr-1"></i> Take Diagnostic
+            <i class="mdi mdi-play-circle mr-1"></i> Take Chapter Diagnostic
         </a>
         <a href="{{ route('pal.adaptive.concepts', ['chapterId' => $chapter_id]) }}" class="btn btn-success btn-sm ml-1">
-            <i class="mdi mdi-brain mr-1"></i> Adaptive Learning
+            <i class="mdi mdi-brain mr-1"></i> Concept Diagnostic
         </a>
     </div>
 <div class="modal fade" id="misconceptionModal">

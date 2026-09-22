@@ -12,10 +12,10 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-12">
-                <h4 class="page-title">Diagnostic History</h4>
+                <h4 class="page-title">Chapter Diagnostic History</h4>
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ route('pal.index') }}">PAL Subjects</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('pal.diagnostic.subjects') }}">Take Diagnostic</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('pal.diagnostic.subjects') }}">Take Chapter Diagnostic</a></li>
                     <li class="breadcrumb-item active">{{ $chapter_name }}</li>
                 </ol>
             </div>
@@ -38,10 +38,10 @@
                         @if (empty($attempts))
                             <div class="text-center py-5">
                                 <i class="mdi mdi-history text-muted" style="font-size: 48px;"></i>
-                                <h5 class="mt-3 text-muted">No Diagnostic History</h5>
-                                <p class="text-muted">You have not taken any diagnostics for this chapter yet.</p>
+                                <h5 class="mt-3 text-muted">No Chapter Diagnostic History</h5>
+                                <p class="text-muted">You have not taken any chapter diagnostics for this chapter yet.</p>
                                 <a href="{{ route('pal.diagnostic.start', ['chapterId' => $chapter_id]) }}" class="btn btn-primary mt-2">
-                                    <i class="mdi mdi-play-circle mr-1"></i> Take Diagnostic
+                                    <i class="mdi mdi-play-circle mr-1"></i> Take Chapter Diagnostic
                                 </a>
                             </div>
                         @else

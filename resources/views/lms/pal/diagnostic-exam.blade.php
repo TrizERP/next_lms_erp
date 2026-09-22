@@ -4,10 +4,10 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-12">
-                <h4 class="page-title">PAL Diagnostic Assessment</h4>
+                <h4 class="page-title">PAL Chapter Diagnostic Assessment</h4>
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ route('pal.index') }}">PAL Subjects</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('pal.diagnostic.subjects') }}">Take Diagnostic</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('pal.diagnostic.subjects') }}">Take Chapter Diagnostic</a></li>
                     <li class="breadcrumb-item active">Assessment</li>
                 </ol>
             </div>
@@ -100,7 +100,7 @@
                         <button type="button" class="btn btn-secondary mr-2" id="prev_question">Previous</button>
                         <button type="button" class="btn btn-primary mr-2" id="next_question">Next</button>
                         <button type="submit" class="btn btn-success" id="submit_diagnostic">
-                            <i class="mdi mdi-check-circle mr-1"></i> Submit Diagnostic
+                            <i class="mdi mdi-check-circle mr-1"></i> Submit Chapter Diagnostic
                         </button>
                     </div>
                 </div>
@@ -167,7 +167,7 @@ $(document).ready(function() {
         if (distance < 0) {
             clearInterval(x);
             document.getElementById("showtimer").innerHTML = "EXPIRED";
-            alert("Your diagnostic time has expired");
+            alert("Your chapter diagnostic time has expired");
             $("#diagnostic_form").submit();
         }
     }, 1000);

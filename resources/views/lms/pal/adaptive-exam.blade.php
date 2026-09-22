@@ -8,12 +8,12 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-12">
-                <h4 class="page-title">Adaptive Practice</h4>
+                <h4 class="page-title">Concept Diagnostic</h4>
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ route('pal.index') }}">PAL Subjects</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('pal.diagnostic.subjects') }}">Take Diagnostic</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('pal.diagnostic.subjects') }}">Take Chapter Diagnostic</a></li>
                     @if ($chapter_id)
-                        <li class="breadcrumb-item"><a href="{{ route('pal.adaptive.concepts', ['chapterId' => $chapter_id]) }}">Adaptive Learning</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('pal.adaptive.concepts', ['chapterId' => $chapter_id]) }}">Concept Diagnostic</a></li>
                     @endif
                     <li class="breadcrumb-item active">{{ $concept_name }}</li>
                 </ol>
