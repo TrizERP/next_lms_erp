@@ -1586,6 +1586,12 @@ public function generateGammaPDF(Request $request)
         $request->validate([
             'prompt' => 'required|string|max:400000',
             'chapter_name' => 'required|string',
+            // Optional, and preferred over chapter_name when sent. chapter_name is
+            // not unique - 'Number Play' exists in both Standard 6 and Standard 7
+            // Mathematics, and 'Fractions' three times over - so a name-only lookup
+            // files a chapter's content onto whichever row happens to come back
+            // first. Callers that know the id should send it.
+            'chapter_id' => 'nullable|integer',
             'content_type' => 'required|string',
             'format' => 'nullable|in:presentation,document,social',
             'export_format' => 'nullable|in:pdf,pptx',
@@ -1626,16 +1632,27 @@ public function generateGammaPDF(Request $request)
             $themeId = null;
         }
 
-        $chapterData = chapterModel::select('chapter_master.*')
-            ->where([
-                'chapter_master.chapter_name' => $chapterName,
-            ])
-            ->first();
+        // An explicit id is unambiguous, so it wins. The name lookup stays as the
+        // fallback for callers that only have the name, and behaves exactly as it
+        // did before.
+        $requestChapterId = $request->input('chapter_id');
+
+        $chapterData = $requestChapterId
+            ? chapterModel::select('chapter_master.*')
+                ->where('chapter_master.id', (int) $requestChapterId)
+                ->first()
+            : chapterModel::select('chapter_master.*')
+                ->where([
+                    'chapter_master.chapter_name' => $chapterName,
+                ])
+                ->first();
 
         if (!$chapterData) {
             return response()->json([
                 'success' => false,
-                'message' => 'Chapter not found: ' . $chapterName
+                'message' => $requestChapterId
+                    ? 'Chapter not found for id: ' . $requestChapterId
+                    : 'Chapter not found: ' . $chapterName
             ], 404);
         }
 
@@ -1903,7 +1920,7 @@ public function generateGammaPDF(Request $request)
                 ],
                 'imageOptions' => [
                     'source' => 'aiGenerated',
-                    'model' => 'imagen-4-pro',
+                    'model' => config('gamma.image_model'),
                     'style' => 'photorealistic'
                 ],
                 'cardOptions' => [
@@ -1993,6 +2010,19 @@ public function generateGammaPDF(Request $request)
 
             $url = null;
             $pdfUrl = null;
+
+            // What Gamma actually returns today, confirmed against a live
+            // generation: { generationId, status, gammaId, gammaUrl, exportUrl,
+            // credits }. The share link arrives as `gammaUrl` - a key none of
+            // the shapes below look for, so $url stayed null and $gammaUrl fell
+            // through to the export link. That is precisely the 403-on-open
+            // failure the comment further down records having already had to
+            // repair 36 rows for; it came back because the extraction list was
+            // never taught Gamma's actual field name. Checked first, and
+            // `gammaId` is kept as a second way home if only the id is present.
+            if (!empty($result['gammaUrl'])) $url = $result['gammaUrl'];
+            if (empty($url) && !empty($result['gammaId'])) $url = 'https://gamma.app/docs/' . $result['gammaId'];
+            if (!empty($result['exportUrl'])) $pdfUrl = $result['exportUrl'];
 
             if (isset($result['presentation'])) {
                 $presentation = $result['presentation'];
