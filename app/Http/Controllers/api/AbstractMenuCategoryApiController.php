@@ -23,6 +23,13 @@ use Illuminate\Support\Facades\Schema;
 abstract class AbstractMenuCategoryApiController extends Controller
 {
     /**
+     * The category an unmapped menu lands in when its own name says nothing
+     * about it. A screen that announces nothing about itself is a day-to-day
+     * screen.
+     */
+    private const DEFAULT_CATEGORY_KEY = 'operations';
+
+    /**
      * Which module's rows this request wants.
      *
      * Takes the request because a module is no longer always a property of the
@@ -115,7 +122,8 @@ abstract class AbstractMenuCategoryApiController extends Controller
             $moduleName,
             $subInstituteId,
             $userId,
-            (string) $request->input('user_profile_name', '')
+            (string) $request->input('user_profile_name', ''),
+            $categoryRows->pluck('category_key')->map(fn ($key) => (string) $key)->all()
         );
 
         $categories = $categoryRows->map(fn ($category) => [
@@ -249,17 +257,43 @@ abstract class AbstractMenuCategoryApiController extends Controller
         return array_values(array_unique($keys));
     }
 
+    /**
+     * Every one of this module's menus the caller may actually see, grouped
+     * by category key.
+     *
+     * Two sources, in this order:
+     *
+     *  1. `fees_menu_category_items` — the configured rows, in their configured
+     *     sort order. These are authoritative: they decide placement, they
+     *     decide order, and they are how one module's bar borrows a screen that
+     *     hangs under another module's level-2 menu.
+     *  2. autoDiscoveredItems() — everything else the menu tree hangs under this
+     *     module that step 1 said nothing about, appended after. This is what
+     *     makes a menu added or moved in the database show up without a code
+     *     change; see that method for why it is needed.
+     *
+     * The join to tblmenumaster is what applies the visibility rules — the
+     * configuration tables only say where a menu belongs, never whether it is
+     * allowed to be seen — and both sources go through the same ones.
+     *
+     * @param  list<string>  $categoryKeys  this module's own category keys, so a
+     *                                      discovered menu can only land in a
+     *                                      category the bar actually has.
+     * @return array<string,list<array{id:int,label:string,link:string}>>
+     */
     private function visibleItemsByCategory(
         string $moduleName,
         string $subInstituteId,
         string $userId,
-        string $userProfileName
+        string $userProfileName,
+        array $categoryKeys = []
     ): array {
         $permittedMenuIds = $this->permittedMenuIds($subInstituteId, $userId, $userProfileName);
         if ($permittedMenuIds === []) {
             return [];
         }
 
+        // The configured rows first.
         $rows = DB::table('fees_menu_category_items as c')
             ->join('tblmenumaster as m', 'm.id', '=', 'c.menu_id')
             ->where('c.module_name', $moduleName)
@@ -280,7 +314,209 @@ abstract class AbstractMenuCategoryApiController extends Controller
             ];
         }
 
+        // Then the menus the tree has that the mapping table does not, appended
+        // after the configured ones so a hand-placed order is never disturbed.
+        $discovered = $this->autoDiscoveredItems(
+            $moduleName,
+            $this->level2MenuId($moduleName),
+            $subInstituteId,
+            $permittedMenuIds,
+            $categoryKeys
+        );
+
+        foreach ($discovered as $categoryKey => $items) {
+            $grouped[$categoryKey] = array_merge($grouped[$categoryKey] ?? [], $items);
+        }
+
         return $grouped;
+    }
+
+    /**
+     * This module's level-2 menu, or 0 when it has none.
+     *
+     * `level2_menu_id` arrived with 2026_09_17_100000 and is read only where it
+     * exists, so an installation that has not run that migration keeps the
+     * behaviour it has today — configured rows and nothing else — rather than
+     * this feed failing outright.
+     *
+     * Where a module's rows disagree, the level-2 menu that is still switched
+     * on wins: a bar belongs to the menu people can actually reach.
+     */
+    private function level2MenuId(string $moduleName): int
+    {
+        if (! Schema::hasColumn('fees_menu_categories', 'level2_menu_id')) {
+            return 0;
+        }
+
+        // A module's rows are supposed to agree on this, and 61 of the 62 do.
+        // `user-i-card` does not: its ten original categories point at Users
+        // (105, live) while the three added later — Workflow, Schedular, Audit
+        // Trail — point at User I-card (266), the level-2 menu that has since
+        // been switched off. So the live menu is preferred explicitly rather
+        // than left to row order, which would have answered correctly here only
+        // by the accident of the disabled one's rows being newer.
+        $id = (int) DB::table('fees_menu_categories as c')
+            ->leftJoin('tblmenumaster as m', 'm.id', '=', 'c.level2_menu_id')
+            ->where('c.module_name', $moduleName)
+            ->where('c.status', 1)
+            ->whereNotNull('c.level2_menu_id')
+            ->orderByRaw('CASE WHEN m.status = 1 THEN 0 ELSE 1 END')
+            ->orderBy('c.id')
+            ->value('c.level2_menu_id');
+
+        return $id > 0 ? $id : 0;
+    }
+
+    /**
+     * The menus that belong to this module by the menu tree, but that
+     * `fees_menu_category_items` says nothing about.
+     *
+     * WHY THIS EXISTS. The mapping table was written once, by
+     * 2026_09_17_100001, from the tree as it stood that day. The tree has moved
+     * since and keeps moving: a menu added under a module afterwards has no row
+     * here, and neither does one re-parented into the module from somewhere
+     * else. The Student bar is the clearest case — Student I-card, Student
+     * Health, Student Vaccination, Student Height Weight, Student Infirmary,
+     * Student Certificate and Student Request were all moved under Student once
+     * their own level-2 menus were switched off, and so were reachable from no
+     * bar at all. Without this the only cure is another seeding migration every
+     * time somebody edits the menu tree, which is a deploy for what is plainly
+     * configuration.
+     *
+     * So the mapping table stops being the whole membership list and becomes
+     * what it is good at: a curation overlay. A row still decides placement and
+     * order, and still lets one module borrow another's screens - 22 of the 33
+     * menus on the Fees bar and 5 of the 7 on Teach/Learn's sit under a
+     * different level-2 parent, which is deliberate and stays exactly as it is.
+     * Everything the tree says belongs to the module, and the overlay is silent
+     * about, now shows up on its own, categorised by the same heuristic the
+     * seeding migration used.
+     *
+     * A row with `status = 0` is how a menu is kept out of a bar: this skips
+     * any menu the module has a row for whatever that row's status says, so
+     * hiding one stays a row rather than a special case here.
+     *
+     * The same rights and tenant filters as the configured items apply, because
+     * these are menus like any other and nothing here may widen what a user is
+     * allowed to see.
+     *
+     * @param  list<int>  $permittedMenuIds
+     * @param  list<string>  $categoryKeys
+     * @return array<string,list<array{id:int,label:string,link:string}>>
+     */
+    private function autoDiscoveredItems(
+        string $moduleName,
+        int $level2MenuId,
+        string $subInstituteId,
+        array $permittedMenuIds,
+        array $categoryKeys
+    ): array {
+        if ($level2MenuId <= 0 || $permittedMenuIds === [] || $categoryKeys === []) {
+            return [];
+        }
+
+        $configuredMenuIds = DB::table('fees_menu_category_items')
+            ->where('module_name', $moduleName)
+            ->pluck('menu_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $rows = DB::table('tblmenumaster as m')
+            ->where('m.parent_menu_id', $level2MenuId)
+            ->where('m.level', 3)
+            ->where('m.status', 1)
+            ->whereIn('m.id', $permittedMenuIds)
+            ->whereNotIn('m.id', $configuredMenuIds === [] ? [0] : $configuredMenuIds)
+            ->whereRaw('FIND_IN_SET(?, m.sub_institute_id)', [$subInstituteId])
+            ->orderBy('m.sort_order')
+            ->orderBy('m.id')
+            ->get(['m.id', 'm.name', 'm.link', 'm.menu_type']);
+
+        $discovered = [];
+
+        foreach ($rows as $row) {
+            $categoryKey = $this->categorize((string) $row->name, $row->menu_type);
+
+            // Every module is seeded every category, but a bar someone has
+            // since trimmed may not have the one the heuristic picked. Falling
+            // back to Operations keeps the menu reachable; dropping it only
+            // when that is missing too keeps this from inventing a category.
+            if (! in_array($categoryKey, $categoryKeys, true)) {
+                $categoryKey = self::DEFAULT_CATEGORY_KEY;
+            }
+
+            if (! in_array($categoryKey, $categoryKeys, true)) {
+                continue;
+            }
+
+            $discovered[$categoryKey][] = [
+                'id' => (int) $row->id,
+                'label' => (string) $row->name,
+                'link' => (string) $row->link,
+            ];
+        }
+
+        return $discovered;
+    }
+
+    /**
+     * Which category a menu belongs to, from the only two signals
+     * tblmenumaster carries about it: its name and its menu_type.
+     *
+     * The rules of the categorize() in
+     * 2026_09_17_100001_seed_all_module_menu_categories.php, in the same order,
+     * so a menu that was seeded and a menu that is discovered land in the same
+     * place. That migration is history and is not edited; this is where the
+     * rules live now, and a placement either of them gets wrong is corrected by
+     * a row in `fees_menu_category_items`, which always wins.
+     *
+     * menu_type is the authoritative signal, in both directions: it is set by
+     * the menu tree itself rather than inferred from wording.
+     *
+     *  - 'MASTER' files the menu under Master Setup outright.
+     *  - 'ENTRY' says the opposite, so the name rule that would have filed it
+     *    under Master Setup is skipped. The case that brought this up is "User
+     *    Master" (`/user/add_user`) under Users, typed ENTRY and landing in
+     *    Master Setup on the strength of one word in its label while the tree
+     *    said plainly that it was a day-to-day screen. Compare "Add Student",
+     *    which is typed MASTER and belongs there.
+     *
+     * The other three name rules still apply to an ENTRY menu, because they
+     * describe what a screen produces rather than contradicting its type: an
+     * ENTRY menu called "User Attendance Report" is still a report.
+     */
+    private function categorize(string $name, ?string $menuType): string
+    {
+        $type = strtoupper(trim((string) $menuType));
+
+        if ($type === 'MASTER') {
+            return 'master-setup';
+        }
+
+        $haystack = strtolower($name);
+
+        $rules = [
+            'reports' => ['report', 'analysis', 'analytics'],
+            'intelligence' => ['dashboard', 'prediction', 'intelligence'],
+            'master-setup' => ['setting', 'master', 'setup', 'mapping'],
+            'communication' => ['sms', 'email', 'circular', 'notice', 'communication'],
+        ];
+
+        foreach ($rules as $categoryKey => $needles) {
+            // A menu the tree calls an entry screen is not master data,
+            // whatever its label happens to contain.
+            if ($categoryKey === 'master-setup' && $type === 'ENTRY') {
+                continue;
+            }
+
+            foreach ($needles as $needle) {
+                if (str_contains($haystack, $needle)) {
+                    return $categoryKey;
+                }
+            }
+        }
+
+        return self::DEFAULT_CATEGORY_KEY;
     }
 
     /**

@@ -54,21 +54,11 @@ final class IntelligencePipeline
         // route every other finding does.
         $feeRules = new FeesSignalRules($this->tenantId, $writer, $this->syear);
 
-        // The twelve module catalogues reach the ledger through a bridge rather
-        // than as a thirteenth rule class: they already compute their findings —
-        // with evidence, severity, confidence and an affected count — for their
-        // own screens, and rewriting each of them to raise signals directly would
-        // mean the same domain logic in two shapes with one of them drifting.
-        // Everything below this point is unchanged: Reasoner reasons over the
-        // signals, AutomationCatalogue links a procedure, and a module finding
-        // reaches a recommendation by exactly the route a fee finding does.
-        $moduleRules = new ModuleSignalBridge($this->tenantId, $writer, $this->syear);
-
         $outcomes = [];
         $created = 0;
         $refreshed = 0;
 
-        foreach ($rules->applicable() + $feeRules->applicable() + $moduleRules->applicable() as $ruleKey => $rule) {
+        foreach ($rules->applicable() + $feeRules->applicable() as $ruleKey => $rule) {
             try {
                 $result = $rule();
             } catch (\Throwable $e) {

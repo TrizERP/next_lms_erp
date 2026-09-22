@@ -101,15 +101,6 @@ class BrainFeesIntelligenceController extends Controller
                 'classes' => $fees->classes(),
                 'paymentModes' => $fees->paymentModes(),
             ],
-            'paymentFailures' => $fees->paymentFailures(),
-            'paymentMethods' => $fees->paymentMethods(),
-            'reconciliation' => $fees->reconciliation(),
-            'bankMandates' => $fees->bankMandates(),
-            'lateRules' => $fees->lateRules(),
-            'reminders' => $fees->reminders(),
-            'velocity' => $fees->velocity(),
-            'otherCollections' => $fees->otherCollections(),
-            'feeRevisions' => $fees->feeRevisions(),
             'findings' => $findings,
             'priorities' => $this->priorities($findings),
             'recommendations' => $this->recommendations(),
@@ -724,12 +715,6 @@ class BrainFeesIntelligenceController extends Controller
             'fee_payment_mode_concentration' => 'How fee money arrives',
             'fee_cancellation_pressure' => 'Cancelled receipts against collection',
             'fee_reconciliation_gap' => 'Cancelled receipts still counted as collected',
-            'fee_payment_failures' => 'Payment failures & auto-debit bounces',
-            'fee_gateway_reconciliation_gap' => 'Gateway settlement reconciliation',
-            'fee_nach_mandate_coverage' => 'NACH bank mandate coverage',
-            'fee_configured_late_backlog' => 'Overdue against institutional late dates',
-            'fee_cancellation_reasons' => 'Receipt cancellation root causes',
-            'fee_revision_impact' => 'Mid-session fee structure modifications',
         ];
 
         $applicable = array_keys((new FeesSignalRules(
@@ -766,8 +751,6 @@ class BrainFeesIntelligenceController extends Controller
     {
         $adjustments = $fees->adjustments();
         $gaps = $fees->reconciliationGaps();
-        $recon = $fees->reconciliation();
-        $mandates = $fees->bankMandates();
 
         $checks = [];
 
@@ -808,32 +791,6 @@ class BrainFeesIntelligenceController extends Controller
                 'note' => $gaps['count'] > 0
                     ? 'These receipts appear in the cancellation record but are still marked live, so reports count them as collected.'
                     : 'Every cancelled receipt is correctly excluded from collection.',
-            ];
-        }
-
-        if ($recon['available']) {
-            $checks[] = [
-                'key' => 'gateway_reconciliation',
-                'label' => 'Gateway reconciliation gap',
-                'value' => $recon['unmatchedCount'],
-                'amount' => $recon['reconciliationGapAmount'],
-                'sharePercent' => null,
-                'state' => $recon['reconciliationGapAmount'] > 0 ? 'attention' : 'ok',
-                'note' => $recon['reconciliationGapAmount'] > 0
-                    ? 'Discrepancy detected between online gateway settlements and ERP receipts.'
-                    : 'All online gateway settlements match ERP receipts.',
-            ];
-        }
-
-        if ($mandates['available'] && $mandates['rejectedMandates'] > 0) {
-            $checks[] = [
-                'key' => 'mandate_rejections',
-                'label' => 'Rejected bank mandates',
-                'value' => $mandates['rejectedMandates'],
-                'amount' => null,
-                'sharePercent' => null,
-                'state' => 'attention',
-                'note' => 'Student bank accounts rejected during e-mandate registration.',
             ];
         }
 

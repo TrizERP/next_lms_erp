@@ -6,6 +6,7 @@ use App\Domain\Exam\AssessmentBlueprint;
 use App\Domain\Exam\AssessmentBlueprintPresets;
 use App\Domain\Exam\HpcBlueprint;
 use App\Domain\Exam\HpcBlueprintPresets;
+use App\Services\Evaluation\HpcVocabularyService;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,6 +28,21 @@ use Illuminate\Support\Facades\DB;
  */
 class AssessmentBlueprintApiController extends Controller
 {
+    public function __construct(private readonly HpcVocabularyService $vocabulary)
+    {
+    }
+
+    /**
+     * The school whose HPC option lists apply to this request.
+     *
+     * Held for the length of one request so present()/presentPreset(), which are
+     * called per row, do not each re-read the same four tiny lists.
+     */
+    private ?int $vocabularyTenantId = null;
+
+    /** @var array<string,array<string,string>>|null */
+    private ?array $resolvedVocabulary = null;
+
     /** A marks-based paper design: sections, question types, chapter weightage. */
     public const KIND_REGULAR = 'regular';
 
@@ -40,6 +56,8 @@ class AssessmentBlueprintApiController extends Controller
         if (! $tenantId) {
             return $this->failure('sub_institute_id is required.', 422);
         }
+
+        $this->useVocabularyOf($tenantId);
 
         $query = DB::table('assessment_blueprint as b')
             ->leftJoin('standard as st', 'st.id', '=', 'b.standard_id')
@@ -88,6 +106,7 @@ class AssessmentBlueprintApiController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         $tenantId = (int) $request->input('sub_institute_id');
+        $this->useVocabularyOf($tenantId);
         $row = $this->find($id, $tenantId);
 
         if (! $row) {
@@ -123,6 +142,8 @@ class AssessmentBlueprintApiController extends Controller
         if (! $tenantId) {
             return $this->failure('sub_institute_id is required.', 422);
         }
+
+        $this->useVocabularyOf($tenantId);
 
         $presetKey = trim((string) $request->input('preset_key'));
         $sourceId = (int) $request->input('blueprint_id');
@@ -289,6 +310,104 @@ class AssessmentBlueprintApiController extends Controller
         ]);
     }
 
+    // -- School HPC options --------------------------------------------------
+
+    /**
+     * One school's HPC option lists, with the published defaults alongside.
+     *
+     * The defaults are sent too so the settings screen can show what a list
+     * would revert to, and offer "start from the standard list" without
+     * hardcoding NCERT's vocabulary in the frontend.
+     */
+    public function hpcOptions(Request $request): JsonResponse
+    {
+        $tenantId = (int) $request->input('sub_institute_id');
+
+        if (! $tenantId) {
+            return $this->failure('sub_institute_id is required.', 422);
+        }
+
+        $defaults = [];
+
+        foreach (HpcVocabularyService::publishedDefaults() as $type => $map) {
+            $defaults[$type] = self::pairs($map);
+        }
+
+        return $this->success([
+            'options' => $this->vocabulary->forTenant($tenantId),
+            'defaults' => $defaults,
+            'customised_types' => $this->vocabulary->customisedTypes($tenantId),
+            'types' => array_keys(HpcVocabularyService::TYPES),
+        ]);
+    }
+
+    /**
+     * Replaces one school's list for one option type.
+     *
+     * Scoped to the caller's own school by construction -- the tenant comes
+     * from the session parameters every other endpoint here uses, never from
+     * the body -- so one school editing its assessors cannot reach another's.
+     */
+    public function saveHpcOptions(Request $request): JsonResponse
+    {
+        $tenantId = (int) $request->input('sub_institute_id');
+        $type = trim((string) $request->input('option_type'));
+
+        if (! $tenantId) {
+            return $this->failure('sub_institute_id is required.', 422);
+        }
+
+        if (! isset(HpcVocabularyService::TYPES[$type])) {
+            return $this->failure('Unknown option type.', 422);
+        }
+
+        $options = $request->input('options');
+
+        if (! is_array($options)) {
+            return $this->failure('Send the full list of options for this type.', 422);
+        }
+
+        // An empty list would leave the school with nothing to choose from and
+        // read as "reset" to anyone looking at the table later. Say so instead.
+        if ($options === []) {
+            return $this->failure('A list needs at least one option. Reset it to the standard list instead.', 422);
+        }
+
+        $saved = $this->vocabulary->replace(
+            $tenantId,
+            $type,
+            $options,
+            (int) $request->input('user_id') ?: null
+        );
+
+        return $this->success(
+            ['option_type' => $type, 'options' => $saved],
+            'Options saved for your school.'
+        );
+    }
+
+    /** Drops this school's list for one type, so it follows the standard again. */
+    public function resetHpcOptions(Request $request): JsonResponse
+    {
+        $tenantId = (int) $request->input('sub_institute_id');
+        $type = trim((string) $request->input('option_type'));
+
+        if (! $tenantId) {
+            return $this->failure('sub_institute_id is required.', 422);
+        }
+
+        if (! isset(HpcVocabularyService::TYPES[$type])) {
+            return $this->failure('Unknown option type.', 422);
+        }
+
+        $this->vocabulary->resetToDefault($tenantId, $type);
+
+        return $this->success(
+            ['option_type' => $type, 'options' => $this->vocabulary->forTenant($tenantId)[$type] ?? []],
+            'Reset to the standard list.'
+        );
+    }
+
     // -- Plumbing -----------------------------------------------------------
 
     private function save(Request $request, ?int $id): JsonResponse
@@ -298,6 +417,8 @@ class AssessmentBlueprintApiController extends Controller
         if (! $tenantId) {
             return $this->failure('sub_institute_id is required.', 422);
         }
+
+        $this->useVocabularyOf($tenantId);
 
         $name = trim((string) $request->input('name'));
 
@@ -469,8 +590,25 @@ class AssessmentBlueprintApiController extends Controller
     private function normalizeDefinition(string $kind, mixed $definition): array
     {
         return $kind === self::KIND_HPC
-            ? HpcBlueprint::normalize($definition)
+            ? HpcBlueprint::normalize($definition, $this->resolvedVocabulary)
             : AssessmentBlueprint::normalize($definition);
+    }
+
+    /**
+     * Loads this school's HPC option lists once per request.
+     *
+     * A reference blueprint is normalised against them too, so a school that
+     * has retired an option does not see it ticked on a published design it is
+     * about to copy.
+     */
+    private function useVocabularyOf(int $tenantId): void
+    {
+        if ($this->vocabularyTenantId === $tenantId) {
+            return;
+        }
+
+        $this->vocabularyTenantId = $tenantId;
+        $this->resolvedVocabulary = $this->vocabulary->codeMapsFor($tenantId);
     }
 
     /**
@@ -499,18 +637,31 @@ class AssessmentBlueprintApiController extends Controller
             'defaults' => AssessmentBlueprint::defaults(),
             // The HPC half of the vocabulary. Sent as {code,label} pairs
             // throughout so the editor never has to hold its own copy of a
-            // published list and drift from it.
+            // published list and drift from it -- and drawn from THIS SCHOOL's
+            // lists, so a school that added a "Grandparent" assessor sees it in
+            // the picker and a school that has not sees the NCERT list.
             'hpc' => [
                 'stages' => HpcBlueprint::STAGES,
-                'assessors' => self::pairs(HpcBlueprint::ASSESSORS),
-                'activity_approaches' => self::pairs(HpcBlueprint::ACTIVITY_APPROACHES),
-                'evidence_modes' => self::pairs(HpcBlueprint::EVIDENCE_MODES),
-                'part_a_elements' => self::pairs(HpcBlueprint::PART_A_ELEMENTS),
+                'assessors' => $this->vocabularyPairs(HpcVocabularyService::TYPE_ASSESSOR),
+                'activity_approaches' => $this->vocabularyPairs(HpcVocabularyService::TYPE_ACTIVITY_APPROACH),
+                'evidence_modes' => $this->vocabularyPairs(HpcVocabularyService::TYPE_EVIDENCE_MODE),
+                'part_a_elements' => $this->vocabularyPairs(HpcVocabularyService::TYPE_PART_A_ELEMENT),
                 'strengths' => HpcBlueprint::STRENGTHS,
                 'barriers' => HpcBlueprint::BARRIERS,
                 'defaults' => HpcBlueprint::defaults(),
+                // Which lists this school has taken over, so the settings screen
+                // can show "customised" against them.
+                'customised_types' => $this->vocabularyTenantId
+                    ? $this->vocabulary->customisedTypes($this->vocabularyTenantId)
+                    : [],
             ],
         ];
+    }
+
+    /** One option type as {code,label} pairs, from the school's own list. */
+    private function vocabularyPairs(string $type): array
+    {
+        return self::pairs($this->resolvedVocabulary[$type] ?? HpcVocabularyService::publishedDefaults()[$type] ?? []);
     }
 
     /** @param array<string,string> $map */

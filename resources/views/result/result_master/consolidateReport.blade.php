@@ -112,17 +112,11 @@
                                                                 @endphp
                                                                 @foreach ($exams as $notebookName => $examDetails)
                                                                     @php
-                                                                        // NULL, NOT ZERO, where no mark was entered. A
-                                                                        // child who scored nothing and a child whose
-                                                                        // mark was never recorded are different facts,
-                                                                        // and a consolidated report that renders both
-                                                                        // as "0" tells the parent the first one. The
-                                                                        // subject total still adds only real marks.
-                                                                        $marks = $studentVal['terms'][$termId]['exams'][$examTitle][$subjectName][$notebookName]['ob_marks'] ?? null;
-                                                                        $subjectTotal += is_numeric($marks) ? floatval($marks) : 0;
+                                                                        $marks = $studentVal['terms'][$termId]['exams'][$examTitle][$subjectName][$notebookName]['ob_marks'] ?? 0;
+                                                                        $subjectTotal += is_numeric($marks) && !is_null($marks) ? floatval($marks) : 0;
                                                                     @endphp
                                                                     <td style="text-align:center;">
-                                                                        {{ $marks ?? '—' }}
+                                                                        {{ $marks }}
                                                                     </td>
                                                                 @endforeach
                                                                 <td style="font-weight: bold; text-align:center;">{{ $subjectTotal }}</td>
