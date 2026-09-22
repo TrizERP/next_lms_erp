@@ -158,6 +158,38 @@ final class FeesIntelligence
 
         $hasDemand = $totals['demandAmount'] > 0;
 
+        $hasFailures = SchemaCache::hasTable('tblstudent_fees_failure')
+            ? DB::table('tblstudent_fees_failure')->where('sub_institute_id', $this->tenantId)->where('syear', $this->syear)->exists()
+            : false;
+
+        $hasPayMethods = SchemaCache::hasTable('tblstudent_payment_method_mapping')
+            ? DB::table('tblstudent_payment_method_mapping')->where('sub_institute_id', $this->tenantId)->where('syear', $this->syear)->exists()
+            : false;
+
+        $hasRecon = SchemaCache::hasTable('fees_reconciliation')
+            ? DB::table('fees_reconciliation')->where('sub_institute_id', $this->tenantId)->exists()
+            : false;
+
+        $hasMandates = SchemaCache::hasTable('tblstudent_bank_detail')
+            ? DB::table('tblstudent_bank_detail')->where('sub_institute_id', $this->tenantId)->exists()
+            : false;
+
+        $hasLateRules = SchemaCache::hasTable('fees_late_master')
+            ? DB::table('fees_late_master')->where('sub_institute_id', $this->tenantId)->where('syear', $this->syear)->exists()
+            : false;
+
+        $hasReminders = SchemaCache::hasTable('fees_circular_log')
+            ? DB::table('fees_circular_log')->where('SUB_INSTITUTE_ID', $this->tenantId)->where('SYEAR', $this->syear)->exists()
+            : false;
+
+        $hasOtherColl = SchemaCache::hasTable('fees_other_collection')
+            ? DB::table('fees_other_collection')->where('sub_institute_id', $this->tenantId)->where('syear', $this->syear)->where('is_deleted', 'N')->exists()
+            : false;
+
+        $hasRevisions = SchemaCache::hasTable('fees_breackoff_logs')
+            ? DB::table('fees_breackoff_logs')->where('sub_institute_id', $this->tenantId)->where('syear', $this->syear)->exists()
+            : false;
+
         return array_merge($base, [
             'available' => $hasDemand || $receiptRows > 0,
             'reason' => $hasDemand || $receiptRows > 0
@@ -170,6 +202,14 @@ final class FeesIntelligence
             'hasOtherFees' => $otherRows > 0,
             'hasCycleMap' => $cycles > 0,
             'hasHeads' => $heads > 0,
+            'hasPaymentFailures' => $hasFailures,
+            'hasPaymentMethods' => $hasPayMethods,
+            'hasReconciliation' => $hasRecon,
+            'hasBankMandates' => $hasMandates,
+            'hasLateRules' => $hasLateRules,
+            'hasReminders' => $hasReminders,
+            'hasOtherCollections' => $hasOtherColl,
+            'hasFeeRevisions' => $hasRevisions,
             'demandRows' => $totals['demandRows'],
             'receiptRows' => $receiptRows,
             'enrolledStudents' => $enrolled,
@@ -766,6 +806,18 @@ final class FeesIntelligence
             ? DB::table('academic_section')->whereIn('id', array_column($groups, 'gradeId'))->pluck('title', 'id')
             : collect();
 
+        $stdFailures = SchemaCache::hasTable('tblstudent_fees_failure')
+            ? DB::table('tblstudent_fees_failure as ff')
+                ->join('tblstudent_enrollment as se', 'se.student_id', '=', 'ff.student_id')
+                ->where('ff.sub_institute_id', $this->tenantId)
+                ->where('ff.syear', $this->syear)
+                ->where('se.sub_institute_id', $this->tenantId)
+                ->where('se.syear', $this->syear)
+                ->select('se.standard_id', DB::raw('COUNT(*) as c'))
+                ->groupBy('se.standard_id')
+                ->pluck('c', 'se.standard_id')
+            : collect();
+
         $out = [];
         foreach ($groups as $row) {
             $name = (string) ($standards[$row['standardId']] ?? '');
@@ -782,6 +834,7 @@ final class FeesIntelligence
                 'outstandingAmount' => round($row['outstanding'], 2),
                 'defaulterAccounts' => $row['defaulters'],
                 'collectionRate' => $row['demand'] > 0 ? round($row['collected'] / $row['demand'] * 100, 1) : null,
+                'failureCount' => (int) ($stdFailures[$row['standardId']] ?? 0),
             ];
         }
 
@@ -948,17 +1001,32 @@ final class FeesIntelligence
      */
     private function nameAccounts(array $rows): array
     {
-        if ($rows === []) {
-            return [];
-        }
+        $studentIds = array_column($rows, 'studentId');
 
-        $students = DB::table('tblstudent')->whereIn('id', array_column($rows, 'studentId'))
+        $students = DB::table('tblstudent')->whereIn('id', $studentIds)
             ->where('sub_institute_id', $this->tenantId)
             ->get(['id', 'first_name', 'middle_name', 'last_name', 'enrollment_no'])
             ->keyBy('id');
 
         $standards = SchemaCache::hasTable('standard')
             ? DB::table('standard')->whereIn('id', array_column($rows, 'standardId'))->pluck('name', 'id')
+            : collect();
+
+        $failures = SchemaCache::hasTable('tblstudent_fees_failure')
+            ? DB::table('tblstudent_fees_failure')
+                ->where('sub_institute_id', $this->tenantId)
+                ->where('syear', $this->syear)
+                ->whereIn('student_id', $studentIds)
+                ->select('student_id', DB::raw('COUNT(*) as c'))
+                ->groupBy('student_id')
+                ->pluck('c', 'student_id')
+            : collect();
+
+        $mandates = SchemaCache::hasTable('tblstudent_bank_detail')
+            ? DB::table('tblstudent_bank_detail')
+                ->where('sub_institute_id', $this->tenantId)
+                ->whereIn('student_id', $studentIds)
+                ->pluck('is_registered', 'student_id')
             : collect();
 
         $out = [];
@@ -978,6 +1046,8 @@ final class FeesIntelligence
                 'collectedAmount' => round($row['collected'], 2),
                 'concessionAmount' => round($row['discount'], 2),
                 'outstandingAmount' => round($row['outstanding'], 2),
+                'failureCount' => (int) ($failures[$row['studentId']] ?? 0),
+                'mandateRegistered' => ($mandates[$row['studentId']] ?? null) === 'Y',
             ];
         }
 
@@ -1121,12 +1191,28 @@ final class FeesIntelligence
             ]);
         }
 
+        $reasons = [];
         if ($hasCancel) {
             $row = DB::table('fees_cancel')
                 ->where('sub_institute_id', $this->tenantId)->where('syear', $this->syear)
                 ->selectRaw('COUNT(*) AS c, COALESCE(SUM(amountpaid), 0) AS amt')->first();
             $out['cancelledReceipts'] = (int) ($row->c ?? 0);
             $out['cancelledAmount'] = round((float) ($row->amt ?? 0), 2);
+
+            $cancelGroups = DB::table('fees_cancel')
+                ->where('sub_institute_id', $this->tenantId)->where('syear', $this->syear)
+                ->select('cancel_type', DB::raw('COALESCE(cancel_remark, cancel_type) as remark'), DB::raw('COUNT(*) as c'), DB::raw('SUM(amountpaid) as amt'))
+                ->groupBy('cancel_type', DB::raw('COALESCE(cancel_remark, cancel_type)'))
+                ->get();
+            foreach ($cancelGroups as $cg) {
+                $reasonLabel = trim((string) ($cg->remark ?: $cg->cancel_type ?: 'Unspecified'));
+                $reasons[] = [
+                    'reason' => $reasonLabel,
+                    'type' => (string) ($cg->cancel_type ?: 'General'),
+                    'count' => (int) $cg->c,
+                    'amount' => round((float) $cg->amt, 2),
+                ];
+            }
         }
 
         if (SchemaCache::hasTable('fees_other_cancel')) {
@@ -1135,14 +1221,42 @@ final class FeesIntelligence
                 ->selectRaw('COUNT(*) AS c, COALESCE(SUM(cancellation_amount), 0) AS amt')->first();
             $out['cancelledReceipts'] += (int) ($row->c ?? 0);
             $out['cancelledAmount'] = round($out['cancelledAmount'] + (float) ($row->amt ?? 0), 2);
+
+            $otherCancelGroups = DB::table('fees_other_cancel')
+                ->where('sub_institute_id', $this->tenantId)->where('syear', $this->syear)
+                ->select(DB::raw('COALESCE(cancellation_remarks, "Other Fee Cancellation") as remark'), DB::raw('COUNT(*) as c'), DB::raw('SUM(cancellation_amount) as amt'))
+                ->groupBy(DB::raw('COALESCE(cancellation_remarks, "Other Fee Cancellation")'))
+                ->get();
+            foreach ($otherCancelGroups as $ocg) {
+                $reasons[] = [
+                    'reason' => trim((string) $ocg->remark),
+                    'type' => 'Additional Head',
+                    'count' => (int) $ocg->c,
+                    'amount' => round((float) $ocg->amt, 2),
+                ];
+            }
         }
 
+        $refundModes = [];
         if ($hasRefund) {
             $row = DB::table('fees_refund')
                 ->where('sub_institute_id', $this->tenantId)->where('syear', $this->syear)
                 ->selectRaw('COUNT(*) AS c, COALESCE(SUM(amount), 0) AS amt')->first();
             $out['refunds'] = (int) ($row->c ?? 0);
             $out['refundedAmount'] = round((float) ($row->amt ?? 0), 2);
+
+            $refundGroups = DB::table('fees_refund')
+                ->where('sub_institute_id', $this->tenantId)->where('syear', $this->syear)
+                ->select('payment_mode', DB::raw('COUNT(*) as c'), DB::raw('SUM(amount) as amt'))
+                ->groupBy('payment_mode')
+                ->get();
+            foreach ($refundGroups as $rg) {
+                $refundModes[] = [
+                    'mode' => trim((string) ($rg->payment_mode ?: 'Cash')),
+                    'count' => (int) $rg->c,
+                    'amount' => round((float) $rg->amt, 2),
+                ];
+            }
         }
 
         $collected = $this->positionTotals()['collectedAmount'];
@@ -1150,6 +1264,8 @@ final class FeesIntelligence
         $out['cancelledShareOfCollection'] = $collected > 0
             ? round($out['cancelledAmount'] / $collected * 100, 1)
             : null;
+        $out['cancellationReasons'] = $reasons;
+        $out['refundPaymentModes'] = $refundModes;
 
         return $out;
     }
@@ -1198,6 +1314,592 @@ final class FeesIntelligence
             'reason' => null,
             'count' => (int) ($row->c ?? 0),
             'amount' => round((float) ($row->amt ?? 0), 2),
+        ];
+    }
+
+    /* ================================================== payment failure intelligence */
+
+    public function paymentFailures(): array
+    {
+        return $this->memo['paymentFailures'] ??= $this->computePaymentFailures();
+    }
+
+    /** @return array<string, mixed> */
+    private function computePaymentFailures(): array
+    {
+        $none = [
+            'available' => false,
+            'reason' => null,
+            'failureCount' => 0,
+            'failedAmount' => 0.0,
+            'affectedAccounts' => 0,
+            'repeatFailureAccounts' => 0,
+            'reasons' => [],
+            'monthlyTrend' => [],
+            'classBreakdown' => [],
+        ];
+
+        if ($this->syear === null || ! SchemaCache::hasTable('tblstudent_fees_failure')) {
+            return array_merge($none, ['reason' => 'No payment failure records recorded for this institute and academic year.']);
+        }
+
+        $rows = DB::table('tblstudent_fees_failure')
+            ->where('sub_institute_id', $this->tenantId)
+            ->where('syear', $this->syear)
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return array_merge($none, ['reason' => 'No payment failures recorded for this academic year.']);
+        }
+
+        $failureCount = $rows->count();
+        $failedAmount = (float) $rows->sum('amount');
+        $byStudent = $rows->groupBy('student_id');
+        $affectedAccounts = $byStudent->count();
+        $repeatFailureAccounts = $byStudent->filter(fn ($g) => $g->count() > 1)->count();
+
+        $reasons = [];
+        foreach ($rows->groupBy('remarks') as $remark => $group) {
+            $label = trim((string) $remark);
+            if ($label === '') {
+                $label = 'Unspecified';
+            }
+            $reasons[] = [
+                'reason' => $label,
+                'count' => $group->count(),
+                'amount' => round((float) $group->sum('amount'), 2),
+            ];
+        }
+        usort($reasons, fn ($a, $b) => $b['count'] <=> $a['count']);
+
+        $monthly = [];
+        foreach ($rows->groupBy('month_id') as $monthId => $group) {
+            $monthly[] = [
+                'monthId' => (string) $monthId,
+                'label' => $this->cycleLabel((string) $monthId),
+                'count' => $group->count(),
+                'amount' => round((float) $group->sum('amount'), 2),
+            ];
+        }
+        usort($monthly, fn ($a, $b) => (int) $a['monthId'] <=> (int) $b['monthId']);
+
+        return [
+            'available' => true,
+            'reason' => null,
+            'failureCount' => $failureCount,
+            'failedAmount' => round($failedAmount, 2),
+            'affectedAccounts' => $affectedAccounts,
+            'repeatFailureAccounts' => $repeatFailureAccounts,
+            'reasons' => $reasons,
+            'monthlyTrend' => $monthly,
+            'classBreakdown' => [],
+        ];
+    }
+
+    /* ================================================== payment method intelligence */
+
+    public function paymentMethods(): array
+    {
+        return $this->memo['paymentMethods'] ??= $this->computePaymentMethods();
+    }
+
+    /** @return array<string, mixed> */
+    private function computePaymentMethods(): array
+    {
+        $none = [
+            'available' => false,
+            'reason' => null,
+            'totalMappings' => 0,
+            'methods' => [],
+            'topMethod' => null,
+        ];
+
+        if ($this->syear === null || ! SchemaCache::hasTable('tblstudent_payment_method_mapping')) {
+            return array_merge($none, ['reason' => 'No payment method mappings recorded for this institute and academic year.']);
+        }
+
+        $rows = DB::table('tblstudent_payment_method_mapping')
+            ->where('sub_institute_id', $this->tenantId)
+            ->where('syear', $this->syear)
+            ->select('payment_method', DB::raw('COUNT(*) as count'))
+            ->groupBy('payment_method')
+            ->orderByDesc('count')
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return array_merge($none, ['reason' => 'No payment method preferences recorded for this academic year.']);
+        }
+
+        $total = (int) $rows->sum('count');
+        $methods = [];
+        foreach ($rows as $r) {
+            $name = trim((string) $r->payment_method);
+            if ($name === '') {
+                $name = 'Unassigned';
+            }
+            $cnt = (int) $r->count;
+            $methods[] = [
+                'method' => $name,
+                'count' => $cnt,
+                'sharePercent' => $total > 0 ? round(($cnt / $total) * 100, 1) : 0.0,
+            ];
+        }
+
+        return [
+            'available' => true,
+            'reason' => null,
+            'totalMappings' => $total,
+            'methods' => $methods,
+            'topMethod' => $methods[0]['method'] ?? null,
+        ];
+    }
+
+    /* ============================================== payment gateway reconciliation */
+
+    public function reconciliation(): array
+    {
+        return $this->memo['reconciliationDetails'] ??= $this->computeReconciliation();
+    }
+
+    /** @return array<string, mixed> */
+    private function computeReconciliation(): array
+    {
+        $none = [
+            'available' => false,
+            'reason' => null,
+            'gatewayTransactions' => 0,
+            'gatewayTotalAmount' => 0.0,
+            'erpRecordedAmount' => 0.0,
+            'reconciliationGapAmount' => 0.0,
+            'unmatchedCount' => 0,
+            'statusBreakdown' => [],
+        ];
+
+        if (! SchemaCache::hasTable('fees_reconciliation')) {
+            return array_merge($none, ['reason' => 'Payment gateway reconciliation records are not present.']);
+        }
+
+        $query = DB::table('fees_reconciliation')->where('sub_institute_id', $this->tenantId);
+        if ($this->syear !== null) {
+            $query->where(function ($q) {
+                $q->where('term_id', 'like', '%'.$this->syear)
+                  ->orWhere('created_at', 'like', $this->syear.'%');
+            });
+        }
+
+        $rows = $query->get(['id', 'reference_no', 'PGAmount', 'amount', 'paymode', 'transaction_process']);
+        if ($rows->isEmpty()) {
+            return array_merge($none, ['reason' => 'No online gateway transactions found for this institute and academic year.']);
+        }
+
+        $gwCount = $rows->count();
+        $gwAmount = (float) $rows->sum('PGAmount');
+        $erpAmount = (float) $rows->sum('amount');
+        $gap = round(abs($gwAmount - $erpAmount), 2);
+
+        $statuses = [];
+        foreach ($rows->groupBy(fn ($r) => trim((string) ($r->paymode ?: 'Online'))) as $status => $grp) {
+            $statuses[] = [
+                'status' => (string) $status,
+                'count' => $grp->count(),
+                'amount' => round((float) $grp->sum('PGAmount'), 2),
+            ];
+        }
+
+        $unmatched = $rows->filter(fn ($r) => abs((float) $r->PGAmount - (float) $r->amount) > 0.01)->count();
+
+        return [
+            'available' => true,
+            'reason' => null,
+            'gatewayTransactions' => $gwCount,
+            'gatewayTotalAmount' => round($gwAmount, 2),
+            'erpRecordedAmount' => round($erpAmount, 2),
+            'reconciliationGapAmount' => $gap,
+            'unmatchedCount' => $unmatched,
+            'statusBreakdown' => $statuses,
+        ];
+    }
+
+    /* ================================================== student bank & NACH mandates */
+
+    public function bankMandates(): array
+    {
+        return $this->memo['bankMandates'] ??= $this->computeBankMandates();
+    }
+
+    /** @return array<string, mixed> */
+    private function computeBankMandates(): array
+    {
+        $none = [
+            'available' => false,
+            'reason' => null,
+            'registeredMandates' => 0,
+            'pendingMandates' => 0,
+            'rejectedMandates' => 0,
+            'totalEligible' => 0,
+            'coveragePercent' => null,
+            'rejectionReasons' => [],
+        ];
+
+        if (! SchemaCache::hasTable('tblstudent_bank_detail')) {
+            return array_merge($none, ['reason' => 'Student bank mandate details are not provisioned in this ERP.']);
+        }
+
+        $enrolled = (int) DB::table('tblstudent_enrollment')
+            ->where('sub_institute_id', $this->tenantId)
+            ->when($this->syear !== null, fn ($q) => $q->where('syear', $this->syear))
+            ->distinct()->count('student_id');
+
+        $mandates = DB::table('tblstudent_bank_detail')
+            ->where('sub_institute_id', $this->tenantId)
+            ->get(['id', 'student_id', 'is_registered', 'status', 'reason']);
+
+        if ($mandates->isEmpty()) {
+            return array_merge($none, [
+                'totalEligible' => $enrolled,
+                'reason' => 'No student bank mandate records registered for this institute.',
+            ]);
+        }
+
+        $registered = $mandates->where('is_registered', 'Y')->count();
+        $rejected = $mandates->filter(fn ($m) => $m->is_registered === 'N' || ! empty($m->reason))->count();
+        $pending = max(0, $mandates->count() - $registered - $rejected);
+
+        $reasons = [];
+        foreach ($mandates->whereNotNull('reason')->groupBy('reason') as $rsn => $grp) {
+            $lbl = trim((string) $rsn);
+            if ($lbl !== '') {
+                $reasons[] = ['reason' => $lbl, 'count' => $grp->count()];
+            }
+        }
+
+        $coverage = $enrolled > 0 ? round(($registered / $enrolled) * 100, 1) : null;
+
+        return [
+            'available' => true,
+            'reason' => null,
+            'registeredMandates' => $registered,
+            'pendingMandates' => $pending,
+            'rejectedMandates' => $rejected,
+            'totalEligible' => $enrolled,
+            'coveragePercent' => $coverage,
+            'rejectionReasons' => $reasons,
+        ];
+    }
+
+    /* ============================================== configured late fee rules */
+
+    public function lateRules(): array
+    {
+        return $this->memo['lateRules'] ??= $this->computeLateRules();
+    }
+
+    /** @return array<string, mixed> */
+    private function computeLateRules(): array
+    {
+        $none = [
+            'available' => false,
+            'reason' => null,
+            'rulesCount' => 0,
+            'rules' => [],
+            'overdueAccountsPastConfiguredDate' => 0,
+            'overdueAmountPastConfiguredDate' => 0.0,
+        ];
+
+        if ($this->syear === null || ! SchemaCache::hasTable('fees_late_master')) {
+            return array_merge($none, ['reason' => 'Institutional late fee rules are not configured for this year.']);
+        }
+
+        $rows = DB::table('fees_late_master')
+            ->where('sub_institute_id', $this->tenantId)
+            ->where('syear', $this->syear)
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return array_merge($none, ['reason' => 'No configured late fee dates found for this academic year.']);
+        }
+
+        $rules = [];
+        $standards = SchemaCache::hasTable('standard')
+            ? DB::table('standard')->where('sub_institute_id', $this->tenantId)->pluck('name', 'id')
+            : collect();
+
+        foreach ($rows as $r) {
+            $stdName = (string) ($standards[$r->standard_id] ?? '');
+            $rules[] = [
+                'standardId' => (string) $r->standard_id,
+                'standardLabel' => $stdName !== '' ? (is_numeric($stdName) ? 'Class '.$stdName : $stdName) : 'Standard '.$r->standard_id,
+                'monthId' => (string) $r->month_id,
+                'lateDate' => (string) $r->late_date,
+                'fineType' => $r->fine_type ? (string) $r->fine_type : null,
+            ];
+        }
+
+        $now = date('Y-m-d');
+        $passedStandardIds = $rows->filter(fn ($r) => $r->late_date && $r->late_date < $now)->pluck('standard_id')->map(fn ($id) => (string) $id)->all();
+        $arrears = $this->accountsInArrears();
+        $overdueAccounts = 0;
+        $overdueAmt = 0.0;
+        foreach ($arrears as $arr) {
+            if (in_array((string) $arr['standardId'], $passedStandardIds, true)) {
+                $overdueAccounts++;
+                $overdueAmt += $arr['outstanding'];
+            }
+        }
+
+        return [
+            'available' => true,
+            'reason' => null,
+            'rulesCount' => $rows->count(),
+            'rules' => $rules,
+            'overdueAccountsPastConfiguredDate' => $overdueAccounts,
+            'overdueAmountPastConfiguredDate' => round($overdueAmt, 2),
+        ];
+    }
+
+    /* ================================================== fee circular reminders */
+
+    public function reminders(): array
+    {
+        return $this->memo['reminders'] ??= $this->computeReminders();
+    }
+
+    /** @return array<string, mixed> */
+    private function computeReminders(): array
+    {
+        $none = [
+            'available' => false,
+            'reason' => null,
+            'remindersSent' => 0,
+            'accountsReminded' => 0,
+            'totalRemindedAmount' => 0.0,
+            'subsequentPayingAccounts' => 0,
+            'subsequentCollectionConversionRate' => null,
+        ];
+
+        if ($this->syear === null || ! SchemaCache::hasTable('fees_circular_log')) {
+            return array_merge($none, ['reason' => 'Fee circular reminder dispatches are not logged for this year.']);
+        }
+
+        $rows = DB::table('fees_circular_log')
+            ->where('SUB_INSTITUTE_ID', $this->tenantId)
+            ->where('SYEAR', $this->syear)
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return array_merge($none, ['reason' => 'No fee circular notices dispatched for this academic year.']);
+        }
+
+        $sent = $rows->count();
+        $remindedStudentIds = $rows->pluck('STUDENT_ID')->unique()->all();
+        $remindedAccounts = count($remindedStudentIds);
+        $totalAmount = (float) $rows->sum('AMOUNT');
+
+        $paying = 0;
+        if (SchemaCache::hasTable('fees_collect') && $remindedAccounts > 0) {
+            $paying = (int) DB::table('fees_collect')
+                ->where('sub_institute_id', $this->tenantId)
+                ->where('syear', $this->syear)
+                ->where('is_deleted', 'N')
+                ->whereIn('student_id', $remindedStudentIds)
+                ->distinct()
+                ->count('student_id');
+        }
+
+        $rate = $remindedAccounts > 0 ? round(($paying / $remindedAccounts) * 100, 1) : null;
+
+        return [
+            'available' => true,
+            'reason' => null,
+            'remindersSent' => $sent,
+            'accountsReminded' => $remindedAccounts,
+            'totalRemindedAmount' => round($totalAmount, 2),
+            'subsequentPayingAccounts' => $paying,
+            'subsequentCollectionConversionRate' => $rate,
+        ];
+    }
+
+    /* ================================================= exact collection velocity */
+
+    public function velocity(): array
+    {
+        return $this->memo['velocity'] ??= $this->computeVelocity();
+    }
+
+    /** @return array<string, mixed> */
+    private function computeVelocity(): array
+    {
+        $none = [
+            'available' => false,
+            'reason' => null,
+            'dailyTrend' => [],
+            'peakDay' => null,
+            'receiptDays' => 0,
+            'averageDailyCollection' => null,
+        ];
+
+        if ($this->syear === null || ! SchemaCache::hasTable('fees_collect')) {
+            return array_merge($none, ['reason' => 'Collection velocity cannot be computed without receipt records.']);
+        }
+
+        $rows = DB::table('fees_collect')
+            ->where('sub_institute_id', $this->tenantId)
+            ->where('syear', $this->syear)
+            ->where('is_deleted', 'N')
+            ->whereNotNull('receiptdate')
+            ->select('receiptdate', DB::raw('COUNT(*) as receipts'), DB::raw('SUM(amount) as amount'))
+            ->groupBy('receiptdate')
+            ->orderBy('receiptdate')
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return array_merge($none, ['reason' => 'No receipt date records available for this academic year.']);
+        }
+
+        $daily = [];
+        $peak = null;
+        $maxAmt = 0.0;
+        $totalAmt = 0.0;
+
+        foreach ($rows as $r) {
+            $amt = round((float) $r->amount, 2);
+            $date = (string) $r->receiptdate;
+            $cnt = (int) $r->receipts;
+            $daily[] = [
+                'date' => $date,
+                'receipts' => $cnt,
+                'amount' => $amt,
+            ];
+            $totalAmt += $amt;
+            if ($amt > $maxAmt) {
+                $maxAmt = $amt;
+                $peak = ['date' => $date, 'amount' => $amt, 'receipts' => $cnt];
+            }
+        }
+
+        $days = count($daily);
+
+        return [
+            'available' => true,
+            'reason' => null,
+            'dailyTrend' => array_slice($daily, -30),
+            'peakDay' => $peak,
+            'receiptDays' => $days,
+            'averageDailyCollection' => $days > 0 ? round($totalAmt / $days, 2) : null,
+        ];
+    }
+
+    /* ============================================= other / misc collections */
+
+    public function otherCollections(): array
+    {
+        return $this->memo['otherCollections'] ??= $this->computeOtherCollections();
+    }
+
+    /** @return array<string, mixed> */
+    private function computeOtherCollections(): array
+    {
+        $none = [
+            'available' => false,
+            'reason' => null,
+            'receiptsCount' => 0,
+            'totalAmount' => 0.0,
+            'heads' => [],
+            'paymentModes' => [],
+        ];
+
+        if ($this->syear === null || ! SchemaCache::hasTable('fees_other_collection')) {
+            return array_merge($none, ['reason' => 'Miscellaneous and other fee collections are not recorded.']);
+        }
+
+        $rows = DB::table('fees_other_collection')
+            ->where('sub_institute_id', $this->tenantId)
+            ->where('syear', $this->syear)
+            ->where('is_deleted', 'N')
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return array_merge($none, ['reason' => 'No miscellaneous collections recorded for this academic year.']);
+        }
+
+        $modes = [];
+        foreach ($rows->groupBy('payment_mode') as $mode => $grp) {
+            $lbl = trim((string) $mode);
+            if ($lbl === '') {
+                $lbl = 'Unspecified';
+            }
+            $modes[] = [
+                'mode' => $lbl,
+                'count' => $grp->count(),
+                'amount' => round((float) $grp->sum('deduction_amount'), 2),
+            ];
+        }
+
+        return [
+            'available' => true,
+            'reason' => null,
+            'receiptsCount' => $rows->count(),
+            'totalAmount' => round((float) $rows->sum('deduction_amount'), 2),
+            'heads' => [],
+            'paymentModes' => $modes,
+        ];
+    }
+
+    /* ================================================== fee revision audit history */
+
+    public function feeRevisions(): array
+    {
+        return $this->memo['feeRevisions'] ??= $this->computeFeeRevisions();
+    }
+
+    /** @return array<string, mixed> */
+    private function computeFeeRevisions(): array
+    {
+        $none = [
+            'available' => false,
+            'reason' => null,
+            'revisionCount' => 0,
+            'affectedStandardsCount' => 0,
+            'recentRevisions' => [],
+        ];
+
+        if ($this->syear === null || ! SchemaCache::hasTable('fees_breackoff_logs')) {
+            return array_merge($none, ['reason' => 'Fee structure revision logs are not recorded.']);
+        }
+
+        $rows = DB::table('fees_breackoff_logs')
+            ->where('sub_institute_id', $this->tenantId)
+            ->where('syear', $this->syear)
+            ->orderByDesc('id')
+            ->limit(50)
+            ->get();
+
+        if ($rows->isEmpty()) {
+            return array_merge($none, ['reason' => 'No mid-session fee structure revisions recorded for this year.']);
+        }
+
+        $standards = SchemaCache::hasTable('standard')
+            ? DB::table('standard')->where('sub_institute_id', $this->tenantId)->pluck('name', 'id')
+            : collect();
+
+        $revs = [];
+        foreach ($rows as $r) {
+            $stdName = (string) ($standards[$r->standard_id] ?? '');
+            $revs[] = [
+                'standardId' => (string) $r->standard_id,
+                'standardLabel' => $stdName !== '' ? (is_numeric($stdName) ? 'Class '.$stdName : $stdName) : 'Standard '.$r->standard_id,
+                'feeTypeId' => (string) $r->fee_type_id,
+                'amount' => (float) $r->amount,
+                'modifiedAt' => (string) $r->created_at,
+            ];
+        }
+
+        return [
+            'available' => true,
+            'reason' => null,
+            'revisionCount' => $rows->count(),
+            'affectedStandardsCount' => $rows->pluck('standard_id')->unique()->count(),
+            'recentRevisions' => array_slice($revs, 0, 10),
         ];
     }
 

@@ -160,6 +160,13 @@ Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 
 // shared tables (module_name = 'teach_learn') — see TeachLearnMenuCategoryApiController.
 Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 'teach-learn/menu-categories', [App\Http\Controllers\api\TeachLearnMenuCategoryApiController::class, 'index']);
 
+// Every other module's category bar, from the same shared tables. The module is
+// named in the request (`module_name`, or the `level2_menu_id` of the menu row
+// the user clicked) rather than in a controller class, which is what lets one
+// route serve all 64 configured modules — see ModuleMenuCategoryApiController.
+// The two routes above are deliberately left alone: Fees and Teach/Learn have
+// their own pages, their own clients and their own response expectations.
+// Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 'modules/menu-categories', [App\Http\Controllers\api\ModuleMenuCategoryApiController::class, 'index']);
 // Every other module's category bar, from one endpoint rather than 62 copies of
 // the two routes above — see ModuleMenuCategoryApiController. The caller names the
 // module by its level-2 tblmenumaster id (preferred; menu names are not unique) or

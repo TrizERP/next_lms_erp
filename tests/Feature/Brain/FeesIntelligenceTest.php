@@ -387,4 +387,71 @@ class FeesIntelligenceTest extends TestCase
         $this->assertLessThanOrEqual(3, count($page['rows']));
         $this->assertGreaterThanOrEqual(count($page['rows']), $page['total']);
     }
+
+    /* ------------------------------------------------ operational intelligence */
+
+    public function test_payload_carries_operational_intelligence_sections(): void
+    {
+        $tenant = $this->tenantWithFees();
+        if ($tenant === null) {
+            $this->markTestSkipped('No fee structure in this database.');
+        }
+
+        $payload = $this->payload($tenant[0], $tenant[1]);
+
+        foreach ([
+            'paymentFailures', 'paymentMethods', 'reconciliation', 'bankMandates',
+            'lateRules', 'reminders', 'velocity', 'otherCollections', 'feeRevisions'
+        ] as $sec) {
+            $this->assertArrayHasKey($sec, $payload, "payload missing '{$sec}'");
+            $this->assertArrayHasKey('available', $payload[$sec], "{$sec} missing 'available'");
+            $this->assertIsBool($payload[$sec]['available']);
+        }
+    }
+
+    public function test_payment_failures_respects_tenant_and_year(): void
+    {
+        // Unused/random tenant ID
+        $fees = new FeesIntelligence('999999999', '2020');
+        $failures = $fees->paymentFailures();
+
+        $this->assertFalse($failures['available']);
+        $this->assertNotNull($failures['reason']);
+        $this->assertSame(0, $failures['failureCount']);
+        $this->assertSame(0.0, $failures['failedAmount']);
+    }
+
+    public function test_bank_mandates_never_exposes_sensitive_account_numbers(): void
+    {
+        $tenant = $this->tenantWithFees();
+        if ($tenant === null) {
+            $this->markTestSkipped('No fee structure in this database.');
+        }
+
+        $fees = new FeesIntelligence($tenant[0], $tenant[1]);
+        $mandates = $fees->bankMandates();
+
+        $this->assertArrayNotHasKey('ac_number', $mandates);
+        $this->assertArrayNotHasKey('account_number', $mandates);
+        $this->assertArrayNotHasKey('ifsc_code', $mandates);
+    }
+
+    public function test_cancellation_reasons_in_adjustments(): void
+    {
+        $tenant = $this->tenantWithFees();
+        if ($tenant === null) {
+            $this->markTestSkipped('No fee structure in this database.');
+        }
+
+        $fees = new FeesIntelligence($tenant[0], $tenant[1]);
+        $adj = $fees->adjustments();
+
+        if ($adj['available']) {
+            $this->assertArrayHasKey('cancellationReasons', $adj);
+            $this->assertArrayHasKey('refundPaymentModes', $adj);
+            $this->assertIsArray($adj['cancellationReasons']);
+            $this->assertIsArray($adj['refundPaymentModes']);
+        }
+    }
 }
+
