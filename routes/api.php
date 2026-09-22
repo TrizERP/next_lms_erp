@@ -20,6 +20,8 @@ use App\Http\Controllers\api\ClassTeacherApiController;
 use App\Http\Controllers\api\AcademicSetupApiController;
 use App\Http\Controllers\api\TransportationApiController;
 use App\Http\Controllers\api\GeneralSetupApiController;
+use App\Http\Controllers\api\AssessmentBlueprintApiController;
+use App\Http\Controllers\api\ExamEvaluationApiController;
 use App\Http\Controllers\api\QuestionPaperTemplateApiController;
 use App\Http\Controllers\api\TeacherDailyReportApiController;
 use App\Http\Controllers\api\UserLogReportApiController;
@@ -258,6 +260,8 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     Route::post('lms-homework/review-list', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewList']);
     Route::post('lms-homework/review-detail/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewDetail']);
     Route::post('lms-homework/review-store', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewStore']);
+    // Re-run the AI marking on a submission that has not been signed off yet.
+    Route::post('lms-homework/review-reprocess/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewReprocess']);
 });
 
 // Generate homework from the question bank (teacher-only lookups feeding
@@ -451,6 +455,39 @@ Route::get('question-paper-templates/{id}', [QuestionPaperTemplateApiController:
 Route::post('question-paper-templates', [QuestionPaperTemplateApiController::class, 'store']);
 Route::match(['put', 'patch', 'post'], 'question-paper-templates/{id}', [QuestionPaperTemplateApiController::class, 'update']);
 Route::delete('question-paper-templates/{id}', [QuestionPaperTemplateApiController::class, 'destroy']);
+
+// "Exam Evaluation". Scanned answer sheets -- OMR/MCQ and written answer books
+// alike -- read, identified, scored against the paper's marking key, and held
+// for a teacher. `sheets/...` is declared before `batches/{id}` and
+// `answer-key/{paperId}` is its own prefix, so none of them swallow each other.
+// Nothing here writes to the gradebook except `batches/{id}/publish`, and that
+// reads teacher-approved marks only.
+Route::get('exam-evaluation/answer-key/{paperId}', [ExamEvaluationApiController::class, 'answerKey']);
+Route::get('exam-evaluation/sheets/{id}', [ExamEvaluationApiController::class, 'sheet']);
+Route::get('exam-evaluation/sheets/{id}/file', [ExamEvaluationApiController::class, 'file']);
+Route::post('exam-evaluation/sheets/{id}/review', [ExamEvaluationApiController::class, 'review']);
+Route::post('exam-evaluation/sheets/{id}/reprocess', [ExamEvaluationApiController::class, 'reprocess']);
+Route::delete('exam-evaluation/sheets/{id}', [ExamEvaluationApiController::class, 'destroySheet']);
+Route::get('exam-evaluation/batches', [ExamEvaluationApiController::class, 'index']);
+Route::post('exam-evaluation/batches', [ExamEvaluationApiController::class, 'store']);
+Route::get('exam-evaluation/batches/{id}', [ExamEvaluationApiController::class, 'show']);
+Route::post('exam-evaluation/batches/{id}/sheets', [ExamEvaluationApiController::class, 'uploadSheets']);
+Route::post('exam-evaluation/batches/{id}/publish', [ExamEvaluationApiController::class, 'publish']);
+Route::delete('exam-evaluation/batches/{id}', [ExamEvaluationApiController::class, 'destroy']);
+
+// "Blueprint". The DESIGN of a paper -- chapter weightage, question-type mix,
+// competency and difficulty split -- as opposed to `question-paper-templates`,
+// which is the LAYOUT of one. The two share a word and nothing else. Reference
+// designs (Delhi DoE, CBSE) come from AssessmentBlueprintPresets rather than
+// the table; `clone` is how a school turns one into something it can edit.
+// `chapters` and `clone` are declared before `{id}` so they are not swallowed.
+Route::get('assessment-blueprints/chapters', [AssessmentBlueprintApiController::class, 'chapters']);
+Route::post('assessment-blueprints/clone', [AssessmentBlueprintApiController::class, 'clone']);
+Route::get('assessment-blueprints', [AssessmentBlueprintApiController::class, 'index']);
+Route::post('assessment-blueprints', [AssessmentBlueprintApiController::class, 'store']);
+Route::get('assessment-blueprints/{id}', [AssessmentBlueprintApiController::class, 'show']);
+Route::match(['put', 'patch', 'post'], 'assessment-blueprints/{id}', [AssessmentBlueprintApiController::class, 'update']);
+Route::delete('assessment-blueprints/{id}', [AssessmentBlueprintApiController::class, 'destroy']);
 // check_permissions reads session()->get('user_profile_id'/'sub_institute_id'/'user_id'),
 // so api.session (JWT-hydrated session) must run first for type=API requests.
 Route::middleware(['api.session', 'check_permissions'])->post('fees-cancel/search', [feesCancelController::class, 'search']);
