@@ -417,7 +417,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
                                     <td width="50%" style="text-align:center;">
                                         <p
                                             style="color:#943634; font-size:16px; margin:0; font-weight:bold; font-family: Arial, sans-serif;">
-                                            Mr. P.P. Jose</p>
+                                            {{ (($conf ?? '') == 'C/A') ? 'Mrs. Rehana Patni' : 'Mr. Ajay Singh Chauhan' }}</p>
                                         <p style="color:#943634; font-weight:bold; font-family: Arial, sans-serif;">
                                             Principal</p>
                                     </td>
