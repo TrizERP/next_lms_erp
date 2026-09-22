@@ -242,6 +242,9 @@ abstract class AbstractMenuCategoryApiController extends Controller
      * exists, so an installation that has not run that migration keeps the
      * behaviour it has today — configured rows and nothing else — rather than
      * this feed failing outright.
+     *
+     * Where a module's rows disagree, the level-2 menu that is still switched
+     * on wins: a bar belongs to the menu people can actually reach.
      */
     private function level2MenuId(string $moduleName): int
     {
@@ -249,15 +252,21 @@ abstract class AbstractMenuCategoryApiController extends Controller
             return 0;
         }
 
-        $id = (int) DB::table('fees_menu_categories')
-            ->where('module_name', $moduleName)
-            ->where('status', 1)
-            ->whereNotNull('level2_menu_id')
-            // Ordered so the answer cannot depend on row order. Every row of a
-            // module carries the same id today; if one ever did not, picking
-            // the same one every time beats flapping between two bars.
-            ->orderBy('id')
-            ->value('level2_menu_id');
+        // A module's rows are supposed to agree on this, and 61 of the 62 do.
+        // `user-i-card` does not: its ten original categories point at Users
+        // (105, live) while the three added later — Workflow, Schedular, Audit
+        // Trail — point at User I-card (266), the level-2 menu that has since
+        // been switched off. So the live menu is preferred explicitly rather
+        // than left to row order, which would have answered correctly here only
+        // by the accident of the disabled one's rows being newer.
+        $id = (int) DB::table('fees_menu_categories as c')
+            ->leftJoin('tblmenumaster as m', 'm.id', '=', 'c.level2_menu_id')
+            ->where('c.module_name', $moduleName)
+            ->where('c.status', 1)
+            ->whereNotNull('c.level2_menu_id')
+            ->orderByRaw('CASE WHEN m.status = 1 THEN 0 ELSE 1 END')
+            ->orderBy('c.id')
+            ->value('c.level2_menu_id');
 
         return $id > 0 ? $id : 0;
     }
@@ -358,19 +367,33 @@ abstract class AbstractMenuCategoryApiController extends Controller
      * Which category a menu belongs to, from the only two signals
      * tblmenumaster carries about it: its name and its menu_type.
      *
-     * Deliberately the same rules, in the same order, as the categorize() in
-     * 2026_09_17_100001_seed_all_module_menu_categories.php, so a menu that was
-     * seeded and a menu that is discovered land in the same place. That
-     * migration is history and is not edited; this is where the rules live now,
-     * and a placement either of them gets wrong is corrected by a row in
-     * `fees_menu_category_items`, which always wins.
+     * The rules of the categorize() in
+     * 2026_09_17_100001_seed_all_module_menu_categories.php, in the same order,
+     * so a menu that was seeded and a menu that is discovered land in the same
+     * place. That migration is history and is not edited; this is where the
+     * rules live now, and a placement either of them gets wrong is corrected by
+     * a row in `fees_menu_category_items`, which always wins.
      *
-     * menu_type='MASTER' is the one authoritative signal — set by the menu
-     * tree itself rather than inferred from wording — so it wins outright.
+     * menu_type is the authoritative signal, in both directions: it is set by
+     * the menu tree itself rather than inferred from wording.
+     *
+     *  - 'MASTER' files the menu under Master Setup outright.
+     *  - 'ENTRY' says the opposite, so the name rule that would have filed it
+     *    under Master Setup is skipped. The case that brought this up is "User
+     *    Master" (`/user/add_user`) under Users, typed ENTRY and landing in
+     *    Master Setup on the strength of one word in its label while the tree
+     *    said plainly that it was a day-to-day screen. Compare "Add Student",
+     *    which is typed MASTER and belongs there.
+     *
+     * The other three name rules still apply to an ENTRY menu, because they
+     * describe what a screen produces rather than contradicting its type: an
+     * ENTRY menu called "User Attendance Report" is still a report.
      */
     private function categorize(string $name, ?string $menuType): string
     {
-        if (strtoupper(trim((string) $menuType)) === 'MASTER') {
+        $type = strtoupper(trim((string) $menuType));
+
+        if ($type === 'MASTER') {
             return 'master-setup';
         }
 
@@ -384,6 +407,12 @@ abstract class AbstractMenuCategoryApiController extends Controller
         ];
 
         foreach ($rules as $categoryKey => $needles) {
+            // A menu the tree calls an entry screen is not master data,
+            // whatever its label happens to contain.
+            if ($categoryKey === 'master-setup' && $type === 'ENTRY') {
+                continue;
+            }
+
             foreach ($needles as $needle) {
                 if (str_contains($haystack, $needle)) {
                     return $categoryKey;
