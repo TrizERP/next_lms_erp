@@ -8,6 +8,7 @@ use App\Services\PAL\Coherence\RelationWriter;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 /**
@@ -99,10 +100,82 @@ class CoherenceMapApiController extends Controller
         if ($data['stats']['chapters'] === 0) {
             return response()->json([
                 'status' => true,
-                'message' => 'No curriculum has been set up for this subject and grade yet.',
+                'message' => $this->emptyReason($data, $syear),
                 'data' => $data,
             ], 200);
         }
+
+        return response()->json([
+            'status' => true,
+            'message' => 'Coherence map fetched successfully.',
+            'data' => $data,
+        ], 200);
+    }
+
+    /**
+     * GET /api/lms/coherence-map/concept/{conceptId}
+     *
+     * The same map, but located by a concept instead of by a subject and grade.
+     *
+     * This is what makes the map walkable across classes 6-10. A prerequisite drawn
+     * from a lower grade arrives as an off-map node; to centre on it the client needs
+     * that concept's OWN subject and grade, which is a scope it cannot name in
+     * advance. Rather than make the client resolve a scope it has no business
+     * knowing, it sends the concept id and this resolves the scope server-side - the
+     * concept row already carries both columns.
+     *
+     * Deliberately the same payload as show(), cache key and all: re-centring must
+     * not hand the client a second, thinner shape to special-case.
+     */
+    public function showForConcept(Request $request, int $conceptId): JsonResponse
+    {
+        $tenant = $this->tenantFor($request);
+
+        if ($tenant === null) {
+            return $this->fail('A verified sign-in is required to read the coherence map.', 401);
+        }
+
+        // Tenant-scoped on the way in, not after the build: a concept id is guessable,
+        // and resolving one belonging to another institute would leak that institute's
+        // whole curriculum through the scope it resolves to (G-SEC-29).
+        $concept = DB::table('lms_concept')
+            ->whereIn('sub_institute_id', array_unique([$tenant, 0]))
+            ->where('id', $conceptId)
+            ->select('id', 'name', 'subject_id', 'standard_id', 'syear')
+            ->first();
+
+        if ($concept === null) {
+            return $this->fail('That concept could not be found.', 404);
+        }
+
+        if (! $concept->subject_id || ! $concept->standard_id) {
+            return $this->fail('That concept is not attached to a subject and grade, so it has no map.', 422);
+        }
+
+        $subjectId = (int) $concept->subject_id;
+        $standardId = (int) $concept->standard_id;
+        $syear = $concept->syear !== null ? (int) $concept->syear : null;
+
+        $options = [
+            'include_suggested' => $request->boolean('include_suggested', true),
+            'include_cross_grade' => $request->boolean('include_cross_grade', true),
+        ];
+
+        $key = $this->cacheKey($tenant, $subjectId, $standardId, $syear, $options);
+
+        $data = Cache::remember($key, self::CACHE_TTL, fn () => $this->graph->build(
+            $tenant, $subjectId, $standardId, $syear, $options
+        ));
+
+        // Which concept to centre on. The client asked by entity id; the graph speaks
+        // in typed refs, so hand back the ref rather than make it rebuild the string.
+        $data['focus'] = [
+            'ref' => 'concept:'.(int) $concept->id,
+            'entity_id' => (int) $concept->id,
+            'label' => (string) $concept->name,
+            'subject_id' => $subjectId,
+            'standard_id' => $standardId,
+        ];
 
         return response()->json([
             'status' => true,
@@ -275,6 +348,32 @@ class CoherenceMapApiController extends Controller
     // ══════════════════════════════════════════════════════════════════
     // Identity + cache
     // ══════════════════════════════════════════════════════════════════
+
+    /**
+     * Why the map came back empty.
+     *
+     * Two very different situations reach this branch and a teacher cannot tell them
+     * apart from the screen: the subject genuinely has no curriculum authored, or it
+     * has one under a different academic year than the one the app is pointed at.
+     * The second is not fixable from this screen - the academic-year selector lives
+     * elsewhere - so saying which years do have curriculum is the difference between
+     * a dead end and an obvious next step.
+     */
+    private function emptyReason(array $data, ?int $syear): string
+    {
+        $years = $data['meta']['available_syears'] ?? [];
+
+        if ($years === []) {
+            return 'No curriculum has been set up for this subject and grade yet.';
+        }
+
+        $asked = $syear !== null ? (string) $syear : 'the selected year';
+        $list = implode(', ', $years);
+
+        return count($years) === 1
+            ? "This subject has curriculum for {$list}, not for {$asked}. Switch the academic year to {$list} to see its map."
+            : "This subject has curriculum for {$list}, not for {$asked}. Switch the academic year to one of those to see its map.";
+    }
 
     /**
      * The institute this caller acts as.
