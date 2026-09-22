@@ -46,13 +46,17 @@ return [
             // Lets one template serve both statuses: << session >> resolves to
             // the right word, so C and C/A share a single editable layout.
             'status_labels'   => [
-                'session' => ['C' => 'Morning', 'C/A' => 'Afternoon'],
+                'session'   => ['C' => 'Morning', 'C/A' => 'Afternoon'],
+                // The two sessions are run by different principals, so the
+                // signature follows the session rather than being fixed text.
+                'principal' => ['C' => 'Mr. Ajay Singh Chauhan', 'C/A' => 'Mrs. Rehana Patni'],
             ],
             'placeholders'    => [
                 'aca_year'      => 'Academic year, e.g. 2025-26',
                 'conf_date'     => 'Confirmation date',
                 'conf'          => 'Confirmation status code',
                 'session'       => 'Morning for C, Afternoon for C/A - use this to share one template across both',
+                'principal'     => 'Principal who signs: Mr. Ajay Singh Chauhan (Morning) or Mrs. Rehana Patni (Afternoon)',
                 'parent_time'   => 'Reporting time / time window',
                 'admission_std' => 'Standard name',
                 'medium'        => 'Standard medium',
