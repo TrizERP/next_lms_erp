@@ -2,6 +2,10 @@
 
 namespace App\Services\Eso;
 
+use App\Domain\Eso\Flow\EsoFlowContext;
+use App\Domain\Eso\Flow\EsoFlowPipeline;
+use App\Domain\Eso\Flow\EsoFlowPlan;
+use App\Domain\Eso\Flow\EsoFlowPort;
 use App\Models\Eso\DecisionLog;
 use App\Models\Eso\LearnerNodeState;
 use App\Models\Eso\ResponseLog;
@@ -11,6 +15,7 @@ use App\Models\PAL\MisconceptionLibrary;
 use App\Models\PAL\QuestionMetadata;
 use App\Services\Eso\EsoConceptVideoResolver;
 use App\Services\PAL\Content\MisconceptionLibraryService;
+use App\Services\PAL\Flow\EsoFlowResolver;
 use App\Services\PAL\Gamification\BadgeService;
 use App\Services\PAL\Gamification\StreakService;
 use App\Services\PAL\Runtime\PalEvidenceRepository;
@@ -34,7 +39,7 @@ use Illuminate\Support\Facades\Schema;
  * see docs/ADAPTIVE_LEARNING_ENGINE_IMPLEMENTATION_PLAN.md §L.1/§L.5. The
  * mastery update rule here is the brief's own simple ±0.2 clamped rule.
  */
-class EsoPolicyService
+class EsoPolicyService implements EsoFlowPort
 {
     /** D1 — node mastery at/above this on entry is skip-eligible. */
     public const SKIP_THRESHOLD = 0.80;
@@ -188,6 +193,33 @@ class EsoPolicyService
      *
      * @var array<int,int>
      */
+    /**
+     * The flow this resolve is running under, for the life of ONE resolve.
+     *
+     * Set by nextActionPipeline() and cleared in its finally. Two methods deep
+     * inside the engine need it — checkSettled() and phaseFor() — and threading
+     * a plan through five signatures that otherwise have no use for it would be
+     * worse than this. It is the only place the plan leaks outside the pipeline,
+     * and it is deliberately restored rather than nulled on the way out because
+     * nextAction() is re-entrant: evaluateProgress() and learningPath() both
+     * call it again from inside a resolve.
+     *
+     * NULL means the legacy engine is running, and both readers fall back to
+     * their hardcoded behaviour.
+     */
+    protected ?EsoFlowPlan $flowPlan = null;
+
+    /**
+     * The institute's current flow version, resolved at most once per instance.
+     *
+     * Two fields rather than one because NULL is a legitimate answer — no flow
+     * tables, or the legacy engine — and a bare null memo would re-resolve on
+     * every call in exactly the cases where resolving is pointless.
+     */
+    protected ?int $currentFlowVersion = null;
+
+    protected bool $currentFlowVersionResolved = false;
+
     protected array $practicePoolSizes = [];
 
     public function __construct(
@@ -1003,19 +1035,188 @@ class EsoPolicyService
     // ── The resolver ─────────────────────────────────────────────────────
 
     /**
-     * The next best learning action for this student, on this concept, now.
+     * The next best learning action for this student, now.
+     *
+     * A five-line dispatcher over two engines that must agree:
+     *
+     *   legacy   - the hardcoded cascade below, unchanged.
+     *   pipeline - the same guards, in the order this institute's flow profile
+     *              declares.
+     *
+     * Ships defaulting to `legacy` (config/pal_flow.php guards.engine, from
+     * PAL_FLOW_ENGINE). tests/Feature/Eso/EsoFlowParityTest.php runs both over
+     * every branch of the cascade and compares the resolved action, the audit
+     * trail AND ITS SEQUENCE, the resulting learner state, and the query count
+     * — so the flip is a one-line .env change against a proven equivalence
+     * rather than a leap.
+     *
+     * Both halves are kept until the pipeline has been the default for a full
+     * release; nextActionLegacy() and the parity test are deleted together.
+     */
+    public function nextAction(int $studentId, int $conceptId, int $subInstituteId, bool $silent = false): array
+    {
+        return config('pal_flow.guards.engine') === 'pipeline'
+            ? $this->nextActionPipeline($studentId, $conceptId, $subInstituteId, $silent)
+            : $this->nextActionLegacy($studentId, $conceptId, $subInstituteId, $silent);
+    }
+
+    /**
+     * Resolve through this institute's configured flow.
+     *
+     * The context is built with the node set only. States, evidence and
+     * staleness are resolved lazily on first access, which is what preserves
+     * the cascade's cheap early exits: a concept with no authored nodes still
+     * costs ONE query, because nothing after the first stage is ever touched.
+     *
+     * $flowPlan is restored rather than nulled in the finally because
+     * nextAction() is re-entrant — evaluateProgress() and learningPath() both
+     * re-enter it from inside a resolve, and nulling would leave the outer
+     * resolve running without a plan halfway through.
+     */
+    protected function nextActionPipeline(int $studentId, int $conceptId, int $subInstituteId, bool $silent = false): array
+    {
+        $nodes = $this->nodesForConcept($conceptId, $subInstituteId);
+
+        // States are loaded here, ahead of the plan, because the learner's pin
+        // lives on them and the pin decides WHICH plan to resolve.
+        //
+        // Skipped entirely when the concept has no authored nodes: there can be
+        // no state for a concept with no nodes, so there is no pin to find, and
+        // NodesPresentStage returns before anything else is consulted. That is
+        // what keeps the cheapest path in the engine at one query.
+        $states = $nodes->isEmpty()
+            ? collect()
+            : $this->statesForNodes($studentId, $nodes->pluck('id'))->keyBy('node_id');
+
+        $plan = app(EsoFlowResolver::class)->resolve(
+            $subInstituteId,
+            $this->pinnedFlowVersion($states)
+        );
+
+        $previous = $this->flowPlan;
+        $this->flowPlan = $plan;
+
+        try {
+            return app(EsoFlowPipeline::class)->run(new EsoFlowContext(
+                engine: $this,
+                studentId: $studentId,
+                conceptId: $conceptId,
+                subInstituteId: $subInstituteId,
+                nodes: $nodes,
+                silent: $silent,
+                plan: $plan,
+                states: $states,
+            ));
+        } finally {
+            $this->flowPlan = $previous;
+        }
+    }
+
+    /**
+     * The flow version this learner is already committed to on this concept.
+     *
+     * THE OLDEST non-null pin across the concept's nodes governs the whole
+     * concept. The column's grain is per node, which is finer than the pin
+     * actually means, so a concept could in principle carry two versions across
+     * its nodes — a learner who started one node, had a new version published,
+     * then started a sibling.
+     *
+     * Taking the minimum makes that deterministic and monotone: a learner can
+     * only ever be pinned BACKWARD mid-concept, never forward. So publishing a
+     * new version can never tighten the rules under someone part-way through,
+     * which is the entire guarantee this column exists to provide.
+     *
+     * Null when no node carries a pin — a new learner, or state that predates
+     * flow versioning — and that resolves to the institute's current
+     * assignment.
+     */
+    /**
+     * The flow version a node created RIGHT NOW should be pinned to.
+     *
+     * ---------------------------------------------------------------------
+     * WHY THIS CANNOT JUST READ $flowPlan
+     * ---------------------------------------------------------------------
+     * $flowPlan is only set inside nextActionPipeline(). But stateFor() — the
+     * one place a state row is ever created — is reached far more often from
+     * the WRITE paths, which the controller enters directly:
+     *
+     *   scoreDiagnostic()          POST /diagnostic/{learner}/{concept}/submit
+     *   recordAttempt()            POST /practice/{learner}/{node}/attempt
+     *   recordCheckUnderstanding() POST /cfu/{learner}/{node}/check
+     *   retrievalCheck()           POST /retrieval/{learner}/{node}/check
+     *
+     * None of those runs a resolve first. In fact the COMMON case is that a
+     * learner's very first state row for a concept is created by
+     * scoreDiagnostic(), because the cold-start path returns `diagnostic`
+     * before the node loop ever asks for a state.
+     *
+     * Reading $flowPlan alone would therefore have stamped NULL on almost
+     * every row in production while passing any test that drove a resolve
+     * first — a silent no-op of exactly the kind the $fillable gate would have
+     * produced, arriving by a different route.
+     *
+     * ---------------------------------------------------------------------
+     * WHY NULL UNDER THE LEGACY ENGINE
+     * ---------------------------------------------------------------------
+     * A node resolved by the hardcoded cascade genuinely is not running a
+     * versioned flow, and claiming otherwise would put a number in the column
+     * that never governed anything. NULL already means "predates flow
+     * versioning", which is the truth for those rows.
+     *
+     * Memoised on the instance: a single recordAttempt() can call stateFor()
+     * more than once, and the resolver is bound per resolution, so without
+     * this each call would cost its own round trip.
+     */
+    protected function currentFlowVersionId(int $subInstituteId): ?int
+    {
+        if ($this->flowPlan !== null) {
+            return $this->flowPlan->versionId();
+        }
+
+        if (config('pal_flow.guards.engine') !== 'pipeline') {
+            return null;
+        }
+
+        if (! $this->currentFlowVersionResolved) {
+            $this->currentFlowVersionResolved = true;
+            $this->currentFlowVersion = app(EsoFlowResolver::class)
+                ->resolve($subInstituteId)
+                ->versionId();
+        }
+
+        return $this->currentFlowVersion;
+    }
+
+    protected function pinnedFlowVersion(Collection $states): ?int
+    {
+        $pins = $states
+            ->map(static fn ($state) => $state->flow_version_id)
+            ->filter(static fn ($id): bool => $id !== null)
+            ->map(static fn ($id): int => (int) $id);
+
+        return $pins->isEmpty() ? null : (int) $pins->min();
+    }
+
+    /**
+     * The hardcoded cascade — the `legacy` half of nextAction().
+     *
      * Runs D1 (entry) -> D2 (prerequisite gate) -> per-node D3/teach/practice
      * -> D4 (mastery verdict) in that order, and writes exactly one
      * eso_decision_log row for whichever decision it returns.
-     */
-    /**
+     *
+     * This order is the thing the pipeline makes configurable, and it is
+     * reproduced exactly by the shipped `standard` flow profile — asserted in
+     * tests/Unit/Eso/EsoFlowValidatorTest.php, key for key. Kept until the
+     * pipeline has been the default for a full release, then deleted along
+     * with EsoFlowParityTest.
+     *
      * $silent suppresses every eso_decision_log write this call (and its
      * delegates) would otherwise make — for read-only callers like the
      * chapter dashboard that need "what would happen next" without producing
      * an audit-log entry on every page view. The real per-concept flow never
      * passes this (default false), so its logging is unchanged.
      */
-    public function nextAction(int $studentId, int $conceptId, int $subInstituteId, bool $silent = false): array
+    public function nextActionLegacy(int $studentId, int $conceptId, int $subInstituteId, bool $silent = false): array
     {
         $nodes = $this->nodesForConcept($conceptId, $subInstituteId);
 
@@ -1199,7 +1400,7 @@ class EsoPolicyService
      * deliberately returns false for them — inventing a threshold here would
      * be a new rule, not a reuse of an existing one.
      */
-    protected function hasSatisfiedOwnThreshold(ConceptNode $node, LearnerNodeState $state): bool
+    public function hasSatisfiedOwnThreshold(ConceptNode $node, LearnerNodeState $state): bool
     {
         return match ($node->node_type) {
             'K' => $state->mastery_estimate >= self::KNOWLEDGE_MASTERY_THRESHOLD,
@@ -1240,7 +1441,7 @@ class EsoPolicyService
      *
      * @param  array<int, array{events:int, independent:int, last_at:mixed}>  $evidence
      */
-    protected function nodeMeetsEvidenceFloor(ConceptNode $node, array $evidence): bool
+    public function nodeMeetsEvidenceFloor(ConceptNode $node, array $evidence): bool
     {
         $required = match ($node->node_type) {
             'K' => self::MIN_EVENTS_K,
@@ -1420,8 +1621,20 @@ class EsoPolicyService
      * (3) is tested last so it only costs a query for a node that has already
      * practised its way to the check.
      */
-    protected function checkSettled(ConceptNode $node, LearnerNodeState $state, int $subInstituteId): bool
+    public function checkSettled(ConceptNode $node, LearnerNodeState $state, int $subInstituteId): bool
     {
+        // A flow with no check phase has nothing to settle, and saying so here
+        // is what stops it deadlocking.
+        //
+        // Without this, a node with an authored CFU question keeps
+        // cfu_passed_at null and cfu_attempts below the guard, so this returns
+        // false, the skip in SettledSkipStage never fires, phaseFor() keeps
+        // answering 'check', and nothing ever serves it. An infinite loop built
+        // entirely out of correct-looking parts.
+        if ($this->flowPlan !== null && ! $this->flowPlan->phaseEnabled('check')) {
+            return true;
+        }
+
         if ($state->cfu_passed_at !== null) {
             return true;
         }
@@ -1443,25 +1656,46 @@ class EsoPolicyService
      */
     protected function phaseFor(ConceptNode $node, LearnerNodeState $state, array $evidence, int $subInstituteId): string
     {
-        // LEARN - never taught, or a failed check sent them back for another look.
-        if ($state->taught_at === null) {
-            return 'teach';
+        // The ORDER is the institute's; the CONDITIONS are not.
+        //
+        // With the shipped `standard` flow this walks learn -> practice ->
+        // check and is identical to the three guards it replaces. A flow with
+        // the check switched off never asks about it; a flow that checks before
+        // practising asks in that order. What each phase MEANS is fixed for
+        // every school.
+        foreach ($this->phaseSequence() as $phase) {
+            $wanted = match ($phase) {
+                // LEARN - never taught, or a failed check sent them back.
+                'learn' => $state->taught_at === null,
+                // PRACTICE - not enough practice since this node was taught.
+                'practice' => ! $this->practiceComplete($node, $state, $evidence),
+                // CHECK - the check is still open.
+                'check' => ! $this->checkSettled($node, $state, $subInstituteId),
+                default => false,
+            };
+
+            if ($wanted) {
+                return $phase === 'learn' ? 'teach' : $phase;
+            }
         }
 
-        // PRACTICE - not enough practice on this node since it was last taught.
-        if (! $this->practiceComplete($node, $state, $evidence)) {
-            return 'practice';
-        }
-
-        // CHECK - practice done and the check is still open.
-        if (! $this->checkSettled($node, $state, $subInstituteId)) {
-            return 'check';
-        }
-
-        // Check settled, but the node has not satisfied its own threshold or
-        // floor - which is why the loop did not pass over it. More practice is
-        // the only thing left that can move it.
+        // Every phase satisfied, but the node has not satisfied its own
+        // threshold or floor - which is why the loop did not pass over it. More
+        // practice is the only thing left that can move it.
         return 'practice';
+    }
+
+    /**
+     * The phase order for this resolve.
+     *
+     * Falls back to the shipped order when no plan is active, which is what
+     * keeps the legacy engine byte-identical.
+     *
+     * @return array<int, string>
+     */
+    protected function phaseSequence(): array
+    {
+        return $this->flowPlan?->phaseOrder() ?? ['learn', 'practice', 'check'];
     }
 
     // ── D2: prerequisite gate ────────────────────────────────────────────
@@ -1471,7 +1705,7 @@ class EsoPolicyService
      * pal_concept_relations rows where from_concept_id = this concept and
      * relation_type = 'requires'; to_concept_id is the prerequisite concept.
      */
-    protected function prerequisiteGate(int $studentId, int $conceptId, int $subInstituteId, bool $silent = false): ?array
+    public function prerequisiteGate(int $studentId, int $conceptId, int $subInstituteId, bool $silent = false): ?array
     {
         // A prerequisite that CLEARS the threshold but whose evidence is older
         // than PREREQUISITE_STALE_AFTER_DAYS is neither trusted silently nor
@@ -1832,7 +2066,7 @@ class EsoPolicyService
     }
 
     /** Re-serve (or first-serve) the contrast pair for the node's active misconception. */
-    protected function reserveContrastPairAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
+    public function reserveContrastPairAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
     {
         if ($state->active_misconception_id === null) {
             // Defensive: flagged with no recorded misconception id should not happen,
@@ -1938,7 +2172,7 @@ class EsoPolicyService
      *
      * @param  array<int,array{events:int,independent:int}>  $nodeEvidence  from evidenceByNode()
      */
-    protected function teachOrPracticeAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, ?array $nodeEvidence = null, bool $silent = false): array
+    public function teachOrPracticeAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, ?array $nodeEvidence = null, bool $silent = false): array
     {
         // Resolved lazily only for the defensive call from
         // reserveContrastPairAction(); the node loop threads its own single
@@ -2682,7 +2916,7 @@ class EsoPolicyService
      * @param  Collection<int, ConceptNode>  $nodes
      * @return array<int, array{events:int, independent:int, last_at:?\Illuminate\Support\Carbon, event_times:array}>
      */
-    protected function evidenceByNode(int $studentId, Collection $nodes): array
+    public function evidenceByNode(int $studentId, Collection $nodes): array
     {
         $nodeIds = $nodes->pluck('id')->all();
         if ($nodeIds === []) {
@@ -2787,7 +3021,7 @@ class EsoPolicyService
      * "next best action" flow — retrievalCheck()/dueForRetrieval() alone are
      * reachable but were never wired into nextAction() itself until this.
      */
-    protected function retrievalDueAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
+    public function retrievalDueAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
     {
         [$recap, $recapFallback, $daysSince] = $this->retentionRecap($node, $state, $conceptId, $subInstituteId);
 
@@ -2869,7 +3103,7 @@ class EsoPolicyService
      * called (it would side-effect `STATUS_MASTERED` writes even on silent,
      * which would be a write hiding in a read).
      */
-    protected function isConceptStale(int $studentId, Collection $nodes, Collection $states): bool
+    public function isConceptStale(int $studentId, Collection $nodes, Collection $states): bool
     {
         if ($nodes->isEmpty()) {
             return false;
@@ -2924,7 +3158,7 @@ class EsoPolicyService
      * revoked on the content gap — staleness is ours to fix, not the
      * learner's standing to lose.
      */
-    protected function staleMasteryAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
+    public function staleMasteryAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
     {
         if ($this->retrievalItems($node->id, $subInstituteId) === []) {
             if (! $silent) {
@@ -4383,12 +4617,19 @@ class EsoPolicyService
         return $stage >= $total ? 'ladder complete' : sprintf('stage %d of %d', $stage + 1, $total);
     }
 
-    protected function stateFor(int $studentId, int $nodeId, int $subInstituteId): LearnerNodeState
+    public function stateFor(int $studentId, int $nodeId, int $subInstituteId): LearnerNodeState
     {
         return LearnerNodeState::firstOrCreate(
             ['student_id' => $studentId, 'node_id' => $nodeId],
             [
                 'sub_institute_id' => $subInstituteId,
+                // Stamped at CREATION and never on update, so a learner keeps
+                // the flow they started this node under even if an
+                // administrator publishes a new version mid-concept.
+                //
+                // Null under the legacy engine, which is correct: a learner
+                // resolved by the hardcoded cascade is not pinned to anything.
+                'flow_version_id' => $this->currentFlowVersionId($subInstituteId),
                 'status' => LearnerNodeState::STATUS_UNSEEN,
                 'practice_mode' => LearnerNodeState::MODE_GUIDED,
                 // Explicit, not left to the DB default: firstOrCreate() returns
@@ -4472,7 +4713,7 @@ class EsoPolicyService
      * @param  \Illuminate\Support\Collection<int, mixed>|array<int, mixed>  $nodeIds
      * @return \Illuminate\Support\Collection<int, LearnerNodeState>
      */
-    protected function statesForNodes(int $studentId, $nodeIds): Collection
+    public function statesForNodes(int $studentId, $nodeIds): Collection
     {
         $wanted = collect($nodeIds)->map(fn ($id) => (int) $id)->flip();
 
@@ -4504,6 +4745,19 @@ class EsoPolicyService
     public function forgetMemoized(): void
     {
         $this->requestMemo = [];
+
+        // Cleared too, because they have the same lifetime and the same
+        // failure. The docblock above describes "a test that seeds more content
+        // after a first call", which is precisely the case $practicePoolSizes
+        // gets wrong: the pool size for a node is resolved once per request and
+        // would otherwise still report the old stock.
+        $this->practicePoolSizes = [];
+        $this->learnerStateCache = [];
+
+        // Same lifetime as the rest: a test that publishes a new flow version
+        // mid-run must not keep stamping the old one.
+        $this->currentFlowVersion = null;
+        $this->currentFlowVersionResolved = false;
     }
 
     /**
@@ -4584,7 +4838,7 @@ class EsoPolicyService
             ->pluck('label');
     }
 
-    protected function respond(string $action, ?int $conceptId, ?int $nodeId, string $ruleFired, ?string $llmInstruction): array
+    public function respond(string $action, ?int $conceptId, ?int $nodeId, string $ruleFired, ?string $llmInstruction): array
     {
         return [
             'action' => $action,

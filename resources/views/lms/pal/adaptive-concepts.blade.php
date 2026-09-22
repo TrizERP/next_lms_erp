@@ -16,10 +16,10 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-12">
-                <h4 class="page-title">Adaptive Learning</h4>
+                <h4 class="page-title">Concept Diagnostic</h4>
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ route('pal.index') }}">PAL Subjects</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('pal.diagnostic.subjects') }}">Take Diagnostic</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('pal.diagnostic.subjects') }}">Take Chapter Diagnostic</a></li>
                     <li class="breadcrumb-item active">{{ $chapter_name }}</li>
                 </ol>
             </div>
@@ -35,25 +35,25 @@
             <div class="alert alert-warning d-md-flex align-items-center justify-content-between">
                 <div>
                     <i class="mdi mdi-information-outline mr-1"></i>
-                    You have not taken the diagnostic for this chapter yet, so practice will start at
+                    You have not taken the chapter diagnostic yet, so practice will start at
                     <strong>Easy</strong> and adjust as you answer.
                 </div>
                 <a href="{{ route('pal.diagnostic.start', ['chapterId' => $chapter_id]) }}" class="btn btn-primary btn-sm mt-2 mt-md-0">
-                    Take Diagnostic
+                    Take Chapter Diagnostic
                 </a>
             </div>
         @else
             <div class="card mb-3">
                 <div class="card-body d-md-flex align-items-center justify-content-between">
                     <div>
-                        <span class="text-muted">Your diagnostic level for this chapter:</span>
+                        <span class="text-muted">Your chapter diagnostic level:</span>
                         <span class="badge badge-{{ $levelColors[$diagnostic_level] ?? 'secondary' }} ml-1">
                             {{ ucfirst($diagnostic_level ?? 'Unknown') }}
                         </span>
                     </div>
                     <div class="mt-2 mt-md-0">
                         <a href="{{ route('pal.diagnostic.result', ['attemptId' => $attempt_id]) }}" class="btn btn-outline-primary btn-sm">
-                            View Diagnostic Result
+                            View Chapter Diagnostic Result
                         </a>
                     </div>
                 </div>
@@ -68,7 +68,7 @@
                         <p class="text-muted mb-0">
                             {{ $availability['concepts_servable'] }} of {{ $availability['concepts_total'] }}
                             concepts in this chapter have practice questions ready. The difficulty is chosen
-                            from your diagnostic and how the practice has been going.
+                            from your chapter diagnostic and how the practice has been going.
                         </p>
                     </div>
                     <div class="card-body">
@@ -103,7 +103,7 @@
 
                                                 @if (! empty($concept['diagnostic']))
                                                     <div class="mb-2">
-                                                        <small class="text-muted">Diagnostic:</small>
+                                                        <small class="text-muted">Chapter Diagnostic:</small>
                                                         <span class="badge badge-{{ $bandColors[$concept['diagnostic']['band']] ?? 'secondary' }}">
                                                             {{ ucfirst($concept['diagnostic']['band']) }}
                                                             {{ number_format($concept['diagnostic']['percentage'], 0) }}%

@@ -4,10 +4,10 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-12">
-                <h4 class="page-title">PAL Diagnostic Assessment</h4>
+                <h4 class="page-title">PAL Chapter Diagnostic Assessment</h4>
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ route('pal.index') }}">PAL Subjects</a></li>
-                    <li class="breadcrumb-item active">Take Diagnostic</li>
+                    <li class="breadcrumb-item active">Take Chapter Diagnostic</li>
                 </ol>
             </div>
         </div>
@@ -26,8 +26,8 @@
                     <div class="card-header">
                         <h5>Choose a Chapter</h5>
                         <p class="text-muted mb-0">
-                            The diagnostic is 15 multiple-choice questions from one chapter
-                            &mdash; 5 Easy, 5 Medium and 5 Hard &mdash; and sets your starting level for Adaptive Learning.
+                            The chapter diagnostic is 15 multiple-choice questions from one chapter
+                            &mdash; 5 Easy, 5 Medium and 5 Hard &mdash; and sets your starting level for the Concept Diagnostic.
                         </p>
                     </div>
                     <div class="card-body">
@@ -88,12 +88,12 @@
                                                         @if ($chapter['servable'])
                                                             <a href="{{ route('pal.diagnostic.start', ['chapterId' => $chapter['chapter_id']]) }}"
                                                                class="btn {{ $chapter['has_diagnostic'] ? 'btn-outline-primary' : 'btn-primary' }} btn-block">
-                                                                {{ $chapter['has_diagnostic'] ? 'Retake Diagnostic' : 'Take Diagnostic' }}
+                                                                {{ $chapter['has_diagnostic'] ? 'Retake Chapter Diagnostic' : 'Take Chapter Diagnostic' }}
                                                             </a>
 
                                                             <a href="{{ route('pal.adaptive.concepts', ['chapterId' => $chapter['chapter_id']]) }}"
                                                                class="btn btn-success btn-block btn-sm mt-2">
-                                                                <i class="mdi mdi-brain mr-1"></i> Adaptive Learning
+                                                                <i class="mdi mdi-brain mr-1"></i> Concept Diagnostic
                                                             </a>
 
                                                             @if ($chapter['has_diagnostic'])

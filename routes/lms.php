@@ -44,6 +44,7 @@ use App\Http\Controllers\lms\questionWiseReportController;
 use App\Http\Controllers\bazar\bulkUploadSheetController;
 use App\Http\Controllers\bazar\bulkUploadedReportController;
 use App\Http\Controllers\lms\pal\palController;
+use App\Http\Controllers\lms\pal\PalFlowAdminController;
 use App\Http\Controllers\lms\pal\PalContentController;
 use App\Http\Controllers\lms\virtualclassroomController;
 use App\Http\Controllers\school_setup\sub_std_mapController;
@@ -156,6 +157,18 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     
     Route::resource('bulk_chapter_upload', bulk_chapter_uploadController::class);
     Route::get('ajax_SubjectwiseQuestion', [questionpaperController::class, 'ajax_SubjectwiseQuestion'])->name('ajax_SubjectwiseQuestion');
+
+    // PAL Learning Flow administration.
+    //
+    // Same ordering rule as the diagnostic routes below: this MUST stay above
+    // Route::resource('pal', ...) or the resource swallows /lms/pal/flow and
+    // hands it to pal.show as $pal = 'flow'.
+    //
+    // Not a learner surface. The controller refuses students outright, and only
+    // admins and the profiles in config/pal_flow.php guards.writer_profiles may
+    // change anything - staff may look.
+    Route::get('pal/flow', [PalFlowAdminController::class, 'index'])->name('pal.flow');
+    Route::post('pal/flow', [PalFlowAdminController::class, 'assign'])->name('pal.flow.assign');
 
     // PAL Subject Diagnostic → Adaptive Learning (Web Routes)
     //
