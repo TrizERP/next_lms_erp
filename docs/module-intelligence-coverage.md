@@ -473,15 +473,40 @@ allocations at all and would otherwise be silent.
 
 ## Every module in the menu, and what it gets
 
-> Added 2026-09-21. The rows below are the 64 modules configured in
-> `fees_menu_categories`, resolved by running the **shipped** matcher
-> (`resolveIntelligenceModuleForMenu`) over the **live** `tblmenumaster` rows —
-> not by reading the registry and assuming. Every "not enough data" reason was
-> measured against the tables named beside it.
+> Added 2026-09-21, re-measured 2026-09-22. The rows below are the modules
+> configured in `fees_menu_categories`, resolved by running the **shipped**
+> matcher (`resolveIntelligenceModuleForMenu`) over the **live** `tblmenumaster`
+> rows — not by reading the registry and assuming. Every "not enough data" reason
+> was measured against the tables named beside it.
 
-**40 of 64 modules reach an Intelligence screen; 24 honestly say why they do
+**40 of 65 modules reach an Intelligence screen; 25 honestly say why they do
 not.** Only two of the 40 have an Intelligence implementation of their own that
 did not exist before this pass — the rest reuse one, which is the point.
+
+### Re-measured 2026-09-22
+
+The module count moved from 64 to **65**: `circular` was added to
+`fees_menu_categories` after the first pass. Every one of the original 64
+mappings was re-resolved and **none had drifted** — including the two that were
+wrong before and were fixed (`hrit-management`, `user-i-card`), which still
+resolve to HR.
+
+This pass measured the mapping twice and required the two to agree:
+
+1. over the raw `tblmenumaster` / `fees_menu_category_items` rows, and
+2. over what `ModuleMenuCategoryApiController::index()` **actually returns**,
+   for a rights-holding user (`328 / 11019`, 513 permitted menus).
+
+Both give 40 of 65. Running it a third time as a user with *no* menu rights
+(`254 / 1`) gives **27**, because thirteen of the forty are SHARED modules that
+the matcher recognises by their level-3 routes rather than by their own label —
+and the level-3 items are rights-filtered. That is worth recording rather than
+burying: **a shared module's Intelligence follows the rights on its screens.** A
+user who cannot open any Student screen does not get Student Intelligence from
+Mobile Apps. The thirteen are `certificate`, `mobile-apps`, `student-i-card`,
+`student-medical`, `student-report`, `student-request`, `exam`, `exam-report`,
+`fees-report`, `communication-report`, `other-reports`, `stock-verification` and
+`test`. The twelve modules that match on their own label are unaffected.
 
 ### Why most modules SHARE rather than get their own
 
@@ -531,6 +556,7 @@ pass), **NOT ENOUGH DATA**, or **NOT A MODULE-INTELLIGENCE DOMAIN**.
 | career-counseling | — | — | no | same | NOT ENOUGH DATA |
 | career-explorer | — | — | no | `onet_career_cluster` — O\*NET reference taxonomy, no institute/student/year | NOT A MODULE-INTELLIGENCE DOMAIN |
 | certificate | student | student | no | `tblstudent_enrollment` | SHARED |
+| circular | — | — | no | `circular` — 33 rows, **every one at demo institute 1, `syear` 2022**; no real tenant has written a circular | NOT ENOUGH DATA |
 | communication | communication | — | no | `parent_communication` | EXISTING |
 | communication-report | communication | communication | no | same | SHARED |
 | complaint | — | — | no | `complaint` — **35 rows database-wide, 30 of them at demo institute 1**; real tenants hold 2, 1, 1, 1 | NOT ENOUGH DATA |
@@ -593,6 +619,15 @@ reports — and it resolves to HR Intelligence because one of its ten screens is
 `/user/user_report`. HR is a defensible answer for a bucket containing staff
 reports and it is the behaviour that already shipped, so it was left alone
 rather than changed on taste. It is the least precise mapping in the table.
+
+**`circular` is the one module with no category bar of its own.** All 64 others
+carry the full twelve category rows; `circular` carries exactly one (`ai-stack`)
+and therefore has no Intelligence menu entry. That was left as it is rather than
+completed, for two reasons: seeding the other eleven categories is a menu change,
+not an Intelligence change, and the module has no tenant data to analyse anyway —
+so the absent Intelligence entry is the honest outcome even though it arrived by
+accident. If the eleven rows are ever seeded, `circular` will still resolve to no
+Intelligence, and should, until a real institute writes a circular.
 
 **Three modules are candidates, not dead ends.** `petty-cash`, `ptm` and
 `task-management-253` each hold real, tenant-scoped, meaning-bearing rows at one

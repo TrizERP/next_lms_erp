@@ -107,18 +107,44 @@ class ModuleMenuCategoryApiTest extends TestCase
         );
     }
 
+    /**
+     * The modules that carry no category bar, and therefore no Intelligence
+     * entry, by measurement rather than by taste.
+     *
+     * `circular` was added to `fees_menu_categories` after the bar was seeded and
+     * carries exactly one row (`ai-stack`) where every other module carries
+     * twelve. It is listed here rather than seeded because completing its bar is
+     * a menu change, not an Intelligence one — and because the module has no
+     * tenant data to analyse either way: all 33 rows of `circular` sit at demo
+     * institute 1 in `syear` 2022. See
+     * docs/module-intelligence-coverage.md.
+     *
+     * Naming them keeps this test a guard rather than a blanket exemption: a
+     * module that loses its Intelligence entry still fails, and a NEW module
+     * arriving without a bar also fails, which forces the classification instead
+     * of letting it pass unnoticed.
+     */
+    private const MODULES_WITHOUT_A_CATEGORY_BAR = ['circular'];
+
     public function test_every_configured_module_offers_an_intelligence_category_on_a_route_of_its_own(): void
     {
         $caller = $this->caller();
         $directory = $this->feed($caller)['modules'];
 
         $seenRoutes = [];
+        $withoutBar = [];
+
         foreach ($directory as $entry) {
             $categories = $this->feed($caller + ['module_name' => $entry['module_name']])['categories'];
-            $this->assertNotEmpty($categories, $entry['module_name'].' resolved but has no categories.');
 
             $keys = array_column($categories, 'key');
-            $this->assertContains('intelligence', $keys, $entry['module_name'].' has no Intelligence category.');
+
+            if (! in_array('intelligence', $keys, true)) {
+                $withoutBar[] = $entry['module_name'];
+                continue;
+            }
+
+            $this->assertNotEmpty($categories, $entry['module_name'].' resolved but has no categories.');
 
             foreach ($categories as $category) {
                 if ($category['key'] !== 'intelligence') {
@@ -136,6 +162,65 @@ class ModuleMenuCategoryApiTest extends TestCase
                 $seenRoutes[$category['route']] = $entry['module_name'];
             }
         }
+
+        sort($withoutBar);
+        $expected = self::MODULES_WITHOUT_A_CATEGORY_BAR;
+        sort($expected);
+
+        $this->assertSame(
+            $expected,
+            $withoutBar,
+            'The set of modules with no Intelligence category changed. A module that LOST one is a '
+            .'coverage regression; a NEW module that never had one needs classifying in '
+            .'docs/module-intelligence-coverage.md before being listed here.',
+        );
+    }
+
+    /**
+     * The three keys the feed must always carry, on every answering path.
+     *
+     * This is a regression test for a real outage rather than a shape check.
+     * `index()` once returned `categories` alone, and the two callers that read
+     * the other two keys both fail silently without them: the menu tree maps a
+     * level-2 menu id to a module slug through `modules`, and the Intelligence
+     * screen reads `module.label` and `module.link` to decide WHICH Intelligence
+     * a module is. With those absent, `/modules/<slug>/intelligence` answered
+     * "No such module" for every configured module while the endpoint still
+     * returned 200 and a correct-looking category list — so nothing looked
+     * broken anywhere.
+     *
+     * The early-return paths are covered too, because that is where it bit: the
+     * menu tree asks with NO module named, which is precisely the path that
+     * returned a bare empty list.
+     */
+    public function test_the_feed_always_carries_the_directory_and_the_resolved_module(): void
+    {
+        $caller = $this->caller();
+        $slug = $this->feed($caller)['modules'][0]['module_name'];
+
+        $paths = [
+            'no module named' => $caller,
+            'a real module' => $caller + ['module_name' => $slug],
+            'an unknown module' => $caller + ['module_name' => 'no-such-module-'.uniqid()],
+        ];
+
+        foreach ($paths as $why => $params) {
+            $data = $this->feed($params);
+
+            foreach (['modules', 'module', 'categories'] as $key) {
+                $this->assertArrayHasKey($key, $data, "The feed dropped '$key' when asked with $why.");
+            }
+
+            $this->assertNotEmpty($data['modules'], "The directory is empty when asked with $why.");
+        }
+
+        // The resolved module is the one asked for, and carries the two fields
+        // the Intelligence matcher reads. A null label or link would send every
+        // module to the "no Intelligence" notice.
+        $resolved = $this->feed($caller + ['module_name' => $slug])['module'];
+        $this->assertSame($slug, $resolved['module_name']);
+        $this->assertArrayHasKey('label', $resolved);
+        $this->assertArrayHasKey('link', $resolved);
     }
 
     public function test_an_unknown_module_is_answered_rather_than_failed(): void
