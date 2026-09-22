@@ -603,6 +603,12 @@ Route::post('lms/concept-intelligence/tab-labels/reset', [\App\Http\Controllers\
 Route::middleware('lms.auth')->group(function () {
     Route::get('lms/coherence-map', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'show']);
 
+    // Located by concept rather than by scope, so the map can be re-centred onto
+    // a prerequisite that lives in another grade. The client cannot name that
+    // scope in advance, so it sends the concept id and the controller resolves it.
+    Route::get('lms/coherence-map/concept/{conceptId}', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'showForConcept'])
+        ->where('conceptId', '[0-9]+');
+
     Route::middleware('perm:lms.curriculum,update')->group(function () {
         // Literal segment before the {source}/{id} pair, so "bulk" is never parsed
         // as a relation source.
