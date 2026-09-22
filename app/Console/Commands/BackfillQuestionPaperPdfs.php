@@ -20,7 +20,7 @@ class BackfillQuestionPaperPdfs extends Command
      *
      * @var string
      */
-    protected $description = 'Generate the offline exam PDF (storage/QuestionPaper/{id}_{sub_institute_id}_{syear}.pdf) for question papers that are missing one. Requires wkhtmltopdf to be installed on this machine.';
+    protected $description = 'Generate the offline exam PDF (storage/QuestionPaper/{id}_{sub_institute_id}_{syear}.pdf) for question papers that are missing one. Rendered with Dompdf, so it needs no external binary.';
 
     public function handle(): int
     {
@@ -42,15 +42,35 @@ class BackfillQuestionPaperPdfs extends Command
         $controller = new questionpaperController();
         $pdfFolder = public_path('storage/QuestionPaper');
 
+        // A paper is only missing if neither root holds it. On a host without
+        // the `public/storage` symlink those are two different directories, and
+        // judging by `public_path()` alone would regenerate over files that are
+        // already there under `storage/app/public` -- the same split that made
+        // `/api/question-paper/{id}/pdf` report stored papers as missing.
+        $roots = array_unique([
+            $pdfFolder,
+            storage_path('app/public/QuestionPaper'),
+        ]);
+
+        $stored = function (string $filename) use ($roots): ?string {
+            foreach ($roots as $root) {
+                $candidate = $root.DIRECTORY_SEPARATOR.$filename;
+                if (is_file($candidate)) {
+                    return $candidate;
+                }
+            }
+
+            return null;
+        };
+
         $generated = 0;
         $skipped = 0;
         $failed = 0;
 
         foreach ($papers as $paper) {
             $filename = "{$paper->id}_{$paper->sub_institute_id}_{$paper->syear}.pdf";
-            $path = $pdfFolder.'/'.$filename;
 
-            if (!$force && file_exists($path)) {
+            if (!$force && $stored($filename) !== null) {
                 $skipped++;
                 continue;
             }
@@ -66,11 +86,11 @@ class BackfillQuestionPaperPdfs extends Command
                 continue;
             }
 
-            if (file_exists($path)) {
+            if ($stored($filename) !== null) {
                 $this->info("Paper {$paper->id}: generated {$filename}");
                 $generated++;
             } else {
-                $this->error("Paper {$paper->id}: PDF still missing after generation attempt (check wkhtmltopdf at /usr/local/bin/wkhtmltopdf)");
+                $this->error("Paper {$paper->id}: PDF still missing after generation attempt (looked in ".implode(', ', $roots).")");
                 $failed++;
             }
         }

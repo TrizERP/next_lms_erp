@@ -44,6 +44,7 @@ use App\Http\Controllers\lms\questionWiseReportController;
 use App\Http\Controllers\bazar\bulkUploadSheetController;
 use App\Http\Controllers\bazar\bulkUploadedReportController;
 use App\Http\Controllers\lms\pal\palController;
+use App\Http\Controllers\lms\pal\PalFlowAdminController;
 use App\Http\Controllers\lms\pal\PalContentController;
 use App\Http\Controllers\lms\virtualclassroomController;
 use App\Http\Controllers\school_setup\sub_std_mapController;
@@ -59,7 +60,17 @@ use App\Http\Controllers\lms\h5p\H5PIndexController;
 use App\Http\Controllers\lms\h5p\H5PScenarioController;
 use App\Http\Controllers\lms\h5p\H5PMCQController;
 use App\Http\Controllers\lms\h5p\H5PInteractiveVideoController;
+use App\Http\Controllers\lms\h5p\H5PBlanksController;
+use App\Http\Controllers\lms\h5p\H5PDragTextController;
+use App\Http\Controllers\lms\h5p\H5PMarkTheWordsController;
 use App\Http\Controllers\lms\h5p\H5pFlashcardController;
+use App\Http\Controllers\lms\h5p\H5PDragDropController;
+use App\Http\Controllers\lms\h5p\H5PImageHotspotsController;
+use App\Http\Controllers\lms\h5p\H5PMemoryGameController;
+use App\Http\Controllers\lms\h5p\H5PCoursePresentationController;
+use App\Http\Controllers\lms\h5p\H5PArithmeticQuizController;
+use App\Http\Controllers\lms\h5p\H5PSingleChoiceSetController;
+use App\Http\Controllers\lms\h5p\H5PTrueFalseController;
 use App\Http\Controllers\lms\nextAPI\chapterMasterController;
 use App\Http\Controllers\lms\nextAPI\lmsCurriculumController as newCurricuumController;
 
@@ -147,8 +158,66 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::resource('bulk_chapter_upload', bulk_chapter_uploadController::class);
     Route::get('ajax_SubjectwiseQuestion', [questionpaperController::class, 'ajax_SubjectwiseQuestion'])->name('ajax_SubjectwiseQuestion');
 
+    // PAL Learning Flow administration.
+    //
+    // Same ordering rule as the diagnostic routes below: this MUST stay above
+    // Route::resource('pal', ...) or the resource swallows /lms/pal/flow and
+    // hands it to pal.show as $pal = 'flow'.
+    //
+    // Not a learner surface. The controller refuses students outright, and only
+    // admins and the profiles in config/pal_flow.php guards.writer_profiles may
+    // change anything - staff may look.
+    Route::get('pal/flow', [PalFlowAdminController::class, 'index'])->name('pal.flow');
+    Route::post('pal/flow', [PalFlowAdminController::class, 'assign'])->name('pal.flow.assign');
+
+    // PAL Subject Diagnostic → Adaptive Learning (Web Routes)
+    //
+    // These MUST stay above Route::resource('pal', ...) below. The resource
+    // registers GET pal/{pal}, and Laravel matches in registration order, so a
+    // resource registered first swallows /lms/pal/diagnostic and hands it to
+    // pal.show as $pal = 'diagnostic'. The whereNumber('pal') on the resource
+    // guards the same thing from the other end.
+    //
+    // The diagnostic is CHAPTER scoped: a learner sits 15 MCQs drawn from one
+    // chapter, and the resulting level drives adaptive practice on the concepts
+    // belonging to that chapter.
+    Route::get('pal/diagnostic', [palController::class, 'diagnosticSubjects'])->name('pal.diagnostic.subjects');
+    Route::get('pal/diagnostic/chapter/{chapterId}', [palController::class, 'diagnosticStart'])->whereNumber('chapterId')->name('pal.diagnostic.start');
+    Route::post('pal/diagnostic/attempt/{attemptId}/submit', [palController::class, 'diagnosticSubmit'])->whereNumber('attemptId')->name('pal.diagnostic.submit');
+    Route::get('pal/diagnostic/attempt/{attemptId}/result', [palController::class, 'diagnosticResult'])->whereNumber('attemptId')->name('pal.diagnostic.result');
+    Route::get('pal/diagnostic/history/{chapterId}', [palController::class, 'diagnosticHistory'])->whereNumber('chapterId')->name('pal.diagnostic.history');
+
+    Route::get('pal/adaptive/chapter/{chapterId}', [palController::class, 'adaptiveConcepts'])->whereNumber('chapterId')->name('pal.adaptive.concepts');
+    Route::get('pal/adaptive/concept/{conceptId}', [palController::class, 'adaptiveQuestions'])->whereNumber('conceptId')->name('pal.adaptive.questions');
+    Route::post('pal/adaptive/answer', [palController::class, 'adaptiveAnswer'])->name('pal.adaptive.answer');
+    Route::get('pal/adaptive/progress/{conceptId}', [palController::class, 'adaptiveProgress'])->whereNumber('conceptId')->name('pal.adaptive.progress');
+    Route::get('pal/adaptive/concept-result/{conceptId}', [palController::class, 'adaptiveConceptResult'])->whereNumber('conceptId')->name('pal.adaptive.conceptResult');
+
+    // Stage 5 of the journey. GET only, and deliberately so: the plan is a
+    // projection over stored evidence, not a stored document, so there is
+    // nothing for a learner to edit and no write route to reach.
+    Route::get('pal/plan/chapter/{chapterId}', [palController::class, 'learningPlan'])->whereNumber('chapterId')->name('pal.plan.chapter');
+
+    // Stages 10 and 11. Both are pure reads: mastery reconciles what is already
+    // stored, and the recall queue reports the engine's own next_review_at
+    // rather than scheduling anything itself.
+    Route::get('pal/mastery/chapter/{chapterId}', [palController::class, 'masteryOverview'])->whereNumber('chapterId')->name('pal.mastery.chapter');
+    Route::get('pal/recall', [palController::class, 'recallQueue'])->name('pal.recall.queue');
+
+    // Stage 6. Strictly read-only: it serves the same material the engine's
+    // teach screen does, but stamps nothing and moves nobody. That is what lets
+    // "Learn it" reliably open a lesson without letting the client drive the
+    // engine - see palController::learnContent().
+    Route::get('pal/learn/concept/{conceptId}', [palController::class, 'learnContent'])->whereNumber('conceptId')->name('pal.learn.concept');
+
+    // POST, because it is the one thing on the Learn screen that changes state:
+    // it tells the engine the lesson was read, so the next resolve stops serving
+    // `teach` and the learner is not shown a second lesson screen they have
+    // already worked through.
+    Route::post('pal/learn/concept/{conceptId}/read', [palController::class, 'learnAcknowledge'])->whereNumber('conceptId')->name('pal.learn.acknowledge');
+
     // palController
-    Route::resource('pal', palController::class);
+    Route::resource('pal', palController::class)->whereNumber('pal');
     Route::get('palreport',[palController::class,'palreport'])->name('palreport.index');
     Route::get('suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggestedContent');
     Route::get('get-suggested-content', [palController::class, 'getSuggestedContent'])->name('pal.getSuggestedContent');
@@ -372,6 +441,98 @@ Route::prefix('h5p')->middleware(['session', 'menu', 'logRoute', 'check_permissi
     Route::resource('h5p_mcq',H5PMCQController::class);
     Route::resource('h5p_interactive_video',H5PInteractiveVideoController::class);
     Route::resource('h5p_flashacard',H5pFlashcardController::class);
+
+    // Drag and Drop (H5P.DragQuestion).
+    //
+    // The four routes below are declared BEFORE the resource on purpose: the
+    // resource's `show` is GET h5p_drag_drop/{id}, which would otherwise
+    // swallow `import` and `media` as ids named "import" and "media".
+    Route::post('h5p_drag_drop/import', [H5PDragDropController::class, 'import'])->name('h5p_drag_drop.import');
+    Route::post('h5p_drag_drop/media', [H5PDragDropController::class, 'media'])->name('h5p_drag_drop.media');
+    Route::get('h5p_drag_drop/{id}/export', [H5PDragDropController::class, 'export'])
+        ->whereNumber('id')->name('h5p_drag_drop.export');
+    Route::post('h5p_drag_drop/{id}/publish', [H5PDragDropController::class, 'publish'])
+        ->whereNumber('id')->name('h5p_drag_drop.publish');
+    Route::resource('h5p_drag_drop', H5PDragDropController::class);
+
+    // Text-passage types: Drag the Words, Fill in the Blanks, Mark the Words.
+    //
+    // Same ordering rule as drag and drop above -- the non-id routes are
+    // declared BEFORE each resource, or the resource's `show`
+    // (GET <prefix>/{id}) swallows `import` and `media` as ids named
+    // "import" and "media".
+    //
+    // The three families point at three ten-line subclasses of one controller;
+    // they are separate route names because each is its own list, its own
+    // library and its own card on the H5P hub.
+    foreach ([
+        'h5p_drag_text' => H5PDragTextController::class,
+        'h5p_blanks' => H5PBlanksController::class,
+        'h5p_mark_the_words' => H5PMarkTheWordsController::class,
+    ] as $prefix => $controller) {
+        Route::post($prefix . '/import', [$controller, 'import'])->name($prefix . '.import');
+        Route::post($prefix . '/media', [$controller, 'media'])->name($prefix . '.media');
+        Route::get($prefix . '/{id}/export', [$controller, 'export'])
+            ->whereNumber('id')->name($prefix . '.export');
+        Route::post($prefix . '/{id}/publish', [$controller, 'publish'])
+            ->whereNumber('id')->name($prefix . '.publish');
+        Route::post($prefix . '/{id}/duplicate', [$controller, 'duplicate'])
+            ->whereNumber('id')->name($prefix . '.duplicate');
+        Route::resource($prefix, $controller);
+    }
+
+    /*
+    | 2026-09-21 vertical: Image Hotspots, Memory Game, Course Presentation,
+    | Arithmetic Quiz.
+    |
+    | Same ordering rule as every H5P type above -- the non-id routes are
+    | declared BEFORE each resource, or the resource's `show`
+    | (GET <prefix>/{id}) swallows `import` and `media` as ids named
+    | "import" and "media".
+    |
+    | All four share H5PContentTypeController, so the route SHAPE is identical
+    | and is written once. `media` is the one exception: an arithmetic quiz
+    | has no media, so routing an upload endpoint for it would advertise a
+    | capability the controller refuses.
+    */
+    foreach ([
+        'h5p_image_hotspots' => [H5PImageHotspotsController::class, 'media' => true],
+        'h5p_memory_game' => [H5PMemoryGameController::class, 'media' => true],
+        'h5p_course_presentation' => [H5PCoursePresentationController::class, 'media' => true],
+        'h5p_arithmetic_quiz' => [H5PArithmeticQuizController::class, 'media' => false],
+
+        /*
+        | Added in the second 2026-09-21 vertical. They join this loop rather
+        | than getting one of their own because they share the same base
+        | controller and therefore the same route shape exactly -- a second
+        | identical loop would be a second place for the ordering rule above
+        | to be got wrong.
+        |
+        | Single Choice Set has no media: a question is a sentence and a list
+        | of sentences, so routing an upload endpoint would advertise a
+        | capability the controller refuses. True/False does, because a
+        | statement about a diagram needs the diagram.
+        */
+        'h5p_single_choice_set' => [H5PSingleChoiceSetController::class, 'media' => false],
+        'h5p_true_false' => [H5PTrueFalseController::class, 'media' => true],
+    ] as $prefix => $spec) {
+        $controller = $spec[0];
+
+        Route::post($prefix . '/import', [$controller, 'import'])->name($prefix . '.import');
+
+        if ($spec['media']) {
+            Route::post($prefix . '/media', [$controller, 'media'])->name($prefix . '.media');
+        }
+
+        Route::get($prefix . '/{id}/export', [$controller, 'export'])
+            ->whereNumber('id')->name($prefix . '.export');
+        Route::post($prefix . '/{id}/publish', [$controller, 'publish'])
+            ->whereNumber('id')->name($prefix . '.publish');
+        Route::post($prefix . '/{id}/duplicate', [$controller, 'duplicate'])
+            ->whereNumber('id')->name($prefix . '.duplicate');
+
+        Route::resource($prefix, $controller);
+    }
 });
 Route::post('get-h5p-ai-output', [H5PIndexController::class, 'getH5pAIOutput'])->name('get-h5p-ai-output');
 Route::post('get-h5p-ai-scenario', [H5PScenarioController::class, 'getH5pAIScenario'])->name('get-h5p-ai-scenario');

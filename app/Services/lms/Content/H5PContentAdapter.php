@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Schema;
  *   - content_master has ZERO H5P rows. Its file_type values are pdf 15,460 /
  *     link 13,683 / mp4 1,921 / pptx 183 / jpg 99 / docx 9 - no h5p anywhere.
  *   - The real H5P estate is 3 separate tables holding 11 items in total
- *     (h5p_scenarios 11, h5p_interactive_video 0, h5p_flashcard 0).
+ *     (h5p_scenarios 11, h5p_interactive_video 0, h5p_flashcard 0); h5p_drag_drop was added later and is the fourth.
  * So there is nothing in the content list to filter FOR until H5P is joined in.
  *
  * Three options were considered:
@@ -58,7 +58,7 @@ use Illuminate\Support\Facades\Schema;
 class H5PContentAdapter
 {
     /**
-     * The three H5P estates, and how each maps into a content asset.
+     * The H5P estates, and how each maps into a content asset.
      *
      * `route` is the Next.js editor the item deep-links to. Those routes already
      * exist and hold the CRUD, which is what makes demoting the top-level button
@@ -70,7 +70,10 @@ class H5PContentAdapter
             'title' => 'title',
             'route' => '/h5p/scenario_based',
             'label' => 'H5P scenario',
-            'h5p_type' => 'image_hotspots',
+            // The registry code for h5p_scenarios, singular -- see
+            // config/pal_h5p.php. Not to be confused with `image_hotspots`
+            // below, which is the richer H5P.ImageHotspots type on its own table.
+            'h5p_type' => 'image_hotspot',
         ],
         'interactive_video' => [
             'table' => 'h5p_interactive_video',
@@ -86,6 +89,119 @@ class H5PContentAdapter
             'route' => '/h5p/h5p_flashacard', // route spelling is the legacy one; kept verbatim
             'label' => 'H5P flashcard',
             'h5p_type' => 'flashcards',
+        ],
+        'drag_drop' => [
+            'table' => 'h5p_drag_drop',
+            'title' => 'title',
+            'route' => '/h5p/h5p_drag_drop',
+            'label' => 'H5P drag and drop',
+            'h5p_type' => 'drag_and_drop',
+            // The first source with a draft state. A draft is authored work
+            // in progress, not content -- surfacing it in the chapter list
+            // would put it in front of students through every consumer of
+            // that list at once.
+            'published_only' => true,
+        ],
+
+        // The three text-passage types share one table, so each carries a
+        // `where` discriminator. Without it all three would surface the same
+        // rows three times over, each under the wrong label and deep-linking
+        // to an editor that would 404 on the id.
+        'drag_text' => [
+            'table' => 'h5p_text_activity',
+            'title' => 'title',
+            'where' => ['content_type' => 'drag_text'],
+            'route' => '/h5p/h5p_drag_text',
+            'label' => 'H5P drag the words',
+            'h5p_type' => 'drag_text',
+            'published_only' => true,
+        ],
+        'blanks' => [
+            'table' => 'h5p_text_activity',
+            'title' => 'title',
+            'where' => ['content_type' => 'fill_in_the_blanks'],
+            'route' => '/h5p/h5p_blanks',
+            'label' => 'H5P fill in the blanks',
+            'h5p_type' => 'fill_in_the_blanks',
+            'published_only' => true,
+        ],
+        'mark_the_words' => [
+            'table' => 'h5p_text_activity',
+            'title' => 'title',
+            'where' => ['content_type' => 'mark_the_words'],
+            'route' => '/h5p/h5p_mark_the_words',
+            'label' => 'H5P mark the words',
+            'h5p_type' => 'mark_the_words',
+            'published_only' => true,
+        ],
+
+        /*
+        | 2026-09-21 vertical. Each has its own table, so none needs a `where`
+        | discriminator, and all four are `published_only` -- a draft is
+        | authored work in progress, not content, and surfacing it in the
+        | chapter list would put it in front of students through every consumer
+        | of that list at once.
+        */
+        'image_hotspots' => [
+            'table' => 'h5p_image_hotspots',
+            'title' => 'title',
+            'route' => '/h5p/h5p_image_hotspots',
+            'label' => 'H5P image hotspots',
+            'h5p_type' => 'image_hotspots',
+            'published_only' => true,
+        ],
+        'memory_game' => [
+            'table' => 'h5p_memory_game',
+            'title' => 'title',
+            'route' => '/h5p/h5p_memory_game',
+            'label' => 'H5P memory game',
+            'h5p_type' => 'memory_game',
+            'published_only' => true,
+        ],
+        'course_presentation' => [
+            'table' => 'h5p_course_presentation',
+            'title' => 'title',
+            'route' => '/h5p/h5p_course_presentation',
+            'label' => 'H5P course presentation',
+            'h5p_type' => 'course_presentation',
+            'published_only' => true,
+        ],
+        'arithmetic_quiz' => [
+            'table' => 'h5p_arithmetic_quiz',
+            'title' => 'title',
+            'route' => '/h5p/h5p_arithmetic_quiz',
+            'label' => 'H5P arithmetic quiz',
+            'h5p_type' => 'arithmetic_quiz',
+            'published_only' => true,
+        ],
+
+        /*
+        | 2026-09-21, second vertical. Both have their own table, so neither
+        | needs a `where` discriminator, and both are `published_only` for the
+        | reason the block above gives: a draft is authored work in progress,
+        | and this list is read by every student-facing surface at once.
+        |
+        | This is the whole of the LMS integration for these two types. A
+        | course, lesson, topic, homework, worksheet or assessment picks its
+        | content from `forChapter()`, so appearing here is what makes them
+        | assignable -- there is no per-consumer registration to do and none
+        | was added.
+        */
+        'single_choice_set' => [
+            'table' => 'h5p_single_choice_set',
+            'title' => 'title',
+            'route' => '/h5p/h5p_single_choice_set',
+            'label' => 'H5P single choice set',
+            'h5p_type' => 'single_choice_set',
+            'published_only' => true,
+        ],
+        'true_false' => [
+            'table' => 'h5p_true_false',
+            'title' => 'title',
+            'route' => '/h5p/h5p_true_false',
+            'label' => 'H5P true or false',
+            'h5p_type' => 'true_false',
+            'published_only' => true,
         ],
     ];
 
@@ -130,8 +246,23 @@ class H5PContentAdapter
                 ->where('chapter_id', $chapterId)
                 ->whereIn('sub_institute_id', $tenants);
 
+            // Discriminator for a source that shares its table with its
+            // siblings -- see the three text-passage entries in SOURCES.
+            foreach ((array) ($spec['where'] ?? []) as $column => $value) {
+                if (Schema::hasColumn($spec['table'], $column)) {
+                    $query->where($column, $value);
+                }
+            }
+
             if (Schema::hasColumn($spec['table'], 'deleted_at')) {
                 $query->whereNull('deleted_at');
+            }
+
+            // Schema::hasColumn guards the column too, so a deployment that
+            // has the table but not yet the migration adding `status` keeps
+            // working instead of erroring on an unknown column.
+            if (($spec['published_only'] ?? false) && Schema::hasColumn($spec['table'], 'status')) {
+                $query->where('status', 'published');
             }
 
             foreach ($query->get() as $row) {

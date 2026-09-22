@@ -1190,7 +1190,16 @@ public function search_question($all_data){
         $sub_institute_id = $request->session()->get("sub_institute_id");
         $syear = $request->session()->get("syear");
 
-        $data = DB::table("lms_".$exam_type."_exam")
+        // Only "online" and "offline" have an attempt table of their own
+        // (lms_online_exam / lms_offline_exam). The newer exam types — homework,
+        // assignment, worksheet, project — are offline-style papers with no table
+        // of their own, so interpolating the type here would query a table that
+        // does not exist and break Edit/Delete on the listing.
+        $attempt_table = strtolower((string) $exam_type) === 'online'
+            ? 'lms_online_exam'
+            : 'lms_offline_exam';
+
+        $data = DB::table($attempt_table)
             ->selectRaw('count(*) as total')
             ->where('question_paper_id', $id)->get()->toArray();
         $count = 0;

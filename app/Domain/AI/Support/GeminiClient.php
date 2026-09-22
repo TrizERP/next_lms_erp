@@ -4,6 +4,7 @@ namespace App\Domain\AI\Support;
 
 use App\Domain\AI\Configuration\ResolvedAiConfiguration;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Http;
 use JsonException;
 use Psr\Http\Message\StreamInterface;
@@ -61,6 +62,72 @@ class GeminiClient implements ModelClient
     private const DEFAULT_MAX_TOKENS = 1466;
 
     private const DEFAULT_TIMEOUT = 45;
+
+    /**
+     * Statuses worth trying again, and only these.
+     *
+     * All five mean "not now" rather than "not ever": the request was well formed and
+     * the credential was accepted, and the same bytes sent a moment later usually
+     * succeed. 429 is deliberately absent — see the note at the retry itself.
+     */
+    private const RETRY_STATUSES = [500, 502, 503, 504, 529];
+
+    /**
+     * How long to wait before attempt N, widening each time.
+     *
+     * A flat 750ms three times rode out a hiccup and nothing more: a capacity spike on
+     * a popular model lasts seconds, not milliseconds, so three attempts inside 1.5s
+     * were really one attempt with extra steps — which is how a 503 reached a user who
+     * had done nothing wrong. Widening to roughly 0.7s, 2s and 4.5s covers about seven
+     * seconds of provider overload, which is the shape these spikes actually have.
+     *
+     * The jitter matters more than it looks. Without it, every request that met the
+     * same spike retries at the same instant and re-creates it — the thundering herd
+     * that turns a brief overload into a sustained one.
+     */
+    private static function backoff(int $attempt): int
+    {
+        $base = (int) (700 * (2.5 ** ($attempt - 1)));
+
+        return $base + random_int(0, (int) ($base * 0.25));
+    }
+
+    /**
+     * What a failed provider response means, said in words a reader can act on.
+     *
+     * This used to be the status code and 300 characters of the provider's own JSON,
+     * which is how `The AI provider returned 503: {"error":{"code":503,"message":"This
+     * model is currently experiencing high demand...` ended up in front of somebody
+     * pressing a button in the Fees module. The status is the one thing a caller cannot
+     * interpret and this class can, so it is interpreted here — once, for every caller —
+     * and the provider's own text is kept on the end for whoever is diagnosing rather
+     * than using.
+     */
+    private function failure(\Illuminate\Http\Client\Response $response): RuntimeException
+    {
+        $status = $response->status();
+        $detail = trim(mb_substr($response->body(), 0, 300));
+
+        $explanation = match (true) {
+            in_array($status, self::RETRY_STATUSES, true) => 'The AI model is busy at the provider and did not '
+                . 'answer after several attempts. Nothing is wrong with the request or the configuration — '
+                . 'try again in a moment.',
+            $status === 429 => 'The AI provider\'s rate limit has been reached for this key. Wait a minute '
+                . 'before trying again, or raise the quota on the account the key belongs to.',
+            in_array($status, [401, 403], true) => 'The AI provider rejected the configured credential. The key '
+                . 'for this module is missing, disabled or no longer valid — an administrator can fix it in '
+                . 'AI & Intelligence → AI Providers.',
+            $status === 404 => 'The AI provider does not recognise the configured model. It may have been '
+                . 'retired — check the model name in AI & Intelligence → AI Providers.',
+            $status === 400 => 'The AI provider rejected the request as malformed, which is a fault in this '
+                . 'platform rather than in what was asked.',
+            default => sprintf('The AI provider returned %d.', $status),
+        };
+
+        return new RuntimeException($detail === ''
+            ? $explanation
+            : sprintf('%s (provider said: %s)', $explanation, $detail));
+    }
 
     public function isConfigured(): bool
     {
@@ -134,21 +201,23 @@ class GeminiClient implements ModelClient
             // twenty-four requests, which tripped the per-minute limit that had not
             // been tripped before. A 429 surfaces immediately so the caller degrades
             // once rather than hammering. A 400 or 401 is a real fault and also surfaces.
-            ->retry(3, 750, function ($exception, $request): bool {
-                $status = method_exists($exception, 'response') && $exception->response !== null
+            ->retry(4, self::backoff(...), function ($exception, $request): bool {
+                // `response` is a public property on RequestException, not a method.
+                // This read `method_exists($exception, 'response')`, which is false for
+                // every exception Laravel hands this callback — so the status was always
+                // null, nothing ever matched, and the retry that this whole block exists
+                // for never once fired. A 503 went straight to whoever pressed the
+                // button, which is exactly what the comment below says it must not.
+                $status = $exception instanceof RequestException && $exception->response !== null
                     ? $exception->response->status()
                     : null;
 
-                return in_array($status, [500, 502, 503, 504], true);
+                return in_array($status, self::RETRY_STATUSES, true);
             }, throw: false)
             ->post($this->endpoint($model ?? $this->defaultModel()), $body);
 
         if (! $response->successful()) {
-            throw new RuntimeException(sprintf(
-                'The AI provider returned %d: %s',
-                $response->status(),
-                mb_substr($response->body(), 0, 300)
-            ));
+            throw $this->failure($response);
         }
 
         return $this->textFrom($response->json());
@@ -231,11 +300,7 @@ class GeminiClient implements ModelClient
                 ->post($this->endpoint($model ?? $this->defaultModel(), stream: true), $body);
 
             if (! $response->successful()) {
-                throw new RuntimeException(sprintf(
-                    'The AI provider returned %d: %s',
-                    $response->status(),
-                    mb_substr($response->body(), 0, 300)
-                ));
+                throw $this->failure($response);
             }
 
             return $this->consume($response->toPsrResponse()->getBody(), $onDelta);

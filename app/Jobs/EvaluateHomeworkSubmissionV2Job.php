@@ -3,8 +3,10 @@
 namespace App\Jobs;
 
 use App\Models\student\studentHomeworkModel;
+use App\Services\Evaluation\HomeworkMarkingService;
 use App\Services\Homework\Exceptions\DocumentExtractionException;
 use App\Services\Homework\Exceptions\EvaluationException;
+use App\Services\Homework\Exceptions\ProviderBusyException;
 use App\Services\Homework\HomeworkAnnotatedPdfService;
 use App\Services\Homework\HomeworkAnswerLocatorService;
 use App\Services\Homework\HomeworkDocumentExtractionService;
@@ -36,6 +38,18 @@ use Throwable;
  * Writes its annotated PDF to homework_evaluated_submissions_v2/... on the
  * digitalocean disk -- a distinct path from the OLD job's
  * homework_evaluated_submissions/... so the two never collide.
+ *
+ * TWO MARKING PATHS, as in the legacy job. Where the homework carries real
+ * questions (`homework.question_ids`), the submission is marked against a true
+ * key through the shared App\Services\Evaluation stack -- the same code that
+ * marks an exam answer sheet, so an MCQ scores identically in either place.
+ * Where it does not, the teacher's own attachment is read for the questions and
+ * the model judges everything at one mark each, which is what this job has
+ * always done. Both paths end in the same `homework_evaluation_answer` rows,
+ * so the teacher's review screen never has to know which one ran.
+ *
+ * Everything written here is a PROPOSAL: `ai_marks` and never `teacher_marks`.
+ * A teacher marking the submission 'Reviewed' is what turns one into the other.
  */
 class EvaluateHomeworkSubmissionV2Job implements ShouldQueue
 {
@@ -55,7 +69,8 @@ class EvaluateHomeworkSubmissionV2Job implements ShouldQueue
         HomeworkDocumentExtractionService $extractor,
         HomeworkAnswerLocatorService $locator,
         HomeworkEvaluationService $evaluationService,
-        HomeworkAnnotatedPdfService $annotatedPdfService
+        HomeworkAnnotatedPdfService $annotatedPdfService,
+        HomeworkMarkingService $marking
     ): void {
         $homework = studentHomeworkModel::find($this->homeworkId);
 
@@ -66,6 +81,17 @@ class EvaluateHomeworkSubmissionV2Job implements ShouldQueue
         $files = is_array($homework->submission_files) ? $homework->submission_files : [];
         if (empty($files)) {
             $this->markFailed($homework, 'OCR Failed', 'No files were uploaded with this submission.');
+            return;
+        }
+
+        // A homework that carries its own questions has a real marking key, so
+        // it never needs the teacher's attachment read for question text -- the
+        // questions, their marks and their answers are already known. That path
+        // returns here; everything below is the free-form one.
+        $questionIds = $this->questionIds($homework);
+
+        if ($questionIds !== []) {
+            $this->markAgainstAnswerKey($homework, $questionIds, $files, $marking, $annotatedPdfService);
             return;
         }
 
@@ -96,6 +122,7 @@ class EvaluateHomeworkSubmissionV2Job implements ShouldQueue
         }
 
         $answerTexts = [];
+        $lastFileFailure = null;
         $firstLocated = null;
         $firstFilePath = null;
         $firstFileMime = null;
@@ -123,6 +150,7 @@ class EvaluateHomeworkSubmissionV2Job implements ShouldQueue
                     }
                 }
             } catch (DocumentExtractionException $exception) {
+                $lastFileFailure = $exception;
                 Log::warning('Homework submission (v2) answer OCR/extraction failed for one file', [
                     'homework_id' => $this->homeworkId,
                     'file_index' => $index,
@@ -134,8 +162,23 @@ class EvaluateHomeworkSubmissionV2Job implements ShouldQueue
         }
 
         if (empty($answerTexts)) {
-            $this->logAiInteraction($homework, null, 'OCR failed: none of the submitted files could be read.');
-            $this->markFailed($homework, 'OCR Failed', 'None of the submitted files could be read.');
+            // Say why, rather than blaming the upload for the provider's weather.
+            // Each file's real reason was logged and then dropped, and every
+            // failure - a 503 after four attempts as much as a corrupt scan -
+            // was recorded as "None of the submitted files could be read", which
+            // sent a teacher looking for a fault in a PDF that was perfectly fine.
+            $providerWasBusy = $lastFileFailure?->getPrevious() instanceof ProviderBusyException;
+            $reason = $lastFileFailure?->getMessage() ?: 'None of the submitted files could be read.';
+
+            $this->logAiInteraction($homework, null, "OCR failed: {$reason}");
+            $this->markFailed(
+                $homework,
+                // An unreadable file and a busy model are different problems with
+                // different remedies: one needs a better scan, the other needs
+                // only a few minutes.
+                $providerWasBusy ? 'Evaluation Failed' : 'OCR Failed',
+                $reason
+            );
             return;
         }
 
@@ -175,11 +218,20 @@ class EvaluateHomeworkSubmissionV2Job implements ShouldQueue
             ]);
         }
 
+        // The same per-question rows the answer-key path produces, so the
+        // review screen is identical either way. One mark per question, because
+        // on this path nothing knows what any question was worth.
+        $scored = $marking->answersFromFreeForm($evaluation['results'], $firstLocated['answers'] ?? []);
+        $marking->persist($this->homeworkId, (int) $homework->sub_institute_id, $scored['answers']);
+
         $updateData = [
             'ai_result_json' => json_encode($evaluation),
             'ai_score' => $evaluation['overall_score'],
             'ai_total_questions' => $evaluation['total_questions'],
             'ai_percentage' => $evaluation['percentage'],
+            'ai_marks' => $scored['ai_marks'],
+            'max_marks' => $scored['max_marks'],
+            'evaluation_mode' => HomeworkMarkingService::MODE_FREE_FORM,
             'ai_status' => 'Evaluated',
             'ai_failure_reason' => null,
             'evaluated_at' => now(),
@@ -194,6 +246,130 @@ class EvaluateHomeworkSubmissionV2Job implements ShouldQueue
         $homework->update($updateData);
 
         $this->logAiInteraction($homework, $evaluation, null);
+    }
+
+    /**
+     * Marks the submission against the homework's own questions.
+     *
+     * Every uploaded file is read and the responses merged by question number,
+     * because an answer book photographed page by page arrives as several files
+     * with the questions running across them. The annotated copy is drawn on
+     * the first file, which is where the marks a teacher looks at first are.
+     *
+     * @param  array<int,int>  $questionIds
+     * @param  array<int,array<string,mixed>>  $files
+     */
+    private function markAgainstAnswerKey(
+        studentHomeworkModel $homework,
+        array $questionIds,
+        array $files,
+        HomeworkMarkingService $marking,
+        HomeworkAnnotatedPdfService $annotatedPdfService
+    ): void {
+        $readable = [];
+
+        foreach ($files as $file) {
+            $path = $this->localPath($file['path'] ?? null);
+
+            if (!$path) {
+                continue;
+            }
+
+            $readable[] = ['path' => $path, 'mime' => $this->detectMime($path, $file['mime_type'] ?? null)];
+        }
+
+        if ($readable === []) {
+            $this->markFailed($homework, 'OCR Failed', 'None of the submitted files could be located on disk.');
+            return;
+        }
+
+        try {
+            $scored = $marking->markAgainstAnswerKey(
+                $questionIds,
+                (int) $homework->sub_institute_id,
+                $readable,
+                (string) $homework->title
+            );
+        } catch (DocumentExtractionException $exception) {
+            Log::warning('Homework submission (v2) answer-key read failed', [
+                'homework_id' => $this->homeworkId,
+                'message' => $exception->getMessage(),
+            ]);
+            $this->logAiInteraction($homework, null, "OCR failed: {$exception->getMessage()}");
+            $this->markFailed($homework, 'OCR Failed', $exception->getMessage());
+            return;
+        } catch (Throwable $exception) {
+            Log::warning('Homework submission (v2) answer-key marking failed', [
+                'homework_id' => $this->homeworkId,
+                'message' => $exception->getMessage(),
+            ]);
+            $this->logAiInteraction($homework, null, "Evaluation failed: {$exception->getMessage()}");
+            $this->markFailed($homework, 'Evaluation Failed', $exception->getMessage());
+            return;
+        }
+
+        $marking->persist($this->homeworkId, (int) $homework->sub_institute_id, $scored['answers']);
+
+        $reviewedPdfPath = null;
+        $annotations = $marking->annotations($scored['answers']);
+        $isWord = in_array($readable[0]['mime'], HomeworkDocumentExtractionService::WORD_MIME_TYPES, true);
+
+        if ($annotations !== [] && !$isWord) {
+            try {
+                $pdfBinary = $annotatedPdfService->annotate($readable[0]['path'], $readable[0]['mime'], $annotations);
+                $filePath = 'homework_evaluated_submissions_v2/evaluated-' . $this->homeworkId . '-' . now()->format('YmdHis') . '.pdf';
+                Storage::disk('digitalocean')->put($filePath, $pdfBinary, 'public');
+                $reviewedPdfPath = Storage::disk('digitalocean')->url($filePath);
+            } catch (Throwable $exception) {
+                // Non-fatal: the marks are the result, the marked-up copy is a
+                // convenience. Losing the PDF must not lose the grading.
+                Log::warning('Homework submission (v2) annotated-PDF generation/storage failed', [
+                    'homework_id' => $this->homeworkId,
+                    'message' => $exception->getMessage(),
+                ]);
+            }
+        }
+
+        $totals = $marking->totals($scored['answers'], $scored['ai_marks'], $scored['max_marks']);
+
+        $updateData = [
+            'ai_result_json' => json_encode([
+                'mode' => $scored['mode'],
+                'ai_marks' => $scored['ai_marks'],
+                'max_marks' => $scored['max_marks'],
+                'questions' => $totals['questions'],
+            ]),
+            'ai_score' => $totals['correct'],
+            'ai_total_questions' => $totals['questions'],
+            'ai_percentage' => $totals['percentage'],
+            'ai_marks' => $scored['ai_marks'],
+            'max_marks' => $scored['max_marks'],
+            'evaluation_mode' => $scored['mode'],
+            'ai_status' => 'Evaluated',
+            'ai_failure_reason' => null,
+            'evaluated_at' => now(),
+        ];
+
+        if ($reviewedPdfPath) {
+            $updateData['reviewed_pdf_path'] = $reviewedPdfPath;
+        }
+
+        if ($homework->status === 'Submitted') {
+            $updateData['status'] = 'Under Review';
+        }
+
+        $homework->update($updateData);
+        $this->logAiInteraction($homework, $scored, null);
+    }
+
+    /** @return array<int,int> */
+    private function questionIds(studentHomeworkModel $homework): array
+    {
+        return collect(explode(',', (string) $homework->question_ids))
+            ->map(static fn ($value) => (int) trim($value))
+            ->filter()
+            ->values()
+            ->all();
     }
 
     public function failed(Throwable $exception): void

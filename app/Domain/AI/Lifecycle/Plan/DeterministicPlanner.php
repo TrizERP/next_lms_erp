@@ -200,6 +200,11 @@ class DeterministicPlanner implements Planner
     {
         return match ($intentKey) {
             'student_risk_scan' => 'agent_runner',
+            // Same route, different agent: which one runs is the module's binding, not
+            // this table's business. Asked on Fees it is the fees agent; the guard in
+            // plan() still declines the route entirely where the module has no agent.
+            'fees_risk_scan' => 'agent_runner',
+            'attendance_risk_scan' => 'agent_runner',
             'student_risk_explain' => 'stored_case_read',
             'evidence_inspect' => 'stored_evidence_read',
             'recommendation_advice' => 'stored_recommendation_read',
@@ -262,6 +267,10 @@ class DeterministicPlanner implements Planner
             'admission_confirm' => 'Collect whatever the admission still needs, then put the confirmation to a person.',
             'record_detail' => 'Open the row the previous answer listed and show everything held about it.',
             'record_filter' => 'Narrow the previous answer to the rows that match, without re-querying.',
+            'fees_risk_scan' => 'Find who is carrying unpaid fees, evidence it from the ledger, and put a '
+                . 'collection review to a person.',
+            'attendance_risk_scan' => 'Find who is attending below the school bar, evidence it from the '
+                . 'marked register, and put a follow-up to a person.',
             default => $label,
         };
     }
@@ -327,12 +336,43 @@ class DeterministicPlanner implements Planner
                 ['read_enquiries', 'Load the admission enquiries in scope.', 'admissions.listEnquiries'],
                 ['report', 'Return the enquiries and which are still pending.'],
             ],
+            // Mirrors the academic scan's shape because it is the same journey: the
+            // agent detects and opens a case, the case carries the evidence, and the
+            // recommendation it drafts stops at a person rather than acting.
+            'fees_risk_scan' => [
+                ['detect', 'Read arrears for the students in scope through the fee ledger.'],
+                ['analyse', 'Open a case for each student carrying a balance, citing the unpaid heads.'],
+                ['recommend', 'Draft a fees collection review for each case.'],
+                ['report', 'Return who owes what, and what is now waiting for approval.'],
+            ],
+            // The same four rungs over the register rather than the ledger. The wording of
+            // `detect` matters: the agent reads what has been *marked*, and a student
+            // nobody has marked is not a student who does not attend.
+            'attendance_risk_scan' => [
+                ['detect', 'Read attendance for the students in scope through the marked register.'],
+                ['analyse', 'Open a case for each student below the bar, citing the days they were absent.'],
+                ['recommend', 'Draft an attendance follow-up for each case.'],
+                ['report', 'Return who is attending least, and what is now waiting for approval.'],
+            ],
             // `fees_query` is intentionally not deterministic. The classifier recognises
             // that a question belongs to the fees module, but the exact MCP tool depends
             // on the wording of the question itself — whether it asks for a cohort,
             // one student's pending balance, or a collection report. Letting the
             // generic module-tool planner handle it preserves the existing fee tools and
             // avoids a brittle one-off route for every fee phrase.
+            //
+            // A deterministic entry was added here once and had to come out. Claiming the
+            // intent here is not additive: the plan written here becomes the only plan, so
+            // its candidate list replaces the module's bound fee tools instead of adding
+            // to them. That entry named `students.search` — `fees_query` was listed in
+            // NEEDS_STUDENT too — which dropped `fees.arrears` and `fees.collection_report`
+            // from the turn entirely, because stage 5 may only select from what the plan
+            // proposed. It then routed to `fees_mcp_tools`, a name `LaravelMcpStage` does
+            // not dispatch, so the turn fell through to subject resolution and answered
+            // "the question did not identify a student or a case" to "which students have
+            // pending fees?". Anything fees-specific belongs in the fee tools, the module
+            // bindings or the classifier — all of which add without displacing.
+
             // Replaced wholesale by detailSteps() when the module binds a lookup tool.
             // This is the shape when it does not: the row the reader was shown is still a
             // real record read from the database a turn ago, and reporting it is a better

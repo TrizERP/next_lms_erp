@@ -20,6 +20,9 @@ use App\Http\Controllers\api\ClassTeacherApiController;
 use App\Http\Controllers\api\AcademicSetupApiController;
 use App\Http\Controllers\api\TransportationApiController;
 use App\Http\Controllers\api\GeneralSetupApiController;
+use App\Http\Controllers\api\AssessmentBlueprintApiController;
+use App\Http\Controllers\api\ExamEvaluationApiController;
+use App\Http\Controllers\api\QuestionPaperTemplateApiController;
 use App\Http\Controllers\api\TeacherDailyReportApiController;
 use App\Http\Controllers\api\UserLogReportApiController;
 use App\Http\Controllers\api\InventoryApiController;
@@ -163,7 +166,14 @@ Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 
 // route serve all 64 configured modules — see ModuleMenuCategoryApiController.
 // The two routes above are deliberately left alone: Fees and Teach/Learn have
 // their own pages, their own clients and their own response expectations.
+// Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 'modules/menu-categories', [App\Http\Controllers\api\ModuleMenuCategoryApiController::class, 'index']);
+// Every other module's category bar, from one endpoint rather than 62 copies of
+// the two routes above — see ModuleMenuCategoryApiController. The caller names the
+// module by its level-2 tblmenumaster id (preferred; menu names are not unique) or
+// by its slug. The registry route lists which modules have a bar at all, so the
+// frontend never carries a hardcoded module list that could drift from the rows.
 Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 'modules/menu-categories', [App\Http\Controllers\api\ModuleMenuCategoryApiController::class, 'index']);
+Route::middleware(['api.session', 'check_permissions'])->match(['get', 'post'], 'modules/menu-categories/registry', [App\Http\Controllers\api\ModuleMenuCategoryApiController::class, 'registry']);
 
 // GET is accepted alongside POST so these can be opened in a browser or curled without
 // a body — the handlers read their parameters through $request->input(), which covers
@@ -257,6 +267,8 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     Route::post('lms-homework/review-list', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewList']);
     Route::post('lms-homework/review-detail/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewDetail']);
     Route::post('lms-homework/review-store', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewStore']);
+    // Re-run the AI marking on a submission that has not been signed off yet.
+    Route::post('lms-homework/review-reprocess/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewReprocess']);
 });
 
 // Generate homework from the question bank (teacher-only lookups feeding
@@ -404,6 +416,10 @@ Route::controller(admissionRegistrationAPIController::class)->group(function () 
 });
 
 
+// Declared before the apiResource so the two-segment PDF route is read on its
+// own terms rather than as a `show` with an odd id. Serves the paper's offline
+// PDF, rendering it on demand when the file was never generated.
+Route::get('question-paper/{id}/pdf', [ApiQuestionPaperController::class, 'pdf']);
 Route::apiResource('question-paper', ApiQuestionPaperController::class);
 Route::apiResource('class-teachers', ClassTeacherApiController::class)->except(['show']);
 Route::get('user-logs/bootstrap', [UserLogReportApiController::class, 'bootstrap']);
@@ -434,6 +450,51 @@ Route::post('inventory/receivables/multiple', [InventoryApiController::class, 's
 Route::match(['put', 'patch'], 'inventory/{module}/{id}', [InventoryApiController::class, 'update'])->where('module', '^(?!reports$).+');
 Route::delete('inventory/{module}/{id}', [InventoryApiController::class, 'destroy'])->where('module', '^(?!reports$).+');
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
+
+// Question paper templates -- the reusable layouts behind LMS > Exam >
+// "Question paper templates". Blueprints are stored per school in
+// `template_master`; `.../paper/{id}` is the render feed (paper + questions +
+// type names + options). The `paper/` route is declared before `{id}` so it is
+// not swallowed by it, and ApiQuestionPaperController is left untouched.
+Route::get('question-paper-templates/paper/{paperId}', [QuestionPaperTemplateApiController::class, 'paper']);
+Route::get('question-paper-templates', [QuestionPaperTemplateApiController::class, 'index']);
+Route::get('question-paper-templates/{id}', [QuestionPaperTemplateApiController::class, 'show']);
+Route::post('question-paper-templates', [QuestionPaperTemplateApiController::class, 'store']);
+Route::match(['put', 'patch', 'post'], 'question-paper-templates/{id}', [QuestionPaperTemplateApiController::class, 'update']);
+Route::delete('question-paper-templates/{id}', [QuestionPaperTemplateApiController::class, 'destroy']);
+
+// "Exam Evaluation". Scanned answer sheets -- OMR/MCQ and written answer books
+// alike -- read, identified, scored against the paper's marking key, and held
+// for a teacher. `sheets/...` is declared before `batches/{id}` and
+// `answer-key/{paperId}` is its own prefix, so none of them swallow each other.
+// Nothing here writes to the gradebook except `batches/{id}/publish`, and that
+// reads teacher-approved marks only.
+Route::get('exam-evaluation/answer-key/{paperId}', [ExamEvaluationApiController::class, 'answerKey']);
+Route::get('exam-evaluation/sheets/{id}', [ExamEvaluationApiController::class, 'sheet']);
+Route::get('exam-evaluation/sheets/{id}/file', [ExamEvaluationApiController::class, 'file']);
+Route::post('exam-evaluation/sheets/{id}/review', [ExamEvaluationApiController::class, 'review']);
+Route::post('exam-evaluation/sheets/{id}/reprocess', [ExamEvaluationApiController::class, 'reprocess']);
+Route::delete('exam-evaluation/sheets/{id}', [ExamEvaluationApiController::class, 'destroySheet']);
+Route::get('exam-evaluation/batches', [ExamEvaluationApiController::class, 'index']);
+Route::post('exam-evaluation/batches', [ExamEvaluationApiController::class, 'store']);
+Route::get('exam-evaluation/batches/{id}', [ExamEvaluationApiController::class, 'show']);
+Route::post('exam-evaluation/batches/{id}/sheets', [ExamEvaluationApiController::class, 'uploadSheets']);
+Route::post('exam-evaluation/batches/{id}/publish', [ExamEvaluationApiController::class, 'publish']);
+Route::delete('exam-evaluation/batches/{id}', [ExamEvaluationApiController::class, 'destroy']);
+
+// "Blueprint". The DESIGN of a paper -- chapter weightage, question-type mix,
+// competency and difficulty split -- as opposed to `question-paper-templates`,
+// which is the LAYOUT of one. The two share a word and nothing else. Reference
+// designs (Delhi DoE, CBSE) come from AssessmentBlueprintPresets rather than
+// the table; `clone` is how a school turns one into something it can edit.
+// `chapters` and `clone` are declared before `{id}` so they are not swallowed.
+Route::get('assessment-blueprints/chapters', [AssessmentBlueprintApiController::class, 'chapters']);
+Route::post('assessment-blueprints/clone', [AssessmentBlueprintApiController::class, 'clone']);
+Route::get('assessment-blueprints', [AssessmentBlueprintApiController::class, 'index']);
+Route::post('assessment-blueprints', [AssessmentBlueprintApiController::class, 'store']);
+Route::get('assessment-blueprints/{id}', [AssessmentBlueprintApiController::class, 'show']);
+Route::match(['put', 'patch', 'post'], 'assessment-blueprints/{id}', [AssessmentBlueprintApiController::class, 'update']);
+Route::delete('assessment-blueprints/{id}', [AssessmentBlueprintApiController::class, 'destroy']);
 // check_permissions reads session()->get('user_profile_id'/'sub_institute_id'/'user_id'),
 // so api.session (JWT-hydrated session) must run first for type=API requests.
 Route::middleware(['api.session', 'check_permissions'])->post('fees-cancel/search', [feesCancelController::class, 'search']);
@@ -564,6 +625,39 @@ Route::get('lms/concept-intelligence/{chapterId}/index', [\App\Http\Controllers\
 Route::match(['GET', 'POST'], 'lms/concept-intelligence/tab-labels', [\App\Http\Controllers\api\lms\ConceptIntelligenceTabLabelApiController::class, 'index']);
 Route::post('lms/concept-intelligence/tab-labels/update', [\App\Http\Controllers\api\lms\ConceptIntelligenceTabLabelApiController::class, 'update']);
 Route::post('lms/concept-intelligence/tab-labels/reset', [\App\Http\Controllers\api\lms\ConceptIntelligenceTabLabelApiController::class, 'reset']);
+
+/*
+| Coherence Map - the curriculum graph for the Next.js authoring screen.
+|
+| Unit -> Chapter -> Topic -> Concept read straight out of MariaDB, plus the
+| prerequisite edges between concepts (pal_concept_relations) and between the other
+| levels (pal_learning_relations).
+|
+| NOT the same surface as /api/pal/coherence/*: that one reads Neo4j for the PAL
+| learner experience and its node shape is frozen by six shipped call sites. Neo4j
+| also carries no Unit and no Topic, which is two of the four levels this screen
+| exists to show. See CoherenceMapApiController's docblock.
+|
+| Reads are gated by `lms.auth` because the tenant must come from the verified token
+| (G-SEC-29) rather than a request parameter naming any institute. Writes add
+| `perm:lms.curriculum,update` - approving a `requires` edge changes what the ESO
+| prerequisite gate lets a learner reach, so it is a curriculum-authoring right and
+| not a content-upload one.
+*/
+Route::middleware('lms.auth')->group(function () {
+    Route::get('lms/coherence-map', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'show']);
+
+    Route::middleware('perm:lms.curriculum,update')->group(function () {
+        // Literal segment before the {source}/{id} pair, so "bulk" is never parsed
+        // as a relation source.
+        Route::post('lms/coherence-map/relations/bulk', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'bulkReview']);
+        Route::post('lms/coherence-map/relations', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'storeRelation']);
+        Route::patch('lms/coherence-map/relations/{source}/{id}', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'reviewRelation'])
+            ->where(['source' => 'concept|learning', 'id' => '[0-9]+']);
+        Route::delete('lms/coherence-map/relations/{source}/{id}', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'destroyRelation'])
+            ->where(['source' => 'concept|learning', 'id' => '[0-9]+']);
+    });
+});
 
 Route::get('/departments', [\App\Http\Controllers\HRMS\departmentController::class, 'index']);
 Route::get('/departments/create', [\App\Http\Controllers\HRMS\departmentController::class, 'create']);

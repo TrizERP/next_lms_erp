@@ -49,12 +49,20 @@ class studentHomeworkModel extends Model {
         'evaluated_at',
         'source_type',
         'question_ids',
+        'exam_paper_id',
         'status',
         'submission_files',
         'teacher_remarks',
         'reviewed_by',
         'reviewed_at',
         'feedback_published',
+        // Marks, as distinct from the count-based `ai_score` above: that one is
+        // `int unsigned` and counts questions correct, so it cannot carry 2.5
+        // marks. See the 2026_09_22 migration.
+        'ai_marks',
+        'teacher_marks',
+        'max_marks',
+        'evaluation_mode',
     ];
 
     protected $casts = [
@@ -64,5 +72,8 @@ class studentHomeworkModel extends Model {
         'reviewed_at' => 'datetime',
         'feedback_published' => 'boolean',
         'submission_files' => 'array',
+        'ai_marks' => 'float',
+        'teacher_marks' => 'float',
+        'max_marks' => 'float',
     ];
 }

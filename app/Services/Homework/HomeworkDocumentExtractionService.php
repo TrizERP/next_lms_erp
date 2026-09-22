@@ -159,6 +159,11 @@ class HomeworkDocumentExtractionService
                 'temperature' => 0.1,
                 'maxOutputTokens' => 6000,
             ]);
+        } catch (\RuntimeException $exception) {
+            // The client already says what went wrong in words a teacher can act
+            // on, and `ai_failure_reason` keeps only the first 250 characters -
+            // so prefixing it with plumbing pushes the useful half off the end.
+            throw new DocumentExtractionException($exception->getMessage(), 0, $exception);
         } catch (\Throwable $exception) {
             throw new DocumentExtractionException('OCR via Gemini failed: ' . $exception->getMessage(), 0, $exception);
         }

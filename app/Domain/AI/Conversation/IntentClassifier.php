@@ -212,15 +212,59 @@ class IntentClassifier
             'slots' => ['case'],
         ],
 
+        /*
+        | A fee question that wants the agent, not a table read.
+        |
+        | Deliberately a separate key rather than a mode of `fees_query`. `fees_query`
+        | routes to the module's own read tools and must keep doing so — a question like
+        | "who owes money" is answered by reading `fees.arrears`, and making it claim an
+        | agent run would drop those tools and answer worse. This key exists for the other
+        | kind of fee question: the one that asks the platform to *analyse* rather than
+        | list, and so needs a case opened, evidence cited and a recommendation drafted.
+        |
+        | It is also what stops such a question being claimed by `student_risk_scan`.
+        | "Which students are at risk of non-payment?" scores highly for the student
+        | module on the bare word "students", and used to resolve there — running the
+        | academic-risk agent, whose detectors know nothing about money, against a
+        | question about fees. Every anchor here names money, so the fees module wins the
+        | sentence outright.
+        */
+        'fees_risk_scan' => [
+            'label' => 'Analyse fee payment risk',
+            'description' => 'Runs the fees agent across the students in scope: opens a case per '
+                . 'student carrying arrears, cites the unpaid heads, and drafts a collection review.',
+            'anchors' => ['fee', 'fees', 'payment', 'payments', 'defaulter', 'defaulters', 'arrears', 'dues'],
+            'signals' => [
+                'payment risk' => 5.0, 'non-payment' => 5.0, 'non payment' => 5.0,
+                'fee risk' => 5.0, 'defaulter analysis' => 5.0, 'defaulter report' => 4.0,
+                'analyse' => 2.5, 'analyze' => 2.5, 'assess' => 2.5, 'scan' => 2.5,
+                'at risk' => 3.5, 'at-risk' => 3.5, 'likely to default' => 4.5,
+                'will default' => 4.0, 'highest risk' => 3.5, 'collection review' => 4.0,
+                'review' => 1.5, 'identify' => 1.5, 'which' => 1.0, 'who' => 1.0,
+            ],
+            'patterns' => [
+                '/\b(analyse|analyze|assess|scan|review)\b.{0,40}\b(fee|fees|defaulters?|arrears|payment)\b/i',
+                '/\b(fee|fees|payment)\b.{0,20}\brisk\b/i',
+                '/\brisk of (non[\s-]?payment|default)\b/i',
+                '/\b(likely to|will) default\b/i',
+                '/\b(fee|fees)\b.{0,30}\bcollection review\b/i',
+            ],
+            'slots' => [],
+        ],
         'fees_query' => [
             'label' => 'Answer a fee query',
-            'description' => 'Recognises fees, pending payments, defaulters, and fee collection questions.',
-            'anchors' => ['fee', 'fees', 'payment', 'payments', 'invoice', 'invoices', 'receipt', 'receipts'],
+            'description' => 'Recognises fees, pending payments, defaulters, fee collection, reminders, and fee summary questions.',
+            'anchors' => ['fee', 'fees', 'payment', 'payments', 'invoice', 'invoices', 'receipt', 'receipts', 'defaulter', 'defaulters', 'collection', 'demand', 'dues', 'outstanding', 'unpaid'],
             'signals' => [
                 'pending fee' => 5.0, 'pending fees' => 5.0, 'outstanding' => 4.0,
                 'outstanding dues' => 4.5, 'defaulter' => 4.5, 'defaulters' => 4.5,
                 'arrears' => 4.0, 'unpaid' => 4.0, 'due' => 2.0, 'collection' => 2.5,
                 'total fee collection' => 4.0, 'what is the total fee collection' => 5.0,
+                'fee summary' => 4.5, 'fee report' => 4.0, 'collection report' => 4.0,
+                'overdue' => 3.5, 'outstanding amount' => 4.0, 'what is due' => 4.0,
+                'balance' => 3.0, 'paid' => 2.0, 'refund' => 3.0,
+                'reminder' => 2.5, 'reminders' => 2.5, 'remind' => 2.5,
+                'details' => 2.0, 'detail' => 2.0,
                 'which' => 1.0, 'who' => 1.0, 'show' => 1.0, 'list' => 1.0,
                 'find' => 1.0,
             ],
@@ -228,15 +272,76 @@ class IntentClassifier
                 '/\b(which|what|show|list|find|any)\b.{0,30}\b(fee|fees|payment|payments|invoice|invoices|receipt|receipts)\b/i',
                 '/\b(pending fees?|unpaid fees?|outstanding dues?|defaulters?|arrears?|fee collection)\b/i',
                 '/\b(student|students|child|children|kid|kids|learner|learners|pupil)\b.{0,40}\b(pending fees?|unpaid fees?|outstanding dues?|defaulters?|arrears?)\b/i',
-                // "How much fee is pending?" — the most natural way to ask this, and it
-                // matched none of the three patterns above: they all want the adjective
-                // before the noun ("pending fees"), and none of them start with "how".
-                // The sentence classified as unknown and the turn stopped at planning
-                // with "no registered intent matched".
                 '/\bhow (much|many)\b.{0,40}\b(fee|fees|due|dues|outstanding|arrears|payment|payments)\b/i',
-                // The same inversion generally: "fees are pending", "the fee is unpaid",
-                // "dues are outstanding".
                 '/\b(fee|fees|due|dues|amount|balance)\b.{0,20}\b(is|are|remains?|still)\b.{0,15}\b(pending|unpaid|outstanding|due|owed)\b/i',
+                // Direct fee-specific phrases that don't fit generic patterns.
+                '/\bfee\s+(details?|detail)\b/i',
+                '/\bfee\s+summary\b/i',
+                '/\bfee\s+reminder\b/i',
+                '/\bsend\s+(a\s+)?fee\s+reminder\b/i',
+                '/\bcollection\s+report\b/i',
+            ],
+            'slots' => [],
+        ],
+
+        /*
+        | An attendance question that wants the agent, not a table read.
+        |
+        | The same split `fees_risk_scan` makes against `fees_query`, and for the same
+        | reason. "What is 8B's attendance?" is answered by reading `attendance.overview`,
+        | and claiming an agent run for it would drop that tool and answer worse. This key
+        | is for the other kind of question — the one that asks the platform to *act on*
+        | poor attendance rather than report it — which needs a case opened, the recorded
+        | absences cited, and a follow-up drafted for somebody to approve.
+        |
+        | It also has to win the sentence against `student_risk_scan`, which scores highly
+        | on the bare word "students" and would otherwise run the academic-risk agent —
+        | whose detectors read assessments and homework as well as attendance, and whose
+        | recommendation is an academic intervention rather than a conversation about
+        | absence. Every anchor here names attendance, so an attendance sentence resolves
+        | here outright.
+        |
+        | Note what is NOT an anchor: "below 75", "low" and "worst" on their own. A
+        | question phrased only as a threshold is ambiguous between marks and attendance,
+        | and an intent that grabbed it would answer the wrong question confidently. Such a
+        | sentence falls through to whichever module its other words name, which is the
+        | honest outcome. A threshold that appears *beside the word attendance* is a
+        | different matter and is matched by the last two patterns below — "students with
+        | attendance below 75%" names its own subject and is the single most common way
+        | this question is asked.
+        */
+        'attendance_risk_scan' => [
+            'label' => 'Analyse attendance risk',
+            'description' => 'Runs the attendance agent across the students in scope: opens a case per '
+                . 'student attending below the bar, cites the days they were recorded absent, and drafts '
+                . 'a follow-up for approval.',
+            'anchors' => ['attendance', 'absent', 'absence', 'absences', 'absenteeism', 'attending', 'truancy'],
+            'signals' => [
+                'attendance risk' => 5.0, 'poor attendance' => 5.0, 'low attendance' => 5.0,
+                'attendance below' => 5.0, 'attendance under' => 5.0,
+                'attendance problem' => 4.5, 'chronic absence' => 5.0, 'chronically absent' => 5.0,
+                'persistent absence' => 5.0, 'absenteeism' => 4.5, 'truancy' => 4.5,
+                'attendance follow-up' => 4.5, 'attendance follow up' => 4.5,
+                'missing school' => 4.5, 'not attending' => 4.0, 'keeps missing' => 4.0,
+                'analyse' => 2.5, 'analyze' => 2.5, 'assess' => 2.5, 'scan' => 2.5,
+                'at risk' => 3.5, 'at-risk' => 3.5, 'flag' => 2.0, 'follow up' => 2.0,
+                'review' => 1.5, 'identify' => 1.5, 'which' => 1.0, 'who' => 1.0,
+            ],
+            'patterns' => [
+                '/\b(analyse|analyze|assess|scan|review|flag)\b.{0,40}\b(attendance|absence|absences|absenteeism|truancy)\b/i',
+                '/\b(attendance|absence)\b.{0,20}\brisk\b/i',
+                // And the other way round. "Who is at risk on attendance?" is an
+                // attendance sentence, but the words arrive in the order `student_risk_scan`
+                // is built for, so without this it resolves there and runs the
+                // academic-risk agent against a question about absence.
+                '/\brisk\b.{0,25}\b(attendance|absence|absences|absenteeism)\b/i',
+                '/\b(poor|low|chronic|persistent|concerning)\b.{0,15}\battendance\b/i',
+                '/\b(chronically|persistently|repeatedly)\s+absent\b/i',
+                '/\b(follow[\s-]?up|action)\b.{0,30}\battendance\b/i',
+                '/\battendance\b.{0,30}\bfollow[\s-]?up\b/i',
+                // A threshold, but only where "attendance" says what it is a threshold on.
+                '/\battendance\b.{0,25}\b(below|under|less than|lower than|worse than)\b/i',
+                '/\b(below|under|less than)\b.{0,25}\battendance\b/i',
             ],
             'slots' => [],
         ],

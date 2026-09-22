@@ -204,18 +204,49 @@ class H5PModelRegistry
         );
     }
 
-    /** Registry code for a native type backed by a given table, if any. */
-    public function typeForTable(string $table, ?int $subInstituteId = null): ?string
+    /**
+     * Registry code for a native type backed by a given table, if any.
+     *
+     * A table no longer identifies a type on its own: the three text-passage
+     * types share `h5p_text_activity` and are told apart by the `where`
+     * discriminator on their implementation block. Pass the row (or just the
+     * discriminating columns) to resolve one of those; without it, a shared
+     * table returns null rather than whichever sibling happened to be first,
+     * because a confident wrong answer here is worse than no answer.
+     *
+     * @param  array<string,mixed>  $row  columns to match a `where` block against
+     */
+    public function typeForTable(string $table, ?int $subInstituteId = null, array $row = []): ?string
     {
+        $candidates = [];
+
         foreach ($this->nativeTypes($subInstituteId) as $code => $type) {
             $implementation = $type['metadata']['implementation'] ?? [];
-            if (($implementation['source_table'] ?? null) === $table
-                || ($implementation['fallback_table'] ?? null) === $table) {
+            if (($implementation['source_table'] ?? null) !== $table
+                && ($implementation['fallback_table'] ?? null) !== $table) {
+                continue;
+            }
+
+            $where = (array) ($implementation['where'] ?? []);
+            if ($where === []) {
+                $candidates[$code] = true;
+                continue;
+            }
+
+            $matches = true;
+            foreach ($where as $column => $value) {
+                if (! array_key_exists($column, $row) || (string) $row[$column] !== (string) $value) {
+                    $matches = false;
+                    break;
+                }
+            }
+            if ($matches) {
+                // An exact discriminator match beats an undiscriminated one.
                 return $code;
             }
         }
 
-        return null;
+        return count($candidates) === 1 ? (string) array_key_first($candidates) : null;
     }
 
     // ── Pedagogies + the §9 coverage matrix ─────────────────────────────────

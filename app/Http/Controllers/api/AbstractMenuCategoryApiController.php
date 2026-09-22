@@ -22,7 +22,17 @@ use Illuminate\Support\Facades\Schema;
  */
 abstract class AbstractMenuCategoryApiController extends Controller
 {
-    abstract protected function moduleName(): string;
+    /**
+     * Which module's rows this request wants.
+     *
+     * Takes the request because a module is no longer always a property of the
+     * class: the per-module subclasses answer with a constant, while
+     * ModuleMenuCategoryApiController serves all 62 remaining modules from one
+     * endpoint and has to read it off the request. Returning '' means the
+     * module could not be resolved, and index() answers with an empty bar
+     * rather than guessing.
+     */
+    abstract protected function resolveModuleName(Request $request): string;
 
     public function index(Request $request): JsonResponse
     {
@@ -40,18 +50,49 @@ abstract class AbstractMenuCategoryApiController extends Controller
             return response()->json(['status' => 1, 'data' => ['categories' => []]]);
         }
 
+        $moduleName = $this->resolveModuleName($request);
+
+        if ($moduleName === '') {
+            return response()->json(['status' => 1, 'data' => ['categories' => []]]);
+        }
+
+        // `onboarding_module_key` arrived with the onboarding rollout, so it is
+        // selected only where it exists rather than making this feed — which
+        // every module's navigation depends on — fail on an installation that
+        // has not run that migration yet.
+        $hasOnboardingKey = Schema::hasColumn('fees_menu_categories', 'onboarding_module_key');
+        // Same treatment for the platform-services column, for the same reason.
+        // It was introduced as `workflow_module_key` and renamed once Scheduler
+        // needed the same mapping, so both spellings are read and served under
+        // the one name the frontend knows.
+        $platformKeyColumn = match (true) {
+            Schema::hasColumn('fees_menu_categories', 'platform_module_key') => 'platform_module_key',
+            Schema::hasColumn('fees_menu_categories', 'workflow_module_key') => 'workflow_module_key',
+            default => '',
+        };
+
+        // The audit trail's prefixes, from the same rollout as the Schedular
+        // category. Same guard, same reason.
+        $hasAuditKeys = Schema::hasColumn('fees_menu_categories', 'audit_module_keys');
+
         $categoryRows = DB::table('fees_menu_categories')
-            ->where('module_name', $this->moduleName())
+            ->where('module_name', $moduleName)
             ->where('status', 1)
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->get(['category_key', 'label', 'description', 'route']);
+            ->get(array_merge(
+                ['category_key', 'label', 'description', 'route'],
+                $hasOnboardingKey ? ['onboarding_module_key'] : [],
+                $platformKeyColumn !== '' ? [$platformKeyColumn.' as platform_module_key'] : [],
+                $hasAuditKeys ? ['audit_module_keys'] : []
+            ));
 
         if ($categoryRows->isEmpty()) {
             return response()->json(['status' => 1, 'data' => ['categories' => []]]);
         }
 
         $itemsByCategory = $this->visibleItemsByCategory(
+            $moduleName,
             $subInstituteId,
             $userId,
             (string) $request->input('user_profile_name', '')
@@ -64,6 +105,23 @@ abstract class AbstractMenuCategoryApiController extends Controller
             // The category's own page. The level-3 bar links here; the page
             // itself renders the items below as its horizontal tab bar.
             'route' => (string) ($category->route ?? ''),
+            // Set on the Onboarding category only: the onboarding journey this
+            // module shows, from onboarding_module.module_key. Empty means the
+            // category renders its menus like any other — or, for Onboarding,
+            // that this bar has no single journey to show.
+            'onboarding_module_key' => (string) ($category->onboarding_module_key ?? ''),
+            // Set on the Workflow and Schedular categories: the
+            // config/platform_services.php module whose approval points and
+            // scheduled tasks this bar configures. Empty means the registry
+            // declares no such module, and the category page says so rather than
+            // pinning a console to a neighbouring module's records.
+            'platform_module_key' => (string) ($category->platform_module_key ?? ''),
+            // Set on the Audit Trail category only: the access_log_route.module
+            // prefixes this bar's screens write. A list, because one bar's
+            // screens can sit under several — the Exam bar logs under both
+            // 'exam' and 'result'. Empty means this module's screens never reach
+            // the middleware that writes the log, and the page says so.
+            'audit_module_keys' => $this->auditKeys($category->audit_module_keys ?? null),
             'items' => $itemsByCategory[$category->category_key] ?? [],
         ])->all();
 
@@ -89,7 +147,34 @@ abstract class AbstractMenuCategoryApiController extends Controller
      * @return array<string,list<array{id:int,label:string,link:string}>>
      */
     protected function visibleItemsByCategory(string $subInstituteId, string $userId, string $userProfileName): array
+    /**
+     * The audit prefixes as a list, from the comma-separated column.
+     *
+     * Normalised here rather than in the browser so every caller sees the same
+     * shape: trimmed, lower-cased, no blanks from a trailing comma.
+     *
+     * @return list<string>
+     */
+    private function auditKeys(?string $value): array
     {
+        if ($value === null || trim($value) === '') {
+            return [];
+        }
+
+        $keys = array_filter(
+            array_map(fn ($key) => strtolower(trim($key)), explode(',', $value)),
+            fn ($key) => $key !== ''
+        );
+
+        return array_values(array_unique($keys));
+    }
+
+    private function visibleItemsByCategory(
+        string $moduleName,
+        string $subInstituteId,
+        string $userId,
+        string $userProfileName
+    ): array {
         $permittedMenuIds = $this->permittedMenuIds($subInstituteId, $userId, $userProfileName);
         if ($permittedMenuIds === []) {
             return [];
@@ -97,7 +182,7 @@ abstract class AbstractMenuCategoryApiController extends Controller
 
         $rows = DB::table('fees_menu_category_items as c')
             ->join('tblmenumaster as m', 'm.id', '=', 'c.menu_id')
-            ->where('c.module_name', $this->moduleName())
+            ->where('c.module_name', $moduleName)
             ->where('c.status', 1)
             ->where('m.status', 1)
             ->whereIn('m.id', $permittedMenuIds)

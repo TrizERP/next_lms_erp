@@ -361,7 +361,9 @@ return [
             ],
 
             'fees' => [
+                'agent_key' => 'k12_fees',
                 'workflow_key' => 'fees_collection',
+                'case_type' => 'fee_collection',
                 'detail_tools' => ['student_id' => 'fees.getPending'],
                 'mcp_tools' => [
                     'fees.getPending',
@@ -394,19 +396,34 @@ return [
                     . 'its own human gate and is never reachable from a model-written plan.',
             ],
 
+            /*
+            | Attendance now reaches the full depth, on the same three bindings Fees uses.
+            |
+            | It previously carried a `depth_reason` saying the module had no agent of its
+            | own — true at the time, and the reason an attendance question could be
+            | answered but never acted on. `k12_attendance`, `attendance_followup` and the
+            | `attendance_follow_up` case type are registered by
+            | 2026_09_19_100000_register_attendance_agent_signal_and_workflow.php, and
+            | `ModuleRegistry` verifies all three against `ai_agents` and
+            | `workflow_definitions` before the module claims the depth — so if that
+            | migration has not run on an estate, this block degrades to exactly the
+            | behaviour it replaced rather than promising something that is not there.
+            */
             'attendance' => [
+                'agent_key' => 'k12_attendance',
+                'workflow_key' => 'attendance_followup',
+                'case_type' => 'attendance_follow_up',
                 'detail_tools' => ['student_id' => 'attendance.student'],
                 'mcp_tools' => [
                     'attendance.overview',
                     'attendance.student',
+                    'ai.templates.list',
+                    'ai.templates.render',
                     'ai.templates.generate',
                     'students.search',
                     'students.directory',
                     'academics.structure',
                 ],
-                'depth_reason' => 'Attendance data feeds the academic-risk agent through its detectors, '
-                    . 'but the attendance module itself has no agent — ask about a student to reach the '
-                    . 'deeper stages.',
             ],
 
             'exam' => [

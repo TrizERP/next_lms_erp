@@ -52,6 +52,82 @@ class LmsAssignmentApiController extends Controller
         return array_values(array_filter(array_map('intval', $parts), fn ($id) => $id > 0));
     }
 
+    /**
+     * Every enrolled student of the posted section/standard/division.
+     *
+     * The same filters students() serves the picker table from, so "all
+     * students" means exactly the rows the teacher would have seen had they
+     * searched -- without the browser having to send them back, and read at
+     * assign time so a student enrolled since the search is included.
+     */
+    private function classStudentIds(Request $request): array
+    {
+        $sub_institute_id = $request->input('sub_institute_id');
+        $syear = $request->input('syear');
+        $grade = $request->input('grade');
+        $standard = $request->input('standard_id');
+        $division = $request->input('division_id');
+
+        $query = DB::table('tblstudent as s')
+            ->join('tblstudent_enrollment as se', function ($join) {
+                $join->whereRaw('se.student_id = s.id AND se.sub_institute_id = s.sub_institute_id');
+            })
+            ->where('s.sub_institute_id', $sub_institute_id)
+            ->where('se.syear', $syear)
+            ->whereNull('se.end_date');
+
+        if ($grade) {
+            $query->where('se.grade_id', $grade);
+        }
+        if ($standard) {
+            $query->where('se.standard_id', $standard);
+        }
+        if ($division) {
+            $query->where('se.section_id', $division);
+        }
+
+        return array_values(array_unique(array_map('intval', $query->pluck('s.id')->all())));
+    }
+
+    /**
+     * Assignment, worksheet or project. Anything unrecognised -- including the
+     * absent value every pre-existing caller sends -- is an assignment.
+     */
+    private function workType(Request $request): string
+    {
+        $value = strtolower(trim((string) $request->input('work_type')));
+
+        return in_array($value, ['worksheet', 'project'], true) ? $value : 'assignment';
+    }
+
+    /**
+     * The `question_paper.exam_type` a screen assigns from: worksheets and
+     * projects pick their own papers, assignments keep the offline pool.
+     */
+    private function paperExamType(Request $request): string
+    {
+        $explicit = strtolower(trim((string) $request->input('exam_type')));
+        if (in_array($explicit, ['worksheet', 'project', 'offline'], true)) {
+            return $explicit;
+        }
+
+        $workType = $this->workType($request);
+
+        return $workType === 'assignment' ? 'offline' : $workType;
+    }
+
+    /** Whether this deployment has run the work_type migration. */
+    private function hasWorkTypeColumn(): bool
+    {
+        static $has = null;
+
+        if ($has === null) {
+            $has = DB::getSchemaBuilder()->hasColumn('lms_assignment', 'work_type');
+        }
+
+        return $has;
+    }
+
     private function fail(string $message, int $status = 422, array $extra = []): JsonResponse
     {
         return response()->json(array_merge([
@@ -195,13 +271,19 @@ class LmsAssignmentApiController extends Controller
     }
 
     /**
-     * Offline question papers for the selected subject (the "Select Exam" PDF
-     * dropdown on the create screen). Mirrors assignmentController::create().
+     * Question papers for the selected subject (the "Select Exam" PDF dropdown
+     * on the create screen). Mirrors assignmentController::create().
+     *
+     * `exam_type` picks the pool: 'offline' for assignments, which is what the
+     * Assignment screen has always asked for and stays the default, and
+     * 'worksheet' / 'project' for those two screens, whose papers are the same
+     * `question_paper` rows under a different type.
      */
     public function examPapers(Request $request): JsonResponse
     {
         $sub_institute_id = $request->input('sub_institute_id');
         $subject_id = $request->input('subject_id');
+        $exam_type = $this->paperExamType($request);
 
         if (!$sub_institute_id || !$subject_id) {
             return $this->fail('sub_institute_id and subject_id are required');
@@ -211,7 +293,7 @@ class LmsAssignmentApiController extends Controller
             ->selectRaw("id, paper_name, total_marks, exam_type, subject_id,
                 CONCAT(CONCAT_WS('_', id, sub_institute_id, syear), '.pdf') AS pdf_name")
             ->where('sub_institute_id', $sub_institute_id)
-            ->where('exam_type', 'offline')
+            ->where('exam_type', $exam_type)
             ->where('subject_id', $subject_id)
             ->orderBy('id', 'DESC')
             ->get()->toArray();
@@ -350,17 +432,23 @@ class LmsAssignmentApiController extends Controller
     {
         $sourceType = $request->input('assignment_source_type', 'exam_paper');
         $homeworkFile = $request->input('homework_file');
+        // Assignment, worksheet or project -- the same row, submitted,
+        // annotated and graded by the same screens. Absent means 'assignment',
+        // so a request from the Assignment screen is stored exactly as before.
+        $workType = $this->workType($request);
 
         $validator = Validator::make($request->all(), [
             'sub_institute_id' => 'required|numeric',
             'syear' => 'required|numeric',
-            'students' => 'required',
+            'students' => 'required_unless:assign_mode,all',
+            'assign_mode' => 'nullable|string|in:selected,all',
             'title' => 'required|string|max:50',
             'description' => 'nullable|string|max:50',
             'subject_id' => 'required|numeric',
             'submission_date' => 'nullable|date',
             'assignment_source_type' => 'nullable|string|in:exam_paper,uploaded_homework',
             'homework_file' => 'nullable|string|max:250',
+            'work_type' => 'nullable|string|in:assignment,worksheet,project',
         ]);
 
         if ($validator->fails()) {
@@ -380,7 +468,18 @@ class LmsAssignmentApiController extends Controller
 
         $sub_institute_id = $request->input('sub_institute_id');
         $syear = $request->input('syear');
-        $students = $this->parseCsvIds($request->input('students'));
+        // Who the assignment goes to. 'selected' is the screen's original
+        // behaviour -- the ids the teacher ticked -- and stays the default, so
+        // a request that never mentions assign_mode behaves exactly as before.
+        // 'all' ignores the posted ids and resolves every currently enrolled
+        // student of the chosen section/standard/division here, on the server,
+        // so the class roster is read at assign time rather than trusted from
+        // the browser. Past this line the two modes are indistinguishable:
+        // both hand the same array of ids to getStudents() below.
+        $assign_mode = $request->input('assign_mode') === 'all' ? 'all' : 'selected';
+        $students = $assign_mode === 'all'
+            ? $this->classStudentIds($request)
+            : $this->parseCsvIds($request->input('students'));
         $title = $request->input('title');
         $description = $request->input('description');
         $submission_date = $request->input('submission_date');
@@ -399,7 +498,9 @@ class LmsAssignmentApiController extends Controller
         $exam_pdf = $exam_pdf_input !== '' ? 'QuestionPaper/' . $exam_pdf_input : null;
 
         if (empty($students)) {
-            return $this->fail('Select at least one student.');
+            return $this->fail($assign_mode === 'all'
+                ? 'No students are enrolled in the selected class.'
+                : 'Select at least one student.');
         }
 
         $student_details = getStudents($students, $sub_institute_id, $syear);
@@ -430,6 +531,13 @@ class LmsAssignmentApiController extends Controller
                 'created_by' => $created_by,
             ];
 
+            // Guarded so a deployment that has not run the work_type migration
+            // yet still creates assignments rather than failing on an unknown
+            // column -- the column's own default says 'assignment' anyway.
+            if ($this->hasWorkTypeColumn()) {
+                $assignment_arr['work_type'] = $workType;
+            }
+
             $inserted_ids[] = lms_assignmentModel::insertGetId($assignment_arr);
 
             try {
@@ -452,9 +560,10 @@ class LmsAssignmentApiController extends Controller
 
         return response()->json([
             'status_code' => 1,
-            'message' => 'Assignment Added successfully',
+            'message' => ucfirst($workType) . ' Added successfully',
             'assignment_ids' => $inserted_ids,
             'count' => count($inserted_ids),
+            'work_type' => $workType,
         ], 201);
     }
 

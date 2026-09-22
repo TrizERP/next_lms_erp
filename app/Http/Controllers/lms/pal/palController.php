@@ -33,6 +33,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Log;
 use function App\Helpers\neo4jCreateNode;
 use function App\Helpers\neo4jCreateRelationship;
+use App\Services\PAL\Questions\ServableQuestions;
 
 class palController extends Controller
 {
@@ -341,7 +342,7 @@ class palController extends Controller
             ->update(['status' => 'resolved', 'updated_at' => now()]);
     }
 
-    private function recordMisconceptionOnWrongAnswer($studentId, $conceptId, $selectedAnswerId): void
+    private function recordMisconceptionOnWrongAnswer($studentId, $conceptId, $selectedAnswerId, $questionId = null, $subInstituteId = null): void
     {
         if (!$studentId || !$conceptId) {
             return;
@@ -359,6 +360,35 @@ class palController extends Controller
             ]);
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::warning('Misconception analysis failed on PAL submit: ' . $e->getMessage());
+        }
+
+        // Also match the answer against the CURATED library.
+        //
+        // The call above writes pal_misconceptions, a runtime registry holding
+        // 2 rows. The authored library - pal_misconception_library, 3,662 rows
+        // with 7,307 correctives - is what the Check/Re-Learn loop actually
+        // serves from, and until now nothing on this submit path touched it, so
+        // a learner's wrong answers never raised its detection counts and the
+        // prevalence signal teachers see was built from the smaller registry
+        // alone.
+        //
+        // Both are kept: the engine's clustering is unchanged, and this adds
+        // the signal that was missing. Failures are swallowed for the same
+        // reason as above - a learner must never lose a submission to
+        // analytics.
+        if (!$questionId) {
+            return;
+        }
+
+        try {
+            app(\App\Services\PAL\Content\MisconceptionLibraryService::class)->detectAndRoute(
+                (int) $studentId,
+                (int) $questionId,
+                $selectedAnswerId,
+                (int) ($subInstituteId ?? session('sub_institute_id') ?? 0)
+            );
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Misconception library routing failed on PAL submit: ' . $e->getMessage());
         }
     }
 
@@ -588,7 +618,7 @@ class palController extends Controller
         return $contentId;
     }
 
-    public function index(Request $request){
+public function index(Request $request){
         $type = $request->type;
         $res['message'] = "no data";
         $ctx = $this->resolveAuthorizedContext($request);
@@ -603,12 +633,11 @@ class palController extends Controller
         if(!empty($studentData)){
             $newData = $studentData[$student_id];
             $currentStandard = $studentData[$student_id]['standard_id'];
-			$request->merge(['standard_id' => $currentStandard]);
+            $request->merge(['standard_id' => $currentStandard]);
             $getSubjectList=$ajaxController->getSubjectList($request)->original;
             // get chapters list 
             if(!empty($getSubjectList)){
                 foreach ($getSubjectList as $subject_id => $subject_name) {
-                    # code...
                     $request->merge(['standard_id' => $currentStandard,'subject_id'=>$subject_id]);
                     $getchapterList[$subject_id]=$ajaxController->getChapterList($request)->original;   
                 }
@@ -617,20 +646,41 @@ class palController extends Controller
         $res['studentDetails'] = $newData;
         $res['subjectList'] =$getSubjectList;
         $res['chapterList'] =$getchapterList;  
-        // $res['attemptExams'] = questionpaperModel::join('lms_online_exam_student as loes','loes.question_paper_id','=','question_paper.id')
-         $res['attemptExams'] = questionpaperModel::join('lms_online_exam as loes','loes.question_paper_id','=','question_paper.id')
+        
+        // Get PAL exam attempts for this student
+        $res['attemptExams'] = questionpaperModel::join('lms_online_exam as loes','loes.question_paper_id','=','question_paper.id')
         ->where('question_paper.created_by',$student_id)->where(['question_paper.sub_institute_id'=>$sub_institute_id])->where('question_paper.exam_type','PAL')->get()->toArray();
+        
         $perChapterQuiz = [];
         foreach($res['attemptExams'] as $exam){
-            $i=0;
             if(!isset($perChapterQuiz[$exam['paper_desc']])){
                 $perChapterQuiz[$exam['paper_desc']]=0;
             }
             $perChapterQuiz[$exam['paper_desc']]++;
-            $i++;
         }
         $res['perChapterQuiz'] = $perChapterQuiz;
-        // echo "<pre>";print_r($res['perChapterQuiz']);exit;
+
+        // Get diagnostic attempts for this student
+        $diagnosticAttempts = \App\Models\PAL\DiagnosticAttempt::where('student_id', $student_id)
+            ->where('status', 'submitted')
+            ->orderByDesc('id')
+            ->get()
+            ->unique('chapter_id')
+            ->keyBy('chapter_id');
+        $res['diagnosticAttempts'] = $diagnosticAttempts;
+
+        // Calculate chapter count per subject and total counts
+        $subjectChapterCounts = [];
+        $totalChapters = 0;
+        foreach ($getchapterList as $subject_id => $chapters) {
+            $count = count($chapters);
+            $subjectChapterCounts[$subject_id] = $count;
+            $totalChapters += $count;
+        }
+        $res['subjectChapterCounts'] = $subjectChapterCounts;
+        $res['totalSubjects'] = count($getSubjectList);
+        $res['totalChapters'] = $totalChapters;
+
         return is_mobile($type, 'lms/pal/show', $res, "view");        
     }
     
@@ -1054,8 +1104,13 @@ public function generateMisconceptionContent(Request $request)
             ->where('lqm.sub_institute_id', $subInstituteId)
             ->where('lqm.standard_id', $standardId)
             ->where('lqm.subject_id', $subjectId)
-            ->where('lqm.chapter_id', $chapterId)
-            ->where('lqm.question_type_id', 1);
+            ->where('lqm.chapter_id', $chapterId);
+
+        // Answerability, not the type label, decides what PAL may serve: this
+        // admits assertion & reason and CBE items (4 options, 1 marked answer)
+        // that the old `question_type_id = 1` test hid, and excludes type-1 rows
+        // that have a single option and nothing to choose between.
+        ServableQuestions::constrain($query, 'lqm.id');
 
         if (!empty($levelIds)) {
             $query->join('lms_question_mapping as lm', 'lqm.id', '=', 'lm.questionmaster_id')
@@ -1553,7 +1608,9 @@ public function incrementContentVisit(Request $request)
                     $this->recordMisconceptionOnWrongAnswer(
                         $user_id,
                         $conceptByQuestionId->get($single_question_id),
-                        $single_ans_arr[0] ?? null
+                        $single_ans_arr[0] ?? null,
+                        $single_question_id,
+                        $sub_institute_id ?? null
                     );
                 } else {
                     $this->resolveMisconceptionsOnCorrectAnswer($user_id, $conceptByQuestionId->get($single_question_id));
@@ -1608,7 +1665,9 @@ public function incrementContentVisit(Request $request)
                             $this->recordMisconceptionOnWrongAnswer(
                                 $user_id,
                                 $conceptByQuestionId->get($multiple_question_id),
-                                $multiple_ans_arr[0] ?? null
+                                $multiple_ans_arr[0] ?? null,
+                                $multiple_question_id,
+                                $sub_institute_id ?? null
                             );
                         } else {
                             $this->resolveMisconceptionsOnCorrectAnswer($user_id, $conceptByQuestionId->get($multiple_question_id));
@@ -2514,6 +2573,714 @@ public function getData($request)
         // echo "<pre>";print_r($data);exit;
         return is_mobile($type, 'lms/online_exam_result', $data, "view");
     }
+
+    // =========================================================================
+    // PAL SUBJECT DIAGNOSTIC (Web Flow)
+    // =========================================================================
+
+    /**
+     * Show subjects available for diagnostic.
+     */
+    public function diagnosticSubjects(Request $request)
+    {
+        $type = $request->input('type');
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+        $subInstituteId = $ctx['sub_institute_id'];
+        $syear = $ctx['syear'];
+
+        // The chapters this learner can actually see, sourced exactly as the
+        // PAL Subjects screen sources them: chapter_master, scoped to the
+        // tenant and the learner's standard. Reading chapter ids off the
+        // question bank instead would list ~1,250 chapters, of which only the
+        // 147 in chapter_master have a name to show.
+        $studentData = getStudents([$studentId], $subInstituteId, $syear);
+        $standardId = $studentData[$studentId]['standard_id'] ?? null;
+
+        $chapters = DB::table('chapter_master as cm')
+            ->join('subject as s', 's.id', '=', 'cm.subject_id')
+            ->where('cm.sub_institute_id', $subInstituteId)
+            ->when($standardId, fn ($q) => $q->where('cm.standard_id', $standardId))
+            ->orderBy('s.subject_name')
+            ->orderBy('cm.sort_order')
+            ->get(['cm.id as chapter_id', 'cm.chapter_name', 'cm.subject_id', 's.subject_name']);
+
+        // ONE grouped query for every chapter on the page - see McqPool.
+        $availability = \App\Services\PAL\Questions\McqPool::availability(
+            $chapters->pluck('chapter_id')->all(),
+            $subInstituteId
+        );
+
+        $latestAttempts = \App\Models\PAL\DiagnosticAttempt::forStudent($studentId)
+            ->submitted()
+            ->orderByDesc('id')
+            ->get()
+            ->unique('chapter_id')
+            ->keyBy('chapter_id');
+
+        $grouped = [];
+
+        foreach ($chapters as $chapter) {
+            $stats = $availability[$chapter->chapter_id] ?? ['easy' => 0, 'medium' => 0, 'hard' => 0, 'total' => 0];
+            $attempt = $latestAttempts[$chapter->chapter_id] ?? null;
+
+            $grouped[$chapter->subject_id]['subject_id'] = $chapter->subject_id;
+            $grouped[$chapter->subject_id]['subject_name'] = $chapter->subject_name;
+            $grouped[$chapter->subject_id]['chapters'][] = [
+                'chapter_id' => $chapter->chapter_id,
+                'name' => $chapter->chapter_name,
+                'available' => $stats,
+                // A chapter with no MCQs is shown disabled rather than hidden,
+                // so the gap reads as "not ready yet", not a missing topic.
+                'servable' => ($stats['total'] ?? 0) > 0,
+                'has_diagnostic' => $attempt !== null,
+                'level' => $attempt?->level,
+                'percentage' => $attempt !== null ? (float) $attempt->percentage : null,
+                'last_attempt_id' => $attempt?->id,
+                'last_attempted_at' => $attempt?->submitted_at,
+            ];
+        }
+
+        $res = [
+            'status_code' => 1,
+            'message' => 'Success',
+            'subjects' => array_values($grouped),
+            'student_id' => $studentId,
+        ];
+
+        return is_mobile($type, 'lms/pal/diagnostic-subjects', $res, 'view');
+    }
+
+    /**
+     * Start a diagnostic attempt for a CHAPTER.
+     */
+    public function diagnosticStart(Request $request, $chapterId)
+    {
+        $type = $request->input('type');
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+        $subInstituteId = $ctx['sub_institute_id'];
+        $syear = $ctx['syear'];
+        $standardId = $request->input('standard_id');
+
+        // subject_id and standard_id are resolved from the chapter inside the
+        // service; passing them here only overrides that.
+        $diagnosticService = app(\App\Services\PAL\Diagnostic\DiagnosticService::class);
+        $result = $diagnosticService->start($studentId, (int) $chapterId, $subInstituteId, $syear, null, $standardId);
+
+        if ($result['attempt_id'] === null) {
+            $message = match ($result['reason']) {
+                'no_mcq_questions_available' => 'There are no multiple-choice questions available for this chapter yet.',
+                'insufficient_mcq_questions' => 'This chapter does not have enough multiple-choice questions for a diagnostic yet.',
+                default => 'Could not start diagnostic.',
+            };
+
+            // A redirect is meaningless to the SPA - it would follow it and get
+            // the chapter picker back as a 200, reading as success. The machine
+            // `reason` travels with the message so the UI can explain WHY this
+            // chapter is unavailable rather than just failing to open it.
+            if ($type === 'API' || $type === 'JSON') {
+                return is_mobile($type, null, [
+                    'status_code' => 0,
+                    'message' => $message,
+                    'reason' => $result['reason'],
+                    'attempt_id' => null,
+                    'chapter_id' => (int) $chapterId,
+                    'questions' => [],
+                    'selection_report' => $result['selection_report'],
+                ], 'view');
+            }
+
+            return redirect()->route('pal.diagnostic.subjects')->with('error', $message);
+        }
+
+        // Render the diagnostic exam view
+        $res = [
+            'status_code' => 1,
+            'message' => 'Success',
+            'attempt_id' => $result['attempt_id'],
+            'chapter_id' => $chapterId,
+            'questions' => $result['questions'],
+            'selection_report' => $result['selection_report'],
+            'student_id' => $studentId,
+            'time_allowed' => 30, // minutes for 15 questions
+            // True when this is an unfinished attempt being handed back rather
+            // than a new paper, with the count already answered on it. The UI
+            // needs both to say so instead of implying a fresh start.
+            'resumed' => $result['resumed'] ?? false,
+            'answered' => $result['answered'] ?? 0,
+        ];
+
+        return is_mobile($type, 'lms/pal/diagnostic-exam', $res, 'view');
+    }
+
+    /**
+     * Submit a diagnostic attempt.
+     */
+    public function diagnosticSubmit(Request $request, $attemptId)
+    {
+        $type = $request->input('type');
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+
+        $attempt = \App\Models\PAL\DiagnosticAttempt::find($attemptId);
+        if (!$attempt || (int) $attempt->student_id !== (int) $studentId) {
+            abort(403, 'Unauthorized');
+        }
+
+        $answers = $request->input('answers', []);
+        $diagnosticService = app(\App\Services\PAL\Diagnostic\DiagnosticService::class);
+        $result = $diagnosticService->submit($attempt, $answers);
+
+        // Hand the scored paper to the Adaptive Learning Engine so the stages
+        // after this one start from what was just measured instead of probing
+        // the same concepts again. Wrapped because this is a hand-off, not part
+        // of scoring: the attempt is already durable in pal_diagnostic_response
+        // and a learner must never lose a submitted paper to it. Idempotent -
+        // see DiagnosticEsoBridge.
+        $handoff = ['published' => false, 'reason' => 'not_attempted'];
+
+        try {
+            $handoff = app(\App\Services\PAL\Plan\DiagnosticEsoBridge::class)
+                ->publish($attempt->refresh(), $ctx['sub_institute_id']);
+        } catch (\Throwable $e) {
+            \Log::warning('PAL diagnostic submitted but the ESO hand-off failed', [
+                'attempt_id' => $attempt->id,
+                'student_id' => $studentId,
+                'error' => $e->getMessage(),
+            ]);
+            $handoff = ['published' => false, 'reason' => 'handoff_failed'];
+        }
+
+        // submit() already returns the scored result. The session path throws it
+        // away and re-reads it on the result screen, which is fine for a browser
+        // redirect but useless to an API caller: the SPA would have to make a
+        // second round trip to learn what it just scored. Hand it back directly.
+        if ($type === 'API' || $type === 'JSON') {
+            return is_mobile($type, null, [
+                'status_code' => 1,
+                'message' => 'Success',
+                'attempt_id' => (int) $attempt->id,
+                'result' => $result,
+                'adaptive_handoff' => $handoff,
+                'student_id' => $studentId,
+            ], 'view');
+        }
+
+        return redirect()->route('pal.diagnostic.result', ['attemptId' => $attemptId]);
+    }
+
+    /**
+     * Show diagnostic result.
+     */
+    public function diagnosticResult(Request $request, $attemptId)
+    {
+        $type = $request->input('type');
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+
+        $attempt = \App\Models\PAL\DiagnosticAttempt::with('responses')->find($attemptId);
+        if (!$attempt || (int) $attempt->student_id !== (int) $studentId) {
+            abort(403, 'Unauthorized');
+        }
+
+        $diagnosticService = app(\App\Services\PAL\Diagnostic\DiagnosticService::class);
+        $result = $diagnosticService->result($attempt);
+
+        $res = [
+            'status_code' => 1,
+            'message' => 'Success',
+            'attempt' => $attempt,
+            'result' => $result,
+            'student_id' => $studentId,
+        ];
+
+        return is_mobile($type, 'lms/pal/diagnostic-result', $res, 'view');
+    }
+
+    /**
+     * Show diagnostic history for a chapter.
+     */
+    public function diagnosticHistory(Request $request, $chapterId)
+    {
+        $type = $request->input('type');
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+
+        $attempts = \App\Models\PAL\DiagnosticAttempt::query()
+            ->forStudent($studentId)
+            ->forChapter($chapterId)
+            ->submitted()
+            ->orderByDesc('id')
+            ->limit(20)
+            ->get();
+
+        $chapter = DB::table('chapter_master')->where('id', $chapterId)->first();
+
+        $res = [
+            'status_code' => 1,
+            'message' => 'Success',
+            'chapter_id' => $chapterId,
+            'chapter_name' => $chapter->chapter_name ?? 'Chapter ' . $chapterId,
+            'attempts' => $attempts,
+            'student_id' => $studentId,
+        ];
+
+        return is_mobile($type, 'lms/pal/diagnostic-history', $res, 'view');
+    }
+
+    // =========================================================================
+    // PAL ADAPTIVE LEARNING (Web Flow)
+    // =========================================================================
+
+    /**
+     * Show concepts available for adaptive learning for a subject.
+     */
+    public function adaptiveConcepts(Request $request, $chapterId)
+    {
+        $type = $request->input('type');
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+        $subInstituteId = $ctx['sub_institute_id'];
+
+        $analyzer = app(\App\Services\PAL\Adaptive\ConceptPerformanceAnalyzer::class);
+        $result = $analyzer->forChapter($studentId, (int) $chapterId, $subInstituteId);
+
+        $chapter = DB::table('chapter_master')->where('id', $chapterId)->first();
+
+        $res = [
+            'status_code' => 1,
+            'message' => 'Success',
+            'chapter_id' => $chapterId,
+            'chapter_name' => $chapter->chapter_name ?? 'Chapter ' . $chapterId,
+            'subject_id' => $chapter->subject_id ?? null,
+            'concepts' => $result['concepts'],
+            'has_diagnostic' => $result['has_diagnostic'],
+            'diagnostic_level' => $result['level'],
+            'attempt_id' => $result['attempt_id'],
+            'availability' => $result['availability'],
+            'student_id' => $studentId,
+        ];
+
+        return is_mobile($type, 'lms/pal/adaptive-concepts', $res, 'view');
+    }
+
+    /**
+     * Show adaptive questions for a concept.
+     */
+    public function adaptiveQuestions(Request $request, $conceptId)
+    {
+        $type = $request->input('type');
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+        $subInstituteId = $ctx['sub_institute_id'];
+        // Five per concept is the product rule, so it is enforced here rather
+        // than trusted from the query string: a caller may ask for FEWER (a
+        // shorter warm-up) but never more.
+        $limit = max(1, min(
+            (int) $request->input('limit', \App\Services\PAL\Adaptive\AdaptiveLearningService::DEFAULT_LIMIT),
+            \App\Services\PAL\Adaptive\AdaptiveLearningService::DEFAULT_LIMIT
+        ));
+
+        $adaptiveService = app(\App\Services\PAL\Adaptive\AdaptiveLearningService::class);
+        $result = $adaptiveService->questions($studentId, (int) $conceptId, $subInstituteId, $limit);
+
+        if (($result['reason'] ?? null) === 'unknown_concept') {
+            abort(404, 'Unknown concept.');
+        }
+
+        $concept = DB::table('lms_concept')->where('id', $conceptId)->first();
+
+        $res = [
+            'status_code' => 1,
+            'message' => 'Success',
+            'concept_id' => $conceptId,
+            'concept_name' => $concept->name ?? 'Concept ' . $conceptId,
+            'chapter_id' => $concept->chapter_id ?? null,
+            'items' => $result['items'],
+            'difficulty' => $result['difficulty'],
+            'exhausted' => $result['exhausted'],
+            'progress' => $result['progress'],
+            'rule_fired' => $result['rule_fired'] ?? null,
+            'rationale' => $result['rationale'] ?? null,
+            'concept_exact' => $result['concept_exact'] ?? false,
+            'recycled' => $result['recycled'] ?? false,
+            'student_id' => $studentId,
+        ];
+
+        return is_mobile($type, 'lms/pal/adaptive-exam', $res, 'view');
+    }
+
+    /**
+     * Submit an adaptive answer.
+     */
+    public function adaptiveAnswer(Request $request)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+        $subInstituteId = $ctx['sub_institute_id'];
+
+        $conceptId = $request->input('concept_id');
+        $questionId = $request->input('question_id');
+        $answerMasterId = $request->input('answer_master_id');
+
+        $adaptiveService = app(\App\Services\PAL\Adaptive\AdaptiveLearningService::class);
+        $result = $adaptiveService->recordAnswer($studentId, (int) $conceptId, $subInstituteId, (int) $questionId, $answerMasterId ? (int) $answerMasterId : null);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Show adaptive progress for a concept.
+     */
+    public function adaptiveProgress(Request $request, $conceptId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+
+        $adaptiveService = app(\App\Services\PAL\Adaptive\AdaptiveLearningService::class);
+        $result = $adaptiveService->progress($studentId, (int) $conceptId);
+
+        return response()->json($result);
+    }
+
+    /**
+     * Stage 6 - the learning material for one concept.
+     *
+     * ---------------------------------------------------------------------
+     * WHY THIS EXISTS RATHER THAN A STEP PARAMETER ON nextAction()
+     * ---------------------------------------------------------------------
+     * The "Learn it" button used to link at /pal/eso?conceptId=N, which asks
+     * the engine what to do next and renders whatever comes back - so it could
+     * not keep its promise, and routinely opened practice instead of a lesson.
+     *
+     * The fix is NOT to let the client ask nextAction() for a particular step.
+     * That endpoint writes state (it stamps taught_at) and logs exactly one
+     * decision per call; letting the caller choose the step would let the
+     * client advance the learner through the engine.
+     *
+     * So this is a separate, strictly READ-ONLY view of the same content the
+     * teach screen serves. It stamps nothing, logs nothing and moves nobody -
+     * a learner can re-read a lesson as often as they like, and the engine
+     * remains the only thing that can move them forward.
+     */
+    public function learnContent(Request $request, $conceptId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+        $subInstituteId = (int) $ctx['sub_institute_id'];
+
+        $concept = DB::table('lms_concept')->where('id', $conceptId)->first(['id', 'name', 'chapter_id']);
+
+        if ($concept === null) {
+            return response()->json(['status' => 0, 'message' => 'Unknown concept.', 'reason' => 'unknown_concept'], 404);
+        }
+
+        // Resolved BEFORE the node check on purpose. Videos hang off the concept
+        // and the rest off the chapter, so neither needs an ESO node — a concept
+        // with no guided-learning node can still have plenty to read, and the
+        // early return used to hide all of it.
+        $resources = app(\App\Services\PAL\Content\ConceptLearningResourceService::class)
+            ->forConcept((int) $conceptId, (int) $concept->chapter_id, $subInstituteId);
+
+        // The concept's nodes, cheapest first: a K node is the natural thing to
+        // teach, and the resolver is node-scoped.
+        $node = \App\Models\PAL\ConceptNode::query()
+            ->forConcept((int) $conceptId)
+            ->forTenant($subInstituteId)
+            ->orderByRaw("FIELD(node_type, 'K', 'A', 'S')")
+            ->orderBy('id')
+            ->first();
+
+        if ($node === null) {
+            return response()->json([
+                // status 1: there is no guided lesson, but the material below is
+                // real and readable. Reporting this as a failure made the screen
+                // render an error over content it was holding.
+                'status' => 1,
+                'message' => 'Guided learning is not set up for this concept yet.',
+                'reason' => 'no_eso_nodes',
+                'concept_id' => (int) $conceptId,
+                'concept_name' => $concept->name,
+                'chapter_id' => (int) $concept->chapter_id,
+                'node_id' => null,
+                'node_type' => null,
+                'attempt' => 0,
+                'content' => null,
+                'resources' => $resources,
+                'student_id' => $studentId,
+            ]);
+        }
+
+        // The learner's real state if they have one, otherwise a TRANSIENT
+        // instance. Never stateFor(), which creates rows eagerly - a read must
+        // not bring a learner into existence on the engine's books.
+        $state = \App\Models\Eso\LearnerNodeState::where('student_id', (int) $studentId)
+            ->where('node_id', $node->id)
+            ->first()
+            ?? new \App\Models\Eso\LearnerNodeState([
+                'student_id' => (int) $studentId,
+                'node_id' => (int) $node->id,
+                'sub_institute_id' => $subInstituteId,
+                'cfu_attempts' => 0,
+            ]);
+
+        $resolver = app(\App\Services\Eso\EsoLearningContentResolver::class);
+
+        // A learner who has already failed a check should re-read the variant
+        // they were moved on to, not the one that did not land.
+        $content = (int) $state->cfu_attempts > 0
+            ? $resolver->forReteach($node, $state, $subInstituteId)
+            : $resolver->forTeach($node, $state, $subInstituteId);
+
+        // `content` is left exactly as it was: it is what the ESO teach step
+        // serves and what the engine's own variant ladder chose, so it stays the
+        // lead item. `resources` is purely additive, so a client reading only
+        // `content` is unaffected.
+        return response()->json([
+            'status' => 1,
+            'message' => 'Success',
+            'concept_id' => (int) $conceptId,
+            'concept_name' => $concept->name,
+            'chapter_id' => (int) $concept->chapter_id,
+            'node_id' => (int) $node->id,
+            'node_type' => $node->node_type,
+            'attempt' => (int) $state->cfu_attempts,
+            // Null is an ordinary outcome, not an error: most concepts on this
+            // estate have nothing authored. The screen says so rather than
+            // inventing material.
+            'content' => $content,
+            'resources' => $resources,
+            'student_id' => $studentId,
+        ]);
+    }
+
+    /**
+     * "I have read the lesson" - the one thing on the Learn screen that moves.
+     *
+     * ---------------------------------------------------------------------
+     * WHY THIS IS A POST, WHEN learnContent() IS DELIBERATELY READ-ONLY
+     * ---------------------------------------------------------------------
+     * learnContent() stays a pure read, so a learner may re-open a lesson as
+     * often as they like. But reading it is a real event, and until the engine
+     * is told, `taught_at` stays null - so the very next resolve serves `teach`
+     * again. That is what put a second, redundant lesson screen (one video)
+     * between the Learn page and practice: the learner had just read everything,
+     * and the engine had no way of knowing.
+     *
+     * The split is the point. GET never mutates; this POST does, and only when
+     * the learner explicitly says they are done reading.
+     *
+     * ---------------------------------------------------------------------
+     * WHY IT DOES NOT WRITE taught_at ITSELF
+     * ---------------------------------------------------------------------
+     * Stamping the column here would skip teachAction()'s own logging and its
+     * variant bookkeeping, and would put a second author on a field the engine
+     * owns. Instead this asks the engine for the next action: when the node has
+     * not been taught, nextAction() resolves to `teach` and stamps `taught_at`
+     * as part of doing so. One call, one decision-log row, and the engine
+     * remains the only thing that writes its own state.
+     *
+     * ---------------------------------------------------------------------
+     * WHAT THE RESPONSE IS, AND WHAT IT IS NOT
+     * ---------------------------------------------------------------------
+     * `acknowledged_action` is the action this call SERVED - normally `teach`,
+     * because serving teach is what stamps `taught_at`. It is emphatically NOT
+     * where the learner goes next, and a client that routed on it would land
+     * straight back on the lesson screen this endpoint exists to skip.
+     *
+     * The client navigates to the engine screen and lets it resolve afresh; by
+     * then `taught_at` is set, so the engine answers `practice` on its own. That
+     * also keeps D0's diagnostic diversion and D2's prerequisite gate working,
+     * which a hardcoded "go to practice" would have silently overridden.
+     */
+    public function learnAcknowledge(Request $request, $conceptId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+        $subInstituteId = (int) $ctx['sub_institute_id'];
+
+        $concept = DB::table('lms_concept')->where('id', $conceptId)->first(['id', 'chapter_id']);
+
+        if ($concept === null) {
+            return response()->json(['status' => 0, 'message' => 'Unknown concept.', 'reason' => 'unknown_concept'], 404);
+        }
+
+        $node = \App\Models\PAL\ConceptNode::query()
+            ->forConcept((int) $conceptId)
+            ->forTenant($subInstituteId)
+            ->first();
+
+        if ($node === null) {
+            // Nothing to acknowledge and nothing for the engine to move: the
+            // concept has no guided-learning node. Reported so the client sends
+            // the learner to practice rather than into an engine that has no
+            // opinion about them.
+            return response()->json([
+                'status' => 1,
+                'message' => 'This concept has no guided-learning node.',
+                'reason' => 'no_eso_nodes',
+                'concept_id' => (int) $conceptId,
+                'chapter_id' => (int) $concept->chapter_id,
+                'acknowledged_action' => null,
+                'taught' => false,
+                'student_id' => $studentId,
+            ]);
+        }
+
+        $next = app(\App\Services\Eso\EsoPolicyService::class)
+            ->nextAction($studentId, (int) $conceptId, $subInstituteId);
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Success',
+            'concept_id' => (int) $conceptId,
+            'chapter_id' => (int) $concept->chapter_id,
+            // The action this call SERVED, for logs and tests. Not a routing
+            // instruction - see the note above.
+            'acknowledged_action' => [
+                'action' => $next['action'] ?? null,
+                'node_id' => $next['node_id'] ?? null,
+                'rule_fired' => $next['rule_fired'] ?? null,
+            ],
+            // Whether ANY of the concept's nodes is now on the engine's books
+            // as taught.
+            //
+            // Across all of them, not just the one resolved above: the engine
+            // walks the concept's nodes in its own order and may well have
+            // taught a different one, so checking a single node would report
+            // false while teaching had plainly happened.
+            //
+            // False is a legitimate answer, not a failure. A learner with no
+            // prior state gets D0 - the engine requires the chapter diagnostic
+            // before it teaches anything - so nothing is stamped and the client
+            // is right to hand over to the engine, which then explains itself.
+            'taught' => \App\Models\Eso\LearnerNodeState::where('student_id', (int) $studentId)
+                ->whereIn('node_id', \App\Models\PAL\ConceptNode::query()
+                    ->forConcept((int) $conceptId)
+                    ->forTenant($subInstituteId)
+                    ->pluck('id'))
+                ->whereNotNull('taught_at')
+                ->exists(),
+            'student_id' => $studentId,
+        ]);
+    }
+
+    /**
+     * Stage 10 - mastery across a chapter, concept by concept.
+     *
+     * A pure read that reconciles the BKT estimate, the engine's own verdict
+     * and what the question bank can actually prove. See MasteryOverviewService.
+     */
+    public function masteryOverview(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+
+        $overview = app(\App\Services\PAL\Plan\MasteryOverviewService::class)
+            ->forChapter($ctx['student_id'], (int) $chapterId, $ctx['sub_institute_id']);
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Success',
+            'mastery' => $overview,
+            'student_id' => $ctx['student_id'],
+        ]);
+    }
+
+    /**
+     * Stage 11 - what is due back for recall, and what is coming.
+     *
+     * Reports learner_node_state.next_review_at; it never schedules. The
+     * retention ladder is EsoPolicyService's, and stays there.
+     */
+    public function recallQueue(Request $request)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $chapterId = $request->input('chapter_id');
+
+        $queue = app(\App\Services\PAL\Plan\MasteryOverviewService::class)
+            ->recallQueue(
+                $ctx['student_id'],
+                $ctx['sub_institute_id'],
+                $chapterId !== null && $chapterId !== '' ? (int) $chapterId : null
+            );
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Success',
+            'recall' => $queue,
+            'student_id' => $ctx['student_id'],
+        ]);
+    }
+
+    /**
+     * The read-only learning plan for a chapter (stage 5).
+     *
+     * GET only, and there is no companion write route: the plan is derived
+     * from stored evidence on every read and owns no table, so there is
+     * nothing for a learner to edit. See LearningPlanService.
+     */
+    public function learningPlan(Request $request, $chapterId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+        $subInstituteId = $ctx['sub_institute_id'];
+
+        $plan = app(\App\Services\PAL\Plan\LearningPlanService::class)
+            ->forChapter($studentId, (int) $chapterId, $subInstituteId);
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Success',
+            'plan' => $plan,
+            'editable' => false,
+            'student_id' => $studentId,
+        ]);
+    }
+
+    /**
+     * Concept Diagnostic Result - where the learner stands on one concept
+     * after adaptive practice, and whether they may progress.
+     *
+     * A pure read, derived from stored answers every time it is called, so it
+     * cannot drift from the evidence. See AdaptiveLearningService::conceptResult().
+     */
+    public function adaptiveConceptResult(Request $request, $conceptId)
+    {
+        $ctx = $this->resolveAuthorizedContext($request);
+        $studentId = $ctx['student_id'];
+        $subInstituteId = $ctx['sub_institute_id'];
+
+        // Closing out a practice set does two things the read alone cannot:
+        // it publishes the answers to the shared mastery ledger (practice
+        // previously never reached BKT at all) and decides the single next
+        // step. Both are idempotent, so refreshing this screen is safe.
+        $outcome = app(\App\Services\PAL\Adaptive\PracticeOutcomeService::class)
+            ->complete($studentId, (int) $conceptId, $subInstituteId);
+
+        $result = $outcome['result'];
+
+        if (($result['reason'] ?? null) === 'unknown_concept') {
+            return response()->json([
+                'status' => 0,
+                'message' => 'Unknown concept.',
+                'reason' => 'unknown_concept',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 1,
+            'message' => 'Success',
+            'result' => $result,
+            // What the learner should do next, and why. One action, decided
+            // server-side - see PracticeOutcomeService::decide().
+            'next' => $outcome['next'],
+            'misconception' => $outcome['misconception']['misconception'] ?? null,
+            'evidence_published' => $outcome['published'],
+            'student_id' => $studentId,
+        ]);
+    }
+
     public function palreport(Request $request){
         $type = $request->type;
         $ctx = $this->resolveAuthorizedContext($request);

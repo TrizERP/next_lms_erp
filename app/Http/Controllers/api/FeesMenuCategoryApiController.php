@@ -2,10 +2,7 @@
 
 namespace App\Http\Controllers\api;
 
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * Fees' category navigation feed for the Fees level-3 menu bar.
@@ -41,11 +38,19 @@ use Illuminate\Support\Facades\Schema;
  *
  * Neither endpoint is modified. All three visibility rules (menu status = 1,
  * tenant provisioning, caller's menu rights) are enforced in SQL by the shared
- * base class — see AbstractMenuCategoryApiController. This class only names
- * the module: `fees_menu_categories`/`fees_menu_category_items` are shared
- * with Teach/Learn (see TeachLearnMenuCategoryApiController) via the
- * `module_name` column, so every query is scoped to 'fees' and the two
- * modules' rows can never collide or leak into each other.
+ * base class — see AbstractMenuCategoryApiController.
+ *
+ * This class now only names the module. It used to carry its own copy of
+ * index() and the two query helpers, written before the base class existed and
+ * left in place when Teach/Learn was added; the copy and the base diverged only
+ * in that the copy read an unused `module_name` request parameter. Deleting it
+ * means the Fees bar and every other module's bar are served by exactly one
+ * implementation, so a fix to the rights or status rules can no longer reach
+ * some modules and miss Fees.
+ *
+ * The route stays at /api/fees/menu-categories so the existing Fees client is
+ * untouched; ModuleMenuCategoryApiController serves the same rows for every
+ * other module from one generic endpoint.
  */
 class FeesMenuCategoryApiController extends AbstractMenuCategoryApiController
 {
@@ -199,6 +204,7 @@ class FeesMenuCategoryApiController extends AbstractMenuCategoryApiController
     }
 
     protected function moduleName(): string
+    protected function resolveModuleName(Request $request): string
     {
         return 'fees';
     }

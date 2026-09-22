@@ -451,8 +451,8 @@ class ApiLmsCourseController extends Controller
             ->where(function ($query) {
                 $query->whereNull('content_master.topic_id')
                     ->orWhere('content_master.topic_id', '0');
-            })
-            ->get();
+            });
+        $contentRows = $this->applyVisibilityFilter($contentRows)->get();
 
         $contentByChapter = [];
         foreach ($contentRows as $content) {
@@ -561,6 +561,26 @@ class ApiLmsCourseController extends Controller
     }
 
     /**
+     * Drop hidden rows from a content_master query.
+     *
+     * content_master.show_hide has always been written by the hide action in
+     * CourseBuilderController but was never read back here, so hiding a row had
+     * no effect on either library. This is what makes it take effect.
+     *
+     * The test is "not 0", never "= 1": show_hide is NULL on 5,205 rows,
+     * 4,896 of them Teacher Training. Those predate the flag and are live
+     * content, so `where('show_hide', 1)` would empty most of the Teacher
+     * Workspace. Only an explicit 0 means hidden.
+     */
+    private function applyVisibilityFilter($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('content_master.show_hide')
+                ->orWhere('content_master.show_hide', '<>', 0);
+        });
+    }
+
+    /**
      * The concept a generated content row was built for, read from its description.
      *
      * The Generate Content flow writes a "Concept Data Block" into the description
@@ -617,7 +637,9 @@ class ApiLmsCourseController extends Controller
                     ->orWhere('content_master.topic_id', '0');
             });
 
-        $content_data = $this->applyContentSourceFilter($content_query, $source)
+        $content_data = $this->applyVisibilityFilter(
+            $this->applyContentSourceFilter($content_query, $source)
+        )
             ->get()
             ->toArray();
 
@@ -1766,7 +1788,17 @@ $restrict_date = $request->input('restrict_date');
             ->join('question_type_master', 'question_type_master.id', '=', 'lms_question_master.question_type_id')
             ->leftJoin('chapter_master', 'chapter_master.id', '=', 'lms_question_master.chapter_id')
             ->leftJoin('lms_question_extraction', 'lms_question_extraction.question_id', '=', 'lms_question_master.id')
-            ->leftJoin('question_type_catalog', 'question_type_catalog.code', '=', 'lms_question_extraction.question_type_code')
+            // Resolve the catalog form from the sidecar where one exists, and
+            // otherwise from the derived tag on the question itself. Joining the
+            // sidecar alone meant the ~3k generated questions -- which have no
+            // sidecar at all -- every one matched nothing and displayed as the
+            // coarse "narrative", so the form dropdown could not see them.
+            ->leftJoin('question_type_catalog', function ($join) {
+                $join->on('question_type_catalog.code', '=', DB::raw(
+                    'COALESCE(lms_question_extraction.question_type_code, '
+                    . 'lms_question_master.g_qtype_code)'
+                ));
+            })
             ->leftJoin('question_publisher', 'question_publisher.id', '=', 'lms_question_extraction.publisher_id')
             ->select(
                 'lms_question_master.id',
@@ -1784,6 +1816,7 @@ $restrict_date = $request->input('restrict_date');
                 // -- which then loses its options on the next save.
                 'question_type_master.question_type as lms_question_type',
                 'lms_question_extraction.question_type_code as question_type_code',
+                'lms_question_master.g_qtype_code as derived_type_code',
                 'lms_question_extraction.exam_section',
                 'lms_question_extraction.item_number',
                 'lms_question_extraction.attribution',
@@ -1924,6 +1957,12 @@ $restrict_date = $request->input('restrict_date');
                 true
             ) ? 'MCQ' : 'Narrative';
 
+            // Sidecar code first -- that one was read off the source document --
+            // then the tag derived from the stem. Null only when neither exists,
+            // which is now just the untagged legacy estate.
+            $resolvedTypeCode = $question['question_type_code'] ?? $question['derived_type_code'] ?? null;
+            $resolvedTypeCode = $resolvedTypeCode !== null ? (string) $resolvedTypeCode : null;
+
             $data[] = [
                 'id' => (int) $question['id'],
                 'chapter_id' => (int) $question['chapter_id'],
@@ -1943,14 +1982,12 @@ $restrict_date = $request->input('restrict_date');
                 // question_type_master's own spelling -- otherwise the bank's
                 // type dropdown lists "multiple" and "narrative" next to
                 // "Multiple Choice" and "Assertion & Reason".
-                'question_type_raw' => $question['question_type_code'] !== null
+                'question_type_raw' => $resolvedTypeCode !== null
                     ? trim((string) ($question['question_type'] ?? ''))
                     : $questionTypeLabel,
                 // Stable machine code to filter on. A label can be reworded;
                 // this cannot.
-                'question_type_code' => $question['question_type_code'] !== null
-                    ? (string) $question['question_type_code']
-                    : null,
+                'question_type_code' => $resolvedTypeCode,
                 'options' => $optionsByQuestion[$qid] ?? [],
                 'model_answer' => $this->readableModelAnswer($question['model_answer'] ?? null),
                 'marks' => (int) ($question['marks'] ?? 1),
