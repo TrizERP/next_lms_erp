@@ -8,10 +8,44 @@ use App\Models\teacher_mobile_homescreenModel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use function App\Helpers\is_mobile;
 
 class mobileapp_menu_rightsController extends Controller
 {
+    /**
+     * The two tables this screen edits, split by role exactly the way
+     * create() and the homescreen APIs already split them: Student rows live
+     * in `mobile_homescreen`, Admin/Teacher rows in
+     * `teacher_mobile_homescreen`.
+     */
+    private function tableFor($profile)
+    {
+        if ($profile == 'Student') {
+            return 'mobile_homescreen';
+        }
+
+        if ($profile == 'Admin' || $profile == 'Teacher') {
+            return 'teacher_mobile_homescreen';
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether this installation has run
+     * 2026_09_22_200000_add_render_type_to_mobile_homescreen_tables. Guarded
+     * rather than assumed, so the screen keeps saving titles and sort orders
+     * on an installation that has not migrated yet -- the same treatment
+     * AbstractMenuCategoryApiController gives its own rollout columns.
+     */
+    private function hasRenderColumns($table)
+    {
+        return $table && Schema::hasColumn($table, 'render_type');
+    }
+
     /**
      * Display a listing of the resource.
      *
@@ -97,14 +131,149 @@ class mobileapp_menu_rightsController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created menu item for the selected profile.
      *
-     * @param  Request  $request
-     * @return void
+     * This was a stub until WebView-backed menus arrived. A native row could
+     * always be added the slow way -- insert it as a sub_institute_id = 1
+     * template, then grant it on the Mobile App Menu Rights page -- which is
+     * tolerable for a screen that needs a Flutter release anyway. A WebView
+     * row is the whole point of not needing a release, so it writes straight
+     * into the tenant and profile the admin is already looking at.
      */
     public function store(Request $request)
     {
-        //
+        $sub_institute_id = $request->session()->get('sub_institute_id');
+        $profile = $request->get('profile_hidden');
+        $type = $request->input('type');
+
+        $table = $this->tableFor($profile);
+        if (empty($table)) {
+            $res = [
+                'status_code' => 0,
+                'message'     => 'Select a user profile before adding a menu item.',
+            ];
+
+            return is_mobile($type, 'add_mobileapp_menu_rights.index', $res);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'main_title'        => 'required|string|max:100',
+            'sub_title_of_main' => 'required|string|max:100',
+            'screen_name'       => [
+                'required',
+                'string',
+                'max:50',
+                // Unique per tenant AND per profile, because screen_name is
+                // the key the Mobile App Menu Rights page grants by and the
+                // key the app dispatches on.
+                Rule::unique($table, 'screen_name')
+                    ->where('sub_institute_id', $sub_institute_id)
+                    ->where('user_profile_name', $profile),
+            ],
+            'render_type' => 'required|in:native,webview',
+            // Only a WebView row needs a URL; a native row is addressed by
+            // its screen_name.
+            'web_url'     => 'required_if:render_type,webview|nullable|string|max:2000',
+            'open_mode'   => 'required|in:in_app,external',
+        ], [
+            'web_url.required_if' => 'Web URL is required when render type is WebView.',
+        ]);
+
+        if ($validator->fails()) {
+            $res = [
+                'status_code' => 0,
+                'message'     => $validator->messages()->first(),
+            ];
+
+            return is_mobile($type, 'add_mobileapp_menu_rights.index', $res);
+        }
+
+        $render_type = $request->get('render_type');
+        if ($render_type == 'webview' && ! $this->hasRenderColumns($table)) {
+            $res = [
+                'status_code' => 0,
+                'message'     => 'WebView menus need the render_type columns. Run the pending migrations and try again.',
+            ];
+
+            return is_mobile($type, 'add_mobileapp_menu_rights.index', $res);
+        }
+
+        // The listing joins mh.user_profile_id to tbluserprofilemaster, so a
+        // row carrying the wrong id would save and then never appear.
+        $user_profile = DB::table('tbluserprofilemaster')
+            ->where('sub_institute_id', $sub_institute_id)
+            ->where('name', $profile)
+            ->where('status', '1')
+            ->first();
+
+        if (empty($user_profile)) {
+            $res = [
+                'status_code' => 0,
+                'message'     => 'The '.$profile.' profile is not active for this school.',
+            ];
+
+            return is_mobile($type, 'add_mobileapp_menu_rights.index', $res);
+        }
+
+        $now = date('Y-m-d H:i:s');
+
+        $insert_data = [
+            'sub_institute_id'            => $sub_institute_id,
+            'user_profile_id'             => $user_profile->id,
+            'user_profile_name'           => $profile,
+            'main_title'                  => $request->get('main_title'),
+            'menu_type'                   => $request->get('menu_type') ?: 'Heading',
+            'main_title_color_code'       => $request->get('main_title_color_code'),
+            'main_title_background_image' => $request->get('main_title_background_image'),
+            'sub_title_of_main'           => $request->get('sub_title_of_main'),
+            'sub_title_icon'              => $request->get('sub_title_icon'),
+            'main_sort_order'             => $request->get('main_sort_order'),
+            'sub_title_sort_order'        => $request->get('sub_title_sort_order'),
+            'screen_name'                 => $request->get('screen_name'),
+            'status'                      => $request->get('status'),
+            'created_on'                  => $now,
+            'updated_on'                  => $now,
+            'updated_by'                  => session()->get('user_id'),
+            'updated_ip_address'          => $_SERVER['REMOTE_ADDR'],
+        ];
+
+        if ($this->hasRenderColumns($table)) {
+            $insert_data = array_merge($insert_data, $this->renderColumns($request, $render_type));
+        }
+
+        DB::table($table)->insert($insert_data);
+
+        $res = [
+            'status_code' => 1,
+            'message'     => 'Mobile App Menu Added Successfully',
+        ];
+
+        return is_mobile($type, 'add_mobileapp_menu_rights.index', $res);
+    }
+
+    /**
+     * The three WebView columns, read off the form and normalised so a row
+     * can never say 'webview' while carrying no URL -- the one combination
+     * that would hand the app a blank screen. The homescreen APIs defend
+     * against it too; this stops it being stored in the first place.
+     */
+    private function renderColumns(Request $request, $render_type)
+    {
+        if ($render_type != 'webview') {
+            return [
+                'render_type' => 'native',
+                'web_url'     => null,
+                'open_mode'   => 'in_app',
+            ];
+        }
+
+        $open_mode = $request->get('open_mode');
+
+        return [
+            'render_type' => 'webview',
+            'web_url'     => trim((string) $request->get('web_url')),
+            'open_mode'   => $open_mode == 'external' ? 'external' : 'in_app',
+        ];
     }
 
     /**
@@ -149,6 +318,7 @@ class mobileapp_menu_rightsController extends Controller
         $sub_title_icon = $request->get('sub_title_icon');
         $sub_title_sort_order = $request->get('sub_title_sort_order');
         $status = $request->get('status');
+        $render_type = $request->get('render_type') == 'webview' ? 'webview' : 'native';
         $updated_by = session()->get('user_id');
         $updated_on = date('Y-m-d H:i:s');
         $updated_ip = $_SERVER['REMOTE_ADDR'];
@@ -168,6 +338,23 @@ class mobileapp_menu_rightsController extends Controller
             'updated_by'           => $updated_by,
             'updated_ip_address'   => $updated_ip,
         ];
+
+        // Render type is a property of the individual menu item, so it rides
+        // with $sub_data rather than $main_data, which fans out across every
+        // row sharing a main_title.
+        $table = $this->tableFor($profile);
+        if ($this->hasRenderColumns($table)) {
+            if ($render_type == 'webview' && trim((string) $request->get('web_url')) === '') {
+                $res = [
+                    'status_code' => 0,
+                    'message'     => 'Web URL is required when render type is WebView.',
+                ];
+
+                return is_mobile($request->input('type'), 'add_mobileapp_menu_rights.index', $res);
+            }
+
+            $sub_data = array_merge($sub_data, $this->renderColumns($request, $render_type));
+        }
 
         if ($profile == 'Student') {
             $get_old_data = mobile_homescreenModel::where(["id" => $id, "sub_institute_id" => $sub_institute_id])
