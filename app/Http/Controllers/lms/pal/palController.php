@@ -34,6 +34,8 @@ use Illuminate\Support\Facades\Log;
 use function App\Helpers\neo4jCreateNode;
 use function App\Helpers\neo4jCreateRelationship;
 use App\Services\PAL\Questions\ServableQuestions;
+use App\Services\PAL\Questions\PalInteractiveAnswers;
+use App\Services\PAL\Questions\PalQuestionForms;
 
 class palController extends Controller
 {
@@ -1097,8 +1099,21 @@ public function generateMisconceptionContent(Request $request)
 
     private function getRandomPalQuestions($subInstituteId, $standardId, $subjectId, $chapterId, $limit = 10, array $levelIds = [], array $excludeQuestionIds = [])
     {
+        // NO JOIN ON `answer_master`. There used to be one, and it was
+        // redundant even then -- `ServableQuestions` already tests for options
+        // with an EXISTS, and the join's only other effect was to multiply a
+        // question by its option count, which is what the `distinct()` below
+        // was undoing.
+        //
+        // It is now actively wrong: an INNER join excludes every question with
+        // no options at all, which is exactly the set the constraint below was
+        // widened to admit. A blank or a match-the-following would have been
+        // dropped here before the servability rule ever saw it, and the
+        // widening would have looked like it did nothing.
+        //
+        // `distinct()` stays, because the difficulty join further down still
+        // multiplies a question mapped at more than one level.
         $query = DB::table('lms_question_master as lqm')
-            ->join('answer_master as am', 'lqm.id', '=', 'am.question_id')
             ->select('lqm.*')
             ->distinct()
             ->where('lqm.sub_institute_id', $subInstituteId)
@@ -1110,7 +1125,15 @@ public function generateMisconceptionContent(Request $request)
         // admits assertion & reason and CBE items (4 options, 1 marked answer)
         // that the old `question_type_id = 1` test hid, and excludes type-1 rows
         // that have a single option and nothing to choose between.
-        ServableQuestions::constrain($query, 'lqm.id');
+        //
+        // It now also admits the forms whose answer is TYPED rather than
+        // chosen -- a blank, a value, a pair to match. Those carry no
+        // `answer_master` rows at all, so the options-only rule could never
+        // reach them however many the chapter held, and a PAL Test could only
+        // ever be multiple choice. They are drawn on the same standard: a
+        // stored model answer to mark against, and a form the client has a
+        // player for. See `PalQuestionForms::constrainPlayable`.
+        (new PalQuestionForms())->constrainPlayable($query, 'lqm.id');
 
         if (!empty($levelIds)) {
             $query->join('lms_question_mapping as lm', 'lqm.id', '=', 'lm.questionmaster_id')
@@ -1127,13 +1150,33 @@ public function generateMisconceptionContent(Request $request)
             ->toArray();
     }
 
+    /**
+     * The drawn questions, as the PAL Test client needs them.
+     *
+     * WHY THIS IS MORE THAN AN ID AND A STEM NOW. The PAL Test renders every
+     * question as the H5P activity its form calls for -- Blanks for a blank,
+     * a matching activity for match-the-following, a single choice set for an
+     * MCQ -- and the client picks that player from the question's own recorded
+     * form. Sending only the id and the stem is what forced every question,
+     * whatever it was, to be drawn as radio buttons.
+     *
+     * Nothing here is authored or converted. The extra fields are read off the
+     * question that already exists; `lms_question_master` stays the one copy.
+     */
     private function formatPalQuestionList(array $questions)
     {
         $questionList = [];
+        $forms = (new PalQuestionForms())->describe(
+            array_map(fn ($question) => $question->id, $questions)
+        );
 
         foreach ($questions as $k => $v) {
             $questionList[$k]['question_id'] = $v->id;
             $questionList[$k]['question_text'] = $v->question_title;
+
+            // Merged rather than assigned key by key so a field added to the
+            // projection reaches the client without a second edit here.
+            $questionList[$k] = array_merge($questionList[$k], $forms[(int) $v->id] ?? []);
         }
 
         return $questionList;
@@ -1294,12 +1337,32 @@ public function generateMisconceptionContent(Request $request)
                     "question_id"      => $val['question_id'],
                     "sub_institute_id" => $sub_institute_id,
                 ])->get()->toArray();
-                if (count($answer_arr) > 0) {
-                    foreach ($answer_arr as $anskey => $ansval) {
-                        $answer[$val['question_id']][] = $ansval;
-                    }
-                    $filteredQuestions[] = $val;
+                foreach ($answer_arr as $anskey => $ansval) {
+                    $answer[$val['question_id']][] = $ansval;
+                }
 
+                // A question with no options used to be dropped here, and that
+                // was right while the only thing the client could draw was
+                // radio buttons. It is wrong now: a fill-in-the-blank, a
+                // numerical response and a match-the-following are answered by
+                // TYPING, not by choosing, so they carry no `answer_master`
+                // rows and would be silently discarded after being drawn --
+                // leaving a short paper, or an empty one on a chapter whose
+                // questions are mostly of those forms.
+                //
+                // The test is the same one the draw applied: a question stays
+                // if it has options to choose between, or if its form is
+                // answered another way and it carries a model answer to be
+                // marked against.
+                $hasOptions = count($answer_arr) > 0;
+                $isTypedAnswer = in_array(
+                    $val['question_type_code'] ?? '',
+                    PalQuestionForms::TYPED_ANSWER_CODES,
+                    true
+                ) && trim((string) ($val['model_answer'] ?? '')) !== '';
+
+                if ($hasOptions || $isTypedAnswer) {
+                    $filteredQuestions[] = $val;
                 }
                 $existQusetion[]=$val['question_id'];
             }
@@ -1445,6 +1508,44 @@ public function incrementContentVisit(Request $request)
         
         $controller = new onlineExamController;
         $result = $controller->get_calculate_marks($request);
+
+        // Answers with no `answer_master` row behind them: a typed blank, a
+        // value, a matched pair. See `PalInteractiveAnswers` for why they
+        // cannot travel on `answer_multiple` and what is and is not trusted.
+        //
+        // READ HERE, not down with `$answer_single` and its siblings: those
+        // are read further down this method, after the marks have already been
+        // calculated, and this channel has to be in hand before the block
+        // below tops those marks up.
+        $answer_interactive = PalInteractiveAnswers::readAll($request->get('answer_interactive'));
+
+        // The verdicts for the typed-answer questions, resolved BEFORE they
+        // are counted or recorded, so the marks, the stored rows and the
+        // mastery evidence all read the same decision.
+        //
+        // The server re-derives what it honestly can -- a one-word or
+        // short-phrase model answer is compared here rather than taken on
+        // trust -- and falls back to the player's verdict when the stored
+        // answer is prose nothing can mark as a string.
+        $interactiveVerdicts = [];
+        foreach ($answer_interactive as $interactiveQuestionId => $interactiveAnswer) {
+            $serverVerdict = PalInteractiveAnswers::verify(
+                (int) $interactiveQuestionId,
+                $interactiveAnswer['response'],
+                $interactiveAnswer['max_score']
+            );
+            $interactiveVerdicts[$interactiveQuestionId] = $serverVerdict ?? $interactiveAnswer['client_correct'];
+        }
+
+        // `get_calculate_marks()` is shared with the standard online exam and
+        // knows nothing about this channel, so the totals are topped up here
+        // rather than by widening a method three other controllers call.
+        $interactiveRight = count(array_filter($interactiveVerdicts));
+        $result['total_right_ans'] += $interactiveRight;
+        $result['total_wrong_ans'] += count($interactiveVerdicts) - $interactiveRight;
+        $result['obtain_marks'] += $controller->get_obtain_marks(
+            array_keys(array_filter($interactiveVerdicts))
+        );
         // echo "<pre>";print_r($result);exit;
         $answer_single = $request->get('answer_single');
         $answer_multiple = $request->get('answer_multiple');
@@ -1469,6 +1570,8 @@ public function incrementContentVisit(Request $request)
         if (is_array($answer_narrative)) {
             $answeredQuestionIds = array_merge($answeredQuestionIds, array_keys(array_filter($answer_narrative)));
         }
+
+        $answeredQuestionIds = array_merge($answeredQuestionIds, array_keys($answer_interactive));
 
         $answeredQuestionIds = array_values(array_unique(array_map('strval', $answeredQuestionIds)));
         $attemptedQuestions = count($answeredQuestionIds);
@@ -1709,6 +1812,59 @@ public function incrementContentVisit(Request $request)
                     'is_correct' => $ans_status === 'right',
                     'response_time_ms' => $getAttemptTime($narrative_question_id) * 1000,
                 ];
+            }
+        }
+
+        // Typed-answer questions: recorded with a null `answer_id`, because
+        // there is genuinely no `answer_master` row to name, and the
+        // learner's own response in `narrative_answer` so the result screen
+        // can show what they wrote instead of a highlighted option.
+        //
+        // NOT routed through the narrative branch above, which marks every
+        // answer 'right' on the grounds that prose cannot be marked. These CAN
+        // be marked -- against the question's own stored answer -- and pushing
+        // them down that path would hand every learner full marks for typing
+        // anything at all.
+        foreach ($answer_interactive as $interactiveQuestionId => $interactiveAnswer) {
+            $isCorrect = (bool) ($interactiveVerdicts[$interactiveQuestionId] ?? false);
+            $ans_status = $isCorrect ? 'right' : 'wrong';
+
+            $interactive = [
+                'question_paper_id' => $questionPaperId,
+                'online_exam_id'    => $online_exam_id,
+                'student_id'        => $user_id,
+                'question_id'       => $interactiveQuestionId,
+                'narrative_answer'  => $interactiveAnswer['response'],
+                'ans_status'        => $ans_status,
+                'created_at'        => now(),
+            ];
+            lmsOnlineExamAnswerModel::insert($interactive);
+            $insertStudentAnswer([
+                'question_paper_id' => $questionPaperId,
+                'online_exam_id'    => $online_exam_id,
+                'student_id'        => $user_id,
+                'question_id'       => $interactiveQuestionId,
+                'narrative_answer'  => $interactiveAnswer['response'],
+                'ans_status'        => $ans_status,
+                'attempt_time'      => $getAttemptTime($interactiveQuestionId),
+            ]);
+            $answeredStudentQuestionIds[] = $interactiveQuestionId;
+            $palEvidence[] = [
+                'question_id' => $interactiveQuestionId,
+                'is_correct' => $isCorrect,
+                'response_time_ms' => $getAttemptTime($interactiveQuestionId) * 1000,
+            ];
+
+            // Misconception detection with no distractor to name: the concept
+            // and the verdict are what it has. Passing null rather than
+            // inventing an answer id keeps "they got this concept wrong" true
+            // and "they chose THIS wrong option" absent, which is the honest
+            // shape of a typed answer.
+            $interactiveConceptId = lmsQuestionMasterModel::where('id', $interactiveQuestionId)->value('concept_id');
+            if (!$isCorrect) {
+                $this->recordMisconceptionOnWrongAnswer($user_id, $interactiveConceptId, null);
+            } else {
+                $this->resolveMisconceptionsOnCorrectAnswer($user_id, $interactiveConceptId);
             }
         }
 
@@ -2540,16 +2696,29 @@ public function getData($request)
         //     $data['online_answer_data'][$val['question_id']][] = $val; 
         // }
 
+        // `right_wrong` is re-derived by comparing the chosen answer_master
+        // ids against the correct ones -- which only works for an answer that
+        // IS a set of ids. A typed answer (a blank, a value, a matched pair)
+        // is stored as text with no answer_id, so every one of them would
+        // compare unequal and come back 'wrong' however the learner did.
+        //
+        // `chose_options` distinguishes the two, and a typed answer reports
+        // the `ans_status` that `store()` already resolved for it -- against
+        // the question's own model answer where that was possible. Recomputing
+        // it here is not an option: the model answer is not in this join, and
+        // the verdict was settled at submission time.
         $online_answer_data = DB::select("SELECT a.*, GROUP_CONCAT(am.id) AS actual_answer,q.question_type_id,q.multiple_answer,
                 (
                 CASE 
+                WHEN a.chose_options = 0 THEN a.ans_status
                 WHEN question_type_id = 2 THEN IF(given_answer is null,'wrong','right') 
                 WHEN question_type_id = 1 AND multiple_answer = 0 THEN IF(given_answer=GROUP_CONCAT(am.id),'right','wrong') 
                 WHEN question_type_id = 1 AND multiple_answer = 1 THEN IF(given_answer=GROUP_CONCAT(am.id),'right','wrong') 
                 END
                 ) AS right_wrong 
                 FROM (
-                SELECT question_id,ans_status, IFNULL(narrative_answer, GROUP_CONCAT(answer_id)) AS given_answer
+                SELECT question_id,ans_status, IFNULL(narrative_answer, GROUP_CONCAT(answer_id)) AS given_answer,
+                       IF(COUNT(answer_id) > 0, 1, 0) AS chose_options
                 FROM lms_online_exam_answer
                 WHERE online_exam_id = '".$online_exam_id."' AND student_id = '".$user_id."'
                 GROUP BY question_id) AS a
@@ -2562,6 +2731,10 @@ public function getData($request)
             $data['online_answer_data'][$val->question_id]['RIGHT_WRONG'] = $val->right_wrong;
             $data['online_answer_data'][$val->question_id]['ACTUAL_ANSWER'] = $val->actual_answer;
             $data['online_answer_data'][$val->question_id]['GIVEN_ANSWER'] = $val->given_answer;
+            // So the result screen can tell "chose option 9002" from "typed
+            // Paris" and render the right one, rather than trying to read a
+            // sentence as a list of answer ids.
+            $data['online_answer_data'][$val->question_id]['CHOSE_OPTIONS'] = (int) $val->chose_options;
         }
         //dd($online_answer_data);
        
