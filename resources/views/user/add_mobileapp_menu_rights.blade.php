@@ -361,12 +361,13 @@ tbody tr td {
                                     <select id='render_type' name="render_type" class="form-control" onchange="toggle_web_url();">
                                         <option value="native">Native screen</option>
                                         <option value="webview">Web page (WebView)</option>
+                                        <option value="native_dynamic">Native Dynamic Page</option>
                                     </select>
                                 </div>
                                 <div class="col-md-12 form-group" id="web_url_group">
-                                    <label>Web URL</label>
+                                    <label id="web_url_label">Web URL</label>
                                     <input type="text" id='web_url' name="web_url" class="form-control" placeholder="/fees/fees_collection">
-                                    <small class="text-muted">A full URL, or a path starting with / which is resolved against this school's ERP address.</small>
+                                    <small class="text-muted" id="web_url_hint">A full URL, or a path starting with / which is resolved against this school's ERP address.</small>
                                 </div>
                                 <div class="col-md-12 form-group" id="open_mode_group">
                                     <label>Open Mode</label>
@@ -411,15 +412,29 @@ tbody tr td {
     $('#hexcolor').on('input', function() {
       $('#main_title_color_code').val(this.value);
     });
-    // Only a WebView menu needs a URL and an open mode, and an input that is
-    // hidden but still `required` blocks submit with no visible message - so
-    // the two move together.
+    // WebView and Native Dynamic Page menus both need the Web URL field, but
+    // mean different things by it (a URL vs. a page_key from Native Dynamic
+    // Pages) and only WebView has an Open Mode. An input that is hidden but
+    // still `required` blocks submit with no visible message, so visibility
+    // and `required` move together.
     function toggle_web_url()
     {
-        var is_webview = $('#render_type').val() == 'webview';
-        $('#web_url_group').toggle(is_webview);
+        var render_type = $('#render_type').val();
+        var is_webview = render_type == 'webview';
+        var is_native_dynamic = render_type == 'native_dynamic';
+        var needs_web_url = is_webview || is_native_dynamic;
+        $('#web_url_group').toggle(needs_web_url);
         $('#open_mode_group').toggle(is_webview);
-        $('#web_url').prop('required', is_webview);
+        $('#web_url').prop('required', needs_web_url);
+        if (is_native_dynamic) {
+            $('#web_url_label').text('Page Key');
+            $('#web_url').attr('placeholder', 'fees_collect_summary');
+            $('#web_url_hint').text('The Page Key of a page configured under Native Dynamic Pages.');
+        } else {
+            $('#web_url_label').text('Web URL');
+            $('#web_url').attr('placeholder', '/fees/fees_collection');
+            $('#web_url_hint').text("A full URL, or a path starting with / which is resolved against this school's ERP address.");
+        }
     }
 
     function add_menu_item(url,user_profile)

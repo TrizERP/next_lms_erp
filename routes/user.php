@@ -16,6 +16,11 @@ use Illuminate\Support\Facades\Route;
 Route::group(['prefix' => 'user', 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     Route::resource('add_groupwise_rights', tblgroupwise_rightsController::class);
     Route::resource('add_mobileapp_menu_rights', mobileapp_menu_rightsController::class);
+
+    // Native, server-driven mobile pages are configured from the lms_k12
+    // Next.js frontend via MobileDynamicPageAdminApiController
+    // (routes/api.php), not a Blade screen here -- there used to be one
+    // (mobileDynamicPageController); it was removed rather than left dead.
     Route::resource('add_user_past_education', tbluserPastEducationController::class);
     Route::resource('user_profile_wise_menu_rights', tbluserProfileWiseMenuController::class);
 

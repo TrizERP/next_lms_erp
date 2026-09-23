@@ -103,6 +103,24 @@ Route::middleware('api.session')->post('mobile/web-handoff', [\App\Http\Controll
 // call, and CORS (config/cors.php) is what lets that other origin's JS call
 // it at all.
 Route::get('mobile/web-handoff/claims', [\App\Http\Controllers\api\MobileWebHandoffApiController::class, 'claims']);
+
+// Schema for a render_type = 'native_dynamic' menu row -- see
+// MobileDynamicPageApiController's class doc for why only the schema is
+// served here, not the page's live data.
+Route::middleware('api.session')->get('mobile/dynamic-page/{pageKey}', [\App\Http\Controllers\api\MobileDynamicPageApiController::class, 'show']);
+
+// Admin API for configuring native dynamic pages -- authored from the
+// lms_k12 Next.js frontend (see MobileDynamicPageAdminApiController's class
+// doc), not a Laravel Blade view.
+Route::middleware('api.session')->prefix('mobile/dynamic-page-admin')->group(function () {
+    Route::get('registry', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'registry']);
+    Route::get('pages', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'index']);
+    Route::post('pages', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'store']);
+    Route::post('pages/{id}', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'update']);
+    Route::post('pages/{id}/fields', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'addField']);
+    Route::post('fields/{fieldId}', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'updateField']);
+    Route::delete('fields/{fieldId}', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'deleteField']);
+});
 Route::middleware('api.session')->prefix('hrms')->group(function () {
     Route::get('today', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'today']);
     Route::post('punch', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'punch']);
