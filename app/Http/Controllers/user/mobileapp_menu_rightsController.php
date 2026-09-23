@@ -170,13 +170,14 @@ class mobileapp_menu_rightsController extends Controller
                     ->where('sub_institute_id', $sub_institute_id)
                     ->where('user_profile_name', $profile),
             ],
-            'render_type' => 'required|in:native,webview',
-            // Only a WebView row needs a URL; a native row is addressed by
-            // its screen_name.
-            'web_url'     => 'required_if:render_type,webview|nullable|string|max:2000',
+            'render_type' => 'required|in:native,webview,native_dynamic',
+            // A WebView row needs a URL; a Native Dynamic row needs the page_key
+            // of a page configured under Native Dynamic Pages; a native row is
+            // addressed by its screen_name and needs neither.
+            'web_url'     => 'required_if:render_type,webview,native_dynamic|nullable|string|max:2000',
             'open_mode'   => 'required|in:in_app,external',
         ], [
-            'web_url.required_if' => 'Web URL is required when render type is WebView.',
+            'web_url.required_if' => 'Web URL is required for this render type.',
         ]);
 
         if ($validator->fails()) {
@@ -259,6 +260,17 @@ class mobileapp_menu_rightsController extends Controller
      */
     private function renderColumns(Request $request, $render_type)
     {
+        if ($render_type == 'native_dynamic') {
+            // web_url holds the page_key of a row configured under Native
+            // Dynamic Pages, not a URL -- open_mode does not apply to it, the
+            // app always renders it in place.
+            return [
+                'render_type' => 'native_dynamic',
+                'web_url'     => trim((string) $request->get('web_url')),
+                'open_mode'   => 'in_app',
+            ];
+        }
+
         if ($render_type != 'webview') {
             return [
                 'render_type' => 'native',
@@ -318,7 +330,9 @@ class mobileapp_menu_rightsController extends Controller
         $sub_title_icon = $request->get('sub_title_icon');
         $sub_title_sort_order = $request->get('sub_title_sort_order');
         $status = $request->get('status');
-        $render_type = $request->get('render_type') == 'webview' ? 'webview' : 'native';
+        $render_type = in_array($request->get('render_type'), ['webview', 'native_dynamic'], true)
+            ? $request->get('render_type')
+            : 'native';
         $updated_by = session()->get('user_id');
         $updated_on = date('Y-m-d H:i:s');
         $updated_ip = $_SERVER['REMOTE_ADDR'];
@@ -344,10 +358,10 @@ class mobileapp_menu_rightsController extends Controller
         // row sharing a main_title.
         $table = $this->tableFor($profile);
         if ($this->hasRenderColumns($table)) {
-            if ($render_type == 'webview' && trim((string) $request->get('web_url')) === '') {
+            if (in_array($render_type, ['webview', 'native_dynamic'], true) && trim((string) $request->get('web_url')) === '') {
                 $res = [
                     'status_code' => 0,
-                    'message'     => 'Web URL is required when render type is WebView.',
+                    'message'     => 'Web URL is required for this render type.',
                 ];
 
                 return is_mobile($request->input('type'), 'add_mobileapp_menu_rights.index', $res);

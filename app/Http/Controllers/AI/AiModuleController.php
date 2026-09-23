@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\AI;
 
 use App\Domain\AI\Support\AiAuditLogger;
+use App\Domain\AI\Support\SchemaCache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 /**
@@ -62,7 +62,13 @@ class AiModuleController extends AiController
      * second way to write history - there is one writer, and it is the one every other
      * part of the intelligence layer already uses.
      */
-    public function __construct(private readonly AiAuditLogger $audit)
+    public function __construct(
+        private readonly AiAuditLogger $audit,
+        // Every read below opens by asking whether the table it wants exists. Asked
+        // through the cache, those nineteen probes become at most one per table for
+        // the whole request — see SchemaCache.
+        private readonly SchemaCache $schema,
+    )
     {
     }
 
@@ -121,6 +127,37 @@ class AiModuleController extends AiController
     // ---------------------------------------------------------------------
 
     /**
+     * This module's template ids, read once per request.
+     *
+     * `generationUsage()`, `refusals()` and `refusalCounts()` each need the same list,
+     * and each used to pluck it for itself — three identical reads of `ai_templates`
+     * inside one guardrails or usage response. The scoping is unchanged: platform rows
+     * plus this institute's own, and nothing else, so a module can still only ever see
+     * its own templates.
+     *
+     * @return \Illuminate\Support\Collection<int, int>
+     */
+    private function moduleTemplateIds(string $module, int|string|null $institute)
+    {
+        $cacheKey = $module . '|' . ($institute === null ? '' : (string) $institute);
+
+        if (isset($this->templateIdCache[$cacheKey])) {
+            return $this->templateIdCache[$cacheKey];
+        }
+
+        return $this->templateIdCache[$cacheKey] = DB::table('ai_templates')
+            ->where('module_key', $module)
+            ->where(function ($query) use ($institute) {
+                $query->where('sub_institute_id', $institute)
+                    ->orWhereNull('sub_institute_id');
+            })
+            ->pluck('id');
+    }
+
+    /** @var array<string, \Illuminate\Support\Collection<int, int>> */
+    private array $templateIdCache = [];
+
+    /**
      * The module as the database knows it, or a `registered: false` stub.
      *
      * A stub rather than a 404: a module can legitimately have a screen before it has
@@ -129,7 +166,27 @@ class AiModuleController extends AiController
      */
     private function moduleIdentity(string $module, int|string|null $institute): array
     {
-        if (! Schema::hasTable('ai_modules')) {
+        // Memoised for the request: `guardrails()` asks for the identity and then for the
+        // capabilities, and `moduleCapabilities()` answers by asking for the identity
+        // again — two `ai_modules` reads for one row, on a remote database, every time.
+        $cacheKey = $module . '|' . ($institute === null ? '' : (string) $institute);
+
+        if (isset($this->identityCache[$cacheKey])) {
+            return $this->identityCache[$cacheKey];
+        }
+
+        return $this->identityCache[$cacheKey] = $this->loadModuleIdentity($module, $institute);
+    }
+
+    /** @var array<string, array<string, mixed>> */
+    private array $identityCache = [];
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function loadModuleIdentity(string $module, int|string|null $institute): array
+    {
+        if (! $this->schema->hasTable('ai_modules')) {
             return ['key' => $module, 'label' => $module, 'registered' => false, 'capabilities' => []];
         }
 
@@ -186,7 +243,7 @@ class AiModuleController extends AiController
      */
     private function conversationUsage(string $module, int|string|null $institute): array
     {
-        if (! Schema::hasTable('ai_conversations')) {
+        if (! $this->schema->hasTable('ai_conversations')) {
             return ['available' => false, 'reason' => 'ai_conversations is not on this estate.'];
         }
 
@@ -207,7 +264,7 @@ class AiModuleController extends AiController
 
         $turnStats = ['available' => false];
 
-        if (Schema::hasTable('ai_conversation_turns')) {
+        if ($this->schema->hasTable('ai_conversation_turns')) {
             $ids = (clone $conversations)->pluck('id');
 
             if ($ids->isNotEmpty()) {
@@ -264,18 +321,12 @@ class AiModuleController extends AiController
     private function generationUsage(string $module, int|string|null $institute): array
     {
         foreach (['ai_templates', 'ai_generation_requests'] as $table) {
-            if (! Schema::hasTable($table)) {
+            if (! $this->schema->hasTable($table)) {
                 return ['available' => false, 'reason' => "{$table} is not on this estate."];
             }
         }
 
-        $templateIds = DB::table('ai_templates')
-            ->where('module_key', $module)
-            ->where(function ($query) use ($institute) {
-                $query->where('sub_institute_id', $institute)
-                    ->orWhereNull('sub_institute_id');
-            })
-            ->pluck('id');
+        $templateIds = $this->moduleTemplateIds($module, $institute);
 
         if ($templateIds->isEmpty()) {
             return [
@@ -315,7 +366,7 @@ class AiModuleController extends AiController
      */
     private function tokenUsage(\Illuminate\Support\Collection $requestIds, int|string|null $institute, string $module): array
     {
-        if (! Schema::hasTable('ai_generation_outputs')) {
+        if (! $this->schema->hasTable('ai_generation_outputs')) {
             return $this->emptyTokens('ai_generation_outputs is not on this estate.');
         }
 
@@ -408,7 +459,7 @@ class AiModuleController extends AiController
      */
     private function modelRate(string $module, int|string|null $institute): ?array
     {
-        if (! Schema::hasTable('ai_api_keys') || ! Schema::hasColumn('ai_api_keys', 'ai_module')) {
+        if (! $this->schema->hasTable('ai_api_keys') || ! $this->schema->hasColumn('ai_api_keys', 'ai_module')) {
             return null;
         }
 
@@ -422,7 +473,7 @@ class AiModuleController extends AiController
             ->orderByRaw('sub_institute_id IS NULL ASC')
             ->first();
 
-        if ($binding === null || ! Schema::hasTable('ai_models')) {
+        if ($binding === null || ! $this->schema->hasTable('ai_models')) {
             return null;
         }
 
@@ -452,7 +503,7 @@ class AiModuleController extends AiController
     /** Saved reports filed against this module. */
     private function reportUsage(string $module, int|string|null $institute): array
     {
-        if (! Schema::hasTable('ai_generated_reports')) {
+        if (! $this->schema->hasTable('ai_generated_reports')) {
             return ['available' => false, 'reason' => 'ai_generated_reports is not on this estate.'];
         }
 
@@ -490,11 +541,11 @@ class AiModuleController extends AiController
      */
     private function providerUsage(string $module, int|string|null $institute): array
     {
-        if (! Schema::hasTable('ai_api_keys')) {
+        if (! $this->schema->hasTable('ai_api_keys')) {
             return ['available' => false, 'reason' => 'ai_api_keys is not on this estate.'];
         }
 
-        $hasModuleColumn = Schema::hasColumn('ai_api_keys', 'ai_module');
+        $hasModuleColumn = $this->schema->hasColumn('ai_api_keys', 'ai_module');
 
         $binding = $hasModuleColumn
             ? DB::table('ai_api_keys')
@@ -510,7 +561,7 @@ class AiModuleController extends AiController
 
         $calls = null;
 
-        if ($binding !== null && Schema::hasTable('ai_daily_used_api')) {
+        if ($binding !== null && $this->schema->hasTable('ai_daily_used_api')) {
             $calls = DB::table('ai_daily_used_api')
                 ->where('parent_id', $binding->id)
                 ->orderByDesc('date')
@@ -534,7 +585,7 @@ class AiModuleController extends AiController
     /** The module's most recent questions — the detail behind the counts. */
     private function recentTurns(string $module, int|string|null $institute): array
     {
-        if (! Schema::hasTable('ai_conversations') || ! Schema::hasTable('ai_conversation_turns')) {
+        if (! $this->schema->hasTable('ai_conversations') || ! $this->schema->hasTable('ai_conversation_turns')) {
             return [];
         }
 
@@ -574,7 +625,7 @@ class AiModuleController extends AiController
     /** Turns per day for the last month, for a trend rather than a single total. */
     private function dailySeries(string $module, int|string|null $institute): array
     {
-        if (! Schema::hasTable('ai_conversations') || ! Schema::hasTable('ai_conversation_turns')) {
+        if (! $this->schema->hasTable('ai_conversations') || ! $this->schema->hasTable('ai_conversation_turns')) {
             return [];
         }
 
@@ -609,7 +660,7 @@ class AiModuleController extends AiController
      */
     private function reviewPosture(string $module, int|string|null $institute): array
     {
-        if (! Schema::hasTable('ai_templates')) {
+        if (! $this->schema->hasTable('ai_templates')) {
             return ['available' => false, 'reason' => 'ai_templates is not on this estate.'];
         }
 
@@ -647,17 +698,11 @@ class AiModuleController extends AiController
      */
     private function refusals(string $module, int|string|null $institute): array
     {
-        if (! Schema::hasTable('ai_templates') || ! Schema::hasTable('ai_generation_requests')) {
+        if (! $this->schema->hasTable('ai_templates') || ! $this->schema->hasTable('ai_generation_requests')) {
             return [];
         }
 
-        $templateIds = DB::table('ai_templates')
-            ->where('module_key', $module)
-            ->where(function ($query) use ($institute) {
-                $query->where('sub_institute_id', $institute)
-                    ->orWhereNull('sub_institute_id');
-            })
-            ->pluck('id');
+        $templateIds = $this->moduleTemplateIds($module, $institute);
 
         if ($templateIds->isEmpty()) {
             return [];
@@ -691,17 +736,11 @@ class AiModuleController extends AiController
     /** Refusals by verdict, so a pattern is visible without paging the list. */
     private function refusalCounts(string $module, int|string|null $institute): array
     {
-        if (! Schema::hasTable('ai_templates') || ! Schema::hasTable('ai_generation_requests')) {
+        if (! $this->schema->hasTable('ai_templates') || ! $this->schema->hasTable('ai_generation_requests')) {
             return [];
         }
 
-        $templateIds = DB::table('ai_templates')
-            ->where('module_key', $module)
-            ->where(function ($query) use ($institute) {
-                $query->where('sub_institute_id', $institute)
-                    ->orWhereNull('sub_institute_id');
-            })
-            ->pluck('id');
+        $templateIds = $this->moduleTemplateIds($module, $institute);
 
         if ($templateIds->isEmpty()) {
             return [];
@@ -875,7 +914,7 @@ class AiModuleController extends AiController
             $scope = $this->scope($request);
             $institute = $scope->selectedInstituteId;
 
-            if (! Schema::hasTable('ai_audit_logs')) {
+            if (! $this->schema->hasTable('ai_audit_logs')) {
                 return $this->success('No ledger on this estate.', [
                     'module' => $this->moduleIdentity($module, $institute),
                     'available' => false,
@@ -972,7 +1011,7 @@ class AiModuleController extends AiController
      */
     private function resolveTemplate(int $id, string $module, int|string|null $institute): ?array
     {
-        if (! Schema::hasTable('ai_templates')) {
+        if (! $this->schema->hasTable('ai_templates')) {
             return null;
         }
 
@@ -1002,7 +1041,7 @@ class AiModuleController extends AiController
     /** The acting user's name, so the ledger reads without a join. */
     private function actorLabel(int|string|null $userId): ?string
     {
-        if ($userId === null || ! Schema::hasTable('users')) {
+        if ($userId === null || ! $this->schema->hasTable('users')) {
             return null;
         }
 

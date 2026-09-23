@@ -103,6 +103,24 @@ Route::middleware('api.session')->post('mobile/web-handoff', [\App\Http\Controll
 // call, and CORS (config/cors.php) is what lets that other origin's JS call
 // it at all.
 Route::get('mobile/web-handoff/claims', [\App\Http\Controllers\api\MobileWebHandoffApiController::class, 'claims']);
+
+// Schema for a render_type = 'native_dynamic' menu row -- see
+// MobileDynamicPageApiController's class doc for why only the schema is
+// served here, not the page's live data.
+Route::middleware('api.session')->get('mobile/dynamic-page/{pageKey}', [\App\Http\Controllers\api\MobileDynamicPageApiController::class, 'show']);
+
+// Admin API for configuring native dynamic pages -- authored from the
+// lms_k12 Next.js frontend (see MobileDynamicPageAdminApiController's class
+// doc), not a Laravel Blade view.
+Route::middleware('api.session')->prefix('mobile/dynamic-page-admin')->group(function () {
+    Route::get('registry', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'registry']);
+    Route::get('pages', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'index']);
+    Route::post('pages', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'store']);
+    Route::post('pages/{id}', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'update']);
+    Route::post('pages/{id}/fields', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'addField']);
+    Route::post('fields/{fieldId}', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'updateField']);
+    Route::delete('fields/{fieldId}', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'deleteField']);
+});
 Route::middleware('api.session')->prefix('hrms')->group(function () {
     Route::get('today', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'today']);
     Route::post('punch', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'punch']);
@@ -550,6 +568,11 @@ Route::match(['GET', 'POST'], 'intelligence/curriculum-planning/chapter', [\App\
 
 // Monthly Plan - calendar view of scheduled periods for a given month
 Route::match(['GET', 'POST'], 'intelligence/monthly-plan', [\App\Http\Controllers\api\lms\MonthlyPlanApiController::class, 'index']);
+
+// Interactions - unified staff/parent/student touchpoint log (calls, meetings, notes, follow-ups)
+Route::match(['GET', 'POST'], 'interactions', [\App\Http\Controllers\api\InteractionLogController::class, 'index']);
+Route::post('interactions/store', [\App\Http\Controllers\api\InteractionLogController::class, 'store']);
+Route::post('interactions/{id}/update', [\App\Http\Controllers\api\InteractionLogController::class, 'update']);
 
 // Lesson Plan detail - periods (+ concepts) for a date range, for the single-lesson detail page
 Route::match(['GET', 'POST'], 'intelligence/lesson-plan-detail', [\App\Http\Controllers\api\lms\LessonPlanDetailApiController::class, 'index']);

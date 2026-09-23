@@ -2,9 +2,9 @@
 
 namespace App\Http\Controllers\AI;
 
+use App\Domain\AI\Support\SchemaCache;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 /**
@@ -37,6 +37,14 @@ use Throwable;
  */
 class CapabilityController extends AiController
 {
+    /**
+     * Every section of this payload opens by asking whether its tables exist, and the
+     * knowledge-rag capability alone probed ten columns. Asked through the cache those
+     * become one probe per table or column for the whole request — see SchemaCache.
+     */
+    public function __construct(private readonly SchemaCache $schema)
+    {
+    }
     /**
      * Capability key => the tables it reads.
      *
@@ -441,20 +449,20 @@ class CapabilityController extends AiController
     {
         return array_values(array_filter(
             self::TABLES[$capability],
-            fn (string $table) => ! Schema::hasTable($table)
+            fn (string $table) => ! $this->schema->hasTable($table)
         ));
     }
 
     private function count(string $table, int|string $institute, array $where = []): int
     {
-        if (! Schema::hasTable($table)) {
+        if (! $this->schema->hasTable($table)) {
             return 0;
         }
 
         $query = $this->scoped($table, $institute);
 
         foreach ($where as $column => $value) {
-            if (Schema::hasColumn($table, $column)) {
+            if ($this->schema->hasColumn($table, $column)) {
                 $query->where($column, $value);
             }
         }
@@ -464,7 +472,7 @@ class CapabilityController extends AiController
 
     private function distinct(string $table, int|string $institute, string $column): int
     {
-        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $column)) {
+        if (! $this->schema->hasTable($table) || ! $this->schema->hasColumn($table, $column)) {
             return 0;
         }
 
@@ -483,7 +491,7 @@ class CapabilityController extends AiController
     {
         $present = array_filter(
             $columns,
-            fn (string $label, string $column) => Schema::hasColumn($table, $column),
+            fn (string $label, string $column) => $this->schema->hasColumn($table, $column),
             ARRAY_FILTER_USE_BOTH
         );
 
@@ -493,7 +501,7 @@ class CapabilityController extends AiController
 
         $query = $this->scoped($table, $institute)->select(array_keys($present));
 
-        if ($orderBy !== null && Schema::hasColumn($table, $orderBy)) {
+        if ($orderBy !== null && $this->schema->hasColumn($table, $orderBy)) {
             $query->orderBy($orderBy);
         } else {
             $query->orderByDesc('id');
@@ -528,14 +536,14 @@ class CapabilityController extends AiController
     {
         $query = DB::table($table);
 
-        if (Schema::hasColumn($table, 'sub_institute_id')) {
+        if ($this->schema->hasColumn($table, 'sub_institute_id')) {
             $query->where(function ($inner) use ($institute) {
                 $inner->where('sub_institute_id', $institute)
                     ->orWhereNull('sub_institute_id');
             });
         }
 
-        if (Schema::hasColumn($table, 'deleted_at')) {
+        if ($this->schema->hasColumn($table, 'deleted_at')) {
             $query->whereNull('deleted_at');
         }
 
