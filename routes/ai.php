@@ -142,6 +142,44 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
                 ->where('module', '[a-z0-9_\-]+');
 
             /*
+            | A module's OWN model configuration, managed inside that module.
+            |
+            | The AI Stack inside a module is decentralised: choosing a model on Fees →
+            | AI Stack → Models applies to Fees and to nothing else, and doing it never
+            | leaves the module. These three routes are what that screen calls, and they
+            | read and write `ai_module_model_bindings` — keyed on the PRODUCT module.
+            |
+            | The central console under AI & Intelligence keeps its own routes below,
+            | writing `ai_api_keys` and `ai_models`, which are keyed on the AI CAPABILITY.
+            | The two never touch the same row: a module with no binding inherits what the
+            | centre decided, and a module with one overrides it for itself.
+            |
+            | `AiConfigurationResolver` consults the binding before anything else, so a
+            | save here changes what the module's next call does rather than only what a
+            | screen shows.
+            */
+            Route::get('/modules/{module}/models', [\App\Http\Controllers\AI\AiModuleModelController::class, 'index'])
+                ->where('module', '[a-z0-9_\-]+');
+            Route::put('/modules/{module}/models', [\App\Http\Controllers\AI\AiModuleModelController::class, 'update'])
+                ->where('module', '[a-z0-9_\-]+');
+            Route::delete('/modules/{module}/models', [\App\Http\Controllers\AI\AiModuleModelController::class, 'destroy'])
+                ->where('module', '[a-z0-9_\-]+');
+
+            /*
+            | "Add New Model" — a module adding its OWN credential rather than picking one
+            | that already exists centrally. Still writes `ai_api_keys`/`ai_models`
+            | (estate-wide tables by nature — a credential is an estate resource whichever
+            | screen creates it), always `sub_institute_id` = the caller's own school,
+            | never the platform default. See the controller for why this sits beside the
+            | picker rather than sending anyone to AI & Intelligence.
+            */
+            Route::post('/modules/{module}/models/credentials', [\App\Http\Controllers\AI\AiModuleModelController::class, 'storeCredential'])
+                ->where('module', '[a-z0-9_\-]+');
+            Route::put('/modules/{module}/models/credentials/{credential}', [\App\Http\Controllers\AI\AiModuleModelController::class, 'updateCredential'])
+                ->where('module', '[a-z0-9_\-]+')
+                ->where('credential', '[0-9]+');
+
+            /*
             | The module execution ledger.
             |
             | `activity` reads what a module's AI has done; the POST writes one entry.

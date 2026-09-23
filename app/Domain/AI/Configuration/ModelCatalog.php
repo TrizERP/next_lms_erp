@@ -2,8 +2,8 @@
 
 namespace App\Domain\AI\Configuration;
 
+use App\Domain\AI\Support\SchemaCache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * The models each provider offers, as one editable list.
@@ -29,6 +29,17 @@ use Illuminate\Support\Facades\Schema;
  */
 final class ModelCatalog
 {
+
+    /**
+     * The schema probes this class makes, asked once per request.
+     *
+     * Injected rather than resolved inline so a test can hand in a fresh one. See
+     * SchemaCache: these two probes used to run on every credential lookup, and the
+     * configuration overview makes fourteen of those in a row.
+     */
+    public function __construct(private readonly SchemaCache $schema)
+    {
+    }
     /**
      * Models for one provider, for one school.
      *
@@ -36,7 +47,7 @@ final class ModelCatalog
      */
     public function forProvider(string $provider, int|string|null $subInstituteId = null, bool $includeRetired = false): array
     {
-        if (! Schema::hasTable('ai_models')) {
+        if (! $this->schema->hasTable('ai_models')) {
             return [];
         }
 
@@ -64,7 +75,7 @@ final class ModelCatalog
      */
     public function grouped(int|string|null $subInstituteId = null, bool $includeRetired = true): array
     {
-        if (! Schema::hasTable('ai_models')) {
+        if (! $this->schema->hasTable('ai_models')) {
             return [];
         }
 
@@ -95,7 +106,7 @@ final class ModelCatalog
     /** One model, by id, but only if the asking school is allowed to see it. */
     public function find(int $id, int|string|null $subInstituteId = null): ?array
     {
-        if (! Schema::hasTable('ai_models')) {
+        if (! $this->schema->hasTable('ai_models')) {
             return null;
         }
 
@@ -116,7 +127,7 @@ final class ModelCatalog
      */
     public function offers(string $provider, string $modelId, int|string|null $subInstituteId = null): bool
     {
-        if (! Schema::hasTable('ai_models')) {
+        if (! $this->schema->hasTable('ai_models')) {
             // No catalogue on this estate: nothing to contradict, so nothing to refuse.
             return true;
         }

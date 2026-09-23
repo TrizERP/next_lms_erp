@@ -128,10 +128,78 @@ class ReportDataSourceCatalog
             fn (array $source) => $this->matchesModule($source['module'], $moduleKey)
         ));
 
-        // Falling back to everything rather than to nothing: the module prefixes are a
-        // convention, not a guarantee, and a module whose tool is named differently
-        // would otherwise show an empty picker with no way to recover.
-        return $exact === [] ? $this->all() : $exact;
+        if ($exact !== []) {
+            return $exact;
+        }
+
+        // The prefix heuristic missed, which happens whenever a module's key and its tools
+        // are named differently — `easy_com` owns the `communication.` tools, and no amount
+        // of singular/plural normalising will pair those two words.
+        //
+        // Before this, the fallback was the WHOLE catalogue, and that was a real hole: the
+        // Communication module's data-source picker offered `fees.arrears`, so a layout
+        // filed under Communication could be bound to fee records and would then render
+        // them. A picker is not just a convenience — what it offers is what a template can
+        // read.
+        //
+        // So the fallback is the module's own declared bindings from `config/ai.php`,
+        // which is the authoritative answer to "what may this module read" and the same
+        // list the planner and the conversational fallback use.
+        //
+        // AND IF IT DECLARES NOTHING, THE ANSWER IS NOTHING.
+        //
+        // This used to widen to the whole catalogue, on the reasoning that a picker with no
+        // options is its own kind of dead end. That was wrong, and measurably so: this
+        // estate has 36 menu modules that offer an AI Stack tab without being registered —
+        // `fees-report`, `exam-report`, `payroll`, `leave` and the rest — and every one of
+        // them was being offered all 76 data sources. Identical lists on every unregistered
+        // module is the "same data on every module" a reader actually sees, and worse, a
+        // layout filed under `fees-report` could be bound to `student_medical.visits`.
+        //
+        // An empty list is the truthful answer for a module the estate has not bound, and
+        // the screen says so. Widening was never a convenience — it was a leak with a
+        // friendly face.
+        return $this->boundSources($moduleKey);
+    }
+
+    /**
+     * The read-only sources a module declares in `config/ai.php`, in its declared order.
+     *
+     * Filtered through `all()` rather than returned from the config directly, so a binding
+     * naming a tool that is not registered — or one that writes — cannot reach a layout
+     * through this path either.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function boundSources(string $moduleKey): array
+    {
+        $binding = (array) config('ai.lifecycle.modules.'.$moduleKey.'.mcp_tools', []);
+
+        if ($binding === []) {
+            return [];
+        }
+
+        $bound = array_flip(array_filter($binding, 'is_string'));
+
+        return array_values(array_filter(
+            $this->all(),
+            static fn (array $source) => isset($bound[$source['name']])
+                // The generation tools are plumbing, not records. Every module binds
+                // `ai.templates.list`, `.render` and `.generate` so that it can generate at
+                // all, and they are read-only, so without this they arrived in the picker
+                // as data sources — and a layout bound to `ai.templates.list` would
+                // tabulate the school's own template list under a heading like "Inward
+                // register".
+                //
+                // Only the per-module fallback is narrowed. The shared picker still offers
+                // everything, so a genuine report ABOUT templates can still be built.
+                //
+                // Without this the six modules were also inconsistent with each other for
+                // no reason a person could see: `petty_cash` matched its tools by prefix
+                // and got two clean options, while `transportation` — whose tools are
+                // named `transport.*` — fell through to here and got six.
+                && ! str_starts_with($source['name'], 'ai.templates.')
+        ));
     }
 
     /**
