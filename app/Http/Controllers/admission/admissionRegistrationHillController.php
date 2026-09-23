@@ -281,9 +281,18 @@ class admissionRegistrationHillController extends Controller
             'syear'            => $syear,
             'example_subject'  => $rendered['subject'],
             'content'          => $rendered['body'],
+            // Set when the template sends its letter as a PDF instead of inline.
+            'attachment_path'  => $rendered['attachment'] ?? null,
+            'attachment_name'  => $rendered['attachment_name'] ?? null,
         ]);
 
-        return $this->sendEmail($emailRequest);
+        try {
+            return $this->sendEmail($emailRequest);
+        } finally {
+            if (!empty($rendered['attachment']) && is_file($rendered['attachment'])) {
+                EmailTemplateService::cleanupAttachment($rendered['attachment']);
+            }
+        }
     }
 
     private function studentName(array $data): string
@@ -406,6 +415,11 @@ class admissionRegistrationHillController extends Controller
             $path = $filePath;
         }
 
+        // A template that sends its letter as a PDF passes an absolute path.
+        if ($path == "" && $request->filled('attachment_path') && is_file($request->get('attachment_path'))) {
+            $path = $request->get('attachment_path');
+        }
+
         $where_arr = [
             "sub_institute_id" => $sub_institute_id,
         ];
@@ -447,7 +461,9 @@ class admissionRegistrationHillController extends Controller
             $mail->SetFrom($from, $from);
             $mail->AddReplyTo($from, $from);
             if ($attechment != "") {
-                $mail->addAttachment($attechment);
+                // Name the attachment explicitly: PHPMailer otherwise falls back
+                // to the file's basename, which carries our temp-file prefix.
+                $mail->addAttachment($attechment, $request->get('attachment_name') ?: '');
             }
             $mail->Subject = $subject;
             $mail->Body = $message;

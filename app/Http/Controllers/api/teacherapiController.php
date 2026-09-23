@@ -27,6 +27,7 @@ use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
 
@@ -123,6 +124,58 @@ class teacherapiController extends Controller
         return in_array($normalized, ['super admin', 'admin', 'school admin'], true);
     }
 
+    /**
+     * The three WebView keys a homescreen row contributes to the mobile
+     * payload, normalised so the app is never handed something it cannot act
+     * on.
+     *
+     * `$hasRenderColumns` is resolved once per request by the caller rather
+     * than here, because this runs once per menu row and Schema::hasColumn
+     * hits the information schema. An installation that has not run
+     * 2026_09_22_200000_add_render_type_to_mobile_homescreen_tables yet gets
+     * the native defaults, exactly as it behaved before those columns
+     * existed -- the same treatment AbstractMenuCategoryApiController gives
+     * its own rollout columns.
+     *
+     * A row that says 'webview' but carries no URL is served as 'native',
+     * because the alternative is an app that opens a blank WebView. It falls
+     * back to its `screen_name`, which is what the row did before an admin
+     * half-configured it.
+     *
+     * `web_url` is always served absolute. An admin may type either a full
+     * URL or a root-relative path like /user/add_mobileapp_menu_rights, and
+     * a relative one is resolved here against the host that served this
+     * request. That keeps the app from having to know the ERP's base URL,
+     * and means the same menu row works on every tenant's hostname.
+     */
+    private function renderKeys(array $row, bool $hasRenderColumns, string $baseUrl): array
+    {
+        $native = ["render_type" => "native", "web_url" => "", "open_mode" => "in_app"];
+
+        if (! $hasRenderColumns) {
+            return $native;
+        }
+
+        $renderType = strtolower(trim((string) ($row["render_type"] ?? "")));
+        $webUrl = trim((string) ($row["web_url"] ?? ""));
+
+        if ($renderType !== "webview" || $webUrl === "") {
+            return $native;
+        }
+
+        if (! preg_match('#^https?://#i', $webUrl)) {
+            $webUrl = rtrim($baseUrl, "/") . "/" . ltrim($webUrl, "/");
+        }
+
+        $openMode = strtolower(trim((string) ($row["open_mode"] ?? "")));
+
+        return [
+            "render_type" => "webview",
+            "web_url"     => $webUrl,
+            "open_mode"   => $openMode === "external" ? "external" : "in_app",
+        ];
+    }
+
     public function teacher_homescreen(Request $request)
     {
         $actingTeacherId = $this->resolveActingTeacherId($request);
@@ -163,6 +216,12 @@ class teacherapiController extends Controller
             $data = json_encode($data);
             $data = json_decode($data, 1);
 
+            // Resolved once for the whole feed, not per row -- see renderKeys().
+            $hasRenderColumns = Schema::hasColumn("teacher_mobile_homescreen", "render_type");
+            // Relative web_url values are resolved against whichever host
+            // served this request -- see renderKeys().
+            $webBaseUrl = $request->getSchemeAndHttpHost();
+
             $send_data = [];
             $i = 0;
             foreach ($data as $id => $arr) {
@@ -178,7 +237,7 @@ class teacherapiController extends Controller
                         "api"                         => $arr['sub_title_api'],
                         "api_param"                   => $arr['sub_title_api_param'],
                         "screen_name"                 => $arr['screen_name'],
-                    ];
+                    ] + $this->renderKeys($arr, $hasRenderColumns, $webBaseUrl);
                     $i++;
                     continue;
                 } else {
@@ -200,7 +259,7 @@ class teacherapiController extends Controller
                             "sub_title_api_param" => $arr1["sub_title_api_param"],
                             "screen_name"         => $arr1["screen_name"],
 
-                        ];
+                        ] + $this->renderKeys($arr1, $hasRenderColumns, $webBaseUrl);
                     }
                 }
                 $i++;

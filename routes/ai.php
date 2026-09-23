@@ -168,6 +168,10 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             Route::match(['get', 'post'], '/workspace/flow', [WorkspaceController::class, 'flowState']);
             Route::post('/workspace/workflow-status', [WorkspaceController::class, 'workflowStatus']);
             Route::match(['get', 'post'], '/workspace/generate', [WorkspaceController::class, 'generate']);
+            // Prose and documents are different things. `generate` writes text to read;
+            // `report` writes a saved report with an id, which /ai-reports/{id} already
+            // previews, edits, refreshes, prints and sends.
+            Route::post('/workspace/report', [WorkspaceController::class, 'report']);
             Route::post('/workspace/agents/{agent}/run', [WorkspaceController::class, 'runAgent'])
                 ->where('agent', '[a-z0-9_\-]+');
             Route::post('/workspace/workflows/{workflow}/start', [WorkspaceController::class, 'startWorkflow'])

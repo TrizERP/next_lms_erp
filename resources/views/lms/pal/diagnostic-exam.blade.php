@@ -4,10 +4,10 @@
     <div class="container-fluid">
         <div class="row bg-title">
             <div class="col-lg-12">
-                <h4 class="page-title">PAL Diagnostic Assessment</h4>
+                <h4 class="page-title">PAL Chapter Diagnostic Assessment</h4>
                 <ol class="breadcrumb">
                     <li class="breadcrumb-item"><a href="{{ route('pal.index') }}">PAL Subjects</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('pal.diagnostic.subjects') }}">Take Diagnostic</a></li>
+                    <li class="breadcrumb-item"><a href="{{ route('pal.diagnostic.subjects') }}">Take Chapter Diagnostic</a></li>
                     <li class="breadcrumb-item active">Assessment</li>
                 </ol>
             </div>
@@ -17,7 +17,7 @@
             @csrf
 
             <input type="hidden" name="attempt_id" value="{{ $attempt_id }}">
-            <input type="hidden" name="subject_id" value="{{ $subject_id }}">
+            <input type="hidden" name="chapter_id" value="{{ $chapter_id }}">
 
             <div class="row">
                 <div class="col-md-8">
@@ -34,7 +34,8 @@
                                                    href="#question-{{ $question['question_id'] }}-tab" 
                                                    data-toggle="pill" 
                                                    role="tab"
-                                                   data-question-id="{{ $question['question_id'] }}">
+                                                   data-question-id="{{ $question['question_id'] }}"
+                                                   data-index="{{ $i }}">
                                                     {{ $i++ }}
                                                 </a>
                                             </li>
@@ -99,7 +100,7 @@
                         <button type="button" class="btn btn-secondary mr-2" id="prev_question">Previous</button>
                         <button type="button" class="btn btn-primary mr-2" id="next_question">Next</button>
                         <button type="submit" class="btn btn-success" id="submit_diagnostic">
-                            <i class="mdi mdi-check-circle mr-1"></i> Submit Diagnostic
+                            <i class="mdi mdi-check-circle mr-1"></i> Submit Chapter Diagnostic
                         </button>
                     </div>
                 </div>
@@ -127,7 +128,7 @@
                                        href="#question-{{ $question['question_id'] }}-tab" 
                                        data-toggle="pill" 
                                        role="tab"
-                                       data-question-id="{{ $question['question_id'] }"
+                                       data-question-id="{{ $question['question_id'] }}"
                                        data-index="{{ $j }}">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <span>Q{{ $j++ }}</span>
@@ -166,7 +167,7 @@ $(document).ready(function() {
         if (distance < 0) {
             clearInterval(x);
             document.getElementById("showtimer").innerHTML = "EXPIRED";
-            alert("Your diagnostic time has expired");
+            alert("Your chapter diagnostic time has expired");
             $("#diagnostic_form").submit();
         }
     }, 1000);

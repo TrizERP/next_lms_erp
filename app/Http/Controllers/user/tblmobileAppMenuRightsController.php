@@ -8,13 +8,57 @@ use App\Models\user\tblgroupwise_rightsModel;
 use App\Models\user\tbluserprofilemasterModel;
 use function App\Helpers\is_mobile;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\View;
 use Response;
 use DB;
 
 class tblmobileAppMenuRightsController extends Controller 
 {
-    public function create(Request $request) 
+    /**
+     * The WebView columns of the sub_institute_id = 1 template being granted.
+     *
+     * Read from the template row rather than from the posted form, because
+     * the form only carries hidden copies of the columns this screen has
+     * always sent -- and because a render type is not the granting admin's to
+     * choose. Without this a WebView template grants as a native row and the
+     * menu silently stops working.
+     */
+    private function templateRenderColumns($table, $screen_name, $user_profile_name)
+    {
+        if (!Schema::hasColumn($table, 'render_type'))
+        {
+            return array();
+        }
+
+        $template = DB::table($table)
+            ->where('sub_institute_id', 1)
+            ->where('screen_name', $screen_name)
+            ->where(function ($q) use ($table, $user_profile_name) {
+                // Student templates are not scoped by profile name; the
+                // teacher table holds Admin and Teacher rows side by side.
+                if ($table != 'mobile_homescreen') {
+                    $q->where('user_profile_name', $user_profile_name);
+                }
+            })
+            ->first();
+
+        if (empty($template))
+        {
+            return array();
+        }
+
+        $render_type = strtolower(trim((string) ($template->render_type ?? '')));
+        $open_mode = strtolower(trim((string) ($template->open_mode ?? '')));
+
+        return array(
+            'render_type' => $render_type == 'webview' ? 'webview' : 'native',
+            'web_url' => $render_type == 'webview' ? $template->web_url : null,
+            'open_mode' => $open_mode == 'external' ? 'external' : 'in_app',
+        );
+    }
+
+    public function create(Request $request)
     {
         $sub_institute_id = $request->session()->get('sub_institute_id');
         
@@ -102,7 +146,7 @@ class tblmobileAppMenuRightsController extends Controller
                     {
                         // Record doesn't exist, insert a new one
                         DB::table('mobile_homescreen')
-                        ->insert([
+                        ->insert(array_merge([
                             'user_profile_name' => $get_user_profile_master->name,
                             'user_profile_id' => $request->input('profile_id'),
                             'sub_institute_id' => $sub_institute_id,
@@ -119,7 +163,7 @@ class tblmobileAppMenuRightsController extends Controller
                             'status' => $request->status[$key][0] ?? '',
                             'screen_name' => $key ?? '',
                             'created_on' => now(),
-                        ]);
+                        ], $this->templateRenderColumns('mobile_homescreen', $key, $get_user_profile_master->name)));
                         
                         $res['message'] = "Mobile App Menu Rights Added Successfully";
                     }          
@@ -179,7 +223,7 @@ class tblmobileAppMenuRightsController extends Controller
                     {
                         // Record doesn't exist, insert a new one
                         DB::table('teacher_mobile_homescreen')
-                        ->insert([
+                        ->insert(array_merge([
                         'user_profile_name' => $get_user_profile_master->name,
                         'user_profile_id' => $request->input('profile_id'),
                         'sub_institute_id' => $sub_institute_id,
@@ -196,7 +240,7 @@ class tblmobileAppMenuRightsController extends Controller
                         'status' => $request->status[$key][0] ?? '',
                         'screen_name' => $key ?? '',
                         'created_on' => now(),
-                      ]);
+                      ], $this->templateRenderColumns('teacher_mobile_homescreen', $key, $get_user_profile_master->name)));
                         
                         $res['message'] = "Mobile App Menu Rights Added Successfully";
                     }          

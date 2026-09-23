@@ -520,6 +520,15 @@ class ActionStage implements LifecycleStage
         // The run moved but nothing has changed yet. This is the honest, common case
         // immediately after an approval, and calling it "done" would be a lie about a
         // child's record.
+        //
+        // Where it is waiting on a person, say so with a button rather than only in
+        // prose. Approving a recommendation starts the workflow, and the workflow's own
+        // first step is itself an approval — so the turn ended with "waiting at
+        // review_pending_fees", no action offered, and no way to finish from the panel.
+        // The gate was reachable only from a separate screen, which is exactly the split
+        // this panel exists to close.
+        $this->offerPendingApproval($context, $status);
+
         return StageOutcome::pending(
             sprintf(
                 'Workflow run #%d started and is waiting at "%s".',
@@ -539,6 +548,93 @@ class ActionStage implements LifecycleStage
             'The workflow advanced, but no record has changed yet — this stage completes when the run '
             . 'reaches the step that writes one.'
         );
+    }
+
+    /**
+     * Offer the workflow's own approval step to whoever may decide it.
+     *
+     * `HumanApprovalStage` already resolves a `workflow_approval_id` — the capability
+     * existed and nothing ever put it in front of a person. Eligibility mirrors
+     * `WorkflowController::pendingApprovals()`: the approval is theirs when it is
+     * assigned to them, assigned to nobody, or addressed to their role. Offering a
+     * button somebody cannot spend would be worse than offering none.
+     *
+     * @param  array<string, mixed>|null  $status
+     */
+    private function offerPendingApproval(StageContext $context, ?array $status): void
+    {
+        $approvals = is_array($status['approvals'] ?? null) ? $status['approvals'] : [];
+
+        foreach ($approvals as $approval) {
+            if (! is_array($approval) || ($approval['status'] ?? null) !== 'pending') {
+                continue;
+            }
+
+            $assignedTo = $approval['assigned_to'] ?? null;
+            $mine = $assignedTo === null
+                || (int) $assignedTo === $context->scope->userId
+                || ($approval['approver_role'] ?? null) === $context->scope->role;
+
+            if (! $mine) {
+                continue;
+            }
+
+            $id = (int) ($approval['id'] ?? 0);
+
+            if ($id <= 0) {
+                continue;
+            }
+
+            $label = (string) ($this->stepLabel($status, $approval) ?? 'this step');
+
+            $context->addAction($this->compose->action(
+                'approve_step',
+                'Approve: ' . $label,
+                'approve_recommendation',
+                ['workflow_approval_id' => $id, 'utterance' => 'Approve the workflow step.'],
+                'primary'
+            ));
+
+            $context->addAction($this->compose->action(
+                'reject_step',
+                'Reject',
+                'reject_recommendation',
+                ['workflow_approval_id' => $id, 'utterance' => 'Reject the workflow step.'],
+                'danger'
+            ));
+
+            $context->suggestFollowUp('Approve the workflow step.', 'What happens if I approve this?');
+
+            // One gate at a time. A panel offering several approve buttons invites the
+            // wrong one being pressed.
+            return;
+        }
+    }
+
+    /**
+     * The human label for the step an approval belongs to.
+     *
+     * @param  array<string, mixed>|null  $status
+     * @param  array<string, mixed>  $approval
+     */
+    private function stepLabel(?array $status, array $approval): ?string
+    {
+        $current = $status['current_step_key'] ?? null;
+
+        foreach ((array) ($status['steps'] ?? []) as $step) {
+            if (! is_array($step)) {
+                continue;
+            }
+
+            $output = is_array($step['output'] ?? null) ? $step['output'] : [];
+
+            if ((int) ($output['approval_id'] ?? 0) === (int) ($approval['id'] ?? -1)
+                || ($step['step_key'] ?? null) === $current) {
+                return $step['label'] ?? $step['step_key'] ?? null;
+            }
+        }
+
+        return $current;
     }
 
     // ---------------------------------------------------------------- helpers

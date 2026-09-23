@@ -3215,3 +3215,53 @@ if (!function_exists('get_string')) {
         }
     }
 }
+
+if (!function_exists('mobile_embed_agent_marker')) {
+
+    /**
+     * The token the mobile app appends to its WebView's user agent.
+     *
+     * A WebView-backed menu row (render_type = 'webview') loads an ordinary
+     * ERP page inside the app, and that page has to drop the sidebar, the
+     * topbar and the breadcrumbs to be usable on a phone.
+     *
+     * The signal is the user agent rather than a ?embed=mobile query flag
+     * because it is the only one that survives the page linking somewhere.
+     * A query flag is dropped by the first <a href> a served page renders,
+     * and the full desktop chrome reappears mid-journey; the user agent is
+     * set once on the WebView and applies to every request it makes,
+     * including XHR.
+     */
+    function mobile_embed_agent_marker()
+    {
+        return 'K12AppWebView';
+    }
+}
+
+if (!function_exists('is_mobile_embed')) {
+
+    /**
+     * Whether this request is an ERP page being rendered inside the mobile
+     * app's WebView, and should therefore skip its desktop chrome.
+     *
+     * The `embed` query parameter is honoured as well, but only so the
+     * embedded layout can be opened in a desktop browser while working on it
+     * -- the app itself never relies on it. It cannot be used to reach
+     * anything a normal session could not: this only decides whether chrome
+     * is drawn, never who the viewer is or what they may see.
+     */
+    function is_mobile_embed($request = null)
+    {
+        $request = $request ?: request();
+
+        if (!$request) {
+            return false;
+        }
+
+        if (str_contains((string) $request->header('User-Agent'), mobile_embed_agent_marker())) {
+            return true;
+        }
+
+        return $request->query('embed') === 'mobile';
+    }
+}

@@ -32,8 +32,37 @@ trait HydratesLegacyApiSession
             return $this->unauthorizedApiSession($e->getMessage());
         }
 
-        $payload = $this->jwtPayload(null, $request);
+        if ($error = $this->hydrateSessionFromClaims($this->jwtPayload(null, $request), $request)) {
+            return $error;
+        }
 
+        // Existing controllers switch to their JSON branches on type=API
+        // (is_mobile() helper / checkPermission behave the same way they
+        // already do for the mobile apps).
+        $request->merge(['type' => 'API']);
+
+        return null;
+    }
+
+    /**
+     * Hydrates the session from claims that have ALREADY been verified by the
+     * caller, and returns null on success or a JSON error on failure.
+     *
+     * Split out of hydrateSessionFromToken() so the WebView handoff bridge
+     * (App\Http\Controllers\MobileWebBridgeController) can build a real
+     * browser session from a redeemed handoff ticket without a second copy of
+     * this logic. A copy is how the two paths would quietly drift apart on,
+     * say, class-teacher scoping.
+     *
+     * Unlike the token path this does NOT force type=API, because the bridge
+     * wants the page's normal HTML response, not its JSON branch.
+     *
+     * $payload is trusted: every caller must have verified it first, either by
+     * validating the JWT signature or by redeeming a single-use ticket whose
+     * claims were written server-side.
+     */
+    protected function hydrateSessionFromClaims(array $payload, Request $request): ?JsonResponse
+    {
         $userId         = $payload['id'] ?? null;
         $subInstituteId = $payload['sub_institute_id'] ?? null;
         $userProfileId  = $payload['user_profile_id'] ?? null;
@@ -140,11 +169,6 @@ trait HydratesLegacyApiSession
         if ($request->filled('menu_id')) {
             $store->put('right_menu_id', $request->input('menu_id'));
         }
-
-        // Existing controllers switch to their JSON branches on type=API
-        // (is_mobile() helper / checkPermission behave the same way they
-        // already do for the mobile apps).
-        $request->merge(['type' => 'API']);
 
         return null;
     }

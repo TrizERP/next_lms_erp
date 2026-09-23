@@ -20,6 +20,8 @@ use App\Http\Controllers\api\ClassTeacherApiController;
 use App\Http\Controllers\api\AcademicSetupApiController;
 use App\Http\Controllers\api\TransportationApiController;
 use App\Http\Controllers\api\GeneralSetupApiController;
+use App\Http\Controllers\api\AssessmentBlueprintApiController;
+use App\Http\Controllers\api\ExamEvaluationApiController;
 use App\Http\Controllers\api\QuestionPaperTemplateApiController;
 use App\Http\Controllers\api\TeacherDailyReportApiController;
 use App\Http\Controllers\api\UserLogReportApiController;
@@ -86,6 +88,21 @@ Route::post('api-login', [ApiLoginController::class, 'login'])->name('api.api-lo
 Route::get('academic-terms', [ApiLoginController::class, 'academicTerms'])->name('api.academic-terms');
 // Isolated mobile Own Profile API; legacy profile controllers are unchanged.
 Route::middleware('api.session')->get('own-profile', [\App\Http\Controllers\api\OwnProfileApiController::class, 'show']);
+
+// Exchanges the app's JWT for a single-use ticket that opens an ERP web page
+// already logged in, for menu rows whose render_type is 'webview'.
+// `api.session` validates the JWT and hydrates the session the controller
+// reads its identity from -- see MobileWebHandoffApiController.
+Route::middleware('api.session')->post('mobile/web-handoff', [\App\Http\Controllers\api\MobileWebHandoffApiController::class, 'create']);
+
+// Redeems a ticket for a page on a TRUSTED CROSS-ORIGIN frontend (e.g.
+// lms_k12), returning its identity as JSON instead of a Laravel session
+// cookie -- see MobileWebHandoffApiController's class doc. Deliberately
+// outside `api.session`: the caller has no session yet, by definition. The
+// ticket itself, single-use and short-lived, is what authenticates this
+// call, and CORS (config/cors.php) is what lets that other origin's JS call
+// it at all.
+Route::get('mobile/web-handoff/claims', [\App\Http\Controllers\api\MobileWebHandoffApiController::class, 'claims']);
 Route::middleware('api.session')->prefix('hrms')->group(function () {
     Route::get('today', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'today']);
     Route::post('punch', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'punch']);
@@ -258,6 +275,8 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     Route::post('lms-homework/review-list', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewList']);
     Route::post('lms-homework/review-detail/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewDetail']);
     Route::post('lms-homework/review-store', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewStore']);
+    // Re-run the AI marking on a submission that has not been signed off yet.
+    Route::post('lms-homework/review-reprocess/{id}', [\App\Http\Controllers\api\lms\HomeworkSubmissionApiController::class, 'reviewReprocess']);
 });
 
 // Generate homework from the question bank (teacher-only lookups feeding
@@ -451,6 +470,46 @@ Route::get('question-paper-templates/{id}', [QuestionPaperTemplateApiController:
 Route::post('question-paper-templates', [QuestionPaperTemplateApiController::class, 'store']);
 Route::match(['put', 'patch', 'post'], 'question-paper-templates/{id}', [QuestionPaperTemplateApiController::class, 'update']);
 Route::delete('question-paper-templates/{id}', [QuestionPaperTemplateApiController::class, 'destroy']);
+
+// "Exam Evaluation". Scanned answer sheets -- OMR/MCQ and written answer books
+// alike -- read, identified, scored against the paper's marking key, and held
+// for a teacher. `sheets/...` is declared before `batches/{id}` and
+// `answer-key/{paperId}` is its own prefix, so none of them swallow each other.
+// Nothing here writes to the gradebook except `batches/{id}/publish`, and that
+// reads teacher-approved marks only.
+Route::get('exam-evaluation/answer-key/{paperId}', [ExamEvaluationApiController::class, 'answerKey']);
+Route::get('exam-evaluation/sheets/{id}', [ExamEvaluationApiController::class, 'sheet']);
+Route::get('exam-evaluation/sheets/{id}/file', [ExamEvaluationApiController::class, 'file']);
+Route::post('exam-evaluation/sheets/{id}/review', [ExamEvaluationApiController::class, 'review']);
+Route::post('exam-evaluation/sheets/{id}/reprocess', [ExamEvaluationApiController::class, 'reprocess']);
+Route::delete('exam-evaluation/sheets/{id}', [ExamEvaluationApiController::class, 'destroySheet']);
+Route::get('exam-evaluation/batches', [ExamEvaluationApiController::class, 'index']);
+Route::post('exam-evaluation/batches', [ExamEvaluationApiController::class, 'store']);
+Route::get('exam-evaluation/batches/{id}', [ExamEvaluationApiController::class, 'show']);
+Route::post('exam-evaluation/batches/{id}/sheets', [ExamEvaluationApiController::class, 'uploadSheets']);
+Route::post('exam-evaluation/batches/{id}/publish', [ExamEvaluationApiController::class, 'publish']);
+Route::delete('exam-evaluation/batches/{id}', [ExamEvaluationApiController::class, 'destroy']);
+
+// "Blueprint". The DESIGN of a paper -- chapter weightage, question-type mix,
+// competency and difficulty split -- as opposed to `question-paper-templates`,
+// which is the LAYOUT of one. The two share a word and nothing else. Reference
+// designs (Delhi DoE, CBSE) come from AssessmentBlueprintPresets rather than
+// the table; `clone` is how a school turns one into something it can edit.
+// `chapters` and `clone` are declared before `{id}` so they are not swallowed.
+Route::get('assessment-blueprints/chapters', [AssessmentBlueprintApiController::class, 'chapters']);
+// A school's own HPC option lists — who may assess, which activity approaches
+// and evidence methods it uses, which Part A sections its cards carry. Absent
+// rows mean "follow the published NCERT list", per option type, so a school
+// only stores the lists it actually decided to change.
+Route::get('assessment-blueprints/hpc-options', [AssessmentBlueprintApiController::class, 'hpcOptions']);
+Route::post('assessment-blueprints/hpc-options', [AssessmentBlueprintApiController::class, 'saveHpcOptions']);
+Route::post('assessment-blueprints/hpc-options/reset', [AssessmentBlueprintApiController::class, 'resetHpcOptions']);
+Route::post('assessment-blueprints/clone', [AssessmentBlueprintApiController::class, 'clone']);
+Route::get('assessment-blueprints', [AssessmentBlueprintApiController::class, 'index']);
+Route::post('assessment-blueprints', [AssessmentBlueprintApiController::class, 'store']);
+Route::get('assessment-blueprints/{id}', [AssessmentBlueprintApiController::class, 'show']);
+Route::match(['put', 'patch', 'post'], 'assessment-blueprints/{id}', [AssessmentBlueprintApiController::class, 'update']);
+Route::delete('assessment-blueprints/{id}', [AssessmentBlueprintApiController::class, 'destroy']);
 // check_permissions reads session()->get('user_profile_id'/'sub_institute_id'/'user_id'),
 // so api.session (JWT-hydrated session) must run first for type=API requests.
 Route::middleware(['api.session', 'check_permissions'])->post('fees-cancel/search', [feesCancelController::class, 'search']);
@@ -602,6 +661,12 @@ Route::post('lms/concept-intelligence/tab-labels/reset', [\App\Http\Controllers\
 */
 Route::middleware('lms.auth')->group(function () {
     Route::get('lms/coherence-map', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'show']);
+
+    // Located by concept rather than by scope, so the map can be re-centred onto
+    // a prerequisite that lives in another grade. The client cannot name that
+    // scope in advance, so it sends the concept id and the controller resolves it.
+    Route::get('lms/coherence-map/concept/{conceptId}', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'showForConcept'])
+        ->where('conceptId', '[0-9]+');
 
     Route::middleware('perm:lms.curriculum,update')->group(function () {
         // Literal segment before the {source}/{id} pair, so "bulk" is never parsed

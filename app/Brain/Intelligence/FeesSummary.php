@@ -129,6 +129,27 @@ final class FeesSummary
             );
         }
 
+        // 6. Operational friction: payment failures
+        $failures = $this->fees->paymentFailures();
+        if ($failures['available'] && $failures['failureCount'] > 0) {
+            $sentences[] = sprintf(
+                '%s payment %s failed this year totaling %s across %s.',
+                number_format($failures['failureCount']),
+                $failures['failureCount'] === 1 ? 'attempt' : 'attempts',
+                Narrative::money($failures['failedAmount']),
+                $this->plural($failures['affectedAccounts'], 'account', 'accounts')
+            );
+        }
+
+        // 7. Gateway reconciliation gap
+        $recon = $this->fees->reconciliation();
+        if ($recon['available'] && $recon['reconciliationGapAmount'] > 0) {
+            $sentences[] = sprintf(
+                '%s in online gateway transactions remains unreconciled against ERP receipts.',
+                Narrative::money($recon['reconciliationGapAmount'])
+            );
+        }
+
         return [
             'available' => $sentences !== [],
             'reason' => $sentences === []
