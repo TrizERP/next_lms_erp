@@ -169,7 +169,7 @@ class MobileAppMenuRightsApiController extends Controller
         $openMode = strtolower(trim((string) ($row->open_mode ?? '')));
 
         return [
-            'render_type' => $renderType === 'webview' ? 'webview' : 'native',
+            'render_type' => in_array($renderType, ['webview', 'native_dynamic'], true) ? $renderType : 'native',
             'web_url' => (string) ($row->web_url ?? ''),
             'open_mode' => $openMode === 'external' ? 'external' : 'in_app',
         ];
@@ -466,13 +466,14 @@ class MobileAppMenuRightsApiController extends Controller
             'sub_title_icon' => 'nullable|string',
             'sub_title_sort_order' => 'nullable|integer',
             'status' => ['required', Rule::in(['Yes', 'No'])],
-            'render_type' => ['nullable', Rule::in(['native', 'webview'])],
-            // Only a WebView row needs a URL; a native row is addressed by
-            // its screen_name.
-            'web_url' => 'required_if:render_type,webview|nullable|string|max:2000',
+            'render_type' => ['nullable', Rule::in(['native', 'webview', 'native_dynamic'])],
+            // A WebView row needs a URL; a Native Dynamic row needs a
+            // page_key (see MobileDynamicPageApiController); a native row is
+            // addressed by its screen_name and needs neither.
+            'web_url' => 'required_if:render_type,webview,native_dynamic|nullable|string|max:2000',
             'open_mode' => ['nullable', Rule::in(['in_app', 'external'])],
         ], [
-            'web_url.required_if' => 'Web URL is required when render type is WebView.',
+            'web_url.required_if' => 'Web URL is required for this render type.',
         ]);
         if ($validator->fails()) {
             return $this->failure($validator->messages()->first(), 422, $validator->errors());
@@ -520,7 +521,7 @@ class MobileAppMenuRightsApiController extends Controller
             $renderType = (string) $request->input('render_type');
             $openMode = (string) $request->input('open_mode', 'in_app');
             $subData['render_type'] = $renderType;
-            $subData['web_url'] = $renderType === 'webview'
+            $subData['web_url'] = in_array($renderType, ['webview', 'native_dynamic'], true)
                 ? trim((string) $request->input('web_url', ''))
                 : null;
             $subData['open_mode'] = $renderType === 'webview' && $openMode === 'external'
