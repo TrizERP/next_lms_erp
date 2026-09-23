@@ -23,6 +23,9 @@ final class AcademicYear
     /** Memo per (tenant, requested) so one page load costs one lookup. */
     private static array $resolved = [];
 
+    /** Memo per (tenant, syear) for the date window. */
+    private static array $windows = [];
+
     /**
      * The year to answer with: the requested one when this institute has it,
      * otherwise the institute's current year, otherwise null (no year data —
@@ -55,6 +58,62 @@ final class AcademicYear
     public static function forget(): void
     {
         self::$resolved = [];
+        self::$windows = [];
+    }
+
+    /**
+     * The calendar dates an academic year actually spans, for the tables that
+     * carry a DATE rather than a `syear`.
+     *
+     * ── WHY THIS EXISTS ─────────────────────────────────────────────────────
+     *
+     * Most of the LMS is scoped by `syear`. Several tables that an Intelligence
+     * module genuinely needs are not: staff leave carries `from_date`, the punch
+     * register carries `day`, library circulation carries an issue date. Without
+     * this, a module has two bad choices — ignore the year entirely and report
+     * every year's rows under this year's heading, or invent its own convention
+     * for what "2025" means in dates, which is the second year mechanism the
+     * architecture forbids.
+     *
+     * The window is read from the institute's OWN `academic_year` rows: the
+     * earliest term start and the latest term end for that `syear`. A school
+     * whose year runs April to March gets April to March; one that runs June to
+     * May gets June to May. Nothing is assumed about either.
+     *
+     * Returns null when the institute has no rows for that year, and the caller
+     * must then say the data could not be year-scoped rather than quietly
+     * reporting every year at once.
+     *
+     * @return array{start:string,end:string}|null
+     */
+    public static function window(string $tenantId, ?string $syear): ?array
+    {
+        if ($syear === null || $syear === '' || ! SchemaCache::hasTable('academic_year')) {
+            return null;
+        }
+
+        $key = $tenantId.'|'.$syear;
+        if (array_key_exists($key, self::$windows)) {
+            return self::$windows[$key];
+        }
+
+        $row = DB::table('academic_year')
+            ->where('sub_institute_id', $tenantId)
+            ->where('syear', $syear)
+            ->selectRaw('MIN(start_date) as start_date, MAX(end_date) as end_date')
+            ->first();
+
+        $start = $row->start_date ?? null;
+        $end = $row->end_date ?? null;
+
+        if ($start === null || $end === null || $start === '0000-00-00' || $end === '0000-00-00') {
+            return self::$windows[$key] = null;
+        }
+
+        return self::$windows[$key] = [
+            'start' => (string) $start,
+            'end' => (string) $end,
+        ];
     }
 
     /**
