@@ -9,7 +9,6 @@ use function App\Helpers\is_mobile;
 use function App\Helpers\MappedStdDiv;
 use function App\Helpers\SearchStudent;
 use DB;
-use App\Services\PAL\Questions\ServableQuestions;
 
 class resultPersonalizeMarksController extends Controller
 {
@@ -155,16 +154,9 @@ class resultPersonalizeMarksController extends Controller
         ->where('lqm.standard_id', $standard_id)
         ->where('lqm.subject_id', $subject_id)
         ->where('lqm.chapter_id', $chapter_id)
-        ->groupBy(['lqm.id']);
-
-        // Same rule as the rest of PAL: a question belongs in a personalised
-        // marks paper when it has real options and a marked answer, not when it
-        // carries a particular type label. This admits assertion & reason and
-        // CBE items, which are auto-markable, and drops type-1 rows that have a
-        // single option. See App\Services\PAL\Questions\ServableQuestions.
-        ServableQuestions::constrain($result, 'lqm.id');
-
-        $result = $result->get();
+        ->where('lqm.question_type_id','1')
+        ->groupBy(['lqm.id'])
+        ->get();
 
         $all_questions = [];
         foreach ($result as $key => $value) {

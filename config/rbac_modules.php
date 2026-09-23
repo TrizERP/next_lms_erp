@@ -70,20 +70,6 @@ return [
             'links' => ['question_paper.index', 'content_master.index'],
         ],
 
-        // The gate on editing the Coherence Map: creating, approving, dismissing and
-        // deleting prerequisite relationships.
-        //
-        // Deliberately NOT folded into lms.content. That key is CONTENT_CREATE - the
-        // right to generate and upload material. Approving a `requires` edge is a
-        // different act: EsoPolicyService's D2 gate reads those edges to decide what a
-        // learner is allowed to reach next, so whoever holds this can change the order
-        // a curriculum is taught in. Someone who may upload a worksheet is not
-        // automatically someone who may re-sequence the syllabus.
-        'lms.curriculum' => [
-            'label' => 'LMS curriculum',
-            'links' => ['lms_curriculum.index', 'course-master/'],
-        ],
-
         /*
         | Platform services — Communication, Scheduler, Workflow.
         |

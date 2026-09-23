@@ -21,7 +21,7 @@
                 Concept Mastery Matrix
             </button>
             <button class="btn btn-success mr-2" onclick="$('#adaptivePracticeModal').modal('show')">
-               Concept Diagnostic
+               Adaptive Practice
             </button>
             @if(isset($data['exam_type']) && $data['exam_type']=="PAL")
             <a href="{{route('pal.index')}}" class="btn btn-primary">Back To PAL</a>
@@ -1751,7 +1751,7 @@ PHASE 3: ADAPTIVE PRACTICE UI (MODAL)
         <div class="modal-content">
             <div class="modal-header bg-success text-white d-flex justify-content-between align-items-center">
                 <h5 class="modal-title mb-0" id="adaptivePracticeModalLabel">
-                    <i class="mdi mdi-brain mr-2"></i>Concept Diagnostic
+                    <i class="mdi mdi-brain mr-2"></i>Adaptive Practice
                 </h5>
                 <div class="d-flex align-items-center">
                     <button class="btn btn-light btn-sm mr-2" onclick="startAdaptivePractice()">

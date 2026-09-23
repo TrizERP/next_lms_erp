@@ -44,7 +44,6 @@ use App\Http\Controllers\lms\questionWiseReportController;
 use App\Http\Controllers\bazar\bulkUploadSheetController;
 use App\Http\Controllers\bazar\bulkUploadedReportController;
 use App\Http\Controllers\lms\pal\palController;
-use App\Http\Controllers\lms\pal\PalFlowAdminController;
 use App\Http\Controllers\lms\pal\PalContentController;
 use App\Http\Controllers\lms\virtualclassroomController;
 use App\Http\Controllers\school_setup\sub_std_mapController;
@@ -159,66 +158,8 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     Route::resource('bulk_chapter_upload', bulk_chapter_uploadController::class);
     Route::get('ajax_SubjectwiseQuestion', [questionpaperController::class, 'ajax_SubjectwiseQuestion'])->name('ajax_SubjectwiseQuestion');
 
-    // PAL Learning Flow administration.
-    //
-    // Same ordering rule as the diagnostic routes below: this MUST stay above
-    // Route::resource('pal', ...) or the resource swallows /lms/pal/flow and
-    // hands it to pal.show as $pal = 'flow'.
-    //
-    // Not a learner surface. The controller refuses students outright, and only
-    // admins and the profiles in config/pal_flow.php guards.writer_profiles may
-    // change anything - staff may look.
-    Route::get('pal/flow', [PalFlowAdminController::class, 'index'])->name('pal.flow');
-    Route::post('pal/flow', [PalFlowAdminController::class, 'assign'])->name('pal.flow.assign');
-
-    // PAL Subject Diagnostic → Adaptive Learning (Web Routes)
-    //
-    // These MUST stay above Route::resource('pal', ...) below. The resource
-    // registers GET pal/{pal}, and Laravel matches in registration order, so a
-    // resource registered first swallows /lms/pal/diagnostic and hands it to
-    // pal.show as $pal = 'diagnostic'. The whereNumber('pal') on the resource
-    // guards the same thing from the other end.
-    //
-    // The diagnostic is CHAPTER scoped: a learner sits 15 MCQs drawn from one
-    // chapter, and the resulting level drives adaptive practice on the concepts
-    // belonging to that chapter.
-    Route::get('pal/diagnostic', [palController::class, 'diagnosticSubjects'])->name('pal.diagnostic.subjects');
-    Route::get('pal/diagnostic/chapter/{chapterId}', [palController::class, 'diagnosticStart'])->whereNumber('chapterId')->name('pal.diagnostic.start');
-    Route::post('pal/diagnostic/attempt/{attemptId}/submit', [palController::class, 'diagnosticSubmit'])->whereNumber('attemptId')->name('pal.diagnostic.submit');
-    Route::get('pal/diagnostic/attempt/{attemptId}/result', [palController::class, 'diagnosticResult'])->whereNumber('attemptId')->name('pal.diagnostic.result');
-    Route::get('pal/diagnostic/history/{chapterId}', [palController::class, 'diagnosticHistory'])->whereNumber('chapterId')->name('pal.diagnostic.history');
-
-    Route::get('pal/adaptive/chapter/{chapterId}', [palController::class, 'adaptiveConcepts'])->whereNumber('chapterId')->name('pal.adaptive.concepts');
-    Route::get('pal/adaptive/concept/{conceptId}', [palController::class, 'adaptiveQuestions'])->whereNumber('conceptId')->name('pal.adaptive.questions');
-    Route::post('pal/adaptive/answer', [palController::class, 'adaptiveAnswer'])->name('pal.adaptive.answer');
-    Route::get('pal/adaptive/progress/{conceptId}', [palController::class, 'adaptiveProgress'])->whereNumber('conceptId')->name('pal.adaptive.progress');
-    Route::get('pal/adaptive/concept-result/{conceptId}', [palController::class, 'adaptiveConceptResult'])->whereNumber('conceptId')->name('pal.adaptive.conceptResult');
-
-    // Stage 5 of the journey. GET only, and deliberately so: the plan is a
-    // projection over stored evidence, not a stored document, so there is
-    // nothing for a learner to edit and no write route to reach.
-    Route::get('pal/plan/chapter/{chapterId}', [palController::class, 'learningPlan'])->whereNumber('chapterId')->name('pal.plan.chapter');
-
-    // Stages 10 and 11. Both are pure reads: mastery reconciles what is already
-    // stored, and the recall queue reports the engine's own next_review_at
-    // rather than scheduling anything itself.
-    Route::get('pal/mastery/chapter/{chapterId}', [palController::class, 'masteryOverview'])->whereNumber('chapterId')->name('pal.mastery.chapter');
-    Route::get('pal/recall', [palController::class, 'recallQueue'])->name('pal.recall.queue');
-
-    // Stage 6. Strictly read-only: it serves the same material the engine's
-    // teach screen does, but stamps nothing and moves nobody. That is what lets
-    // "Learn it" reliably open a lesson without letting the client drive the
-    // engine - see palController::learnContent().
-    Route::get('pal/learn/concept/{conceptId}', [palController::class, 'learnContent'])->whereNumber('conceptId')->name('pal.learn.concept');
-
-    // POST, because it is the one thing on the Learn screen that changes state:
-    // it tells the engine the lesson was read, so the next resolve stops serving
-    // `teach` and the learner is not shown a second lesson screen they have
-    // already worked through.
-    Route::post('pal/learn/concept/{conceptId}/read', [palController::class, 'learnAcknowledge'])->whereNumber('conceptId')->name('pal.learn.acknowledge');
-
     // palController
-    Route::resource('pal', palController::class)->whereNumber('pal');
+    Route::resource('pal', palController::class);
     Route::get('palreport',[palController::class,'palreport'])->name('palreport.index');
     Route::get('suggested-content', [palController::class, 'suggestedContent'])->name('pal.suggestedContent');
     Route::get('get-suggested-content', [palController::class, 'getSuggestedContent'])->name('pal.getSuggestedContent');

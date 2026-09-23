@@ -28,23 +28,8 @@ class LearnerNodeState extends Model
         'attempts', 'consecutive_correct', 'practice_mode', 'hint_used_count',
         'status', 'active_misconception_id', 'last_seen_at', 'next_review_at',
         'retention_stage', 'taught_at', 'cfu_passed_at', 'cfu_attempts',
-        // The flow version this node was STARTED under. Stamped once, at
-        // creation, and never on update.
-        //
-        // It has to be here or the stamp silently does nothing: firstOrCreate()
-        // filters its attributes through $fillable, so an unlisted key is
-        // dropped without error and every row comes back with a null pin.
-        'flow_version_id',
     ];
 
-    /**
-     * flow_version_id is deliberately NOT cast to integer.
-     *
-     * NULL is a meaningful value for it — "this node predates flow
-     * versioning" — and an integer cast would render that as 0, which is a
-     * version id that does not exist. Every reader treats it as nullable and
-     * means it.
-     */
     protected $casts = [
         'mastery_estimate' => 'float',
         'attempts' => 'integer',

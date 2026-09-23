@@ -2,7 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\api\PAL\CoherenceMapController;
-use App\Http\Controllers\api\PAL\ConceptVideoController;
 use App\Http\Controllers\api\PAL\NewPalContentModelController;
 use App\Http\Controllers\api\PAL\NewPalGamificationController;
 use App\Http\Controllers\api\PAL\PALAPIController;
@@ -249,25 +248,6 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
 
         // Literal route must remain before the {nodeKey} wildcard.
         Route::post('/nodes/bulk-transition', [NewPalContentModelController::class, 'bulkTransition']);
-
-        /*
-         * Concept videos — what PAL offers on a reteach.
-         *
-         * Keyed on lms_concept.id rather than a node key, because a node key
-         * needs a semantic_intelligence row and most chapters carrying
-         * concepts have never been extracted. Literal `bulk-transition` stays
-         * ahead of the numeric wildcards for the same reason as above.
-         */
-        Route::get('/concept-videos', [ConceptVideoController::class, 'index']);
-        Route::post('/concept-videos/bulk-transition', [ConceptVideoController::class, 'bulkTransition']);
-        Route::get('/concept-videos/{conceptId}', [ConceptVideoController::class, 'show'])
-            ->where('conceptId', $numericId);
-        Route::post('/concept-videos/{conceptId}', [ConceptVideoController::class, 'store'])
-            ->where('conceptId', $numericId);
-        Route::post('/concept-videos/{conceptId}/search', [ConceptVideoController::class, 'search'])
-            ->where('conceptId', $numericId);
-        Route::post('/concept-videos/{videoId}/transition', [ConceptVideoController::class, 'transition'])
-            ->where('videoId', $numericId);
 
         Route::get('/nodes/{nodeKey}', [NewPalContentModelController::class, 'node'])
             ->where('nodeKey', $nodeKey);

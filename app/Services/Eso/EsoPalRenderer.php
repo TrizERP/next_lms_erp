@@ -74,56 +74,42 @@ class EsoPalRenderer
      */
     protected static function learningMaterialLine(?array $content): string
     {
-        if ($content === null) {
+        $body = trim((string) ($content['body'] ?? ''));
+        if ($content === null || $body === '') {
             return '';
         }
 
-        $body = trim((string) ($content['body'] ?? ''));
-        $mediaUrl = $content['media_url'] ?? null;
+        $line = 'Base the explanation ONLY on this approved material for the concept, and do not add facts it does not contain: '
+            . strip_tags($body);
 
-        // The two clauses are independent. They used to share a single early
-        // return on an empty body, which meant a media-only payload — a video
-        // with no accompanying text, the common shape now that the reteach
-        // step can serve one — told Pal nothing at all. Pal would then explain
-        // in text as though no player were on screen, talking over it.
-        $parts = [];
-
-        if ($body !== '') {
-            $parts[] = 'Base the explanation ONLY on this approved material for the concept, and do not add facts it does not contain: '
-                . strip_tags($body);
+        // An authored asset is shown to the student alongside the text, so Pal
+        // must introduce it rather than duplicate what it contains.
+        if (($content['media_url'] ?? null) !== null) {
+            $line .= ' The student is also being shown a ' . ($content['format_label'] ?? 'resource')
+                . ' alongside this — point them at it briefly, do not describe its contents.';
         }
 
-        if ($mediaUrl !== null) {
-            $label = $content['format_label'] ?? 'resource';
-
-            $parts[] = $body !== ''
-                ? 'The student is also being shown a ' . $label
-                    . ' alongside this — point them at it briefly, do not describe its contents.'
-                : 'The student is being shown a ' . $label
-                    . ' on this screen — point them at it briefly and let it do the explaining, '
-                    . 'do not describe its contents or re-teach the material in text.';
-        }
-
-        return implode(' ', $parts);
+        return $line;
     }
 
-    /*
-     * There is deliberately NO checkUnderstandingInstruction() any more.
+    /**
+     * The Check-For-Understanding gate, served immediately after teaching and
+     * before any scored practice.
      *
-     * The Check step used to open with a Pal-rendered preamble built from an
-     * instruction that asked the model to say, in so many words, that this was
-     * "a quick check to see whether the explanation landed, not a graded test"
-     * and that getting one wrong was no problem. Removed as a product decision:
-     * the check now sits AFTER practice (see EsoPolicyService's note on
-     * teachOrPracticeAction), so it is a verdict on work already done, and
-     * telling the learner up front that it does not count invited them to
-     * coast through the one step that decides whether they are re-taught.
-     *
-     * Nothing about the MECHANISM changed - recordCheckUnderstanding() still
-     * records no mastery evidence - only that the engine no longer narrates it.
-     * checkUnderstandingAction() now returns a null llm_instruction, which the
-     * client already handles by rendering no preamble at all.
+     * This is deliberately framed as a check, not as practice: the answers do
+     * not move mastery_estimate, attempts or consecutive_correct (see
+     * EsoPolicyService::recordCheckUnderstanding()), so Pal must not present
+     * it as a test the student can fail their way out of the concept with.
      */
+    public static function checkUnderstandingInstruction(ConceptNode $node, int $itemCount): string
+    {
+        $lines = [];
+        $lines[] = sprintf('The student has just been taught %s: %s and is about to answer a short check of understanding (%d question(s)).', $node->node_type, $node->label, $itemCount);
+        $lines[] = 'In one or two sentences, tell them this is a quick check to see whether the explanation landed, not a graded test, and that getting one wrong just means we explain it a different way.';
+        $lines[] = 'Do not re-teach the material here, and do not reveal or hint at any answer.';
+
+        return implode(' ', $lines);
+    }
 
     /**
      * The "not understood" branch of CFU: re-explain the SAME node a different
