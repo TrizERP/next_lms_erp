@@ -4,6 +4,11 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use App\Services\PAL\Administration\ArchitectureHealthService;
+use App\Domain\Eso\Flow\EsoFlowPipeline;
+use App\Domain\Eso\Flow\EsoFlowStageRegistry;
+use App\Services\PAL\Flow\EsoFlowRegistry;
+use App\Services\PAL\Flow\EsoFlowResolver;
+use App\Services\PAL\Flow\EsoFlowValidator;
 use App\Services\PAL\Administration\ArchitectureRegistry;
 use App\Services\PAL\Runtime\PalEvidenceRepository;
 use App\Services\PAL\Runtime\SubsystemRuntime;
@@ -203,6 +208,65 @@ class PALServiceProvider extends ServiceProvider
             return new SubsystemRuntime(
                 $app->make(PalEvidenceRepository::class),
                 $app->make(ArchitectureRegistry::class)
+            );
+        });
+
+        // Flow - the per-institute learning-flow control plane.
+        //
+        // NOTHING CALLS THESE YET. They are registered at rollout step 2 so the
+        // catalogue, the tier rules and the resolution order can be reviewed
+        // and tested while the engine is untouched; nextAction() starts
+        // consulting them at step 3, behind a config flag that defaults to the
+        // legacy cascade.
+        //
+        // The registry is handed CLASS NAMES, never stage instances, and
+        // resolves them through the container on first use. That is a
+        // container-safety requirement rather than a style choice:
+        // constructing stages here would drag EsoPolicyService into provider
+        // registration and reopen the resolution cycle documented at lines
+        // 94-100 above.
+        $this->app->singleton(EsoFlowStageRegistry::class, function () {
+            $classes = [];
+
+            foreach ((array) config('pal_flow.stages', []) as $key => $stage) {
+                if (isset($stage['handler'])) {
+                    $classes[(string) $key] = (string) $stage['handler'];
+                }
+            }
+
+            return new EsoFlowStageRegistry($classes);
+        });
+
+        // Both bound per request rather than as singletons: the resolver
+        // memoises resolved plans for the life of a request, and a singleton
+        // would serve a stale flow inside a queue worker after an
+        // administrator republished a profile - the same reasoning
+        // ArchitectureHealthService records above.
+        $this->app->bind(EsoFlowValidator::class, function ($app) {
+            return new EsoFlowValidator(
+                $app->make(EsoFlowStageRegistry::class)
+            );
+        });
+
+        // The database half. Bound per request because it memoises lookups,
+        // and an assignment published mid-queue-run must not be served stale.
+        $this->app->bind(EsoFlowRegistry::class, function () {
+            return new EsoFlowRegistry();
+        });
+
+        $this->app->bind(EsoFlowResolver::class, function ($app) {
+            return new EsoFlowResolver(
+                $app->make(EsoFlowValidator::class),
+                $app->make(EsoFlowRegistry::class)
+            );
+        });
+
+        // The pipeline walks a resolved plan. It depends only on the stage
+        // registry, which holds class names - so NodeLoopStage can depend on
+        // the pipeline in turn without a cycle.
+        $this->app->bind(EsoFlowPipeline::class, function ($app) {
+            return new EsoFlowPipeline(
+                $app->make(EsoFlowStageRegistry::class)
             );
         });
     }

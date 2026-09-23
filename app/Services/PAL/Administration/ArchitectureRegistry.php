@@ -4,6 +4,7 @@ namespace App\Services\PAL\Administration;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use App\Services\PAL\Support\SettingCoercer;
 use InvalidArgumentException;
 
 /**
@@ -416,68 +417,26 @@ class ArchitectureRegistry
     }
 
     /** One field or column value, coerced and range-checked against its descriptor. */
+    /**
+     * Coerce and bounds-check one submitted value.
+     *
+     * The implementation moved to App\Services\PAL\Support\SettingCoercer so
+     * that EsoFlowValidator applies the identical rules. Two admin surfaces
+     * that both accept "a number between 1 and 5" must agree on what that
+     * means; one implementation guarantees it, two careful ones do not.
+     *
+     * Kept as a private method rather than replacing every call site, so no
+     * call site of this class changes.
+     *
+     * ArchitectureRegistry has NO test coverage of its own (checked), so the
+     * extraction is guarded by tests/Unit/Pal/SettingCoercerTest.php instead,
+     * which pins the coercion rules directly. Worth knowing before changing
+     * anything else in this class: the safety net here is thinner than it
+     * looks.
+     */
     private function coerce(array $descriptor, mixed $raw, mixed $fallback, string $label): mixed
     {
-        $type = (string) ($descriptor['type'] ?? 'text');
-
-        switch ($type) {
-            case 'toggle':
-                return $raw === true || $raw === 1 || $raw === '1' || $raw === 'true';
-
-            case 'number':
-                if (! is_numeric($raw)) {
-                    throw new InvalidArgumentException("{$label} must be a number.");
-                }
-                $number = (float) $raw;
-
-                if (isset($descriptor['min']) && $number < (float) $descriptor['min']) {
-                    throw new InvalidArgumentException("{$label} cannot be below {$descriptor['min']}.");
-                }
-                if (isset($descriptor['max']) && $number > (float) $descriptor['max']) {
-                    throw new InvalidArgumentException("{$label} cannot be above {$descriptor['max']}.");
-                }
-
-                // Keep integers integral so a round-trip does not turn 3 into 3.0.
-                $isIntegral = ! isset($descriptor['step']) || fmod((float) $descriptor['step'], 1.0) === 0.0;
-
-                return $isIntegral && fmod($number, 1.0) === 0.0 ? (int) $number : $number;
-
-            case 'select':
-                $options = array_map('strval', (array) ($descriptor['options'] ?? []));
-                $choice = (string) $raw;
-                if (! in_array($choice, $options, true)) {
-                    throw new InvalidArgumentException("{$label} must be one of: " . implode(', ', $options) . '.');
-                }
-
-                return $choice;
-
-            case 'tags':
-                if (! is_array($raw)) {
-                    throw new InvalidArgumentException("{$label} must be a list.");
-                }
-                $tags = [];
-                foreach ($raw as $tag) {
-                    $tag = trim((string) $tag);
-                    if ($tag !== '') {
-                        $tags[] = mb_substr($tag, 0, 64);
-                    }
-                }
-
-                return array_values(array_unique($tags));
-
-            case 'code':
-            case 'text':
-            default:
-                $text = trim((string) $raw);
-                if (mb_strlen($text) > 1000) {
-                    throw new InvalidArgumentException("{$label} is too long (1000 characters maximum).");
-                }
-
-                // An empty string is a legitimate "inherit the default" for the
-                // optional per-agent model pin, so it is kept rather than
-                // replaced by the fallback.
-                return $text === '' && $fallback === null ? '' : $text;
-        }
+        return SettingCoercer::coerce($descriptor, $raw, $fallback, $label);
     }
 
     // ══════════════════════════════════════════════════════════════════════
