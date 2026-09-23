@@ -94,6 +94,15 @@ Route::middleware('api.session')->get('own-profile', [\App\Http\Controllers\api\
 // `api.session` validates the JWT and hydrates the session the controller
 // reads its identity from -- see MobileWebHandoffApiController.
 Route::middleware('api.session')->post('mobile/web-handoff', [\App\Http\Controllers\api\MobileWebHandoffApiController::class, 'create']);
+
+// Redeems a ticket for a page on a TRUSTED CROSS-ORIGIN frontend (e.g.
+// lms_k12), returning its identity as JSON instead of a Laravel session
+// cookie -- see MobileWebHandoffApiController's class doc. Deliberately
+// outside `api.session`: the caller has no session yet, by definition. The
+// ticket itself, single-use and short-lived, is what authenticates this
+// call, and CORS (config/cors.php) is what lets that other origin's JS call
+// it at all.
+Route::get('mobile/web-handoff/claims', [\App\Http\Controllers\api\MobileWebHandoffApiController::class, 'claims']);
 Route::middleware('api.session')->prefix('hrms')->group(function () {
     Route::get('today', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'today']);
     Route::post('punch', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'punch']);
