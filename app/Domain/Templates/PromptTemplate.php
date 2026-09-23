@@ -32,6 +32,14 @@ final class PromptTemplate
         public readonly array $safetyRules = [],
         public readonly bool $allowAsEvidence = false,
         public readonly bool $requiresReview = false,
+        /**
+         * The `ai_modules` key this template belongs to, from `ai_templates.module_key`.
+         *
+         * Carried on the DTO so a generation knows which PRODUCT module it is for, and
+         * can therefore honour a model that module chose on its own AI Stack. Null for a
+         * shared template that belongs to no single module, which resolves centrally.
+         */
+        public readonly ?string $moduleKey = null,
     ) {
     }
 
@@ -56,6 +64,9 @@ final class PromptTemplate
             safetyRules: self::decode($row->safety_rules ?? null),
             allowAsEvidence: (bool) ($row->allow_as_evidence ?? false),
             requiresReview: (bool) ($row->requires_review ?? false),
+            moduleKey: isset($row->module_key) && trim((string) $row->module_key) !== ''
+                ? (string) $row->module_key
+                : null,
         );
     }
 

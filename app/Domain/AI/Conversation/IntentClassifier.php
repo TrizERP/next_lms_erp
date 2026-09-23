@@ -346,6 +346,86 @@ class IntentClassifier
             'slots' => [],
         ],
 
+        /*
+        | An admission question that wants the agent, not a table read.
+        |
+        | Deliberately a separate key rather than a mode of `admission_enquiry_list`, for
+        | exactly the reason `fees_risk_scan` is separate from `fees_query`. Listing the
+        | enquiries is answered by reading `admissions.listEnquiries`, and making that
+        | route claim an agent run would drop the tool and answer worse. This key is for
+        | the other kind of admission question: the one that asks the platform to
+        | *analyse* rather than list, and so needs a case opened, the recorded follow-up
+        | date cited as evidence, and a follow-up drafted for a person to approve.
+        |
+        | WHY IT HAD TO EXIST
+        |
+        | Without it, "analyse the pending admission enquiries and identify which
+        | applicants need follow-up" scored as `admission_enquiry_list` on the bare words
+        | "admission" and "enquiries", and came back as a list of ten rows with the Agent
+        | rung reported as not needed. The agent was registered, bound and runnable from
+        | the AI Stack, and no typed sentence could reach it — which is the same gap
+        | `attendance_risk_scan` was added to close for the register.
+        |
+        | The anchors all name admissions, so a fee or attendance sentence cannot land
+        | here; and `DeterministicPlanner::plan()` still declines the agent route outright
+        | for a module with no verified agent, so this key is inert on an estate that has
+        | not registered `k12_admissions`.
+        */
+        'admission_followup_scan' => [
+            'label' => 'Analyse admission follow-ups',
+            'description' => 'Runs the admissions agent across the enquiries in scope: opens a case per '
+                . 'enquiry past the follow-up date the school recorded for it, cites that date and what '
+                . 'the confirmation check still wants, and drafts a follow-up for approval.',
+            'anchors' => ['admission', 'admissions', 'enquiry', 'enquiries', 'applicant', 'applicants'],
+            'signals' => [
+                'admission follow-up' => 5.0, 'admission follow up' => 5.0,
+                'enquiry follow-up' => 5.0, 'enquiry follow up' => 5.0,
+                // These weights are what separate this key from `admission_enquiry_list`,
+                // and they are deliberately higher than the equivalents on the other scan
+                // intents. Both admission keys share every anchor — "admission",
+                // "enquiry", "applicant" — so the anchors cannot break the tie and the
+                // verbs have to. None of these words appears in `admission_enquiry_list`
+                // at all, so raising them can only ever move an *analyse* sentence; a
+                // "show me the enquiries" sentence scores zero on all of them and is
+                // unaffected. Measured: analyse-and-follow-up 30.5 here against 28.0
+                // there, and "show me the admission enquiries" 1.0 here against 13.5.
+                'follow-up' => 4.5, 'follow up' => 4.5, 'chase' => 3.5, 'chased' => 3.5,
+                'stalled' => 4.5, 'gone quiet' => 4.5, 'no response' => 3.5,
+                'overdue' => 4.0, 'not come back' => 4.0, 'never replied' => 4.0,
+                'need attention' => 3.0, 'needs attention' => 3.0,
+                'analyse' => 4.0, 'analyze' => 4.0, 'assess' => 4.0, 'scan' => 4.0,
+                'at risk' => 3.0, 'at-risk' => 3.0, 'review' => 1.5, 'identify' => 1.5,
+                'which' => 1.0, 'who' => 1.0,
+            ],
+            'patterns' => [
+                // The sentence this key exists for: analyse, over admissions.
+                '/\b(analyse|analyze|assess|scan|review|flag)\b.{0,40}\b(admission|admissions|enquir|applicant)/i',
+                // And the follow-up phrasings, either way round.
+                '/\b(admission|enquir|applicant)\w*\b.{0,30}\bfollow[\s-]?up\b/i',
+                '/\bfollow[\s-]?up\b.{0,30}\b(admission|enquir|applicant)/i',
+                '/\b(admission|enquir|applicant)\w*\b.{0,25}\b(overdue|stalled|gone quiet|no response)\b/i',
+                '/\b(overdue|stalled)\b.{0,25}\b(admission|enquir|applicant)/i',
+                // "…enquiries that require follow-up", with or without a leading question
+                // word. The earlier version demanded "which/who/what" first and so missed
+                // every imperative phrasing — "Find the enquiries that require follow-up".
+                '/\b(admission|enquir|applicant)\w*\b.{0,40}\b(need|needs|require|requires|requiring|awaiting|waiting)\b.{0,20}\bfollow/i',
+                // "Which admission enquiries have gone quiet?" — the question word is far
+                // from the phrase that makes it an analysis, so the two are matched
+                // together rather than relying on either alone.
+                '/\b(which|what|who)\b.{0,45}\b(gone quiet|no response|not responded|unanswered|overdue|stalled)\b/i',
+                // All three elements at once: a question word, an admission noun, and a
+                // phrase that asks about the state of the follow-up rather than for a
+                // list. `admission_enquiry_list` carries two patterns that both fire on
+                // any "which … enquiries" sentence, which is correct for it and is why a
+                // question like "which admission enquiries need follow-up?" needed a
+                // match this specific to be recognised as the analysis it is. Nothing
+                // without all three parts can reach it, so "show me the enquiries" is
+                // untouched.
+                '/\b(which|what|who)\b.{0,40}\b(admission|enquir|applicant)\w*\b.{0,40}\b(gone quiet|no response|not responded|unanswered|overdue|stalled|follow[\s-]?up|chas(e|ing|ed))\b/i',
+            ],
+            'slots' => [],
+        ],
+
         'admission_enquiry_list' => [
             'label' => 'List admission enquiries',
             'description' => 'Shows the admission enquiries on record and which are still pending.',

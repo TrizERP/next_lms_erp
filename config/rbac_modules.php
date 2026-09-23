@@ -136,6 +136,283 @@ return [
             'links' => ['ai_agents.attendance', 'ai_agents'],
         ],
 
+        /*
+        | The keys the Admission and Student AI Stacks' Automations tabs ask for.
+        |
+        | `agents.admissions` and `agents.students`, plural, because the key is
+        | `agents.<ai_modules key>` and those modules are keyed `admissions` and
+        | `students` — the same spelling `AGENT_MODULES` in the frontend registry uses,
+        | so `rbacModuleKey(module)` and this file cannot drift apart.
+        |
+        | Their rows are created by
+        | database/migrations/2026_09_21_100300_add_admission_and_student_ai_agent_menu_rows.php,
+        | which also mirrors whatever grants `ai_agents.fees` carries. Until that has run,
+        | both fall through to the `ai_agents` parent, and if that is absent too they
+        | resolve to null and deny — which is the correct failure. This file grants nothing.
+        */
+        'agents.admissions' => [
+            'label' => 'AI agents — Admission',
+            'links' => ['ai_agents.admissions', 'ai_agents'],
+        ],
+
+        'agents.students' => [
+            'label' => 'AI agents — Student',
+            'links' => ['ai_agents.students', 'ai_agents'],
+        ],
+
+        /*
+        | The keys the Exam, PTM, Hostel, Student Request and Circular AI Stacks'
+        | Automations tabs ask for.
+        |
+        | Each is `agents.<ai_modules key>`, which is the same spelling `AGENT_MODULES` in
+        | the frontend registry uses, so `rbacModuleKey(module)` and this file cannot drift
+        | apart. `student_request` and `circular` are singular here because that is how the
+        | modules are keyed in `ai_modules`; `agents.students` a few lines up is a different
+        | module and is left exactly as it is.
+        |
+        | Their rows are created by
+        | database/migrations/2026_09_22_100300_add_five_module_ai_agent_menu_rows.php,
+        | which also mirrors whatever grants `ai_agents.fees` carries. Until that has run
+        | they fall through to the `ai_agents` parent, and if that is absent too they
+        | resolve to null and deny — which is the correct failure. This file grants nothing.
+        */
+        'agents.exam' => [
+            'label' => 'AI agents — Exam',
+            'links' => ['ai_agents.exam', 'ai_agents'],
+        ],
+
+        'agents.ptm' => [
+            'label' => 'AI agents — PTM',
+            'links' => ['ai_agents.ptm', 'ai_agents'],
+        ],
+
+        'agents.hostel' => [
+            'label' => 'AI agents — Hostel',
+            'links' => ['ai_agents.hostel', 'ai_agents'],
+        ],
+
+        'agents.student_request' => [
+            'label' => 'AI agents — Student request',
+            'links' => ['ai_agents.student_request', 'ai_agents'],
+        ],
+
+        'agents.circular' => [
+            'label' => 'AI agents — Circular',
+            'links' => ['ai_agents.circular', 'ai_agents'],
+        ],
+
+        /*
+        | The keys the six AI Stacks added in 2026-09-23 ask for.
+        |
+        | `agents.easy_com` is spelled for the `ai_modules` key, not for the menu slug
+        | `communication` — the key is always `agents.<ai_modules key>`, which is what
+        | `rbacModuleKey(module)` builds in the frontend registry, so the two cannot drift.
+        |
+        | `agents.student_medical` is registered like the rest and grants nothing by
+        | itself. Whether anybody may operate Student Medical AI remains a decision an
+        | administrator makes in Group-wise Rights against that row, and the tools behind
+        | it carry their own `student_medical.read` permission besides.
+        |
+        | Their rows are created by
+        | database/migrations/2026_09_23_100300_add_six_module_ai_agent_menu_rows.php.
+        | Until that has run they fall through to the `ai_agents` parent, and if that is
+        | absent too they resolve to null and deny — the correct failure.
+        */
+        'agents.mobile_apps' => [
+            'label' => 'AI agents — Users Mobile Apps',
+            'links' => ['ai_agents.mobile_apps', 'ai_agents'],
+        ],
+
+        'agents.student_icard' => [
+            'label' => 'AI agents — Student I-Card',
+            'links' => ['ai_agents.student_icard', 'ai_agents'],
+        ],
+
+        'agents.certificate' => [
+            'label' => 'AI agents — Certificate',
+            'links' => ['ai_agents.certificate', 'ai_agents'],
+        ],
+
+        'agents.easy_com' => [
+            'label' => 'AI agents — Communication',
+            'links' => ['ai_agents.easy_com', 'ai_agents'],
+        ],
+
+        'agents.timetable' => [
+            'label' => 'AI agents — Time Table',
+            'links' => ['ai_agents.timetable', 'ai_agents'],
+        ],
+
+        'agents.student_medical' => [
+            'label' => 'AI agents — Student Medical',
+            'links' => ['ai_agents.student_medical', 'ai_agents'],
+        ],
+
+        /*
+        | The keys the six AI Stacks added in 2026-09-24 ask for.
+        |
+        | Two of them are spelled for a key that predates this work: Inward is
+        | `agents.inward_outward` and Transport is `agents.transportation`, because those
+        | are the `ai_modules` keys those modules have always had and the key is always
+        | `agents.<ai_modules key>`. Spelling either of them for the menu slug — `inward`,
+        | `transport` — would name a right the frontend never asks for, so the Automations
+        | tab would deny everybody on a module that is correctly configured.
+        |
+        | Their rows are created by
+        | database/migrations/2026_09_24_100300_add_six_more_module_ai_agent_menu_rows.php.
+        | Until that has run they fall through to the `ai_agents` parent, and if that is
+        | absent too they resolve to null and deny — the correct failure.
+        */
+        'agents.inward_outward' => [
+            'label' => 'AI agents — Inward',
+            'links' => ['ai_agents.inward_outward', 'ai_agents'],
+        ],
+
+        'agents.user_icard' => [
+            'label' => 'AI agents — User I-Card',
+            'links' => ['ai_agents.user_icard', 'ai_agents'],
+        ],
+
+        'agents.petty_cash' => [
+            'label' => 'AI agents — Petty Cash',
+            'links' => ['ai_agents.petty_cash', 'ai_agents'],
+        ],
+
+        'agents.consent' => [
+            'label' => 'AI agents — Consent',
+            'links' => ['ai_agents.consent', 'ai_agents'],
+        ],
+
+        'agents.visitor_management' => [
+            'label' => 'AI agents — Visitor Management',
+            'links' => ['ai_agents.visitor_management', 'ai_agents'],
+        ],
+
+        'agents.transportation' => [
+            'label' => 'AI agents — Transport',
+            'links' => ['ai_agents.transportation', 'ai_agents'],
+        ],
+
+        /*
+        | The keys the six AI Stacks added in 2026-09-25 ask for.
+        |
+        | Four of them are spelled for keys that predate this work — `inventory`,
+        | `front_desk`, `document-templates` and `migration-modules` — because the key is
+        | always `agents.<ai_modules key>`. Two of those carry a HYPHEN, which is unusual
+        | here and is not a typo: `document-templates` and `migration-modules` are spelled
+        | that way in `ai_modules` and `rbacModuleKey()` builds the right from the key
+        | verbatim. Writing either with an underscore would name a right nobody holds.
+        |
+        | `agents.migration-modules` is the Utility module's right. The module is keyed
+        | `migration-modules` because that row has claimed `/Utility/**` since the
+        | workspace was seeded; its menu slug is `utility`.
+        |
+        | Their rows are created by
+        | database/migrations/2026_09_25_100300_add_final_six_module_ai_agent_menu_rows.php.
+        | Until that has run they fall through to the `ai_agents` parent, and if that is
+        | absent too they resolve to null and deny — the correct failure.
+        */
+        'agents.inventory' => [
+            'label' => 'AI agents — Inventory',
+            'links' => ['ai_agents.inventory', 'ai_agents'],
+        ],
+
+        'agents.front_desk' => [
+            'label' => 'AI agents — Front Desk',
+            'links' => ['ai_agents.front_desk', 'ai_agents'],
+        ],
+
+        'agents.task_management' => [
+            'label' => 'AI agents — Task Management',
+            'links' => ['ai_agents.task_management', 'ai_agents'],
+        ],
+
+        'agents.complaint' => [
+            'label' => 'AI agents — Complaint',
+            'links' => ['ai_agents.complaint', 'ai_agents'],
+        ],
+
+        'agents.migration-modules' => [
+            'label' => 'AI agents — Utility',
+            'links' => ['ai_agents.migration-modules', 'ai_agents'],
+        ],
+
+        'agents.document-templates' => [
+            'label' => 'AI agents — Document Templates',
+            'links' => ['ai_agents.document-templates', 'ai_agents'],
+        ],
+
+        /*
+        | The last six keys, added 2026-09-26. `user`, `sqaa`, `library`, `lms` and
+        | `institute` have had `ai_modules` rows since the workspace was seeded and were
+        | simply never given a stack; `parent_communication` is new. Their rows are
+        | created by 2026_09_26_100300.
+        */
+        'agents.parent_communication' => [
+            'label' => 'AI agents — Parent Communication',
+            'links' => ['ai_agents.parent_communication', 'ai_agents'],
+        ],
+
+        'agents.sqaa' => [
+            'label' => 'AI agents — Quality assurance',
+            'links' => ['ai_agents.sqaa', 'ai_agents'],
+        ],
+
+        'agents.user' => [
+            'label' => 'AI agents — Users',
+            'links' => ['ai_agents.user', 'ai_agents'],
+        ],
+
+        'agents.library' => [
+            'label' => 'AI agents — Library',
+            'links' => ['ai_agents.library', 'ai_agents'],
+        ],
+
+        'agents.lms' => [
+            'label' => 'AI agents — Learning',
+            'links' => ['ai_agents.lms', 'ai_agents'],
+        ],
+
+        'agents.institute' => [
+            'label' => 'AI agents — Institute',
+            'links' => ['ai_agents.institute', 'ai_agents'],
+        ],
+
+        /*
+        | The keys the five LMS + PAL AI Stacks ask for.
+        |
+        | Their rows are created by
+        | database/migrations/2026_09_28_100300_add_lms_pal_module_ai_agent_menu_rows.php,
+        | which mirrors whatever grants `ai_agents.fees` carries, the same as every batch
+        | above. `teach_learn`, `curriculum_planning`, `engagement`, `interactions` and
+        | `new_pal` are the `ai_modules` keys those five migrations use — none of them had
+        | an `ai_modules` row before this batch.
+        */
+        'agents.teach_learn' => [
+            'label' => 'AI agents — Teach/Learn',
+            'links' => ['ai_agents.teach_learn', 'ai_agents'],
+        ],
+
+        'agents.curriculum_planning' => [
+            'label' => 'AI agents — Curriculum Planning',
+            'links' => ['ai_agents.curriculum_planning', 'ai_agents'],
+        ],
+
+        'agents.engagement' => [
+            'label' => 'AI agents — Engagement',
+            'links' => ['ai_agents.engagement', 'ai_agents'],
+        ],
+
+        'agents.interactions' => [
+            'label' => 'AI agents — Interactions',
+            'links' => ['ai_agents.interactions', 'ai_agents'],
+        ],
+
+        'agents.new_pal' => [
+            'label' => 'AI agents — New PAL',
+            'links' => ['ai_agents.new_pal', 'ai_agents'],
+        ],
+
         'platform.notification' => [
             'label' => 'Platform services — Communication',
             'links' => ['platform_services.notification', 'platform_services'],

@@ -137,7 +137,10 @@ class AiPolicyController extends AiController
             $id = DB::table('ai_policies')->insertGetId([
                 'sub_institute_id' => $institute,
                 'name' => trim($data['name']),
-                'description' => $data['description'] !== null ? trim($data['description']) : null,
+                // Coalesced, not just null-checked: `description` is `nullable` in the rules, so a
+                // valid request may omit the key entirely and reading it unguarded is a 500 on a
+                // call the validator accepted.
+                'description' => isset($data['description']) ? trim((string) $data['description']) : null,
                 'policy_type' => $data['policy_type'],
                 'status' => $data['status'] ?? 1,
                 'require_disclosure' => $data['require_disclosure'] ?? 0,
@@ -175,17 +178,31 @@ class AiPolicyController extends AiController
             $scope = $this->scope($request);
             $institute = $scope->selectedInstituteId;
 
-            $row = DB::table('ai_policies')->where('id', $id)->first();
+            $row = $this->findPolicyRow($id);
 
-            if ($row === null) {
+            if ($row === null || ! $this->readableBy($row, $institute)) {
+                // A policy belonging to another school answers exactly as one that does not
+                // exist. Saying "that is not yours" would confirm the id is real, which is
+                // the disclosure this check exists to prevent.
                 return $this->failure('That AI policy was not found.', 404);
             }
 
             $data = $this->validatedPolicy($request, false);
 
+            // A shared platform policy is owned by nobody and read by everybody, so editing
+            // it in place would change every school's copy from one school's screen. It is
+            // forked instead — the same rule `TemplateCatalog::update()` applies to platform
+            // templates, and the screens already say so before the save rather than after.
+            if ($row->sub_institute_id === null) {
+                return $this->forkPlatformPolicy($row, $data, $scope, $institute);
+            }
+
             DB::table('ai_policies')->where('id', $id)->update([
                 'name' => trim($data['name']),
-                'description' => $data['description'] !== null ? trim($data['description']) : null,
+                // Coalesced, not just null-checked: `description` is `nullable` in the rules, so a
+                // valid request may omit the key entirely and reading it unguarded is a 500 on a
+                // call the validator accepted.
+                'description' => isset($data['description']) ? trim((string) $data['description']) : null,
                 'policy_type' => $data['policy_type'],
                 'status' => $data['status'] ?? 1,
                 'require_disclosure' => $data['require_disclosure'] ?? 0,
@@ -209,6 +226,9 @@ class AiPolicyController extends AiController
 
             return $this->success('AI policy updated.', [
                 'policy' => $this->policyDetail($id, $institute),
+                // Reported on both paths so a caller never has to infer which happened
+                // from the absence of the field.
+                'action' => 'updated',
             ]);
         } catch (Throwable $exception) {
             return $this->handle($exception);
@@ -221,10 +241,21 @@ class AiPolicyController extends AiController
             $scope = $this->scope($request);
             $institute = $scope->selectedInstituteId;
 
-            $row = DB::table('ai_policies')->where('id', $id)->first();
+            $row = $this->findPolicyRow($id);
 
-            if ($row === null) {
+            if ($row === null || ! $this->readableBy($row, $institute)) {
+                // Same answer as update(): another school's policy is not found here.
                 return $this->failure('That AI policy was not found.', 404);
+            }
+
+            if ($row->sub_institute_id === null) {
+                // Retiring a shared policy would retire it for every school. Refused with
+                // the reason, rather than silently doing nothing or doing it estate-wide.
+                return $this->failure(
+                    'This is a shared example policy used by every school, so it cannot be retired from here. '
+                        .'Edit it instead — saving writes this institute its own copy, which you can then retire.',
+                    422
+                );
             }
 
             DB::table('ai_policies')->where('id', $id)->update([
@@ -512,6 +543,101 @@ class AiPolicyController extends AiController
                 'updated_at' => now(),
             ]);
         }
+    }
+
+    /**
+     * The policy row a write is about to act on, before any ownership check.
+     *
+     * A seam, and a protected one, for the same reason `PermissionService::rightsFor()`
+     * is: this project's tests run against the live shared database, so they substitute
+     * the storage read rather than performing one. `AiPolicyIsolationTest` overrides this
+     * to hand the controller a row it chose, which is what makes the tenant guard below
+     * testable without touching an estate's policies.
+     *
+     * Deliberately unscoped. It answers "what row is this", and `readableBy()` answers
+     * "may this school act on it" — keeping the two apart is what lets the guard be the
+     * only place the decision is made, rather than a filter that a future caller could
+     * forget to apply.
+     */
+    protected function findPolicyRow(int $id): ?object
+    {
+        return DB::table('ai_policies')->where('id', $id)->first();
+    }
+
+    /**
+     * Whether this school may see, and therefore act on, one policy row.
+     *
+     * Two kinds are readable: the school's own, and the shared platform rows every school
+     * resolves. Anything else belongs to another institute.
+     *
+     * This exists because `update()` and `destroy()` previously looked a policy up by id
+     * alone and wrote to it. `index()` has always been scoped, so the rows a screen could
+     * show were correct — but the id in a PUT is supplied by the caller, not chosen from
+     * that list, so one school could edit or retire another school's policy by naming its
+     * id. The read being scoped is not the same as the write being scoped, and only the
+     * second of those stops it.
+     */
+    protected function readableBy(object $row, int|string|null $institute): bool
+    {
+        if ($row->sub_institute_id === null) {
+            return true;
+        }
+
+        return (string) $row->sub_institute_id === (string) $institute;
+    }
+
+    /**
+     * Save an edit to a shared platform policy as this school's own copy.
+     *
+     * The original is left exactly as it is, so every other school keeps the example it
+     * had. The new row carries this institute's id, which makes it editable and
+     * retirable here like any policy the school wrote itself, and it is no longer an
+     * example — a school that has customised a policy is using it, not illustrating it.
+     *
+     * `action` is reported so the screen can say which of the two things happened; the
+     * Prompts and Templates tabs already report the same field for the same reason.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function forkPlatformPolicy(object $row, array $data, object $scope, int|string|null $institute)
+    {
+        $id = DB::table('ai_policies')->insertGetId([
+            'sub_institute_id' => $institute,
+            'name' => trim($data['name']),
+            // Coalesced, not just null-checked: `description` is `nullable` in the rules, so a
+                // valid request may omit the key entirely and reading it unguarded is a 500 on a
+                // call the validator accepted.
+                'description' => isset($data['description']) ? trim((string) $data['description']) : null,
+            'policy_type' => $data['policy_type'],
+            'is_example' => 0,
+            'status' => $data['status'] ?? 1,
+            'require_disclosure' => $data['require_disclosure'] ?? 0,
+            'require_acknowledgement' => $data['require_acknowledgement'] ?? 0,
+            'ai_detection_required' => $data['ai_detection_required'] ?? 0,
+            'plagiarism_check_required' => $data['plagiarism_check_required'] ?? 0,
+            'detection_provider' => $data['detection_provider'] ?? null,
+            'detection_threshold' => $data['detection_threshold'] ?? null,
+            'created_by' => $scope->userId,
+            'updated_by' => $scope->userId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->saveRules($id, $data['rules'] ?? []);
+        $this->saveAssignments($id, $data['assignments'] ?? [], $institute, $scope->userId);
+
+        $this->audit->record('ai.policy.forked', $scope, [
+            'related_type' => 'ai_policies',
+            'related_id' => $id,
+            'message' => 'Shared AI policy customised for this institute.',
+            'context' => ['forked_from' => (int) $row->id],
+        ]);
+
+        return $this->success('Saved as this institute’s own copy. The shared policy is unchanged.', [
+            'policy' => $this->policyDetail($id, $institute),
+            'action' => 'forked',
+            'forked_from' => (int) $row->id,
+        ]);
     }
 
     private function saveAssignments(int $policyId, array $assignments, int|string|null $institute, int|string|null $userId): void
