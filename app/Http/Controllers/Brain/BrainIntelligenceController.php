@@ -10,7 +10,6 @@ use App\Brain\Intelligence\Narrative;
 use App\Brain\Intelligence\TrendAnalyzer;
 use App\Brain\Intelligence\LmsAnalytics;
 use App\Brain\Intelligence\RuleCatalogue;
-use App\Brain\Intelligence\RuleModules;
 use App\Brain\Intelligence\Uuid;
 use App\Brain\Ingestion\FoundationIngestor;
 use App\Brain\Support\AcademicYear;
@@ -72,104 +71,6 @@ class BrainIntelligenceController extends Controller
             'lastRun' => $this->lastRun($tenant),
             'signals' => $this->signalList($tenant, 100),
         ]);
-    }
-
-    /**
-     * The loop, narrowed to one module — what a module's own Intelligence tab
-     * shows.
-     *
-     * WHY NOT THE TENANT-WIDE PAYLOAD. intelligence() answers "what is happening
-     * at this institute", which is the Enterprise Brain's question. A bursar
-     * opening Fees → Intelligence is asking a narrower one, and handing them the
-     * institute-wide list of department-ownership and hostel-bed signals answers
-     * none of it. So the signals are filtered to the module's own rules, and the
-     * recommendations to the ones reasoned from those signals.
-     *
-     * THREE STATES, AND THEY ARE DIFFERENT ANSWERS. `declared` false means no
-     * rule in the catalogue belongs to this module — nothing is watching it yet.
-     * `declared` true with no signals means rules are watching and found nothing
-     * wrong. An empty list alone cannot tell those apart, and they are opposite
-     * news.
-     */
-    public function moduleIntelligence(Request $request, string $tenantId, string $module): JsonResponse
-    {
-        $tenant = $this->tenant($request);
-        $module = strtolower(trim($module));
-
-        $modules = (array) config('platform_services.modules', []);
-        $declared = RuleModules::isDeclared($module);
-
-        $payload = [
-            'module' => $module,
-            'label' => (string) ($modules[$module]['label'] ?? ucfirst(str_replace('_', ' ', $module))),
-            // Whether the platform registry knows this module at all, as
-            // opposed to whether the Brain watches it.
-            'registered' => isset($modules[$module]),
-            'declared' => $declared,
-            'rules' => RuleModules::declaredRules($module),
-            'signals' => [],
-            'recommendations' => [],
-            'summary' => ['signals' => 0, 'bySeverity' => [], 'byStatus' => [], 'recommendations' => 0, 'open' => 0],
-            'lastRun' => $this->lastRun($tenant),
-        ];
-
-        if (! $declared || ! SchemaCache::hasTable('hpbrain_signals')) {
-            return response()->json($payload);
-        }
-
-        // Classify the rule keys that actually fired rather than matching them
-        // in SQL: the attribution is per rule and a LIKE clause cannot express
-        // it (see RuleModules).
-        $ruleKeys = RuleModules::filter(
-            DB::table('hpbrain_signals')->where('tenant_id', $tenant)
-                ->whereNotNull('rule_key')->distinct()->pluck('rule_key')->all(),
-            $module
-        );
-
-        if ($ruleKeys === []) {
-            return response()->json($payload);
-        }
-
-        $signals = DB::table('hpbrain_signals')->where('tenant_id', $tenant)
-            ->whereIn('rule_key', $ruleKeys)
-            ->orderByRaw("FIELD(severity, 'critical', 'high', 'medium', 'low')")
-            ->orderByDesc('created_date')
-            ->limit(200)
-            ->get();
-
-        $payload['signals'] = $this->decorateSignals($signals);
-        $payload['summary']['signals'] = $signals->count();
-        $payload['summary']['bySeverity'] = $signals->groupBy('severity')->map->count()->all();
-        $payload['summary']['byStatus'] = $signals->groupBy('status')->map->count()->all();
-
-        // A recommendation reaches its signal through the reasoning step it was
-        // written from, which is the only link the tables carry.
-        if (SchemaCache::hasTable('hpbrain_recommendations') && SchemaCache::hasTable('hpbrain_reasoning_steps')) {
-            $stepIds = DB::table('hpbrain_reasoning_steps')->where('tenant_id', $tenant)
-                ->whereIn('signal_id', $signals->pluck('id')->all())
-                ->pluck('id')
-                ->all();
-
-            if ($stepIds !== []) {
-                $rows = DB::table('hpbrain_recommendations')->where('tenant_id', $tenant)
-                    ->whereIn('reasoning_step_id', $stepIds)
-                    ->orderByRaw("FIELD(priority, 'high', 'medium', 'low')")
-                    ->orderByDesc('confidence')
-                    ->limit(200)
-                    ->get()
-                    ->map(fn ($row) => (array) $row)
-                    ->all();
-
-                $payload['recommendations'] = $this->decorateRecommendations($tenant, $rows);
-                $payload['summary']['recommendations'] = count($rows);
-                $payload['summary']['open'] = count(array_filter(
-                    $rows,
-                    fn ($row) => ($row['status'] ?? '') === 'pending'
-                ));
-            }
-        }
-
-        return response()->json($payload);
     }
 
     /** Re-run the loop against the live LMS data. */
@@ -432,6 +333,53 @@ class BrainIntelligenceController extends Controller
     }
 
     /**
+     * The noun the originating finding measured itself in.
+     *
+     * `ModuleSignalBridge` carries each module's own impact label on the
+     * signal's metadata — "students", "arrangements", "titles" — because Fees
+     * measures impact in rupees and no other module does. Hard-coding INR here
+     * was correct while Fees was the only module whose findings reached an
+     * outcome; it now labels a transport outcome measured in vehicles as a
+     * balance in rupees, which is the unit confusion `payload.ts` exists to
+     * prevent.
+     *
+     * Returns null when the signal named no unit. A guessed noun is worse than
+     * none, and the caller words the basis without one.
+     */
+    private function measuredUnitFor(string $tenant, string $decisionId): ?string
+    {
+        if ($decisionId === '' || ! SchemaCache::hasTable('hpbrain_signals')) {
+            return null;
+        }
+
+        $metadata = DB::table('hpbrain_decisions as d')
+            ->join('hpbrain_recommendations as r', 'r.id', '=', 'd.recommendation_id')
+            ->join('hpbrain_reasoning_steps as s', 's.id', '=', 'r.reasoning_step_id')
+            ->join('hpbrain_signals as sg', 'sg.id', '=', 's.signal_id')
+            ->where('d.tenant_id', $tenant)
+            ->where('d.id', $decisionId)
+            ->value('sg.metadata');
+
+        if ($metadata === null) {
+            return null;
+        }
+
+        $decoded = json_decode((string) $metadata, true);
+        if (! is_array($decoded)) {
+            return null;
+        }
+
+        // A module finding names its own noun; a fee finding carries an amount
+        // and is measured in rupees.
+        $label = $decoded['impactLabel'] ?? null;
+        if (is_string($label) && trim($label) !== '') {
+            return trim($label);
+        }
+
+        return isset($decoded['impactAmount']) ? 'INR' : null;
+    }
+
+    /**
      * Report back on an authorised execution, and capture the outcome.
      *
      * The outcome is what closes the loop: hpbrain_outcomes is what a later run
@@ -493,6 +441,12 @@ class BrainIntelligenceController extends Controller
              * figure is missing the delta is NULL rather than zero, because
              * "not measured" and "no change" are different outcomes.
              */
+            // The noun the originating finding measured itself in — "students",
+            // "arrangements", "titles" — carried on the signal's metadata by
+            // ModuleSignalBridge, or the fee module's rupees where it came from
+            // there.
+            $measuredUnit = $this->measuredUnitFor($tenant, (string) $execution->decision_id);
+
             $before = $request->input('measured_before');
             $after = $request->input('measured_after');
             $measured = is_numeric($before) && is_numeric($after);
@@ -503,8 +457,17 @@ class BrainIntelligenceController extends Controller
                 'accountsAffected' => $request->filled('accounts_affected')
                     ? (int) $request->input('accounts_affected')
                     : null,
-                'unit' => 'INR',
-                'basis' => 'Outstanding balance recorded by the person reporting the outcome.',
+                // The unit and the wording follow the SIGNAL'S OWN module.
+                // Hard-coding rupees and "outstanding balance" was correct while
+                // Fees was the only module that reached an outcome; it now
+                // labels a transport outcome measured in vehicles as a balance
+                // in INR, which is the unit confusion `payload.ts` exists to
+                // prevent. Null where the signal did not name a unit, because a
+                // guessed noun is worse than none.
+                'unit' => $measuredUnit,
+                'basis' => $measuredUnit === null
+                    ? 'Recorded by the person reporting the outcome.'
+                    : 'Change in '.$measuredUnit.', recorded by the person reporting the outcome.',
             ];
 
             DB::table('hpbrain_outcomes')->insert(SchemaCache::only('hpbrain_outcomes', [
