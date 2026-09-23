@@ -42,6 +42,11 @@ class MobileDynamicPageApiController extends Controller
             return response()->json(['status' => '0', 'message' => 'This page is not configured.', 'data' => []], 404);
         }
 
+        // Guarded so an installation that has not yet run
+        // 2026_09_23_180000_add_drill_endpoint_to_... keeps serving tiles as
+        // plain (non-tappable) stats instead of erroring.
+        $hasDrillEndpoint = Schema::hasColumn('mobile_dynamic_page_field', 'drill_endpoint');
+
         return response()->json([
             'status' => '1',
             'message' => 'Success',
@@ -54,6 +59,7 @@ class MobileDynamicPageApiController extends Controller
                     'display_key' => $field->display_key,
                     'label' => $field->label,
                     'field_type' => $field->field_type,
+                    'drill_endpoint' => $hasDrillEndpoint ? $field->drill_endpoint : null,
                 ]),
             ],
         ]);

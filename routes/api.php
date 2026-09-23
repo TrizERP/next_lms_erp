@@ -130,6 +130,9 @@ Route::middleware('api.session')->prefix('hrms')->group(function () {
 // check_permissions reads session()->get('user_profile_id'/'sub_institute_id'/'user_id'),
 // so api.session (JWT-hydrated session) must run first for type=API requests.
 Route::middleware(['api.session', 'check_permissions'])->post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
+// Flat "who owes money" list backing the Outstanding tile's drill-in (see
+// FeesDashboardApiController@defaulters and MobileDynamicPageFieldRegistry).
+Route::middleware(['api.session', 'check_permissions'])->post('fees-dashboard/defaulters', [FeesDashboardApiController::class, 'defaulters']);
 // Module dashboards (Admissions/Students) — stateless: tenant/year travel in
 // the request body and there's no permission check, so no session middleware
 // is required.
