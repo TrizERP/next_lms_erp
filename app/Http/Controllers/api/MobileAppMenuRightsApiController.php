@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
@@ -143,9 +144,43 @@ class MobileAppMenuRightsApiController extends Controller
         return $profileName === 'Student' ? 'mobile_homescreen' : 'teacher_mobile_homescreen';
     }
 
+    /**
+     * Whether this installation has run
+     * 2026_09_22_200000_add_render_type_to_mobile_homescreen_tables. Until it
+     * has, this screen serves and saves exactly the columns it always did.
+     */
+    private function hasRenderColumns(string $table): bool
+    {
+        return Schema::hasColumn($table, 'render_type');
+    }
+
+    /**
+     * The WebView columns of one row, normalised for the admin UI. Unlike the
+     * homescreen APIs this does NOT resolve a relative web_url -- an admin
+     * editing the field should see back the value they typed.
+     */
+    private function renderFields($row, bool $hasRenderColumns): array
+    {
+        if (! $hasRenderColumns) {
+            return ['render_type' => 'native', 'web_url' => '', 'open_mode' => 'in_app'];
+        }
+
+        $renderType = strtolower(trim((string) ($row->render_type ?? '')));
+        $openMode = strtolower(trim((string) ($row->open_mode ?? '')));
+
+        return [
+            'render_type' => $renderType === 'webview' ? 'webview' : 'native',
+            'web_url' => (string) ($row->web_url ?? ''),
+            'open_mode' => $openMode === 'external' ? 'external' : 'in_app',
+        ];
+    }
+
     private function defaultRightsRows(string $profileName): array
     {
-        $query = DB::table($this->tableForProfileName($profileName))
+        $table = $this->tableForProfileName($profileName);
+        $hasRenderColumns = $this->hasRenderColumns($table);
+
+        $query = DB::table($table)
             ->where('sub_institute_id', 1)
             ->orderByRaw('main_sort_order,sub_title_sort_order');
 
@@ -153,7 +188,7 @@ class MobileAppMenuRightsApiController extends Controller
             $query->where('user_profile_name', $profileName);
         }
 
-        return $query->get()->map(function ($row) {
+        return $query->get()->map(function ($row) use ($hasRenderColumns) {
             return [
                 'id' => (int) $row->id,
                 'user_profile_name' => (string) ($row->user_profile_name ?? ''),
@@ -169,7 +204,7 @@ class MobileAppMenuRightsApiController extends Controller
                 'sub_title_sort_order' => (int) ($row->sub_title_sort_order ?? 0),
                 'screen_name' => (string) ($row->screen_name ?? ''),
                 'status' => (string) ($row->status ?? ''),
-            ];
+            ] + $this->renderFields($row, $hasRenderColumns);
         })->all();
     }
 
@@ -305,6 +340,7 @@ class MobileAppMenuRightsApiController extends Controller
             ->all();
 
         $table = $this->tableForProfileName($profileName);
+        $hasRenderColumns = $this->hasRenderColumns($table);
         $defaults = collect($this->defaultRightsRows($profileName))->keyBy('screen_name');
 
         foreach ($selectedScreens as $screenName) {
@@ -314,7 +350,7 @@ class MobileAppMenuRightsApiController extends Controller
         }
 
         if (count($selectedScreens) > 0) {
-            DB::transaction(function () use ($actor, $profile, $profileName, $table, $selectedScreens, $defaults) {
+            DB::transaction(function () use ($actor, $profile, $profileName, $table, $selectedScreens, $defaults, $hasRenderColumns) {
                 DB::table($table)
                     ->where('sub_institute_id', $actor->sub_institute_id)
                     ->where('user_profile_id', $profile->id)
@@ -347,7 +383,7 @@ class MobileAppMenuRightsApiController extends Controller
                         continue;
                     }
 
-                    DB::table($table)->insert([
+                    $insert = [
                         'user_profile_name' => $profileName,
                         'user_profile_id' => $profile->id,
                         'sub_institute_id' => $actor->sub_institute_id,
@@ -364,7 +400,18 @@ class MobileAppMenuRightsApiController extends Controller
                         'status' => $default['status'],
                         'screen_name' => $default['screen_name'],
                         'created_on' => now(),
-                    ]);
+                    ];
+
+                    // A WebView template grants as a WebView row. Without
+                    // this the three columns fall to their defaults and the
+                    // menu silently reverts to native.
+                    if ($hasRenderColumns) {
+                        $insert['render_type'] = $default['render_type'];
+                        $insert['web_url'] = $default['render_type'] === 'webview' ? $default['web_url'] : null;
+                        $insert['open_mode'] = $default['open_mode'];
+                    }
+
+                    DB::table($table)->insert($insert);
                 }
             });
         }
@@ -419,6 +466,13 @@ class MobileAppMenuRightsApiController extends Controller
             'sub_title_icon' => 'nullable|string',
             'sub_title_sort_order' => 'nullable|integer',
             'status' => ['required', Rule::in(['Yes', 'No'])],
+            'render_type' => ['nullable', Rule::in(['native', 'webview'])],
+            // Only a WebView row needs a URL; a native row is addressed by
+            // its screen_name.
+            'web_url' => 'required_if:render_type,webview|nullable|string|max:2000',
+            'open_mode' => ['nullable', Rule::in(['in_app', 'external'])],
+        ], [
+            'web_url.required_if' => 'Web URL is required when render type is WebView.',
         ]);
         if ($validator->fails()) {
             return $this->failure($validator->messages()->first(), 422, $validator->errors());
@@ -458,6 +512,21 @@ class MobileAppMenuRightsApiController extends Controller
             'updated_by' => $updatedBy,
             'updated_ip_address' => $updatedIp,
         ];
+
+        // Render type belongs to the individual menu item, so it rides with
+        // $subData rather than $mainData, which fans out across every row
+        // sharing a main_title. Omitting render_type leaves the row as it is.
+        if ($this->hasRenderColumns($table) && $request->filled('render_type')) {
+            $renderType = (string) $request->input('render_type');
+            $openMode = (string) $request->input('open_mode', 'in_app');
+            $subData['render_type'] = $renderType;
+            $subData['web_url'] = $renderType === 'webview'
+                ? trim((string) $request->input('web_url', ''))
+                : null;
+            $subData['open_mode'] = $renderType === 'webview' && $openMode === 'external'
+                ? 'external'
+                : 'in_app';
+        }
 
         $scope = function ($query) use ($actor, $profileName) {
             $query->where('sub_institute_id', $actor->sub_institute_id);

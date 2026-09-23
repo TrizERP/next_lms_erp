@@ -88,6 +88,12 @@ Route::post('api-login', [ApiLoginController::class, 'login'])->name('api.api-lo
 Route::get('academic-terms', [ApiLoginController::class, 'academicTerms'])->name('api.academic-terms');
 // Isolated mobile Own Profile API; legacy profile controllers are unchanged.
 Route::middleware('api.session')->get('own-profile', [\App\Http\Controllers\api\OwnProfileApiController::class, 'show']);
+
+// Exchanges the app's JWT for a single-use ticket that opens an ERP web page
+// already logged in, for menu rows whose render_type is 'webview'.
+// `api.session` validates the JWT and hydrates the session the controller
+// reads its identity from -- see MobileWebHandoffApiController.
+Route::middleware('api.session')->post('mobile/web-handoff', [\App\Http\Controllers\api\MobileWebHandoffApiController::class, 'create']);
 Route::middleware('api.session')->prefix('hrms')->group(function () {
     Route::get('today', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'today']);
     Route::post('punch', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'punch']);

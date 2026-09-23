@@ -88,6 +88,11 @@ tbody tr td {
             @endphp
             <div class="card">         
                 <div class="row">
+                    <div class="col-lg-12 col-sm-12 col-xs-12 p-0 mb-2">
+                        <a href="javascript:add_menu_item('{{route('add_mobileapp_menu_rights.store')}}','{{$data['profile']}}');" class="btn btn-success">
+                            <i class="mdi mdi-plus"></i> Add Menu Item
+                        </a>
+                    </div>
                     <div class="col-lg-12 col-sm-12 col-xs-12 p-0">
                         <div class="table-responsive">
                             <table id="example" class="table">
@@ -102,6 +107,7 @@ tbody tr td {
                                         <th>Sub Title Icon</th>
                                         <th>Sub Title Sort Order</th>
                                         <th>Status</th>
+                                        <th>Render</th>
                                         <th>Action</th>
                                     </tr>
                                 </thead>
@@ -166,9 +172,18 @@ tbody tr td {
                                                 <img style="height: 70px;width: 70px;" src="{{$value['sub_title_icon']}}">
                                             </td>
                                             <td>{{$value['sub_title_sort_order']}}</td>
-                                            <td>{{$value['status']}}</td>                                            
+                                            <td>{{$value['status']}}</td>
                                             <td style="background-color: white;">
-                                                <a href="javascript:edit_data('{{route('add_mobileapp_menu_rights.update',$value['id'])}}','{{$value['id']}}','{{$value['main_title']}}','{{$value['main_title_color_code']}}','{{$value['main_title_background_image']}}','{{$value['main_sort_order']}}','{{$value['sub_title_of_main']}}','{{$value['sub_title_icon']}}','{{$value['sub_title_sort_order']}}','{{$value['status']}}','{{$data['profile']}}',{{$new_i}});" class="btn btn-outline-success mr-1"><i class="mdi mdi-lead-pencil"></i></a>
+                                                @if(($value['render_type'] ?? 'native') == 'webview')
+                                                    WebView
+                                                    <div style="font-size: 11px;word-break: break-all;">{{$value['web_url'] ?? ''}}</div>
+                                                    <div style="font-size: 11px;">{{($value['open_mode'] ?? 'in_app') == 'external' ? 'System browser' : 'Inside the app'}}</div>
+                                                @else
+                                                    Native
+                                                @endif
+                                            </td>
+                                            <td style="background-color: white;">
+                                                <a href="javascript:edit_data('{{route('add_mobileapp_menu_rights.update',$value['id'])}}','{{$value['id']}}','{{$value['main_title']}}','{{$value['main_title_color_code']}}','{{$value['main_title_background_image']}}','{{$value['main_sort_order']}}','{{$value['sub_title_of_main']}}','{{$value['sub_title_icon']}}','{{$value['sub_title_sort_order']}}','{{$value['status']}}','{{$data['profile']}}',{{$new_i}},'{{$value['screen_name']}}','{{$value['render_type'] ?? 'native'}}',{{json_encode($value['web_url'] ?? '')}},'{{$value['open_mode'] ?? 'in_app'}}');" class="btn btn-outline-success mr-1"><i class="mdi mdi-lead-pencil"></i></a>
                                                 
                                             </td>                                            
                                         </tr>
@@ -183,9 +198,18 @@ tbody tr td {
                                                 <img style="height: 70px;width: 70px;" src="{{$value['sub_title_icon']}}">
                                             </td>
                                             <td>{{$value['sub_title_sort_order']}}</td>
-                                            <td>{{$value['status']}}</td>                                            
+                                            <td>{{$value['status']}}</td>
                                             <td style="background-color: white;">
-                                                <a href="javascript:edit_data('{{route('add_mobileapp_menu_rights.update',$value['id'])}}','{{$value['id']}}','{{$value['main_title']}}','{{$value['main_title_color_code']}}','{{$value['main_title_background_image']}}','{{$value['main_sort_order']}}','{{$value['sub_title_of_main']}}','{{$value['sub_title_icon']}}','{{$value['sub_title_sort_order']}}','{{$value['status']}}','{{$data['profile']}}',{{$new_i}});" class="btn btn-outline-success mr-1"><i class="mdi mdi-lead-pencil"></i></a>
+                                                @if(($value['render_type'] ?? 'native') == 'webview')
+                                                    WebView
+                                                    <div style="font-size: 11px;word-break: break-all;">{{$value['web_url'] ?? ''}}</div>
+                                                    <div style="font-size: 11px;">{{($value['open_mode'] ?? 'in_app') == 'external' ? 'System browser' : 'Inside the app'}}</div>
+                                                @else
+                                                    Native
+                                                @endif
+                                            </td>
+                                            <td style="background-color: white;">
+                                                <a href="javascript:edit_data('{{route('add_mobileapp_menu_rights.update',$value['id'])}}','{{$value['id']}}','{{$value['main_title']}}','{{$value['main_title_color_code']}}','{{$value['main_title_background_image']}}','{{$value['main_sort_order']}}','{{$value['sub_title_of_main']}}','{{$value['sub_title_icon']}}','{{$value['sub_title_sort_order']}}','{{$value['status']}}','{{$data['profile']}}',{{$new_i}},'{{$value['screen_name']}}','{{$value['render_type'] ?? 'native'}}',{{json_encode($value['web_url'] ?? '')}},'{{$value['open_mode'] ?? 'in_app'}}');" class="btn btn-outline-success mr-1"><i class="mdi mdi-lead-pencil"></i></a>
                                                 
                                             </td> 
                                         </tr> 
@@ -321,6 +345,37 @@ tbody tr td {
                                     </select>
                                 </div>
                                 <div class="col-md-12 form-group">
+                                    <label>Screen Name</label>
+                                    <input type="text" id='screen_name' name="screen_name" class="form-control">
+                                    <small class="text-muted">The identifier the app dispatches on. Set once, when the menu is created - renaming the label above never changes it.</small>
+                                </div>
+                                <div class="col-md-12 form-group">
+                                    <label>Menu Type</label>
+                                    <select id='menu_type' name="menu_type" class="form-control">
+                                        <option value="Heading">Heading</option>
+                                        <option value="Banner">Banner</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-12 form-group">
+                                    <label>Render Type</label>
+                                    <select id='render_type' name="render_type" class="form-control" onchange="toggle_web_url();">
+                                        <option value="native">Native screen</option>
+                                        <option value="webview">Web page (WebView)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-12 form-group" id="web_url_group">
+                                    <label>Web URL</label>
+                                    <input type="text" id='web_url' name="web_url" class="form-control" placeholder="/fees/fees_collection">
+                                    <small class="text-muted">A full URL, or a path starting with / which is resolved against this school's ERP address.</small>
+                                </div>
+                                <div class="col-md-12 form-group" id="open_mode_group">
+                                    <label>Open Mode</label>
+                                    <select id='open_mode' name="open_mode" class="form-control">
+                                        <option value="in_app">Inside the app</option>
+                                        <option value="external">System browser</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-12 form-group">
                                     <label>Status</label>
                                     <select id='status' name="status" class="form-control">
                                         <option value="Yes">Yes</option>
@@ -356,7 +411,36 @@ tbody tr td {
     $('#hexcolor').on('input', function() {
       $('#main_title_color_code').val(this.value);
     });
-    function edit_data(url,main_id,main_title,main_title_color_code,main_title_background_image,main_sort_order,sub_title_of_main,sub_title_icon,sub_title_sort_order,status,user_profile,sr_no)
+    // Only a WebView menu needs a URL and an open mode, and an input that is
+    // hidden but still `required` blocks submit with no visible message - so
+    // the two move together.
+    function toggle_web_url()
+    {
+        var is_webview = $('#render_type').val() == 'webview';
+        $('#web_url_group').toggle(is_webview);
+        $('#open_mode_group').toggle(is_webview);
+        $('#web_url').prop('required', is_webview);
+    }
+
+    function add_menu_item(url,user_profile)
+    {
+        $('#menu_form')[0].reset();
+        $("#profile_hidden").val(user_profile);
+        // screen_name and menu_type are writable only here, on create - see
+        // edit_data() for why.
+        $("#screen_name").prop('readonly', false);
+        $("#menu_type").prop('disabled', false);
+        $("#render_type").val('native');
+        $("#open_mode").val('in_app');
+        toggle_web_url();
+        $('#submit').val('Save');
+        $('#heading').html('Add Menu Item');
+        $('#menu_form').attr('action',url);
+        $('#change_method').html('{{ method_field("POST") }}');
+        $('#MenuModal').modal('show');
+    }
+
+    function edit_data(url,main_id,main_title,main_title_color_code,main_title_background_image,main_sort_order,sub_title_of_main,sub_title_icon,sub_title_sort_order,status,user_profile,sr_no,screen_name,render_type,web_url,open_mode)
     {                      
         $("#main_title").val(main_title);
         $("#main_title_color_code").val(main_title_color_code);
@@ -369,6 +453,17 @@ tbody tr td {
         $("#sub_title_sort_order").val(sub_title_sort_order);
         $("#status").val(status);
         $("#profile_hidden").val(user_profile);
+        $("#screen_name").val(screen_name || '');
+        $("#render_type").val(render_type || 'native');
+        $("#web_url").val(web_url || '');
+        $("#open_mode").val(open_mode || 'in_app');
+        // screen_name is what the Mobile App Menu Rights page grants by and
+        // what the app dispatches on, so editing it here would orphan both.
+        // menu_type is locked for the same reason: it decides which shape the
+        // homescreen API serves the row in.
+        $("#screen_name").prop('readonly', true);
+        $("#menu_type").prop('disabled', true);
+        toggle_web_url();
         $('#submit').val('Update'); 
         $('#heading').html('Update Menu Sub-menu');         
         $('#menu_form').attr('action',url);
