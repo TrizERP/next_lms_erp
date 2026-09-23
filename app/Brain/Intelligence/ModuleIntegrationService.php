@@ -49,6 +49,12 @@ class ModuleIntegrationService
             'visitor' => $this->getVisitorIntegrations($tenantId, $syear),
             'correspondence' => $this->getCorrespondenceIntegrations($tenantId, $syear),
             'teach-learn' => $this->getTeachLearnIntegrations($tenantId, $syear),
+            'organization' => $this->getOrganizationIntegrations($tenantId, $syear),
+            'task-management' => $this->getTaskManagementIntegrations($tenantId, $syear),
+            'talent' => $this->getTalentIntegrations($tenantId, $syear),
+            'capability' => $this->getCapabilityIntegrations($tenantId, $syear),
+            'staff-attendance' => $this->getStaffAttendanceIntegrations($tenantId, $syear),
+            'lms-activity' => $this->getLmsActivityIntegrations($tenantId, $syear),
             default => [],
         };
 
@@ -100,6 +106,12 @@ class ModuleIntegrationService
             'visitor' => 'Visitor & Front Desk',
             'correspondence' => 'Correspondence',
             'teach-learn' => 'Teach & Learn (PAL)',
+            'organization' => 'Organization Management',
+            'task-management' => 'Task Management',
+            'talent' => 'Talent Management',
+            'capability' => 'Capability Intelligence',
+            'staff-attendance' => 'Attendance Management',
+            'lms-activity' => 'LMS',
             default => ucfirst($module),
         };
     }
@@ -986,6 +998,356 @@ class ModuleIntegrationService
             'shared_entities' => ['student_id', 'topic_mastery_pct', 'remedial_required'],
             'route' => '/result',
             'reason' => $marksCount === 0 ? "No assessment marks recorded for {$syear}." : null,
+        ];
+
+        return $integrations;
+    }
+
+    /* -------------------------------------------------------------------------- */
+    /* People & Competency Integration Builders                                  */
+    /* -------------------------------------------------------------------------- */
+
+    private function getOrganizationIntegrations(int $tenantId, ?string $syear): array
+    {
+        $integrations = [];
+
+        $talentActivityCount = 0;
+        try {
+            $talentActivityCount = DB::table('talent_job_applications')
+                ->where('sub_institute_id', $tenantId)
+                ->count();
+        } catch (\Throwable) {}
+
+        $integrations[] = [
+            'id' => 'organization-talent',
+            'target_module' => 'talent',
+            'target_label' => 'Talent Management',
+            'relationship' => 'Headcount & Hiring Pipeline',
+            'why_it_matters' => 'Department headcount and attrition figures are the denominator Talent\'s hiring funnel and offer decisions are sized against.',
+            'status' => $talentActivityCount > 0 ? 'available' : 'unavailable',
+            'record_count' => $talentActivityCount,
+            'metrics' => [['label' => 'Job Applications on File', 'value' => (string) $talentActivityCount]],
+            'shared_entities' => ['tbluser.id', 'hrms_departments.id', 'talent_job_applications.department_id'],
+            'route' => '/modules/talent-management/intelligence',
+            'reason' => $talentActivityCount === 0 ? 'No recruitment activity recorded for this institute.' : null,
+        ];
+
+        $taskCount = 0;
+        try {
+            $taskCount = DB::table('task')
+                ->where('sub_institute_id', $tenantId)
+                ->whereNull('deleted_at')
+                ->count();
+        } catch (\Throwable) {}
+
+        $integrations[] = [
+            'id' => 'organization-task',
+            'target_module' => 'task-management',
+            'target_label' => 'Task Management',
+            'relationship' => 'Staff Workload by Department',
+            'why_it_matters' => 'Task assignment is keyed on the same staff id Organization reports headcount against, so workload can be read alongside department size.',
+            'status' => $taskCount > 0 ? 'available' : 'unavailable',
+            'record_count' => $taskCount,
+            'metrics' => [['label' => 'Tasks on File', 'value' => (string) $taskCount]],
+            'shared_entities' => ['tbluser.id (TASK_ALLOCATED_TO)'],
+            'route' => '/modules/task-management-551/intelligence',
+            'reason' => $taskCount === 0 ? 'No tasks recorded for this institute.' : null,
+        ];
+
+        $attendanceCount = 0;
+        try {
+            $attendanceCount = DB::table('hrms_attendances')
+                ->where('sub_institute_id', $tenantId)
+                ->count();
+        } catch (\Throwable) {}
+
+        $integrations[] = [
+            'id' => 'organization-staff-attendance',
+            'target_module' => 'staff-attendance',
+            'target_label' => 'Attendance Management',
+            'relationship' => 'Active Staff Roster Verification',
+            'why_it_matters' => 'Attendance Management\'s punch-register figures are only meaningful measured against Organization\'s own active-staff count.',
+            'status' => $attendanceCount > 0 ? 'available' : 'unavailable',
+            'record_count' => $attendanceCount,
+            'metrics' => [['label' => 'Punch Records on File', 'value' => (string) $attendanceCount]],
+            'shared_entities' => ['tbluser.id', 'hrms_departments.id'],
+            'route' => '/hrit/attendance-management/attendance-reports',
+            'reason' => $attendanceCount === 0 ? 'No staff attendance data recorded for this institute.' : null,
+        ];
+
+        return $integrations;
+    }
+
+    private function getTaskManagementIntegrations(int $tenantId, ?string $syear): array
+    {
+        $integrations = [];
+
+        $staffCount = 0;
+        try {
+            $staffCount = DB::table('tbluser')
+                ->where('sub_institute_id', $tenantId)
+                ->where('status', 1)
+                ->whereNull('terminated_date')
+                ->count();
+        } catch (\Throwable) {}
+
+        $integrations[] = [
+            'id' => 'task-organization',
+            'target_module' => 'organization',
+            'target_label' => 'Organization Management',
+            'relationship' => 'Assignee Directory',
+            'why_it_matters' => 'Every task\'s TASK_ALLOCATED_TO is an active staff id from the Organization directory, so workload concentration can be read against department context.',
+            'status' => $staffCount > 0 ? 'available' : 'unavailable',
+            'record_count' => $staffCount,
+            'metrics' => [['label' => 'Active Staff', 'value' => (string) $staffCount]],
+            'shared_entities' => ['tbluser.id'],
+            'route' => '/modules/organization-management/intelligence',
+            'reason' => $staffCount === 0 ? 'No active staff on file for this institute.' : null,
+        ];
+
+        $attendanceCount = 0;
+        try {
+            $attendanceCount = DB::table('hrms_attendances')
+                ->where('sub_institute_id', $tenantId)
+                ->count();
+        } catch (\Throwable) {}
+
+        $integrations[] = [
+            'id' => 'task-staff-attendance',
+            'target_module' => 'staff-attendance',
+            'target_label' => 'Attendance Management',
+            'relationship' => 'Overload vs. Presence Cross-Check',
+            'why_it_matters' => 'A person carrying a high overdue task share who is also irregular on the punch register is a different story than one who is simply overloaded.',
+            'status' => $attendanceCount > 0 ? 'available' : 'unavailable',
+            'record_count' => $attendanceCount,
+            'metrics' => [['label' => 'Punch Records on File', 'value' => (string) $attendanceCount]],
+            'shared_entities' => ['tbluser.id'],
+            'route' => '/hrit/attendance-management/attendance-reports',
+            'reason' => $attendanceCount === 0 ? 'No staff attendance data recorded for this institute.' : null,
+        ];
+
+        return $integrations;
+    }
+
+    private function getTalentIntegrations(int $tenantId, ?string $syear): array
+    {
+        $integrations = [];
+
+        $departmentCount = 0;
+        try {
+            $departmentCount = DB::table('hrms_departments')
+                ->where('sub_institute_id', $tenantId)
+                ->count();
+        } catch (\Throwable) {}
+
+        $integrations[] = [
+            'id' => 'talent-organization',
+            'target_module' => 'organization',
+            'target_label' => 'Organization Management',
+            'relationship' => 'Department Structure',
+            'why_it_matters' => 'Hiring pipeline, onboarding and offboarding are all placed against the same department structure Organization owns.',
+            'status' => $departmentCount > 0 ? 'available' : 'unavailable',
+            'record_count' => $departmentCount,
+            'metrics' => [['label' => 'Departments on File', 'value' => (string) $departmentCount]],
+            'shared_entities' => ['hrms_departments.id', 'tbluser.department_id'],
+            'route' => '/modules/organization-management/intelligence',
+            'reason' => $departmentCount === 0 ? 'No department master data on file.' : null,
+        ];
+
+        $jobroleCount = 0;
+        try {
+            $jobroleCount = DB::table('s_user_jobrole')
+                ->where('sub_institute_id', $tenantId)
+                ->count();
+        } catch (\Throwable) {}
+
+        $integrations[] = [
+            'id' => 'talent-capability',
+            'target_module' => 'capability',
+            'target_label' => 'Capability Intelligence',
+            'relationship' => 'Job-Role Skill Mapping',
+            'why_it_matters' => 'Candidate and succession matching is only as good as the skill mapping behind each job role, which Capability owns.',
+            'status' => $jobroleCount > 0 ? 'available' : 'unavailable',
+            'record_count' => $jobroleCount,
+            'metrics' => [['label' => 'Job Roles Mapped', 'value' => (string) $jobroleCount]],
+            'shared_entities' => ['s_user_jobrole.id', 's_user_skill_jobrole.jobrole_id'],
+            'route' => '/modules/capability-intelligence/intelligence',
+            'reason' => $jobroleCount === 0 ? 'No job-role mapping on file.' : null,
+        ];
+
+        $attendanceCount = 0;
+        try {
+            $attendanceCount = DB::table('hrms_attendances')
+                ->where('sub_institute_id', $tenantId)
+                ->count();
+        } catch (\Throwable) {}
+
+        $integrations[] = [
+            'id' => 'talent-staff-attendance',
+            'target_module' => 'staff-attendance',
+            'target_label' => 'Attendance Management',
+            'relationship' => 'Onboarding/Offboarding Presence Check',
+            'why_it_matters' => 'A new hire\'s onboarding journey and an exiting employee\'s offboarding case are both cross-checked against the punch register.',
+            'status' => $attendanceCount > 0 ? 'available' : 'unavailable',
+            'record_count' => $attendanceCount,
+            'metrics' => [['label' => 'Punch Records on File', 'value' => (string) $attendanceCount]],
+            'shared_entities' => ['tbluser.id'],
+            'route' => '/hrit/attendance-management/attendance-reports',
+            'reason' => $attendanceCount === 0 ? 'No staff attendance data recorded for this institute.' : null,
+        ];
+
+        return $integrations;
+    }
+
+    private function getCapabilityIntegrations(int $tenantId, ?string $syear): array
+    {
+        $integrations = [];
+
+        $jobroleCount = 0;
+        try {
+            $jobroleCount = DB::table('s_user_jobrole')
+                ->where('sub_institute_id', $tenantId)
+                ->count();
+        } catch (\Throwable) {}
+
+        $integrations[] = [
+            'id' => 'capability-talent',
+            'target_module' => 'talent',
+            'target_label' => 'Talent Management',
+            'relationship' => 'Job-Role Skill Coverage for Hiring',
+            'why_it_matters' => 'Skill-coverage gaps by job role are the same surface Talent\'s hiring funnel and succession planning read from.',
+            'status' => $jobroleCount > 0 ? 'available' : 'unavailable',
+            'record_count' => $jobroleCount,
+            'metrics' => [['label' => 'Job Roles Mapped', 'value' => (string) $jobroleCount]],
+            'shared_entities' => ['s_user_jobrole.id', 's_user_skill_jobrole.jobrole_id'],
+            'route' => '/modules/talent-management/intelligence',
+            'reason' => $jobroleCount === 0 ? 'No job-role mapping on file.' : null,
+        ];
+
+        $staffCount = 0;
+        try {
+            $staffCount = DB::table('tbluser')
+                ->where('sub_institute_id', $tenantId)
+                ->where('status', 1)
+                ->whereNull('terminated_date')
+                ->count();
+        } catch (\Throwable) {}
+
+        $integrations[] = [
+            'id' => 'capability-organization',
+            'target_module' => 'organization',
+            'target_label' => 'Organization Management',
+            'relationship' => 'Department Skill Coverage',
+            'why_it_matters' => 'Skill-coverage gaps are reported by department, using the same department structure Organization owns.',
+            'status' => $staffCount > 0 ? 'available' : 'unavailable',
+            'record_count' => $staffCount,
+            'metrics' => [['label' => 'Active Staff', 'value' => (string) $staffCount]],
+            'shared_entities' => ['tbluser.id', 'hrms_departments.id'],
+            'route' => '/modules/organization-management/intelligence',
+            'reason' => $staffCount === 0 ? 'No active staff on file for this institute.' : null,
+        ];
+
+        return $integrations;
+    }
+
+    private function getStaffAttendanceIntegrations(int $tenantId, ?string $syear): array
+    {
+        $integrations = [];
+
+        $staffCount = 0;
+        try {
+            $staffCount = DB::table('tbluser')
+                ->where('sub_institute_id', $tenantId)
+                ->where('status', 1)
+                ->whereNull('terminated_date')
+                ->count();
+        } catch (\Throwable) {}
+
+        $integrations[] = [
+            'id' => 'staff-attendance-organization',
+            'target_module' => 'organization',
+            'target_label' => 'Organization Management',
+            'relationship' => 'Active Staff Register',
+            'why_it_matters' => 'Attendance rates are only meaningful measured against Organization\'s own active-staff count and department structure.',
+            'status' => $staffCount > 0 ? 'available' : 'unavailable',
+            'record_count' => $staffCount,
+            'metrics' => [['label' => 'Active Staff', 'value' => (string) $staffCount]],
+            'shared_entities' => ['tbluser.id', 'hrms_departments.id'],
+            'route' => '/modules/organization-management/intelligence',
+            'reason' => $staffCount === 0 ? 'No active staff on file for this institute.' : null,
+        ];
+
+        $taskCount = 0;
+        try {
+            $taskCount = DB::table('task')
+                ->where('sub_institute_id', $tenantId)
+                ->whereNull('deleted_at')
+                ->count();
+        } catch (\Throwable) {}
+
+        $integrations[] = [
+            'id' => 'staff-attendance-task',
+            'target_module' => 'task-management',
+            'target_label' => 'Task Management',
+            'relationship' => 'Presence vs. Overload Cross-Check',
+            'why_it_matters' => 'Irregular attendance on a person already carrying a heavy overdue task load is a different finding than either signal alone.',
+            'status' => $taskCount > 0 ? 'available' : 'unavailable',
+            'record_count' => $taskCount,
+            'metrics' => [['label' => 'Tasks on File', 'value' => (string) $taskCount]],
+            'shared_entities' => ['tbluser.id (TASK_ALLOCATED_TO)'],
+            'route' => '/modules/task-management-551/intelligence',
+            'reason' => $taskCount === 0 ? 'No tasks recorded for this institute.' : null,
+        ];
+
+        return $integrations;
+    }
+
+    private function getLmsActivityIntegrations(int $tenantId, ?string $syear): array
+    {
+        $integrations = [];
+
+        $homeworkCount = 0;
+        try {
+            $homeworkCount = DB::table('homework')
+                ->where('sub_institute_id', $tenantId)
+                ->when($syear, fn ($q) => $q->where('syear', $syear))
+                ->count();
+        } catch (\Throwable) {}
+
+        $integrations[] = [
+            'id' => 'lms-activity-homework',
+            'target_module' => 'homework',
+            'target_label' => 'Homework & Assignments',
+            'relationship' => 'Learner Engagement Source',
+            'why_it_matters' => 'Homework submission is the real, measurable learner-activity signal this module blends with content coverage.',
+            'status' => $homeworkCount > 0 ? 'available' : 'unavailable',
+            'record_count' => $homeworkCount,
+            'metrics' => [['label' => 'Homework Rows on File', 'value' => (string) $homeworkCount]],
+            'shared_entities' => ['standard_id', 'subject_id', 'student_id'],
+            'route' => '/lms/homework/intelligence',
+            'reason' => $homeworkCount === 0 ? "No homework activity recorded for {$syear}." : null,
+        ];
+
+        $contentCount = 0;
+        try {
+            $contentCount = DB::table('content_master')
+                ->where('sub_institute_id', $tenantId)
+                ->when($syear, fn ($q) => $q->where('syear', $syear))
+                ->count();
+        } catch (\Throwable) {}
+
+        $integrations[] = [
+            'id' => 'lms-activity-teachlearn',
+            'target_module' => 'teach-learn',
+            'target_label' => 'Teach & Learn (PAL)',
+            'relationship' => 'Course & Content Catalogue Source',
+            'why_it_matters' => 'Content coverage — what has been published and to which class — is the other real half of this module\'s position metrics.',
+            'status' => $contentCount > 0 ? 'available' : 'unavailable',
+            'record_count' => $contentCount,
+            'metrics' => [['label' => 'Published Content Items', 'value' => (string) $contentCount]],
+            'shared_entities' => ['sub_std_map.standard_id', 'sub_std_map.subject_id', 'content_master.id'],
+            'route' => '/modules/teach-learn/intelligence',
+            'reason' => $contentCount === 0 ? "No published content recorded for {$syear}." : null,
         ];
 
         return $integrations;

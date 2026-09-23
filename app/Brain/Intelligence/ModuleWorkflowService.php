@@ -264,6 +264,16 @@ class ModuleWorkflowService
             $keys = array_unique(array_merge($keys, ['front_desk.gate_pass.flow', 'front_desk.complaint.flow']));
         } elseif ($module === 'teach-learn') {
             $keys = array_unique(array_merge($keys, ['academics.lesson_plan.flow', 'lms.content.flow']));
+        } elseif ($module === 'staff-attendance') {
+            // Its own workflow point sits under the 'attendance' module (component
+            // 'staff') to reuse the existing attendance.staff component rather
+            // than declare a second one, so it does not match by moduleOf() alone.
+            $keys = array_unique(array_merge($keys, ['attendance.staff.flow']));
+        } elseif ($module === 'lms-activity') {
+            // Its own workflow point sits under 'lms.activity'; content
+            // publication approvals are also relevant to a content-without-
+            // activity finding.
+            $keys = array_unique(array_merge($keys, ['lms.activity.flow', 'lms.content.flow']));
         }
 
         return array_values($keys);
