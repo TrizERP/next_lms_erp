@@ -572,6 +572,11 @@ Route::match(['GET', 'POST'], 'intelligence/curriculum-planning/chapter', [\App\
 // Monthly Plan - calendar view of scheduled periods for a given month
 Route::match(['GET', 'POST'], 'intelligence/monthly-plan', [\App\Http\Controllers\api\lms\MonthlyPlanApiController::class, 'index']);
 
+// Interactions - unified staff/parent/student touchpoint log (calls, meetings, notes, follow-ups)
+Route::match(['GET', 'POST'], 'interactions', [\App\Http\Controllers\api\InteractionLogController::class, 'index']);
+Route::post('interactions/store', [\App\Http\Controllers\api\InteractionLogController::class, 'store']);
+Route::post('interactions/{id}/update', [\App\Http\Controllers\api\InteractionLogController::class, 'update']);
+
 // Lesson Plan detail - periods (+ concepts) for a date range, for the single-lesson detail page
 Route::match(['GET', 'POST'], 'intelligence/lesson-plan-detail', [\App\Http\Controllers\api\lms\LessonPlanDetailApiController::class, 'index']);
 

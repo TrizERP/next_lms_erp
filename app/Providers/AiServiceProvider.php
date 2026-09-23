@@ -99,6 +99,12 @@ class AiServiceProvider extends ServiceProvider
 
     private function registerFoundation(): void
     {
+        // Scoped, not singleton: the schema cannot change inside one request, so the memo
+        // is always right for the life of that request — and it is rebuilt for the next
+        // one, so a long-lived worker cannot keep answering from before a migration.
+        // `SchemaCache` carries the measurements that made this necessary.
+        $this->app->scoped(\App\Domain\AI\Support\SchemaCache::class);
+
         $this->app->singleton(OntologyRegistry::class);
         $this->app->singleton(AiAuditLogger::class);
         $this->app->singleton(ThresholdRegistry::class);
@@ -373,6 +379,20 @@ class AiServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Domain\AI\Configuration\AiModuleRegistry::class);
         $this->app->singleton(\App\Domain\AI\Configuration\ProviderCatalog::class);
         $this->app->singleton(\App\Domain\AI\Configuration\ModelCatalog::class);
+
+        // Scoped, not left unbound: `ModuleModelBindings` carries a per-institute row
+        // cache that a `save()` or `clear()` clears on itself, and `AiConfigurationResolver`
+        // (below) holds a `ModuleModelBindings` of its own for its whole life as a
+        // singleton. Left unbound, the container hands the resolver one instance and
+        // anything else that asks for `ModuleModelBindings::class` — a controller saving a
+        // binding, for one — a completely different one: a save's cache-clear would land
+        // on an instance the resolver never consults, and a resolve straight after would
+        // silently answer from before the save. One instance per request, the same
+        // reasoning `SchemaCache` above gets, closes that gap; the "always call save then
+        // resolve" order the one caller today happens to use is what has kept it from
+        // showing up yet.
+        $this->app->scoped(\App\Domain\AI\Configuration\ModuleModelBindings::class);
+
         $this->app->singleton(\App\Domain\AI\Configuration\AiConfigurationResolver::class);
         $this->app->singleton(\App\Domain\AI\Configuration\AiModelClientFactory::class);
 

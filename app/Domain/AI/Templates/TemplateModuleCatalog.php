@@ -2,8 +2,8 @@
 
 namespace App\Domain\AI\Templates;
 
+use App\Domain\AI\Support\SchemaCache;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * The modules a template can belong to — the list behind the module selector.
@@ -36,11 +36,45 @@ class TemplateModuleCatalog
     public const SHARED = '__shared__';
 
     /**
+     * One `ai_modules` read per institute per request, keyed by institute.
+     *
+     * `AiTemplateController::index()` calls `label()` once per template row, and `label()`
+     * calls `all()`. A nine-template module therefore ran the same `ai_modules` query nine
+     * times and probed `Schema::hasTable('ai_modules')` nine times with it — measured at
+     * 4.8 of the 6.1 seconds the Admission Prompts and Templates tabs spent loading.
+     *
+     * The catalogue is a read of configuration that no request mutates, so one answer per
+     * institute is the correct answer for the whole request. The instance is resolved from
+     * the container per request, so nothing survives into the next one.
+     *
+     * @var array<string, array<int, array{key:string, label:string, description:?string, icon:?string, shared:bool}>>
+     */
+    private array $memo = [];
+
+    public function __construct(private readonly SchemaCache $schema)
+    {
+    }
+
+    /**
      * Every module a template can be filed under, shared first.
      *
      * @return array<int, array{key:string, label:string, description:?string, icon:?string, shared:bool}>
      */
     public function all(int|string|null $subInstituteId = null): array
+    {
+        $cacheKey = $subInstituteId === null ? '' : (string) $subInstituteId;
+
+        if (isset($this->memo[$cacheKey])) {
+            return $this->memo[$cacheKey];
+        }
+
+        return $this->memo[$cacheKey] = $this->load($subInstituteId);
+    }
+
+    /**
+     * @return array<int, array{key:string, label:string, description:?string, icon:?string, shared:bool}>
+     */
+    private function load(int|string|null $subInstituteId): array
     {
         $modules = [[
             'key' => self::SHARED,
@@ -50,7 +84,7 @@ class TemplateModuleCatalog
             'shared' => true,
         ]];
 
-        if (! Schema::hasTable('ai_modules')) {
+        if (! $this->schema->hasTable('ai_modules')) {
             return $modules;
         }
 

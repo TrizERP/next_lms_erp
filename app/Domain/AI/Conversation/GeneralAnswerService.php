@@ -84,13 +84,18 @@ class GeneralAnswerService
         string $question,
         array $history = [],
         ?callable $onToken = null,
-        ?McpRequestContext $scope = null
+        ?McpRequestContext $scope = null,
+        ?string $productModuleKey = null
     ): ?array {
         if (trim($question) === '') {
             return null;
         }
 
-        $client = $this->clients?->for(self::MODULE, $scope?->selectedInstituteId) ?? $this->client;
+        // `$productModuleKey` is the PRODUCT module the question was asked on, so a module
+        // that chose its own conversational model on its own AI Stack gets it. Null — which
+        // every existing caller passes by omission — resolves exactly as before.
+        $client = $this->clients?->for(self::MODULE, $scope?->selectedInstituteId, $productModuleKey)
+            ?? $this->client;
 
         if (! $client->isConfigured()) {
             return null;

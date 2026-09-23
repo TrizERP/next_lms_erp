@@ -50,7 +50,16 @@ class LlmPlanner implements Planner
 
         // The client this module is configured to use, scoped to the asking school.
         // Unconfigured, this is the same client the container has always injected.
-        $client = $this->clients->for(self::MODULE, $context->scope->selectedInstituteId);
+        //
+        // `$context->module->key` is passed so a PRODUCT module that chose its own
+        // reasoning model on its own AI Stack gets it: planning for Fees can run on a
+        // different model from planning for Hostel. A module that chose nothing resolves
+        // through the central configuration exactly as before.
+        $client = $this->clients->for(
+            self::MODULE,
+            $context->scope->selectedInstituteId,
+            $context->module->key
+        );
 
         if ($available === [] || ! $client->isConfigured()) {
             return null;

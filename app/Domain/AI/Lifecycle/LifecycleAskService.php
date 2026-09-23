@@ -365,6 +365,9 @@ class LifecycleAskService
             $onToken,
             // So a school with its own conversational configuration uses it.
             $context->scope,
+            // And so a PRODUCT module that chose its own conversational model on its own
+            // AI Stack uses that. A module that chose nothing resolves as before.
+            $context->module->key,
         );
     }
 

@@ -39,13 +39,24 @@ class LmsMcpServer extends Server
 
         // One page, always.
         //
-        // Laravel MCP paginates tools/list at 15 by default, and the catalogue is 25.
-        // A client that reads the first page and stops — which is most of them, and was
-        // this application's own REST façade behaviour — saw fifteen tools and silently
-        // lost every admissions and fees tool. Cursor pagination is spec-correct and
-        // still works; sizing the page to the catalogue just means there is never a
-        // second page to miss. The catalogue is bounded by McpServiceProvider::TOOLS,
-        // so this cannot grow unbounded without someone editing that list.
-        $this->defaultPaginationLength = max($this->defaultPaginationLength, count($this->tools));
+        // Laravel MCP paginates tools/list at 15 by default. A client that reads the first
+        // page and stops — which is most of them, and was this application's own REST
+        // façade behaviour — saw fifteen tools and silently lost every admissions and fees
+        // tool. Cursor pagination is spec-correct and still works; sizing the page to the
+        // catalogue just means there is never a second page to miss. The catalogue is
+        // bounded by McpServiceProvider::TOOLS, so this cannot grow unbounded without
+        // someone editing that list.
+        //
+        // BOTH properties, and the second one is not redundant. `maxPaginationLength` is
+        // 50 in the package and caps whatever `defaultPaginationLength` asks for, so
+        // raising only the default silently stopped working the moment the catalogue
+        // passed fifty tools — the first page held 50 of 52 and carried a `nextCursor`
+        // nobody was reading. That is the same bug as the original one, rediscovered at a
+        // different threshold, which is why the size is now derived in both places rather
+        // than in one.
+        $count = count($this->tools);
+
+        $this->maxPaginationLength = max($this->maxPaginationLength, $count);
+        $this->defaultPaginationLength = max($this->defaultPaginationLength, $count);
     }
 }
