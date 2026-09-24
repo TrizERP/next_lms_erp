@@ -51,6 +51,22 @@ class PracticeOutcomeService
     /** Answers needed before a low score means anything. */
     private const MIN_FOR_VERDICT = 3;
 
+    /**
+     * Total practice attempts on a concept, still below RETEACH_CUT, before
+     * this hands off to a teacher instead of sending the learner back to
+     * reteach again — the chapter-level flow's answer to "avoid infinite
+     * loops" (the misconception branch already has one via
+     * MisconceptionLibraryService's occurrence count and teacher_alert flag;
+     * this is the equivalent for the plain-low-accuracy branch, which had
+     * none). Multiplies MIN_FOR_VERDICT by the existing
+     * regression.corrective_attempts_before_demotion config value, which was
+     * defined but never wired into the student flow before this.
+     */
+    private function reteachAttemptCap(): int
+    {
+        return self::MIN_FOR_VERDICT * (int) config('pal_content.regression.corrective_attempts_before_demotion', 2);
+    }
+
     public function __construct(
         private AdaptiveLearningService $adaptive = new AdaptiveLearningService(),
     ) {
@@ -244,7 +260,23 @@ class PracticeOutcomeService
         $accuracy = (float) ($progress['accuracy'] ?? 0);
 
         // 1. A live misconception. Correct the model before drilling it.
+        //    Bounded: once MisconceptionLibraryService's own occurrence count
+        //    crosses teacher_alert_after_occurrences, remediate->check->fail
+        //    would otherwise repeat forever. Hand off instead of looping.
         if ($misconception !== null) {
+            if (! empty($misconception['teacher_alert'])) {
+                return [
+                    'action' => 'escalate',
+                    'band' => null,
+                    'concept_id' => $conceptId,
+                    'eso' => $esoReady,
+                    'reason' => sprintf(
+                        'The same mix-up has come up %d times. Your teacher has been flagged to help with this one.',
+                        (int) ($misconception['occurrences'] ?? 0)
+                    ),
+                ];
+            }
+
             return [
                 'action' => 'remediate',
                 'band' => null,
@@ -268,7 +300,24 @@ class PracticeOutcomeService
 
         // 3. Well below the pass mark on enough answers: the band is not the
         //    problem, the concept is. Re-teach rather than serve more questions.
+        //    Bounded: past reteachAttemptCap() attempts still under the cut,
+        //    reteach->practice->fail would otherwise repeat forever. Hand off
+        //    instead of looping, same posture as the misconception branch above.
         if ($attempted >= self::MIN_FOR_VERDICT && $accuracy < self::RETEACH_CUT) {
+            if ($attempted >= $this->reteachAttemptCap()) {
+                return [
+                    'action' => 'escalate',
+                    'band' => null,
+                    'concept_id' => $conceptId,
+                    'eso' => $esoReady,
+                    'reason' => sprintf(
+                        'You are still at %.0f%% after %d questions on this concept. Your teacher has been flagged to help with this one.',
+                        $accuracy,
+                        $attempted
+                    ),
+                ];
+            }
+
             return [
                 'action' => $esoReady ? 'reteach' : 'review_content',
                 'band' => $result['next_difficulty'] ?? null,

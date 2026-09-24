@@ -119,8 +119,30 @@ class lmsCurriculumController extends Controller
             ->whereIn('chapter_id', $chapterRows->pluck('id')->all() ?: [0])
             ->orderBy('chapter_id')
             ->orderBy('id')
-            ->get(['chapter_id', 'topic_id', 'name'])
+            ->get(['id', 'chapter_id', 'topic_id', 'name'])
             ->groupBy('chapter_id');
+
+        // The real concept -> learning-outcome/competency mapping:
+        // lms_concept_outcome keys on concept_id (an actual FK into
+        // lms_concept, unlike lms_concept_intelligence_index's name matching)
+        // and outcome_id into lms_learning_outcomes, which now carries three
+        // tiers - goal, competency, learning_outcome - chained by parent_id.
+        // competency_code/goal_code are denormalised onto every row, LO rows
+        // included, so LOs group under their competency even on the ~3% of
+        // concepts where the competency row itself isn't mapped to this
+        // concept.
+        $conceptOutcomesByConcept = DB::table('lms_concept_outcome as co')
+            ->join('lms_learning_outcomes as lo', 'lo.id', '=', 'co.outcome_id')
+            ->whereIn('co.chapter_id', $chapterRows->pluck('id')->all() ?: [0])
+            ->orderBy('co.goal_code')
+            ->orderBy('co.competency_code')
+            ->orderBy('co.outcome_type')
+            ->orderBy('co.outcome_code')
+            ->get([
+                'co.concept_id', 'co.outcome_type', 'co.outcome_code',
+                'co.competency_code', 'co.goal_code', 'co.match_source', 'lo.description',
+            ])
+            ->groupBy('concept_id');
 
         // The chapter's own lms_learning_outcomes rows are the source of truth
         // for this tab. Return only their `code` values, never descriptions or
@@ -176,18 +198,21 @@ class lmsCurriculumController extends Controller
                     $chapters = [];
 
                     foreach ($declared as $index => $declaredName) {
-                        $match = $canPair ? $extracted->get($index) : null;
+                        $match = $this->matchDeclaredChapter($declaredName, $extracted, $canPair, $index);
                         $conceptRows = $match ? ($conceptRowsByChapter->get($match->id) ?? collect()) : collect();
                         $concepts = $conceptRows
-                            ->pluck('name')
-                            ->map(fn ($name) => trim((string) $name))
-                            ->filter()
+                            ->map(fn ($concept) => [
+                                'name' => trim((string) $concept->name),
+                                'competencies' => $this->conceptCompetencies($concept->id, $conceptOutcomesByConcept),
+                            ])
+                            ->filter(fn ($concept) => $concept['name'] !== '')
                             ->values()
                             ->all();
                         $topics = $match
                             ? $this->chapterTopics(
                                 $topicsByChapter->get($match->id) ?? collect(),
-                                $conceptRows
+                                $conceptRows,
+                                $conceptOutcomesByConcept
                             )
                             : [];
 
@@ -217,17 +242,20 @@ class lmsCurriculumController extends Controller
                     // ones - Hindi unit 3 holds eleven. Falling back to them
                     // keeps real content on screen instead of "No chapters".
                     $chapters = $extracted
-                        ->map(function ($chapter) use ($periodsByName, $topicsByChapter, $conceptRowsByChapter, $competencyCodesByChapter) {
+                        ->map(function ($chapter) use ($periodsByName, $topicsByChapter, $conceptRowsByChapter, $competencyCodesByChapter, $conceptOutcomesByConcept) {
                             $conceptRows = $conceptRowsByChapter->get($chapter->id) ?? collect();
                             $concepts = $conceptRows
-                                ->pluck('name')
-                                ->map(fn ($name) => trim((string) $name))
-                                ->filter()
+                                ->map(fn ($concept) => [
+                                    'name' => trim((string) $concept->name),
+                                    'competencies' => $this->conceptCompetencies($concept->id, $conceptOutcomesByConcept),
+                                ])
+                                ->filter(fn ($concept) => $concept['name'] !== '')
                                 ->values()
                                 ->all();
                             $topics = $this->chapterTopics(
                                 $topicsByChapter->get($chapter->id) ?? collect(),
-                                $conceptRows
+                                $conceptRows,
+                                $conceptOutcomesByConcept
                             );
 
                             return [
@@ -267,16 +295,59 @@ class lmsCurriculumController extends Controller
         return is_array($decoded) ? array_values(array_filter($decoded, 'is_string')) : [];
     }
 
+    /**
+     * Resolve one declared chapter name to its chapter_master row.
+     *
+     * Positional pairing ($canPair) is the primary and safest method - it is
+     * only trusted when the unit declares exactly as many chapters as were
+     * extracted. Where the counts differ (48% of units), position means
+     * nothing, but roughly a fifth of those declared chapters can still be
+     * resolved safely by name: either an exact match, or a name that is a
+     * substring of the other with exactly one such candidate in the unit.
+     * Never resolved by a fuzzy/best-effort match - an ambiguous or absent
+     * name match leaves chapter_id null rather than guessing, same as before.
+     */
+    private function matchDeclaredChapter(string $declaredName, $extracted, bool $canPair, int $index)
+    {
+        if ($canPair) {
+            return $extracted->get($index);
+        }
+
+        $normalized = mb_strtolower(trim($declaredName));
+        if ($normalized === '') {
+            return null;
+        }
+
+        $exact = $extracted->first(
+            fn ($chapter) => mb_strtolower(trim((string) $chapter->chapter_name)) === $normalized
+        );
+        if ($exact !== null) {
+            return $exact;
+        }
+
+        $candidates = $extracted->filter(function ($chapter) use ($normalized) {
+            $chapterName = mb_strtolower(trim((string) $chapter->chapter_name));
+
+            return $chapterName !== '' && (
+                str_contains($chapterName, $normalized) || str_contains($normalized, $chapterName)
+            );
+        });
+
+        return $candidates->count() === 1 ? $candidates->first() : null;
+    }
+
     /** Build topic_master -> lms_concept rows without ever deriving a topic by name. */
-    private function chapterTopics($topics, $conceptRows): array
+    private function chapterTopics($topics, $conceptRows, $conceptOutcomesByConcept): array
     {
         return collect($topics)
-            ->map(function ($topic) use ($conceptRows) {
+            ->map(function ($topic) use ($conceptRows, $conceptOutcomesByConcept) {
                 $concepts = collect($conceptRows)
                     ->where('topic_id', $topic->id)
-                    ->pluck('name')
-                    ->map(fn ($name) => trim((string) $name))
-                    ->filter()
+                    ->map(fn ($concept) => [
+                        'name' => trim((string) $concept->name),
+                        'competencies' => $this->conceptCompetencies($concept->id, $conceptOutcomesByConcept),
+                    ])
+                    ->filter(fn ($concept) => $concept['name'] !== '')
                     ->values()
                     ->all();
 
@@ -288,6 +359,71 @@ class lmsCurriculumController extends Controller
                 ];
             })
             ->filter(fn ($topic) => $topic['name'] !== '')
+            ->values()
+            ->all();
+    }
+
+    /**
+     * A concept's own competencies, and the learning outcomes mapped beneath
+     * each one - both read from lms_concept_outcome, the real concept_id ->
+     * outcome_id mapping (never inferred by name).
+     *
+     * lms_concept_outcome was built in two passes, recorded in match_source:
+     * 'chapter_scope' assigns every competency of a chapter to every concept
+     * in it (score 0.6) - by far the largest source (4,047 rows) - while
+     * 'llm' (score 0.9) and 'token_overlap' match a competency to the specific
+     * concepts it actually covers. Reading chapter_scope rows without
+     * preference is why every concept in a chapter was rendering the same
+     * competency set: it *is* the same set, on purpose, at that grain. Where a
+     * concept has any llm/token_overlap competency match, only that
+     * concept-specific set is used; chapter_scope is a fallback for concepts
+     * with no specific match at all (~1,967 of 6,892).
+     *
+     * Learning-outcome rows are not filtered the same way: 98% of them carry
+     * match_source 'inherited', because once a competency is selected for a
+     * concept its learning outcomes come with it structurally (they describe
+     * that competency, not the concept) - filtering LOs by source would drop
+     * nearly all of them for no reason.
+     */
+    private function conceptCompetencies($conceptId, $conceptOutcomesByConcept): array
+    {
+        $rows = $conceptOutcomesByConcept->get($conceptId);
+
+        if ($rows === null) {
+            return [];
+        }
+
+        $competencyRows = $rows->where('outcome_type', 'competency');
+        $specificCompetencyRows = $competencyRows->whereIn('match_source', ['llm', 'token_overlap']);
+        $competencyRows = $specificCompetencyRows->isNotEmpty() ? $specificCompetencyRows : $competencyRows;
+
+        $learningOutcomeRows = $rows->where('outcome_type', 'learning_outcome');
+
+        return $competencyRows
+            ->pluck('competency_code')
+            ->unique()
+            ->map(function ($competencyCode) use ($competencyRows, $learningOutcomeRows, $rows) {
+                $competencyRow = $competencyRows->firstWhere('competency_code', $competencyCode);
+
+                $learningOutcomes = $learningOutcomeRows
+                    ->where('competency_code', $competencyCode)
+                    ->unique('outcome_code')
+                    ->map(fn ($row) => [
+                        'code'  => $row->outcome_code,
+                        'label' => trim((string) $row->description),
+                    ])
+                    ->filter(fn ($outcome) => $outcome['label'] !== '')
+                    ->values()
+                    ->all();
+
+                return [
+                    'code'              => $competencyCode,
+                    'goal_code'         => optional($rows->firstWhere('competency_code', $competencyCode))->goal_code,
+                    'label'             => $competencyRow ? trim((string) $competencyRow->description) : null,
+                    'learning_outcomes' => $learningOutcomes,
+                ];
+            })
+            ->filter(fn ($competency) => $competency['label'] !== null || $competency['learning_outcomes'] !== [])
             ->values()
             ->all();
     }
