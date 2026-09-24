@@ -17,6 +17,10 @@ use App\Http\Controllers\Brain\BrainInventoryIntelligenceController;
 use App\Http\Controllers\Brain\BrainLibraryIntelligenceController;
 use App\Http\Controllers\Brain\BrainLmsActivityIntelligenceController;
 use App\Http\Controllers\Brain\BrainOrganizationIntelligenceController;
+use App\Http\Controllers\Brain\BrainConsentIntelligenceController;
+use App\Http\Controllers\Brain\BrainDocumentTemplateIntelligenceController;
+use App\Http\Controllers\Brain\BrainPettyCashIntelligenceController;
+use App\Http\Controllers\Brain\BrainPtmIntelligenceController;
 use App\Http\Controllers\Brain\BrainResultIntelligenceController;
 use App\Http\Controllers\Brain\BrainStaffAttendanceIntelligenceController;
 use App\Http\Controllers\Brain\BrainStudentIntelligenceController;
@@ -118,6 +122,20 @@ Route::middleware(['brain.auth', 'brain.tenant'])->group(function () {
          * every other recommendation in the system goes through.
          */
         Route::get('result/intelligence', [BrainResultIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+
+        /*
+         * Four modules that previously answered "The Brain does not watch this
+         * menu". Each emits the canonical ModuleIntelligencePayload directly, so
+         * each frontend contract is presentation only with no adapter.
+         *
+         * None declares a `run` counterpart: their findings are computed per
+         * request rather than written to the signal ledger, and a button that
+         * recomputed nothing would misdescribe what the endpoint does.
+         */
+        Route::get('petty-cash/intelligence', [BrainPettyCashIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::get('document-templates/intelligence', [BrainDocumentTemplateIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::get('ptm/intelligence', [BrainPtmIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::get('consent/intelligence', [BrainConsentIntelligenceController::class, 'index'])->middleware('brain.permission:read');
         Route::post('result/intelligence/run', [BrainResultIntelligenceController::class, 'run'])->middleware('brain.permission:create');
         Route::get('attendance/intelligence', [BrainAttendanceIntelligenceController::class, 'index'])->middleware('brain.permission:read');
         Route::post('attendance/intelligence/run', [BrainAttendanceIntelligenceController::class, 'run'])->middleware('brain.permission:create');

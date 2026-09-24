@@ -264,6 +264,17 @@ class ModuleWorkflowService
             $keys = array_unique(array_merge($keys, ['front_desk.gate_pass.flow', 'front_desk.complaint.flow']));
         } elseif ($module === 'teach-learn') {
             $keys = array_unique(array_merge($keys, ['academics.lesson_plan.flow', 'lms.content.flow']));
+        } elseif ($module === 'homework') {
+            // `lms.activity.flow` IS the homework flow — its own definition reads
+            // "Homework activity & content alignment: reviewing published content
+            // with no associated homework activity". It sits under the `lms`
+            // module prefix, so moduleOf() alone never matched it and Homework
+            // reported no workflows at all on every tenant.
+            //
+            // `lms.content.flow` is included with it because the gap the first
+            // flow acts on is defined by the second: content published, homework
+            // not set against it.
+            $keys = array_unique(array_merge($keys, ['lms.activity.flow', 'lms.content.flow']));
         } elseif ($module === 'staff-attendance') {
             // Its own workflow point sits under the 'attendance' module (component
             // 'staff') to reuse the existing attendance.staff component rather
