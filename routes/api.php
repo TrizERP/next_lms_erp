@@ -41,6 +41,7 @@ use App\Http\Controllers\api\TeacherAssignmentMobileApiController;
 use App\Http\Controllers\api\TeacherTimetableApiController;
 use App\Http\Controllers\api\TeacherFeeDuesApiController;
 use App\Http\Controllers\api\TeacherIcardApiController;
+use App\Http\Controllers\api\UserDashboardPreferenceApiController;
 
 // Student Assessment API - Get student assessment data with scores and levels
 Route::get('/student-assessment', [StudentGraphController::class, 'getStudentAssessment']);
@@ -153,6 +154,12 @@ Route::middleware('api.session')->group(function () {
     // Self-service "My ID card" — scoped to the caller's own user_id only,
     // see App\Http\Controllers\api\TeacherIcardApiController::mine().
     Route::post('teacher-icard/mine', [TeacherIcardApiController::class, 'mine']);
+    // Per-user dashboard customisation (which KPI cards / charts the caller has
+    // hidden). Owner comes from the JWT, so it never affects another user.
+    Route::get('dashboard-preferences/{dashboardKey}', [UserDashboardPreferenceApiController::class, 'show'])
+        ->where('dashboardKey', UserDashboardPreferenceApiController::KEY_PATTERN);
+    Route::put('dashboard-preferences/{dashboardKey}', [UserDashboardPreferenceApiController::class, 'update'])
+        ->where('dashboardKey', UserDashboardPreferenceApiController::KEY_PATTERN);
 });
 Route::middleware('api.session')->prefix('fees-refund')->group(function () {
     Route::post('search', [FeesRefundApiController::class, 'search']);
