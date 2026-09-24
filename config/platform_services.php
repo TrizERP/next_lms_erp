@@ -123,6 +123,12 @@ return [
         'communication' => ['label' => 'Communication', 'group' => 'Administration', 'icon' => 'megaphone',              'description' => 'Circulars, campaigns and parent messaging.'],
         'reports'       => ['label' => 'Reports',       'group' => 'Administration', 'icon' => 'bar-chart-3',            'description' => 'Scheduled reports, exports and statutory returns.'],
         'compliance'    => ['label' => 'Compliance',    'group' => 'Administration', 'icon' => 'shield-check',           'description' => 'Documents, accreditation evidence and retention.'],
+
+        // People & Competency
+        'organization'     => ['label' => 'Organization',     'group' => 'People', 'icon' => 'building-2',     'description' => 'Departments, headcount and organization structure.'],
+        'task-management'  => ['label' => 'Task Management',  'group' => 'People', 'icon' => 'list-checks',    'description' => 'Work assignment, tracking and deadline extensions.'],
+        'talent'           => ['label' => 'Talent Management','group' => 'People', 'icon' => 'user-search',    'description' => 'Recruitment, onboarding, mobility and offboarding.'],
+        'capability'       => ['label' => 'Capability',       'group' => 'People', 'icon' => 'badge-check',    'description' => 'Skills, job-role mapping, frameworks and certifications.'],
     ],
 
     /*
@@ -224,6 +230,16 @@ return [
         'compliance.document'      => ['label' => 'Document repository', 'description' => 'Statutory and institutional documents.'],
         'compliance.accreditation' => ['label' => 'Accreditation',       'description' => 'Evidence collection for inspection and audit.'],
         'compliance.retention'     => ['label' => 'Data retention',      'description' => 'Archival and purge of aged records.'],
+
+        // People & Competency
+        'organization.posting'             => ['label' => 'Job posting',           'description' => 'Open postings and their review.'],
+        'task-management.deadline_extension' => ['label' => 'Deadline extension',  'description' => 'A request to move a task\'s due date.'],
+        'talent.offboarding'               => ['label' => 'Offboarding',           'description' => 'Exit clearance across notice, accounts and assets.'],
+        'capability.certification'         => ['label' => 'Certification renewal','description' => 'Renewing or re-validating a staff certification.'],
+        // Learning activity — distinct from lms.course/lms.content above, which
+        // are catalogue and published-material components; this one is the
+        // submission/engagement signal blended alongside them.
+        'lms.activity'                     => ['label' => 'Learning activity',    'description' => 'Homework submission and content-usage signals.'],
     ],
 
     /*
@@ -1069,6 +1085,48 @@ return [
         ],
         'lms.content.flow' => [
             'label' => 'Content publication', 'description' => 'Publishing learning content to students.', 'subject' => 'Content item',
+            'suggested_steps' => [
+                ['name' => 'Academic head', 'approver_type' => 'role', 'approver' => 'Academic head', 'sla_hours' => 48],
+            ],
+        ],
+
+        // People & Competency
+        'organization.posting.flow' => [
+            'label' => 'Stalled posting review', 'description' => 'Reviewing an open job posting that has gone past its expected close date.', 'subject' => 'Job posting',
+            'suggested_steps' => [
+                ['name' => 'HR review', 'approver_type' => 'role', 'approver' => 'HR', 'sla_hours' => 48],
+                ['name' => 'Department head decision', 'approver_type' => 'role', 'approver' => 'Department head', 'sla_hours' => 48],
+            ],
+        ],
+        'task-management.deadline_extension.flow' => [
+            'label' => 'Deadline extension approval', 'description' => 'A staff request to move an assigned task\'s due date.', 'subject' => 'Deadline extension',
+            'suggested_steps' => [
+                ['name' => 'Task observer', 'approver_type' => 'role', 'approver' => 'Task observer', 'sla_hours' => 24],
+            ],
+        ],
+        'talent.offboarding.flow' => [
+            'label' => 'Offboarding clearance', 'description' => 'Exit clearance for a departing staff member, from notice to closure.', 'subject' => 'Offboarding case',
+            'suggested_steps' => [
+                ['name' => 'Reporting manager', 'approver_type' => 'reporting_manager', 'approver' => '', 'sla_hours' => 24],
+                ['name' => 'HR clearance', 'approver_type' => 'role', 'approver' => 'HR', 'sla_hours' => 48],
+                ['name' => 'Accounts clearance', 'approver_type' => 'role', 'approver' => 'Accounts', 'sla_hours' => 48],
+            ],
+        ],
+        'capability.certification.flow' => [
+            'label' => 'Certification renewal approval', 'description' => 'Renewing a certification that has expired or is expiring soon.', 'subject' => 'Certification',
+            'suggested_steps' => [
+                ['name' => 'HR verification', 'approver_type' => 'role', 'approver' => 'HR', 'sla_hours' => 48],
+            ],
+        ],
+        'attendance.staff.flow' => [
+            'label' => 'Staff attendance anomaly escalation', 'description' => 'Escalating a chronic staff attendance or department-coverage finding.', 'subject' => 'Attendance finding',
+            'suggested_steps' => [
+                ['name' => 'Department head', 'approver_type' => 'role', 'approver' => 'Department head', 'sla_hours' => 24],
+                ['name' => 'HR', 'approver_type' => 'role', 'approver' => 'HR', 'sla_hours' => 48],
+            ],
+        ],
+        'lms.activity.flow' => [
+            'label' => 'Homework activity & content alignment', 'description' => 'Reviewing published content with no associated homework activity.', 'subject' => 'Content item',
             'suggested_steps' => [
                 ['name' => 'Academic head', 'approver_type' => 'role', 'approver' => 'Academic head', 'sla_hours' => 48],
             ],
