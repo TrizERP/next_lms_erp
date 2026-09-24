@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
+use App\Models\mobile_pageModel;
 use GenTux\Jwt\GetsJwtToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -155,23 +156,37 @@ class MobileAppMenuRightsApiController extends Controller
     }
 
     /**
+     * Whether this installation has run
+     * 2026_09_24_100100_add_page_source_to_mobile_homescreen_tables. Until it
+     * has, every row behaves as page_source = 'external' -- i.e. exactly like
+     * today, since that migration changes no runtime behavior by itself.
+     */
+    private function hasPageSourceColumns(string $table): bool
+    {
+        return Schema::hasColumn($table, 'page_source');
+    }
+
+    /**
      * The WebView columns of one row, normalised for the admin UI. Unlike the
      * homescreen APIs this does NOT resolve a relative web_url -- an admin
      * editing the field should see back the value they typed.
      */
-    private function renderFields($row, bool $hasRenderColumns): array
+    private function renderFields($row, bool $hasRenderColumns, bool $hasPageSourceColumns = false): array
     {
         if (! $hasRenderColumns) {
-            return ['render_type' => 'native', 'web_url' => '', 'open_mode' => 'in_app'];
+            return ['render_type' => 'native', 'web_url' => '', 'open_mode' => 'in_app', 'page_source' => 'external', 'custom_page_id' => null];
         }
 
         $renderType = strtolower(trim((string) ($row->render_type ?? '')));
         $openMode = strtolower(trim((string) ($row->open_mode ?? '')));
+        $pageSource = $hasPageSourceColumns ? strtolower(trim((string) ($row->page_source ?? ''))) : '';
 
         return [
             'render_type' => in_array($renderType, ['webview', 'native_dynamic'], true) ? $renderType : 'native',
             'web_url' => (string) ($row->web_url ?? ''),
             'open_mode' => $openMode === 'external' ? 'external' : 'in_app',
+            'page_source' => $pageSource === 'custom' ? 'custom' : 'external',
+            'custom_page_id' => $hasPageSourceColumns && $row->custom_page_id ? (int) $row->custom_page_id : null,
         ];
     }
 
@@ -179,6 +194,7 @@ class MobileAppMenuRightsApiController extends Controller
     {
         $table = $this->tableForProfileName($profileName);
         $hasRenderColumns = $this->hasRenderColumns($table);
+        $hasPageSourceColumns = $this->hasPageSourceColumns($table);
 
         $query = DB::table($table)
             ->where('sub_institute_id', 1)
@@ -188,7 +204,7 @@ class MobileAppMenuRightsApiController extends Controller
             $query->where('user_profile_name', $profileName);
         }
 
-        return $query->get()->map(function ($row) use ($hasRenderColumns) {
+        return $query->get()->map(function ($row) use ($hasRenderColumns, $hasPageSourceColumns) {
             return [
                 'id' => (int) $row->id,
                 'user_profile_name' => (string) ($row->user_profile_name ?? ''),
@@ -204,7 +220,7 @@ class MobileAppMenuRightsApiController extends Controller
                 'sub_title_sort_order' => (int) ($row->sub_title_sort_order ?? 0),
                 'screen_name' => (string) ($row->screen_name ?? ''),
                 'status' => (string) ($row->status ?? ''),
-            ] + $this->renderFields($row, $hasRenderColumns);
+            ] + $this->renderFields($row, $hasRenderColumns, $hasPageSourceColumns);
         })->all();
     }
 
@@ -467,16 +483,31 @@ class MobileAppMenuRightsApiController extends Controller
             'sub_title_sort_order' => 'nullable|integer',
             'status' => ['required', Rule::in(['Yes', 'No'])],
             'render_type' => ['nullable', Rule::in(['native', 'webview', 'native_dynamic'])],
-            // A WebView row needs a URL; a Native Dynamic row needs a
-            // page_key (see MobileDynamicPageApiController); a native row is
-            // addressed by its screen_name and needs neither.
-            'web_url' => 'required_if:render_type,webview,native_dynamic|nullable|string|max:2000',
+            // Plain nullable here rather than required_if: whether web_url is
+            // required depends on page_source too (a Custom Mobile Page row
+            // never submits one -- see the manual check below), which
+            // required_if cannot express across two fields at once.
+            'web_url' => 'nullable|string|max:2000',
             'open_mode' => ['nullable', Rule::in(['in_app', 'external'])],
-        ], [
-            'web_url.required_if' => 'Web URL is required for this render type.',
+            'page_source' => ['nullable', Rule::in(['external', 'custom'])],
+            'custom_page_id' => 'nullable|integer',
         ]);
         if ($validator->fails()) {
             return $this->failure($validator->messages()->first(), 422, $validator->errors());
+        }
+
+        $renderTypeInput = (string) $request->input('render_type', '');
+        $pageSourceInput = (string) $request->input('page_source', 'external');
+        $isCustomWebview = $renderTypeInput === 'webview' && $pageSourceInput === 'custom';
+
+        if ($renderTypeInput === 'native_dynamic' && trim((string) $request->input('web_url', '')) === '') {
+            return $this->failure('Web URL is required for this render type.', 422);
+        }
+        if ($renderTypeInput === 'webview' && ! $isCustomWebview && trim((string) $request->input('web_url', '')) === '') {
+            return $this->failure('Web URL is required for this render type.', 422);
+        }
+        if ($isCustomWebview && ! $request->filled('custom_page_id')) {
+            return $this->failure('Please select a mobile page.', 422);
         }
 
         $actor = $request->attributes->get('mobile_actor');
@@ -527,6 +558,33 @@ class MobileAppMenuRightsApiController extends Controller
             $subData['open_mode'] = $renderType === 'webview' && $openMode === 'external'
                 ? 'external'
                 : 'in_app';
+
+            // Custom Mobile Page: the web_url set above is whatever the
+            // client sent (normally nothing, since the Next.js form collects
+            // a page picker instead for this mode) -- overwritten here with
+            // the page's own runtime URL, computed server-side so the stored
+            // value can never drift from the page it actually names. Any
+            // other page_source (or an installation that has not run the
+            // page_source migration) leaves the block above untouched --
+            // today's behavior, byte for byte.
+            if ($this->hasPageSourceColumns($table)) {
+                if ($isCustomWebview) {
+                    $customPage = mobile_pageModel::where('id', $request->integer('custom_page_id'))
+                        ->where('sub_institute_id', $actor->sub_institute_id)
+                        ->first();
+
+                    if (! $customPage) {
+                        return $this->failure('The selected mobile page was not found.', 422);
+                    }
+
+                    $subData['page_source'] = 'custom';
+                    $subData['custom_page_id'] = $customPage->id;
+                    $subData['web_url'] = rtrim((string) config('mobile_page_builder.frontend_url'), '/') . '/mobile/custom/' . $customPage->slug;
+                } else {
+                    $subData['page_source'] = 'external';
+                    $subData['custom_page_id'] = null;
+                }
+            }
         }
 
         $scope = function ($query) use ($actor, $profileName) {
