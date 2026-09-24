@@ -647,7 +647,23 @@ public function studentData($is_exist,$request,$student_id, $sub_institute_id){
         $renderType = strtolower(trim((string) ($row["render_type"] ?? "")));
         $webUrl = trim((string) ($row["web_url"] ?? ""));
 
-        if ($renderType !== "webview" || $webUrl === "") {
+        if ($webUrl === "") {
+            return $native;
+        }
+
+        if ($renderType === "native_dynamic") {
+            // web_url holds the page_key here, not a URL -- see
+            // MobileDynamicPageApiController -- so it is passed through
+            // exactly as configured, never resolved against $baseUrl the way
+            // a webview row's web_url is.
+            return [
+                "render_type" => "native_dynamic",
+                "web_url"     => $webUrl,
+                "open_mode"   => "in_app",
+            ];
+        }
+
+        if ($renderType !== "webview") {
             return $native;
         }
 

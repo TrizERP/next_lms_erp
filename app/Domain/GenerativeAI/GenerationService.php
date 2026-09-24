@@ -131,7 +131,14 @@ class GenerationService
         // the same provider and model the call actually used. Resolving twice would let
         // a configuration saved mid-request produce an audit row that disagrees with
         // what happened.
-        $configuration = $this->clients->configurationFor(self::MODULE, $scope->selectedInstituteId);
+        // The template names the PRODUCT module it belongs to, so a module that chose
+        // its own generative model on its own AI Stack gets it. A shared template
+        // carries no module and resolves through the central configuration as before.
+        $configuration = $this->clients->configurationFor(
+            self::MODULE,
+            $scope->selectedInstituteId,
+            $template->moduleKey,
+        );
 
         $requestId = $this->recordRequest($request, $template, $rendered, $scope, 'running', null, $configuration);
 
