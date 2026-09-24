@@ -181,6 +181,20 @@ return [
             'links' => ['ai_agents.exam', 'ai_agents'],
         ],
 
+        /*
+        | Exam & Assessment (online exams, homework, assignments, worksheets, projects) —
+        | a distinct module from `agents.exam` above, which is the Mark Entry / Results
+        | module's own right. Its `ai_agents.exam_assessment` row is created by
+        | 2026_09_29_100200_register_exam_assessment_module.php, which also mirrors
+        | whatever grants `ai_agents.fees` carries. Until that has run it falls through to
+        | the `ai_agents` parent, and if that is absent too it resolves to null and denies
+        | — the correct failure.
+        */
+        'agents.exam_assessment' => [
+            'label' => 'AI agents — Exam & Assessment',
+            'links' => ['ai_agents.exam_assessment', 'ai_agents'],
+        ],
+
         'agents.ptm' => [
             'label' => 'AI agents — PTM',
             'links' => ['ai_agents.ptm', 'ai_agents'],
