@@ -15,6 +15,7 @@ use App\Mcp\Tools\AdmissionsValidateConfirmationTool;
 use App\Mcp\Tools\AiTemplatesGenerateTool;
 use App\Mcp\Tools\AiTemplatesListTool;
 use App\Mcp\Tools\AiTemplatesRenderTool;
+use App\Mcp\Tools\AssignmentStatusTool;
 use App\Mcp\Tools\AttendanceOverviewTool;
 use App\Mcp\Tools\AttendanceStudentTool;
 use App\Mcp\Tools\CertificateIssuedTool;
@@ -60,6 +61,7 @@ use App\Mcp\Tools\MobileAppsSectionsTool;
 use App\Mcp\Tools\NewPalCoherenceGapsTool;
 use App\Mcp\Tools\NewPalContentModelStatusTool;
 use App\Mcp\Tools\NewPalGamificationSummaryTool;
+use App\Mcp\Tools\OnlineExamSummaryTool;
 use App\Mcp\Tools\ParentCommunicationMessagesTool;
 use App\Mcp\Tools\ParentCommunicationSummaryTool;
 use App\Mcp\Tools\PettyCashSummaryTool;
@@ -153,6 +155,12 @@ class McpServiceProvider extends ServiceProvider
         NewPalGamificationSummaryTool::class,
         NewPalContentModelStatusTool::class,
         NewPalCoherenceGapsTool::class,
+
+        // Exam & Assessment — online exams, homework, assignments, worksheets and
+        // projects. `HomeworkListTool` above already covers Homework/Homework
+        // Submission; these two are new.
+        OnlineExamSummaryTool::class,
+        AssignmentStatusTool::class,
 
         // Money
         FeesArrearsTool::class,

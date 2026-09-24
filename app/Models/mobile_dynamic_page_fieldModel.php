@@ -15,6 +15,7 @@ class mobile_dynamic_page_fieldModel extends Model
         'display_key',
         'label',
         'field_type',
+        'drill_endpoint',
         'sort_order',
         'status',
         'created_on',

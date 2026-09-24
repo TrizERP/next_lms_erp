@@ -41,6 +41,7 @@ use App\Http\Controllers\api\TeacherAssignmentMobileApiController;
 use App\Http\Controllers\api\TeacherTimetableApiController;
 use App\Http\Controllers\api\TeacherFeeDuesApiController;
 use App\Http\Controllers\api\TeacherIcardApiController;
+use App\Http\Controllers\api\UserDashboardPreferenceApiController;
 
 // Student Assessment API - Get student assessment data with scores and levels
 Route::get('/student-assessment', [StudentGraphController::class, 'getStudentAssessment']);
@@ -130,6 +131,9 @@ Route::middleware('api.session')->prefix('hrms')->group(function () {
 // check_permissions reads session()->get('user_profile_id'/'sub_institute_id'/'user_id'),
 // so api.session (JWT-hydrated session) must run first for type=API requests.
 Route::middleware(['api.session', 'check_permissions'])->post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
+// Flat "who owes money" list backing the Outstanding tile's drill-in (see
+// FeesDashboardApiController@defaulters and MobileDynamicPageFieldRegistry).
+Route::middleware(['api.session', 'check_permissions'])->post('fees-dashboard/defaulters', [FeesDashboardApiController::class, 'defaulters']);
 // Module dashboards (Admissions/Students) — stateless: tenant/year travel in
 // the request body and there's no permission check, so no session middleware
 // is required.
@@ -150,6 +154,12 @@ Route::middleware('api.session')->group(function () {
     // Self-service "My ID card" — scoped to the caller's own user_id only,
     // see App\Http\Controllers\api\TeacherIcardApiController::mine().
     Route::post('teacher-icard/mine', [TeacherIcardApiController::class, 'mine']);
+    // Per-user dashboard customisation (which KPI cards / charts the caller has
+    // hidden). Owner comes from the JWT, so it never affects another user.
+    Route::get('dashboard-preferences/{dashboardKey}', [UserDashboardPreferenceApiController::class, 'show'])
+        ->where('dashboardKey', UserDashboardPreferenceApiController::KEY_PATTERN);
+    Route::put('dashboard-preferences/{dashboardKey}', [UserDashboardPreferenceApiController::class, 'update'])
+        ->where('dashboardKey', UserDashboardPreferenceApiController::KEY_PATTERN);
 });
 Route::middleware('api.session')->prefix('fees-refund')->group(function () {
     Route::post('search', [FeesRefundApiController::class, 'search']);
@@ -211,6 +221,7 @@ Route::post('lms-chapters', [ApiLmsCourseController::class, 'chapters']);
 Route::post('lms-chapter-content', [ApiLmsCourseController::class, 'chapterContent']);
 Route::post('lms-questions', [ApiLmsCourseController::class, 'getLmsQuestions']);
 Route::post('lms-question-bank', [ApiLmsCourseController::class, 'getQuestionBank']);
+Route::post('lms-question-bank/create', [ApiLmsCourseController::class, 'createQuestionBank']);
 Route::post('lms-question-bank/update', [ApiLmsCourseController::class, 'updateQuestionBank']);
 Route::post('lms-question-bank/delete', [ApiLmsCourseController::class, 'deleteQuestionBank']);
 Route::post('lms-question-bank/review', [ApiLmsCourseController::class, 'reviewQuestionBank']);
@@ -757,6 +768,7 @@ Route::get('mobile-app-rights/bootstrap', [\App\Http\Controllers\api\MobileAppMe
 Route::get('mobile-app-rights/{profileId}/rights', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'rights']);
 Route::post('mobile-app-rights/rights', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'saveRights']);
 Route::get('mobile-app-rights/config', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'configIndex']);
+Route::post('mobile-app-rights/config', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'createConfig']);
 Route::post('mobile-app-rights/config/{id}', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'updateConfig']);
 
 

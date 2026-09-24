@@ -483,8 +483,18 @@ return [
             |
             | `exams.results` sits second and requires no argument, so a cohort question
             | reads recorded marks rather than failing for want of a student id.
+            |
+            | `agent_key`/`workflow_key`/`case_type` were added by
+            | 2026_09_29_100000_register_exam_agent_signal_and_workflow.php, and
+            | `ModuleRegistry` verifies all three against `ai_agents` and
+            | `workflow_definitions` before the module claims the depth — so if that
+            | migration has not run on an estate, this block degrades to exactly the
+            | behaviour it replaced rather than promising something that is not there.
             */
             'exam' => [
+                'agent_key' => 'k12_exam',
+                'workflow_key' => 'exam_result_followup',
+                'case_type' => 'exam_result_follow_up',
                 'detail_tools' => ['student_id' => 'exams.results'],
                 'mcp_tools' => [
                     'exams.list',
@@ -496,8 +506,6 @@ return [
                     'ai.templates.render',
                     'ai.templates.generate',
                 ],
-                'depth_reason' => 'Assessment data feeds the academic-risk agent through its detectors, '
-                    . 'but the exams module itself has no agent of its own yet.',
             ],
 
             /*
@@ -573,7 +581,18 @@ return [
                     . 'itself has no agent of its own yet.',
             ],
 
+            /*
+            | `agent_key`/`workflow_key`/`case_type` were added by
+            | 2026_09_29_100100_register_new_pal_agent_signal_and_workflow.php, verified
+            | the same way the exam block above is — a missing migration degrades this to
+            | the tool-only depth it replaced rather than promising something not there.
+            | The agent reads only New PAL's own content-model, gamification and coherence
+            | tables — never the older pal module's.
+            */
             'new_pal' => [
+                'agent_key' => 'k12_new_pal',
+                'workflow_key' => 'pal_intervention_followup',
+                'case_type' => 'pal_intervention_review',
                 'detail_tools' => ['student_id' => 'new_pal.gamification_summary'],
                 'mcp_tools' => [
                     'new_pal.gamification_summary',
@@ -585,9 +604,38 @@ return [
                     'ai.templates.render',
                     'ai.templates.generate',
                 ],
-                'depth_reason' => 'Personalised-learning signals could feed a recommendation agent, but '
-                    . 'New PAL itself has no agent of its own yet. New PAL reads its own content-model, '
-                    . 'gamification and coherence tables — never the older pal module’s tables.',
+            ],
+
+            /*
+            | Exam & Assessment — the LMS's online-delivery domain: online exams, homework,
+            | assignments, worksheets, projects. Registered by
+            | 2026_09_29_100200_register_exam_assessment_module.php and
+            | 2026_09_29_100300_register_exam_assessment_agent_signal_and_workflow.php.
+            |
+            | DISTINCT FROM `exam` ABOVE, DELIBERATELY. The two names collide in prose —
+            | this estate's sidebar even calls this one "Exam & Assesment" — but they read
+            | different tables (`lms_online_exam`/`question_paper`/`lms_assignment`/
+            | `homework` here, versus `result_marks`/`result_exam_master` for `exam`) and
+            | open different case types. `homework.list` is reused rather than duplicated:
+            | it already covers Homework/Homework Submission and is bound into
+            | `teach_learn`/`student`/`students` too.
+            */
+            'exam_assessment' => [
+                'agent_key' => 'k12_exam_assessment',
+                'workflow_key' => 'exam_assessment_followup',
+                'case_type' => 'exam_assessment_follow_up',
+                'detail_tools' => ['student_id' => 'exam_assessment.online_exam_summary'],
+                'mcp_tools' => [
+                    'exam_assessment.online_exam_summary',
+                    'exam_assessment.assignment_status',
+                    'homework.list',
+                    'academics.structure',
+                    'academics.subjects',
+                    'students.directory',
+                    'ai.templates.list',
+                    'ai.templates.render',
+                    'ai.templates.generate',
+                ],
             ],
 
             /*
@@ -1802,6 +1850,18 @@ return [
                 'personalised learning' => 4.0, 'personalized learning' => 4.0,
                 'gamification' => 3.5, 'coherence map' => 4.0,
                 'learning intelligence' => 3.5, 'learning progress' => 3.0,
+            ],
+            /*
+            | Exam & Assessment. Unambiguous terms outweigh `exam` block's own weak claim
+            | on "assessment" (2.0), and the online-delivery vocabulary — homework,
+            | assignment, worksheet, project — never appears in the Mark Entry / Results
+            | module's own keyword list.
+            */
+            'exam_assessment' => [
+                'online exam' => 4.0, 'homework' => 3.5, 'assignment' => 3.5,
+                'assignments' => 3.5, 'worksheet' => 3.5, 'worksheets' => 3.5,
+                'project submission' => 3.0, 'annotate assignment' => 4.0,
+                'assignment submission' => 4.0, 'homework review' => 4.0,
             ],
             'hr' => [
                 'teacher' => 3.0, 'teachers' => 3.0, 'staff' => 3.5, 'employee' => 3.0,
