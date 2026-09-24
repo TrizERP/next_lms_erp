@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class MobileAppMenuRightsApiController extends Controller
@@ -464,6 +465,147 @@ class MobileAppMenuRightsApiController extends Controller
                 'include_inactive' => $includeInactive,
                 'records' => $records,
             ],
+        ]);
+    }
+
+    /**
+     * Add a brand-new home-screen icon. Unlike updateConfig() (which only
+     * ever touches a row that already exists), this is the one place a
+     * screen_name this installation has never seen before -- e.g. a menu
+     * that was never part of the ~46-row set seeded back in 2020 -- gets
+     * created. Same field set and the same Custom Mobile Page /
+     * page_source resolution as updateConfig(), so a new row behaves
+     * identically to an edited one from the moment it's created.
+     */
+    public function createConfig(Request $request)
+    {
+        if ($response = $this->context($request)) return $response;
+        if ($response = $this->authorizeAction($request, 'add')) return $response;
+
+        $validator = Validator::make($request->all(), [
+            'profile_name' => ['required', Rule::in(self::CONFIG_PROFILES)],
+            'main_title' => 'required|string',
+            'main_title_color_code' => 'nullable|string',
+            'main_title_background_image' => 'nullable|string',
+            'main_sort_order' => 'nullable|integer',
+            'sub_title_of_main' => 'required|string',
+            'sub_title_icon' => 'nullable|string',
+            'sub_title_sort_order' => 'nullable|integer',
+            'status' => ['required', Rule::in(['Yes', 'No'])],
+            'render_type' => ['nullable', Rule::in(['native', 'webview', 'native_dynamic'])],
+            'web_url' => 'nullable|string|max:2000',
+            'open_mode' => ['nullable', Rule::in(['in_app', 'external'])],
+            'page_source' => ['nullable', Rule::in(['external', 'custom'])],
+            'custom_page_id' => 'nullable|integer',
+        ]);
+        if ($validator->fails()) {
+            return $this->failure($validator->messages()->first(), 422, $validator->errors());
+        }
+
+        $actor = $request->attributes->get('mobile_actor');
+        $profileName = (string) $request->input('profile_name');
+        $table = $this->tableForProfileName($profileName);
+        $hasRenderColumns = $this->hasRenderColumns($table);
+        $hasPageSourceColumns = $this->hasPageSourceColumns($table);
+
+        $renderTypeInput = $hasRenderColumns ? (string) $request->input('render_type', 'native') : 'native';
+        $pageSourceInput = $hasPageSourceColumns ? (string) $request->input('page_source', 'external') : 'external';
+        $isCustomWebview = $renderTypeInput === 'webview' && $pageSourceInput === 'custom';
+
+        if ($renderTypeInput === 'native_dynamic' && trim((string) $request->input('web_url', '')) === '') {
+            return $this->failure('Web URL is required for this render type.', 422);
+        }
+        if ($renderTypeInput === 'webview' && ! $isCustomWebview && trim((string) $request->input('web_url', '')) === '') {
+            return $this->failure('Web URL is required for this render type.', 422);
+        }
+        if ($isCustomWebview && ! $request->filled('custom_page_id')) {
+            return $this->failure('Please select a mobile page.', 422);
+        }
+
+        // Unlike updateConfig() (which edits a row already scoped to a
+        // known profile_id), a brand-new row needs one resolved from the
+        // chosen profile *name* -- this tenant's own 'Student'/'Teacher'/
+        // 'Admin' row, not the global row the JWT's own user_profile_id
+        // happens to point at.
+        $profile = DB::table('tbluserprofilemaster')
+            ->where('sub_institute_id', $actor->sub_institute_id)
+            ->where('name', $profileName)
+            ->where('status', 1)
+            ->first();
+        if (! $profile) {
+            return $this->failure("This school has no active '{$profileName}' profile to attach the menu item to.", 404);
+        }
+
+        // screen_name is the stable key saveRights()/defaultRightsRows() key
+        // by, shared across every tenant's copy of this table -- suffix on
+        // collision rather than fail, same idea as
+        // MobilePageBuilderAdminApiController::uniqueSlug().
+        $base = Str::slug((string) $request->input('sub_title_of_main'), '_') ?: 'menu_item';
+        $base = substr($base, 0, 95);
+        $screenName = $base;
+        $suffix = 2;
+        while (DB::table($table)->where('screen_name', $screenName)->exists()) {
+            $screenName = substr($base, 0, 95 - strlen((string) $suffix) - 1) . '_' . $suffix;
+            $suffix++;
+        }
+
+        $insert = [
+            'sub_institute_id' => $actor->sub_institute_id,
+            'user_profile_id' => $profile->id,
+            'user_profile_name' => $profileName,
+            'main_title' => (string) $request->input('main_title'),
+            'menu_type' => 'Heading',
+            'main_title_color_code' => (string) $request->input('main_title_color_code', ''),
+            'main_title_background_image' => (string) $request->input('main_title_background_image', ''),
+            'sub_title_of_main' => (string) $request->input('sub_title_of_main'),
+            'sub_title_icon' => (string) $request->input('sub_title_icon', ''),
+            'sub_title_api' => '',
+            'sub_title_api_param' => '',
+            'main_sort_order' => (int) $request->input('main_sort_order', 0),
+            'sub_title_sort_order' => (int) $request->input('sub_title_sort_order', 0),
+            'status' => (string) $request->input('status'),
+            'screen_name' => $screenName,
+            'created_on' => now(),
+            'updated_on' => now(),
+            'updated_by' => (int) $actor->id,
+            'updated_ip_address' => (string) $request->ip(),
+        ];
+
+        if ($hasRenderColumns) {
+            $insert['render_type'] = $renderTypeInput;
+            $insert['web_url'] = in_array($renderTypeInput, ['webview', 'native_dynamic'], true)
+                ? trim((string) $request->input('web_url', ''))
+                : null;
+            $insert['open_mode'] = $renderTypeInput === 'webview' && (string) $request->input('open_mode', 'in_app') === 'external'
+                ? 'external'
+                : 'in_app';
+
+            if ($hasPageSourceColumns) {
+                if ($isCustomWebview) {
+                    $customPage = mobile_pageModel::where('id', $request->integer('custom_page_id'))
+                        ->where('sub_institute_id', $actor->sub_institute_id)
+                        ->first();
+
+                    if (! $customPage) {
+                        return $this->failure('The selected mobile page was not found.', 422);
+                    }
+
+                    $insert['page_source'] = 'custom';
+                    $insert['custom_page_id'] = $customPage->id;
+                    $insert['web_url'] = rtrim((string) config('mobile_page_builder.frontend_url'), '/') . '/mobile/custom/' . $customPage->slug;
+                } else {
+                    $insert['page_source'] = 'external';
+                    $insert['custom_page_id'] = null;
+                }
+            }
+        }
+
+        $id = DB::table($table)->insertGetId($insert);
+
+        return response()->json([
+            'status_code' => 1,
+            'message' => 'Mobile app menu item created successfully.',
+            'data' => ['id' => $id, 'screen_name' => $screenName],
         ]);
     }
 

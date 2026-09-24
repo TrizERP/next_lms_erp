@@ -760,6 +760,7 @@ Route::get('mobile-app-rights/bootstrap', [\App\Http\Controllers\api\MobileAppMe
 Route::get('mobile-app-rights/{profileId}/rights', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'rights']);
 Route::post('mobile-app-rights/rights', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'saveRights']);
 Route::get('mobile-app-rights/config', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'configIndex']);
+Route::post('mobile-app-rights/config', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'createConfig']);
 Route::post('mobile-app-rights/config/{id}', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'updateConfig']);
 
 

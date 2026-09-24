@@ -356,6 +356,123 @@ class MobilePageBuilderTest extends TestCase
     }
 
     /**
+     * Before createConfig() existed, there was no way to attach a page to
+     * the home screen unless a matching screen_name row already happened
+     * to exist -- updateConfig() only ever edits a row that's already
+     * there. This is the exact real-world case that exposed the gap: a
+     * freshly published Custom Mobile Page for a menu ("Admission
+     * Enquiry") that was never one of the ~46 rows seeded back in 2020.
+     */
+    public function test_config_can_create_a_brand_new_menu_item_pointed_at_a_custom_page(): void
+    {
+        [$instituteId, $userId, $token] = $this->makeTenantAndAdmin();
+        $headers = ['Authorization' => 'Bearer ' . $token];
+
+        DB::table('tbluserprofilemaster')->insert([
+            'parent_id' => 0,
+            'name' => 'Student',
+            'description' => 'Student',
+            'sort_order' => 1,
+            'status' => 1,
+            'sub_institute_id' => $instituteId,
+        ]);
+
+        $page = $this->withHeaders($headers)
+            ->postJson('/api/mobile-page-builder/pages', ['name' => 'Admission Enquiry', 'slug' => 'admission-enquiry'])
+            ->json('data');
+        $this->withHeaders($headers)->postJson("/api/mobile-page-builder/pages/{$page['id']}/publish")->assertStatus(200);
+
+        $response = $this->withHeaders($headers)
+            ->postJson('/api/mobile-app-rights/config', [
+                'sub_institute_id' => $instituteId,
+                'user_id' => $userId,
+                'profile_name' => 'Student',
+                'main_title' => 'Admissions',
+                'main_sort_order' => 1,
+                'sub_title_of_main' => 'Admission Enquiry',
+                'sub_title_sort_order' => 1,
+                'status' => 'Yes',
+                'render_type' => 'webview',
+                'page_source' => 'custom',
+                'custom_page_id' => $page['id'],
+            ]);
+        $response->assertStatus(200);
+
+        $rowId = (int) $response->json('data.id');
+        $row = DB::table('mobile_homescreen')->where('id', $rowId)->first();
+
+        self::assertSame($instituteId, (int) $row->sub_institute_id);
+        self::assertSame('Student', $row->user_profile_name);
+        self::assertSame('custom', $row->page_source);
+        self::assertSame($page['id'], (int) $row->custom_page_id);
+        self::assertStringEndsWith('/mobile/custom/admission-enquiry', $row->web_url);
+        self::assertSame('admission_enquiry', $row->screen_name);
+        self::assertSame('Yes', $row->status);
+
+        // And an admin searching the config screen now finds it -- the
+        // whole point of this endpoint.
+        $this->withHeaders($headers)
+            ->getJson('/api/mobile-app-rights/config?' . http_build_query([
+                'sub_institute_id' => $instituteId,
+                'user_id' => $userId,
+                'profile_name' => 'Student',
+            ]))
+            ->assertStatus(200)
+            ->assertJsonFragment(['screen_name' => 'admission_enquiry']);
+    }
+
+    public function test_config_create_rejects_custom_page_source_without_a_page(): void
+    {
+        [$instituteId, $userId, $token] = $this->makeTenantAndAdmin();
+        $headers = ['Authorization' => 'Bearer ' . $token];
+
+        DB::table('tbluserprofilemaster')->insert([
+            'parent_id' => 0,
+            'name' => 'Student',
+            'description' => 'Student',
+            'sort_order' => 1,
+            'status' => 1,
+            'sub_institute_id' => $instituteId,
+        ]);
+
+        $this->withHeaders($headers)
+            ->postJson('/api/mobile-app-rights/config', [
+                'sub_institute_id' => $instituteId,
+                'user_id' => $userId,
+                'profile_name' => 'Student',
+                'main_title' => 'Admissions',
+                'sub_title_of_main' => 'Admission Enquiry',
+                'status' => 'Yes',
+                'render_type' => 'webview',
+                'page_source' => 'custom',
+            ])
+            ->assertStatus(422);
+
+        self::assertSame(0, DB::table('mobile_homescreen')->where('sub_institute_id', $instituteId)->count());
+    }
+
+    public function test_config_create_rejects_an_unknown_profile_for_this_tenant(): void
+    {
+        [$instituteId, $userId, $token] = $this->makeTenantAndAdmin();
+        $headers = ['Authorization' => 'Bearer ' . $token];
+
+        // No 'Teacher' row seeded for this tenant's tbluserprofilemaster --
+        // the endpoint must not silently attach the new row to some other
+        // tenant's profile of the same name.
+        $this->withHeaders($headers)
+            ->postJson('/api/mobile-app-rights/config', [
+                'sub_institute_id' => $instituteId,
+                'user_id' => $userId,
+                'profile_name' => 'Teacher',
+                'main_title' => 'Admissions',
+                'sub_title_of_main' => 'Admission Enquiry',
+                'status' => 'Yes',
+                'render_type' => 'native',
+            ])
+            ->assertStatus(404);
+    }
+
+    /**
      * Attendance is a `type = 'list'` entry (search a roster, then one
      * Present/Absent row per student) -- a materially different shape from
      * add_student/edit_student's fixed field list. Locks in the verified
