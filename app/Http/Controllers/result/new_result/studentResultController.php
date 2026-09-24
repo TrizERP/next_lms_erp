@@ -3487,7 +3487,7 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
         $sub_institute_id = session()->get('sub_institute_id');
         $extra_term  = $extra_exam = "1=1";
         $att_term = "atd.term_id = 2";
-        $standard_array = [3303,3316];
+        $standard_array = [3303,3316];//,3301,3304,3307
         
         // For upper academic type, we need to get both terms and merge exam titles
         $merge_both_terms = false;
@@ -3502,6 +3502,7 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
             $extra_exam = "rce.term_id = " . $format;
             $att_term = "atd.term_id = " . $format;
         }
+
 
         // get term_name 
         $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
@@ -4352,7 +4353,7 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
         if ($format != "yearly") {
             $extra_term = "term_id = 2";
             $extra_exam = "rce.term_id = 2";
-            $att_term = "atd.term_id = 1";
+            $att_term = "atd.term_id = 2";
         }
 
         // Retrieve data from database
@@ -6613,17 +6614,32 @@ $table .= '</div>';
     {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
-        $standard_array = [3303,3316];
+        $standard_array = [3303,3316,3301,3304,3307];
 
-        $extra_term = ($format == "yearly")
-            ? (($academic_type != "primary") ? "term_id = 2" : "1=1")
-            : "term_id = $format";
-
+        $extra_term = "1=1";
         $extra_term_co = "1=1";
+        $extra_exam = "1=1";
 
-        $extra_exam = ($format == "yearly")
-            ? (in_array($standard_id, $standard_array) ? "comark.term_id = 2" : "1=1")
-            : "comark.term_id = $format";
+        if ($academic_type != "primary") {
+
+            // Upper / non-primary should use Term 2
+            $extra_term = "term_id = 2";
+
+            if (in_array($standard_id, $standard_array)) {
+                $extra_exam = "comark.term_id = 2";
+            }
+
+        } else {
+
+            // Primary
+            if ($format == "yearly") {
+                $extra_term = "1=1";
+                $extra_exam = "1=1";
+            } else {
+                $extra_term = "term_id = $format";
+                $extra_exam = "comark.term_id = $format";
+            }
+        }
 
         $both_term = DB::table('academic_year')
             ->whereRaw($extra_term)
