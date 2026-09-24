@@ -16,7 +16,7 @@ namespace App\Support;
 class MobileDynamicPageFieldRegistry
 {
     /**
-     * data_endpoint => [field_key => [label, field_type, display_key]].
+     * data_endpoint => [field_key => [label, field_type, display_key, drill_endpoint]].
      *
      * fees-dashboard/summary is FeesDashboardApiController@summary's
      * `summary` object (routes/api.php: POST /api/fees-dashboard/summary,
@@ -28,16 +28,23 @@ class MobileDynamicPageFieldRegistry
      * defaulters_count and students_considered are omitted: the controller
      * currently hardcodes both to 0 rather than computing them, so they are
      * not real fields yet.
+     *
+     * `drill_endpoint`, when not null, is a second API (same relative-to-/api/
+     * convention as a page's own data_endpoint) a tile bound to this field
+     * opens on tap -- see 2026_09_23_180000_add_drill_endpoint_to_... and
+     * FeesDashboardApiController@defaulters for the one configured so far.
+     * Most fields have none: a stat with no natural "list behind the number"
+     * (Collection Rate, Fine Collected) just stays a read-only tile.
      */
     private const REGISTRY = [
         'fees-dashboard/summary' => [
-            'summary.collected_amount' => ['label' => 'Total Collected', 'field_type' => 'currency', 'display_key' => 'summary.collected_display'],
-            'summary.demand_amount' => ['label' => 'Total Payable', 'field_type' => 'currency', 'display_key' => 'summary.demand_display'],
-            'summary.outstanding_amount' => ['label' => 'Outstanding', 'field_type' => 'currency', 'display_key' => 'summary.outstanding_display'],
-            'summary.collection_rate' => ['label' => 'Collection Rate', 'field_type' => 'percent', 'display_key' => 'summary.collection_rate_display'],
-            'summary.receipts_count' => ['label' => 'Receipts Issued', 'field_type' => 'number', 'display_key' => null],
-            'summary.fine_amount' => ['label' => 'Fine Collected', 'field_type' => 'currency', 'display_key' => null],
-            'summary.discount_amount' => ['label' => 'Discount Given', 'field_type' => 'currency', 'display_key' => null],
+            'summary.collected_amount' => ['label' => 'Total Collected', 'field_type' => 'currency', 'display_key' => 'summary.collected_display', 'drill_endpoint' => null],
+            'summary.demand_amount' => ['label' => 'Total Payable', 'field_type' => 'currency', 'display_key' => 'summary.demand_display', 'drill_endpoint' => null],
+            'summary.outstanding_amount' => ['label' => 'Outstanding', 'field_type' => 'currency', 'display_key' => 'summary.outstanding_display', 'drill_endpoint' => 'fees-dashboard/defaulters'],
+            'summary.collection_rate' => ['label' => 'Collection Rate', 'field_type' => 'percent', 'display_key' => 'summary.collection_rate_display', 'drill_endpoint' => null],
+            'summary.receipts_count' => ['label' => 'Receipts Issued', 'field_type' => 'number', 'display_key' => null, 'drill_endpoint' => null],
+            'summary.fine_amount' => ['label' => 'Fine Collected', 'field_type' => 'currency', 'display_key' => null, 'drill_endpoint' => null],
+            'summary.discount_amount' => ['label' => 'Discount Given', 'field_type' => 'currency', 'display_key' => null, 'drill_endpoint' => null],
         ],
     ];
 

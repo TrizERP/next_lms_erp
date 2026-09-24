@@ -126,6 +126,8 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapPlatformRoutes();
 
         $this->mapDocumentRoutes();
+
+        $this->mapMobilePageBuilderRoutes();
     }
 
     /**
@@ -447,6 +449,21 @@ class RouteServiceProvider extends ServiceProvider
         Route::prefix('api/documents')
             ->middleware('api')
             ->group(base_path('routes/documents.php'));
+    }
+
+    /**
+     * Custom Mobile Page Builder -- authoring + runtime read for
+     * render_type = 'webview' menu rows whose page_source is 'custom'.
+     *
+     * Mounted like the Platform, Brain and Document routes: its own prefix,
+     * its own file. routes/api.php is untouched; `api.session` is declared
+     * inside routes/mobile_page_builder.php, next to the endpoints it covers.
+     */
+    protected function mapMobilePageBuilderRoutes()
+    {
+        Route::prefix('api/mobile-page-builder')
+            ->middleware('api')
+            ->group(base_path('routes/mobile_page_builder.php'));
     }
 
     /**

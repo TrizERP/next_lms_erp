@@ -61,6 +61,7 @@ class MobileDynamicPageAdminApiController extends Controller
                     'label' => $info['label'],
                     'field_type' => $info['field_type'],
                     'display_key' => $info['display_key'],
+                    'drill_endpoint' => $info['drill_endpoint'] ?? null,
                 ])
                 ->values();
         }
@@ -210,7 +211,7 @@ class MobileDynamicPageAdminApiController extends Controller
         $fieldKey = $request->input('field_key');
         $defaults = $available[$fieldKey];
 
-        $field = mobile_dynamic_page_fieldModel::create([
+        $fieldData = [
             'page_id' => $page->id,
             'field_key' => $fieldKey,
             'display_key' => $defaults['display_key'],
@@ -219,7 +220,13 @@ class MobileDynamicPageAdminApiController extends Controller
             'sort_order' => $request->input('sort_order', (mobile_dynamic_page_fieldModel::where('page_id', $page->id)->max('sort_order') ?? 0) + 1),
             'status' => 'Yes',
             'created_on' => now(),
-        ]);
+        ];
+
+        if (Schema::hasColumn('mobile_dynamic_page_field', 'drill_endpoint')) {
+            $fieldData['drill_endpoint'] = $defaults['drill_endpoint'] ?? null;
+        }
+
+        $field = mobile_dynamic_page_fieldModel::create($fieldData);
 
         return response()->json(['status' => '1', 'message' => 'Tile added.', 'data' => $field]);
     }
