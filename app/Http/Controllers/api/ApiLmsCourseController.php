@@ -1799,7 +1799,19 @@ $restrict_date = $request->input('restrict_date');
                     'COALESCE(lms_question_extraction.question_type_code, '
                     . 'lms_question_master.question_format_code, '
                     . 'lms_question_master.g_qtype_code)'
-                ));
+                ))
+                    // The catalog carries one row per (code, publisher) --
+                    // 'case_study' has a KVS RO Agra row and a NODIA Press
+                    // row with the same code. Matching on code alone joined
+                    // every question onto BOTH rows, doubling it in the
+                    // response (only this table's label is read out of the
+                    // join, so a second matching row is pure duplication,
+                    // never a second real answer). Pin the match to the
+                    // lowest id for that code so the join is 1:1.
+                    ->on('question_type_catalog.id', '=', DB::raw(
+                        '(SELECT MIN(t2.id) FROM question_type_catalog t2 '
+                        . 'WHERE t2.code = question_type_catalog.code)'
+                    ));
             })
             ->leftJoin('question_publisher', 'question_publisher.id', '=', 'lms_question_extraction.publisher_id')
             ->select(
