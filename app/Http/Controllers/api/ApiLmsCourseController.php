@@ -1788,16 +1788,30 @@ $restrict_date = $request->input('restrict_date');
             ->join('question_type_master', 'question_type_master.id', '=', 'lms_question_master.question_type_id')
             ->leftJoin('chapter_master', 'chapter_master.id', '=', 'lms_question_master.chapter_id')
             ->leftJoin('lms_question_extraction', 'lms_question_extraction.question_id', '=', 'lms_question_master.id')
-            // Resolve the catalog form from the sidecar where one exists, and
-            // otherwise from the derived tag on the question itself. Joining the
-            // sidecar alone meant the ~3k generated questions -- which have no
-            // sidecar at all -- every one matched nothing and displayed as the
-            // coarse "narrative", so the form dropdown could not see them.
+            // Resolve the catalog form from the sidecar where one exists, then a
+            // teacher's own manual pick, then the derived tag on the question
+            // itself. Joining the sidecar alone meant the ~3k generated
+            // questions -- which have no sidecar at all -- every one matched
+            // nothing and displayed as the coarse "narrative", so the form
+            // dropdown could not see them.
             ->leftJoin('question_type_catalog', function ($join) {
                 $join->on('question_type_catalog.code', '=', DB::raw(
                     'COALESCE(lms_question_extraction.question_type_code, '
+                    . 'lms_question_master.question_format_code, '
                     . 'lms_question_master.g_qtype_code)'
-                ));
+                ))
+                    // The catalog carries one row per (code, publisher) --
+                    // 'case_study' has a KVS RO Agra row and a NODIA Press
+                    // row with the same code. Matching on code alone joined
+                    // every question onto BOTH rows, doubling it in the
+                    // response (only this table's label is read out of the
+                    // join, so a second matching row is pure duplication,
+                    // never a second real answer). Pin the match to the
+                    // lowest id for that code so the join is 1:1.
+                    ->on('question_type_catalog.id', '=', DB::raw(
+                        '(SELECT MIN(t2.id) FROM question_type_catalog t2 '
+                        . 'WHERE t2.code = question_type_catalog.code)'
+                    ));
             })
             ->leftJoin('question_publisher', 'question_publisher.id', '=', 'lms_question_extraction.publisher_id')
             ->select(
@@ -2088,6 +2102,167 @@ $restrict_date = $request->input('restrict_date');
      * bank reads from — the question row in `lms_question_master` and its options
      * in `answer_master` — so an edit is there on the next fetch.
      */
+    /**
+     * POST /api/lms-question-bank/create
+     *
+     * Insert a new hand-authored (or H5P-authored) row into the bank. Mirrors
+     * the insert shape QuestionGenerationService uses for AI-generated rows
+     * (~line 1765), minus the LLM-owned fields this caller supplies itself.
+     *
+     * WHY THIS EXISTS NOW. The manual "Add question" modal used to accept a
+     * new question, ask nothing of the server, and drop it into local React
+     * state -- it was never actually saved. That silent gap is closed here,
+     * and it is also what an H5P-authored question uses: h5p_content_type /
+     * h5p_content_id point at the real content in that type's own table, and
+     * `answer` / `answer_master` are left empty rather than duplicating it.
+     *
+     * A ROW WITH h5p_content_type SET RENDERS AS EMPTY EVERYWHERE ELSE. The
+     * exam paper builder, homework assignment and bulk edit all read
+     * `question`/`answer`/`answer_master` and none of them resolve an H5P
+     * link yet. That is a known, explicitly accepted limitation of this pass,
+     * not an oversight -- teaching every consumer to resolve the link is a
+     * separate piece of work.
+     */
+    public function createQuestionBank(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'chapter_id'           => 'required|integer',
+            'subject_id'           => 'required|integer',
+            'standard_id'          => 'required|integer',
+            'sub_institute_id'     => 'required|integer',
+            'question'             => 'required|string',
+            'question_type'        => 'required|string|in:MCQ,Narrative',
+            'marks'                => 'required|integer|min:1',
+            'concept_id'           => 'nullable|integer',
+            'concept'              => 'nullable|string|max:250',
+            'model_answer'         => 'nullable|string',
+            'question_type_code'   => 'nullable|string|max:48',
+            'h5p_content_type'     => 'nullable|string|max:48|required_with:h5p_content_id',
+            'h5p_content_id'       => 'nullable|integer|required_with:h5p_content_type',
+            // Options are required for a hand-typed MCQ, but an H5P-linked
+            // question carries no options here at all -- its content lives in
+            // the linked h5p_* row. That is a cross-field rule required_if
+            // cannot express, so it is checked by hand just below.
+            'options'              => 'nullable|array',
+            'options.*.label'      => 'required_with:options|string|max:8',
+            'options.*.text'       => 'required_with:options|string',
+            'options.*.is_correct' => 'nullable|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Validation failed.',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        $input          = $validator->validated();
+        $subInstituteId = (int) $input['sub_institute_id'];
+
+        if (
+            $input['question_type'] === 'MCQ'
+            && empty($input['h5p_content_type'])
+            && empty($input['options'])
+        ) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Please add the answer options for this MCQ.',
+            ], 422);
+        }
+
+        // Same tenant guard as updateQuestionBank: a chapter belongs to one
+        // institute, and a question may only be authored onto one this
+        // caller actually owns.
+        $chapterInstituteId = DB::table('chapter_master')
+            ->where('id', $input['chapter_id'])
+            ->value('sub_institute_id');
+
+        if ($chapterInstituteId === null || (int) $chapterInstituteId !== $subInstituteId) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'This chapter belongs to another institute and cannot be authored here.',
+            ], 403);
+        }
+
+        $isMcq = $input['question_type'] === 'MCQ';
+        $isH5p = array_key_exists('h5p_content_type', $input) && $input['h5p_content_type'] !== null;
+
+        $questionTypeId = DB::table('question_type_master')
+            ->whereIn(DB::raw('LOWER(question_type)'), $isMcq
+                ? ['multiple', 'mcq', 'multiple choice', 'multiple_choice']
+                : ['narrative'])
+            ->orderBy('id')
+            ->value('id');
+
+        $userId = $request->input('user_id') ? $request->input('user_id') : (session()->get('user_id') ?: null);
+        $options = $isMcq && !$isH5p ? array_values($input['options'] ?? []) : [];
+
+        $row = [
+            'chapter_id'         => (int) $input['chapter_id'],
+            'subject_id'         => (int) $input['subject_id'],
+            'standard_id'        => (int) $input['standard_id'],
+            'concept_id'         => isset($input['concept_id']) ? (int) $input['concept_id'] : null,
+            'concept'            => $input['concept'] ?? null,
+            'sub_institute_id'   => $subInstituteId,
+            'created_by'         => $userId,
+            'created_on'         => now(),
+            'status'             => 1,
+            'question_title'     => $input['question'],
+            'points'             => (int) $input['marks'],
+            'question_type_id'   => $questionTypeId ?: null,
+            'question_format_code' => $input['question_type_code'] ?? null,
+            'h5p_content_type'   => $isH5p ? $input['h5p_content_type'] : null,
+            'h5p_content_id'     => $isH5p ? (int) $input['h5p_content_id'] : null,
+            // H5P content carries its own answer; duplicating it here would be
+            // a second copy to keep in sync for no reader that needs it yet.
+            'answer'             => $isH5p ? null : (!$isMcq ? ($input['model_answer'] ?? null) : null),
+        ];
+
+        try {
+            $questionId = DB::transaction(function () use ($row, $isMcq, $isH5p, $options, $subInstituteId) {
+                $id = DB::table('lms_question_master')->insertGetId($row);
+
+                if ($isMcq && !$isH5p && !empty($options)) {
+                    $rows = [];
+                    foreach ($options as $option) {
+                        $text = trim((string) ($option['text'] ?? ''));
+                        if ($text === '') {
+                            continue;
+                        }
+
+                        $rows[] = [
+                            'question_id'      => $id,
+                            'answer'           => mb_substr($text, 0, 250),
+                            'correct_answer'   => !empty($option['is_correct']) ? 1 : 0,
+                            'sub_institute_id' => $subInstituteId,
+                            'created_on'       => now(),
+                        ];
+                    }
+
+                    if (!empty($rows)) {
+                        DB::table('answer_master')->insert($rows);
+                    }
+                }
+
+                return $id;
+            });
+        } catch (Throwable $e) {
+            Log::error('Question bank create failed', ['error' => $e->getMessage()]);
+
+            return response()->json([
+                'status'  => false,
+                'message' => 'Failed to save the question.',
+            ], 500);
+        }
+
+        return response()->json([
+            'status'  => true,
+            'message' => 'Question added to the bank.',
+            'data'    => ['id' => $questionId],
+        ], 200);
+    }
+
     public function updateQuestionBank(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
@@ -2099,6 +2274,10 @@ $restrict_date = $request->input('restrict_date');
             'concept_id'           => 'nullable|integer',
             'concept'              => 'nullable|string|max:250',
             'model_answer'         => 'nullable|string',
+            // question_type_catalog.code the teacher picked via the Question
+            // Format dropdown. Written to lms_question_master.question_format_code,
+            // never to the AI extraction sidecar -- see that column's migration.
+            'question_type_code'   => 'nullable|string|max:48',
             'options'              => 'required_if:question_type,MCQ|array',
             'options.*.label'      => 'required_with:options|string|max:8',
             'options.*.text'       => 'required_with:options|string',
@@ -2169,6 +2348,10 @@ $restrict_date = $request->input('restrict_date');
 
         if (array_key_exists('concept', $input)) {
             $update['concept'] = $input['concept'];
+        }
+
+        if (array_key_exists('question_type_code', $input)) {
+            $update['question_format_code'] = $input['question_type_code'];
         }
 
         $options = $isMcq ? array_values($input['options'] ?? []) : [];

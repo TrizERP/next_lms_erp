@@ -294,25 +294,32 @@ class ApiQuestionBankController extends Controller
         // extraction sidecar and therefore no catalogue code, so counting the
         // sidecar alone reported "Multiple Choice (0)" on a chapter holding
         // 125 MCQs. Fall back to the grading type for those.
-        $counts = DB::table('lms_question_master as q')
+        $countRows = DB::table('lms_question_master as q')
             ->leftJoin('lms_question_extraction as x', 'x.question_id', '=', 'q.id')
             ->whereNull('q.deleted_at')
             ->tap(fn ($w) => $this->scoped($w, $request))
             ->select(
                 DB::raw(
-                    // Three tiers, most authoritative first. The sidecar code was
-                    // read off the source document. q.g_qtype_code is derived from
+                    // Four tiers, most authoritative first. The sidecar code was
+                    // read off the source document. question_format_code is a
+                    // teacher's own manual pick. q.g_qtype_code is derived from
                     // the stem for the ~3k questions that were generated and so
                     // have no sidecar -- without it every one of them counted as
                     // "narrative" and the form dropdown could not see them at all.
-                    "COALESCE(x.question_type_code, q.g_qtype_code, "
+                    "COALESCE(x.question_type_code, q.question_format_code, q.g_qtype_code, "
                     . "CASE WHEN q.question_type_id = 1 "
                     . "THEN 'mcq' ELSE 'narrative' END) as code"
                 ),
-                DB::raw('COUNT(*) as total')
+                DB::raw('COUNT(*) as total'),
+                // Lets a catalogue-less code (below) still carry a real
+                // lms_question_type_id instead of leaving the Format dropdown
+                // unable to filter it under either Question Type.
+                DB::raw('MAX(q.question_type_id) as qtype_id')
             )
             ->groupBy('code')
-            ->pluck('total', 'code');
+            ->get();
+        $counts = $countRows->pluck('total', 'code');
+        $qtypeIdByCode = $countRows->pluck('qtype_id', 'code');
 
         // LEFT from the catalogue, so every known form is listed even at zero:
         // a dropdown whose contents change per chapter is the thing being
@@ -321,7 +328,7 @@ class ApiQuestionBankController extends Controller
             ->leftJoin('question_publisher as p', 'p.id', '=', 't.publisher_id')
             ->where('t.status', 1)
             ->select('t.code', 't.label', 't.exam_section', 't.default_marks',
-                     't.is_standard', 'p.short_name as publisher')
+                     't.is_standard', 't.lms_question_type_id', 'p.short_name as publisher')
             ->orderByDesc('t.is_standard')
             ->orderBy('t.label')
             ->get();
@@ -336,6 +343,9 @@ class ApiQuestionBankController extends Controller
                 'exam_section' => $row->exam_section,
                 'default_marks' => $row->default_marks,
                 'is_standard' => $row->is_standard,
+                'lms_question_type_id' => $row->lms_question_type_id !== null
+                    ? (int) $row->lms_question_type_id
+                    : null,
                 'publisher' => $row->publisher,
                 'total' => (int) ($counts[$row->code] ?? 0),
             ];
@@ -353,6 +363,9 @@ class ApiQuestionBankController extends Controller
                 'exam_section' => null,
                 'default_marks' => null,
                 'is_standard' => 0,
+                'lms_question_type_id' => isset($qtypeIdByCode[$code]) && $qtypeIdByCode[$code] !== null
+                    ? (int) $qtypeIdByCode[$code]
+                    : null,
                 'publisher' => null,
                 'total' => (int) $total,
             ];
