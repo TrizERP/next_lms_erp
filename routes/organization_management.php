@@ -3,6 +3,9 @@
 use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\api\OrganizationManagement\Compliance\ComplianceLibraryController;
+use App\Http\Controllers\api\OrganizationManagement\Compliance\ComplianceCategoryController;
+use App\Http\Controllers\api\OrganizationManagement\Compliance\ComplianceEvidenceController;
+use App\Http\Controllers\api\OrganizationManagement\Compliance\ComplianceTemplateController;
 use App\Http\Controllers\api\OrganizationManagement\Disciplinary\DisciplinaryLibraryController;
 use App\Http\Controllers\api\OrganizationManagement\EmployeeDirectory\EmployeeDirectoryController;
 use App\Http\Controllers\api\OrganizationManagement\EmployeeDirectory\EmployeeDirectoryAnalyticsController;
@@ -28,12 +31,49 @@ use App\Http\Controllers\api\OrganizationManagement\RolePermissions\RolePermissi
 Route::middleware(['api.session'])->group(function () {
 
     // Compliance Library - ported from G2G's instituteDetailController
-    // `formName == 'complaince_library'` branch.
+    // `formName == 'complaince_library'` branch; extended into the full
+    // Compliance Management System (categories/templates/evidence/dashboard/
+    // calendar/my/overdue/complete) in the frontend-completion pass.
+    // Static-path routes (dashboard/calendar/my/overdue/categories/templates/
+    // evidence) are registered BEFORE the `/{id}` wildcard routes so e.g.
+    // GET .../dashboard is not swallowed as `id = "dashboard"`.
     Route::prefix('organization-management/compliance-library')->group(function () {
         Route::get('/', [ComplianceLibraryController::class, 'index']);
         Route::post('/', [ComplianceLibraryController::class, 'store']);
-        Route::match(['put', 'post'], '/{id}', [ComplianceLibraryController::class, 'update']);
-        Route::delete('/{id}', [ComplianceLibraryController::class, 'destroy']);
+
+        Route::get('/dashboard', [ComplianceLibraryController::class, 'dashboard']);
+        Route::get('/calendar', [ComplianceLibraryController::class, 'calendar']);
+        Route::get('/my', [ComplianceLibraryController::class, 'my']);
+        Route::get('/overdue', [ComplianceLibraryController::class, 'overdue']);
+
+        Route::prefix('/categories')->group(function () {
+            Route::get('/', [ComplianceCategoryController::class, 'index']);
+            Route::post('/', [ComplianceCategoryController::class, 'store']);
+            Route::match(['put', 'post'], '/{id}', [ComplianceCategoryController::class, 'update']);
+            Route::delete('/{id}', [ComplianceCategoryController::class, 'destroy']);
+        });
+
+        Route::prefix('/templates')->group(function () {
+            Route::get('/', [ComplianceTemplateController::class, 'index']);
+            Route::post('/', [ComplianceTemplateController::class, 'store']);
+            Route::post('/{id}/duplicate', [ComplianceTemplateController::class, 'duplicate']);
+            Route::match(['put', 'post'], '/{id}', [ComplianceTemplateController::class, 'update']);
+            Route::delete('/{id}', [ComplianceTemplateController::class, 'destroy']);
+        });
+
+        Route::prefix('/evidence')->group(function () {
+            Route::post('/{evidenceId}/verify', [ComplianceEvidenceController::class, 'verify']);
+            Route::post('/{evidenceId}/reject', [ComplianceEvidenceController::class, 'reject']);
+            Route::delete('/{evidenceId}', [ComplianceEvidenceController::class, 'destroy']);
+        });
+
+        Route::get('/{id}/evidence', [ComplianceEvidenceController::class, 'index'])->whereNumber('id');
+        Route::post('/{id}/evidence', [ComplianceEvidenceController::class, 'store'])->whereNumber('id');
+        Route::post('/{id}/complete', [ComplianceLibraryController::class, 'complete'])->whereNumber('id');
+
+        Route::get('/{id}', [ComplianceLibraryController::class, 'show'])->whereNumber('id');
+        Route::match(['put', 'post'], '/{id}', [ComplianceLibraryController::class, 'update'])->whereNumber('id');
+        Route::delete('/{id}', [ComplianceLibraryController::class, 'destroy'])->whereNumber('id');
     });
 
     // Disciplinary Library - ported from G2G's discliplinaryManagementController.
