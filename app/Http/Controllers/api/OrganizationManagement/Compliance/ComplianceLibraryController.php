@@ -13,6 +13,7 @@ use App\Models\OrganizationManagement\ComplianceTemplate;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -331,12 +332,30 @@ class ComplianceLibraryController extends Controller
         // new actions (evidence upload/verify/reject, complete). Filtered by
         // sub_institute_id too, defense-in-depth against entity_id collisions
         // across tenants (entity_id alone is not globally unique).
-        $activity = DB::table('system_audit_logs')
-            ->where('entity_type', 'org_compliance_library')
-            ->where('entity_id', (string) $record->id)
-            ->where('sub_institute_id', $tenant)
-            ->orderBy('created_at')
-            ->get(['action', 'actor_name', 'created_at', 'new_values'])
+        //
+        // Guarded (2026-09-28): `system_audit_logs`'s own migration
+        // (2026_08_24_090000_create_system_audit_logs_table) turns out to be
+        // "Pending" on at least one live database - never actually applied,
+        // despite the model/migration existing in the codebase and
+        // AuditLog::record() already being called from this controller's
+        // create/update/delete. Those calls never surfaced the problem
+        // because AuditLog::record() swallows its own exceptions (see that
+        // method's docblock: "must never break the mutation it documents");
+        // this endpoint's direct read did not have the same protection and
+        // 500'd instead. Same fallback shape either way: an empty activity
+        // list rather than a broken detail view - this pass does not touch
+        // the wider pre-existing gap (every other AuditLog::record() call in
+        // the app is silently failing the same way on that database).
+        $activity = Schema::hasTable('system_audit_logs')
+            ? DB::table('system_audit_logs')
+                ->where('entity_type', 'org_compliance_library')
+                ->where('entity_id', (string) $record->id)
+                ->where('sub_institute_id', $tenant)
+                ->orderBy('created_at')
+                ->get(['action', 'actor_name', 'created_at', 'new_values'])
+            : collect();
+
+        $activity = $activity
             ->map(fn ($row) => [
                 'action' => $row->action,
                 'actor_name' => $row->actor_name,
