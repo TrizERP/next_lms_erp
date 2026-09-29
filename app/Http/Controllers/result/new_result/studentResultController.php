@@ -2780,25 +2780,26 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
         // Get standard grades
         $grade_arr = $this->getGradeScale($standard_id, '');
         $table = "";
+        $overallTotal = 0;
 
         if (!empty($groupedExam)) {
             // Step 2: Build table
             $table = "<div class='box-height'>
-                <table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
-            $table .= "<thead><tr>";
-            $table .= "<th style='text-align:center !important;'><b>SUBJECTS</b></th>";
+                <table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #007bff;' cellspacing='0' border='1'>";
+            $table .= "<tr>";
+            $table .= "<td style='text-align:center !important;background-color:none !important;'><b>SUBJECTS</b></td>";
 
-            $totalMarks = $overallTotal = $overallObt = 0;
+            $totalMarks = $overallObt = 0;
 
             // Create headers for each ExamTitle with total weightage
             foreach ($groupedExam as $examGroup) {
-                $table .= "<th style='text-align:center !important;'><b>" . $examGroup['title'] . "<br>(" . $examGroup['total_weightage'] . ")</b></th>";
+                $table .= "<td style='text-align:center !important;background-color:none !important;'><b>" . $examGroup['title'] . "<br>(" . $examGroup['total_weightage'] . ")</b></td>";
                 $totalMarks += $examGroup['total_weightage'];
             }
 
-            $table .= "<th style='text-align:center!important;'><b>Total <br>(" . $totalMarks . ")</b></th>";
+            $table .= "<td style='text-align:center!important;background-color:none !important;'><b>Total <br>(" . $totalMarks . ")</b></td>";
             //$table .= "<th style='text-align:center!important;'><b>Grade</b></th>";
-            $table .= "</tr></thead><tbody>";
+            $table .= "</tr><tbody>";
 
             // Step 3: Loop through subjects
             foreach ($get_subject as $subject) {
