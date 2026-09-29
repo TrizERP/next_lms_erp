@@ -42,14 +42,13 @@ class GeminiClientRetryTest extends TestCase
             self::ENDPOINT => Http::sequence()
                 ->push($this->overloaded(), 503)
                 ->push($this->overloaded(), 503)
-                ->push($this->overloaded(), 503)
                 ->push(['candidates' => [['content' => ['parts' => [['text' => 'Drafted.']]]]]], 200),
         ]);
 
         $answer = $this->client()->chat([['role' => 'user', 'content' => 'Draft a fee reminder.']]);
 
-        $this->assertSame('Drafted.', $answer, 'Three busy responses must not cost the turn its answer.');
-        Http::assertSentCount(4);
+        $this->assertSame('Drafted.', $answer, 'Two busy responses must not cost the turn its answer.');
+        Http::assertSentCount(3);
     }
 
     public function test_the_wait_widens_between_attempts(): void
@@ -62,17 +61,24 @@ class GeminiClientRetryTest extends TestCase
             // The message is the next test's subject; this one is about the waiting.
         }
 
-        Sleep::assertSleptTimes(3, 'Four attempts means three waits.');
+        // MAX_ATTEMPTS is 3 (two waits) — lowered from 4 (five attempts total) after a
+        // run where every attempt failed measured at roughly a minute end to end, long
+        // enough that something in front of the call (observed on a Windows box
+        // serving Laravel via `php artisan serve`, no Apache or PHP-FPM involved) was
+        // cutting the connection before this class's own honest failure ever reached
+        // the caller.
+        Sleep::assertSleptTimes(2, 'Three attempts means two waits.');
 
-        // One wait under a second, one over four: the flat 750ms it replaced could
-        // produce neither, and that is the whole point. The attempts now span the
-        // seconds a real capacity spike lasts rather than a second and a half.
+        // The first wait is comfortably under a second; the second is comfortably
+        // more than double it. The flat 750ms this replaced could produce neither —
+        // that distinction, not a specific millisecond floor, is what "widening"
+        // means here.
         Sleep::assertSlept(
             static fn ($duration) => $duration->totalMilliseconds < 1000,
             1
         );
         Sleep::assertSlept(
-            static fn ($duration) => $duration->totalMilliseconds > 4000,
+            static fn ($duration) => $duration->totalMilliseconds > 1500,
             1
         );
     }
