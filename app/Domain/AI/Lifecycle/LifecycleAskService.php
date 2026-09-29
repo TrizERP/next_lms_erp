@@ -309,12 +309,16 @@ class LifecycleAskService
      * A general answer, when and only when this was not an ERP question.
      *
      * The dangerous version of this feature answers "how many students are in 8B?" from a
-     * language model. Three conditions keep that from happening, and all three must hold:
+     * language model. Four conditions keep that from happening, and all four must hold:
      *
      *   1. **The module binds no tools.** A question that reached `general` had no lookup
      *      available to it in the first place, so there is no ERP answer being displaced.
      *      A fees question routes to the fees module, which binds tools, and never gets
-     *      here however badly it went.
+     *      here however badly it went — see `ModuleReadPlanner` for the fix to the actual
+     *      bug this invariant used to hide: a tool-bound module blindly reading its own
+     *      data for a domain-free question ("what can I do in this system?") and then
+     *      refusing for want of a student or case, rather than either declining to read at
+     *      all or naming its own refusal honestly.
      *   2. **Only planning blocked.** Planning refusing with "not scoped to a module and
      *      matched no registered intent" *is* the signature of a non-ERP question. A
      *      block anywhere else — no permission, tool not bound, provider down — has a
