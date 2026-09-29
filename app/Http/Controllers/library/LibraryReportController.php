@@ -163,6 +163,15 @@ class LibraryReportController extends Controller
             ->when($mobile, function ($q) use ($mobile) {
                 $q->where('s.mobile', $mobile);
             })
+            ->when($grade_id, function ($q) use ($grade_id) {
+                $q->where('se.grade_id', $grade_id);
+            })
+            ->when($standard_id, function ($q) use ($standard_id) {
+                $q->where('se.standard_id', $standard_id);
+            })
+            ->when($division_id, function ($q) use ($division_id) {
+                $q->where('se.section_id', $division_id);
+            })
             // ->where('se.syear',$syear)
             ->where('library_book_circulations.sub_institute_id', $sub_institute_id);
         if ($report_type == "overdue") {
