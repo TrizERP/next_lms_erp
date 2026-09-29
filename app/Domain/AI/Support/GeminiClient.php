@@ -73,6 +73,26 @@ class GeminiClient implements ModelClient
     private const RETRY_STATUSES = [500, 502, 503, 504, 529];
 
     /**
+     * How many times a "not now" response lets this attempt the call, in total —
+     * `Http::retry($times, ...)`'s own parameter name is `$times`, not "retries after
+     * the first", and it is easy to misread as the latter.
+     *
+     * Was 4 (five attempts total, four waits). Measured live: with `DEFAULT_TIMEOUT`
+     * at 45s per attempt and `backoff()` widening geometrically, a run where every
+     * attempt failed took roughly a minute end to end — and something in front of
+     * this call (observed on a Windows box serving Laravel through `php artisan
+     * serve`, with no Apache or PHP-FPM in front of it — most likely Node's own
+     * `fetch()`, since PHP's own execution limit was confirmed unlimited here) was
+     * cutting the connection at almost exactly that mark, turning a slow-but-honest
+     * 422 into a bare 500 the caller could not read anything useful from. Three
+     * attempts (two waits) keeps the behaviour that actually mattered in practice —
+     * the second attempt is the one that has been observed to succeed after a first
+     * 503 — while finishing with enough margin that a caller's own timeout, whatever
+     * and wherever it is, is not a race this loses.
+     */
+    private const MAX_ATTEMPTS = 3;
+
+    /**
      * How long to wait before attempt N, widening each time.
      *
      * A flat 750ms three times rode out a hiccup and nothing more: a capacity spike on
@@ -201,7 +221,7 @@ class GeminiClient implements ModelClient
             // twenty-four requests, which tripped the per-minute limit that had not
             // been tripped before. A 429 surfaces immediately so the caller degrades
             // once rather than hammering. A 400 or 401 is a real fault and also surfaces.
-            ->retry(4, self::backoff(...), function ($exception, $request): bool {
+            ->retry(self::MAX_ATTEMPTS, self::backoff(...), function ($exception, $request): bool {
                 // `response` is a public property on RequestException, not a method.
                 // This read `method_exists($exception, 'response')`, which is false for
                 // every exception Laravel hands this callback — so the status was always
