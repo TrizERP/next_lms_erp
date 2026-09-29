@@ -419,6 +419,14 @@ if ($staffData) {
             'is_student'      => $isStudent,
         ];
 
+        // Tokens carried no expiry, so a leaked one worked forever. Set JWT_TTL_MINUTES
+        // (for example 720) to make them expire; unset keeps the old behaviour.
+        $ttlMinutes = (int) env('JWT_TTL_MINUTES', 0);
+        if ($ttlMinutes > 0) {
+            $payload['iat'] = time();
+            $payload['exp'] = time() + ($ttlMinutes * 60);
+        }
+
         $userToken = $jwt->createToken($payload);
 
         $apiLoginUrl = url('/api/api-login');

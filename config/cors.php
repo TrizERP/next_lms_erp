@@ -19,7 +19,10 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    // Comma-separated list of browser origins allowed to call the API, e.g.
+    // CORS_ALLOWED_ORIGINS=https://lms.example.in,https://erp.triz.co.in
+    // Defaults to '*' (unchanged behaviour) until the deployment sets it.
+    'allowed_origins' => array_values(array_filter(array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS', '*'))))),
 
     'allowed_origins_patterns' => [],
 
