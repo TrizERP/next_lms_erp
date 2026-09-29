@@ -21,6 +21,7 @@ use App\Services\PAL\Gamification\StreakService;
 use App\Services\PAL\Runtime\PalEvidenceRepository;
 use Illuminate\Support\Collection;
 use App\Services\PAL\Questions\McqPool;
+use App\Services\PAL\Questions\PalQuestionForms;
 use App\Services\PAL\Questions\ServableQuestions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -671,7 +672,17 @@ class EsoPolicyService implements EsoFlowPort
             // hydrateQuestion() itself enforces answerable options and a marked answer.
             $hydrated = $this->hydrateQuestion((int) $questionId);
             if ($hydrated !== null && $hydrated['options'] !== []) {
-                return array_merge($hydrated, ['node_id' => $nodeId]);
+                // Practice, unlike CFU, is not narrowed to MCQ (see
+                // mcqQuestionIdsQuery()'s docblock) - it can genuinely serve
+                // an assertion & reason, CBE, or ncert-solution item, which
+                // hydrate()'s plain question_type label can't distinguish
+                // from one another. question_type_code reuses the exact
+                // classification ladder PAL Test already runs
+                // (PalQuestionForms::describe()) so the client's
+                // mappingForQuestion() can pick the right H5P-style player.
+                $code = (new PalQuestionForms())->describe([(int) $questionId])[(int) $questionId]['question_type_code'] ?? null;
+
+                return array_merge($hydrated, ['node_id' => $nodeId, 'question_type_code' => $code]);
             }
         }
 
