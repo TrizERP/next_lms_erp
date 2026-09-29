@@ -371,7 +371,7 @@ class EsoEngineController extends Controller
             return $this->fail('Unknown learner.', 404);
         }
 
-        return $this->ok($this->policy->retrievalItems($nodeId, $subInstituteId));
+        return $this->ok($this->policy->retrievalItems($nodeId, $subInstituteId, $learnerId));
     }
 
     /**

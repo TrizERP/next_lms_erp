@@ -50,10 +50,15 @@ class QuestionBankSource
         'h5p_single_choice_set'   => ['mcq', 'assertion_reason'],
         'h5p_true_false'          => ['true_false'],
         'h5p_blanks'              => ['fill_blank', 'numerical'],
-        'h5p_drag_text'           => ['fill_blank'],
-        'h5p_mark_the_words'      => ['fill_blank'],
+        // 'drag_text' / 'mark_the_words' / 'drag_drop' are their own
+        // question_type_catalog codes (near-identical labels to these H5P
+        // types) that carried no mapping here -- confirmed zero existing
+        // questions under any of the three, so adding the obvious 1:1 is
+        // additive with no effect on what any existing row plays as.
+        'h5p_drag_text'           => ['fill_blank', 'drag_text'],
+        'h5p_mark_the_words'      => ['fill_blank', 'mark_the_words'],
         'h5p_memory_game'         => ['match_following'],
-        'h5p_drag_drop'           => ['match_following'],
+        'h5p_drag_drop'           => ['match_following', 'drag_drop'],
         'h5p_arithmetic_quiz'     => ['numerical'],
         'h5p_course_presentation' => [
             'case_study', 'case_study_parent', 'case_study_child',

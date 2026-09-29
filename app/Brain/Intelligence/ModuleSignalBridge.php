@@ -139,6 +139,40 @@ final class ModuleSignalBridge
             TeachLearnSignalRules::class,
             'vivek_erp.content_master',
         ],
+
+        // People & Competency modules.
+        'organization' => [
+            OrganizationIntelligence::class,
+            OrganizationSignalRules::class,
+            'vivek_erp.tbluser',
+        ],
+        'task-management' => [
+            TaskIntelligence::class,
+            TaskSignalRules::class,
+            'vivek_erp.task',
+        ],
+        'talent' => [
+            TalentIntelligence::class,
+            TalentSignalRules::class,
+            'vivek_erp.talent_job_applications',
+        ],
+        'capability' => [
+            CapabilityIntelligence::class,
+            CapabilitySignalRules::class,
+            'vivek_erp.s_user_jobrole',
+        ],
+        // Staff biometric/punch attendance — distinct from the pupil register
+        // the 'attendance' key above covers.
+        'staff-attendance' => [
+            StaffAttendanceIntelligence::class,
+            StaffAttendanceSignalRules::class,
+            'vivek_erp.hrms_attendances',
+        ],
+        'lms-activity' => [
+            LmsActivityIntelligence::class,
+            LmsActivitySignalRules::class,
+            'vivek_erp.homework',
+        ],
     ];
 
     public function __construct(

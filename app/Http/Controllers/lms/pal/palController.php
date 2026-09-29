@@ -3156,6 +3156,44 @@ public function getData($request)
         $resources = app(\App\Services\PAL\Content\ConceptLearningResourceService::class)
             ->forConcept((int) $conceptId, (int) $concept->chapter_id, $subInstituteId);
 
+        // Correctives already routed to this learner for this concept by
+        // MisconceptionLibraryService (fired at practice-submit time via
+        // PracticeOutcomeService::detect()) but not yet marked resolved.
+        // learnContent() is a pure read with no knowledge of that history on
+        // its own, so without this the Learn screen would show only generic
+        // material even when the engine already knows exactly what tripped
+        // the learner up.
+        $exposures = \App\Models\PAL\LearnerContentExposure::forLearnerConcept($studentId, (int) $conceptId)
+            ->where('content_type', 'corrective')
+            // resolved is NULL until recordOutcome() runs, then true/false -
+            // "outstanding" is anything that isn't a confirmed success.
+            ->where(fn ($q) => $q->whereNull('resolved')->orWhere('resolved', false))
+            ->orderByDesc('served_at')
+            ->get(['corrective_id', 'misconception_tag', 'served_at']);
+
+        $correctives = \App\Models\PAL\MisconceptionCorrective::whereIn('id', $exposures->pluck('corrective_id')->filter()->unique())
+            ->get(['id', 'title', 'body', 'media_url', 'format'])
+            ->keyBy('id');
+
+        $misconceptions = $exposures
+            ->map(function ($exposure) use ($correctives) {
+                $corrective = $correctives->get($exposure->corrective_id);
+                if ($corrective === null) {
+                    return null;
+                }
+
+                return [
+                    'misconception_tag' => $exposure->misconception_tag,
+                    'title' => $corrective->title,
+                    'body' => $corrective->body,
+                    'media_url' => $corrective->media_url,
+                    'format' => $corrective->format,
+                    'served_at' => $exposure->served_at,
+                ];
+            })
+            ->filter()
+            ->values();
+
         // The concept's nodes, cheapest first: a K node is the natural thing to
         // teach, and the resolver is node-scoped.
         $node = \App\Models\PAL\ConceptNode::query()
@@ -3181,6 +3219,7 @@ public function getData($request)
                 'attempt' => 0,
                 'content' => null,
                 'resources' => $resources,
+                'misconceptions' => $misconceptions,
                 'student_id' => $studentId,
             ]);
         }
@@ -3224,6 +3263,7 @@ public function getData($request)
             // inventing material.
             'content' => $content,
             'resources' => $resources,
+            'misconceptions' => $misconceptions,
             'student_id' => $studentId,
         ]);
     }

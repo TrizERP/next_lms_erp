@@ -69,7 +69,7 @@ class ConceptPerformanceAnalyzer
         $concepts = DB::table('lms_concept')
             ->where('chapter_id', $chapterId)
             ->whereIn('sub_institute_id', [$subInstituteId, 0])
-            ->orderBy('name')
+            ->orderBy('id')
             ->get(['id', 'name', 'chapter_id']);
 
         $chapterAvailability = McqPool::availability([$chapterId], $subInstituteId)[$chapterId]
@@ -91,6 +91,21 @@ class ConceptPerformanceAnalyzer
 
             $diag = $diagnosticByConcept[$conceptId] ?? null;
             $prac = $practice[$conceptId] ?? null;
+
+            $diagnosticPct = $diag['percentage'] ?? null;
+            $practicePct = $prac['percentage'] ?? 0.0;
+            $attempts = (int) ($prac['attempts'] ?? 0);
+
+            // Same priority formula LearningPlanService::gradeConcept() uses:
+            // diagnostic is the strongest signal, an unprobed concept sits
+            // mid-table rather than jumping the queue on a score it never
+            // earned. Kept identical so the Adaptive screen and the Learning
+            // Plan agree on which concepts are weak.
+            $priority = match (true) {
+                $diagnosticPct !== null => (float) $diagnosticPct,
+                $attempts > 0 => (float) $practicePct,
+                default => 50.0,
+            };
 
             $decision = $rule->decide([
                 'diagnostic_level' => $level,
@@ -118,8 +133,20 @@ class ConceptPerformanceAnalyzer
                 'rule_fired' => $decision['rule_fired'],
                 'rationale' => $decision['rationale'],
                 'servable' => ($availability['total'] ?? 0) > 0,
+                'priority' => $priority,
             ];
         }
+
+        // Weakest first, same convention as LearningPlanService::forChapter():
+        // unservable concepts sort last, since there's nothing the learner can
+        // actually do on them yet.
+        usort($out, function ($a, $b) {
+            if ($a['servable'] !== $b['servable']) {
+                return $a['servable'] ? -1 : 1;
+            }
+
+            return $a['priority'] <=> $b['priority'];
+        });
 
         return [
             'concepts' => $out,
