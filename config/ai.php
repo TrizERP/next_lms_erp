@@ -391,6 +391,12 @@ return [
                 'case_type' => 'fee_collection',
                 'detail_tools' => ['student_id' => 'fees.getPending'],
                 'mcp_tools' => [
+                    // Whole-school reads come first: `ModuleReadPlanner` calls the first
+                    // readable tools in this order when nothing else routes a question, and
+                    // the answer to "how much is pending?" must be the school's, not a
+                    // sample of the first 25 students that `fees.arrears` examines.
+                    'fees.position',
+                    'fees.outstanding_accounts',
                     'fees.getPending',
                     'fees.arrears',
                     'fees.collection_report',
