@@ -5,11 +5,13 @@ namespace App\Domain\KnowledgeGraph;
 use App\Domain\Ontology\EntityDefinition;
 use App\Domain\Ontology\OntologyRegistry;
 use App\Domain\Ontology\RelationshipDefinition;
+use App\Services\Graph\GraphSchema;
 use App\Services\Mcp\McpRequestContext;
 use App\Services\Neo4jService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -337,13 +339,34 @@ class GraphQueryService
         $fromLabel = $this->graphLabelFor($node->entityKey);
         $toLabel = $this->graphLabelFor($targetEntity->key);
 
-        // Labels and relationship types come from the ontology, never from user input,
-        // so they are safe to interpolate. Values stay parameterised.
+        // The graph is never keyed on a generic `id` property (GraphSchema.php's own
+        // docblock: "no node uses `id` as its key" — MERGEing on it would silently miss
+        // every real node). Resolve each label's actual unique key instead. A label
+        // GraphSchema doesn't know about isn't safe to query — fall back to SQL rather
+        // than build a MATCH against a made-up property.
+        try {
+            $fromKey = GraphSchema::key($fromLabel);
+            $toKey = GraphSchema::key($toLabel);
+        } catch (InvalidArgumentException $exception) {
+            Log::info('[knowledge-graph] label not in GraphSchema whitelist, using SQL', [
+                'edge' => $edge->key,
+                'from_label' => $fromLabel,
+                'to_label' => $toLabel,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return null;
+        }
+
+        // Labels, relationship types and key property names come from the ontology and
+        // GraphSchema, never from user input, so they are safe to interpolate. Values
+        // stay parameterised.
         $cypher = sprintf(
-            'MATCH (a:%s {id: $startId})-[:%s]->(b:%s) '
+            'MATCH (a:%s {%s: $startId})-[:%s]->(b:%s) '
             . 'WHERE ($tenantId IS NULL OR b.sub_institute_id IS NULL OR b.sub_institute_id = $tenantId) '
             . 'RETURN b LIMIT %d',
             $fromLabel,
+            $fromKey,
             $edge->graphRelationshipType,
             $toLabel,
             $spec->limitPerHop
@@ -378,7 +401,7 @@ class GraphQueryService
 
             $nodes[] = new GraphNode(
                 entityKey: $targetEntity->key,
-                id: $properties['id'] ?? null,
+                id: $properties[$toKey] ?? null,
                 label: $this->labelFor($properties, $targetEntity),
                 attributes: $this->attributesFor($properties, $targetEntity),
                 viaRelation: $edge->relation,

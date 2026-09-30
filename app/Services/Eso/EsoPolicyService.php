@@ -14,6 +14,7 @@ use App\Models\PAL\ConceptRelation;
 use App\Models\PAL\MisconceptionLibrary;
 use App\Models\PAL\QuestionMetadata;
 use App\Services\Eso\EsoConceptVideoResolver;
+use App\Services\PAL\Coherence\CoherenceMapRepository;
 use App\Services\PAL\Content\MisconceptionLibraryService;
 use App\Services\PAL\Flow\EsoFlowResolver;
 use App\Services\PAL\Gamification\BadgeService;
@@ -242,6 +243,7 @@ class EsoPolicyService implements EsoFlowPort
         protected EsoConceptVideoResolver $videos,
         protected EsoEvidenceBridge $evidenceBridge,
         protected EsoEnrichmentResolver $enrichment,
+        protected CoherenceMapRepository $coherenceMap,
     ) {
     }
 
@@ -1783,6 +1785,19 @@ class EsoPolicyService implements EsoFlowPort
      */
     protected function unmetPrerequisiteConceptIds(int $conceptId, int $studentId, int $subInstituteId): Collection
     {
+        if (config('pal.eso.graph_prerequisite_gate', false)) {
+            $viaGraph = $this->unmetPrerequisiteConceptIdsViaGraph($conceptId, $studentId, $subInstituteId);
+
+            if ($viaGraph !== null) {
+                return $viaGraph;
+            }
+            // Null, not empty — the graph has no projected map for this
+            // concept's scope. Fall through to the SQL check below rather
+            // than treat "no answer" as "nothing is blocked" (the exact
+            // "deployment gap ≠ guarantee" precedent CurriculumGraphBuilder
+            // already set for the authoring Coherence Map screen).
+        }
+
         // Authored curriculum structure, never written by this engine — safe to
         // memoise for the request. The chapter dashboard resolves this once per
         // concept and was re-reading the same relation rows 17 times a page.
@@ -1802,6 +1817,46 @@ class EsoPolicyService implements EsoFlowPort
                 return $mastery !== null && $mastery < self::PREREQUISITE_THRESHOLD;
             })
             ->values();
+    }
+
+    /**
+     * Graph-backed version of unmetPrerequisiteConceptIds() above — full
+     * transitive closure via CoherenceMapRepository::rootBlockers(), instead
+     * of this class's own single-hop-only ConceptRelation check. Returns the
+     * deepest unmastered ROOT blockers (weakest-first), not just the
+     * concept's direct prerequisites, so D2 can point a student at the real
+     * cause instead of the first thing in the way.
+     *
+     * Returns null — not an empty Collection — when rootBlockers() has
+     * nothing to say for this scope, so the caller knows to fall back rather
+     * than read "no answer" as "cleared". A concept with genuinely zero
+     * prerequisites, or one whose prerequisites are all mastered, is a real
+     * empty Collection, not null — see hasProjectedScope()'s docblock.
+     */
+    protected function unmetPrerequisiteConceptIdsViaGraph(int $conceptId, int $studentId, int $subInstituteId): ?Collection
+    {
+        if (! $this->coherenceMap->hasProjectedScope($conceptId)) {
+            return null;
+        }
+
+        // hasProjectedScope() only proves the concept is A node with SOME
+        // edges — not that every edge rootBlockers() would walk (this
+        // concept's own, or an ancestor's) actually made it into the graph.
+        // Measured live: a concept can look "present" while missing a real
+        // prerequisite edge SQL has, which would silently under-gate a
+        // student rather than error. See transitivePrerequisiteEdgesComplete()'s
+        // docblock for the exact case this caught.
+        if (! $this->coherenceMap->transitivePrerequisiteEdgesComplete($conceptId)) {
+            return null;
+        }
+
+        return $this->memo(
+            "prereq:graph:{$conceptId}:{$studentId}:{$subInstituteId}",
+            fn () => collect($this->coherenceMap->rootBlockers($conceptId, $studentId))
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+        );
     }
 
     /** Plain read: does this concept have any unmet prerequisite right now? No logging, no action payload. */

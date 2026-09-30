@@ -233,6 +233,127 @@ class CoherenceMapRepository
      *
      * @return array<int, array{id: int, name: string, mastery: float, gate: float, depth: int}>
      */
+    /**
+     * Whether this concept's (standard, subject) scope has ANY projected map
+     * at all — distinct from "this concept has no prerequisites" or "every
+     * prerequisite is mastered", both of which are legitimate empty results
+     * from rootBlockers() below. A caller that GATES real behavior on an
+     * empty rootBlockers() result (rather than just displaying it) needs this
+     * to tell "nothing blocks it" apart from "the graph has nothing to say
+     * here yet" — see EsoPolicyService::unmetPrerequisiteConceptIds().
+     *
+     * Reuses the same memoized scope() lookup rootBlockers() makes, so
+     * calling both on one request costs one Neo4j round trip, not two.
+     */
+    public function hasProjectedScope(int $conceptId): bool
+    {
+        $scope = $this->scopeForConcept($conceptId);
+
+        return $scope !== null && isset($scope['nodes'][$conceptId]);
+    }
+
+    /**
+     * Whether every REQUIRES edge rootBlockers() would actually traverse for
+     * this concept is present in the graph, cross-checked against SQL
+     * (pal_concept_relations ∪ concept_prerequisite).
+     *
+     * hasProjectedScope() alone is not enough: it only proves the concept is
+     * A node with SOME edges, not that all of ITS edges (or an ancestor's)
+     * made it into the graph. Measured live 2026-09-30 — concept 115's own
+     * `pal_concept_relations` row (115 requires 114, draft, not rejected, not
+     * expert-covered) should have synced per projectRelations()'s own logic,
+     * but the live graph has zero REQUIRES edges from 115 to 114. A learner
+     * genuinely unmastered on 114 would have been silently cleared by
+     * rootBlockers() alone — hasProjectedScope(115) returns true (115 has
+     * OTHER edges), so nothing before this check would have caught it.
+     *
+     * Checks the concept plus every ancestor rootBlockers() would visit (via
+     * the same walkWithDepth() this class already uses), not the whole
+     * scope — bounded the same way every other walk here is (measured real
+     * max depth 6, scope itself ~118 concepts), so this costs a handful of
+     * small indexed queries, not a scope-wide audit.
+     */
+    public function transitivePrerequisiteEdgesComplete(int $conceptId): bool
+    {
+        $scope = $this->scopeForConcept($conceptId);
+
+        if ($scope === null || ! isset($scope['nodes'][$conceptId])) {
+            return false;
+        }
+
+        $ancestors = $this->walkWithDepth($conceptId, $scope['requires']);
+        $toCheck = array_merge([$conceptId], array_keys($ancestors));
+
+        foreach ($toCheck as $id) {
+            if (! $this->directPrerequisiteEdgesComplete((int) $id, $scope)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * SQL's distinct direct-prerequisite ids for one concept minus the
+     * graph's — non-empty means the graph is missing at least one edge SQL
+     * has. Deliberately a set difference, not a count comparison: the two
+     * SQL sources can overlap (projectRelations() dedupes pal_concept_relations
+     * against concept_prerequisite pairs it already covers), so comparing
+     * sizes alone could pass even with the wrong edges missing.
+     */
+    private function directPrerequisiteEdgesComplete(int $conceptId, array $scope): bool
+    {
+        $sqlPrerequisiteIds = DB::table('pal_concept_relations')
+            ->where('from_concept_id', $conceptId)
+            ->where('relation_type', 'requires')
+            ->where('quality_status', '!=', 'rejected')
+            ->pluck('to_concept_id')
+            ->merge(
+                DB::table('concept_prerequisite')
+                    ->where('concept_id', $conceptId)
+                    ->where('status', 'approved')
+                    ->pluck('prerequisite_id')
+            )
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            // A prerequisite outside this (standard, subject) scope — e.g. an
+            // earlier-grade concept from a different standard — is never
+            // walked by rootBlockers() either way: readEdges() drops any
+            // edge whose endpoint isn't in $scope['nodes'] by design ("an
+            // edge to a concept not on the canvas is a dangling reference").
+            // Measured live: concept 2723 -> 28084 is real in Neo4j but
+            // 28084 sits in a different standard, so it never enters this
+            // scope's node set. Comparing against it would flag a boundary
+            // rootBlockers() was never going to cross as if it were a gap.
+            ->filter(fn ($id) => isset($scope['nodes'][$id]));
+
+        if ($sqlPrerequisiteIds->isEmpty()) {
+            return true;
+        }
+
+        $graphPrerequisiteIds = collect($scope['requires'][$conceptId] ?? [])->map(fn ($id) => (int) $id);
+
+        return $sqlPrerequisiteIds->diff($graphPrerequisiteIds)->isEmpty();
+    }
+
+    /** Shared (standard, subject, tenant) scope lookup for one concept id, or null if the concept row itself doesn't exist. */
+    private function scopeForConcept(int $conceptId): ?array
+    {
+        $home = DB::table('lms_concept')
+            ->where('id', $conceptId)
+            ->first(['standard_id', 'subject_id', 'sub_institute_id']);
+
+        if ($home === null) {
+            return null;
+        }
+
+        return $this->scope(
+            (int) $home->standard_id,
+            (int) $home->subject_id,
+            (int) $home->sub_institute_id
+        );
+    }
+
     public function rootBlockers(int $conceptId, int $learnerId): array
     {
         $home = DB::table('lms_concept')
@@ -396,6 +517,80 @@ class CoherenceMapRepository
         }
 
         return $out;
+    }
+
+    /**
+     * Misconceptions attached to one concept, with their corrective content —
+     * both edges written by `CoherenceGraphProjection::projectMisconceptions()`.
+     *
+     * :Misconception is keyed on `misconceptionId` as an integer (confirmed
+     * against the write side, `projectMisconceptions()`'s `$affectsCypher`) —
+     * unlike :Content, which stays keyed on `id` as a string here too, same
+     * cast `contentFor()` already established.
+     *
+     * Two queries, not one: CORRECTS_WITH is sparse today (many misconceptions
+     * have no linked corrective content yet), and collecting it via a Cypher
+     * subquery/OPTIONAL MATCH would require parsing nested map results this
+     * class has no existing precedent for. A second flat query, merged in PHP,
+     * matches every other method's shape here and degrades cleanly to an empty
+     * `corrective_content` array rather than a parsing edge case.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function misconceptionsFor(int $conceptId, int $limit = 5): array
+    {
+        $cypher = 'MATCH (mc:Misconception)-[e:AFFECTS]->(c:Concept {conceptId: $conceptId}) '
+            . 'RETURN mc.misconceptionId AS id, mc.tag AS tag, mc.description AS description, '
+            . '       mc.error_pattern AS error_pattern, mc.corrective_note AS corrective_note, '
+            . '       mc.prevalence_rate AS prevalence_rate, mc.priority_level AS priority_level, '
+            . '       mc.teacher_confirmed AS teacher_confirmed, mc.quality_status AS status '
+            // Most prevalent, highest-priority first — the misconception a
+            // teacher most needs to know about goes first.
+            . 'ORDER BY coalesce(mc.priority_level, 3) ASC, coalesce(mc.prevalence_rate, 0.0) DESC '
+            . 'LIMIT $limit';
+
+        $misconceptions = [];
+
+        foreach ($this->neo4j->run($cypher, ['conceptId' => $conceptId, 'limit' => max(1, $limit)]) as $r) {
+            $id = (int) $r->get('id');
+            $misconceptions[$id] = [
+                'id'                 => $id,
+                'tag'                => $this->text($r->get('tag')),
+                'description'        => $this->text($r->get('description')),
+                'error_pattern'      => $this->text($r->get('error_pattern')),
+                'corrective_note'    => $this->text($r->get('corrective_note')),
+                'prevalence_rate'    => $r->get('prevalence_rate') === null ? null : (float) $r->get('prevalence_rate'),
+                'priority_level'     => $this->intOrNull($r->get('priority_level')),
+                'teacher_confirmed'  => (bool) $r->get('teacher_confirmed'),
+                'status'             => $this->text($r->get('status')) ?: 'draft',
+                'corrective_content' => [],
+            ];
+        }
+
+        if ($misconceptions === []) {
+            return [];
+        }
+
+        $correctiveCypher = 'MATCH (mc:Misconception)-[e:CORRECTS_WITH]->(content:Content) '
+            . 'WHERE mc.misconceptionId IN $ids '
+            . 'RETURN mc.misconceptionId AS misconceptionId, content.id AS contentId, '
+            . '       content.title AS title, e.format AS format';
+
+        foreach ($this->neo4j->run($correctiveCypher, ['ids' => array_keys($misconceptions)]) as $r) {
+            $misconceptionId = (int) $r->get('misconceptionId');
+
+            if (! isset($misconceptions[$misconceptionId])) {
+                continue;
+            }
+
+            $misconceptions[$misconceptionId]['corrective_content'][] = [
+                'id'     => (string) $r->get('contentId'),
+                'title'  => $this->text($r->get('title')),
+                'format' => $this->text($r->get('format')),
+            ];
+        }
+
+        return array_values($misconceptions);
     }
 
     // ══════════════════════════════════════════════════════════════════

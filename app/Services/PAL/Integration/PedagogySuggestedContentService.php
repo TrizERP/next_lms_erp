@@ -2,18 +2,24 @@
 
 namespace App\Services\PAL\Integration;
 
+use App\Services\PAL\Coherence\CoherenceMapRepository;
 use App\Services\PAL\Pedagogy\PedagogyOrchestrationService;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class PedagogySuggestedContentService
 {
     private ?PedagogyOrchestrationService $pedagogy;
 
-    public function __construct(?PedagogyOrchestrationService $pedagogy = null)
+    private CoherenceMapRepository $coherenceMap;
+
+    public function __construct(?PedagogyOrchestrationService $pedagogy = null, ?CoherenceMapRepository $coherenceMap = null)
     {
         $this->pedagogy = $pedagogy;
+        $this->coherenceMap = $coherenceMap ?? app(CoherenceMapRepository::class);
     }
 
     public function getSuggestions(array $context = []): array
@@ -81,6 +87,46 @@ class PedagogySuggestedContentService
         $weakConceptNames = array_values(array_filter(array_map(function (array $item) {
             return $item['concept_name'] ?? null;
         }, $weakConceptRows)));
+
+        // Additive only — the mastery_level<40 threshold above stays this
+        // service's own system of record for "weak"; this attaches WHY
+        // (CoherenceMapRepository::rootBlockers(), the same transitive
+        // prerequisite closure Phase 3 uses) and WHAT TO SHOW for it
+        // (contentFor(), reading the already-projected TEACHES edges).
+        //
+        // Deliberately NOT wired into getCandidateContent()'s chapter-wide
+        // SQL pool below: that method returns content_master's raw columns
+        // straight into calculateContentScore()/attachContentMappings()/
+        // categorizeContentWithPedagogy(), and contentFor()'s narrower graph
+        // row shape (id/title/format/bloom/difficulty) doesn't match what
+        // those three functions expect. Surfacing it as its own field here
+        // is the safe version of the same idea — real graph-sourced content,
+        // targeted at the specific concept rather than the whole chapter —
+        // without reshaping a live, heavily-used scoring pipeline to fit it.
+        //
+        // Wrapped defensively: unlike the Coherence Map screen this
+        // repository normally serves, this service is on the live
+        // suggested-content path and must not go down just because Neo4j is
+        // unreachable or a scope has no projected map.
+        $enrichedWeakConcepts = array_map(function (array $item) use ($learnerId) {
+            $conceptId = (int) ($item['concept_id'] ?? 0);
+            $rootCause = [];
+            $graphContent = [];
+
+            if ($conceptId > 0) {
+                try {
+                    $rootCause = $this->coherenceMap->rootBlockers($conceptId, $learnerId);
+                    $graphContent = $this->coherenceMap->contentFor($conceptId, [], 3);
+                } catch (Throwable $exception) {
+                    Log::info('[pedagogy-suggested-content] graph lookup unavailable', [
+                        'concept_id' => $conceptId,
+                        'error' => $exception->getMessage(),
+                    ]);
+                }
+            }
+
+            return $item + ['root_cause' => $rootCause, 'graph_content' => $graphContent];
+        }, $weakConceptRows);
 
         $dueConceptIds = [];
         foreach ($forgettingData as $row) {
@@ -181,6 +227,7 @@ class PedagogySuggestedContentService
                 'due_for_review' => count($dueConceptIds),
             ],
             'teacher_insights' => $teacherInsights,
+            'weak_concepts' => $enrichedWeakConcepts,
             'student_level' => $studentLevel,
             'grade' => $gradeId ?: null,
             'standard' => $standardId ?: null,
