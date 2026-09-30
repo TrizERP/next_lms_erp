@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php \"C:/Users/Asus/AppData/Local/Temp/claude/d--next-lms-erp/*/scratchpad/*\")"
+    ]
+  }
+}

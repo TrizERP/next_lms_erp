@@ -3,6 +3,7 @@
 namespace App\Domain\AI\Lifecycle;
 
 use App\Domain\AI\Conversation\AnswerComposer;
+use App\Domain\AI\Conversation\ConversationalNarrator;
 use App\Domain\AI\Conversation\ConversationStore;
 use App\Domain\AI\Conversation\FollowUpComposer;
 use App\Domain\AI\Conversation\GeneralAnswerService;
@@ -40,6 +41,8 @@ class LifecycleAskService
         private readonly GeneralAnswerService $general,
         private readonly ModuleSuggestions $suggestions,
         private readonly FollowUpComposer $followUps,
+        // Optional so a service built by hand keeps the deterministic headline it always had.
+        private readonly ?ConversationalNarrator $narrator = null,
     ) {
     }
 
@@ -248,6 +251,20 @@ class LifecycleAskService
             }
         }
 
+        // A turn the tools answered gets its top line said in words, when a model can do so
+        // from the tool data alone. The cards below stay as the evidence, and any reply
+        // that cites a figure the tools did not return is dropped in favour of the headline.
+        // `answer_source` is left as it was: the audit reads it to tell an answer from a
+        // refusal, and a narrated answer is still an answer from the stages.
+        if ($this->narrator !== null && $context->get('answer_source') === 'stages') {
+            $narrated = $this->narrator->narrate($context, $headline);
+
+            if ($narrated !== null) {
+                $headline = $narrated;
+                $context->set('narrated', true);
+            }
+        }
+
         if ($followUps === []) {
             // What to ask next comes from the module the turn was answered in, read from
             // `ai_suggestions`. This used to be two sentences about academic risk offered
@@ -309,12 +326,16 @@ class LifecycleAskService
      * A general answer, when and only when this was not an ERP question.
      *
      * The dangerous version of this feature answers "how many students are in 8B?" from a
-     * language model. Three conditions keep that from happening, and all three must hold:
+     * language model. Four conditions keep that from happening, and all four must hold:
      *
      *   1. **The module binds no tools.** A question that reached `general` had no lookup
      *      available to it in the first place, so there is no ERP answer being displaced.
      *      A fees question routes to the fees module, which binds tools, and never gets
-     *      here however badly it went.
+     *      here however badly it went — see `ModuleReadPlanner` for the fix to the actual
+     *      bug this invariant used to hide: a tool-bound module blindly reading its own
+     *      data for a domain-free question ("what can I do in this system?") and then
+     *      refusing for want of a student or case, rather than either declining to read at
+     *      all or naming its own refusal honestly.
      *   2. **Only planning blocked.** Planning refusing with "not scoped to a module and
      *      matched no registered intent" *is* the signature of a non-ERP question. A
      *      block anywhere else — no permission, tool not bound, provider down — has a

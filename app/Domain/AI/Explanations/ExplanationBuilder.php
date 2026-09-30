@@ -45,7 +45,8 @@ class ExplanationBuilder
         ?string $subjectEntityKey = null,
         int|string|null $subjectId = null,
         ?string $subjectLabel = null,
-        ?string $narrative = null
+        ?string $narrative = null,
+        bool $usedKnowledgeGraph = false
     ): array {
         $composed = $narrative ?? $this->governance->explain()->composeNarrative($claims, $subjectLabel);
 
@@ -80,6 +81,7 @@ class ExplanationBuilder
                 'subject_id' => $subjectId,
                 'message' => mb_substr($composed, 0, 200),
                 'payload' => ['case_id' => $caseId, 'claim_count' => count($claims)],
+                'knowledge_graph_used' => $usedKnowledgeGraph,
             ]);
         }
 

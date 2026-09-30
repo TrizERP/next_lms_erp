@@ -193,7 +193,8 @@ class AgentContext
         string $audience = 'teacher',
         ?string $subjectEntityKey = null,
         int|string|null $subjectId = null,
-        ?string $subjectLabel = null
+        ?string $subjectLabel = null,
+        bool $usedKnowledgeGraph = false
     ): array {
         $this->assertVerb(Verb::Explain);
 
@@ -204,7 +205,9 @@ class AgentContext
             $audience,
             $subjectEntityKey,
             $subjectId,
-            $subjectLabel
+            $subjectLabel,
+            null,
+            $usedKnowledgeGraph
         );
     }
 

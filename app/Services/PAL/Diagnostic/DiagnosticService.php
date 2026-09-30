@@ -463,9 +463,14 @@ class DiagnosticService
      * the aggregate totals and the per-band/per-concept breakdowns above don't
      * cover on their own.
      *
-     * Question text only, never the correct option or which option the
-     * learner chose: the answer key still does not cross this boundary (see
-     * ServableQuestions::hydrate()'s own rule), only the verdict does.
+     * Now carries the full answer key too — every option, which one the
+     * learner chose, which one was correct, and the correct option's stored
+     * feedback text as an explanation. That boundary (see
+     * `ServableQuestions::hydrate()`'s own rule) is about the LIVE paper,
+     * answered before the attempt is scored; this method only ever runs
+     * after `submit()` has already closed the attempt out, so there is
+     * nothing left to protect by withholding it here — a review screen is
+     * exactly what a submitted paper's answer key is for.
      *
      * @param  iterable<object>  $responses
      * @return array<int,array<string,mixed>>
@@ -478,8 +483,10 @@ class DiagnosticService
             return [];
         }
 
+        $questionIds = $responses->pluck('question_id')->unique()->all();
+
         $titles = DB::table('lms_question_master')
-            ->whereIn('id', $responses->pluck('question_id')->unique()->all())
+            ->whereIn('id', $questionIds)
             ->pluck('question_title', 'id');
 
         $conceptIds = $responses->pluck('concept_id_snapshot')->filter()->unique()->values()->all();
@@ -488,8 +495,20 @@ class DiagnosticService
             ->pluck('name', 'id')
             ->all();
 
-        return $responses->map(function ($row) use ($titles, $conceptNames) {
+        // Every option for every question this attempt served, grouped by
+        // question_id — the review screen's answer key. Re-queried here
+        // rather than reused from whatever built the paper, because the
+        // attempt is long finished by the time result() runs and nothing
+        // keeps that array around.
+        $options = DB::table('answer_master')
+            ->whereIn('question_id', $questionIds)
+            ->get(['id', 'question_id', 'answer', 'correct_answer', 'feedback'])
+            ->groupBy('question_id');
+
+        return $responses->map(function ($row) use ($titles, $conceptNames, $options) {
             $conceptId = $row->concept_id_snapshot !== null ? (int) $row->concept_id_snapshot : null;
+            $rowOptions = $options->get($row->question_id, collect());
+            $correctOption = $rowOptions->first(fn ($option) => (int) $option->correct_answer === 1);
 
             return [
                 'sequence' => (int) $row->sequence,
@@ -502,6 +521,17 @@ class DiagnosticService
                 // null (not false) when unanswered — an unanswered question is
                 // neither right nor wrong, same distinction totals() makes.
                 'is_correct' => $row->answer_master_id !== null ? (bool) $row->is_correct : null,
+                'options' => $rowOptions->map(fn ($option) => [
+                    'id' => (int) $option->id,
+                    'answer' => $option->answer,
+                ])->values()->all(),
+                'selected_option_id' => $row->answer_master_id !== null ? (int) $row->answer_master_id : null,
+                'correct_option_id' => $correctOption !== null ? (int) $correctOption->id : null,
+                // Populated for a small minority of rows today, and often
+                // just restates the verdict ("Correct") rather than
+                // explaining it — shown only when genuinely present, never
+                // as an empty placeholder.
+                'explanation' => $correctOption !== null && $correctOption->feedback ? $correctOption->feedback : null,
             ];
         })->values()->all();
     }

@@ -28,7 +28,7 @@ use App\Http\Controllers\api\PAL\PalWorkspaceController;
 | Pedagogy Engine - Read Only
 |--------------------------------------------------------------------------
 */
-Route::prefix('api/pal/pedagogy-engine')->group(function () {
+Route::prefix('api/pal/pedagogy-engine')->middleware('api.jwt')->group(function () {
     Route::get('/', [PedagogyEngineController::class, 'index']);
     Route::get('/sections', [PedagogyEngineController::class, 'sections']);
     Route::get('/chapters', [PedagogyEngineController::class, 'chapters']);
@@ -173,6 +173,9 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
         ->where('learnerId', '[0-9]+');
     Route::get('/coherence/remediation/{learnerId}/{conceptId}', [CoherenceMapController::class, 'remediation'])
         ->where(['learnerId' => '[0-9]+', 'conceptId' => '[0-9]+']);
+    // Graph RAG: graph-retrieved context + LLM narrative, additive alongside remediation() above.
+    Route::get('/coherence/explain/{learnerId}/{conceptId}', [CoherenceMapController::class, 'explain'])
+        ->where(['learnerId' => '[0-9]+', 'conceptId' => '[0-9]+']);
 
     // The real-time write path: one answer in, new mastery + next action out.
     // learner_id travels in the body, which is what PalApiAuth ownership-checks.
@@ -212,6 +215,9 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
         ->where('id', '[0-9]+');
     Route::post('/content/misconceptions/{id}/correctives', [PalContentIntelligenceController::class, 'storeCorrective'])
         ->where('id', '[0-9]+');
+    // Graph-sourced view (CoherenceGraphProjection's AFFECTS/CORRECTS_WITH edges), additive alongside the SQL routes above.
+    Route::get('/content/misconceptions/for-concept/{conceptId}', [PalContentIntelligenceController::class, 'misconceptionsForConcept'])
+        ->where('conceptId', '[0-9]+');
 
     // Authoring and QA review
     Route::get('/content/review-queue/{entityType}', [PalContentIntelligenceController::class, 'reviewQueue']);

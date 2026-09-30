@@ -109,7 +109,7 @@ class TableGraphProjection implements GraphProjection
                 foreach ($this->edges($rel, $row, $recordId) as [$sourceId, $targetId]) {
                     $queue[] = $this->outbox->relationship(
                         $rel['from'][0], $sourceId, $rel['type'], $rel['to'][0], $targetId,
-                        null, 'INSERT', $this->edgeKey($rel, $row, $recordId)
+                        $this->previousTarget($rel, $sourceId, $targetId), 'INSERT', $this->edgeKey($rel, $row, $recordId)
                     );
                 }
             }
@@ -134,7 +134,7 @@ class TableGraphProjection implements GraphProjection
             foreach ($this->edges($rel, $row, $nodeId) as [$sourceId, $targetId]) {
                 $queue[] = $this->outbox->relationship(
                     $rel['from'][0], $sourceId, $rel['type'], $rel['to'][0], $targetId,
-                    null, 'INSERT', $this->edgeKey($rel, $row, $nodeId)
+                    $this->previousTarget($rel, $sourceId, $targetId), 'INSERT', $this->edgeKey($rel, $row, $nodeId)
                 );
             }
         }
@@ -362,6 +362,51 @@ class TableGraphProjection implements GraphProjection
         }
 
         return $key;
+    }
+
+    /**
+     * The target this relationship pointed at last time it was queued, when
+     * it has since changed to `$newTargetId` — the signal `GraphDrain` needs
+     * to delete the stale edge instead of leaving it beside the new one
+     * (`GraphOutbox::relationship()`'s `old_target_id` contract).
+     *
+     * Only correct for a "forward", single-valued relationship: THIS row's
+     * own node is the source (`from` column is `id`) and the target is one
+     * scalar FK column, not a `list`. Anything else is either a `key`-scoped
+     * edge (several of the same type legitimately coexist between the same
+     * two nodes, e.g. `hrms_emp_leaves`) or a "reverse" edge whose SOURCE
+     * column can change instead (e.g. `chapter_master`'s `HAS_CHAPTER`,
+     * `from => ['Subject', 'subject_id']`) — that is a different defect
+     * (`neo4j_sync_queue` has no `old_source_id` to diff against) and this
+     * must not guess at it. Both return null here, leaving that queue row
+     * exactly as it always was.
+     *
+     * Confirmed live 2026-09-28: without this, `lms_question_master.concept_id`
+     * being re-tagged left 283 `Question`s with 2-3 contradictory `ASSESSES`
+     * edges, and `.chapter_id` being re-filed left 7,143 with contradictory
+     * `BELONGS_TO` edges — every re-point queued as a bare INSERT with no old
+     * target, so the stale edge was never removed.
+     *
+     * Reads `neo4j_sync_queue` itself rather than Neo4j, mirroring
+     * `StudentGraphProjection::currentStandardInGraph()` — a live Bolt read
+     * here would put a network round-trip on the critical path of whatever
+     * transaction is writing the MariaDB row.
+     */
+    private function previousTarget(array $rel, int $sourceId, int $newTargetId): ?int
+    {
+        if ($rel['from'][1] !== 'id' || ($rel['list'] ?? null) !== null || ($rel['key'] ?? []) !== []) {
+            return null;
+        }
+
+        $previous = DB::table('neo4j_sync_queue')
+            ->where('source_table', $rel['from'][0])
+            ->where('source_id', $sourceId)
+            ->where('rel_type', $rel['type'])
+            ->where('target_table', $rel['to'][0])
+            ->orderByDesc('id')
+            ->value('new_target_id');
+
+        return ($previous !== null && (int) $previous !== $newTargetId) ? (int) $previous : null;
     }
 
     /** @return int[] */

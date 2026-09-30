@@ -49,15 +49,43 @@ class AiAuditLogger
 
     public const TOOL_EXECUTION = 'tool.execution';
 
+    public const ASSISTANCE_TICKET_CREATED = 'assistance.ticket.created';
+
     /**
-     * Record an event. Returns the row id, or null if the write could not happen.
+     * Build the row this event would write, without writing it.
+     *
+     * Pure and DB-free on purpose: this is the part of `record()` worth unit testing
+     * directly, and this codebase's tests run against the same shared estate every
+     * other environment does — there is no isolated test database to write into, so a
+     * test exercises this method rather than a real insert.
+     *
+     * PROMOTING `duration_ms` — several callers (AgentRunner, McpToolCaller,
+     * WorkflowEngine) already compute an accurate elapsed time and were burying it
+     * inside the freeform `payload` JSON, unreadable by anything that only queries
+     * columns. An explicit `$options['duration_ms']` wins; failing that, a
+     * `duration_ms` key already present in `$options['payload']` is promoted so every
+     * caller that was already computing it lights this column up for free, unedited.
+     * Left null — never zero — when nobody supplied one, because a genuinely instant
+     * event and an unmeasured one must not read the same.
+     *
+     * `knowledge_graph_used` has no such existing source to promote from; it is only
+     * ever what `$options['knowledge_graph_used']` explicitly says, and stays null
+     * (not false) when the caller has no opinion — see ExplanationBuilder for the one
+     * call site that currently supplies it.
+     *
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>
      */
-    public function record(
+    public function buildRow(
         string $eventType,
-        ?McpRequestContext $context = null,
-        array $options = []
-    ): ?int {
-        $payload = [
+        ?McpRequestContext $context,
+        array $options
+    ): array {
+        $payloadArray = $options['payload'] ?? null;
+        $durationMs = $options['duration_ms']
+            ?? (is_array($payloadArray) ? $payloadArray['duration_ms'] ?? null : null);
+
+        return [
             'request_id' => $options['request_id'] ?? request()?->header('X-Request-Id'),
             'event_type' => $eventType,
             'actor_type' => $options['actor_type'] ?? ($context ? 'user' : 'system'),
@@ -78,11 +106,26 @@ class AiAuditLogger
             'payload' => isset($options['payload'])
                 ? json_encode($this->redact($options['payload']), JSON_UNESCAPED_SLASHES)
                 : null,
+            'duration_ms' => is_numeric($durationMs) ? (int) $durationMs : null,
+            'knowledge_graph_used' => isset($options['knowledge_graph_used'])
+                ? (bool) $options['knowledge_graph_used']
+                : null,
             'sub_institute_id' => $context?->selectedInstituteId ?? ($options['sub_institute_id'] ?? null),
             'client_id' => $context?->clientId ?? ($options['client_id'] ?? null),
             'created_at' => now(),
             'updated_at' => now(),
         ];
+    }
+
+    /**
+     * Record an event. Returns the row id, or null if the write could not happen.
+     */
+    public function record(
+        string $eventType,
+        ?McpRequestContext $context = null,
+        array $options = []
+    ): ?int {
+        $payload = $this->buildRow($eventType, $context, $options);
 
         try {
             if (! Schema::hasTable('ai_audit_logs')) {

@@ -120,8 +120,31 @@ class FeesAgent implements Agent
             'limit' => $input['limit'] ?? null,
         ], static fn ($value) => $value !== null);
 
+        $startedAt = microtime(true);
         $detected = $this->detector->detect($context, $arguments);
         $coverage = $this->detector->coverage($context->scope, $arguments);
+
+        // Say which tools the run actually read through. The detector reaches the fee
+        // engine through services rather than the MCP transport, so nothing else would
+        // record it - a run's `tool_calls` stayed empty and the manifest's allowlist was
+        // never consulted. `noteToolCall` also refuses a tool this manifest is not
+        // licensed for, which is the allowlist doing its job.
+        $elapsed = (int) round((microtime(true) - $startedAt) * 1000);
+        $context->noteToolCall(
+            'fees.arrears',
+            'completed',
+            $elapsed,
+            sprintf('%d of %d students in scope checked', (int) ($coverage['checked'] ?? 0), (int) ($coverage['cohort'] ?? 0))
+        );
+
+        if ($detected !== []) {
+            $context->noteToolCall(
+                'fees.getPending',
+                'completed',
+                null,
+                'Unpaid fee heads read for the students that carry a balance, as case evidence.'
+            );
+        }
 
         if ($studentId !== null) {
             $detected = array_values(array_filter(
