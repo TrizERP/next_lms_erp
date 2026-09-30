@@ -19,28 +19,10 @@ return [
 
     'allowed_methods' => ['*'],
 
-    /*
-    | Origins allowed to drive this API from a browser.
-    |
-    | This was previously ['*'], which meant any page on the internet could make
-    | a visitor's browser call the API - including the billable LLM endpoints
-    | (intelligence/questions/generate, lesson-intelligence/micro-plan/*). Those
-    | endpoints are now behind `api.session`, but a wildcard here is still the
-    | wrong default: it lets an attacker's page read any response the browser is
-    | able to obtain.
-    |
-    | Override per environment with a comma-separated CORS_ALLOWED_ORIGINS.
-    */
-    'allowed_origins' => array_values(array_filter(array_map(
-        'trim',
-        explode(',', (string) env('CORS_ALLOWED_ORIGINS', implode(',', [
-            'https://lms-k12.vercel.app',
-            'https://k12.scholarclone.com',
-            'https://dev.triz.co.in',
-            'http://localhost:3000',
-            'http://127.0.0.1:3000',
-        ])))
-    ))),
+    // Comma-separated list of browser origins allowed to call the API, e.g.
+    // CORS_ALLOWED_ORIGINS=https://lms.example.in,https://erp.triz.co.in
+    // Defaults to '*' (unchanged behaviour) until the deployment sets it.
+    'allowed_origins' => array_values(array_filter(array_map('trim', explode(',', env('CORS_ALLOWED_ORIGINS', '*'))))),
 
     /*
     | Vercel preview deployments get a generated hostname per branch/commit, so

@@ -73,19 +73,25 @@ Route::post('incoming-message',[\App\Http\Controllers\WhatsappController::class,
 
 
 Route::controller(apiController::class)->group(function () {
-    Route::post('login', 'login');
-    Route::post('login_hills', 'login_hills');
-    Route::post('check_otp', 'check_otp');
+    // Credential and OTP endpoints get a tight per-IP limit on top of the global one, so a
+    // 4-6 digit OTP or a password cannot be brute-forced at 1000 attempts a minute.
+    Route::post('login', 'login')->middleware('throttle:20,1');
+    Route::post('login_hills', 'login_hills')->middleware('throttle:20,1');
+    Route::post('check_otp', 'check_otp')->middleware('throttle:10,1');
     Route::post('homescreen', 'homescreen');
-    Route::post('teacherlogin', 'teacherlogin');
-    Route::post('teacher_check_otp', 'teacher_check_otp');
+    Route::post('teacherlogin', 'teacherlogin')->middleware('throttle:20,1');
+    Route::post('teacher_check_otp', 'teacher_check_otp')->middleware('throttle:10,1');
     Route::post('playscreen', 'playscreen');
     Route::post('homescreen', 'homescreen');
     Route::post('gcm_insert', 'gcm_insert');
-    Route::get('testkey', 'testkey');
+    // testkey mints a validly signed JWT for a fixed payload with no credentials, which every
+    // controller that only checks the signature would accept. Never register it outside dev.
+    if (app()->environment(['local', 'testing'])) {
+        Route::get('testkey', 'testkey');
+    }
 });
 
-Route::post('api-login', [ApiLoginController::class, 'login'])->name('api.api-login');
+Route::post('api-login', [ApiLoginController::class, 'login'])->middleware('throttle:20,1')->name('api.api-login');
 Route::get('academic-terms', [ApiLoginController::class, 'academicTerms'])->name('api.academic-terms');
 // Isolated mobile Own Profile API; legacy profile controllers are unchanged.
 Route::middleware('api.session')->get('own-profile', [\App\Http\Controllers\api\OwnProfileApiController::class, 'show']);
