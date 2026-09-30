@@ -49,7 +49,8 @@ trait Helpers
         // Sum of all allowance plus
         $ESIC = 0;
         if($totalAllowance <= 21000 && $totalAllowance > 0){
-            $ESIC =round(($totalAllowance * 0.75)/100);
+            //$ESIC =round(($totalAllowance * 0.75)/100);
+            $ESIC = ceil(($totalAllowance * 0.75) / 100);
         }
         return $ESIC;
     }
