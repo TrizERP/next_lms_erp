@@ -3,6 +3,7 @@
 namespace App\Domain\AI\Lifecycle;
 
 use App\Domain\AI\Conversation\AnswerComposer;
+use App\Domain\AI\Conversation\ConversationalNarrator;
 use App\Domain\AI\Conversation\ConversationStore;
 use App\Domain\AI\Conversation\FollowUpComposer;
 use App\Domain\AI\Conversation\GeneralAnswerService;
@@ -40,6 +41,8 @@ class LifecycleAskService
         private readonly GeneralAnswerService $general,
         private readonly ModuleSuggestions $suggestions,
         private readonly FollowUpComposer $followUps,
+        // Optional so a service built by hand keeps the deterministic headline it always had.
+        private readonly ?ConversationalNarrator $narrator = null,
     ) {
     }
 
@@ -245,6 +248,20 @@ class LifecycleAskService
 
             if ($fallbackSection !== null) {
                 array_unshift($sections, $fallbackSection);
+            }
+        }
+
+        // A turn the tools answered gets its top line said in words, when a model can do so
+        // from the tool data alone. The cards below stay as the evidence, and any reply
+        // that cites a figure the tools did not return is dropped in favour of the headline.
+        // `answer_source` is left as it was: the audit reads it to tell an answer from a
+        // refusal, and a narrated answer is still an answer from the stages.
+        if ($this->narrator !== null && $context->get('answer_source') === 'stages') {
+            $narrated = $this->narrator->narrate($context, $headline);
+
+            if ($narrated !== null) {
+                $headline = $narrated;
+                $context->set('narrated', true);
             }
         }
 

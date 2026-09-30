@@ -2,6 +2,7 @@
 
 namespace App\Domain\AI\Lifecycle\Plan;
 
+use App\Domain\AI\Conversation\Intent;
 use App\Domain\AI\Lifecycle\StageContext;
 
 /**
@@ -32,6 +33,21 @@ class HybridPlanner implements Planner
         $plan = $this->deterministic->plan($context);
 
         if ($plan !== null) {
+            // A reference back to the previous list is the one deterministic route a model
+            // is allowed to improve on. "Narrow those rows" is right for "only the ones over
+            // 5,000", but the same shape also catches "which of them has waited longest?" -
+            // a question about the students, not a filter on the rows - and answering that
+            // by re-filtering the last list produced "7 of 7 students have a outstanding".
+            // The model sees the rows the reader saw and can read the follow-up from the data
+            // again. If it cannot plan tool calls, the deterministic filter runs unchanged.
+            if ($plan->intentKey === 'record_filter') {
+                $followUp = $this->followUp($context);
+
+                if ($followUp !== null) {
+                    return $followUp;
+                }
+            }
+
             return $plan;
         }
 
@@ -71,6 +87,37 @@ class HybridPlanner implements Planner
         // every intent that worked before still takes exactly the same path. It only
         // occupies the gap where the alternative was no answer at all.
         return $this->moduleRead->plan($context);
+    }
+
+    /**
+     * A model plan for a question that points back at the previous answer, or null.
+     *
+     * Only a plan that actually calls tools qualifies: a plan with no lookups would leave
+     * the turn with nothing to say, which is strictly worse than the filter it replaces.
+     */
+    private function followUp(StageContext $context): ?Plan
+    {
+        if ($this->soundsConsequential($context->question) || ! $context->module->supports('conversational')) {
+            return null;
+        }
+
+        $plan = $this->llm->plan($context);
+
+        if ($plan === null || $plan->candidateTools === []) {
+            return null;
+        }
+
+        // The turn is no longer "narrow the last list", and the reasoning stage keys off the
+        // intent - left as it was, it would discard this plan's results and re-filter.
+        $context->intent = new Intent(
+            key: 'follow_up',
+            label: 'Follow-up on the previous answer',
+            confidence: 0.8,
+            slots: $context->intent?->slots ?? [],
+            matched: ['resolved_by' => 'model plan over the rows the previous answer listed'],
+        );
+
+        return $plan;
     }
 
     /**
