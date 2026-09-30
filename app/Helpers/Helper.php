@@ -89,7 +89,10 @@ if (!function_exists('ValidateInsertData')) {
 
         $files_arr = ["Logo", "Image"];
 
-        $columns = DB::select("SHOW COLUMNS FROM " . $table);
+        if (! preg_match('/^[A-Za-z0-9_]+$/', (string) $table)) {
+            throw new \InvalidArgumentException('Invalid table name');
+        }
+        $columns = DB::select("SHOW COLUMNS FROM `" . $table . "`");
 
         $required_fields = array();
         $validation_status = true;

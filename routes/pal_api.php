@@ -28,7 +28,7 @@ use App\Http\Controllers\api\PAL\PalWorkspaceController;
 | Pedagogy Engine - Read Only
 |--------------------------------------------------------------------------
 */
-Route::prefix('api/pal/pedagogy-engine')->group(function () {
+Route::prefix('api/pal/pedagogy-engine')->middleware('api.jwt')->group(function () {
     Route::get('/', [PedagogyEngineController::class, 'index']);
     Route::get('/sections', [PedagogyEngineController::class, 'sections']);
     Route::get('/chapters', [PedagogyEngineController::class, 'chapters']);
