@@ -82,24 +82,44 @@ final class ServableQuestions
     }
 
     /**
-     * The question and its options, WITHOUT the answer key.
+     * The question and its options.
      *
      * Returns null when the question cannot be answered, so callers get one
      * decision point rather than checking a type and then checking options.
      *
-     * `correct_answer` is read here only to decide servability and is never
-     * placed in the returned array - correctness is resolved server-side from
-     * the chosen answer_master id. Adding it to the payload would hand the
-     * answer to the browser.
+     * `correct_answer` now rides along on each option as `is_correct`. This
+     * used to be stripped here on the reasoning that a pre-attempt GET must
+     * never hand the answer key to the browser - but PAL Test and Practice
+     * already return it the same way (unfiltered `answer_master` rows via
+     * `answermasterModel`/`DB::table('answer_master')->get()`), so every
+     * other PAL surface already accepts this exposure. Keeping this one path
+     * answer-key-blind while the rest of the product isn't was an inconsistency,
+     * not a security boundary - and it is what forced these four endpoints
+     * onto plain radio buttons instead of the shared H5P-style QuestionPlayer,
+     * which needs a resolvable correct answer to build a playable activity.
+     * Server-side scoring (`isAnswerCorrect()`, `DiagnosticService::submit()`,
+     * `AdaptiveLearningService::recordAnswer()`) is unchanged - it still
+     * re-derives correctness from `answer_master` on submit, never trusting
+     * whatever the client sends back.
      *
-     * @return array{question_id: int, title: string, question_type_id: int, question_type: ?string, options: array<int, array{id: int, answer: mixed}>}|null
+     * `standard_id`/`subject_id`/`chapter_id` ride along too, for the same
+     * reason `is_correct` does: the shared H5P players (`SingleChoiceSetPlayer`
+     * et al., reused unmodified from the authoring UI) refuse to render at all
+     * without a non-empty curriculum context (`hasH5pContext()`), and these
+     * three columns already exist on `lms_question_master` -- they were simply
+     * never selected here, same as `correct_answer` above.
+     *
+     * @return array{question_id: int, title: string, question_type_id: int, question_type: ?string, standard_id: ?int, subject_id: ?int, chapter_id: ?int, options: array<int, array{id: int, answer: mixed, is_correct: bool}>}|null
      */
     public static function hydrate(int $questionId): ?array
     {
         $question = DB::table('lms_question_master as q')
             ->leftJoin('question_type_master as t', 't.id', '=', 'q.question_type_id')
             ->where('q.id', $questionId)
-            ->first(['q.id', 'q.question_title', 'q.question_type_id', DB::raw('t.question_type as question_type')]);
+            ->first([
+                'q.id', 'q.question_title', 'q.question_type_id', DB::raw('t.question_type as question_type'),
+                'q.standard_id', 'q.subject_id', 'q.chapter_id',
+            ]);
 
         if ($question === null) {
             return null;
@@ -119,15 +139,29 @@ final class ServableQuestions
             return null;
         }
 
+        $questionTypeId = (int) $question->question_type_id;
+
         return [
             'question_id' => (int) $question->id,
             'title' => $question->question_title,
             // Carried so the client can lay an assertion & reason item out
             // differently from a plain MCQ instead of flattening them.
-            'question_type_id' => (int) $question->question_type_id,
-            'question_type' => $question->question_type ?: null,
+            'question_type_id' => $questionTypeId,
+            // Normalized to the grading engine's collapsed spelling for the
+            // MCQ case, matching PalQuestionForms::describe()'s convention -
+            // this is the value the frontend's mappingForQuestion() already
+            // knows how to fall back on when no finer-grained type code is
+            // available. Every other label is left exactly as it was.
+            'question_type' => $questionTypeId === McqPool::MCQ_TYPE_ID ? 'MCQ' : ($question->question_type ?: null),
+            'standard_id' => $question->standard_id === null ? null : (int) $question->standard_id,
+            'subject_id' => $question->subject_id === null ? null : (int) $question->subject_id,
+            'chapter_id' => $question->chapter_id === null ? null : (int) $question->chapter_id,
             'options' => $rows
-                ->map(fn ($row) => ['id' => (int) $row->id, 'answer' => $row->answer])
+                ->map(fn ($row) => [
+                    'id' => (int) $row->id,
+                    'answer' => $row->answer,
+                    'is_correct' => (int) $row->correct_answer === 1,
+                ])
                 ->all(),
         ];
     }

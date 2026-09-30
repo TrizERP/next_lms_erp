@@ -821,6 +821,13 @@ class AiModuleController extends AiController
                 'workflow' => 'nullable|string|max:120',
                 'tool' => 'nullable|string|max:120',
                 'result' => 'nullable|array',
+                // Optional, and honestly so: most module screens do not yet measure how
+                // long their own operation took, or whether it drew on the knowledge
+                // graph. A screen that does know either may report it; one that does not
+                // leaves it out, and the ledger records that as "not measured", never as
+                // zero or false.
+                'duration_ms' => 'nullable|integer|min:0',
+                'knowledge_graph_used' => 'nullable|boolean',
             ]);
 
             $used = [];
@@ -869,6 +876,8 @@ class AiModuleController extends AiController
                 'related_id' => $used['template']['id'] ?? $used['prompt']['id'] ?? null,
                 'outcome' => $this->outcomeOf($data['status']),
                 'message' => $data['message'] ?? ($data['operation_label'] ?? $data['operation']),
+                'duration_ms' => $data['duration_ms'] ?? null,
+                'knowledge_graph_used' => $data['knowledge_graph_used'] ?? null,
                 'payload' => [
                     'module' => $module,
                     'operation' => $data['operation'],
@@ -998,6 +1007,8 @@ class AiModuleController extends AiController
             'reference' => $payload['reference'] ?? null,
             'used' => is_array($payload['used'] ?? null) ? $payload['used'] : [],
             'result' => $payload['result'] ?? null,
+            'duration_ms' => isset($row->duration_ms) ? (int) $row->duration_ms : null,
+            'knowledge_graph_used' => isset($row->knowledge_graph_used) ? (bool) $row->knowledge_graph_used : null,
             'created_at' => $row->created_at,
         ];
     }

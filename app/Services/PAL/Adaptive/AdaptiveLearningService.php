@@ -258,6 +258,7 @@ class AdaptiveLearningService
                 'understanding' => 'unknown', 'needs_remediation' => false,
                 'ready_for_progression' => false,
                 'reason' => 'unknown_concept',
+                'question_results' => [],
             ];
         }
 
@@ -305,7 +306,67 @@ class AdaptiveLearningService
             'understanding' => $understanding,
             'needs_remediation' => $understanding === 'weak',
             'ready_for_progression' => $ladder['mastered'],
+
+            // The review screen's question-by-question answer key, mirroring
+            // DiagnosticService::questionResults() for the chapter diagnostic.
+            // Safe here for the same reason it is safe there: conceptResult()
+            // only ever runs after recordAnswer() has already closed each
+            // question out, never before.
+            'question_results' => $this->questionResults($studentId, $conceptId),
         ];
+    }
+
+    /**
+     * Every question this student has answered for this concept, in the
+     * order they answered them, with the full answer key -- every option,
+     * which one they picked, which one was correct, and the correct
+     * option's stored feedback as an explanation when one exists.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function questionResults($studentId, int $conceptId): array
+    {
+        $rows = DB::table('pal_adaptive_response')
+            ->where('student_id', (int) $studentId)
+            ->where('concept_id', $conceptId)
+            ->orderBy('id')
+            ->get(['question_id', 'answer_master_id', 'is_correct', 'difficulty_served']);
+
+        if ($rows->isEmpty()) {
+            return [];
+        }
+
+        $questionIds = $rows->pluck('question_id')->unique()->all();
+
+        $titles = DB::table('lms_question_master')
+            ->whereIn('id', $questionIds)
+            ->pluck('question_title', 'id');
+
+        $options = DB::table('answer_master')
+            ->whereIn('question_id', $questionIds)
+            ->get(['id', 'question_id', 'answer', 'correct_answer', 'feedback'])
+            ->groupBy('question_id');
+
+        return $rows->values()->map(function ($row, $index) use ($titles, $options) {
+            $rowOptions = $options->get($row->question_id, collect());
+            $correctOption = $rowOptions->first(fn ($option) => (int) $option->correct_answer === 1);
+
+            return [
+                'sequence' => $index + 1,
+                'question_id' => (int) $row->question_id,
+                'title' => $titles[$row->question_id] ?? null,
+                'difficulty' => $row->difficulty_served,
+                'answered' => $row->answer_master_id !== null,
+                'is_correct' => $row->answer_master_id !== null ? (bool) $row->is_correct : null,
+                'options' => $rowOptions->map(fn ($option) => [
+                    'id' => (int) $option->id,
+                    'answer' => $option->answer,
+                ])->values()->all(),
+                'selected_option_id' => $row->answer_master_id !== null ? (int) $row->answer_master_id : null,
+                'correct_option_id' => $correctOption !== null ? (int) $correctOption->id : null,
+                'explanation' => $correctOption !== null && $correctOption->feedback ? $correctOption->feedback : null,
+            ];
+        })->values()->all();
     }
 
     /**

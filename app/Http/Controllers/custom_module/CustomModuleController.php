@@ -341,7 +341,11 @@ class CustomModuleController extends Controller
             // check in menumaster 09-04-2025 end
 
             if (!empty($table)) {
-                DB::statement('DROP TABLE IF EXISTS ' . $table->table_name);
+                // The name comes from stored module config, but it is spliced into DDL, so only drop
+                // a plain identifier rather than trust whatever got saved.
+                if (preg_match('/^[A-Za-z0-9_]+$/', (string) $table->table_name)) {
+                    DB::statement('DROP TABLE IF EXISTS `' . $table->table_name . '`');
+                }
             }
             CustomModuleTable::where('id', $id)->delete();
         }

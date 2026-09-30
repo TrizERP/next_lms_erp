@@ -39,8 +39,12 @@ class AgentRegistry
                     $query->orWhere('sub_institute_id', $subInstituteId);
                 }
             })
-            // Tenant-specific first: the more specific manifest wins.
+            // Tenant-specific first: the more specific manifest wins. Then the oldest row,
+            // so two active manifests sharing a key resolve the same way on every call
+            // instead of whichever row the database happened to return first - which is how
+            // `k12_fees` came to have two active rows with different tool allowlists.
             ->orderByRaw('sub_institute_id IS NULL ASC')
+            ->orderBy('id')
             ->first();
 
         return $this->memo[$memoKey] = $row ? AgentManifest::fromRow($row) : null;
@@ -68,7 +72,7 @@ class AgentRegistry
             $query->whereIn('domain', [$domain, 'shared']);
         }
 
-        $rows = $query->orderByRaw('sub_institute_id IS NULL ASC')->get();
+        $rows = $query->orderByRaw('sub_institute_id IS NULL ASC')->orderBy('id')->get();
 
         // Collapse to one manifest per key, tenant override winning.
         $byKey = [];

@@ -915,7 +915,7 @@ final class FeesIntelligence
      *
      * @return array{total: int, rows: array<int, array<string, mixed>>}
      */
-    public function outstandingAccounts(int $limit = 25, int $offset = 0, ?string $standardId = null): array
+    public function outstandingAccounts(int $limit = 25, int $offset = 0, ?string $standardId = null, ?array $studentIds = null): array
     {
         if ($this->syear === null) {
             return ['total' => 0, 'rows' => [], 'scope' => null];
@@ -938,6 +938,15 @@ final class FeesIntelligence
                 'accounts' => count($arrears),
                 'outstandingAmount' => round(array_sum(array_column($arrears, 'outstanding')), 2),
             ];
+        }
+
+        // Narrowing to named students filters the same ledger too - it is how a follow-up
+        // ("how much does each of them owe?") re-reads exactly the accounts the previous
+        // answer listed, rather than trusting a remembered copy of their balances. A student
+        // who owes nothing is simply absent from the result; the caller reports that.
+        if ($studentIds !== null) {
+            $wanted = array_flip(array_map('strval', $studentIds));
+            $arrears = array_values(array_filter($arrears, fn ($row) => isset($wanted[(string) $row['studentId']])));
         }
 
         $page = array_slice($arrears, $offset, $limit);
