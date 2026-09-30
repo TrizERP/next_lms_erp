@@ -65,7 +65,7 @@ class CoherenceSyncCommand extends Command
     private function projectMap(CoherenceGraphProjection $projection, int $tenant, int $standard, int $subject): void
     {
         $this->newLine();
-        $this->info('1/4  Concepts + HAS_CONCEPT');
+        $this->info('1/9  Concepts + HAS_CONCEPT');
         $concepts = $projection->projectConcepts($tenant, $standard, $subject);
         $this->report($concepts);
 
@@ -81,7 +81,7 @@ class CoherenceSyncCommand extends Command
             ));
         }
 
-        $this->info('2/4  REQUIRES + CROSS_LINKS');
+        $this->info('2/9  REQUIRES + CROSS_LINKS');
         $relations = $projection->projectRelations($tenant, $standard, $subject);
         $this->report($relations);
 
@@ -93,11 +93,43 @@ class CoherenceSyncCommand extends Command
             ));
         }
 
-        $this->info('3/4  TEACHES (Content -> Concept)');
+        $this->info('3/9  TEACHES (Content -> Concept)');
         $this->report($projection->projectTeaches($tenant, $standard, $subject));
 
-        $this->info('4/4  ASSESSES (Question -> Concept)');
+        $this->info('4/9  ASSESSES (Question -> Concept)');
         $this->report($projection->projectAssesses($tenant, $standard, $subject));
+
+        $this->info('5/9  Chapter-grain REQUIRES (pal_learning_relations)');
+        $this->report($projection->projectLearningRelations($tenant, $standard, $subject));
+
+        $this->info('6/9  Misconceptions: AFFECTS + CORRECTS_WITH');
+        $misconceptions = $projection->projectMisconceptions($tenant, $standard, $subject);
+        $this->report($misconceptions);
+
+        if (($misconceptions['unlinked'] ?? 0) > 0) {
+            $this->warn(sprintf(
+                '     %d misconception(s) tenant-wide have no concept_ref_id and cannot be placed on the map '
+                . 'until tagged.',
+                $misconceptions['unlinked']
+            ));
+        }
+
+        $this->info('7/9  ConceptNode identity (pal_concept_nodes, K/A/S)');
+        $this->report($projection->projectConceptNodes($tenant, $standard, $subject));
+
+        $this->info('8/9  Node-level mastery (learner_node_state)');
+        $this->report($projection->projectNodeMastery($tenant, $standard, $subject));
+
+        $this->info('9/9  Learning outcomes: PART_OF + HAS_OUTCOME + ADDRESSES');
+        $outcomes = $projection->projectLearningOutcomes($tenant, $standard, $subject);
+        $this->report($outcomes);
+
+        if (($outcomes['unresolved_addresses'] ?? 0) > 0) {
+            $this->warn(sprintf(
+                '     %d concept-outcome link(s) reference a concept or outcome not yet in the graph.',
+                $outcomes['unresolved_addresses']
+            ));
+        }
     }
 
     private function sweepMastery(CoherenceGraphProjection $projection, int $tenant): void
@@ -245,6 +277,22 @@ class CoherenceSyncCommand extends Command
             ->where('k.subject_id', $subject)
             ->count();
 
+        $learningRelations = DB::table('pal_learning_relations as r')
+            ->join('chapter_master as t', 't.id', '=', 'r.to_node_id')
+            ->where('r.from_node_type', 'chapter')
+            ->where('r.to_node_type', 'chapter')
+            ->whereIn('r.sub_institute_id', [$tenant, 0])
+            ->where('t.standard_id', $standard)
+            ->where('t.subject_id', $subject)
+            ->count();
+
+        $misconceptions = DB::table('pal_misconception_library as m')
+            ->join('lms_concept as k', 'k.id', '=', 'm.concept_ref_id')
+            ->whereIn('m.sub_institute_id', [$tenant, 0])
+            ->where('k.standard_id', $standard)
+            ->where('k.subject_id', $subject)
+            ->count();
+
         $this->table(
             ['source', 'rows ready to project'],
             [
@@ -252,6 +300,8 @@ class CoherenceSyncCommand extends Command
                 ['pal_concept_relations', $relations],
                 ['pal_content_metadata.concept_ref_id', $teaches],
                 ['pal_question_metadata.concept_ref_id', $assesses],
+                ['pal_learning_relations (chapter-grain only)', $learningRelations],
+                ['pal_misconception_library.concept_ref_id', $misconceptions],
             ]
         );
 

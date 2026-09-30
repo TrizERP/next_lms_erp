@@ -2,13 +2,16 @@
 
 namespace App\Http\Controllers\api\PAL;
 
+use App\Domain\AI\Support\ModelClient;
 use App\Http\Controllers\Controller;
 use App\Services\PAL\Coherence\CoherenceMapRepository;
 use App\Services\PAL\Coherence\CoherenceRecommender;
+use App\Services\PAL\Coherence\GraphRagRetriever;
 use App\Services\PAL\Coherence\MasteryUpdater;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * Set Coherence Map - Recommendation API.
@@ -32,6 +35,8 @@ class CoherenceMapController extends Controller
         protected CoherenceMapRepository $map,
         protected CoherenceRecommender $recommender,
         protected MasteryUpdater $mastery,
+        protected GraphRagRetriever $graphRag,
+        protected ModelClient $modelClient,
     ) {}
 
     // ══════════════════════════════════════════════════════════════════
@@ -194,6 +199,121 @@ class CoherenceMapController extends Controller
             ],
             'content' => $this->map->contentFor((int) $root['id'], [], 5),
         ]);
+    }
+
+    /**
+     * GET /api/pal/coherence/explain/{learnerId}/{conceptId}
+     *
+     * Graph RAG. Retrieves the concept's root blockers, assessing questions,
+     * teaching content and misconceptions from the graph (GraphRagRetriever —
+     * pure retrieval, no model call), then asks the institute's configured
+     * LLM to explain why the learner is stuck, grounded only in those
+     * retrieved facts. Retrieval and generation are deliberately two
+     * separate steps: a graph outage or an unconfigured model degrades to a
+     * clear failure response here, never a fabricated explanation.
+     */
+    public function explain(Request $request, int $learnerId, int $conceptId): JsonResponse
+    {
+        $scope = $this->scopeForLearner($request, $learnerId);
+
+        if (is_string($scope)) {
+            return $this->fail($scope, 422);
+        }
+
+        if (! $this->conceptInTenant($conceptId, $scope['sub_institute_id'])) {
+            return $this->fail("Concept {$conceptId} is not in this learner's tenant.", 404);
+        }
+
+        try {
+            $context = $this->graphRag->contextFor($learnerId, $conceptId, $scope['sub_institute_id']);
+        } catch (Throwable $exception) {
+            return $this->fail('The knowledge graph is unavailable right now, so an explanation cannot be generated.', 503);
+        }
+
+        $conceptName = (string) (
+            DB::table('lms_concept')->where('id', $conceptId)->value('name') ?? "Concept {$conceptId}"
+        );
+
+        $client = $this->modelClient->forInstitute($scope['sub_institute_id']);
+
+        if (! $client->isConfigured()) {
+            return $this->fail('No AI model is configured for this institute.', 503);
+        }
+
+        try {
+            // maxTokens is generous on purpose: the configured model spends output-token
+            // budget on internal reasoning before any visible text (measured live —
+            // ~376 "thoughts" tokens against a 400 ceiling left only ~20 for the actual
+            // answer, truncating it mid-sentence with finishReason=MAX_TOKENS). 2048
+            // leaves enough room for that reasoning AND the 3-5 sentence answer asked for.
+            $narrative = $client->chat(
+                [
+                    ['role' => 'system', 'content' => $this->explainSystemPrompt()],
+                    ['role' => 'user', 'content' => $this->explainUserPrompt($conceptName, $context)],
+                ],
+                model: null,
+                maxTokens: 2048,
+                temperature: 0.3,
+            );
+        } catch (Throwable $exception) {
+            return $this->fail('The explanation could not be generated.', 502);
+        }
+
+        return $this->ok([
+            'learner_id'   => $learnerId,
+            'concept_id'   => $conceptId,
+            'concept_name' => $conceptName,
+            'context'      => $context,
+            'explanation'  => trim((string) $narrative),
+        ]);
+    }
+
+    private function explainSystemPrompt(): string
+    {
+        return 'You are a teaching assistant explaining, to a teacher, exactly why one student is stuck on '
+            . 'one concept. Use only the facts given in the message — never invent a prerequisite, mastery '
+            . 'figure, misconception, or content title that is not present in the input. If no blocker was '
+            . 'found, say so plainly rather than guessing one. Keep the answer to 3-5 sentences of plain '
+            . 'language, addressed to the teacher.';
+    }
+
+    /**
+     * @param  array{blocked:bool, root_blockers:array, assessing_questions:array, teaching_content:array, misconceptions:array}  $context
+     */
+    private function explainUserPrompt(string $conceptName, array $context): string
+    {
+        $lines = [sprintf('The student is working on: "%s".', $conceptName)];
+
+        if ($context['blocked']) {
+            $lines[] = 'Unmastered root prerequisite(s), weakest first:';
+
+            foreach ($context['root_blockers'] as $blocker) {
+                $lines[] = sprintf(
+                    '- "%s" (mastery %.2f, needs %.2f)',
+                    $blocker['name'] ?? 'unnamed concept',
+                    (float) ($blocker['mastery'] ?? 0),
+                    (float) ($blocker['gate'] ?? 0.7)
+                );
+            }
+        } else {
+            $lines[] = 'No unmastered prerequisite was found for this concept in the knowledge graph.';
+        }
+
+        if ($context['misconceptions'] !== []) {
+            $lines[] = 'Known misconceptions linked to this concept:';
+
+            foreach ($context['misconceptions'] as $misconception) {
+                $lines[] = '- ' . ($misconception['description'] ?: $misconception['error_pattern'] ?: $misconception['tag']);
+            }
+        }
+
+        if ($context['assessing_questions'] !== []) {
+            $lines[] = sprintf('%d question(s) in the bank assess this concept directly.', count($context['assessing_questions']));
+        }
+
+        $lines[] = 'Explain, in plain language for a teacher, why this student is likely stuck — grounded only in the facts above.';
+
+        return implode("\n", $lines);
     }
 
     // ══════════════════════════════════════════════════════════════════

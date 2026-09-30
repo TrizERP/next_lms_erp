@@ -83,7 +83,7 @@ class ReconcileCommand extends Command
         ['Subject', 'HAS_ASSESSMENT', 'Assessment', null],
         ['Assessment', 'HAS_QUESTION', 'Question', null],
         ['Question', 'BELONGS_TO', 'Chapter', null],
-        ['Question', 'ASSESSES', 'Concept', null],
+        ['Question', 'ASSESSES', 'Concept', '2026-09-28: 283 Questions had stale duplicate edges from concept_id re-tagging, misdiagnosed as a conflict with CoherenceGraphProjection::projectAssesses() (which has barely run - 26 edges, zero conflicts). Real cause was TableGraphProjection never diffing a re-point; see previousTarget() and this command\'s stale-edge check'],
         ['Chapter', 'HAS_CONCEPT', 'Concept', null],
         ['Student', 'HAS_RESULT', 'Result', null],
         ['Result', 'FOR_ASSESSMENT', 'Assessment', null],
@@ -273,7 +273,159 @@ class ReconcileCommand extends Command
         $this->line('');
         $this->info($synced . ' of ' . count(self::K12_EDGES) . ' K12 edge types are maintained by the live sync.');
 
-        return self::SUCCESS;
+        ['stale' => $stale, 'deleted' => $deleted] = $this->staleEdgeRepair($neo4j);
+
+        // Same philosophy as handle(): a clean --fix run is a success; a
+        // report-only run that found drift is a failure, so it can be
+        // alerted on from cron.
+        if ($stale === 0) {
+            return self::SUCCESS;
+        }
+
+        return ($this->option('fix') && ! $this->option('dry-run') && $deleted >= $stale)
+            ? self::SUCCESS
+            : self::FAILURE;
+    }
+
+    /**
+     * Relationships shaped so a source node should hold at most one live
+     * edge of that type: `from` is this row's own key (`id`), the target is
+     * one scalar FK column — not a `list`, not `key`-scoped. Read straight
+     * from `config('neo4j.projections.entities')` so this cannot drift from
+     * what `TableGraphProjection` actually treats as single-valued (see its
+     * `previousTarget()`).
+     *
+     * @return array<int, array{table: string, column: string, src: string, type: string, tgt: string}>
+     */
+    private function singleValuedRelationships(): array
+    {
+        $out = [];
+
+        foreach ((array) config('neo4j.projections.entities', []) as $table => $spec) {
+            foreach ($spec['relationships'] ?? [] as $rel) {
+                if ($rel['from'][1] === 'id' && ($rel['list'] ?? null) === null && ($rel['key'] ?? []) === []) {
+                    $key = $rel['from'][0] . '|' . $rel['type'] . '|' . $rel['to'][0];
+                    $out[$key] = [
+                        'table'  => $table,
+                        'column' => $rel['to'][1],
+                        'src'    => $rel['from'][0],
+                        'type'   => $rel['type'],
+                        'tgt'    => $rel['to'][0],
+                    ];
+                }
+            }
+        }
+
+        return array_values($out);
+    }
+
+    /**
+     * Source nodes holding more than one live edge of a type that should be
+     * single-valued, whose extra target(s) no longer match MariaDB's
+     * *current* value on that row — edges provably superseded by a later
+     * re-point, not a judgement call between two disagreeing sources (every
+     * edge flagged here has a MariaDB row saying what the one correct target
+     * is; the rest disagree with THAT row, not with each other).
+     *
+     * This is the backlog `TableGraphProjection::previousTarget()` now
+     * prevents from growing further — confirmed live 2026-09-28:
+     * `(Question)-[:ASSESSES]->(Concept)` (283 questions) and
+     * `(Question)-[:BELONGS_TO]->(Chapter)` (7,143 questions) both had
+     * stale duplicate edges left behind by `concept_id`/`chapter_id`
+     * re-tagging that the old sync path never cleaned up.
+     *
+     * Report-only by default; `--fix` deletes, `--fix --dry-run` previews —
+     * same contract as the rest of this command.
+     *
+     * @return array{stale: int, deleted: int}
+     */
+    private function staleEdgeRepair(Neo4jService $neo4j): array
+    {
+        $fix = (bool) $this->option('fix');
+        $dryRun = (bool) $this->option('dry-run');
+        $rows = [];
+        $totalStale = 0;
+        $totalDeleted = 0;
+
+        foreach ($this->singleValuedRelationships() as ['table' => $table, 'column' => $column, 'src' => $srcLabel, 'type' => $relType, 'tgt' => $tgtLabel]) {
+            $srcKey = GraphSchema::key($srcLabel);
+            $tgtKey = GraphSchema::key($tgtLabel);
+
+            $fanned = iterator_to_array($neo4j->run(
+                "MATCH (s:`{$srcLabel}`)-[r:`{$relType}`]->(t:`{$tgtLabel}`)
+                 WITH s.`{$srcKey}` AS sid, collect(t.`{$tgtKey}`) AS tids
+                 WHERE size(tids) > 1
+                 RETURN sid, tids"
+            ));
+
+            if ($fanned === []) {
+                continue;
+            }
+
+            $sourceIds = array_map(fn ($row) => (int) $row->get('sid'), $fanned);
+            $currentTargets = DB::table($table)->whereIn('id', $sourceIds)->pluck($column, 'id');
+
+            $staleForThisType = 0;
+            $deletedForThisType = 0;
+
+            foreach ($fanned as $row) {
+                $sid = (int) $row->get('sid');
+                $currentRaw = $currentTargets[$sid] ?? null;
+                $current = (is_numeric($currentRaw) && (int) $currentRaw > 0) ? (int) $currentRaw : null;
+
+                foreach ($row->get('tids') as $tidRaw) {
+                    $tid = (int) $tidRaw;
+
+                    if ($current === null || $tid === $current) {
+                        continue;
+                    }
+
+                    $staleForThisType++;
+
+                    if ($fix && ! $dryRun) {
+                        $neo4j->run(
+                            "MATCH (s:`{$srcLabel}` {`{$srcKey}`: \$sid})-[r:`{$relType}`]->(t:`{$tgtLabel}` {`{$tgtKey}`: \$tid})
+                             DELETE r",
+                            ['sid' => $sid, 'tid' => $tid]
+                        );
+                        $deletedForThisType++;
+                    }
+                }
+            }
+
+            $totalStale += $staleForThisType;
+            $totalDeleted += $deletedForThisType;
+
+            if ($staleForThisType > 0) {
+                $rows[] = [
+                    '(' . $srcLabel . ')-[:' . $relType . ']->(' . $tgtLabel . ')',
+                    number_format(count($fanned)),
+                    number_format($staleForThisType),
+                    ! $fix ? 'report only' : ($dryRun ? 'would delete ' . $staleForThisType : 'deleted ' . $deletedForThisType),
+                ];
+            }
+        }
+
+        $this->line('');
+
+        if ($rows === []) {
+            $this->info('No stale edges among single-valued relationships.');
+
+            return ['stale' => 0, 'deleted' => 0];
+        }
+
+        $this->line('Stale edges (source has >1 target; MariaDB\'s current value disagrees with the extra one(s)):');
+        $this->table(['edge', 'fanned-out sources', 'stale edges', 'action'], $rows);
+
+        if (! $fix) {
+            $this->warn($totalStale . ' stale edge(s) found. Re-run with --fix to delete them (--dry-run to preview).');
+        } elseif ($dryRun) {
+            $this->warn($totalStale . ' stale edge(s) would be deleted (dry run, nothing written).');
+        } else {
+            $this->info($totalDeleted . ' stale edge(s) deleted.');
+        }
+
+        return ['stale' => $totalStale, 'deleted' => $totalDeleted];
     }
 
     /** @return array<string, int> "Src|REL|Tgt" => count */

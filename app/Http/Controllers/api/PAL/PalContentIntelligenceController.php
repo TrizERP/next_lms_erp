@@ -7,6 +7,7 @@ use App\Models\PAL\ContentMetadata;
 use App\Models\PAL\MisconceptionCorrective;
 use App\Models\PAL\MisconceptionLibrary;
 use App\Models\PAL\QuestionMetadata;
+use App\Services\PAL\Coherence\CoherenceMapRepository;
 use App\Services\PAL\Content\BloomLadderService;
 use App\Services\PAL\Content\ContentMetadataService;
 use App\Services\PAL\Content\MisconceptionLibraryService;
@@ -34,7 +35,8 @@ class PalContentIntelligenceController extends Controller
         protected ContentMetadataService $metadata,
         protected BloomLadderService $ladder,
         protected MisconceptionLibraryService $misconceptions,
-        protected VariantRouterService $router
+        protected VariantRouterService $router,
+        protected CoherenceMapRepository $coherenceMap
     ) {}
 
     // ══════════════════════════════════════════════════════════════════
@@ -476,6 +478,31 @@ class PalContentIntelligenceController extends Controller
                     // CONTENT LAW C6 surfaced per row so the console can show it.
                     'c6_ok' => (int) $m->correctives_count > 0,
                 ])->all(),
+            ],
+        ]);
+    }
+
+    /**
+     * GET /api/pal/content/misconceptions/for-concept/{conceptId}
+     *
+     * Graph-sourced view of the same data `listMisconceptions()` serves from
+     * SQL — reads `(:Misconception)-[:AFFECTS]->(:Concept)` and
+     * `(:Misconception)-[:CORRECTS_WITH]->(:Content)` directly, via
+     * `CoherenceMapRepository::misconceptionsFor()`. Added alongside the
+     * existing SQL endpoint, not replacing it: `MisconceptionLibraryService`'s
+     * CRUD/authoring path is unchanged, and this new route degrades to an
+     * empty list rather than an error if the graph has no projected data for
+     * this concept (a projection lag, not a fault).
+     */
+    public function misconceptionsForConcept(Request $request, int $conceptId): JsonResponse
+    {
+        $limit = min(50, max(1, (int) $request->get('limit', 5)));
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'concept_id' => $conceptId,
+                'items' => $this->coherenceMap->misconceptionsFor($conceptId, $limit),
             ],
         ]);
     }
