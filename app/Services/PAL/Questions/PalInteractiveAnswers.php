@@ -148,6 +148,12 @@ class PalInteractiveAnswers
             return null;
         }
 
+        // Preserve signs and decimal separators for numeric responses. The
+        // prose normalizer otherwise treats -2.5 and 2.5 as the same answer.
+        if (is_numeric(trim($stored))) {
+            return is_numeric(trim($response)) && (float) $stored === (float) $response;
+        }
+
         $expected = self::fold($stored);
         $given = self::fold($response);
 

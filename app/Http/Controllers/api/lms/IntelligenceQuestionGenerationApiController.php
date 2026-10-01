@@ -40,9 +40,10 @@ class IntelligenceQuestionGenerationApiController extends Controller
             'subject_id'        => 'required|integer',
             'standard_id'       => 'required|integer',
             'chapter_id'        => 'required|integer',
-            'question_type_id'  => 'required|integer|min:1',
-            'question_type'     => 'required|in:mcq,narrative',
-            'total_questions'   => 'required|integer|min:1|max:100',
+            'question_type_id'  => 'nullable|integer|min:1',
+            'question_type'     => 'nullable|string|max:100',
+            'total_questions'   => 'nullable|integer|min:1|max:100',
+            'questions_per_type' => 'nullable|integer|min:4|max:5',
             'grade_id'          => 'nullable|integer',
             // `model` and `temperature` are intentionally absent: they are
             // server-owned (config/deepseek.php). `seed` is kept because it only

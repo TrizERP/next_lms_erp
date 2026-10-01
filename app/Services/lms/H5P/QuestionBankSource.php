@@ -112,7 +112,9 @@ class QuestionBankSource
         $sidecar = $this->hasSidecar() ? 'x.question_type_code' : 'NULL';
         $generated = $this->hasGeneratedCode() ? 'q.g_qtype_code' : 'NULL';
 
-        return "COALESCE($sidecar, $generated, "
+        $explicit = $this->hasColumn('question_format_code') ? "NULLIF(q.question_format_code, '')" : 'NULL';
+        $envelope = "NULLIF(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(q.answer, '$.item_form')), 'null'), '')";
+        return "COALESCE($explicit, $sidecar, $envelope, $generated, "
             . "CASE WHEN q.question_type_id = 1 THEN 'mcq' ELSE 'narrative' END)";
     }
 
@@ -257,6 +259,9 @@ class QuestionBankSource
         }
         if ($this->hasGeneratedCode()) {
             $query->groupBy('q.g_qtype_code');
+        }
+        if ($this->hasColumn('question_format_code')) {
+            $query->groupBy('q.question_format_code');
         }
 
         if ($level !== null && trim($level) !== '') {

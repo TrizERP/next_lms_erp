@@ -19,6 +19,7 @@ use Throwable;
  */
 class QuestionGenerationService
 {
+    use GeneratesH5PQuestions;
     protected string $model;
     protected float $temperature;
     protected int $timeout;
@@ -1763,6 +1764,7 @@ SCHEMA;
             }
 
             $id = DB::table('lms_question_master')->insertGetId([
+                ...(!empty($answer['item_form']) ? ['question_format_code' => $answer['item_form']] : []),
                 // caller-owned — never from the LLM
                 'question_type_id' => $questionTypeId,
                 'grade_id'         => $ctx['grade_id'] ?? null,
@@ -1945,6 +1947,9 @@ SCHEMA;
 
     public function generate(array $input): array
     {
+        if (empty($input['diagnostic_stage']) && !in_array(strtolower((string) ($input['question_type'] ?? 'all')), ['mcq', 'narrative'], true)) {
+            return $this->generateH5P($input);
+        }
         $type = strtolower((string) ($input['question_type'] ?? ''));
         $diagnosticStage = $input['diagnostic_stage'] ?? null;
         if ($diagnosticStage !== null && !in_array($diagnosticStage, [
