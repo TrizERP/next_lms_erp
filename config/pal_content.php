@@ -368,6 +368,98 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | PAL Learn — "Learn this concept visually" web image search
+    |--------------------------------------------------------------------------
+    |
+    | Unlike `video` above, there is no draft/review gate here: an image shown
+    | on the Learn page is picked and served in the same request, to the
+    | student who asked for it. That is a deliberate difference from CONTENT
+    | LAW C4/C5 (only a human may publish a video), not an oversight — the
+    | image is illustrative context for a concept name/chapter that a teacher
+    | has already put in front of students via the syllabus itself, the same
+    | trust boundary a Google/Bing image search box would have. See
+    | ConceptImageSearchService.
+    |
+    | Openverse (openverse.org, run by WordPress/Automattic) needs no API key
+    | for search at this volume and returns only openly-licensed images with
+    | real attribution metadata, which is what makes it usable here at all —
+    | an arbitrary image-search API would return copyrighted results with no
+    | license the app could show a student it came from.
+    */
+    'image' => [
+        'enabled' => env('PAL_IMAGE_ENABLED', true),
+
+        'external' => [
+            'enabled'  => env('PAL_IMAGE_EXTERNAL_ENABLED', true),
+            'endpoint' => env('OPENVERSE_ENDPOINT', 'https://api.openverse.org/v1/images/'),
+
+            // Openverse client credentials are optional (raises the anonymous
+            // rate limit; search itself needs none) — see
+            // ConceptImageSearchService::accessToken().
+            'client_id'     => env('OPENVERSE_CLIENT_ID'),
+            'client_secret' => env('OPENVERSE_CLIENT_SECRET'),
+
+            // Restricting to Wikimedia Commons trades some coverage for a
+            // large jump in relevance — verified live against Flickr, which
+            // dominates Openverse's overall volume with personal/travel
+            // photography whose per-photo tag folksonomy produces false
+            // keyword matches on abstract topic words. Empty string searches
+            // every source Openverse indexes.
+            'source' => env('OPENVERSE_SOURCE', 'wikimedia'),
+
+            'max_results' => 12,
+            'timeout'     => 6,
+
+            // Broadest license set that still guarantees free reuse — nothing
+            // ND (no-derivatives) is excluded because the point of the filter
+            // is "usable", not "every possible license".
+            'license_type' => 'commercial,modification',
+
+            'min_width'  => 200,
+            'min_height' => 200,
+
+            // How many ranked candidates to URL-check before giving up and
+            // falling back — see ConceptImageSearchService::pickBest().
+            'candidates_to_verify' => 3,
+
+            // The relevance floor a candidate must clear to be shown at all,
+            // set deliberately conservative. Verified live across a sample of
+            // real PAL concepts: at 2.0 (two real keyword hits) roughly a
+            // third of "matches" were still wrong — two genuine query words
+            // coinciding in an unrelated Wikimedia title/description ("Area
+            // space" hitting "Living area space panorama"; "Division inverse"
+            // hitting "Italian Division Bell, inverse"). At 3.0, every wrong
+            // match in that same sample was correctly rejected, at the cost
+            // of a much lower hit rate — most concepts fall back to the
+            // rule-based journey rather than show a web image. That is the
+            // honest ceiling of keyword matching against a general-purpose
+            // encyclopedia corpus without an actual relevance model, and
+            // "fails to a fine fallback" is a far better failure mode here
+            // than "confidently shows the wrong picture".
+            'min_score' => 3.0,
+
+            'cache_hours' => 720,
+        ],
+
+        // Titles/tags that mark a result as decoration rather than teaching
+        // material — logos, icons, memes, ads, stock-photo filler. Lower-cased
+        // substring match against the candidate's own title/tags/creator, not
+        // a closed vocabulary, so a new junk pattern is one line to add.
+        'exclude_keywords' => [
+            'logo', 'icon set', 'meme', 'advertisement', 'advert', 'banner ad',
+            'screenshot', 'wallpaper', 'clipart border', 'watermark',
+        ],
+
+        // Rewarded when present in a candidate's title/tags — the visual
+        // vocabulary of an actual teaching diagram, not a photo of the topic.
+        'prefer_keywords' => [
+            'diagram', 'illustration', 'infographic', 'chart', 'graphic',
+            'educational', 'worksheet', 'schematic',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | QA pipeline — spec §7.1
     |--------------------------------------------------------------------------
     |

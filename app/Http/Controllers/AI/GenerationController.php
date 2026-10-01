@@ -69,8 +69,16 @@ class GenerationController extends AiController
                 caseId: $validated['case_id'] ?? null,
             );
 
+            // Derived from the template itself, never from the request body: a caller
+            // could otherwise dodge the images policy by asking for an image template
+            // under an innocuous-sounding operation. A template is looked up here
+            // purely to read its output_format — GenerationService::generate() looks
+            // the same row up again to actually render and call it.
+            $requestedTemplate = $this->templates->find($validated['template_key'], $scope->selectedInstituteId);
+            $operation = $requestedTemplate?->outputFormat === 'image' ? 'images' : 'generate_answers';
+
             $policy = $this->policyResolver->resolve($scope->selectedInstituteId, [
-                'operation' => 'generate_answers',
+                'operation' => $operation,
                 'scope_type' => $validated['scope_type'] ?? null,
                 'scope_id' => $validated['scope_id'] ?? null,
                 'assignment_id' => $validated['assignment_id'] ?? null,

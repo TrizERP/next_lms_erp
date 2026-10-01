@@ -128,7 +128,7 @@ class ConceptLearningResourceService
         }
 
         // ── H5P ──────────────────────────────────────────────────────────────
-        $h5p = $this->h5pForConcept($conceptId, $subInstituteId);
+        $h5p = $this->h5pForConcept($conceptId, $chapterId, $subInstituteId);
         if ($h5p !== []) {
             $buckets['h5p'] = $h5p;
         }
@@ -144,24 +144,32 @@ class ConceptLearningResourceService
      * h5p_interactive_video and h5p_flashcard have no concept or topic column at
      * all, so a concept link is not even representable there.
      *
-     * The table has 0 rows today, so this returns [] and the section does not
-     * render. That is deliberate and it is the whole design:
+     * The table has 0 rows until a node is tagged (via the PAL H5P Model admin
+     * endpoints, `POST /api/pal/h5p/nodes/{type}/{id}/tags`), so this returns []
+     * and the section does not render until then. That is deliberate:
      *
-     *   - There is no H5P runtime in this repo. No h5p_libraries, no
-     *     h5p_contents, no composer package, no player, no .h5p handling.
-     *   - Of 21 registered types in pal_vocabulary, 4 are 'native' and 17 are
-     *     'planned' with no source_table. interactive_video and flash_cards have
-     *     0 rows; branching_scenario has no table.
-     *   - So switching on h5p_type strings - which config/pal_content_model.php
-     *     does supply - would build branches that can never have data. Both
-     *     config/pal_content.php:487 ("ASPIRATIONAL") and
-     *     VariantRouterService.php:23 ("gating on H5P would serve nothing")
-     *     already warn about exactly this.
+     *   - There is no OFFICIAL H5P.org runtime in this repo (no h5p_libraries,
+     *     no h5p_contents, no composer package) - see config/h5p_libraries.php.
+     *     What exists is a native reimplementation of 13 content types, each
+     *     with its own table and its own player under `/h5p/{route}/{id}`.
+     *   - Every native type's frontend player route is derived below from
+     *     config/pal_h5p.php's `implementation.route`, so a newly-promoted type
+     *     (planned -> native) is playable from Learn the moment its `route` key
+     *     is filled in - no branch here needs to change.
      *
      * Keyed on data, not on a type whitelist, so the section appears by itself
      * the moment content is genuinely tagged - and stays honest until then.
+     *
+     * A row is either concept-scoped (`concept_ref_id` = this concept - the
+     * flashcard pilot's shape) or chapter-scoped (`concept_ref_id` null,
+     * `chapter_id` = this concept's chapter - the course-presentation pilot's
+     * shape, one deck covering every topic in the chapter). content_master
+     * already draws exactly this concept/chapter distinction for the same
+     * reason - a Classroom Resource has no finer-grained link than the
+     * chapter - so an H5P node inherits the same honesty rule: a chapter-wide
+     * item is labelled 'chapter' scope, never claimed as this concept's own.
      */
-    protected function h5pForConcept(int $conceptId, ?int $subInstituteId): array
+    protected function h5pForConcept(int $conceptId, ?int $chapterId, ?int $subInstituteId): array
     {
         if (! Schema::hasTable('pal_h5p_node_metadata')) {
             return [];
@@ -169,7 +177,12 @@ class ConceptLearningResourceService
 
         try {
             $rows = DB::table('pal_h5p_node_metadata')
-                ->where('concept_ref_id', $conceptId)
+                ->where(function ($q) use ($conceptId, $chapterId) {
+                    $q->where('concept_ref_id', $conceptId)
+                        ->when($chapterId !== null, fn ($q2) => $q2->orWhere(
+                            fn ($q3) => $q3->whereNull('concept_ref_id')->where('chapter_id', $chapterId)
+                        ));
+                })
                 ->where('quality_status', 'approved')
                 ->when($subInstituteId !== null, fn ($q) => $q->whereIn('sub_institute_id', [$subInstituteId, 0]))
                 ->orderBy('id')
@@ -182,17 +195,32 @@ class ConceptLearningResourceService
         $items = [];
 
         foreach ($rows as $row) {
+            $h5pType = $this->trimOrNull($row->h5p_type ?? null);
+            $nodeId = (int) ($row->node_id ?? 0);
+            $rowChapterId = ((int) ($row->chapter_id ?? 0)) ?: null;
+            $subjectId = ((int) ($row->subject_id ?? 0)) ?: null;
+            $standardId = ((int) ($row->standard_id ?? 0)) ?: null;
+            $isConceptScoped = (int) ($row->concept_ref_id ?? 0) === $conceptId;
+
+            // No url is a legitimate outcome, not a bug: an unresolvable row
+            // renders as a plain (non-clickable) card, same rule this class
+            // already applies to a content_master row with no reconstructable
+            // file path. Never a dead link.
+            $url = $h5pType !== null && $nodeId > 0
+                ? $this->h5pPlayableUrl($h5pType, $nodeId, $rowChapterId, $subjectId, $standardId)
+                : null;
+
             $items[] = [
                 'id' => 'h5p:' . $row->id,
                 'source_table' => 'pal_h5p_node_metadata',
                 'section' => 'h5p',
-                'scope' => 'concept',
+                'scope' => $isConceptScoped ? 'concept' : 'chapter',
                 'title' => $this->trimOrNull($row->title ?? null) ?? 'Interactive activity',
                 'description' => $this->trimOrNull($row->ai_rationale ?? null),
-                'url' => null,
+                'url' => $url,
                 'file_type' => 'h5p',
                 'category' => 'H5P interactive',
-                'h5p_type' => $this->trimOrNull($row->h5p_type ?? null),
+                'h5p_type' => $h5pType,
                 'provider' => null,
                 'attribution' => null,
                 'thumbnail_url' => null,
@@ -203,12 +231,81 @@ class ConceptLearningResourceService
                     'difficulty' => $this->trimOrNull(isset($row->difficulty_1_to_5) ? (string) $row->difficulty_1_to_5 : null),
                     'bloom_level' => $this->trimOrNull($row->bloom_level ?? null),
                     'pedagogy_tag' => $this->trimOrNull($row->pedagogy_tag ?? null),
-                    'concept_id' => $conceptId,
+                    // Only claimed when the row is genuinely this concept's
+                    // own tag - a chapter-wide deck is not "about" any one
+                    // concept, so it carries no concept_id.
+                    'concept_id' => $isConceptScoped ? $conceptId : null,
+                    // Carried so the frontend can mount the matching native
+                    // player inline (H5pContext + the node id) without having
+                    // to re-parse them back out of `url`.
+                    'h5p_node_id' => $nodeId > 0 ? $nodeId : null,
+                    'chapter_id' => $rowChapterId,
+                    'subject_id' => $subjectId,
+                    'standard_id' => $standardId,
                 ], fn ($v) => $v !== null),
             ];
         }
 
         return $items;
+    }
+
+    /**
+     * The frontend player URL for one native H5P node, or null when it cannot
+     * be built.
+     *
+     * Every native type in config/pal_h5p.php declares `implementation.route`
+     * as a Laravel route name of the form `{frontend_folder}.index` - e.g.
+     * `h5p_memory_game.index` for the Next.js page at
+     * `/h5p/h5p_memory_game/[id]/page.tsx`. Stripping `.index` recovers that
+     * folder name for every type except `multiple_choice`, whose "route" is the
+     * question-bank's own admin listing, not a per-node player - MCQ is served
+     * to a learner through the question bank / PAL practice-and-assessment
+     * surface already, not through this H5P section, so it is excluded here on
+     * purpose (see the class docblock and CLAUDE-facing note in
+     * `learn_teacher_only_categories` neighbours: assessment stays on its own
+     * path, H5P here is Learning Content).
+     *
+     * The player route additionally requires `chapter_id`, `subject_id` and
+     * `standard_id` as query params (`hasH5pContext()` on the frontend) or it
+     * renders "missing context" instead of the activity - so a row missing any
+     * of the three also resolves to no url rather than a broken one.
+     */
+    protected function h5pPlayableUrl(
+        string $h5pType,
+        int $nodeId,
+        ?int $chapterId,
+        ?int $subjectId,
+        ?int $standardId
+    ): ?string {
+        if ($h5pType === 'multiple_choice') {
+            return null;
+        }
+
+        if ($chapterId === null || $subjectId === null || $standardId === null) {
+            return null;
+        }
+
+        $implementation = (array) config("pal_h5p.h5p_types.$h5pType.implementation", []);
+
+        if (($implementation['status'] ?? null) !== 'native') {
+            return null;
+        }
+
+        $route = (string) ($implementation['route'] ?? '');
+
+        if (! str_ends_with($route, '.index')) {
+            return null;
+        }
+
+        $routeBase = substr($route, 0, -6);
+
+        $query = http_build_query([
+            'chapter_id' => (string) $chapterId,
+            'standard_id' => (string) $standardId,
+            'subject_id' => (string) $subjectId,
+        ]);
+
+        return "/h5p/{$routeBase}/{$nodeId}?{$query}";
     }
 
     /**
@@ -450,7 +547,7 @@ class ConceptLearningResourceService
         $other = $configured['other'] ?? ['label' => 'More material', 'categories' => []];
         unset($configured['other']);
 
-        $configured['h5p'] = ['label' => 'Interactive activity', 'categories' => []];
+        $configured['h5p'] = ['label' => 'Interactive activities', 'categories' => []];
         $configured['other'] = $other;
 
         return $configured;

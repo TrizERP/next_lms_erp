@@ -55,8 +55,15 @@ class TemplateCatalog
      */
     public const KINDS = ['prompt', 'report'];
 
-    /** What the output of a template is expected to look like. */
-    public const OUTPUT_FORMATS = ['text', 'markdown', 'json'];
+    /**
+     * What the output of a template is expected to look like.
+     *
+     * `image` is stored the same way `json`'s structured data is: the binary itself
+     * never touches this table or the generic OutputValidator (both are text-shaped),
+     * it is written to storage by GenerationService and only its URL — and a caption,
+     * as the row's ordinary text `content` — are recorded.
+     */
+    public const OUTPUT_FORMATS = ['text', 'markdown', 'json', 'image'];
 
     /**
      * The categories in use, offered as suggestions rather than enforced.
