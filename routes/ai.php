@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AI\AgentController;
+use App\Http\Controllers\AI\AiAssistanceTicketController;
 use App\Http\Controllers\AI\AiConfigurationController;
 use App\Http\Controllers\AI\AiTemplateController;
 use App\Http\Controllers\AI\AskController;
@@ -307,6 +308,18 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             Route::post('/generate', [GenerationController::class, 'generate']);
             Route::post('/generated-outputs/{output}/review', [GenerationController::class, 'review'])
                 ->whereNumber('output');
+
+            /*
+            | Stuck-user assistance — the "are you stuck?" popup's decline path.
+            |
+            | The "yes, help me" path has no route of its own: it proxies to the
+            | /generate route above, naming the k12.stuck_user_help template. Only the
+            | "no, I'm fine" path needs a route, since only it writes anything.
+            */
+            Route::post('/assistance/tickets', [AiAssistanceTicketController::class, 'store']);
+            Route::get('/assistance/tickets', [AiAssistanceTicketController::class, 'index']);
+            Route::get('/assistance/tickets/{ticket}/screenshot', [AiAssistanceTicketController::class, 'screenshot'])
+                ->whereNumber('ticket');
 
             /*
             | Saved reports — the documents `ai.templates.generate` writes.

@@ -114,10 +114,10 @@ class IntentClassifier
             'description' => 'Returns the drafted recommendation and the action it would take.',
             'anchors' => ['do', 'action', 'recommend', 'suggest', 'next', 'help', 'fix', 'plan'],
             'signals' => [
-                'what should' => 4.5, 'what can' => 3.5, 'recommend' => 4.5,
+                'what should' => 4.5, 'recommend' => 4.5,
                 'recommendation' => 5.0, 'recommendations' => 5.0, 'suggest' => 4.0,
                 'suggestion' => 4.0, 'advice' => 3.5, 'next step' => 4.0,
-                'next steps' => 4.0, 'what do i do' => 4.0, 'how do i help' => 4.0,
+                'next steps' => 4.0, 'how do i help' => 4.0,
                 'how can we help' => 4.0, 'intervention' => 3.5, 'action plan' => 4.0,
                 'plan' => 2.0, 'teacher do' => 4.0, 'teacher should' => 4.5,
             ],
@@ -125,6 +125,14 @@ class IntentClassifier
                 '/\bwhat should (the )?(teacher|we|i|school)\b/i',
                 '/\b(recommend|recommendation|suggest|advice|next steps?)\b/i',
                 '/\bhow (do|can) (i|we)\b.{0,20}\b(help|support|fix|improve)\b/i',
+                // "what can/do I do" only counts once it points at a situation — "what
+                // can I do about it", "what do I do to help him" name a case. Scored as
+                // a bare signal, "what can" and "what do i do" matched "what can I do
+                // in this system?" outright: nothing else in that sentence scored, so
+                // an unrelated capability question was classified as this intent at
+                // 100% confidence. Requiring "about/for/with/to help" after the second
+                // "do" keeps the real phrasing and drops the false one.
+                '/\bwhat (can|do) (i|we)\b.{0,10}\bdo\b.{0,20}\b(about|for|with|to help)\b/i',
             ],
             'slots' => ['case'],
         ],

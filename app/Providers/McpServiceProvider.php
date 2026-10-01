@@ -39,6 +39,8 @@ use App\Mcp\Tools\ExamsResultsTool;
 use App\Mcp\Tools\FeesArrearsTool;
 use App\Mcp\Tools\FeesCollectionReportTool;
 use App\Mcp\Tools\FeesGetPendingTool;
+use App\Mcp\Tools\FeesOutstandingAccountsTool;
+use App\Mcp\Tools\FeesPositionTool;
 use App\Mcp\Tools\FrontDeskVisitsTool;
 use App\Mcp\Tools\HomeworkListTool;
 use App\Mcp\Tools\HostelAllocationsTool;
@@ -166,6 +168,8 @@ class McpServiceProvider extends ServiceProvider
         FeesArrearsTool::class,
         FeesCollectionReportTool::class,
         FeesGetPendingTool::class,
+        FeesPositionTool::class,
+        FeesOutstandingAccountsTool::class,
 
         // Boarding, meetings, requests and notices.
         //

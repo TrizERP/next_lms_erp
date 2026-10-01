@@ -96,7 +96,7 @@ class FeesArrearsServiceTest extends TestCase
         $summary = $this->call('summarise', [[['outstanding' => 500.0]], 25, 3435, true, 0]);
 
         $this->assertStringContainsString('1 of 25 students checked has money outstanding', $summary);
-        $this->assertStringContainsString('first 25 of 3435 students in scope', $summary);
+        $this->assertStringContainsString('covers 25 of the 3435 students in scope', $summary);
         $this->assertStringContainsString('not the whole school', $summary);
     }
 

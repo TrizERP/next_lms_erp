@@ -15,6 +15,26 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Secondary target connections
+    |--------------------------------------------------------------------------
+    |
+    | Additive only — the keys above (`uri`/`username`/`password`) stay pointed
+    | at the K12 graph and remain what every live sync pipeline (A/B) writes to.
+    | `targets.lms_pal` is consumed ONLY by `neo4j:copy-lms-pal`, a one-time
+    | seed copy into a brand-new, separate Neo4j instance dedicated to LMS+PAL
+    | work. It does not change where ongoing sync writes.
+    |
+    */
+    'targets' => [
+        'lms_pal' => [
+            'uri'      => env('NEO4J_LMSPAL_URI'),
+            'username' => env('NEO4J_LMSPAL_USERNAME', 'neo4j'),
+            'password' => env('NEO4J_LMSPAL_PASSWORD'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Application writes to Neo4j  (decision RESIDUAL-WRITERS, 2026-08-10)
     |--------------------------------------------------------------------------
     |
@@ -97,8 +117,18 @@ return [
      *     works, so that is the edge these specs emit.
      *   - `question_paper` has NO `concept_id`, so `(:Assessment)-[:ASSESSES]->
      *     (:Concept)` has no source. `lms_question_master.concept_id` does exist,
-     *     and the live graph carries 26 `(:Question)-[:ASSESSES]->(:Concept)`, so
-     *     ASSESSES hangs off the question.
+     *     so ASSESSES hangs off the question here. Check the live edge count via
+     *     `php artisan neo4j:reconcile --relationships` rather than trusting a
+     *     number in this comment — it drifts. As of 2026-09-28 this edge (and
+     *     `BELONGS_TO` below it) also carried a real defect: `TableGraphProjection`
+     *     never diffed a re-pointed FK against its last queued value, so re-tagging
+     *     `concept_id`/`chapter_id` on an existing question left a stale edge beside
+     *     the new one (283 / 7,143 Questions respectively). Fixed via
+     *     `TableGraphProjection::previousTarget()`; `ReconcileCommand`'s
+     *     `--relationships` stale-edge check repairs the backlog with `--fix`.
+     *     (An earlier read of this also suspected `CoherenceGraphProjection::
+     *     projectAssesses()` as a second writer in conflict — it exists, but has
+     *     barely run against production, 26 edges, zero conflicts. Not the cause.)
      *   - `lms_lesson_plan` has NO `lesson_title`, `teacher_id`, `pedagogy_tag` or
      *     `status`. The script's displayLabel for :Lesson referenced
      *     `row.curriculum_name`, a column of a different table entirely, which is

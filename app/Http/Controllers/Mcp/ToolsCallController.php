@@ -14,6 +14,8 @@ class ToolsCallController extends McpController
 
     public function __invoke(CallToolRequest $request)
     {
+        $this->allowTimeForACohortSweep();
+
         $toolName = (string) $request->input('tool');
 
         try {

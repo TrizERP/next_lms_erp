@@ -79,6 +79,20 @@ class ModuleReadPlanner implements Planner
             return null;
         }
 
+        // The question named nothing any module's vocabulary recognises — not this one,
+        // not any other. That is what small talk, a capability question ("what can I do
+        // here?") or general knowledge looks like from the resolver's side, and it is a
+        // different case from "asked about fees on the fees screen but phrased oddly",
+        // which does score for something and is exactly what this planner exists to
+        // rescue. Reading the screen's own tools for a domain-free sentence is a guess,
+        // not a fallback, and it was the reason such questions always ended up being
+        // forced through a case-resolution read that had nothing to resolve: the blind
+        // tool call "completed" with a real but irrelevant answer, so nothing downstream
+        // could recognise the turn as one a general answer should take instead.
+        if ($context->get('modules_considered', []) === []) {
+            return null;
+        }
+
         $candidates = $this->readableTools($module->mcpTools);
 
         if ($candidates === []) {

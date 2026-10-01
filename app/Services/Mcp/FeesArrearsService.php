@@ -2,6 +2,7 @@
 
 namespace App\Services\Mcp;
 
+use App\Brain\Intelligence\FeesIntelligence;
 use Illuminate\Support\Facades\DB;
 use Throwable;
 
@@ -196,7 +197,42 @@ class FeesArrearsService
 
         $all = $ids->map(static fn ($id) => (int) $id)->unique()->values();
 
-        return [$all->take($limit)->all(), $all->count()];
+        return [$this->largestBalancesFirst($context, $all->all(), $limit), $all->count()];
+    }
+
+    /**
+     * Put the students who owe the most at the front of the sweep.
+     *
+     * The sweep is bounded, so *which* students it examines decides whether "who owes the
+     * most?" can be answered at all. Taken in id order it examined an arbitrary slice - on
+     * a 268-student institute it checked the first 25 and reported 7 defaulters when 66
+     * accounts owed money. The fee ledger ranks accounts in one grouped query, so the
+     * bounded sweep starts with the largest balances and the per-student figures still come
+     * from the fee screen's own calculation.
+     *
+     * If the ledger cannot be read the order is left as it was: a ranking is an
+     * optimisation of the sample, never a reason to fail the sweep.
+     *
+     * @param  array<int, int>  $studentIds
+     * @return array<int, int>
+     */
+    private function largestBalancesFirst(McpRequestContext $context, array $studentIds, int $limit): array
+    {
+        if ($context->academicYear === null || count($studentIds) <= $limit) {
+            return array_slice($studentIds, 0, $limit);
+        }
+
+        try {
+            $ranked = (new FeesIntelligence((string) $context->selectedInstituteId, (string) $context->academicYear))
+                ->outstandingAccounts(200, 0, null, $studentIds)['rows'];
+        } catch (Throwable) {
+            return array_slice($studentIds, 0, $limit);
+        }
+
+        $first = array_map(static fn (array $row) => (int) $row['studentId'], $ranked);
+        $rest = array_values(array_diff($studentIds, $first));
+
+        return array_slice(array_merge($first, $rest), 0, $limit);
     }
 
     /**
@@ -238,7 +274,7 @@ class FeesArrearsService
 
         if ($truncated) {
             $caveats[] = sprintf(
-                'this covers the first %d of %d students in scope, not the whole school',
+                'this covers %d of the %d students in scope, not the whole school',
                 $checked,
                 $cohortSize
             );

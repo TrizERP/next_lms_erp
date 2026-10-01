@@ -15,6 +15,26 @@ use Throwable;
 
 abstract class McpController extends Controller
 {
+    /**
+     * Some tools sweep a cohort rather than answering about one record — `fees.arrears`
+     * makes one `FeesPendingService::getPending()` call per student in scope, sequentially,
+     * and 25 students of legacy per-student fee logic has been measured past PHP's default
+     * 60-second limit, turning a slow-but-honest answer into a fatal timeout instead.
+     *
+     * Raised here rather than in php.ini so the limit travels with the code that needs it —
+     * the same reasoning `AskController::allowTimeForACohortSweep()` already applies for the
+     * conversational route. This one covers every tool called through this MCP surface,
+     * since any of them could grow the same shape. It is a ceiling, not a target: nothing
+     * here is expected to take three minutes, and a call that does is a performance bug
+     * this does not excuse.
+     */
+    protected function allowTimeForACohortSweep(): void
+    {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(180);
+        }
+    }
+
     protected function success(Request $request, string $message, array $data, int $status = 200): JsonResponse
     {
         $response = response()->json([

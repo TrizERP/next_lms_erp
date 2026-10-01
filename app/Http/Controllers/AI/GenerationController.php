@@ -46,6 +46,8 @@ class GenerationController extends AiController
 
     public function generate(Request $request)
     {
+        $this->allowTimeForProviderRetries();
+
         try {
             $scope = $this->scope($request);
 
@@ -146,6 +148,27 @@ class GenerationController extends AiController
             return $this->success('Review recorded.');
         } catch (Throwable $exception) {
             return $this->handle($exception);
+        }
+    }
+
+    /**
+     * A provider under "high demand" is retried with real backoff — 700ms, ~1.75s,
+     * with jitter on each — by design, to ride out exactly the kind of spike that
+     * produced a clean, honest "busy, try again" response the one time this was
+     * measured end to end. Even a shortened retry adds up past PHP's default
+     * 60-second execution limit on some hosts, which does not wait for that honest
+     * response — it kills the script first, so the caller sees a bare connection
+     * reset instead of the failure `GenerationService` would otherwise have reported.
+     *
+     * Same fix, same reasoning as `AskController::allowTimeForACohortSweep()` and
+     * `McpController::allowTimeForACohortSweep()` — raised here because this is the
+     * route that owns the retrying call, matching this codebase's own convention of
+     * raising the limit in the controller that needs it rather than on every request.
+     */
+    private function allowTimeForProviderRetries(): void
+    {
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(180);
         }
     }
 }

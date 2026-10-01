@@ -179,7 +179,8 @@ class PALServiceProvider extends ServiceProvider
         // LMS integration
         $this->app->singleton(PedagogySuggestedContentService::class, function ($app) {
             return new PedagogySuggestedContentService(
-                $app->make(PedagogyOrchestrationService::class)
+                $app->make(PedagogyOrchestrationService::class),
+                $app->make(\App\Services\PAL\Coherence\CoherenceMapRepository::class)
             );
         });
 
