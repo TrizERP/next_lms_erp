@@ -127,26 +127,62 @@ class ConceptImageSearchService
      * photography rather than textbook diagrams, and a broader retry is a
      * search a person would make by hand rather than an invented visual.
      *
+     * `$maxVariants` caps how many of those retries are allowed, counting the
+     * full query as one. Null (the default) means "all of them", which is the
+     * right behaviour for the Learn page: it is one search for one concept and
+     * a broader retry is what rescues a hard one.
+     *
+     * It exists for callers that search many queries in one request — the
+     * journey map is ten of them — where "all four variants for every query"
+     * is up to 40 outbound searches and the caller, not this method, is the
+     * thing that has to stop. Passing 1 searches only the exact query, which
+     * is also what lets a caller tell "this query found its own picture" from
+     * "this query fell back to a narrowed prefix of itself".
+     *
+     * `$minScore` overrides the configured relevance floor for this one call.
+     * Null (the default) means "the configured floor", which is what the Learn
+     * page wants and what 3.0 exists for. A caller asking a DIFFERENT question
+     * — the journey map, whose question is "does this picture depict this
+     * step", not "is this picture about this concept" — may pass its own floor
+     * and is then responsible for a matching check of its own.
+     *
+     * `$source` overrides the configured source filter for this one call. Null
+     * (the default) means "the configured source", which is `wikimedia` — a
+     * deliberate relevance trade for the Learn page (see rank()'s note). A
+     * caller asking a different question may widen it; the journey map does,
+     * because "which step does this picture show" is better answered by
+     * photography of flashcards than by encyclopedia diagrams, and it applies
+     * its own stricter gate over the results instead of relying on the corpus.
+     *
      * @return array{image:array<string,mixed>, query:string}|null
      */
-    public function bestImageFor(string $query): ?array
-    {
+    public function bestImageFor(
+        string $query,
+        ?int $maxVariants = null,
+        ?float $minScore = null,
+        ?string $source = null,
+    ): ?array {
         if (! $this->available()) {
             return null;
         }
 
-        foreach ($this->queryVariants($query) as $variant) {
+        $variants = $this->queryVariants($query);
+        if ($maxVariants !== null) {
+            $variants = array_slice($variants, 0, max(1, $maxVariants));
+        }
+
+        foreach ($variants as $variant) {
             $variant = $this->clipQuery($variant);
             if ($variant === '') {
                 continue;
             }
 
-            $candidates = $this->search($variant);
+            $candidates = $this->search($variant, $source);
             if ($candidates === []) {
                 continue;
             }
 
-            $best = $this->pickBest($candidates, $variant);
+            $best = $this->pickBest($candidates, $variant, $minScore);
             if ($best !== null) {
                 return ['image' => $best, 'query' => $variant];
             }
@@ -210,9 +246,15 @@ class ConceptImageSearchService
      *
      * @return array<int, array<string, mixed>>
      */
-    protected function search(string $query): array
+    protected function search(string $query, ?string $sourceOverride = null): array
     {
-        $cacheKey = 'pal:image:openverse:' . sha1($query);
+        // Keyed by source as well as query: the same text searched across all
+        // sources and across Wikimedia alone are different result sets, and
+        // caching them under one key would make the second caller silently
+        // receive the first one's answer.
+        $effectiveSource = $sourceOverride ?? trim((string) config('pal_content.image.external.source', 'wikimedia'));
+
+        $cacheKey = 'pal:image:openverse:' . sha1($effectiveSource . '|' . $query);
         $cached = Cache::get($cacheKey);
         if (is_array($cached)) {
             return $cached;
@@ -245,7 +287,7 @@ class ConceptImageSearchService
             // addition" diagram). `source` is configurable rather than
             // hardcoded so a school that finds a specific concept needs a
             // wider net can loosen it without a code change.
-            $source = trim((string) config('pal_content.image.external.source', 'wikimedia'));
+            $source = $effectiveSource;
             if ($source !== '') {
                 $params['source'] = $source;
             }
@@ -325,9 +367,9 @@ class ConceptImageSearchService
      * @param  array<int, array<string, mixed>>  $candidates
      * @return array<string, mixed>|null
      */
-    protected function pickBest(array $candidates, string $query): ?array
+    protected function pickBest(array $candidates, string $query, ?float $minScore = null): ?array
     {
-        $ranked = $this->rank($candidates, $query);
+        $ranked = $this->rank($candidates, $query, $minScore);
 
         // The floor that separates "actually about this concept" from "an
         // unrelated photo Openverse's own full-text match happened to
@@ -339,7 +381,7 @@ class ConceptImageSearchService
         // answer. `min_score` of 1.0 requires at least one genuine keyword
         // hit against the candidate's own title/tags, not merely Openverse's
         // internal match on some other field.
-        $minScore = (float) config('pal_content.image.external.min_score', 1.0);
+        $minScore = $minScore ?? (float) config('pal_content.image.external.min_score', 1.0);
         $ranked = array_values(array_filter($ranked, static fn (array $row) => $row['score'] >= $minScore));
 
         $toVerify = (int) config('pal_content.image.external.candidates_to_verify', 3);
@@ -361,7 +403,7 @@ class ConceptImageSearchService
      * @param  array<int, array<string, mixed>>  $candidates
      * @return array<int, array<string, mixed>>
      */
-    protected function rank(array $candidates, string $query): array
+    protected function rank(array $candidates, string $query, ?float $minScore = null): array
     {
         $queryWords = $this->words($query);
         $exclude = array_map('mb_strtolower', (array) config('pal_content.image.exclude_keywords', []));

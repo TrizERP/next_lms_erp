@@ -27,6 +27,7 @@ use App\Models\lms\topicModel;
 use App\Models\school_setup\sub_std_mapModel;
 use App\Services\OpenAIService;
 use App\Services\PAL\Integration\ConceptImageSearchService;
+use App\Services\PAL\Integration\JourneyImageService;
 use App\Services\PAL\Integration\PedagogySuggestedContentService;
 use App\Services\PAL\Runtime\BktEngine;
 use App\Services\PAL\Intelligence\MisconceptionIntelligenceEngine;
@@ -3337,6 +3338,43 @@ public function getData($request)
             ],
             'query' => $result['query'],
         ]);
+    }
+
+    /**
+     * The image-based "Your Journey" map — one openly-licensed picture per
+     * journey stage, searched live from this learner's own subject, chapter
+     * and concept (see JourneyImageService).
+     *
+     * CHAPTER OR CONCEPT, EITHER ALONE
+     *
+     * `chapter_id` and `concept_id` are both optional and both sufficient. The
+     * diagnostic exam screen only knows its chapter; a Learn or Feedback
+     * screen only knows its concept. Neither is made to go and fetch the
+     * other's id first — the service resolves the missing half itself (a
+     * concept carries its `chapter_id`, a chapter carries its `subject_id`),
+     * which is what lets one image-map component sit behind the journey rail
+     * on every PAL screen without each screen first resolving anything.
+     *
+     * Read-only and side-effect-free, like learnConceptImage() above and for
+     * the same reason: the whole map is cached server-side, so re-opening it
+     * costs a cache read rather than ten searches.
+     *
+     * The response shape is deliberately `{success, subject, chapter, concept,
+     * poster, stages}` and never a 4xx/5xx for "no image found" — including
+     * when neither id resolves at all. A missing picture is an ordinary
+     * outcome the frontend renders as an icon tile, and it must be
+     * distinguishable from "the request itself failed" without the frontend
+     * having to inspect an HTTP status.
+     */
+    public function journeyImages(Request $request)
+    {
+        $chapterId = (int) $request->query('chapter_id', 0);
+        $conceptId = (int) $request->query('concept_id', 0);
+
+        return response()->json(app(JourneyImageService::class)->forContext(
+            $chapterId > 0 ? $chapterId : null,
+            $conceptId > 0 ? $conceptId : null,
+        ));
     }
 
     /**
