@@ -89,7 +89,14 @@ class DocumentMaster extends Model
         if (is_object($user)) {
             $isAdmin = in_array((int)($user->is_admin ?? 0), [1, 2], true);
             $profileId = (int)($user->user_profile_id ?? 0);
-            $deptId = $user->department_id ? (int)$user->department_id : null;
+            // Every property read here is null-coalesced on purpose. This scope is
+            // called with whatever the caller happens to hold — a tbluser row, a
+            // query-builder stdClass, or a hand-built identity object from a queued
+            // job — and those are not all the same shape. A bare `$user->department_id`
+            // raised an "Undefined property: stdClass::$department_id" warning, which
+            // PHP 8.2 escalates to an ErrorException and which therefore failed the
+            // whole upload pipeline. An absent column means "no department", not a crash.
+            $deptId = ($user->department_id ?? null) ? (int)$user->department_id : null;
         }
 
         // Admin bypass

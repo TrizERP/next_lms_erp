@@ -13,6 +13,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -96,7 +97,30 @@ class ProcessDocumentPipelineJob implements ShouldQueue
             $document->recomputeViewPrincipals();
 
             // 6. Duplicate Detection
-            $user = (object)['id' => $this->userId, 'is_admin' => 0];
+            /*
+             * Load the real uploader rather than a placeholder identity. detectDuplicates()
+             * scopes its lookup through DocumentMaster::visibleTo(), which needs the uploader's
+             * department_id and user_profile_id to build the principal list. A stub object with
+             * only an id silently narrowed the candidate set to "organization-visible documents",
+             * so a duplicate the uploader cannot see would have been offered as a new version.
+             * The stub is kept only as the last resort, with every property visibleTo() reads
+             * present, so the fallback path cannot throw either.
+             */
+            $user = DB::table('tbluser as u')
+                ->leftJoin('tbluserprofilemaster as p', 'p.id', '=', 'u.user_profile_id')
+                ->select('u.id', 'u.user_profile_id', 'u.department_id', 'u.is_admin')
+                ->where('u.id', $this->userId)
+                ->first();
+
+            if (!$user) {
+                $user = (object)[
+                    'id' => $this->userId,
+                    'is_admin' => 0,
+                    'user_profile_id' => 0,
+                    'department_id' => null,
+                ];
+            }
+
             $dupWarnings = $duplicateDetector->detectDuplicates($document, $user, $document->sub_institute_id);
 
             $allWarnings = array_merge($classification['warnings'] ?? [], $dupWarnings);

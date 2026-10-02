@@ -78,6 +78,20 @@ class DocumentClassificationService
             }
         }
 
+        /*
+         * An unmatched department name is a silent data loss: the document is real, the
+         * model picked a plausible name, but nothing maps it to a hrms_departments row, so
+         * department_id stays NULL and the file drops into "General / Common" in the browse
+         * tree with nothing on the review screen to explain why. Gemini is told the valid
+         * names but does not always pick from them, and the same document can classify
+         * differently on two runs. Recording the mismatch turns an invisible wrong filing
+         * into a one-click correction on the review screen.
+         */
+        if ($targetDeptName !== '' && $deptId === null) {
+            $warnings[] = 'unmatched_department';
+            $warnings[] = 'department_not_recognised:' . $targetDeptName;
+        }
+
         return [
             'metadata' => $result,
             'department_id' => $deptId,
