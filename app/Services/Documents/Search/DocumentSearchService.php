@@ -48,6 +48,23 @@ class DocumentSearchService
                 'created_by',
                 'created_at',
                 'updated_at',
+                /*
+                 * The columns below are read by DocumentResource and rendered by the
+                 * library and the review screen. They were missing from this list, and a
+                 * column that is not selected comes back as NULL rather than as absent:
+                 * processing_status therefore arrived as null and the result row crashed
+                 * the list. Adding a field to DocumentResource without adding it here is
+                 * the trap — this select is the contract, not the model.
+                 *
+                 * extracted_text and embedding stay out on purpose: they are fetched only
+                 * for the current page of snippets, below.
+                 */
+                'processing_status',
+                'processing_error',
+                'warnings',
+                'people',
+                'keywords',
+                'permissions',
             ]);
 
         // Exact column filters
