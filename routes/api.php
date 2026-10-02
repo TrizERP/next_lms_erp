@@ -9,6 +9,7 @@ use App\Http\Controllers\StudentGraphController;
 use App\Http\Controllers\api\ApiLoginController;
 use App\Http\Controllers\api\MenuRightsController;
 use App\Http\Controllers\api\ApiLmsCourseController;
+use App\Http\Controllers\api\ApiQuestionPaperController;
 
 
 
@@ -86,4 +87,31 @@ Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search
 
 // Intelligence Lesson Plan - Lesson Plan -> Period -> Concepts hierarchy
 Route::match(['GET', 'POST'], 'intelligence/lesson-plans', [\App\Http\Controllers\api\lms\IntelligenceLessonPlanApiController::class, 'index']);
+
+/*
+|--------------------------------------------------------------------------
+| Intelligent Document Management System (IDMS) API v1
+|--------------------------------------------------------------------------
+*/
+Route::prefix('v1')->group(function () {
+    Route::get('documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'index']);
+    Route::post('documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'store']);
+    Route::get('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'show']);
+    Route::patch('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'update']);
+    Route::delete('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'destroy']);
+    Route::post('documents/{id}/confirm', [\App\Http\Controllers\api\v1\DocumentController::class, 'confirm']);
+    Route::post('documents/{id}/tags', [\App\Http\Controllers\api\v1\DocumentController::class, 'updateTags']);
+    Route::get('documents/{id}/preview', [\App\Http\Controllers\api\v1\DocumentController::class, 'preview']);
+    Route::get('documents/{id}/download', [\App\Http\Controllers\api\v1\DocumentController::class, 'download']);
+    Route::get('documents/{id}/versions', [\App\Http\Controllers\api\v1\DocumentController::class, 'getVersions']);
+    Route::post('documents/{id}/versions', [\App\Http\Controllers\api\v1\DocumentController::class, 'addVersion']);
+    Route::post('documents/{id}/versions/{versionNumber}/restore', [\App\Http\Controllers\api\v1\DocumentController::class, 'restoreVersion']);
+    Route::get('documents/{id}/related', [\App\Http\Controllers\api\v1\DocumentController::class, 'related']);
+
+    Route::post('search/parse', [\App\Http\Controllers\api\v1\DocumentController::class, 'parseSearch']);
+    Route::get('browse/tree', [\App\Http\Controllers\api\v1\DocumentController::class, 'tree']);
+    Route::get('tags', [\App\Http\Controllers\api\v1\DocumentController::class, 'tags']);
+    Route::get('audit', [\App\Http\Controllers\api\v1\DocumentController::class, 'audit']);
+});
+
 
