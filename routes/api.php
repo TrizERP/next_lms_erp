@@ -42,7 +42,6 @@ use App\Http\Controllers\api\TeacherTimetableApiController;
 use App\Http\Controllers\api\TeacherFeeDuesApiController;
 use App\Http\Controllers\api\TeacherIcardApiController;
 use App\Http\Controllers\api\UserDashboardPreferenceApiController;
-use App\Http\Controllers\api\ApiQuestionPaperController;
 
 
 // Student Assessment API - Get student assessment data with scores and levels
