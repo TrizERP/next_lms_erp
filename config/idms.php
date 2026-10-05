@@ -8,6 +8,9 @@ return [
     */
     'disk' => env('IDMS_DISK', 'digitalocean'),
 
+    // Days a deleted document stays restorable before it is purged for good.
+    'trash_retention_days' => (int) env('IDMS_TRASH_RETENTION_DAYS', 30),
+
     /*
     |--------------------------------------------------------------------------
     | AI Classification Configuration
