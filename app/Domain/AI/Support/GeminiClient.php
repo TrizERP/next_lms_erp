@@ -29,7 +29,7 @@ use Throwable;
  * schema complaint rather than "wrong provider", which is why this lives behind the
  * ModelClient interface instead of at each call site.
  */
-class GeminiClient implements ModelClient
+class GeminiClient implements ModelClient, SupportsImageGeneration
 {
     /** The school this client resolves credentials for. Null means platform keys only. */
     private int|string|null $subInstituteId = null;
@@ -241,6 +241,117 @@ class GeminiClient implements ModelClient
         }
 
         return $this->textFrom($response->json());
+    }
+
+    /**
+     * Ask for an image back, from the same REST endpoint `chat()` already calls.
+     *
+     * Gemini's image-output models take no shape this class doesn't already build:
+     * same `contents`/`generationConfig` body, same endpoint, same error handling. The
+     * only difference is `responseModalities`, and the response carries an `inlineData`
+     * part (base64 image bytes) alongside an ordinary `text` part — requesting both
+     * TEXT and IMAGE gets a caption that is grounded in the same generation as the
+     * image, not a second, separately-generated description that could drift from it.
+     */
+    public function generateImage(string $prompt, ?string $model = null, ?int $timeout = null): ImageGenerationResult
+    {
+        $key = $this->resolveApiKey();
+
+        if ($key === null) {
+            throw new RuntimeException('No usable AI API key is configured.');
+        }
+
+        $body = [
+            'contents' => [
+                ['role' => 'user', 'parts' => [['text' => $prompt]]],
+            ],
+            'generationConfig' => [
+                'responseModalities' => ['TEXT', 'IMAGE'],
+            ],
+        ];
+
+        $response = Http::withHeaders([
+            'x-goog-api-key' => $key['api_key'],
+            'Content-Type' => 'application/json',
+        ])
+            ->timeout($timeout ?? (int) config('ai.provider.gemini.timeout', self::DEFAULT_TIMEOUT))
+            ->retry(4, self::backoff(...), function ($exception, $request): bool {
+                $status = $exception instanceof RequestException && $exception->response !== null
+                    ? $exception->response->status()
+                    : null;
+
+                return in_array($status, self::RETRY_STATUSES, true);
+            }, throw: false)
+            ->post($this->endpoint($model ?? $this->defaultImageModel()), $body);
+
+        if (! $response->successful()) {
+            throw $this->failure($response);
+        }
+
+        return $this->imageFrom($response->json());
+    }
+
+    /**
+     * The image-capable model to use when a caller (template, module configuration)
+     * names none. Deliberately a separate config key from `defaultModel()` — a school
+     * that configured a text model for the `image_generation` module's provider row
+     * still needs an image-capable one here, and the two are never interchangeable.
+     *
+     * `gemini-2.5-flash-image` is Google's deprecated image model (shutdown scheduled
+     * 2026-10-02) — `gemini-3.1-flash-image` is its current replacement, verified live
+     * against this estate's own key (`GET /v1beta/models`) to exist and accept the same
+     * request shape. Both are billing-tier-only on Google's side; neither is free-tier
+     * quota, so this choice is unrelated to the "quota exceeded" failures a school sees
+     * before enabling billing on its Google Cloud project.
+     */
+    private function defaultImageModel(): string
+    {
+        return $this->configuration?->model
+            ?? (string) config('ai.provider.gemini.image_model', 'gemini-3.1-flash-image');
+    }
+
+    /**
+     * The first inline image and any accompanying caption text from a response.
+     *
+     * @param  array<string, mixed>|null  $payload
+     */
+    private function imageFrom(?array $payload): ImageGenerationResult
+    {
+        $parts = $payload['candidates'][0]['content']['parts'] ?? null;
+
+        if (! is_array($parts)) {
+            throw new RuntimeException('The AI provider returned no image.');
+        }
+
+        $mimeType = null;
+        $base64Data = null;
+        $caption = null;
+
+        foreach ($parts as $part) {
+            if (! is_array($part)) {
+                continue;
+            }
+
+            if (isset($part['inlineData']['data']) && $base64Data === null) {
+                $mimeType = (string) ($part['inlineData']['mimeType'] ?? 'image/png');
+                $base64Data = (string) $part['inlineData']['data'];
+
+                continue;
+            }
+
+            if (isset($part['text'])) {
+                $caption = trim(($caption ?? '') . ' ' . (string) $part['text']);
+            }
+        }
+
+        if ($base64Data === null) {
+            // A safety block or a text-only reply both land here as "no usable image" —
+            // the caller (GenerationService) treats this the same as any other failed
+            // generation, which is what lets the frontend fall back cleanly.
+            throw new RuntimeException('The AI provider did not return an image.');
+        }
+
+        return new ImageGenerationResult($mimeType ?? 'image/png', $base64Data, $caption !== null && $caption !== '' ? $caption : null);
     }
 
     public function json(

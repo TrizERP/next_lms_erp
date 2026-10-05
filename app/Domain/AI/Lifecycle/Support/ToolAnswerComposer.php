@@ -121,7 +121,7 @@ class ToolAnswerComposer
 
         $context->addSection($this->compose->records(
             $this->sectionTitle($answer),
-            array_map(fn (array $item) => $this->record($item), $shown)
+            array_map(fn (array $item) => $this->record($item, $this->moneyFields($answer)), $shown)
         ));
 
         if (count($answer['items']) > count($shown)) {
@@ -410,6 +410,14 @@ class ToolAnswerComposer
     {
         // `count` is the tool's own total, which can exceed what it returned when a limit
         // applied. Falling back to the row count keeps the sentence true either way.
+        // A tool that can state its own answer in a sentence supplies it as `headline`;
+        // a payload that does not gets the count-and-noun line, exactly as before.
+        $stated = $list['payload']['headline'] ?? null;
+
+        if (is_string($stated) && trim($stated) !== '') {
+            return trim($stated);
+        }
+
         $total = $list['payload']['count'] ?? count($list['items']);
         $noun = str_replace('_', ' ', $list['key']);
 
@@ -430,7 +438,7 @@ class ToolAnswerComposer
      * @param  array<string, mixed>  $item
      * @return array<string, mixed>
      */
-    private function record(array $item): array
+    private function record(array $item, array $money = []): array
     {
         $title = null;
 
@@ -459,13 +467,13 @@ class ToolAnswerComposer
 
             $meta[ucfirst(str_replace('_', ' ', (string) $key))] = is_bool($value)
                 ? ($value ? 'yes' : 'no')
-                : (string) $value;
+                : (in_array($key, $money, true) && is_numeric($value) ? $this->rupees((float) $value) : (string) $value);
         }
 
         return [
             'title' => $title ?? 'Record',
             'lines' => [],
-            'meta' => array_slice($meta, 0, 5, true),
+            'meta' => array_slice($meta, 0, 6, true),
             // The row's own identifier, carried separately from the meta a reader sees.
             //
             // Without it the panel can only address a row by the words in its title,
@@ -521,16 +529,48 @@ class ToolAnswerComposer
                 }
 
                 // `count` is already the headline, and echoing it reads as padding.
-                if (in_array($key, ['count', 'query', 'note', 'rule'], true)) {
+                if (in_array($key, ['count', 'query', 'note', 'rule', 'headline', 'basis', 'money_fields'], true)) {
                     continue;
                 }
 
                 $facts[ucfirst(str_replace('_', ' ', (string) $key))] = is_bool($value)
                     ? ($value ? 'yes' : 'no')
-                    : (string) $value;
+                    : (in_array($key, $list['payload']['money_fields'] ?? [], true) && is_numeric($value)
+                        ? $this->rupees((float) $value)
+                        : (string) $value);
             }
         }
 
-        return array_slice($facts, 0, 8, true);
+        return array_slice($facts, 0, 10, true);
+    }
+
+    /**
+     * The fields a tool declared to be rupee amounts, so they are shown as money.
+     *
+     * Declared by the tool rather than guessed from a field's name: "outstanding" is an
+     * amount in one payload and a count in another, and formatting the wrong one would
+     * put a currency sign on a number of students.
+     *
+     * @param  array<string, mixed>  $list
+     * @return array<int, string>
+     */
+    private function moneyFields(array $list): array
+    {
+        $declared = $list['payload']['money_fields'] ?? [];
+
+        return is_array($declared) ? array_values(array_filter($declared, 'is_string')) : [];
+    }
+
+    /** Rupees with Indian digit grouping - 292299 becomes ₹2,92,299. */
+    private function rupees(float $amount): string
+    {
+        $negative = $amount < 0;
+        $whole = (string) (int) round(abs($amount));
+
+        if (strlen($whole) > 3) {
+            $whole = preg_replace('/\B(?=(\d{2})+(?!\d))/', ',', substr($whole, 0, -3)) . ',' . substr($whole, -3);
+        }
+
+        return ($negative ? '-' : '') . '₹' . $whole;
     }
 }

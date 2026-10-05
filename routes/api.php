@@ -43,6 +43,7 @@ use App\Http\Controllers\api\TeacherFeeDuesApiController;
 use App\Http\Controllers\api\TeacherIcardApiController;
 use App\Http\Controllers\api\UserDashboardPreferenceApiController;
 
+
 // Student Assessment API - Get student assessment data with scores and levels
 Route::get('/student-assessment', [StudentGraphController::class, 'getStudentAssessment']);
 Route::middleware('api.session')->group(function () { Route::post('teacher/assignments/standards', [TeacherAssignmentMobileApiController::class, 'standards']); Route::post('teacher/assignments/divisions', [TeacherAssignmentMobileApiController::class, 'divisions']); });
@@ -73,19 +74,25 @@ Route::post('incoming-message',[\App\Http\Controllers\WhatsappController::class,
 
 
 Route::controller(apiController::class)->group(function () {
-    Route::post('login', 'login');
-    Route::post('login_hills', 'login_hills');
-    Route::post('check_otp', 'check_otp');
+    // Credential and OTP endpoints get a tight per-IP limit on top of the global one, so a
+    // 4-6 digit OTP or a password cannot be brute-forced at 1000 attempts a minute.
+    Route::post('login', 'login')->middleware('throttle:20,1');
+    Route::post('login_hills', 'login_hills')->middleware('throttle:20,1');
+    Route::post('check_otp', 'check_otp')->middleware('throttle:10,1');
     Route::post('homescreen', 'homescreen');
-    Route::post('teacherlogin', 'teacherlogin');
-    Route::post('teacher_check_otp', 'teacher_check_otp');
+    Route::post('teacherlogin', 'teacherlogin')->middleware('throttle:20,1');
+    Route::post('teacher_check_otp', 'teacher_check_otp')->middleware('throttle:10,1');
     Route::post('playscreen', 'playscreen');
     Route::post('homescreen', 'homescreen');
     Route::post('gcm_insert', 'gcm_insert');
-    Route::get('testkey', 'testkey');
+    // testkey mints a validly signed JWT for a fixed payload with no credentials, which every
+    // controller that only checks the signature would accept. Never register it outside dev.
+    if (app()->environment(['local', 'testing'])) {
+        Route::get('testkey', 'testkey');
+    }
 });
 
-Route::post('api-login', [ApiLoginController::class, 'login'])->name('api.api-login');
+Route::post('api-login', [ApiLoginController::class, 'login'])->middleware('throttle:20,1')->name('api.api-login');
 Route::get('academic-terms', [ApiLoginController::class, 'academicTerms'])->name('api.academic-terms');
 // Isolated mobile Own Profile API; legacy profile controllers are unchanged.
 Route::middleware('api.session')->get('own-profile', [\App\Http\Controllers\api\OwnProfileApiController::class, 'show']);
@@ -992,8 +999,28 @@ Route::prefix('attendance')->group(function () {
     Route::get('/kpi', [\App\Http\Controllers\api\Attendance\AttendanceDashboardApiController::class, 'kpi']);
 });
 
+/*
+|--------------------------------------------------------------------------
+| Intelligent Document Management System (IDMS) API v1
+|--------------------------------------------------------------------------
+*/
+Route::prefix('v1')->group(function () {
+    Route::get('documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'index']);
+    Route::post('documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'store']);
+    Route::get('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'show']);
+    Route::patch('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'update']);
+    Route::delete('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'destroy']);
+    Route::post('documents/{id}/confirm', [\App\Http\Controllers\api\v1\DocumentController::class, 'confirm']);
+    Route::post('documents/{id}/tags', [\App\Http\Controllers\api\v1\DocumentController::class, 'updateTags']);
+    Route::get('documents/{id}/preview', [\App\Http\Controllers\api\v1\DocumentController::class, 'preview']);
+    Route::get('documents/{id}/download', [\App\Http\Controllers\api\v1\DocumentController::class, 'download']);
+    Route::get('documents/{id}/versions', [\App\Http\Controllers\api\v1\DocumentController::class, 'getVersions']);
+    Route::post('documents/{id}/versions', [\App\Http\Controllers\api\v1\DocumentController::class, 'addVersion']);
+    Route::post('documents/{id}/versions/{versionNumber}/restore', [\App\Http\Controllers\api\v1\DocumentController::class, 'restoreVersion']);
+    Route::get('documents/{id}/related', [\App\Http\Controllers\api\v1\DocumentController::class, 'related']);
 
-
-
-
-
+    Route::post('search/parse', [\App\Http\Controllers\api\v1\DocumentController::class, 'parseSearch']);
+    Route::get('browse/tree', [\App\Http\Controllers\api\v1\DocumentController::class, 'tree']);
+    Route::get('tags', [\App\Http\Controllers\api\v1\DocumentController::class, 'tags']);
+    Route::get('audit', [\App\Http\Controllers\api\v1\DocumentController::class, 'audit']);
+});

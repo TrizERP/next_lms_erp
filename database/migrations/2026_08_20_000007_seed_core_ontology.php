@@ -266,7 +266,7 @@ return new class extends Migration
             ['enrollment', 'in_division', 'division', 'from_column' => 'section_id', 'to_column' => 'id', 'cardinality' => 'many_to_one'],
             ['standard', 'teaches', 'subject', 'from_column' => 'id', 'join_table' => 'chapter_master', 'join_from_column' => 'standard_id', 'join_to_column' => 'subject_id', 'to_column' => 'id', 'cardinality' => 'many_to_many'],
             ['subject', 'contains', 'chapter', 'from_column' => 'id', 'to_column' => 'subject_id', 'cardinality' => 'one_to_many', 'in_graph' => true, 'graph_relationship_type' => 'HAS_CHAPTER'],
-            ['chapter', 'contains', 'learning_concept', 'from_column' => 'id', 'to_column' => 'chapter_id', 'cardinality' => 'one_to_many', 'in_graph' => true, 'graph_relationship_type' => 'BELONGS_TO'],
+            ['chapter', 'contains', 'learning_concept', 'from_column' => 'id', 'to_column' => 'chapter_id', 'cardinality' => 'one_to_many', 'in_graph' => true, 'graph_relationship_type' => 'HAS_CONCEPT'],
             ['student', 'attempts', 'assessment', 'from_column' => 'id', 'to_column' => 'student_id', 'cardinality' => 'one_to_many'],
             ['student', 'has_attendance', 'attendance_record', 'from_column' => 'id', 'to_column' => 'student_id', 'cardinality' => 'one_to_many'],
             ['student', 'produced', 'learning_evidence', 'from_column' => 'id', 'to_column' => 'learner_id', 'cardinality' => 'one_to_many'],
