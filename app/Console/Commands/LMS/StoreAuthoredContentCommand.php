@@ -63,6 +63,20 @@ class StoreAuthoredContentCommand extends Command
      */
     private const GENERATED_SOURCES = ['Gamma AI', 'aiGenerated', 'Claude AI'];
 
+    /**
+     * Does this content category render as a slide deck?
+     *
+     * Matched case-insensitively on a substring, because content_master holds
+     * several spellings of the same lane - "Presentation", "Classroom
+     * Presentation", "Teacher training presentation" - and the estate is not
+     * consistent about casing (it holds both "Classroom Presentation" and
+     * "Classroom presentation").
+     */
+    private function isPresentationCategory(string $contentType): bool
+    {
+        return str_contains(strtolower($contentType), 'presentation');
+    }
+
     public function handle(ContentGenerationService $contentGeneration): int
     {
         $chapterId = (int) $this->argument('chapter');
@@ -147,7 +161,11 @@ class StoreAuthoredContentCommand extends Command
 
         $input = [
             'content_type' => $contentType,
-            'is_presentation' => false,
+            // Drives which renderer runs: a presentation becomes an editable
+            // .pptx, everything else a PDF. Derived from the content category
+            // rather than a flag, so a caller cannot store a deck as a document
+            // by forgetting to pass one.
+            'is_presentation' => $this->isPresentationCategory($contentType),
             'chapter' => $chapter,
             'chapter_name' => (string) $chapter->chapter_name,
             'grade_id' => $gradeId,

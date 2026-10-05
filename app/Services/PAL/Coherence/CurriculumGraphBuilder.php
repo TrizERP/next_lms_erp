@@ -89,8 +89,18 @@ class CurriculumGraphBuilder
         // with no curriculum authored yet. Return the shape with nothing in it so
         // the UI shows an empty state rather than a failure.
         if ($chapters === []) {
+            $meta = $this->meta($subInstituteId, $subjectId, $standardId, $syear, $curriculum, false);
+
+            // Why it is empty, not just that it is. "No curriculum" and "curriculum
+            // exists, but not for the year you asked for" look identical to a teacher
+            // and have completely different fixes - the second is an academic-year
+            // selector pointing somewhere the data is not, which is invisible from
+            // this screen. chapter_master on this estate holds 2026 plus a handful of
+            // 2022 rows, so an off-by-one year silently empties the entire map.
+            $meta['available_syears'] = $this->syearsWithChapters($subInstituteId, $subjectId, $standardId);
+
             return [
-                'meta' => $this->meta($subInstituteId, $subjectId, $standardId, $syear, $curriculum, false),
+                'meta' => $meta,
                 'nodes' => [],
                 'edges' => [],
                 'stats' => $this->emptyStats(),
@@ -209,6 +219,32 @@ class CurriculumGraphBuilder
         return $q->orderBy('sort_order')->orderBy('id')->get()->keyBy('id')->all();
     }
 
+    /**
+     * Academic years this subject+grade actually has chapters for.
+     *
+     * Only asked when the requested year returned none, so it costs nothing on the
+     * normal path. Same filters as chapters() minus the year, or it would answer a
+     * different question than the one that just failed.
+     *
+     * @return array<int, int>
+     */
+    private function syearsWithChapters(int $tenant, int $subjectId, int $standardId): array
+    {
+        return DB::table('chapter_master')
+            ->where('sub_institute_id', $tenant)
+            ->where('subject_id', $subjectId)
+            ->where('standard_id', $standardId)
+            ->where(function ($q) {
+                $q->whereNull('show_hide')->orWhere('show_hide', '!=', 'hide');
+            })
+            ->whereNotNull('syear')
+            ->distinct()
+            ->orderByDesc('syear')
+            ->pluck('syear')
+            ->map(static fn ($y): int => (int) $y)
+            ->all();
+    }
+
     /** @return array<int, object> */
     private function units(?int $curriculumId): array
     {
@@ -263,7 +299,22 @@ class CurriculumGraphBuilder
     }
 
     /**
-     * Concept prerequisite edges touching this scope.
+     * Concept prerequisite edges touching this scope, from BOTH stores.
+     *
+     * There are two, and they are not interchangeable:
+     *
+     *   `concept_prerequisite`   the authored map. Written by the curriculum team
+     *                            through `concept:prereq-import`, reviewed before it
+     *                            lands, and the only store that carries real class
+     *                            numbers on the row - so it is also the only one that
+     *                            crosses a grade boundary today.
+     *   `pal_concept_relations`  the machine's suggestions. Every row on this estate
+     *                            is `draft` + `tagged_by=ai`; none have been reviewed.
+     *
+     * Both are read because the screen is a review queue as well as a map: the
+     * authored edges are what a teacher should trust, and the suggestions are what a
+     * curator is there to accept or throw away. They are told apart by `status` and
+     * `source_table`, never by being present or absent.
      *
      * An edge is in scope if EITHER endpoint is, so a prerequisite sitting in a lower
      * grade is found rather than silently dropped. The out-of-scope endpoints come
@@ -279,23 +330,30 @@ class CurriculumGraphBuilder
 
         $inScope = array_flip($conceptIds);
 
-        $rows = DB::table('pal_concept_relations')
-            ->whereIn('sub_institute_id', array_unique([$tenant, 0]))
-            ->where(function ($q) use ($conceptIds) {
-                $q->whereIn('from_concept_id', $conceptIds)
-                    ->orWhereIn('to_concept_id', $conceptIds);
-            })
-            ->get();
+        // The authored rows come first so that where both stores describe the same
+        // link, the one a person wrote wins and the machine's duplicate is dropped
+        // rather than drawn as a second arrow between the same two cards.
+        $candidates = array_merge(
+            $this->expertRelationRows($tenant, $conceptIds),
+            $this->suggestedRelationRows($tenant, $conceptIds)
+        );
 
         $edges = [];
         $offMap = [];
+        $seen = [];
 
-        foreach ($rows as $r) {
-            $dependent = (int) $r->from_concept_id;
-            $prerequisite = (int) $r->to_concept_id;
+        foreach ($candidates as $edge) {
+            $dependent = $edge['_dependent_id'];
+            $prerequisite = $edge['_prerequisite_id'];
 
             // A self-edge is never meaningful and would show as a loop on the node.
             if ($dependent === $prerequisite) {
+                continue;
+            }
+
+            $pair = $prerequisite.'>'.$dependent;
+
+            if (isset($seen[$pair])) {
                 continue;
             }
 
@@ -314,12 +372,92 @@ class CurriculumGraphBuilder
                 $offMap[] = $dependentIn ? $prerequisite : $dependent;
             }
 
+            $seen[$pair] = true;
+
+            unset($edge['_dependent_id'], $edge['_prerequisite_id']);
+            $edges[] = $edge;
+        }
+
+        return [$edges, array_values(array_unique($offMap))];
+    }
+
+    /**
+     * The authored map: `concept_prerequisite`.
+     *
+     * Direction matches the other store - `concept_id` is the LATER concept and
+     * `prerequisite_id` the earlier one - so both normalise into the same shape and
+     * the flip to presentation direction happens once, in presentRelations().
+     *
+     * @return array<int, array>
+     */
+    private function expertRelationRows(int $tenant, array $conceptIds): array
+    {
+        $rows = DB::table('concept_prerequisite')
+            ->whereIn('sub_institute_id', array_unique([$tenant, 0]))
+            ->where(function ($q) use ($conceptIds) {
+                $q->whereIn('concept_id', $conceptIds)
+                    ->orWhereIn('prerequisite_id', $conceptIds);
+            })
+            ->get();
+
+        $edges = [];
+
+        foreach ($rows as $r) {
+            $edges[] = [
+                'id' => 'expert-rel:'.$r->id,
+                // Neither 'concept' nor 'learning': this table has no review workflow
+                // and the PATCH/DELETE routes do not address it. The client reads this
+                // to render the row read-only rather than offering buttons that 404.
+                'source_table' => 'expert',
+                'relation_id' => (int) $r->id,
+                '_dependent_id' => (int) $r->concept_id,
+                '_prerequisite_id' => (int) $r->prerequisite_id,
+                '_dependent' => 'concept:'.(int) $r->concept_id,
+                '_prerequisite' => 'concept:'.(int) $r->prerequisite_id,
+                // Of the four link types only cross_subject is not a step in this
+                // subject's own progression; requires, builds_on and spiral all mean
+                // "earlier than", so they carry the progression axis.
+                'kind' => $r->link_type === 'cross_subject' ? 'cross_curricular' : 'prerequisite',
+                'relation_type' => (string) $r->link_type,
+                'status' => $this->status($r->status),
+                'tagged_by' => (string) ($r->origin ?: 'expert'),
+                // is_gate is a second axis, not a kind: a `requires` that does not gate
+                // still orders the curriculum, it just does not block a learner.
+                'link_type' => $r->is_gate ? 'gate' : null,
+                'confidence' => null,
+                'note' => $r->reason ?: null,
+            ];
+        }
+
+        return $edges;
+    }
+
+    /**
+     * The machine's suggestions: `pal_concept_relations`.
+     *
+     * @return array<int, array>
+     */
+    private function suggestedRelationRows(int $tenant, array $conceptIds): array
+    {
+        $rows = DB::table('pal_concept_relations')
+            ->whereIn('sub_institute_id', array_unique([$tenant, 0]))
+            ->where(function ($q) use ($conceptIds) {
+                $q->whereIn('from_concept_id', $conceptIds)
+                    ->orWhereIn('to_concept_id', $conceptIds);
+            })
+            ->get();
+
+        $edges = [];
+
+        foreach ($rows as $r) {
             $edges[] = [
                 'id' => 'concept-rel:'.$r->id,
                 'source_table' => 'concept',
                 'relation_id' => (int) $r->id,
-                '_dependent' => 'concept:'.$dependent,
-                '_prerequisite' => 'concept:'.$prerequisite,
+                '_dependent_id' => (int) $r->from_concept_id,
+                '_prerequisite_id' => (int) $r->to_concept_id,
+                '_dependent' => 'concept:'.(int) $r->from_concept_id,
+                '_prerequisite' => 'concept:'.(int) $r->to_concept_id,
                 'kind' => $r->relation_type === 'cross_curricular' ? 'cross_curricular' : 'prerequisite',
                 'relation_type' => (string) $r->relation_type,
                 'status' => $this->status($r->quality_status),
@@ -330,7 +468,7 @@ class CurriculumGraphBuilder
             ];
         }
 
-        return [$edges, array_values(array_unique($offMap))];
+        return $edges;
     }
 
     /**
@@ -416,7 +554,7 @@ class CurriculumGraphBuilder
             })
             ->whereIn('c.id', $conceptIds)
             ->select(
-                'c.id', 'c.name', 'c.chapter_id', 'c.standard_id', 'c.subject_id',
+                'c.id', 'c.name', 'c.description', 'c.chapter_id', 'c.standard_id', 'c.subject_id',
                 'ch.chapter_name',
                 DB::raw('s.name as standard_name'),
                 DB::raw('m.display_name as subject_name')
@@ -530,9 +668,17 @@ class CurriculumGraphBuilder
             }
 
             $nodes[$ref] = $this->node($ref, 'concept', (int) $c->id, (string) $c->name, null, 0, [
+                'description' => $c->description ?: null,
                 'chapter_name' => $c->chapter_name ?: null,
                 'standard_name' => $c->standard_name ?: null,
                 'subject_name' => $c->subject_name ?: null,
+                // The ids, not just the names. Without these the client can see that a
+                // prerequisite lives in another grade but cannot open it: names are not
+                // invertible to ids here, because sub_std_map.display_name varies per
+                // grade for the same subject ("Hindi", "Hindi-A", "Hindi-A Vasant-1").
+                // This is what makes re-centring across grades 6-10 possible.
+                'standard_id' => $c->standard_id === null ? null : (int) $c->standard_id,
+                'subject_id' => $c->subject_id === null ? null : (int) $c->subject_id,
             ]);
             $nodes[$ref]['off_map'] = true;
         }

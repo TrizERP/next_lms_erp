@@ -40,12 +40,15 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
             // \Inspector\Laravel\Middleware\WebRequestMonitoring::class,
+            // After StartSession, so a logged-in Blade page is recognised. No-op outside config/api_guard.php.
+            'api.jwt',
         ],
 
         'api' => [
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
              'throttle:1000,1',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            'api.jwt',
             // \Inspector\Laravel\Middleware\WebRequestMonitoring::class,
         ],
     ];
@@ -75,6 +78,7 @@ class Kernel extends HttpKernel
         'jwt' => \GenTux\Jwt\Http\JwtMiddleware::class,
         'check_permissions' =>\App\Http\Middleware\checkPermission::class,
         'api.session' => \App\Http\Middleware\ApiSessionHydrator::class,
+        'api.jwt' => \App\Http\Middleware\RequireApiJwt::class,
         'pal.auth' => \App\Http\Middleware\PalApiAuth::class,
         'lms.auth' => \App\Http\Middleware\LmsApiAuth::class,
         'perm' => \App\Http\Middleware\RequirePermission::class,

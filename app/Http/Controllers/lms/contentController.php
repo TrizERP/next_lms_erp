@@ -1625,10 +1625,15 @@ public function generateGammaPDF(Request $request)
         $format = $isPresentation ? 'presentation' : 'document';
         $exportAs = $isPresentation ? 'pptx' : 'pdf';
         $numCards = (int) $request->input('slide_count', 30);
-        $themeId = env('GAMMA_THEME_ID');
+        // The whitelist this used to inline held seven invented names - simple,
+        // minimal, corporate, creative, bold, elegant, modern - and NOT ONE is a
+        // real Gamma theme id, so it discarded every configured value and every
+        // deck rendered in Gamma's default theme. The ids now live in
+        // config/gamma.php, checked against the live GET /v1.0/themes list.
+        $themeId = env('GAMMA_THEME_ID', config('gamma.default_theme'));
 
-        $validThemes = ['simple', 'minimal', 'corporate', 'creative', 'bold', 'elegant', 'modern'];
-        if (empty($themeId) || !in_array($themeId, $validThemes)) {
+        $validThemes = (array) config('gamma.themes', []);
+        if (empty($themeId) || !in_array($themeId, $validThemes, true)) {
             $themeId = null;
         }
 

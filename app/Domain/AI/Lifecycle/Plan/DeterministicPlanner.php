@@ -205,6 +205,9 @@ class DeterministicPlanner implements Planner
             // plan() still declines the route entirely where the module has no agent.
             'fees_risk_scan' => 'agent_runner',
             'attendance_risk_scan' => 'agent_runner',
+            // And admissions, on the same route and the same guard. Which agent runs is
+            // the module's binding: asked on Admissions it is `k12_admissions`.
+            'admission_followup_scan' => 'agent_runner',
             'student_risk_explain' => 'stored_case_read',
             'evidence_inspect' => 'stored_evidence_read',
             'recommendation_advice' => 'stored_recommendation_read',
@@ -271,6 +274,8 @@ class DeterministicPlanner implements Planner
                 . 'collection review to a person.',
             'attendance_risk_scan' => 'Find who is attending below the school bar, evidence it from the '
                 . 'marked register, and put a follow-up to a person.',
+            'admission_followup_scan' => 'Find the enquiries past the follow-up date the school recorded '
+                . 'for them, evidence it from that date, and put a follow-up to a person.',
             default => $label,
         };
     }
@@ -353,6 +358,15 @@ class DeterministicPlanner implements Planner
                 ['analyse', 'Open a case for each student below the bar, citing the days they were absent.'],
                 ['recommend', 'Draft an attendance follow-up for each case.'],
                 ['report', 'Return who is attending least, and what is now waiting for approval.'],
+            ],
+            // The same four rungs over the enquiry records. The wording of `detect`
+            // matters: an enquiry with no follow-up date recorded is not an enquiry the
+            // school is late on, and the agent counts those apart rather than with.
+            'admission_followup_scan' => [
+                ['detect', 'Read the open enquiries and the follow-up date recorded on each.'],
+                ['analyse', 'Open a case for each enquiry past its own recorded date, citing that date.'],
+                ['recommend', 'Draft an admission follow-up for each case.'],
+                ['report', 'Return which families are waiting, and what is now waiting for approval.'],
             ],
             // `fees_query` is intentionally not deterministic. The classifier recognises
             // that a question belongs to the fees module, but the exact MCP tool depends

@@ -368,6 +368,235 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | PAL Learn — "Learn this concept visually" web image search
+    |--------------------------------------------------------------------------
+    |
+    | Unlike `video` above, there is no draft/review gate here: an image shown
+    | on the Learn page is picked and served in the same request, to the
+    | student who asked for it. That is a deliberate difference from CONTENT
+    | LAW C4/C5 (only a human may publish a video), not an oversight — the
+    | image is illustrative context for a concept name/chapter that a teacher
+    | has already put in front of students via the syllabus itself, the same
+    | trust boundary a Google/Bing image search box would have. See
+    | ConceptImageSearchService.
+    |
+    | Openverse (openverse.org, run by WordPress/Automattic) needs no API key
+    | for search at this volume and returns only openly-licensed images with
+    | real attribution metadata, which is what makes it usable here at all —
+    | an arbitrary image-search API would return copyrighted results with no
+    | license the app could show a student it came from.
+    */
+    'image' => [
+        'enabled' => env('PAL_IMAGE_ENABLED', true),
+
+        'external' => [
+            'enabled'  => env('PAL_IMAGE_EXTERNAL_ENABLED', true),
+            'endpoint' => env('OPENVERSE_ENDPOINT', 'https://api.openverse.org/v1/images/'),
+
+            // Openverse client credentials are optional (raises the anonymous
+            // rate limit; search itself needs none) — see
+            // ConceptImageSearchService::accessToken().
+            'client_id'     => env('OPENVERSE_CLIENT_ID'),
+            'client_secret' => env('OPENVERSE_CLIENT_SECRET'),
+
+            // Restricting to Wikimedia Commons trades some coverage for a
+            // large jump in relevance — verified live against Flickr, which
+            // dominates Openverse's overall volume with personal/travel
+            // photography whose per-photo tag folksonomy produces false
+            // keyword matches on abstract topic words. Empty string searches
+            // every source Openverse indexes.
+            'source' => env('OPENVERSE_SOURCE', 'wikimedia'),
+
+            'max_results' => 12,
+            'timeout'     => 6,
+
+            // Broadest license set that still guarantees free reuse — nothing
+            // ND (no-derivatives) is excluded because the point of the filter
+            // is "usable", not "every possible license".
+            'license_type' => 'commercial,modification',
+
+            'min_width'  => 200,
+            'min_height' => 200,
+
+            // How many ranked candidates to URL-check before giving up and
+            // falling back — see ConceptImageSearchService::pickBest().
+            'candidates_to_verify' => 3,
+
+            // The relevance floor a candidate must clear to be shown at all,
+            // set deliberately conservative. Verified live across a sample of
+            // real PAL concepts: at 2.0 (two real keyword hits) roughly a
+            // third of "matches" were still wrong — two genuine query words
+            // coinciding in an unrelated Wikimedia title/description ("Area
+            // space" hitting "Living area space panorama"; "Division inverse"
+            // hitting "Italian Division Bell, inverse"). At 3.0, every wrong
+            // match in that same sample was correctly rejected, at the cost
+            // of a much lower hit rate — most concepts fall back to the
+            // rule-based journey rather than show a web image. That is the
+            // honest ceiling of keyword matching against a general-purpose
+            // encyclopedia corpus without an actual relevance model, and
+            // "fails to a fine fallback" is a far better failure mode here
+            // than "confidently shows the wrong picture".
+            'min_score' => 3.0,
+
+            'cache_hours' => 720,
+        ],
+
+        // Titles/tags that mark a result as decoration rather than teaching
+        // material — logos, icons, memes, ads, stock-photo filler. Lower-cased
+        // substring match against the candidate's own title/tags/creator, not
+        // a closed vocabulary, so a new junk pattern is one line to add.
+        'exclude_keywords' => [
+            'logo', 'icon set', 'meme', 'advertisement', 'advert', 'banner ad',
+            'screenshot', 'wallpaper', 'clipart border', 'watermark',
+        ],
+
+        // Rewarded when present in a candidate's title/tags — the visual
+        // vocabulary of an actual teaching diagram, not a photo of the topic.
+        'prefer_keywords' => [
+            'diagram', 'illustration', 'infographic', 'chart', 'graphic',
+            'educational', 'worksheet', 'schematic',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | PAL Journey — the image-based "Your Journey" map
+    |--------------------------------------------------------------------------
+    |
+    | The same Openverse pipeline as `image` above, driven once per journey
+    | STAGE rather than once per concept: the frontend's image map needs a
+    | picture for Chapter diagnostic, Concept diagnostic, Plan, Learn,
+    | Practice, Feedback, Check, Extra support, Mastery and Recall — ten
+    | nodes, not one. See JourneyImageService.
+    |
+    | There is no per-subject or per-chapter configuration here on purpose.
+    | Nothing below names a subject, a chapter or a concept; the only words
+    | this estate authors are the STAGE words, and those describe what the
+    | step IS (a marked quiz paper, a study plan, a marked worksheet). The
+    | subject/chapter/concept vocabulary is joined onto them at request time
+    | from `lms_concept` / `chapter_master` / `subject`, so a new subject
+    | or chapter needs no change anywhere.
+    |
+    | These are search terms, not images. No URL is hardcoded, and no term is
+    | subject-specific — that is what keeps the map working for every chapter
+    | on the estate rather than only the one it was written for.
+    */
+    'journey_image' => [
+        'enabled' => env('PAL_JOURNEY_IMAGE_ENABLED', true),
+
+        // The whole ten-node map is cached as one payload, so a learner pays
+        // for at most this many searches per (chapter, concept) pair — after
+        // which every visit, on every device, is a cache read. Individually
+        // cached queries inside ConceptImageSearchService mean a map rebuilt
+        // months later still only searches what genuinely changed.
+        'cache_hours' => env('PAL_JOURNEY_IMAGE_CACHE_HOURS', 1440),
+
+        // Search terms tried per stage before falling back to the chapter's
+        // own image. Kept as ONE authored term per stage on purpose: the map
+        // has TEN stages and one budget between them, and the query built from
+        // it is tried twice (topic-anchored, then stage-alone) — so every stage
+        // gets two real attempts before any stage gets a third.
+        'terms_per_stage' => 1,
+
+        // Wall-clock ceiling on building the whole map, and a cap on how many
+        // stage lookups it may make.
+        //
+        // Both exist because the real cost is not "ten stages" — it is twenty
+        // lookups, each of which verifies up to three candidate URLs with a HEAD
+        // request. The per-query variant count is capped in
+        // ConceptImageSearchService::bestImageFor($query, 1); this is the outer
+        // belt to that braces, because a slow provider can still eat seconds per
+        // call.
+        //
+        // A stage the budget never reached is not an error and not a gap: it
+        // falls back to the chapter's own searched image and reports
+        // `match: 'chapter'`, which the frontend states in words rather than
+        // implying the picture depicts that step. A map that is complete, with
+        // a few honest stand-ins, beats a map that is sharper but never
+        // finishes loading.
+        'build_time_budget_seconds' => 8,
+        'max_stage_lookups' => 24,
+
+        // How many words of the concept/chapter name, and of the subject name,
+        // are joined onto a stage term. The chapter is the anchor (it is what
+        // makes two different chapters' maps differ); the subject is one word
+        // of disambiguator only, because a long subject name ("English
+        // Language and Literature") crowds the stage term out of the query.
+        'chapter_words' => 3,
+        'subject_words' => 1,
+
+        // THE STAGE GATE — the reason a node may claim to show its own step.
+        //
+        // `min_score` here is deliberately far below `image.external.min_score`
+        // (3.0). The two are answering different questions, and holding the
+        // journey map to the Learn page's floor was verified live to be wrong:
+        // on a Wikimedia-only index it rejects nearly every stage picture, and
+        // all ten nodes silently collapse into one chapter photo - a map that
+        // looks finished and teaches nothing.
+        //
+        // 1.0 is one genuine keyword hit against the candidate's own
+        // title/tags, which is a floor, not a guarantee. The guarantee is
+        // `require_stage_word` below: the picture's own metadata must contain
+        // a word from the stage term ("worksheet", "flashcards", "badge"), so a
+        // node is only labelled with a stage when the file is actually named
+        // after that stage. Set it false and the floor is all that stands
+        // between a learner and a confidently wrong picture.
+        'min_score' => 1.0,
+        'require_stage_word' => true,
+
+        // Which Openverse sources the stage search may draw from. Empty string
+        // means "all of them", which is the opposite of the Learn page's
+        // `wikimedia` restriction and is deliberate.
+        //
+        // Verified live: Wikimedia-only, "memory flashcards" returns NOTHING.
+        // It indexes encyclopedia diagrams and historical scans, not the
+        // everyday photography of a child holding flashcards — which is
+        // exactly what a Recall node needs to show. Widening the corpus is only
+        // safe because `require_stage_word` and the topic gate then filter every
+        // result twice over: it must be named after the step AND on-topic for
+        // this learner's chapter.
+        'source' => env('PAL_JOURNEY_IMAGE_SOURCE', ''),
+
+        // The stage words. Order matters — the first term is tried first, so
+        // put the most literal depiction of the step at the top. These are
+        // deliberately visual and generic: they describe the activity ("a
+        // marked worksheet"), never the curriculum.
+        'stages' => [
+            'diagnostic' => [
+                'quiz paper marked', 'exam paper answers', 'test paper pencil',
+            ],
+            'adaptive' => [
+                'multiple choice question sheet', 'quiz questions pencil', 'answer sheet',
+            ],
+            'plan' => [
+                'study plan notebook', 'revision timetable chart', 'learning plan checklist',
+            ],
+            'learn' => [
+                'open book reading', 'textbook lesson page', 'student reading book',
+            ],
+            'practice' => [
+                'exercise worksheet', 'maths practice sums', 'drill sheet exercises',
+            ],
+            'feedback' => [
+                'marked report card', 'teacher marking work', 'corrected paper comments',
+            ],
+            'check' => [
+                'short quiz test', 'quick check questions', 'revision test paper',
+            ],
+            'intervention' => [
+                'extra learning support', 'one to one teaching help', 'tutoring support lesson',
+            ],
+            'mastery' => [
+                'achievement badge', 'star rating success', 'prize certificate school',
+            ],
+            'recall' => [
+                'memory flashcards', 'revision memory cards', 'flash card revision',
+            ],
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | QA pipeline — spec §7.1
     |--------------------------------------------------------------------------
     |

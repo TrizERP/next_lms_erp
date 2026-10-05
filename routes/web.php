@@ -248,6 +248,12 @@ Route::get('/', function (Request $request) {
     }
 })->name('home');
 
+// Redeems a mobile web-handoff ticket and starts a real browser session.
+// Intentionally outside the `session` middleware group: that middleware
+// redirects anyone without a session to the login page, and arriving here
+// without one is the whole point. See MobileWebBridgeController.
+Route::get('/mobile-bridge/enter', [\App\Http\Controllers\MobileWebBridgeController::class, 'enter'])->name('mobile.bridge.enter');
+
 //PAYROLL SYSTEM
 Route::group([ 'middleware' => ['session', 'menu', 'logRoute','check_permissions']], function () {
     

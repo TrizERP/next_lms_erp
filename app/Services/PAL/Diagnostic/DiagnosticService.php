@@ -312,7 +312,60 @@ class DiagnosticService
             ])->save();
         });
 
-        return $this->result($attempt->refresh());
+        $attempt->refresh();
+
+        // Wrong diagnostic answers never reached MisconceptionLibraryService
+        // before this - only wrong adaptive/practice answers did (see
+        // PracticeOutcomeService::detect()). Called once, after the
+        // transaction commits: isSubmitted() above means submit() can never
+        // re-run for this attempt, so this can never double-fire on a
+        // resubmit or a resumed GET, the same guarantee detect()'s own
+        // "only NEW wrong answers" comment is protecting.
+        $this->detectMisconceptions($attempt);
+
+        return $this->result($attempt);
+    }
+
+    /**
+     * Route correctives for every wrong answer on a just-submitted paper.
+     *
+     * Unlike PracticeOutcomeService::detect(), which stops at the first hit
+     * because one practice set targets a single concept, this does not stop
+     * early: the diagnostic spans the whole chapter, so two wrong answers can
+     * genuinely belong to two different concepts, and each deserves its own
+     * routed corrective for that concept's Learn screen
+     * (palController::learnContent() reads whatever this routes, via
+     * LearnerContentExposure - see the note there).
+     */
+    private function detectMisconceptions(DiagnosticAttempt $attempt): void
+    {
+        $wrong = $attempt->responses()
+            ->whereNotNull('answer_master_id')
+            ->where('is_correct', 0)
+            ->get(['question_id', 'answer_master_id']);
+
+        if ($wrong->isEmpty()) {
+            return;
+        }
+
+        $service = app(\App\Services\PAL\Content\MisconceptionLibraryService::class);
+
+        foreach ($wrong as $response) {
+            try {
+                $service->detectAndRoute(
+                    (int) $attempt->student_id,
+                    (int) $response->question_id,
+                    (int) $response->answer_master_id,
+                    (int) $attempt->sub_institute_id
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('PAL diagnostic misconception routing failed', [
+                    'student_id' => $attempt->student_id,
+                    'question_id' => $response->question_id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
     }
 
     /**
@@ -325,13 +378,18 @@ class DiagnosticService
      */
     public function result(DiagnosticAttempt $attempt): array
     {
+        // Always fetched now, not just on the legacy-row fallback path below:
+        // questionResults() needs the individual rows regardless of whether the
+        // persisted breakdowns are already populated. Fifteen rows by indexed
+        // attempt_id, so the extra query on the common path is negligible.
+        $responses = $attempt->responses()->get();
+
         $difficulty = $attempt->difficulty_breakdown;
         $concepts = $attempt->concept_breakdown;
 
         if (empty($difficulty) || empty($concepts)) {
-            $scored = $attempt->responses()->get();
-            $difficulty = $difficulty ?: $this->scorer->difficultyBreakdown($scored);
-            $concepts = $concepts ?: $this->conceptBreakdown($scored);
+            $difficulty = $difficulty ?: $this->scorer->difficultyBreakdown($responses);
+            $concepts = $concepts ?: $this->conceptBreakdown($responses);
         }
 
         $level = $attempt->level ?: $this->scorer->level((float) $attempt->percentage);
@@ -359,6 +417,11 @@ class DiagnosticService
             'concept_breakdown' => $concepts,
             'strengths' => array_slice($strengths, 0, 5),
             'weaknesses' => array_slice($weaknesses, 0, 5),
+            // Named distinctly from start()'s `questions` (the served paper,
+            // title + options, no verdict) — this is the post-submission
+            // question-by-question review (verdict, no options), a different
+            // shape entirely, and the two must never be confused.
+            'question_results' => $this->questionResults($responses),
             'recommended_difficulty' => $baseline['difficulty'],
             'recommended_reason' => $baseline['reason'],
             'selection_report' => $attempt->selection_report ?: [],
@@ -392,6 +455,85 @@ class DiagnosticService
             ->all();
 
         return $this->scorer->conceptBreakdown($responses, $conceptNames, $chapterNames);
+    }
+
+    /**
+     * Per-question correct/incorrect, for the result screen's question-by-
+     * question review — the "Correct/incorrect questions" requirement, which
+     * the aggregate totals and the per-band/per-concept breakdowns above don't
+     * cover on their own.
+     *
+     * Now carries the full answer key too — every option, which one the
+     * learner chose, which one was correct, and the correct option's stored
+     * feedback text as an explanation. That boundary (see
+     * `ServableQuestions::hydrate()`'s own rule) is about the LIVE paper,
+     * answered before the attempt is scored; this method only ever runs
+     * after `submit()` has already closed the attempt out, so there is
+     * nothing left to protect by withholding it here — a review screen is
+     * exactly what a submitted paper's answer key is for.
+     *
+     * @param  iterable<object>  $responses
+     * @return array<int,array<string,mixed>>
+     */
+    private function questionResults(iterable $responses): array
+    {
+        $responses = collect($responses);
+
+        if ($responses->isEmpty()) {
+            return [];
+        }
+
+        $questionIds = $responses->pluck('question_id')->unique()->all();
+
+        $titles = DB::table('lms_question_master')
+            ->whereIn('id', $questionIds)
+            ->pluck('question_title', 'id');
+
+        $conceptIds = $responses->pluck('concept_id_snapshot')->filter()->unique()->values()->all();
+        $conceptNames = $conceptIds === [] ? [] : DB::table('lms_concept')
+            ->whereIn('id', $conceptIds)
+            ->pluck('name', 'id')
+            ->all();
+
+        // Every option for every question this attempt served, grouped by
+        // question_id — the review screen's answer key. Re-queried here
+        // rather than reused from whatever built the paper, because the
+        // attempt is long finished by the time result() runs and nothing
+        // keeps that array around.
+        $options = DB::table('answer_master')
+            ->whereIn('question_id', $questionIds)
+            ->get(['id', 'question_id', 'answer', 'correct_answer', 'feedback'])
+            ->groupBy('question_id');
+
+        return $responses->map(function ($row) use ($titles, $conceptNames, $options) {
+            $conceptId = $row->concept_id_snapshot !== null ? (int) $row->concept_id_snapshot : null;
+            $rowOptions = $options->get($row->question_id, collect());
+            $correctOption = $rowOptions->first(fn ($option) => (int) $option->correct_answer === 1);
+
+            return [
+                'sequence' => (int) $row->sequence,
+                'question_id' => (int) $row->question_id,
+                'title' => $titles[$row->question_id] ?? null,
+                'difficulty' => $row->difficulty_served,
+                'concept_id' => $conceptId,
+                'concept_name' => $conceptId !== null ? ($conceptNames[$conceptId] ?? null) : null,
+                'answered' => $row->answer_master_id !== null,
+                // null (not false) when unanswered — an unanswered question is
+                // neither right nor wrong, same distinction totals() makes.
+                'is_correct' => $row->answer_master_id !== null ? (bool) $row->is_correct : null,
+                'options' => $rowOptions->map(fn ($option) => [
+                    'id' => (int) $option->id,
+                    'answer' => $option->answer,
+                ])->values()->all(),
+                'selected_option_id' => $row->answer_master_id !== null ? (int) $row->answer_master_id : null,
+                'correct_option_id' => $correctOption !== null ? (int) $correctOption->id : null,
+                // Populated for a small minority of rows today, and often
+                // just restates the verdict ("Correct") rather than
+                // explaining it — shown only when genuinely present, never
+                // as an empty placeholder.
+                'explanation' => $correctOption !== null && $correctOption->feedback ? $correctOption->feedback : null,
+            ];
+        })->values()->all();
     }
 
     /** @return array{attempt_id: null, questions: array, selection_report: array, reason: string} */

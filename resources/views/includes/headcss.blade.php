@@ -135,4 +135,49 @@
         gtag('config', 'UA-153077517-1');
     </script> -->
   
+@if(\App\Helpers\is_mobile_embed())
+{{-- Rendered inside the mobile app's WebView. header.blade.php and
+     sideNavigation.blade.php already skip the topbar, breadcrumbs and
+     sidebar; this undoes the space the stylesheet reserves for them
+     (#content carries a 70-84px top padding for the fixed header, and the
+     sidebar is position:fixed with the body translated clear of it).
+
+     The display:none rules are belt and braces, for a page that renders its
+     own copy of the chrome instead of using the shared includes. --}}
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style type="text/css">
+    header.navbar,
+    aside.left-sidebar,
+    .right-sidebar,
+    nav[aria-label="breadcrumb"],
+    .collapse-btn {
+        display: none !important;
+    }
+
+    body.fix-header,
+    #content {
+        padding-top: 0 !important;
+        margin-left: 0 !important;
+        transform: none !important;
+    }
+
+    #page-wrapper {
+        margin-left: 0 !important;
+        padding-top: 0 !important;
+    }
+
+    .container-fluid {
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    /* Wide ERP tables are the usual reason a page is unusable on a phone;
+       let them scroll sideways instead of forcing the page to. */
+    .table-responsive {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+    }
+</style>
+@endif
+
 </head>

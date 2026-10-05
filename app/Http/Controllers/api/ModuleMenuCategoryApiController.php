@@ -106,7 +106,12 @@ class ModuleMenuCategoryApiController extends AbstractMenuCategoryApiController
             ->where('c.status', 1)
             ->orderBy('c.module_name')
             ->orderBy('c.sort_order')
-            ->get(['c.module_name', 'c.level2_menu_id', 'c.route', 'm.name as label']);
+            // `m.link` is the level-2 menu's legacy route name. It is carried
+            // because it is one of the three inputs the frontend's Intelligence
+            // matcher reads — label, link, and the module's own screen routes —
+            // and without it a module whose label alone is ambiguous resolves to
+            // no Intelligence at all.
+            ->get(['c.module_name', 'c.level2_menu_id', 'c.route', 'm.name as label', 'm.link as link']);
 
         $modules = [];
 
@@ -118,6 +123,7 @@ class ModuleMenuCategoryApiController extends AbstractMenuCategoryApiController
                     'module_name' => $moduleName,
                     'level2_menu_id' => $row->level2_menu_id === null ? null : (int) $row->level2_menu_id,
                     'label' => (string) ($row->label ?? ''),
+                    'link' => (string) ($row->link ?? ''),
                     'category_count' => 0,
                     'routes' => [],
                     'bases' => [],
@@ -157,6 +163,7 @@ class ModuleMenuCategoryApiController extends AbstractMenuCategoryApiController
                 'module_name' => $module['module_name'],
                 'level2_menu_id' => $module['level2_menu_id'],
                 'label' => $module['label'],
+                'link' => $module['link'],
                 'category_count' => $module['category_count'],
                 'base_route' => (string) (array_key_first($bases) ?? ''),
                 'routes' => array_values(array_unique($module['routes'])),

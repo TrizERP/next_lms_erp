@@ -50,4 +50,9 @@ class ResponseLog extends Model
     {
         return $query->where('concept_id', $conceptId);
     }
+
+    public function scopeForNode($query, int $nodeId)
+    {
+        return $query->where('node_id', $nodeId);
+    }
 }

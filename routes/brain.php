@@ -1,8 +1,34 @@
 <?php
 
+use App\Http\Controllers\Brain\BrainAcademicIntelligenceController;
+use App\Http\Controllers\Brain\BrainAdmissionsIntelligenceController;
+use App\Http\Controllers\Brain\BrainAttendanceIntelligenceController;
+use App\Http\Controllers\Brain\BrainCapabilityIntelligenceController;
+use App\Http\Controllers\Brain\BrainCommunicationIntelligenceController;
 use App\Http\Controllers\Brain\BrainController;
+use App\Http\Controllers\Brain\BrainCorrespondenceIntelligenceController;
 use App\Http\Controllers\Brain\BrainFeesIntelligenceController;
+use App\Http\Controllers\Brain\BrainHomeworkIntelligenceController;
+use App\Http\Controllers\Brain\BrainHostelIntelligenceController;
+use App\Http\Controllers\Brain\BrainHrIntelligenceController;
 use App\Http\Controllers\Brain\BrainIntelligenceController;
+use App\Http\Controllers\Brain\BrainIntelligenceIntegrationController;
+use App\Http\Controllers\Brain\BrainInventoryIntelligenceController;
+use App\Http\Controllers\Brain\BrainLibraryIntelligenceController;
+use App\Http\Controllers\Brain\BrainLmsActivityIntelligenceController;
+use App\Http\Controllers\Brain\BrainOrganizationIntelligenceController;
+use App\Http\Controllers\Brain\BrainConsentIntelligenceController;
+use App\Http\Controllers\Brain\BrainDocumentTemplateIntelligenceController;
+use App\Http\Controllers\Brain\BrainPettyCashIntelligenceController;
+use App\Http\Controllers\Brain\BrainPtmIntelligenceController;
+use App\Http\Controllers\Brain\BrainResultIntelligenceController;
+use App\Http\Controllers\Brain\BrainStaffAttendanceIntelligenceController;
+use App\Http\Controllers\Brain\BrainStudentIntelligenceController;
+use App\Http\Controllers\Brain\BrainTalentIntelligenceController;
+use App\Http\Controllers\Brain\BrainTaskIntelligenceController;
+use App\Http\Controllers\Brain\BrainTeachLearnIntelligenceController;
+use App\Http\Controllers\Brain\BrainTransportIntelligenceController;
+use App\Http\Controllers\Brain\BrainVisitorIntelligenceController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -52,12 +78,6 @@ Route::middleware(['brain.auth', 'brain.tenant'])->group(function () {
         // Intelligence loop — the real pipeline over vivek_erp.
         Route::get('intelligence', [BrainIntelligenceController::class, 'intelligence'])->middleware('brain.permission:read');
         Route::post('intelligence/run', [BrainIntelligenceController::class, 'intelligenceRun'])->middleware('brain.permission:create');
-
-        // The same loop narrowed to one module, for that module's own
-        // Intelligence tab. Placed before 'intelligence/{anything}' routes would
-        // be, and named by module rather than taking a query parameter, so the
-        // scope is part of the address a screen links to.
-        Route::get('modules/{module}/intelligence', [BrainIntelligenceController::class, 'moduleIntelligence'])->middleware('brain.permission:read');
         Route::get('signals', [BrainIntelligenceController::class, 'signals'])->middleware('brain.permission:read');
         Route::get('signals/{id}', [BrainIntelligenceController::class, 'signalShow'])->middleware('brain.permission:read');
         Route::get('recommendations', [BrainIntelligenceController::class, 'recommendations'])->middleware('brain.permission:read');
@@ -84,6 +104,102 @@ Route::middleware(['brain.auth', 'brain.tenant'])->group(function () {
         Route::get('fees/intelligence', [BrainFeesIntelligenceController::class, 'index'])->middleware('brain.permission:read');
         Route::post('fees/intelligence/run', [BrainFeesIntelligenceController::class, 'run'])->middleware('brain.permission:create');
         Route::get('fees/accounts', [BrainFeesIntelligenceController::class, 'accounts'])->middleware('brain.permission:read');
+
+        /*
+         * The fourteen module Intelligence endpoints. Unlike the Fees endpoint
+         * above, these emit the canonical ModuleIntelligencePayload directly, so
+         * their frontend contracts need no adapter.
+         *
+         * Each has a `run` counterpart that writes its findings into the signal
+         * ledger through ModuleSignalBridge, which is what gives them
+         * recommendations, a decision trail and a learning memory. `run` is
+         * idempotent — SignalWriter dedupes on (tenant, rule, year) — so pressing
+         * it twice refreshes the same signals rather than duplicating them.
+         *
+         * Decisions and outcomes are NOT duplicated per module: a module
+         * recommendation is decided through `recommendations/{id}/decide` and
+         * reported through `executions/{id}/complete` above, the same two writes
+         * every other recommendation in the system goes through.
+         */
+        Route::get('result/intelligence', [BrainResultIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+
+        /*
+         * Four modules that previously answered "The Brain does not watch this
+         * menu". Each emits the canonical ModuleIntelligencePayload directly, so
+         * each frontend contract is presentation only with no adapter.
+         *
+         * None declares a `run` counterpart: their findings are computed per
+         * request rather than written to the signal ledger, and a button that
+         * recomputed nothing would misdescribe what the endpoint does.
+         */
+        Route::get('petty-cash/intelligence', [BrainPettyCashIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::get('document-templates/intelligence', [BrainDocumentTemplateIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::get('ptm/intelligence', [BrainPtmIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::get('consent/intelligence', [BrainConsentIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('result/intelligence/run', [BrainResultIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('attendance/intelligence', [BrainAttendanceIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('attendance/intelligence/run', [BrainAttendanceIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('student/intelligence', [BrainStudentIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('student/intelligence/run', [BrainStudentIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('transport/intelligence', [BrainTransportIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('transport/intelligence/run', [BrainTransportIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('library/intelligence', [BrainLibraryIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('library/intelligence/run', [BrainLibraryIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('academic/intelligence', [BrainAcademicIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('academic/intelligence/run', [BrainAcademicIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('hr/intelligence', [BrainHrIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('hr/intelligence/run', [BrainHrIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('communication/intelligence', [BrainCommunicationIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('communication/intelligence/run', [BrainCommunicationIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('homework/intelligence', [BrainHomeworkIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('homework/intelligence/run', [BrainHomeworkIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('admissions/intelligence', [BrainAdmissionsIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('admissions/intelligence/run', [BrainAdmissionsIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('inventory/intelligence', [BrainInventoryIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('inventory/intelligence/run', [BrainInventoryIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('hostel/intelligence', [BrainHostelIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('hostel/intelligence/run', [BrainHostelIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('visitor/intelligence', [BrainVisitorIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('visitor/intelligence/run', [BrainVisitorIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('correspondence/intelligence', [BrainCorrespondenceIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('correspondence/intelligence/run', [BrainCorrespondenceIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('teach-learn/intelligence', [BrainTeachLearnIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('teach-learn/intelligence/run', [BrainTeachLearnIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+
+        /*
+         * The six People & Competency module Intelligence endpoints, added
+         * alongside the fourteen above and following the same shape: each emits
+         * the canonical ModuleIntelligencePayload directly and has a `run`
+         * counterpart that writes its findings into the signal ledger through
+         * ModuleSignalBridge.
+         *
+         * 'staff-attendance' is deliberately distinct from the pupil-register
+         * 'attendance' key above — it covers staff biometric/punch data, not
+         * the student attendance register.
+         */
+        Route::get('organization/intelligence', [BrainOrganizationIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('organization/intelligence/run', [BrainOrganizationIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('task-management/intelligence', [BrainTaskIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('task-management/intelligence/run', [BrainTaskIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('talent/intelligence', [BrainTalentIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('talent/intelligence/run', [BrainTalentIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('capability/intelligence', [BrainCapabilityIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('capability/intelligence/run', [BrainCapabilityIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('staff-attendance/intelligence', [BrainStaffAttendanceIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('staff-attendance/intelligence/run', [BrainStaffAttendanceIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+        Route::get('lms-activity/intelligence', [BrainLmsActivityIntelligenceController::class, 'index'])->middleware('brain.permission:read');
+        Route::post('lms-activity/intelligence/run', [BrainLmsActivityIntelligenceController::class, 'run'])->middleware('brain.permission:create');
+
+        /*
+         * Cross-Module Integration & Cross-Module Workflows.
+         * Real data integration relationships and multi-module workflow execution across all modules.
+         */
+        Route::get('{module}/integration', [BrainIntelligenceIntegrationController::class, 'getIntegration'])->middleware('brain.permission:read');
+        Route::get('modules/{module}/integration', [BrainIntelligenceIntegrationController::class, 'getIntegration'])->middleware('brain.permission:read');
+        Route::get('{module}/workflows', [BrainIntelligenceIntegrationController::class, 'getWorkflows'])->middleware('brain.permission:read');
+        Route::get('modules/{module}/workflows', [BrainIntelligenceIntegrationController::class, 'getWorkflows'])->middleware('brain.permission:read');
+        Route::post('{module}/workflows/{flowKey}/trigger', [BrainIntelligenceIntegrationController::class, 'triggerWorkflow'])->middleware('brain.permission:create');
+        Route::post('modules/{module}/workflows/{flowKey}/trigger', [BrainIntelligenceIntegrationController::class, 'triggerWorkflow'])->middleware('brain.permission:create');
 
         // Executive intelligence: health, what changed, what is at risk, what to do.
         Route::get('executive', [BrainIntelligenceController::class, 'executive'])->middleware('brain.permission:read');

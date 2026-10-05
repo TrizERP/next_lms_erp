@@ -14,12 +14,15 @@ use App\Models\PAL\ConceptRelation;
 use App\Models\PAL\MisconceptionLibrary;
 use App\Models\PAL\QuestionMetadata;
 use App\Services\Eso\EsoConceptVideoResolver;
+use App\Services\PAL\Coherence\CoherenceMapRepository;
 use App\Services\PAL\Content\MisconceptionLibraryService;
 use App\Services\PAL\Flow\EsoFlowResolver;
 use App\Services\PAL\Gamification\BadgeService;
 use App\Services\PAL\Gamification\StreakService;
 use App\Services\PAL\Runtime\PalEvidenceRepository;
 use Illuminate\Support\Collection;
+use App\Services\PAL\Questions\McqPool;
+use App\Services\PAL\Questions\PalQuestionForms;
 use App\Services\PAL\Questions\ServableQuestions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -81,6 +84,15 @@ class EsoPolicyService implements EsoFlowPort
 
     /** D5 — brief specifies "2-3 items". */
     public const RETRIEVAL_ITEM_COUNT = 3;
+
+    /**
+     * How many of the student's most recent retrieval-check questions for a
+     * node are excluded from the next set, so a small item pool doesn't just
+     * repeat itself review after review. Soft: if excluding them would leave
+     * too few candidates, they're allowed back in rather than starving the
+     * check — same posture as DiagnosticQuestionSelector::recentQuestionIds().
+     */
+    public const RETRIEVAL_RECENCY_LOOKBACK = 6;
 
     /**
      * How many questions the Check-For-Understanding gate serves between
@@ -232,6 +244,7 @@ class EsoPolicyService implements EsoFlowPort
         protected EsoConceptVideoResolver $videos,
         protected EsoEvidenceBridge $evidenceBridge,
         protected EsoEnrichmentResolver $enrichment,
+        protected CoherenceMapRepository $coherenceMap,
     ) {
     }
 
@@ -661,7 +674,17 @@ class EsoPolicyService implements EsoFlowPort
             // hydrateQuestion() itself enforces answerable options and a marked answer.
             $hydrated = $this->hydrateQuestion((int) $questionId);
             if ($hydrated !== null && $hydrated['options'] !== []) {
-                return array_merge($hydrated, ['node_id' => $nodeId]);
+                // Practice, unlike CFU, is not narrowed to MCQ (see
+                // mcqQuestionIdsQuery()'s docblock) - it can genuinely serve
+                // an assertion & reason, CBE, or ncert-solution item, which
+                // hydrate()'s plain question_type label can't distinguish
+                // from one another. question_type_code reuses the exact
+                // classification ladder PAL Test already runs
+                // (PalQuestionForms::describe()) so the client's
+                // mappingForQuestion() can pick the right H5P-style player.
+                $code = (new PalQuestionForms())->describe([(int) $questionId])[(int) $questionId]['question_type_code'] ?? null;
+
+                return array_merge($hydrated, ['node_id' => $nodeId, 'question_type_code' => $code]);
             }
         }
 
@@ -802,6 +825,24 @@ class EsoPolicyService implements EsoFlowPort
     protected function hydrateQuestion(int $questionId): ?array
     {
         return ServableQuestions::hydrate($questionId);
+    }
+
+    /**
+     * Subquery of lms_question_master ids typed MCQ — composed onto a
+     * QuestionMetadata query with whereIn('question_id', ...) at the two call
+     * sites the product owner scoped this to: checkUnderstandingItems() and
+     * retrievalItems(). Deliberately not folded into QuestionMetadata::forPal()
+     * or ServableQuestions: those stay answerability-based (see hydrateQuestion()'s
+     * docblock) for the diagnostic-entry and practice/teach item selection this
+     * class also does, which were not asked to narrow to MCQ. Mirrors
+     * McqPool::MCQ_TYPE_ID so "MCQ" means the same type id everywhere it is
+     * asserted.
+     */
+    private function mcqQuestionIdsQuery()
+    {
+        return DB::table('lms_question_master')
+            ->select('id')
+            ->where('question_type_id', McqPool::MCQ_TYPE_ID);
     }
 
     /**
@@ -1755,6 +1796,19 @@ class EsoPolicyService implements EsoFlowPort
      */
     protected function unmetPrerequisiteConceptIds(int $conceptId, int $studentId, int $subInstituteId): Collection
     {
+        if (config('pal.eso.graph_prerequisite_gate', false)) {
+            $viaGraph = $this->unmetPrerequisiteConceptIdsViaGraph($conceptId, $studentId, $subInstituteId);
+
+            if ($viaGraph !== null) {
+                return $viaGraph;
+            }
+            // Null, not empty — the graph has no projected map for this
+            // concept's scope. Fall through to the SQL check below rather
+            // than treat "no answer" as "nothing is blocked" (the exact
+            // "deployment gap ≠ guarantee" precedent CurriculumGraphBuilder
+            // already set for the authoring Coherence Map screen).
+        }
+
         // Authored curriculum structure, never written by this engine — safe to
         // memoise for the request. The chapter dashboard resolves this once per
         // concept and was re-reading the same relation rows 17 times a page.
@@ -1774,6 +1828,46 @@ class EsoPolicyService implements EsoFlowPort
                 return $mastery !== null && $mastery < self::PREREQUISITE_THRESHOLD;
             })
             ->values();
+    }
+
+    /**
+     * Graph-backed version of unmetPrerequisiteConceptIds() above — full
+     * transitive closure via CoherenceMapRepository::rootBlockers(), instead
+     * of this class's own single-hop-only ConceptRelation check. Returns the
+     * deepest unmastered ROOT blockers (weakest-first), not just the
+     * concept's direct prerequisites, so D2 can point a student at the real
+     * cause instead of the first thing in the way.
+     *
+     * Returns null — not an empty Collection — when rootBlockers() has
+     * nothing to say for this scope, so the caller knows to fall back rather
+     * than read "no answer" as "cleared". A concept with genuinely zero
+     * prerequisites, or one whose prerequisites are all mastered, is a real
+     * empty Collection, not null — see hasProjectedScope()'s docblock.
+     */
+    protected function unmetPrerequisiteConceptIdsViaGraph(int $conceptId, int $studentId, int $subInstituteId): ?Collection
+    {
+        if (! $this->coherenceMap->hasProjectedScope($conceptId)) {
+            return null;
+        }
+
+        // hasProjectedScope() only proves the concept is A node with SOME
+        // edges — not that every edge rootBlockers() would walk (this
+        // concept's own, or an ancestor's) actually made it into the graph.
+        // Measured live: a concept can look "present" while missing a real
+        // prerequisite edge SQL has, which would silently under-gate a
+        // student rather than error. See transitivePrerequisiteEdgesComplete()'s
+        // docblock for the exact case this caught.
+        if (! $this->coherenceMap->transitivePrerequisiteEdgesComplete($conceptId)) {
+            return null;
+        }
+
+        return $this->memo(
+            "prereq:graph:{$conceptId}:{$studentId}:{$subInstituteId}",
+            fn () => collect($this->coherenceMap->rootBlockers($conceptId, $studentId))
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->values()
+        );
     }
 
     /** Plain read: does this concept have any unmet prerequisite right now? No logging, no action payload. */
@@ -2471,6 +2565,7 @@ class EsoPolicyService implements EsoFlowPort
             QuestionMetadata::forNode($nodeId)
                 ->forTenant($subInstituteId)
                 ->forPal()
+                ->whereIn('question_id', $this->mcqQuestionIdsQuery())
                 ->get(['question_id']),
             $state === null
                 ? 'cfu:' . $nodeId
@@ -3032,7 +3127,7 @@ class EsoPolicyService implements EsoFlowPort
         // Mastery is NOT revoked and the schedule is NOT advanced — the
         // learner must never lose standing because WE have no content for
         // them. The node stays due and will resolve the moment content exists.
-        if ($this->retrievalItems($node->id, $subInstituteId) === []) {
+        if ($this->retrievalItems($node->id, $subInstituteId, $studentId) === []) {
             if (! $silent) {
                 $this->log(
                     $studentId,
@@ -3160,7 +3255,7 @@ class EsoPolicyService implements EsoFlowPort
      */
     public function staleMasteryAction(int $studentId, int $conceptId, ConceptNode $node, LearnerNodeState $state, int $subInstituteId, bool $silent = false): array
     {
-        if ($this->retrievalItems($node->id, $subInstituteId) === []) {
+        if ($this->retrievalItems($node->id, $subInstituteId, $studentId) === []) {
             if (! $silent) {
                 $this->log(
                     $studentId,
@@ -3257,13 +3352,26 @@ class EsoPolicyService implements EsoFlowPort
     }
 
     /** 2-3 fresh items for a node's delayed retrieval check. */
-    public function retrievalItems(int $nodeId, int $subInstituteId): array
+    public function retrievalItems(int $nodeId, int $subInstituteId, ?int $studentId = null): array
     {
         $candidates = QuestionMetadata::forNode($nodeId)
             ->forTenant($subInstituteId)
             ->forPal()
+            ->whereIn('question_id', $this->mcqQuestionIdsQuery())
             ->pluck('question_id')
             ->shuffle();
+
+        if ($studentId !== null) {
+            $recent = $this->recentRetrievalQuestionIds($studentId, $nodeId);
+            $fresh = $candidates->diff($recent)->values();
+
+            // Soft exclusion: a node with only 2-3 authored items would
+            // otherwise starve the check the moment they've all been seen
+            // once. Better to repeat than to dead-end into content_unavailable.
+            if ($fresh->count() >= self::RETRIEVAL_ITEM_COUNT) {
+                $candidates = $fresh;
+            }
+        }
 
         $items = [];
         foreach ($candidates as $questionId) {
@@ -3278,6 +3386,26 @@ class EsoPolicyService implements EsoFlowPort
         }
 
         return $items;
+    }
+
+    /**
+     * The student's most recently served retrieval-check question IDs for a
+     * node — mirrors DiagnosticQuestionSelector::recentQuestionIds().
+     *
+     * @return array<int,int>
+     */
+    private function recentRetrievalQuestionIds(int $studentId, int $nodeId): array
+    {
+        return ResponseLog::forStudent($studentId)
+            ->forNode($nodeId)
+            ->where('mode', self::RESPONSE_MODE_RETRIEVAL)
+            ->orderByDesc('created_at')
+            ->limit(self::RETRIEVAL_RECENCY_LOOKBACK)
+            ->pluck('question_id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**

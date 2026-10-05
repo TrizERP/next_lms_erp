@@ -41,6 +41,8 @@ use App\Http\Controllers\api\TeacherAssignmentMobileApiController;
 use App\Http\Controllers\api\TeacherTimetableApiController;
 use App\Http\Controllers\api\TeacherFeeDuesApiController;
 use App\Http\Controllers\api\TeacherIcardApiController;
+use App\Http\Controllers\api\UserDashboardPreferenceApiController;
+
 
 // Student Assessment API - Get student assessment data with scores and levels
 Route::get('/student-assessment', [StudentGraphController::class, 'getStudentAssessment']);
@@ -72,22 +74,61 @@ Route::post('incoming-message',[\App\Http\Controllers\WhatsappController::class,
 
 
 Route::controller(apiController::class)->group(function () {
-    Route::post('login', 'login');
-    Route::post('login_hills', 'login_hills');
-    Route::post('check_otp', 'check_otp');
+    // Credential and OTP endpoints get a tight per-IP limit on top of the global one, so a
+    // 4-6 digit OTP or a password cannot be brute-forced at 1000 attempts a minute.
+    Route::post('login', 'login')->middleware('throttle:20,1');
+    Route::post('login_hills', 'login_hills')->middleware('throttle:20,1');
+    Route::post('check_otp', 'check_otp')->middleware('throttle:10,1');
     Route::post('homescreen', 'homescreen');
-    Route::post('teacherlogin', 'teacherlogin');
-    Route::post('teacher_check_otp', 'teacher_check_otp');
+    Route::post('teacherlogin', 'teacherlogin')->middleware('throttle:20,1');
+    Route::post('teacher_check_otp', 'teacher_check_otp')->middleware('throttle:10,1');
     Route::post('playscreen', 'playscreen');
     Route::post('homescreen', 'homescreen');
     Route::post('gcm_insert', 'gcm_insert');
-    Route::get('testkey', 'testkey');
+    // testkey mints a validly signed JWT for a fixed payload with no credentials, which every
+    // controller that only checks the signature would accept. Never register it outside dev.
+    if (app()->environment(['local', 'testing'])) {
+        Route::get('testkey', 'testkey');
+    }
 });
 
-Route::post('api-login', [ApiLoginController::class, 'login'])->name('api.api-login');
+Route::post('api-login', [ApiLoginController::class, 'login'])->middleware('throttle:20,1')->name('api.api-login');
 Route::get('academic-terms', [ApiLoginController::class, 'academicTerms'])->name('api.academic-terms');
 // Isolated mobile Own Profile API; legacy profile controllers are unchanged.
 Route::middleware('api.session')->get('own-profile', [\App\Http\Controllers\api\OwnProfileApiController::class, 'show']);
+
+// Exchanges the app's JWT for a single-use ticket that opens an ERP web page
+// already logged in, for menu rows whose render_type is 'webview'.
+// `api.session` validates the JWT and hydrates the session the controller
+// reads its identity from -- see MobileWebHandoffApiController.
+Route::middleware('api.session')->post('mobile/web-handoff', [\App\Http\Controllers\api\MobileWebHandoffApiController::class, 'create']);
+
+// Redeems a ticket for a page on a TRUSTED CROSS-ORIGIN frontend (e.g.
+// lms_k12), returning its identity as JSON instead of a Laravel session
+// cookie -- see MobileWebHandoffApiController's class doc. Deliberately
+// outside `api.session`: the caller has no session yet, by definition. The
+// ticket itself, single-use and short-lived, is what authenticates this
+// call, and CORS (config/cors.php) is what lets that other origin's JS call
+// it at all.
+Route::get('mobile/web-handoff/claims', [\App\Http\Controllers\api\MobileWebHandoffApiController::class, 'claims']);
+
+// Schema for a render_type = 'native_dynamic' menu row -- see
+// MobileDynamicPageApiController's class doc for why only the schema is
+// served here, not the page's live data.
+Route::middleware('api.session')->get('mobile/dynamic-page/{pageKey}', [\App\Http\Controllers\api\MobileDynamicPageApiController::class, 'show']);
+
+// Admin API for configuring native dynamic pages -- authored from the
+// lms_k12 Next.js frontend (see MobileDynamicPageAdminApiController's class
+// doc), not a Laravel Blade view.
+Route::middleware('api.session')->prefix('mobile/dynamic-page-admin')->group(function () {
+    Route::get('registry', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'registry']);
+    Route::get('pages', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'index']);
+    Route::post('pages', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'store']);
+    Route::post('pages/{id}', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'update']);
+    Route::post('pages/{id}/fields', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'addField']);
+    Route::post('fields/{fieldId}', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'updateField']);
+    Route::delete('fields/{fieldId}', [\App\Http\Controllers\api\MobileDynamicPageAdminApiController::class, 'deleteField']);
+});
 Route::middleware('api.session')->prefix('hrms')->group(function () {
     Route::get('today', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'today']);
     Route::post('punch', [\App\Http\Controllers\api\HrmsMobileApiController::class, 'punch']);
@@ -97,6 +138,9 @@ Route::middleware('api.session')->prefix('hrms')->group(function () {
 // check_permissions reads session()->get('user_profile_id'/'sub_institute_id'/'user_id'),
 // so api.session (JWT-hydrated session) must run first for type=API requests.
 Route::middleware(['api.session', 'check_permissions'])->post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
+// Flat "who owes money" list backing the Outstanding tile's drill-in (see
+// FeesDashboardApiController@defaulters and MobileDynamicPageFieldRegistry).
+Route::middleware(['api.session', 'check_permissions'])->post('fees-dashboard/defaulters', [FeesDashboardApiController::class, 'defaulters']);
 // Module dashboards (Admissions/Students) — stateless: tenant/year travel in
 // the request body and there's no permission check, so no session middleware
 // is required.
@@ -117,6 +161,12 @@ Route::middleware('api.session')->group(function () {
     // Self-service "My ID card" — scoped to the caller's own user_id only,
     // see App\Http\Controllers\api\TeacherIcardApiController::mine().
     Route::post('teacher-icard/mine', [TeacherIcardApiController::class, 'mine']);
+    // Per-user dashboard customisation (which KPI cards / charts the caller has
+    // hidden). Owner comes from the JWT, so it never affects another user.
+    Route::get('dashboard-preferences/{dashboardKey}', [UserDashboardPreferenceApiController::class, 'show'])
+        ->where('dashboardKey', UserDashboardPreferenceApiController::KEY_PATTERN);
+    Route::put('dashboard-preferences/{dashboardKey}', [UserDashboardPreferenceApiController::class, 'update'])
+        ->where('dashboardKey', UserDashboardPreferenceApiController::KEY_PATTERN);
 });
 Route::middleware('api.session')->prefix('fees-refund')->group(function () {
     Route::post('search', [FeesRefundApiController::class, 'search']);
@@ -178,6 +228,7 @@ Route::post('lms-chapters', [ApiLmsCourseController::class, 'chapters']);
 Route::post('lms-chapter-content', [ApiLmsCourseController::class, 'chapterContent']);
 Route::post('lms-questions', [ApiLmsCourseController::class, 'getLmsQuestions']);
 Route::post('lms-question-bank', [ApiLmsCourseController::class, 'getQuestionBank']);
+Route::post('lms-question-bank/create', [ApiLmsCourseController::class, 'createQuestionBank']);
 Route::post('lms-question-bank/update', [ApiLmsCourseController::class, 'updateQuestionBank']);
 Route::post('lms-question-bank/delete', [ApiLmsCourseController::class, 'deleteQuestionBank']);
 Route::post('lms-question-bank/review', [ApiLmsCourseController::class, 'reviewQuestionBank']);
@@ -482,6 +533,13 @@ Route::delete('exam-evaluation/batches/{id}', [ExamEvaluationApiController::clas
 // the table; `clone` is how a school turns one into something it can edit.
 // `chapters` and `clone` are declared before `{id}` so they are not swallowed.
 Route::get('assessment-blueprints/chapters', [AssessmentBlueprintApiController::class, 'chapters']);
+// A school's own HPC option lists — who may assess, which activity approaches
+// and evidence methods it uses, which Part A sections its cards carry. Absent
+// rows mean "follow the published NCERT list", per option type, so a school
+// only stores the lists it actually decided to change.
+Route::get('assessment-blueprints/hpc-options', [AssessmentBlueprintApiController::class, 'hpcOptions']);
+Route::post('assessment-blueprints/hpc-options', [AssessmentBlueprintApiController::class, 'saveHpcOptions']);
+Route::post('assessment-blueprints/hpc-options/reset', [AssessmentBlueprintApiController::class, 'resetHpcOptions']);
 Route::post('assessment-blueprints/clone', [AssessmentBlueprintApiController::class, 'clone']);
 Route::get('assessment-blueprints', [AssessmentBlueprintApiController::class, 'index']);
 Route::post('assessment-blueprints', [AssessmentBlueprintApiController::class, 'store']);
@@ -528,6 +586,11 @@ Route::match(['GET', 'POST'], 'intelligence/curriculum-planning/chapter', [\App\
 
 // Monthly Plan - calendar view of scheduled periods for a given month
 Route::match(['GET', 'POST'], 'intelligence/monthly-plan', [\App\Http\Controllers\api\lms\MonthlyPlanApiController::class, 'index']);
+
+// Interactions - unified staff/parent/student touchpoint log (calls, meetings, notes, follow-ups)
+Route::match(['GET', 'POST'], 'interactions', [\App\Http\Controllers\api\InteractionLogController::class, 'index']);
+Route::post('interactions/store', [\App\Http\Controllers\api\InteractionLogController::class, 'store']);
+Route::post('interactions/{id}/update', [\App\Http\Controllers\api\InteractionLogController::class, 'update']);
 
 // Lesson Plan detail - periods (+ concepts) for a date range, for the single-lesson detail page
 Route::match(['GET', 'POST'], 'intelligence/lesson-plan-detail', [\App\Http\Controllers\api\lms\LessonPlanDetailApiController::class, 'index']);
@@ -640,6 +703,12 @@ Route::post('lms/concept-intelligence/tab-labels/reset', [\App\Http\Controllers\
 Route::middleware('lms.auth')->group(function () {
     Route::get('lms/coherence-map', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'show']);
 
+    // Located by concept rather than by scope, so the map can be re-centred onto
+    // a prerequisite that lives in another grade. The client cannot name that
+    // scope in advance, so it sends the concept id and the controller resolves it.
+    Route::get('lms/coherence-map/concept/{conceptId}', [\App\Http\Controllers\api\lms\CoherenceMapApiController::class, 'showForConcept'])
+        ->where('conceptId', '[0-9]+');
+
     Route::middleware('perm:lms.curriculum,update')->group(function () {
         // Literal segment before the {source}/{id} pair, so "bulk" is never parsed
         // as a relation source.
@@ -706,6 +775,7 @@ Route::get('mobile-app-rights/bootstrap', [\App\Http\Controllers\api\MobileAppMe
 Route::get('mobile-app-rights/{profileId}/rights', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'rights']);
 Route::post('mobile-app-rights/rights', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'saveRights']);
 Route::get('mobile-app-rights/config', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'configIndex']);
+Route::post('mobile-app-rights/config', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'createConfig']);
 Route::post('mobile-app-rights/config/{id}', [\App\Http\Controllers\api\MobileAppMenuRightsApiController::class, 'updateConfig']);
 
 
@@ -929,8 +999,28 @@ Route::prefix('attendance')->group(function () {
     Route::get('/kpi', [\App\Http\Controllers\api\Attendance\AttendanceDashboardApiController::class, 'kpi']);
 });
 
+/*
+|--------------------------------------------------------------------------
+| Intelligent Document Management System (IDMS) API v1
+|--------------------------------------------------------------------------
+*/
+Route::prefix('v1')->group(function () {
+    Route::get('documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'index']);
+    Route::post('documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'store']);
+    Route::get('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'show']);
+    Route::patch('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'update']);
+    Route::delete('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'destroy']);
+    Route::post('documents/{id}/confirm', [\App\Http\Controllers\api\v1\DocumentController::class, 'confirm']);
+    Route::post('documents/{id}/tags', [\App\Http\Controllers\api\v1\DocumentController::class, 'updateTags']);
+    Route::get('documents/{id}/preview', [\App\Http\Controllers\api\v1\DocumentController::class, 'preview']);
+    Route::get('documents/{id}/download', [\App\Http\Controllers\api\v1\DocumentController::class, 'download']);
+    Route::get('documents/{id}/versions', [\App\Http\Controllers\api\v1\DocumentController::class, 'getVersions']);
+    Route::post('documents/{id}/versions', [\App\Http\Controllers\api\v1\DocumentController::class, 'addVersion']);
+    Route::post('documents/{id}/versions/{versionNumber}/restore', [\App\Http\Controllers\api\v1\DocumentController::class, 'restoreVersion']);
+    Route::get('documents/{id}/related', [\App\Http\Controllers\api\v1\DocumentController::class, 'related']);
 
-
-
-
-
+    Route::post('search/parse', [\App\Http\Controllers\api\v1\DocumentController::class, 'parseSearch']);
+    Route::get('browse/tree', [\App\Http\Controllers\api\v1\DocumentController::class, 'tree']);
+    Route::get('tags', [\App\Http\Controllers\api\v1\DocumentController::class, 'tags']);
+    Route::get('audit', [\App\Http\Controllers\api\v1\DocumentController::class, 'audit']);
+});

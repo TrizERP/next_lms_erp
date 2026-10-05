@@ -75,6 +75,9 @@
     @endphp
     <div id="wrapper">
         <div id="page">
+            {{-- Desktop chrome. Skipped when the page is being rendered inside
+                 the mobile app's WebView -- see is_mobile_embed(). --}}
+            @unless(\App\Helpers\is_mobile_embed())
             <header class="navbar justify-content-between flex-nowrap fixed-top">
                 <div class="d-md-flex align-items-center">
                     <div class="d-flex align-items-center mobile-logo-bar">
@@ -319,7 +322,9 @@
 
                 </div>
             </header>
+            @endunless
 
+            @unless(\App\Helpers\is_mobile_embed())
             @if(Route::current()->getName() != 'home')
             <nav aria-label="breadcrumb">
                 <ol class="breadcrumb mt-2">
@@ -363,6 +368,7 @@
                 </ol>
             </nav>
             @endif
+            @endunless
 
             <!-- End Top Navigation -->
 

@@ -3,6 +3,7 @@
 namespace App\Domain\AI\Lifecycle\Plan;
 
 use App\Domain\AI\Configuration\AiModelClientFactory;
+use App\Domain\AI\Conversation\ResultSet;
 use App\Domain\AI\Lifecycle\StageContext;
 use App\Domain\AI\Support\ModelClient;
 use App\Mcp\ToolRegistry;
@@ -50,7 +51,16 @@ class LlmPlanner implements Planner
 
         // The client this module is configured to use, scoped to the asking school.
         // Unconfigured, this is the same client the container has always injected.
-        $client = $this->clients->for(self::MODULE, $context->scope->selectedInstituteId);
+        //
+        // `$context->module->key` is passed so a PRODUCT module that chose its own
+        // reasoning model on its own AI Stack gets it: planning for Fees can run on a
+        // different model from planning for Hostel. A module that chose nothing resolves
+        // through the central configuration exactly as before.
+        $client = $this->clients->for(
+            self::MODULE,
+            $context->scope->selectedInstituteId,
+            $context->module->key
+        );
 
         if ($available === [] || ! $client->isConfigured()) {
             return null;
@@ -156,6 +166,13 @@ class LlmPlanner implements Planner
         {$catalogue}
 
         Rules:
+        - The user may be continuing a conversation. When "Earlier in this conversation" is
+          given and the question refers back to it - "them", "their", "each one", "those
+          students", "which of them", "the first two" - work out which of the listed rows it
+          means and pass exactly those ids (for example `student_ids`) to a tool that accepts
+          them, so the follow-up is read from the data again. Ids may only be copied from that
+          list or the question itself, never invented. Ask for every field the follow-up needs
+          (for example due dates when asking who has waited longest).
         - Between 1 and 6 steps. Never name a tool outside the list above.
         - `arguments` must match that tool's argument schema. Omit anything you cannot fill
           from the question itself — never invent an id, a name or a date.
@@ -173,11 +190,67 @@ class LlmPlanner implements Planner
     {
         $module = $context->module;
 
-        return sprintf(
+        $prompt = sprintf(
             "Module: %s (%s)\nQuestion: %s",
             $module->label,
             $module->description !== '' ? $module->description : 'no description',
             $context->question
+        );
+
+        $earlier = $this->earlierAnswer($context);
+
+        return $earlier === null ? $prompt : $earlier . "\n\n" . $prompt;
+    }
+
+    /**
+     * What the previous answer in this conversation listed, so a follow-up can be planned.
+     *
+     * "Show me their classes" and "which of them has the oldest payment?" only mean
+     * something next to the rows the reader was just looking at. Without them the model
+     * sees a bare sentence, cannot fill an id it was told never to invent, and the turn
+     * has nowhere to go. With them it can pass exactly those ids to a tool, so the
+     * follow-up is answered from the database again rather than from a remembered copy.
+     *
+     * Only rows the previous answer actually printed are offered, with the identifying
+     * field and the few scalar facts that made them recognisable. This is context for
+     * choosing arguments, not a source of figures: the answer is still read from a tool.
+     */
+    private function earlierAnswer(StageContext $context): ?string
+    {
+        $memory = $context->thread['memory'] ?? null;
+        $set = is_array($memory) ? ResultSet::fromArray($memory['last_result_set'] ?? null) : null;
+
+        if ($set === null) {
+            return null;
+        }
+
+        $lines = [];
+
+        foreach (array_slice($set->items, 0, 25) as $item) {
+            $facts = [];
+
+            foreach ((array) ($item['row'] ?? []) as $key => $value) {
+                if (! is_scalar($value) || $value === '' || $key === $set->idField) {
+                    continue;
+                }
+
+                $facts[] = $key . ': ' . $value;
+            }
+
+            $lines[] = sprintf(
+                '%d. %s%s%s',
+                $item['position'],
+                $item['title'],
+                $set->idField !== null && isset($item['id']) ? sprintf(' [%s=%s]', $set->idField, $item['id']) : '',
+                $facts === [] ? '' : ' - ' . implode(', ', array_slice($facts, 0, 6))
+            );
+        }
+
+        return sprintf(
+            "Earlier in this conversation the user asked: \"%s\"\nThe answer listed these %s (numbered as the user saw them):\n%s",
+            $set->question,
+            $set->noun,
+            implode("\n", $lines)
         );
     }
 

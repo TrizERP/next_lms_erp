@@ -98,6 +98,14 @@ class AgentController extends AiController
                 'standard_id' => 'nullable|integer|min:1',
                 'division_id' => 'nullable|integer|min:1',
                 'min_attendance_rate' => 'nullable|numeric|min:0|max:100',
+                // Admissions. Additive and nullable, exactly like the block above: a caller
+                // that sends none of them produces the request it produced before, and the
+                // agents that do not read them ignore them. Without these three the
+                // Admission agent could only ever run its own defaults, because the
+                // validator returns only what it names and silently drops the rest.
+                'enquiry_id' => 'nullable|integer|min:1',
+                'overdue_days' => 'nullable|integer|min:1|max:365',
+                'search_text' => 'nullable|string|max:120',
             ]);
 
             $result = $this->runner->run(

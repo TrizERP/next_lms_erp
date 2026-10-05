@@ -106,6 +106,26 @@ class PlanningStage implements LifecycleStage
             );
         }
 
+        // The module is bound to tools, but nothing here is what stopped the turn — the
+        // question named nothing any module's vocabulary recognises, this module's own
+        // data included. "What can I do in this system?" asked on the Fees screen used to
+        // read this as a fees question because Fees binds tools, blindly read the fee
+        // ledger for it, and reported that no student or case could be found — a decoy
+        // for a question that was never about a case. The fix is to say what actually
+        // happened: the screen's data was not what was asked about.
+        if ($context->get('modules_considered', []) === [] && $module->mcpTools !== []) {
+            return StageOutcome::blocked(
+                sprintf(
+                    'That is not a question about %s\'s own data, so there was nothing here to look up.',
+                    $module->label
+                ),
+                ['module' => $module->key, 'bound_tools' => $module->mcpTools]
+            )->halting(
+                'Nothing ran: ask about a student, a fee, attendance, admissions or another module by '
+                . 'name, or ask what this screen can do.'
+            );
+        }
+
         return StageOutcome::blocked(
             sprintf(
                 'No registered intent matched, and the %s module has no tools bound that could answer it another way.',

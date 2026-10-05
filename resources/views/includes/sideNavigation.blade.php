@@ -5,6 +5,9 @@
 $school_logo = session()->get('school_logo');
 ?>
 <div id="content" class="">
+    {{-- The sidebar, but not the #content wrapper the page body lives in.
+         Skipped inside the mobile app's WebView -- see is_mobile_embed(). --}}
+    @unless(\App\Helpers\is_mobile_embed())
     <aside class="left-sidebar d-flex">
         <div class="main-menu-block">
             <div class="main-nav nav flex-column nav-pills" role="tablist" aria-orientation="vertical">
@@ -287,6 +290,7 @@ $school_logo = session()->get('school_logo');
 
 </div>
 </aside>
+    @endunless
 
 
 <!-- ============================================================== -->

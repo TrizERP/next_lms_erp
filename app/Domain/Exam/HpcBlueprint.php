@@ -28,6 +28,13 @@ namespace App\Domain\Exam;
  * Nothing here is validated into refusal. An HPC design is assembled over a
  * term, and a form that will not save a half-built one is a form nobody uses.
  * `validate()` reports what is missing; it never blocks.
+ *
+ * SCHOOL VOCABULARY. The published lists below are defaults, not limits. Every
+ * normalise takes an optional `$vocabulary` of the school's own option lists
+ * (HpcVocabularyService), and validates against that instead, so a school can
+ * add a "Grandparent" assessor or a "Community-based" activity and have it
+ * survive a save. Passing nothing falls back to the published lists, which is
+ * what every caller without a tenant in hand wants.
  */
 class HpcBlueprint
 {
@@ -59,6 +66,8 @@ class HpcBlueprint
         'technology_integrated' => 'Technology-integrated',
         'skill_based' => 'Skill-based learning',
         'experiential' => 'Experiential learning',
+        // Printed on the Secondary card's pedagogy list and nowhere else.
+        'drama_integrated' => 'Drama/Theatre-integrated',
         'cross_cutting' => 'Cross-cutting theme integrated',
         'iks_integrated' => 'Indian Knowledge Systems integrated',
         'other' => 'Any other',
@@ -119,6 +128,9 @@ class HpcBlueprint
         'attendance' => 'Monthly attendance',
         'interest' => 'Interests ("I am interested in")',
         'all_about_me' => 'All About Me',
+        // The Secondary card replaces "All About Me" with a structured
+        // self-assessment the learner fills under the teacher's guidance.
+        'self_assessment' => 'Learner self-assessment',
         'goal_setting' => 'Goal setting (academic and personal)',
         'ambition_card' => 'My Ambition Card',
     ];
@@ -138,7 +150,14 @@ class HpcBlueprint
             'areas' => [self::defaultArea()],
             'activity_approaches' => [],
             'evidence_modes' => ['observation'],
-            'part_a' => ['attendance' => true, 'interest' => true, 'all_about_me' => true, 'goal_setting' => true, 'ambition_card' => false],
+            'part_a' => [
+                'attendance' => true,
+                'interest' => true,
+                'all_about_me' => true,
+                'self_assessment' => false,
+                'goal_setting' => true,
+                'ambition_card' => false,
+            ],
             'strengths' => self::STRENGTHS,
             'barriers' => self::BARRIERS,
             'notes' => '',
@@ -178,9 +197,19 @@ class HpcBlueprint
         ];
     }
 
-    /** @param  mixed  $definition  Decoded JSON, a JSON string, or null. */
-    public static function normalize(mixed $definition): array
+    /**
+     * @param  mixed  $definition  Decoded JSON, a JSON string, or null.
+     * @param  array<string,array<string,string>>|null  $vocabulary  One school's
+     *         option lists, keyed by HpcVocabularyService::TYPE_*. Null uses the
+     *         published defaults.
+     */
+    public static function normalize(mixed $definition, ?array $vocabulary = null): array
     {
+        $assessors = $vocabulary['assessor'] ?? self::ASSESSORS;
+        $approaches = $vocabulary['activity_approach'] ?? self::ACTIVITY_APPROACHES;
+        $evidence = $vocabulary['evidence_mode'] ?? self::EVIDENCE_MODES;
+        $partAElements = $vocabulary['part_a_element'] ?? self::PART_A_ELEMENTS;
+
         if (is_string($definition)) {
             $definition = json_decode($definition, true);
         }
@@ -260,8 +289,8 @@ class HpcBlueprint
                             static fn ($outcome) => self::text($outcome, 500),
                             self::arrayOf($competency, 'learning_outcomes')
                         ), static fn ($outcome) => $outcome !== '')),
-                        'assessors' => self::keysIn(self::arrayOf($competency, 'assessors'), self::ASSESSORS),
-                        'evidence_modes' => self::keysIn(self::arrayOf($competency, 'evidence_modes'), self::EVIDENCE_MODES),
+                        'assessors' => self::keysIn(self::arrayOf($competency, 'assessors'), $assessors),
+                        'evidence_modes' => self::keysIn(self::arrayOf($competency, 'evidence_modes'), $evidence),
                     ];
                 }
 
@@ -285,7 +314,7 @@ class HpcBlueprint
         $partA = is_array($definition['part_a'] ?? null) ? $definition['part_a'] : [];
         $normalizedPartA = [];
 
-        foreach (array_keys(self::PART_A_ELEMENTS) as $key) {
+        foreach (array_keys($partAElements) as $key) {
             $normalizedPartA[$key] = (bool) ($partA[$key] ?? false);
         }
 
@@ -293,11 +322,11 @@ class HpcBlueprint
             'version' => self::VERSION,
             'stage' => in_array($stage, self::STAGES, true) ? $stage : 'Middle',
             'proficiency_scale' => $scale !== [] ? $scale : self::defaults()['proficiency_scale'],
-            'assessors' => self::keysIn(self::arrayOf($definition, 'assessors'), self::ASSESSORS),
+            'assessors' => self::keysIn(self::arrayOf($definition, 'assessors'), $assessors),
             'abilities' => $abilities,
             'areas' => $areas !== [] ? $areas : [self::defaultArea()],
-            'activity_approaches' => self::keysIn(self::arrayOf($definition, 'activity_approaches'), self::ACTIVITY_APPROACHES),
-            'evidence_modes' => self::keysIn(self::arrayOf($definition, 'evidence_modes'), self::EVIDENCE_MODES),
+            'activity_approaches' => self::keysIn(self::arrayOf($definition, 'activity_approaches'), $approaches),
+            'evidence_modes' => self::keysIn(self::arrayOf($definition, 'evidence_modes'), $evidence),
             'part_a' => $normalizedPartA,
             'strengths' => array_values(array_filter(array_map(
                 static fn ($entry) => self::text($entry, 120),

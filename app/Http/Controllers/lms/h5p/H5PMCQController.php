@@ -3,21 +3,45 @@
 namespace App\Http\Controllers\lms\h5p;
 
 use App\Http\Controllers\Controller;
+use App\Services\lms\H5P\QuestionBankSource;
 use Illuminate\Http\Request;
 use function App\Helpers\is_mobile;
-use Illuminate\Support\Facades\DB;
-use App\Models\lms\answermasterModel;
 
 class H5PMCQController extends Controller
 {
+    public function __construct(private QuestionBankSource $source)
+    {
+    }
+
     /**
-     * Display a listing of the resource.
+     * The MCQ quiz: pick a difficulty, get ten questions at it.
      *
-     * @return \Illuminate\Http\Response
+     * LEVELS AND QUESTIONS BOTH COME FROM `lms_question_master` NOW.
+     *
+     * This screen used to list the fixed `lms_mapping_type` tree under parent
+     * id 9 and then match questions through `lms_question_mapping`. That made a
+     * question's difficulty a fact recorded in two places, and the second one
+     * had to be written per question for the quiz to find it. On chapter 1012,
+     * institute 1, that returned 1 question at Easy, 6 at Medium and 4 at Hard
+     * out of 726 playable questions -- a menu with no kitchen behind it.
+     *
+     * Difficulty is `g_difficulty`, a stored generated column holding
+     * `answer -> $.difficulty` and already indexed as part of
+     * `idx_qm_blueprint`. The same three levels now draw a full ten each.
+     *
+     * AND `question_type_id = 1` IS GONE. It restricted this to rows the
+     * grading engine spells "multiple", which describes how a question was
+     * CATALOGUED rather than whether it can be played here. `QuestionBankSource`
+     * asks the question that matters -- does it have at least two options? --
+     * and resolves the form through `question_type_catalog` instead.
+     *
+     * EVERY OTHER H5P TYPE USES THE SAME SERVICE, through
+     * `GET /h5p/question_bank/{h5pType}`. This controller keeps its own action
+     * only because its response shape predates that endpoint and the Blade view
+     * reads it.
      */
     public function index(Request $request)
     {
-        //
         $type = $request->input('type');
         $sub_institute_id = session()->get('sub_institute_id');
 
@@ -25,62 +49,38 @@ class H5PMCQController extends Controller
             $sub_institute_id = $request->sub_institute_id;
         }
 
-        $res['mcq_levels'] = DB::table('lms_mapping_type as parent')
-            ->join('lms_mapping_type as child', 'child.parent_id', '=', 'parent.id')
-            ->where('parent.parent_id', 0)
-            ->where('parent.id', 9)
-            ->select('child.id', 'child.name')
-            ->groupBy('child.id')
-            ->get();
+        $selectedLevel = trim((string) $request->input('selectedLevel', ''));
+
+        $res['mcq_levels'] = $this->source->levels($request, $sub_institute_id, 'h5p_mcq');
+
         $questionList = $answer = [];
-        if ($request->has('selectedLevel') && !empty($request->input('selectedLevel'))) {
-            $randomQuestions = DB::table('lms_question_master as lqm')
-                ->join('lms_question_mapping as lm', 'lqm.id', '=', 'lm.questionmaster_id')
-                ->join('answer_master as am', 'lqm.id', '=', 'am.question_id')
-                ->select('lqm.*')
-                ->where('lqm.sub_institute_id', $sub_institute_id)
-                ->where('lqm.standard_id', $request->standard_id)
-                ->where('lqm.subject_id', $request->subject_id)
-                ->where('lqm.chapter_id', $request->chapter_id)
-                ->where('lqm.question_type_id', 1)
-                ->when($request->has('selectedLevel') && !empty($request->input('selectedLevel')), function ($query) use ($request) {
-                    $query->where('lm.mapping_value_id', $request->selectedLevel);
-                })
-                ->inRandomOrder()
-                ->take(10)
-                ->groupBy('lqm.question_title')
-                ->get()->toArray();
-            foreach ($randomQuestions as $k => $v) {
+
+        if ($selectedLevel !== '') {
+            $questions = $this->source->questions(
+                $request,
+                $sub_institute_id,
+                'h5p_mcq',
+                $selectedLevel,
+                10
+            );
+
+            foreach ($questions as $k => $v) {
                 $questionList[$k]['question_id'] = $v->id;
                 $questionList[$k]['question_text'] = $v->question_title;
             }
-            
-            $existQusetion = [];
-            if (!empty($questionList)) {
-                foreach ($questionList as $key => $val) {
-                    if (!in_array($val['question_id'], $existQusetion)) {
-                        $answer_arr = answermasterModel::where([
-                            "question_id"      => $val['question_id'],
-                            "sub_institute_id" => $sub_institute_id,
-                        ])->get()->toArray();
-                        if (count($answer_arr) > 0) {
-                            foreach ($answer_arr as $anskey => $ansval) {
-                                $answer[$val['question_id']][] = $ansval;
-                            }
-                        }
-                        $existQusetion[] = $val['question_id'];
-                    }
-                }
-            }
+
+            // One query for every option on the paper. Ten questions used to
+            // cost ten round trips, one per question.
+            $answer = $this->source->answersFor($questions->pluck('id')->all(), $sub_institute_id);
         }
 
         $res['chapter_id'] = $request->input('chapter_id');
         $res['subject_id'] = $request->input('subject_id');
         $res['standard_id'] = $request->input('standard_id');
-        $res['selectedLevel'] = $request->input('selectedLevel');
+        $res['selectedLevel'] = $selectedLevel !== '' ? $selectedLevel : null;
         $res['question_arr'] = $questionList;
         $res['answer_arr'] = $answer;
-        // return $res['question_arr'];
+
         return is_mobile($type, 'lms/h5p/mcq/index', $res, "view");
     }
 

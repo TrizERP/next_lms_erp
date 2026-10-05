@@ -557,6 +557,43 @@ class AiReportGenerator
             'fees' => 'fees.arrears',
             'admissions' => 'admissions.listEnquiries',
             'attendance' => 'attendance.overview',
+            // The five modules whose AI Stacks were added in 2026_09_22. Each names the
+            // same tool its published layout binds to, so the fallback and the layout
+            // cannot disagree about which records a report is built from. Purely additive:
+            // the four arms above are untouched, and a module with a layout never reaches
+            // this match at all.
+            'exam' => 'exams.results',
+            'ptm' => 'ptm.meetings',
+            'hostel' => 'hostel.allocations',
+            'student_request' => 'student_requests.list',
+            'circular' => 'circulars.list',
+            // The six added in 2026_09_23 and the six in 2026_09_24, on the same rule:
+            // each names the tool that module's published layout binds to. Without an arm
+            // here the default returns the module KEY, which is never a tool name, so the
+            // fallback resolved to nothing — visible only when a module has no layout,
+            // which is exactly when the fallback is the thing being used.
+            'mobile_apps' => 'mobile_apps.homescreen',
+            'student_icard' => 'student_icard.roster',
+            'certificate' => 'certificate.issued',
+            'easy_com' => 'communication.messages',
+            'timetable' => 'timetable.schedule',
+            // Safe as a fallback: a cohort read through this tool withholds every clinical
+            // field in the service, so a report built without a layout cannot print one.
+            'student_medical' => 'student_medical.visits',
+            'inward_outward' => 'inward.register',
+            'user_icard' => 'user_icard.roster',
+            'petty_cash' => 'petty_cash.transactions',
+            'consent' => 'consent.records',
+            'visitor_management' => 'visitor.visits',
+            'transportation' => 'transport.routes',
+            // The six added in 2026_09_25. Two keys carry a hyphen because that is how
+            // `ai_modules` spells them; `migration-modules` is the Utility module.
+            'inventory' => 'inventory.items',
+            'front_desk' => 'front_desk.visits',
+            'task_management' => 'tasks.list',
+            'complaint' => 'complaints.list',
+            'migration-modules' => 'utility.custom_modules',
+            'document-templates' => 'doc_templates.list',
             default => $module,
         };
     }

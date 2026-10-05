@@ -46,21 +46,32 @@ final class AiModelClientFactory
     /**
      * The client one module should use, already scoped to the school and its key.
      *
-     * @param  string|null  $moduleKey  A key from `AiModuleRegistry`. Null gives the
-     *                                  unbound pool behaviour legacy callers have.
+     * @param  string|null  $moduleKey  A key from `AiModuleRegistry` — the CAPABILITY.
+     *                                  Null gives the unbound pool behaviour legacy
+     *                                  callers have.
+     * @param  string|null  $productModuleKey  An `ai_modules` key — the PRODUCT module on
+     *                                  whose behalf the call is made, so a module that
+     *                                  chose its own model on its own AI Stack gets it.
+     *                                  Omitting it resolves exactly as before.
      */
-    public function for(?string $moduleKey, int|string|null $subInstituteId = null): ModelClient
-    {
+    public function for(
+        ?string $moduleKey,
+        int|string|null $subInstituteId = null,
+        ?string $productModuleKey = null
+    ): ModelClient {
         return $this->fromConfiguration(
-            $this->resolver->resolve($moduleKey, $subInstituteId),
+            $this->resolver->resolve($moduleKey, $subInstituteId, $productModuleKey),
             $subInstituteId
         );
     }
 
     /** The configuration a module resolves to, without building a client for it. */
-    public function configurationFor(?string $moduleKey, int|string|null $subInstituteId = null): ResolvedAiConfiguration
-    {
-        return $this->resolver->resolve($moduleKey, $subInstituteId);
+    public function configurationFor(
+        ?string $moduleKey,
+        int|string|null $subInstituteId = null,
+        ?string $productModuleKey = null
+    ): ResolvedAiConfiguration {
+        return $this->resolver->resolve($moduleKey, $subInstituteId, $productModuleKey);
     }
 
     /**

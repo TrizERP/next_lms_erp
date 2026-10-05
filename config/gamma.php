@@ -49,10 +49,29 @@ return [
     */
     'image_model' => env('GAMMA_IMAGE_MODEL', 'gemini-3-pro-image'),
 
-    // Whitelisted by contentController.php:1613 today. Kept here so the list has one home.
-    'themes' => ['simple', 'minimal', 'corporate', 'creative', 'bold', 'elegant', 'modern'],
+    /*
+    | Gamma theme ids this platform allows.
+    |
+    | The previous list - simple, minimal, corporate, creative, bold, elegant,
+    | modern - contained NO REAL GAMMA THEME IDS. Every one of the seven was
+    | rejected, so the whitelist silently discarded whatever was configured and
+    | every deck ever generated fell back to Gamma's default theme. Verified
+    | against GET https://public-api.gamma.app/v1.0/themes, which returns 50
+    | themes; none of the seven appears in it, and neither did the configured
+    | GAMMA_THEME_ID=dark (the real id is `default-dark`).
+    |
+    | These are real ids, chosen for the EduERP design language: light surfaces,
+    | indigo/slate palette, enterprise tone, no decoration. `default-light` is
+    | the closest match and the default.
+    |
+    | This is the VISUAL half of the Content Design System reaching Gamma. The
+    | content half travels via textMode=preserve + cardSplit=inputTextBreaks,
+    | which hands Gamma our own blocks and slide breaks instead of asking it to
+    | invent them. See docs/content-design-system/README.md.
+    */
+    'themes' => ['default-light', 'ash', 'chimney-smoke', 'coal', 'commons', 'blue-steel', 'breeze', 'default-dark'],
 
-    'default_theme' => env('GAMMA_THEME_ID'),
+    'default_theme' => env('GAMMA_THEME_ID', 'default-light'),
 
     'request_timeout' => env('GAMMA_REQUEST_TIMEOUT', 120),
 ];

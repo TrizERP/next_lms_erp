@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\fees\fees_report\feesDefaulterReportController;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -179,5 +180,62 @@ class FeesDashboardApiController extends Controller
     private function amount(float $amount): string
     {
         return '₹' . number_format($amount, 2, '.', ',');
+    }
+
+    /**
+     * Flat "who owes money" list, for the Outstanding tile's drill-in (see
+     * MobileDynamicPageFieldRegistry) -- deliberately NOT a re-derivation of
+     * the defaulter calculation. This calls feesDefaulterReportController's
+     * own, already-correct logic directly and reshapes its response, rather
+     * than re-implementing the month-by-month fee-balance math a second time
+     * (a fee calculation existing in two places is how they quietly drift
+     * apart on the next rate or breakoff-structure change).
+     *
+     * That controller's own response is a nested per-student-per-month
+     * structure ($fees_data[student_id][month_id] = {...}, plus a `'-'` key
+     * carrying that student's totals) -- exactly the shape too complex for a
+     * generic tile field to bind to directly, which is why this exists as
+     * its own drill_endpoint rather than the Outstanding tile reading it as
+     * a plain field. Same $request forwarded unchanged: both controllers
+     * read the identical sub_institute_id/syear/type inputs.
+     */
+    public function defaulters(Request $request): JsonResponse
+    {
+        $upstream = (new feesDefaulterReportController())->showFeesDefaulter($request);
+        $payload = json_decode($upstream->getContent(), true) ?: [];
+
+        $rows = [];
+        foreach ((array) ($payload['fees_data'] ?? []) as $studentId => $student) {
+            $outstanding = (float) ($student['-']['remain'] ?? 0);
+            if ($outstanding <= 0) {
+                // Not a defaulter -- fully paid or nothing yet due. The
+                // report this reshapes lists every enrolled student to build
+                // its month-by-month table; the drill-in is specifically
+                // "who owes money", so it filters to that.
+                continue;
+            }
+
+            $rows[] = [
+                'student_name' => (string) ($student['name'] ?? ''),
+                'standard_division' => (string) ($student['stddiv'] ?? ''),
+                'mobile' => (string) ($student['mobile'] ?? ''),
+                'outstanding_amount' => round($outstanding, 2),
+                'outstanding_display' => $this->amount($outstanding),
+            ];
+        }
+
+        usort($rows, fn ($a, $b) => $b['outstanding_amount'] <=> $a['outstanding_amount']);
+
+        return response()->json([
+            'status' => '1',
+            'message' => 'Success',
+            'columns' => [
+                ['key' => 'student_name', 'label' => 'Student'],
+                ['key' => 'standard_division', 'label' => 'Class'],
+                ['key' => 'mobile', 'label' => 'Mobile'],
+                ['key' => 'outstanding_display', 'label' => 'Outstanding'],
+            ],
+            'rows' => $rows,
+        ]);
     }
 }

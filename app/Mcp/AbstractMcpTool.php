@@ -85,7 +85,7 @@ abstract class AbstractMcpTool extends Tool implements McpToolInterface
         return [
             'name' => $this->name(),
             'description' => $this->description(),
-            'input_schema' => $this->inputSchema(),
+            'input_schema' => $this->normalisedSchema(),
             'annotations' => array_merge(
                 [
                     'read_only' => $this->isReadOnly(),
@@ -95,6 +95,43 @@ abstract class AbstractMcpTool extends Tool implements McpToolInterface
                 $this->toolAnnotations()
             ),
         ];
+    }
+
+    /**
+     * `inputSchema()` with an empty properties map encoded as an object, not a list.
+     *
+     * PHP has one array type for both, and `json_encode([])` is `[]` while
+     * `json_encode((object) [])` is `{}`. JSON Schema requires `properties` to be an
+     * object, and `toArray()` below already casts it for the protocol — so a tool whose
+     * properties map is EMPTY published `{}` over MCP while declaring `[]` here, and the
+     * two views of one tool disagreed.
+     *
+     * Every tool with at least one argument is unaffected: a non-empty associative array
+     * encodes as an object either way, which is why this went unnoticed until
+     * `utility.rollover_scope` became the first tool that takes no arguments at all.
+     * `OfficialMcpServerTest::test_the_published_schemas_match_each_tool_definition` is
+     * what caught it.
+     *
+     * Normalised here rather than in the one tool, so the next argument-free tool is
+     * correct without anybody remembering this.
+     *
+     * @return array<string, mixed>
+     */
+    private function normalisedSchema(): array
+    {
+        $schema = $this->inputSchema();
+
+        if (array_key_exists('properties', $schema)) {
+            $properties = $schema['properties'];
+            $properties = is_object($properties) ? get_object_vars($properties) : (array) $properties;
+
+            // Cast only when empty. A populated map is already an object once encoded, and
+            // casting it would make every `definition()` consumer handle stdClass for no
+            // reason — `ReportDataSourceCatalog::argumentsOf()` iterates it as an array.
+            $schema['properties'] = $properties === [] ? (object) [] : $properties;
+        }
+
+        return $schema;
     }
 
     /**

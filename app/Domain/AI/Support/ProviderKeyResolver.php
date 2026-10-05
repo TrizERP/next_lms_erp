@@ -3,7 +3,6 @@
 namespace App\Domain\AI\Support;
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 /**
@@ -41,6 +40,17 @@ use Throwable;
  */
 class ProviderKeyResolver
 {
+
+    /**
+     * The schema probes this class makes, asked once per request.
+     *
+     * Injected rather than resolved inline so a test can hand in a fresh one. See
+     * SchemaCache: these two probes used to run on every credential lookup, and the
+     * configuration overview makes fourteen of those in a row.
+     */
+    public function __construct(private readonly SchemaCache $schema)
+    {
+    }
     /**
      * The credential for one provider type, for one school.
      *
@@ -70,7 +80,7 @@ class ProviderKeyResolver
     /** @return array{api_key:string, api_limit:int|null, id:int|string|null, scope:string}|null */
     private function fromPool(string $apiType, int|string|null $subInstituteId): ?array
     {
-        if (! Schema::hasTable('ai_api_keys')) {
+        if (! $this->schema->hasTable('ai_api_keys')) {
             return null;
         }
 
@@ -79,7 +89,7 @@ class ProviderKeyResolver
                 ->where('api_type', $apiType)
                 ->where('status', 1);
 
-            $hasTenantColumn = Schema::hasColumn('ai_api_keys', 'sub_institute_id');
+            $hasTenantColumn = $this->schema->hasColumn('ai_api_keys', 'sub_institute_id');
 
             if ($hasTenantColumn) {
                 $institute = $subInstituteId === null ? null : trim((string) $subInstituteId);

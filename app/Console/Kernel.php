@@ -111,6 +111,53 @@ class Kernel extends ConsoleKernel
                 Log::channel('daily')->warning('Coherence mastery rows had no graph endpoint', $result);
             }
         })->everyFiveMinutes()->name('coherence-mastery-sweep')->withoutOverlapping();
+
+        // Set Coherence Map — full nightly projection.
+        //
+        // pal:coherence-sync (concepts, REQUIRES/CROSS_LINKS, TEACHES, ASSESSES)
+        // has no scheduled entry at all — it only ever runs when someone
+        // remembers to type it by hand, so "the PAL Knowledge Graph" is only
+        // ever as fresh as the last manual run. This closure is that missing
+        // schedule: every scope with at least one lms_concept row gets a full
+        // re-projection once a day. Cheap to run unconditionally because every
+        // write in CoherenceGraphProjection is an idempotent MERGE (plus, as of
+        // 2026-09-28, a scoped retraction of disqualified edges) — a clean
+        // scope costs one read pass and writes nothing new.
+        $schedule->call(function () {
+            $projection = app(\App\Services\Graph\CoherenceGraphProjection::class);
+
+            $scopes = \Illuminate\Support\Facades\DB::table('lms_concept')
+                ->select('sub_institute_id', 'standard_id', 'subject_id')
+                ->distinct()
+                ->get();
+
+            foreach ($scopes as $scope) {
+                $tenant = (int) $scope->sub_institute_id;
+                $standard = (int) $scope->standard_id;
+                $subject = (int) $scope->subject_id;
+
+                if ($tenant <= 0 || $standard <= 0 || $subject <= 0) {
+                    continue;
+                }
+
+                try {
+                    $projection->projectConcepts($tenant, $standard, $subject);
+                    $projection->projectRelations($tenant, $standard, $subject);
+                    $projection->projectTeaches($tenant, $standard, $subject);
+                    $projection->projectAssesses($tenant, $standard, $subject);
+                    $projection->projectLearningRelations($tenant, $standard, $subject);
+                    $projection->projectMisconceptions($tenant, $standard, $subject);
+                    $projection->projectConceptNodes($tenant, $standard, $subject);
+                    $projection->projectNodeMastery($tenant, $standard, $subject);
+                    $projection->projectLearningOutcomes($tenant, $standard, $subject);
+                } catch (\Throwable $e) {
+                    Log::channel('daily')->error('Coherence map nightly sync failed for scope', [
+                        'tenant' => $tenant, 'standard' => $standard, 'subject' => $subject,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        })->dailyAt('03:00')->name('coherence-map-nightly-sync')->withoutOverlapping(120);
     }
 
     /**
