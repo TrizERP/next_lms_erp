@@ -87,6 +87,51 @@ class ReportTemplateResolver
             ->first();
     }
 
+    /** Whether a layout's data source is still registered and read-only. */
+    public function isUsable(object $template): bool
+    {
+        return $template->data_source !== null
+            && $this->sources->isBindable((string) $template->data_source);
+    }
+
+    /**
+     * Every usable published report layout for a module, newest version of each key,
+     * the school's own row beating the platform baseline — the same precedence as find().
+     *
+     * @return array<int, object> `ai_templates` rows.
+     */
+    public function listForModule(string $moduleKey, int|string|null $institute): array
+    {
+        if (! $this->available()) {
+            return [];
+        }
+
+        $rows = DB::table('ai_templates')
+            ->where('kind', self::KIND)
+            ->where('status', 'published')
+            ->where('module_key', $moduleKey)
+            ->whereNotNull('html_layout')
+            ->where('html_layout', '!=', '')
+            ->where(function ($inner) use ($institute) {
+                $inner->whereNull('sub_institute_id');
+
+                if ($institute !== null && $institute !== '') {
+                    $inner->orWhere('sub_institute_id', $institute);
+                }
+            })
+            ->orderByRaw('sub_institute_id IS NULL ASC')
+            ->orderByDesc('version')
+            ->get();
+
+        $byKey = [];
+
+        foreach ($rows as $row) {
+            $byKey[(string) $row->template_key] ??= $row;
+        }
+
+        return array_values(array_filter($byKey, fn ($row) => $this->isUsable($row)));
+    }
+
     /**
      * Every module that has a usable report layout published.
      *

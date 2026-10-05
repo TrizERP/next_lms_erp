@@ -7,6 +7,7 @@ use App\Domain\AI\Workspace\AiContextService;
 use App\Domain\AI\Workspace\CapabilityResolver;
 use App\Domain\AI\Workspace\FlowStateResolver;
 use App\Domain\AI\Workspace\OntologyViewResolver;
+use App\Domain\AI\Templates\ReportTemplateResolver;
 use App\Domain\AI\Workspace\PageDataResolver;
 use App\Domain\GenerativeAI\GenerationRequest;
 use App\Domain\GenerativeAI\GenerationService;
@@ -38,6 +39,7 @@ class WorkspaceController extends AiController
         private readonly OntologyViewResolver $ontologyViews,
         private readonly PageDataResolver $pageData,
         private readonly AiReportGenerator $reports,
+        private readonly ReportTemplateResolver $reportLayouts,
         private readonly AgentRunner $agents,
         private readonly WorkflowEngine $workflows,
         private readonly GenerationService $generation,
@@ -301,6 +303,9 @@ class WorkspaceController extends AiController
                 'route' => 'required|string|max:500',
                 // Optional filters the layout understands. Omitted means the default view.
                 'arguments' => 'nullable|array',
+                // Which published report to build when the module has several. Omitted
+                // keeps the module's default, exactly as before.
+                'template_id' => 'nullable|integer|min:1',
             ]);
 
             $context = $this->contextService->resolve($validated['route'], $scope, $validated);
@@ -312,7 +317,8 @@ class WorkspaceController extends AiController
 
             $result = $this->reports->generate($scope, array_merge(
                 (array) ($validated['arguments'] ?? []),
-                ['module' => $module]
+                ['module' => $module],
+                isset($validated['template_id']) ? ['layout_template_id' => (int) $validated['template_id']] : []
             ));
 
             if (($result['success'] ?? false) !== true) {
@@ -327,6 +333,227 @@ class WorkspaceController extends AiController
         } catch (Throwable $exception) {
             return $this->handle($exception);
         }
+    }
+
+    /**
+     * The reports and templates the Create tab can offer for the module on screen.
+     *
+     * Everything returned is a real row: published report layouts and prompt templates
+     * from `ai_templates` (the school's own beating the platform baseline), and the
+     * `ai_suggestions` rows that already offer them. Nothing is listed that could not
+     * be run, and nothing is invented.
+     *
+     * "Suggested templates" for a report are matched from the rows' own names, keys and
+     * category — words they share, such as "pending" or "collection" — and each match
+     * says why. It is a suggestion, not a binding: any listed template can be run
+     * against the module, and the data each one reads is unchanged.
+     */
+    public function createOptions(Request $request)
+    {
+        try {
+            $scope = $this->scope($request);
+
+            $validated = $request->validate(['route' => 'required|string|max:500']);
+
+            $context = $this->contextService->resolve($validated['route'], $scope, $validated);
+            $module = $context->moduleKey;
+
+            if ($module === null || $module === 'general' || ! Schema::hasTable('ai_templates')) {
+                return $this->success('No reports or templates for this page.', [
+                    'module' => $module,
+                    'reports' => [],
+                    'templates' => [],
+                ]);
+            }
+
+            $institute = $scope->selectedInstituteId;
+            $role = $scope->role ?? null;
+
+            // Where each template is already offered, from the same rows the Create tab reads.
+            $offered = [];
+            if (Schema::hasTable('ai_suggestions')) {
+                $rows = DB::table('ai_suggestions')
+                    ->where('module_key', $module)
+                    ->where('capability', 'generative')
+                    ->where('status', 1)
+                    ->where(function ($inner) use ($institute) {
+                        $inner->whereNull('sub_institute_id');
+                        if ($institute !== null && $institute !== '') {
+                            $inner->orWhere('sub_institute_id', $institute);
+                        }
+                    })
+                    ->orderBy('sort_order')
+                    ->get(['label', 'action_type', 'action_ref', 'allowed_roles']);
+
+                foreach ($rows as $row) {
+                    $roles = is_string($row->allowed_roles) ? json_decode($row->allowed_roles, true) : null;
+                    if (is_array($roles) && $roles !== [] && ! in_array($role, $roles, true)) {
+                        continue;
+                    }
+                    if ($row->action_type === 'generate' && $row->action_ref) {
+                        $offered[(string) $row->action_ref][] = (string) $row->label;
+                    }
+                }
+            }
+
+            $defaultLayout = $this->reportLayouts->find($module, $institute);
+            $layouts = $this->reportLayouts->listForModule($module, $institute);
+
+            $promptQuery = DB::table('ai_templates')
+                ->where('status', 'published')
+                ->where(function ($inner) use ($module, $offered) {
+                    $inner->where('module_key', $module);
+                    if ($offered !== []) {
+                        $inner->orWhereIn('template_key', array_keys($offered));
+                    }
+                })
+                ->where(function ($inner) use ($institute) {
+                    $inner->whereNull('sub_institute_id');
+                    if ($institute !== null && $institute !== '') {
+                        $inner->orWhere('sub_institute_id', $institute);
+                    }
+                });
+
+            if (Schema::hasColumn('ai_templates', 'kind')) {
+                $promptQuery->where(fn ($inner) => $inner->whereNull('kind')->orWhere('kind', 'prompt'));
+            }
+
+            $byKey = [];
+            foreach ($promptQuery->orderByRaw('sub_institute_id IS NULL ASC')->orderByDesc('version')->get() as $row) {
+                $byKey[(string) $row->template_key] ??= $row;
+            }
+            $templates = array_values($byKey);
+
+            $stop = array_merge(
+                ['k12', 'report', 'reports', 'summary', 'summarise', 'summarize', 'analysis', 'analyse', 'template', 'the', 'and', 'for'],
+                $this->tokens((string) $module)
+            );
+
+            $reportsOut = [];
+            $suggestedFor = [];
+
+            foreach ($layouts as $layout) {
+                $reportTokens = array_values(array_diff(
+                    $this->tokens($layout->name . ' ' . $layout->template_key),
+                    $stop
+                ));
+
+                $matches = [];
+                foreach ($templates as $template) {
+                    $shared = array_values(array_intersect(
+                        $reportTokens,
+                        array_diff($this->tokens($template->name . ' ' . $template->template_key), $stop)
+                    ));
+
+                    if ($shared === []) {
+                        continue;
+                    }
+
+                    $score = count($shared)
+                        + (($template->category ?? null) !== null && $template->category === $layout->category ? 0.5 : 0);
+
+                    $matches[] = [
+                        'template_key' => (string) $template->template_key,
+                        'name' => (string) $template->name,
+                        'score' => $score,
+                        'reason' => 'Both cover: ' . implode(', ', $shared),
+                    ];
+                    $suggestedFor[(string) $template->template_key][] = (string) $layout->name;
+                }
+
+                usort($matches, fn ($a, $b) => $b['score'] <=> $a['score'] ?: strcmp($a['name'], $b['name']));
+                if ($matches !== []) {
+                    $matches[0]['best'] = true;
+                }
+
+                $reportsOut[] = [
+                    'id' => (int) $layout->id,
+                    'template_key' => (string) $layout->template_key,
+                    'name' => (string) $layout->name,
+                    'description' => $layout->description,
+                    'data_source' => $layout->data_source,
+                    'scope' => $layout->sub_institute_id === null ? 'platform' : 'school',
+                    'is_default' => $defaultLayout !== null && (int) $defaultLayout->id === (int) $layout->id,
+                    'suggested_templates' => $matches,
+                ];
+            }
+
+            $templatesOut = array_map(fn ($row) => [
+                'template_key' => (string) $row->template_key,
+                'name' => (string) $row->name,
+                'description' => $row->description,
+                'category' => $row->category,
+                'scope' => $row->sub_institute_id === null ? 'platform' : 'school',
+                // Where it is already offered on this module's Create tab.
+                'offered_as' => $offered[(string) $row->template_key] ?? [],
+                'suggested_for_reports' => array_values(array_unique($suggestedFor[(string) $row->template_key] ?? [])),
+                // What the person must supply. The page fills the rest itself; a template
+                // about one student's receipt cannot be generated from a school-wide page.
+                'inputs' => $this->templateInputs($row),
+            ], $templates);
+
+            return $this->success('Create options loaded.', [
+                'module' => $module,
+                'module_label' => $context->moduleLabel,
+                'reports' => $reportsOut,
+                'templates' => $templatesOut,
+            ]);
+        } catch (Throwable $exception) {
+            return $this->handle($exception);
+        }
+    }
+
+    /**
+     * The variables of a template that the page cannot fill, so the person must.
+     *
+     * The page supplies a fixed set (see pageVariables()): the rows, the figures, the
+     * filters and the page's own labels. Anything else a template declares — a student's
+     * name, an amount — has to come from the user, or the grounding check rightly
+     * refuses to generate from an empty prompt.
+     *
+     * @return array<int, array{key: string, label: string, required: bool, type: string}>
+     */
+    private function templateInputs(object $template): array
+    {
+        $supplied = [
+            'records', 'metrics', 'page_title', 'page_type', 'record_count', 'filters',
+            'search_query', 'data_source', 'rows_shown', 'is_partial', 'entity_label', 'module',
+        ];
+
+        $variables = is_string($template->variables ?? null)
+            ? json_decode($template->variables, true)
+            : ($template->variables ?? []);
+
+        if (! is_array($variables)) {
+            return [];
+        }
+
+        $inputs = [];
+
+        foreach ($variables as $variable) {
+            $key = (string) ($variable['key'] ?? '');
+
+            if ($key === '' || in_array($key, $supplied, true)) {
+                continue;
+            }
+
+            $inputs[] = [
+                'key' => $key,
+                'label' => (string) ($variable['label'] ?? $key),
+                'required' => (bool) ($variable['required'] ?? false),
+                'type' => (string) ($variable['type'] ?? 'string'),
+            ];
+        }
+
+        return $inputs;
+    }
+
+    /** @return array<int, string> Lower-case alphanumeric words longer than two characters. */
+    private function tokens(string $text): array
+    {
+        $words = preg_split('/[^a-z0-9]+/', mb_strtolower($text)) ?: [];
+
+        return array_values(array_unique(array_filter($words, fn ($word) => strlen($word) > 2)));
     }
 
     /**
