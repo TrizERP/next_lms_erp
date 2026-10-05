@@ -16,6 +16,7 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('check:broken-links')->everyMinute();
+        $schedule->command('documents:purge-trash')->dailyAt('02:30');
     }
 
     /**

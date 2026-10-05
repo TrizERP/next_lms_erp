@@ -53,6 +53,8 @@ class DocumentResource extends JsonResource
                 ),
             ],
             'snippet' => $this->when(isset($this->snippet), $this->snippet),
+            'deleted_at' => $this->deleted_at ? $this->deleted_at->toIso8601String() : null,
+            'purge_at' => $this->deleted_at ? $this->deleted_at->copy()->addDays((int) config('idms.trash_retention_days', 30))->toIso8601String() : null,
             'created_at' => $this->created_at ? $this->created_at->toIso8601String() : null,
             'updated_at' => $this->updated_at ? $this->updated_at->toIso8601String() : null,
         ];
