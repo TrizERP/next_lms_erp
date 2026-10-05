@@ -2166,7 +2166,7 @@ public function generateGammaPresentation($params = [])
             ],
             'imageOptions' => [
                 'source' => 'aiGenerated',
-                'model' => 'imagen-4-pro',
+                'model' => config('gamma.image_model'),
                 'style' => 'photorealistic'
             ],
             'cardOptions' => [
