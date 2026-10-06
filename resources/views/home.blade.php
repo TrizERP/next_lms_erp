@@ -165,7 +165,13 @@
                     @endif
                 </div>
                 <div class="col-md-3">
-                    @if(isset($data['totalFees']) && Session::get('sub_institute_id') == 76 && Session::get('user_profile_name') == 'Admin')
+                    @if(
+                        isset($data['totalFees']) &&
+                        (
+                            Session::get('sub_institute_id') != 76 ||
+                            Session::get('user_profile_name') == 'Admin'
+                        )
+                    )
                     <div class="card">
                         <div class="text-center card-body">
                         <a href="{{route('fees_collection_report.index')}}">

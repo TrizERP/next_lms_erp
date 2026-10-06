@@ -280,7 +280,7 @@ body, table, td, div, p {font-family: Arial, Helvetica, sans-serif !important;}
     <!-- SIGNATURES -->
     <div style="width:100%; margin-top:30px;">
       <div style="float:left; width:50%; text-align:center;">
-        <p style="color:#943634; font-size:16px; margin:0;"><b>Mr. P.P. Jose</b></p>
+        <p style="color:#943634; font-size:16px; margin:0;"><b>{{ (($conf ?? '') == 'C/A') ? 'Mrs. Rehana Patni' : 'Mr. Ajay Singh Chauhan' }}</b></p>
         <p style="color:#943634; font-weight:bold;">Principal</p>
       </div>
   

@@ -2780,25 +2780,26 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
         // Get standard grades
         $grade_arr = $this->getGradeScale($standard_id, '');
         $table = "";
+        $overallTotal = 0;
 
         if (!empty($groupedExam)) {
             // Step 2: Build table
             $table = "<div class='box-height'>
-                <table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #e68023;' cellspacing='0' border='1'>";
-            $table .= "<thead><tr>";
-            $table .= "<th style='text-align:center !important;'><b>SUBJECTS</b></th>";
+                <table class='aca-year' style='width: 100%;border-collapse:collapse; border:1px solid #007bff;' cellspacing='0' border='1'>";
+            $table .= "<tr>";
+            $table .= "<td style='text-align:center !important;background-color:none !important;'><b>SUBJECTS</b></td>";
 
-            $totalMarks = $overallTotal = $overallObt = 0;
+            $totalMarks = $overallObt = 0;
 
             // Create headers for each ExamTitle with total weightage
             foreach ($groupedExam as $examGroup) {
-                $table .= "<th style='text-align:center !important;'><b>" . $examGroup['title'] . "<br>(" . $examGroup['total_weightage'] . ")</b></th>";
+                $table .= "<td style='text-align:center !important;background-color:none !important;'><b>" . $examGroup['title'] . "<br>(" . $examGroup['total_weightage'] . ")</b></td>";
                 $totalMarks += $examGroup['total_weightage'];
             }
 
-            $table .= "<th style='text-align:center!important;'><b>Total <br>(" . $totalMarks . ")</b></th>";
+            $table .= "<td style='text-align:center!important;background-color:none !important;'><b>Total <br>(" . $totalMarks . ")</b></td>";
             //$table .= "<th style='text-align:center!important;'><b>Grade</b></th>";
-            $table .= "</tr></thead><tbody>";
+            $table .= "</tr><tbody>";
 
             // Step 3: Loop through subjects
             foreach ($get_subject as $subject) {
@@ -3717,7 +3718,7 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
         $sub_institute_id = session()->get('sub_institute_id');
         $extra_term  = $extra_exam = "1=1";
         $att_term = "atd.term_id = 2";
-        $standard_array = [3303,3316];
+        $standard_array = [3303,3316];//,3301,3304,3307
         
         // For upper academic type, we need to get both terms and merge exam titles
         $merge_both_terms = false;
@@ -3732,6 +3733,7 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
             $extra_exam = "rce.term_id = " . $format;
             $att_term = "atd.term_id = " . $format;
         }
+
 
         // get term_name 
         $term_name = DB::table('academic_year')->whereRaw($extra_term)->where(['sub_institute_id' => $sub_institute_id, 'syear' => $syear])->get()->toArray();
@@ -4389,16 +4391,12 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
                         // convert marks if best of 2
                         if ($standard_id == 3299 || $standard_id == 3965) {
                             if (count($obtained_mark_arr) > 1) {
-                                $convert_mark = max($numeric_marks);
+                                $convert_mark = max($numeric_marks); // get greatest max
                             } else {
-                                $convert_mark = $t_m > 0
-                                    ? (($obtained_mark_sum / $t_m) * $w_m)
-                                    : 0;
+                                $convert_mark = (($obtained_mark_sum / $t_m) * $w_m);// $obtained_mark_sum; // for PT
                             }
                         } else {
-                            $convert_mark = ($t_m > 0)
-                                ? (($obtained_mark_sum / $t_m) * $w_m)
-                                : 0;
+                            $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
                         }
 
                         $pt_per = ($convert_mark !== '0.00' && $w_m != 0) ? round(($convert_mark / $w_m) * 100, 0) : 0;
@@ -4531,11 +4529,11 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
             $r3_head = array_intersect_key($r3_all_head, $r3_marked_head);
             // R3 table started
             if (!empty($r3_head) && !empty($r3_row)) {
-                $table .= '<table class="aca-year" style="width: 45%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
+                $table .= '<table class="aca-year" style="width: 100%;border-collapse:collapse; border:1px solid #e68023;" cellspacing="0"  border="1">
                 <thead>
-                    <tr><th width="50%"><b>R3</b></th>';//style="background:black;color:white"
+                    <tr><th><b>R3</b></th>';//style="background:black;color:white"
                 foreach ($r3_head as $r3_title) {
-                    $table .= '<th width="25%" class="data_center"><b>' . $r3_title . '</b></th>';
+                    $table .= '<th class="data_center"><b>' . $r3_title . '</b></th>';
                 }
                 $table .= '</tr>
                     </thead>
@@ -4586,7 +4584,7 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
         if ($format != "yearly") {
             $extra_term = "term_id = 2";
             $extra_exam = "rce.term_id = 2";
-            $att_term = "atd.term_id = 1";
+            $att_term = "atd.term_id = 2";
         }
 
         // Retrieve data from database
@@ -6847,17 +6845,32 @@ $table .= '</div>';
     {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
-        $standard_array = [3303,3316];
+        $standard_array = [3303,3316,3301,3304,3307];
 
-        $extra_term = ($format == "yearly")
-            ? (($academic_type != "primary") ? "term_id = 2" : "1=1")
-            : "term_id = $format";
-
+        $extra_term = "1=1";
         $extra_term_co = "1=1";
+        $extra_exam = "1=1";
 
-        $extra_exam = ($format == "yearly")
-            ? (in_array($standard_id, $standard_array) ? "comark.term_id = 2" : "1=1")
-            : "comark.term_id = $format";
+        if ($academic_type != "primary") {
+
+            // Upper / non-primary should use Term 2
+            $extra_term = "term_id = 2";
+
+            if (in_array($standard_id, $standard_array)) {
+                $extra_exam = "comark.term_id = 2";
+            }
+
+        } else {
+
+            // Primary
+            if ($format == "yearly") {
+                $extra_term = "1=1";
+                $extra_exam = "1=1";
+            } else {
+                $extra_term = "term_id = $format";
+                $extra_exam = "comark.term_id = $format";
+            }
+        }
 
         $both_term = DB::table('academic_year')
             ->whereRaw($extra_term)
@@ -12073,11 +12086,11 @@ if ($format === 'yearly') {
                 ];
             }
             $groupedExam[$exam->ExamTitle]['exams'][] = $exam;
-            $groupedExam[$exam->ExamTitle]['total_weightage'] = $exam->weightage;
+            $groupedExam[$exam->ExamTitle]['total_weightage'] = $exam->points;//$exam->weightage
         }
 
         $exam_marks = $this->get_exam_marks($sub_institute_id, $student_id, 'examWise', $syear);
-        // echo "<pre>";print_r($exam_marks);exit;
+        // echo "<pre>";print_r($groupedExam);exit;
         // Get standard grades
         $grade_arr = $this->getGradeScale($standard_id, '');
         $table = "";
@@ -12097,7 +12110,7 @@ if ($format === 'yearly') {
                 $totalMarks += $examGroup['total_weightage'];
             }
 
-            $table .= "<th style='text-align:center!important;' rowspan='2'>Total</th>";
+            $table .= "<th style='text-align:center!important;' rowspan='2'>Total<br/>(100)</th>";
             $table .= "<th style='text-align:center!important;' rowspan='2'>Grade</th>";
             $table .= "</tr>
             <tr>";
@@ -12131,7 +12144,7 @@ if ($format === 'yearly') {
                         foreach ($exam_marks as $mark) {
                             if ($mark->create_exam == $exam->id && $mark->subject_id == $subject->subject_id) {
                                 if (in_array($mark->is_absent, ["AB", "N.A.", "EX"])) {
-                                    $marks = $mark->is_absent;
+                                    $marks += 0;//$mark->is_absent
                                 } else {
                                     // Convert marks as per weightage: (obt * weightage) / max_marks
                                     $marks = number_format($mark->points, 2);
@@ -12179,18 +12192,19 @@ if ($format === 'yearly') {
                             // $totalPoints +=0;
                             $obtainedTotal += floatval($examGroupTotal);
                             $overallObt += floatval($examGroupTotal);
+                            $totalPoints += floatval($examGroupPoints);
                         }
                     }
                 }
 
                 // Handle total column
                 if ($subject->elective_subject == "Yes") {
-                    $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>-</b></td>";
+                    $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "total_marks" => $totalPoints]) . "><b>-</b></td>";
                 } else {
                     if (!is_numeric($obtainedTotal)) {
-                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>" . $obtainedTotal . "</b></td>";
+                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "total_marks" => $totalPoints]) . "><b>" . $obtainedTotal . "</b></td>";
                     } else {
-                        $table .= "</td><td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>" . round($obtainedTotal, 0) . "</b></td>";
+                        $table .= "</td><td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "total_marks" => $totalPoints]) . "><b>" . round($obtainedTotal, 0) . "</b></td>";
                     }
                 }
 
@@ -12198,7 +12212,7 @@ if ($format === 'yearly') {
                 if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
                     $table .= "<td style='text-align:center!important;'><b>-</b></td>";
                 } else {
-                    $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $totalMarks, $obtainedTotal) . "</b></td>";
+                    $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $totalPoints, $obtainedTotal) . "</b></td>";
                 }
 
                 $table .= "</tr>";

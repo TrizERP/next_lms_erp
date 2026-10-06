@@ -93,6 +93,18 @@ $(function () {
     $('#event_key').on('change', renderEventMeta);
     renderEventMeta();
 
+    function togglePdfOptions() {
+        var isLetter = $('#is_letter').val() === '1';
+
+        // A letter-only template is never a body, so the attachment settings
+        // that belong to a body do not apply to it.
+        $('.body-option').toggle(!isLetter);
+        $('.pdf-option').toggle(!isLetter && $('#attach_as_pdf').val() === '1');
+    }
+
+    $('#attach_as_pdf, #is_letter').on('change', togglePdfOptions);
+    togglePdfOptions();
+
     function importLegacyLayout(silent) {
         var standards = $('select[name="standard_ids[]"]').val() || [];
 
@@ -179,7 +191,12 @@ $(function () {
             event_key: $('#event_key').val(),
             to: to,
             subject: $('#subject').val(),
-            html_content: $('#html_content').val()
+            html_content: $('#html_content').val(),
+            attach_as_pdf: $('#attach_as_pdf').val(),
+            pdf_template_id: $('select[name="pdf_template_id"]').val(),
+            pdf_filename: $('input[name="pdf_filename"]').val(),
+            status_code: $('#status_code').val(),
+            standard_ids: ($('select[name="standard_ids[]"]').val() || []).join(',')
         }, function (res) {
             alert(res.message);
         });
