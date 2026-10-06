@@ -84,6 +84,26 @@ class DocumentStorageService
     }
 
     /**
+     * Remove every stored object (current file and all versions) of a document.
+     * Used only when a trashed document is purged for good.
+     */
+    public function deleteAllFiles(DocumentMaster $document): void
+    {
+        $paths = DocumentHistory::where('document_id', $document->id)
+            ->whereNotNull('storage_path')
+            ->pluck('storage_path')
+            ->push($document->storage_path)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($paths) {
+            Storage::disk($this->disk)->delete($paths);
+        }
+    }
+
+    /**
      * Get raw content of a stored file
      */
     public function get(string $path): string

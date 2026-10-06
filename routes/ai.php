@@ -211,6 +211,7 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             // `report` writes a saved report with an id, which /ai-reports/{id} already
             // previews, edits, refreshes, prints and sends.
             Route::post('/workspace/report', [WorkspaceController::class, 'report']);
+            Route::match(['get', 'post'], '/workspace/create-options', [WorkspaceController::class, 'createOptions']);
             Route::post('/workspace/agents/{agent}/run', [WorkspaceController::class, 'runAgent'])
                 ->where('agent', '[a-z0-9_\-]+');
             Route::post('/workspace/workflows/{workflow}/start', [WorkspaceController::class, 'startWorkflow'])

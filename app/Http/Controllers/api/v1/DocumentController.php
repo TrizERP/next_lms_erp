@@ -547,6 +547,77 @@ class DocumentController extends Controller
     }
 
     /**
+     * GET /api/v1/trash/documents - Documents deleted within the retention window
+     */
+    public function trash(Request $request)
+    {
+        $ctx = $this->getContext($request);
+        $days = (int) config('idms.trash_retention_days', 30);
+
+        $docs = DocumentMaster::onlyTrashed()
+            ->visibleTo($ctx['user'], $ctx['sub_institute_id'])
+            ->where('document_master.deleted_at', '>=', now()->subDays($days))
+            ->orderByDesc('document_master.deleted_at')
+            ->limit(200)
+            ->get()
+            ->filter(fn ($d) => app(\App\Policies\DocumentPolicy::class)->delete($ctx['user'], $d))
+            ->values();
+
+        return response()->json([
+            'status' => 1,
+            'retention_days' => $days,
+            'data' => DocumentResource::collection($docs),
+        ]);
+    }
+
+    /**
+     * POST /api/v1/trash/documents/{id}/restore
+     */
+    public function restore($id, Request $request)
+    {
+        $ctx = $this->getContext($request);
+        $document = DocumentMaster::onlyTrashed()->visibleTo($ctx['user'], $ctx['sub_institute_id'])->find($id);
+
+        if (!$document) {
+            return response()->json(['status' => 0, 'message' => 'Document not found in trash.'], 404);
+        }
+        if (!app(\App\Policies\DocumentPolicy::class)->delete($ctx['user'], $document)) {
+            return response()->json(['status' => 0, 'message' => 'Unauthorized to restore this document.'], 403);
+        }
+
+        $days = (int) config('idms.trash_retention_days', 30);
+        if ($document->deleted_at && $document->deleted_at->lt(now()->subDays($days))) {
+            return response()->json(['status' => 0, 'message' => "This document was deleted more than {$days} days ago and can no longer be restored."], 410);
+        }
+
+        $document->restore();
+        DocumentAuditService::log($document, 'restore', $ctx['user']->id);
+
+        return response()->json(['status' => 1, 'message' => 'Document restored.', 'data' => new DocumentResource($document)]);
+    }
+
+    /**
+     * DELETE /api/v1/trash/documents/{id} - Delete forever (only from trash)
+     */
+    public function purge($id, Request $request)
+    {
+        $ctx = $this->getContext($request);
+        $document = DocumentMaster::onlyTrashed()->visibleTo($ctx['user'], $ctx['sub_institute_id'])->find($id);
+
+        if (!$document) {
+            return response()->json(['status' => 0, 'message' => 'Document not found in trash.'], 404);
+        }
+        if (!app(\App\Policies\DocumentPolicy::class)->delete($ctx['user'], $document)) {
+            return response()->json(['status' => 0, 'message' => 'Unauthorized to delete this document.'], 403);
+        }
+
+        $this->storage->deleteAllFiles($document);
+        $document->forceDelete();
+
+        return response()->json(['status' => 1, 'message' => 'Document deleted forever.']);
+    }
+
+    /**
      * POST /api/v1/search/parse - Natural Language Query parser
      */
     public function parseSearch(Request $request)

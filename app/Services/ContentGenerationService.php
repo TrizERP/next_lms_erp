@@ -6,6 +6,7 @@ use Anthropic\Client as AnthropicClient;
 use Anthropic\Core\Exceptions\APIStatusException;
 use Anthropic\Lib\Streaming\MessageAccumulator;
 use App\Models\lms\contentModel;
+use App\Services\Content\RendersContentPresentation;
 use App\Services\Content\RendersGeneratedContent;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -27,22 +28,48 @@ use Throwable;
  */
 class ContentGenerationService
 {
+    use RendersContentPresentation;
     use RendersGeneratedContent;
 
     /**
      * Output-format instruction only - no pedagogy, no subject matter.
      *
-     * The four document prompts already carry these same PDF formatting rules
-     * (PDF_FORMATTING_INSTRUCTIONS in sideDrawer.tsx). The two presentation
-     * prompts do not: they ask for slide-by-slide prose, because Gamma used to
-     * do the rendering. Repeating the rules in the system prompt makes the
-     * presentation output land as HTML too, without editing any prompt.
+     * The three document prompts already carry these same formatting rules
+     * (PDF_FORMATTING_INSTRUCTIONS in sideDrawer.tsx, interpolated at exactly
+     * three sites - remedial class, classroom activity, and the generic
+     * revision-notes branch). The presentation prompts do not, and must not:
+     * they ask for slide-by-slide prose because Gamma builds its own slides
+     * from that prose, and handing Gamma HTML would break it.
+     *
+     * Repeating the rules here is therefore what makes a presentation land as
+     * structured HTML when Claude - rather than Gamma - does the rendering,
+     * without editing a prompt Gamma still depends on. It is also why the
+     * slide markup guidance below appears here and nowhere else.
      */
     private const OUTPUT_FORMAT_SYSTEM = "Return the finished document as clean HTML suitable for direct PDF conversion.\n"
         . "- Use semantic HTML tags such as <h2>, <h3>, <p>, <strong>, <ul>, <ol>, <li>, and <table> where appropriate.\n"
         . "- Do not use Markdown syntax such as #, ##, **, *, backticks, or code fences.\n"
-        . "- Use clear section headings, bold emphasis, readable lists, adequate spacing, and a professional document layout.\n"
-        . "- Return only the document body content. Do not wrap it in markdown fences, and do not add commentary before or after it.";
+        . "- Return only the document body content. Do not wrap it in markdown fences, and do not add commentary before or after it.\n"
+        . "- Do not use inline styles, colours or emoji. Appearance is handled entirely by the stylesheet.\n"
+        . "\n"
+        . "Use these design-system classes:\n"
+        . "- <section class=\"cover\"> with <p class=\"eyebrow\">, <h2> and <p class=\"lede\"> for the opening panel.\n"
+        . "- <section class=\"callout callout-key\"> for a key idea, callout-warn for a misconception, "
+        . "callout-example for a worked example, callout-try for something the learner must do or answer.\n"
+        . "- Every callout opens with <span class=\"callout-label\">Short label</span>, so meaning is never carried by colour alone.\n"
+        . "- <table class=\"tiles\"> with <span class=\"tile-num\"> and <span class=\"tile-label\"> for headline figures.\n"
+        . "- For a presentation, wrap each slide in <section class=\"slide\"> opening with "
+        . "<div class=\"slide-head\"><span class=\"slide-num\">Slide N</span><h3>Title</h3></div>, "
+        . "and give every slide at least one callout-try the learner must answer.\n"
+        . "\n"
+        . "Tag every section with what it teaches:\n"
+        . "- data-block: intro, explain, visual, example, real-world, misconception, check, activity, summary or assess\n"
+        . "- data-concept: the concept name exactly as given in the prompt\n"
+        . "- data-bloom: remember, understand, apply, analyze, evaluate or create (lowercase)\n"
+        . "- data-dok: 1, 2, 3 or 4\n"
+        . "- data-minutes: an integer\n"
+        . "Example: <section class=\"callout callout-warn\" data-block=\"misconception\" data-concept=\"Osmosis\" "
+        . "data-bloom=\"understand\" data-dok=\"2\" data-minutes=\"4\"><span class=\"callout-label\">Common misconception</span><p>...</p></section>";
 
     /**
      * Is this chapter served by Claude?
@@ -274,11 +301,16 @@ class ContentGenerationService
         // content_master.description is already safe to render.
         $html = $this->formatGeneratedPdfBody($generated['text']);
 
-        $renderer = $this->resolvePresentationRenderer((bool) ($input['is_presentation'] ?? false));
+        $isPresentation = (bool) ($input['is_presentation'] ?? false);
+        $renderer = $this->resolvePresentationRenderer($isPresentation);
         $binary = $renderer($generated['text'], $chapterName, $contentType);
+        // A presentation is now a real .pptx, so the extension and the stored
+        // file_type have to follow the renderer rather than assuming PDF - the
+        // content library uses file_type to decide how to offer the file.
+        $extension = $this->presentationFileType($isPresentation);
 
         $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '_', $contentType . '_' . $chapterName));
-        $fileName = trim($slug, '_') . '_' . time() . '.pdf';
+        $fileName = trim($slug, '_') . '_' . time() . '.' . $extension;
         $spacesPath = 'public/lms_content_file/' . $fileName;
 
         Storage::disk('digitalocean')->put($spacesPath, $binary, 'public');
@@ -302,7 +334,7 @@ class ContentGenerationService
             'file_folder' => '/lms_content_file',
             'filename' => $fileName,
             'url' => $fileUrl,
-            'file_type' => 'pdf',
+            'file_type' => $extension,
             'file_size' => strlen($binary) ?: null,
             'show_hide' => '1',
             'sort_order' => null,
@@ -339,7 +371,7 @@ class ContentGenerationService
                     'file_url' => $fileUrl,
                     'storage_path' => $spacesPath,
                     'filename' => $fileName,
-                    'file_type' => 'pdf',
+                    'file_type' => $extension,
                     'content_category' => $contentType,
                     'source' => config('claude.source_label', 'Claude AI'),
                     'model' => $model,
@@ -351,21 +383,35 @@ class ContentGenerationService
     }
 
     /**
-     * Seam for a real .pptx renderer.
+     * Pick the renderer for this content type.
      *
-     * Both presentation types currently render through the same HTML -> PDF
-     * pipeline as the documents. To emit an actual deck instead, return a
-     * different callable here for $isPresentation - a Claude Agent Skills call
-     * (code_execution + python-pptx, artifact retrieved through the Files API)
-     * is the intended replacement. Callers do not change; only file_type and
-     * filename in persist() would need to follow.
+     * A presentation becomes a real, editable .pptx so a teacher can open it in
+     * PowerPoint, drop a slide or add their own example. Everything else stays
+     * on the HTML -> PDF path, which is the right output for a document.
+     *
+     * The earlier note here proposed a Claude Agent Skills call with
+     * python-pptx. That turned out to be unnecessary: phpoffice/phppresentation
+     * was already a dependency with zero usages, so the deck is built in-process
+     * with no sandbox, no API key and no extra package. See
+     * RendersContentPresentation.
      *
      * @return callable(string,string,string):string
      */
     protected function resolvePresentationRenderer(bool $isPresentation): callable
     {
+        if ($isPresentation) {
+            return fn (string $body, string $chapterName, string $contentType): string
+                => $this->renderContentPresentationPptx($body, $chapterName, $contentType);
+        }
+
         return fn (string $body, string $chapterName, string $contentType): string
             => $this->renderGeneratedContentPdf($body, $chapterName, $contentType);
+    }
+
+    /** File extension and content_master.file_type for a rendered artefact. */
+    protected function presentationFileType(bool $isPresentation): string
+    {
+        return $isPresentation ? 'pptx' : 'pdf';
     }
 
     protected function readableApiError(APIStatusException $e): string

@@ -1010,6 +1010,9 @@ Route::prefix('v1')->group(function () {
     Route::get('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'show']);
     Route::patch('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'update']);
     Route::delete('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'destroy']);
+    Route::get('trash/documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'trash']);
+    Route::post('trash/documents/{id}/restore', [\App\Http\Controllers\api\v1\DocumentController::class, 'restore']);
+    Route::delete('trash/documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'purge']);
     Route::post('documents/{id}/confirm', [\App\Http\Controllers\api\v1\DocumentController::class, 'confirm']);
     Route::post('documents/{id}/tags', [\App\Http\Controllers\api\v1\DocumentController::class, 'updateTags']);
     Route::get('documents/{id}/preview', [\App\Http\Controllers\api\v1\DocumentController::class, 'preview']);
