@@ -4577,14 +4577,19 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
     {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
+        $standard_array = [3300,3305,3306];
 
         // Initialize variables
         $extra_term = $extra_exam = "1=1";
-        $att_term = "atd.term_id = 2";
-        if ($format != "yearly") {
+        //$att_term = "atd.term_id = 2";
+        if ($format != "yearly" && !in_array($standard_id, $standard_array)) {
             $extra_term = "term_id = 2";
             $extra_exam = "rce.term_id = 2";
             $att_term = "atd.term_id = 2";
+        }else{
+            $extra_term = "term_id = $format";
+            $extra_exam = "rce.term_id = $format";
+            $att_term = "atd.term_id = $format";
         }
 
         // Retrieve data from database
@@ -6858,6 +6863,8 @@ $table .= '</div>';
 
             if (in_array($standard_id, $standard_array)) {
                 $extra_exam = "comark.term_id = 2";
+            }else{
+                $extra_exam = "comark.term_id = $format";
             }
 
         } else {
