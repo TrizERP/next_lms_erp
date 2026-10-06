@@ -12086,11 +12086,11 @@ if ($format === 'yearly') {
                 ];
             }
             $groupedExam[$exam->ExamTitle]['exams'][] = $exam;
-            $groupedExam[$exam->ExamTitle]['total_weightage'] = $exam->weightage;
+            $groupedExam[$exam->ExamTitle]['total_weightage'] = $exam->points;//$exam->weightage
         }
 
         $exam_marks = $this->get_exam_marks($sub_institute_id, $student_id, 'examWise', $syear);
-        // echo "<pre>";print_r($exam_marks);exit;
+        // echo "<pre>";print_r($groupedExam);exit;
         // Get standard grades
         $grade_arr = $this->getGradeScale($standard_id, '');
         $table = "";
@@ -12110,7 +12110,7 @@ if ($format === 'yearly') {
                 $totalMarks += $examGroup['total_weightage'];
             }
 
-            $table .= "<th style='text-align:center!important;' rowspan='2'>Total</th>";
+            $table .= "<th style='text-align:center!important;' rowspan='2'>Total<br/>(100)</th>";
             $table .= "<th style='text-align:center!important;' rowspan='2'>Grade</th>";
             $table .= "</tr>
             <tr>";
@@ -12144,7 +12144,7 @@ if ($format === 'yearly') {
                         foreach ($exam_marks as $mark) {
                             if ($mark->create_exam == $exam->id && $mark->subject_id == $subject->subject_id) {
                                 if (in_array($mark->is_absent, ["AB", "N.A.", "EX"])) {
-                                    $marks = $mark->is_absent;
+                                    $marks += 0;//$mark->is_absent
                                 } else {
                                     // Convert marks as per weightage: (obt * weightage) / max_marks
                                     $marks = number_format($mark->points, 2);
@@ -12192,18 +12192,19 @@ if ($format === 'yearly') {
                             // $totalPoints +=0;
                             $obtainedTotal += floatval($examGroupTotal);
                             $overallObt += floatval($examGroupTotal);
+                            $totalPoints += floatval($examGroupPoints);
                         }
                     }
                 }
 
                 // Handle total column
                 if ($subject->elective_subject == "Yes") {
-                    $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>-</b></td>";
+                    $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "total_marks" => $totalPoints]) . "><b>-</b></td>";
                 } else {
                     if (!is_numeric($obtainedTotal)) {
-                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>" . $obtainedTotal . "</b></td>";
+                        $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "total_marks" => $totalPoints]) . "><b>" . $obtainedTotal . "</b></td>";
                     } else {
-                        $table .= "</td><td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal]) . "><b>" . round($obtainedTotal, 0) . "</b></td>";
+                        $table .= "</td><td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "total_marks" => $totalPoints]) . "><b>" . round($obtainedTotal, 0) . "</b></td>";
                     }
                 }
 
@@ -12211,7 +12212,7 @@ if ($format === 'yearly') {
                 if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
                     $table .= "<td style='text-align:center!important;'><b>-</b></td>";
                 } else {
-                    $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $totalMarks, $obtainedTotal) . "</b></td>";
+                    $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $totalPoints, $obtainedTotal) . "</b></td>";
                 }
 
                 $table .= "</tr>";
