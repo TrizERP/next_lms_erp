@@ -1788,21 +1788,6 @@ $restrict_date = $request->input('restrict_date');
             ->join('question_type_master', 'question_type_master.id', '=', 'lms_question_master.question_type_id')
             ->leftJoin('chapter_master', 'chapter_master.id', '=', 'lms_question_master.chapter_id')
             ->leftJoin('lms_question_extraction', 'lms_question_extraction.question_id', '=', 'lms_question_master.id')
-<<<<<<< HEAD
-            // Resolve the catalog form from the sidecar where one exists, and
-            // otherwise from the derived tag on the question itself. Joining the
-            // sidecar alone meant the ~3k generated questions -- which have no
-            // sidecar at all -- every one matched nothing and displayed as the
-            // coarse "narrative", so the form dropdown could not see them.
-            // NOT a join. question_type_catalog is per-publisher: 'case_study'
-            // exists once for KVS and once for NODIA, so joining on code alone
-            // returned every case-study question TWICE - 1,211 rows for 1,198
-            // questions, and the same question drawn twice in the UI. A
-            // correlated subquery is single-valued by construction, so no
-            // catalog row can ever multiply a question again. It prefers the
-            // row belonging to the question's own publisher and falls back to
-            // the oldest, which is the shared/standard one.
-=======
             // Resolve the catalog form from the sidecar where one exists, then a
             // teacher's own manual pick, then the derived tag on the question
             // itself. Joining the sidecar alone meant the ~3k generated
@@ -1828,7 +1813,6 @@ $restrict_date = $request->input('restrict_date');
                         . 'WHERE t2.code = question_type_catalog.code)'
                     ));
             })
->>>>>>> 8ff4adfb5434f33076c51cc2bfe419a6fd8a0059
             ->leftJoin('question_publisher', 'question_publisher.id', '=', 'lms_question_extraction.publisher_id')
             // lms_question_master.concept is a legacy free-text column. The
             // extraction pipeline sets concept_id - the real foreign key - and
