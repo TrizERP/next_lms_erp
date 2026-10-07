@@ -1,0 +1,1605 @@
+{
+    "scope": {
+        "chapter_id": 23512,
+        "subject_id": 3976,
+        "standard_id": 43,
+        "sub_institute_id": 1
+    },
+    "activities": [
+        {
+            "id": "activity_01",
+            "source_type": "drag_drop",
+            "format": "drag_drop",
+            "concept_id": 24784,
+            "difficulty": "Easy",
+            "bloom": "Remember",
+            "dok": 1,
+            "title": "Drag each point onto the quadrant of the coordinate plane where it lies.",
+            "image": {
+                "file": "coord_geometry_ch13_images/plane_plain.png",
+                "width_px": 800,
+                "height_px": 800,
+                "mime": "image/png",
+                "alt": "Cartesian coordinate plane with x-axis and y-axis marked from -8 to 8",
+                "sha1": "27a4246b7ce7934032ed2ccf8dbadc6df3dacba8",
+                "bytes": 9001,
+                "plane": {
+                    "W": 800,
+                    "H": 800,
+                    "ox": 400,
+                    "oy": 400,
+                    "u": 45
+                }
+            },
+            "zones": [
+                {
+                    "id": "z1",
+                    "label": "Quadrant I",
+                    "x": 55,
+                    "y": 7.5,
+                    "width": 37.5,
+                    "height": 37.5,
+                    "quadrant": "I"
+                },
+                {
+                    "id": "z2",
+                    "label": "Quadrant II",
+                    "x": 7.5,
+                    "y": 7.5,
+                    "width": 37.5,
+                    "height": 37.5,
+                    "quadrant": "II"
+                },
+                {
+                    "id": "z3",
+                    "label": "Quadrant III",
+                    "x": 7.5,
+                    "y": 55,
+                    "width": 37.5,
+                    "height": 37.5,
+                    "quadrant": "III"
+                },
+                {
+                    "id": "z4",
+                    "label": "Quadrant IV",
+                    "x": 55,
+                    "y": 55,
+                    "width": 37.5,
+                    "height": 37.5,
+                    "quadrant": "IV"
+                }
+            ],
+            "elements": [
+                {
+                    "id": "e1",
+                    "text": "(-3, 5)",
+                    "zone_id": "z2",
+                    "point": [
+                        -3,
+                        5
+                    ]
+                },
+                {
+                    "id": "e2",
+                    "text": "(4, -6)",
+                    "zone_id": "z4",
+                    "point": [
+                        4,
+                        -6
+                    ]
+                },
+                {
+                    "id": "e3",
+                    "text": "(-7, -2)",
+                    "zone_id": "z3",
+                    "point": [
+                        -7,
+                        -2
+                    ]
+                },
+                {
+                    "id": "e4",
+                    "text": "(8, 3)",
+                    "zone_id": "z1",
+                    "point": [
+                        8,
+                        3
+                    ]
+                }
+            ],
+            "explanation": "The signs of the x- and y-coordinates decide the quadrant: (+, +) is I, (-, +) is II, (-, -) is III and (+, -) is IV.",
+            "checks": [
+                {
+                    "t": "quad",
+                    "p": [
+                        -3,
+                        5
+                    ],
+                    "expect": "II"
+                },
+                {
+                    "t": "quad",
+                    "p": [
+                        4,
+                        -6
+                    ],
+                    "expect": "IV"
+                },
+                {
+                    "t": "quad",
+                    "p": [
+                        -7,
+                        -2
+                    ],
+                    "expect": "III"
+                },
+                {
+                    "t": "quad",
+                    "p": [
+                        8,
+                        3
+                    ],
+                    "expect": "I"
+                }
+            ]
+        },
+        {
+            "id": "activity_02",
+            "source_type": "drag_drop",
+            "format": "drag_drop",
+            "concept_id": 24785,
+            "difficulty": "Medium",
+            "bloom": "Understand",
+            "dok": 1,
+            "title": "Drag each point onto the part of the axes where it lies.",
+            "image": {
+                "file": "coord_geometry_ch13_images/plane_plain.png",
+                "width_px": 800,
+                "height_px": 800,
+                "mime": "image/png",
+                "alt": "Cartesian coordinate plane with x-axis and y-axis marked from -8 to 8",
+                "sha1": "27a4246b7ce7934032ed2ccf8dbadc6df3dacba8",
+                "bytes": 9001,
+                "plane": {
+                    "W": 800,
+                    "H": 800,
+                    "ox": 400,
+                    "oy": 400,
+                    "u": 45
+                }
+            },
+            "zones": [
+                {
+                    "id": "z1",
+                    "label": "Positive x-axis",
+                    "x": 80.938,
+                    "y": 44.375,
+                    "width": 11.25,
+                    "height": 11.25,
+                    "axis": "x+"
+                },
+                {
+                    "id": "z2",
+                    "label": "Negative y-axis",
+                    "x": 44.375,
+                    "y": 80.938,
+                    "width": 11.25,
+                    "height": 11.25,
+                    "axis": "y-"
+                },
+                {
+                    "id": "z3",
+                    "label": "Origin",
+                    "x": 45,
+                    "y": 45,
+                    "width": 10,
+                    "height": 10,
+                    "axis": "origin"
+                },
+                {
+                    "id": "z4",
+                    "label": "Negative x-axis",
+                    "x": 7.813,
+                    "y": 44.375,
+                    "width": 11.25,
+                    "height": 11.25,
+                    "axis": "x-"
+                },
+                {
+                    "id": "z5",
+                    "label": "Positive y-axis",
+                    "x": 44.375,
+                    "y": 7.813,
+                    "width": 11.25,
+                    "height": 11.25,
+                    "axis": "y+"
+                }
+            ],
+            "elements": [
+                {
+                    "id": "e1",
+                    "text": "(6, 0)",
+                    "zone_id": "z1",
+                    "point": [
+                        6,
+                        0
+                    ]
+                },
+                {
+                    "id": "e2",
+                    "text": "(0, -7)",
+                    "zone_id": "z2",
+                    "point": [
+                        0,
+                        -7
+                    ]
+                },
+                {
+                    "id": "e3",
+                    "text": "(0, 0)",
+                    "zone_id": "z3",
+                    "point": [
+                        0,
+                        0
+                    ]
+                },
+                {
+                    "id": "e4",
+                    "text": "(-5, 0)",
+                    "zone_id": "z4",
+                    "point": [
+                        -5,
+                        0
+                    ]
+                },
+                {
+                    "id": "e5",
+                    "text": "(0, 4)",
+                    "zone_id": "z5",
+                    "point": [
+                        0,
+                        4
+                    ]
+                }
+            ],
+            "explanation": "A point with y = 0 lies on the x-axis, a point with x = 0 lies on the y-axis, and (0, 0) is the origin.",
+            "checks": [
+                {
+                    "t": "pos",
+                    "p": [
+                        6,
+                        0
+                    ],
+                    "expect": "Positive x-axis"
+                },
+                {
+                    "t": "pos",
+                    "p": [
+                        0,
+                        -7
+                    ],
+                    "expect": "Negative y-axis"
+                },
+                {
+                    "t": "pos",
+                    "p": [
+                        0,
+                        0
+                    ],
+                    "expect": "Origin"
+                },
+                {
+                    "t": "pos",
+                    "p": [
+                        -5,
+                        0
+                    ],
+                    "expect": "Negative x-axis"
+                },
+                {
+                    "t": "pos",
+                    "p": [
+                        0,
+                        4
+                    ],
+                    "expect": "Positive y-axis"
+                }
+            ]
+        },
+        {
+            "id": "activity_03",
+            "source_type": "drag_drop",
+            "format": "drag_drop",
+            "concept_id": 24787,
+            "difficulty": "Medium",
+            "bloom": "Apply",
+            "dok": 2,
+            "title": "Read the end points from the grid, then drag each length onto its segment.",
+            "image": {
+                "file": "coord_geometry_ch13_images/plane_segments.png",
+                "width_px": 800,
+                "height_px": 800,
+                "mime": "image/png",
+                "alt": "Coordinate grid with three line segments AB, CD and EF drawn between marked points",
+                "sha1": "0a9f51fb86c748b3ac929a2249d3a062f336e490",
+                "bytes": 16762,
+                "plane": {
+                    "W": 800,
+                    "H": 800,
+                    "ox": 400,
+                    "oy": 400,
+                    "u": 45
+                }
+            },
+            "zones": [
+                {
+                    "id": "z1",
+                    "label": "Segment AB",
+                    "x": 57.188,
+                    "y": 26.25,
+                    "width": 13.75,
+                    "height": 13.75,
+                    "contains": [
+                        2.5,
+                        3
+                    ]
+                },
+                {
+                    "id": "z2",
+                    "label": "Segment CD",
+                    "x": 20.625,
+                    "y": 48.75,
+                    "width": 13.75,
+                    "height": 13.75,
+                    "contains": [
+                        -4,
+                        -1
+                    ]
+                },
+                {
+                    "id": "z3",
+                    "label": "Segment EF",
+                    "x": 68.438,
+                    "y": 43.125,
+                    "width": 13.75,
+                    "height": 13.75,
+                    "contains": [
+                        4.5,
+                        0
+                    ]
+                }
+            ],
+            "elements": [
+                {
+                    "id": "e1",
+                    "text": "5 units",
+                    "zone_id": "z1",
+                    "point": null
+                },
+                {
+                    "id": "e2",
+                    "text": "10 units",
+                    "zone_id": "z2",
+                    "point": null
+                },
+                {
+                    "id": "e3",
+                    "text": "13 units",
+                    "zone_id": "z3",
+                    "point": null
+                }
+            ],
+            "segments": [
+                [
+                    "z1",
+                    [
+                        1,
+                        1
+                    ],
+                    [
+                        4,
+                        5
+                    ]
+                ],
+                [
+                    "z2",
+                    [
+                        -7,
+                        -5
+                    ],
+                    [
+                        -1,
+                        3
+                    ]
+                ],
+                [
+                    "z3",
+                    [
+                        2,
+                        -6
+                    ],
+                    [
+                        7,
+                        6
+                    ]
+                ]
+            ],
+            "explanation": "Use the distance formula: AB = √(3² + 4²) = 5, CD = √(6² + 8²) = 10 and EF = √(5² + 12²) = 13.",
+            "checks": [
+                {
+                    "t": "dist",
+                    "p": [
+                        1,
+                        1
+                    ],
+                    "q": [
+                        4,
+                        5
+                    ],
+                    "expect": 5
+                },
+                {
+                    "t": "dist",
+                    "p": [
+                        -7,
+                        -5
+                    ],
+                    "q": [
+                        -1,
+                        3
+                    ],
+                    "expect": 10
+                },
+                {
+                    "t": "dist",
+                    "p": [
+                        2,
+                        -6
+                    ],
+                    "q": [
+                        7,
+                        6
+                    ],
+                    "expect": 13
+                }
+            ]
+        },
+        {
+            "id": "activity_04",
+            "source_type": "drag_drop",
+            "format": "drag_drop",
+            "concept_id": 24789,
+            "difficulty": "Hard",
+            "bloom": "Apply",
+            "dok": 3,
+            "title": "A is (-2, -1) and B is (10, 5). Drag each ratio onto the point that divides AB in that ratio.",
+            "image": {
+                "file": "coord_geometry_ch13_images/plane_ratio.png",
+                "width_px": 800,
+                "height_px": 620,
+                "mime": "image/png",
+                "alt": "Coordinate grid with line segment AB and three marked points P, Q and R on it",
+                "sha1": "40cc88f27ae1e0d6d6563f5e08c98cf6a73d53f2",
+                "bytes": 13298,
+                "plane": {
+                    "W": 800,
+                    "H": 620,
+                    "ox": 220,
+                    "oy": 400,
+                    "u": 45
+                }
+            },
+            "zones": [
+                {
+                    "id": "z1",
+                    "label": "Point P",
+                    "x": 36.5,
+                    "y": 53.871,
+                    "width": 18.75,
+                    "height": 6.774,
+                    "contains": [
+                        2,
+                        1
+                    ]
+                },
+                {
+                    "id": "z2",
+                    "label": "Point Q",
+                    "x": 47.75,
+                    "y": 46.613,
+                    "width": 18.75,
+                    "height": 6.774,
+                    "contains": [
+                        4,
+                        2
+                    ]
+                },
+                {
+                    "id": "z3",
+                    "label": "Point R",
+                    "x": 59,
+                    "y": 39.355,
+                    "width": 18.75,
+                    "height": 6.774,
+                    "contains": [
+                        6,
+                        3
+                    ]
+                }
+            ],
+            "elements": [
+                {
+                    "id": "e1",
+                    "text": "AP : PB = 1 : 2",
+                    "zone_id": "z1",
+                    "point": [
+                        2,
+                        1
+                    ]
+                },
+                {
+                    "id": "e2",
+                    "text": "AP : PB = 1 : 1",
+                    "zone_id": "z2",
+                    "point": [
+                        4,
+                        2
+                    ]
+                },
+                {
+                    "id": "e3",
+                    "text": "AP : PB = 2 : 1",
+                    "zone_id": "z3",
+                    "point": [
+                        6,
+                        3
+                    ]
+                }
+            ],
+            "explanation": "For AP : PB = m : n the point is ((10m − 2n)/(m + n), (5m − n)/(m + n)): 1 : 2 gives (2, 1), 1 : 1 gives (4, 2) and 2 : 1 gives (6, 3).",
+            "checks": [
+                {
+                    "t": "sec",
+                    "p": [
+                        -2,
+                        -1
+                    ],
+                    "q": [
+                        10,
+                        5
+                    ],
+                    "m": 1,
+                    "n": 2,
+                    "expect": [
+                        2,
+                        1
+                    ]
+                },
+                {
+                    "t": "mid",
+                    "p": [
+                        -2,
+                        -1
+                    ],
+                    "q": [
+                        10,
+                        5
+                    ],
+                    "expect": [
+                        4,
+                        2
+                    ]
+                },
+                {
+                    "t": "sec",
+                    "p": [
+                        -2,
+                        -1
+                    ],
+                    "q": [
+                        10,
+                        5
+                    ],
+                    "m": 2,
+                    "n": 1,
+                    "expect": [
+                        6,
+                        3
+                    ]
+                }
+            ],
+            "ends": [
+                [
+                    -2,
+                    -1
+                ],
+                [
+                    10,
+                    5
+                ]
+            ]
+        },
+        {
+            "id": "activity_05",
+            "source_type": "fill_blanks",
+            "format": "fill_blank",
+            "concept_id": 24786,
+            "difficulty": "Easy",
+            "bloom": "Remember",
+            "dok": 1,
+            "text": "The distance of the point (-6, 8) from the origin is ______ units. This point lies in the ______ quadrant.",
+            "answers": [
+                "10",
+                "second"
+            ],
+            "alts": [
+                [],
+                [
+                    "2nd",
+                    "II"
+                ]
+            ],
+            "explanation": "Distance from the origin is √(36 + 64) = 10, and x < 0 with y > 0 places the point in the second quadrant.",
+            "checks": [
+                {
+                    "t": "dist",
+                    "p": [
+                        0,
+                        0
+                    ],
+                    "q": [
+                        -6,
+                        8
+                    ],
+                    "expect": 10
+                },
+                {
+                    "t": "quad",
+                    "p": [
+                        -6,
+                        8
+                    ],
+                    "expect": "II"
+                }
+            ]
+        },
+        {
+            "id": "activity_06",
+            "source_type": "fill_blanks",
+            "format": "fill_blank",
+            "concept_id": 24792,
+            "difficulty": "Medium",
+            "bloom": "Apply",
+            "dok": 2,
+            "text": "On a school map the library is at (-4, 9) and the canteen is at (10, -5). A bench exactly halfway between them is at x = ______ and y = ______.",
+            "answers": [
+                "3",
+                "2"
+            ],
+            "alts": [
+                [],
+                []
+            ],
+            "explanation": "The midpoint is ((-4 + 10)/2, (9 - 5)/2) = (3, 2).",
+            "checks": [
+                {
+                    "t": "mid",
+                    "p": [
+                        -4,
+                        9
+                    ],
+                    "q": [
+                        10,
+                        -5
+                    ],
+                    "expect": [
+                        3,
+                        2
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "activity_07",
+            "source_type": "fill_blanks",
+            "format": "fill_blank",
+            "concept_id": 24790,
+            "difficulty": "Medium",
+            "bloom": "Apply",
+            "dok": 2,
+            "text": "The point dividing A(-3, 2) and B(7, -8) internally in the ratio 2 : 3 has x-coordinate ______ and y-coordinate ______.",
+            "answers": [
+                "1",
+                "-2"
+            ],
+            "alts": [
+                [],
+                [
+                    "−2"
+                ]
+            ],
+            "explanation": "x = (2×7 + 3×(-3))/5 = 1 and y = (2×(-8) + 3×2)/5 = -2, so the point is (1, -2).",
+            "checks": [
+                {
+                    "t": "sec",
+                    "p": [
+                        -3,
+                        2
+                    ],
+                    "q": [
+                        7,
+                        -8
+                    ],
+                    "m": 2,
+                    "n": 3,
+                    "expect": [
+                        1,
+                        -2
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "activity_08",
+            "source_type": "fill_blanks",
+            "format": "fill_blank",
+            "concept_id": 24788,
+            "difficulty": "Hard",
+            "bloom": "Apply",
+            "dok": 3,
+            "text": "The area of the triangle with vertices A(2, -1), B(6, 3) and C(-2, 5) is ______ square units. Three points that enclose zero area are ______.",
+            "answers": [
+                "20",
+                "collinear"
+            ],
+            "alts": [
+                [],
+                [
+                    "in a straight line",
+                    "on one line"
+                ]
+            ],
+            "explanation": "Area = ½|2(3-5) + 6(5+1) + (-2)(-1-3)| = ½|-4 + 36 + 8| = 20. Zero area means the three points lie on one line.",
+            "checks": [
+                {
+                    "t": "area",
+                    "p": [
+                        2,
+                        -1
+                    ],
+                    "q": [
+                        6,
+                        3
+                    ],
+                    "r": [
+                        -2,
+                        5
+                    ],
+                    "expect": 20
+                }
+            ]
+        },
+        {
+            "id": "activity_09",
+            "source_type": "matching",
+            "format": "match_following",
+            "concept_id": 24784,
+            "difficulty": "Easy",
+            "bloom": "Remember",
+            "dok": 1,
+            "title": "Match each point with the quadrant or axis where it lies.",
+            "pairs": [
+                [
+                    "Point A(-2, 4)",
+                    "Quadrant II"
+                ],
+                [
+                    "Point B(5, -1)",
+                    "Quadrant IV"
+                ],
+                [
+                    "Point C(-6, -3)",
+                    "Quadrant III"
+                ],
+                [
+                    "Point D(3, 7)",
+                    "Quadrant I"
+                ],
+                [
+                    "Point E(0, -5)",
+                    "On the y-axis"
+                ]
+            ],
+            "explanation": "Read the signs of the coordinates; a zero coordinate puts the point on an axis, not in a quadrant.",
+            "checks": [
+                {
+                    "t": "quad",
+                    "p": [
+                        -2,
+                        4
+                    ],
+                    "expect": "II"
+                },
+                {
+                    "t": "quad",
+                    "p": [
+                        5,
+                        -1
+                    ],
+                    "expect": "IV"
+                },
+                {
+                    "t": "quad",
+                    "p": [
+                        -6,
+                        -3
+                    ],
+                    "expect": "III"
+                },
+                {
+                    "t": "quad",
+                    "p": [
+                        3,
+                        7
+                    ],
+                    "expect": "I"
+                },
+                {
+                    "t": "pos",
+                    "p": [
+                        0,
+                        -5
+                    ],
+                    "expect": "On the y-axis"
+                }
+            ]
+        },
+        {
+            "id": "activity_10",
+            "source_type": "matching",
+            "format": "match_following",
+            "concept_id": 24790,
+            "difficulty": "Medium",
+            "bloom": "Understand",
+            "dok": 2,
+            "title": "Match each expression with what it represents.",
+            "pairs": [
+                [
+                    "√(x²+y²)",
+                    "Distance of a point from the origin"
+                ],
+                [
+                    "((x₁+x₂)/2, (y₁+y₂)/2)",
+                    "Midpoint of a segment"
+                ],
+                [
+                    "(mx₂+nx₁)/(m+n)",
+                    "x-coordinate of the point dividing a segment internally in m : n"
+                ],
+                [
+                    "½ × abs[ x₁(y₂−y₃) + x₂(y₃−y₁) + x₃(y₁−y₂) ]",
+                    "Area of a triangle"
+                ],
+                [
+                    "Area of triangle = 0",
+                    "The three points are collinear"
+                ]
+            ],
+            "explanation": "Each expression is the standard Class 10 formula for the quantity named on the right.",
+            "checks": []
+        },
+        {
+            "id": "activity_11",
+            "source_type": "matching",
+            "format": "match_following",
+            "concept_id": 24787,
+            "difficulty": "Medium",
+            "bloom": "Apply",
+            "dok": 2,
+            "title": "Solve each problem and match it with its answer.",
+            "pairs": [
+                [
+                    "Distance from (0, 0) to (-8, 15)",
+                    "17 units"
+                ],
+                [
+                    "Distance between (3, -2) and (3, 7)",
+                    "9 units"
+                ],
+                [
+                    "Midpoint of (-6, 4) and (2, 10)",
+                    "(-2, 7)"
+                ],
+                [
+                    "Distance between (1, 1) and (7, 9)",
+                    "10 units"
+                ],
+                [
+                    "Midpoint of (5, -3) and (9, -7)",
+                    "(7, -5)"
+                ]
+            ],
+            "explanation": "Apply the distance formula or the midpoint formula to each pair of points.",
+            "checks": [
+                {
+                    "t": "dist",
+                    "p": [
+                        0,
+                        0
+                    ],
+                    "q": [
+                        -8,
+                        15
+                    ],
+                    "expect": 17
+                },
+                {
+                    "t": "dist",
+                    "p": [
+                        3,
+                        -2
+                    ],
+                    "q": [
+                        3,
+                        7
+                    ],
+                    "expect": 9
+                },
+                {
+                    "t": "mid",
+                    "p": [
+                        -6,
+                        4
+                    ],
+                    "q": [
+                        2,
+                        10
+                    ],
+                    "expect": [
+                        -2,
+                        7
+                    ]
+                },
+                {
+                    "t": "dist",
+                    "p": [
+                        1,
+                        1
+                    ],
+                    "q": [
+                        7,
+                        9
+                    ],
+                    "expect": 10
+                },
+                {
+                    "t": "mid",
+                    "p": [
+                        5,
+                        -3
+                    ],
+                    "q": [
+                        9,
+                        -7
+                    ],
+                    "expect": [
+                        7,
+                        -5
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "activity_12",
+            "source_type": "matching",
+            "format": "match_following",
+            "concept_id": 24789,
+            "difficulty": "Hard",
+            "bloom": "Apply",
+            "dok": 3,
+            "title": "A is (-4, 2) and B is (8, 14). Match each ratio A : B with its internal dividing point.",
+            "pairs": [
+                [
+                    "Ratio 1 : 2",
+                    "(0, 6)"
+                ],
+                [
+                    "Ratio 1 : 1",
+                    "(2, 8)"
+                ],
+                [
+                    "Ratio 1 : 3",
+                    "(-1, 5)"
+                ],
+                [
+                    "Ratio 2 : 1",
+                    "(4, 10)"
+                ],
+                [
+                    "Ratio 3 : 1",
+                    "(5, 11)"
+                ]
+            ],
+            "explanation": "For ratio m : n the point is ((8m - 4n)/(m + n), (14m + 2n)/(m + n)).",
+            "checks": [
+                {
+                    "t": "sec",
+                    "p": [
+                        -4,
+                        2
+                    ],
+                    "q": [
+                        8,
+                        14
+                    ],
+                    "m": 1,
+                    "n": 2,
+                    "expect": [
+                        0,
+                        6
+                    ]
+                },
+                {
+                    "t": "sec",
+                    "p": [
+                        -4,
+                        2
+                    ],
+                    "q": [
+                        8,
+                        14
+                    ],
+                    "m": 1,
+                    "n": 1,
+                    "expect": [
+                        2,
+                        8
+                    ]
+                },
+                {
+                    "t": "sec",
+                    "p": [
+                        -4,
+                        2
+                    ],
+                    "q": [
+                        8,
+                        14
+                    ],
+                    "m": 1,
+                    "n": 3,
+                    "expect": [
+                        -1,
+                        5
+                    ]
+                },
+                {
+                    "t": "sec",
+                    "p": [
+                        -4,
+                        2
+                    ],
+                    "q": [
+                        8,
+                        14
+                    ],
+                    "m": 2,
+                    "n": 1,
+                    "expect": [
+                        4,
+                        10
+                    ]
+                },
+                {
+                    "t": "sec",
+                    "p": [
+                        -4,
+                        2
+                    ],
+                    "q": [
+                        8,
+                        14
+                    ],
+                    "m": 3,
+                    "n": 1,
+                    "expect": [
+                        5,
+                        11
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "activity_13",
+            "source_type": "multiple_choice",
+            "format": "mcq",
+            "concept_id": 24784,
+            "difficulty": "Easy",
+            "bloom": "Remember",
+            "dok": 1,
+            "question": "If the point P(x, y) lies in the fourth quadrant, which statement about its coordinates is true?",
+            "options": [
+                "x is negative and y is positive",
+                "x is positive and y is negative",
+                "x and y are both negative",
+                "x and y are both positive"
+            ],
+            "correct": 1,
+            "explanation": "In the fourth quadrant the point lies to the right of the y-axis (x > 0) and below the x-axis (y < 0).",
+            "checks": []
+        },
+        {
+            "id": "activity_14",
+            "source_type": "multiple_choice",
+            "format": "mcq",
+            "concept_id": 24787,
+            "difficulty": "Medium",
+            "bloom": "Apply",
+            "dok": 2,
+            "question": "What is the distance between the points A(-2, 3) and B(4, -5)?",
+            "options": [
+                "14 units",
+                "√28 units",
+                "10 units",
+                "2 units"
+            ],
+            "correct": 2,
+            "explanation": "d = √[(4 − (−2))² + (−5 − 3)²] = √(36 + 64) = √100 = 10 units.",
+            "checks": [
+                {
+                    "t": "dist",
+                    "p": [
+                        -2,
+                        3
+                    ],
+                    "q": [
+                        4,
+                        -5
+                    ],
+                    "expect": 10
+                }
+            ]
+        },
+        {
+            "id": "activity_15",
+            "source_type": "multiple_choice",
+            "format": "mcq",
+            "concept_id": 24792,
+            "difficulty": "Medium",
+            "bloom": "Apply",
+            "dok": 2,
+            "question": "The midpoint of a segment is (3, -1) and one endpoint is (7, 2). What are the coordinates of the other endpoint?",
+            "options": [
+                "(11, 3)",
+                "(-4, -1)",
+                "(5, 1/2)",
+                "(-1, -4)"
+            ],
+            "correct": 3,
+            "explanation": "(7 + x)/2 = 3 gives x = −1, and (2 + y)/2 = −1 gives y = −4. The other endpoint is (−1, −4).",
+            "checks": [
+                {
+                    "t": "mid",
+                    "p": [
+                        7,
+                        2
+                    ],
+                    "q": [
+                        -1,
+                        -4
+                    ],
+                    "expect": [
+                        3,
+                        -1
+                    ]
+                }
+            ]
+        },
+        {
+            "id": "activity_16",
+            "source_type": "multiple_choice",
+            "format": "mcq",
+            "concept_id": 24788,
+            "difficulty": "Hard",
+            "bloom": "Apply",
+            "dok": 3,
+            "question": "The points A(1, 3), B(2, k) and C(5, -5) are collinear. What is the value of k?",
+            "options": [
+                "k = -1",
+                "k = 2",
+                "k = 1",
+                "k = 4"
+            ],
+            "correct": 2,
+            "explanation": "Area = ½|1(k + 5) + 2(−5 − 3) + 5(3 − k)| = ½|4 − 4k|. Setting this to 0 gives k = 1.",
+            "checks": [
+                {
+                    "t": "area",
+                    "p": [
+                        1,
+                        3
+                    ],
+                    "q": [
+                        2,
+                        1
+                    ],
+                    "r": [
+                        5,
+                        -5
+                    ],
+                    "expect": 0
+                }
+            ]
+        },
+        {
+            "id": "activity_17",
+            "source_type": "true_false",
+            "format": "true_false",
+            "concept_id": 24784,
+            "difficulty": "Easy",
+            "bloom": "Remember",
+            "dok": 1,
+            "statement": "The point (-4, 3) lies in the second quadrant.",
+            "answer": true,
+            "explanation": "Its x-coordinate is negative and its y-coordinate is positive, which describes the second quadrant.",
+            "checks": [
+                {
+                    "t": "quad",
+                    "p": [
+                        -4,
+                        3
+                    ],
+                    "expect": "II"
+                }
+            ]
+        },
+        {
+            "id": "activity_18",
+            "source_type": "true_false",
+            "format": "true_false",
+            "concept_id": 24786,
+            "difficulty": "Medium",
+            "bloom": "Apply",
+            "dok": 2,
+            "statement": "The distance of the point (-7, 24) from the origin is 31 units.",
+            "answer": false,
+            "explanation": "The distance is √(49 + 576) = √625 = 25 units, not 7 + 24 = 31.",
+            "checks": [
+                {
+                    "t": "dist",
+                    "p": [
+                        0,
+                        0
+                    ],
+                    "q": [
+                        -7,
+                        24
+                    ],
+                    "expect": 25
+                }
+            ]
+        },
+        {
+            "id": "activity_19",
+            "source_type": "true_false",
+            "format": "true_false",
+            "concept_id": 24785,
+            "difficulty": "Easy",
+            "bloom": "Understand",
+            "dok": 1,
+            "statement": "The point (0, -5) lies in the third quadrant.",
+            "answer": false,
+            "explanation": "A point with x = 0 lies on the y-axis. Points on an axis do not belong to any quadrant.",
+            "checks": [
+                {
+                    "t": "pos",
+                    "p": [
+                        0,
+                        -5
+                    ],
+                    "expect": "On the y-axis"
+                }
+            ]
+        },
+        {
+            "id": "activity_20",
+            "source_type": "true_false",
+            "format": "true_false",
+            "concept_id": 24788,
+            "difficulty": "Hard",
+            "bloom": "Analyze",
+            "dok": 3,
+            "statement": "The points (-1, -3), (2, 3) and (4, 7) are collinear.",
+            "answer": true,
+            "explanation": "Area = ½|−1(3 − 7) + 2(7 + 3) + 4(−3 − 3)| = ½|4 + 20 − 24| = 0, so the points lie on one line.",
+            "checks": [
+                {
+                    "t": "area",
+                    "p": [
+                        -1,
+                        -3
+                    ],
+                    "q": [
+                        2,
+                        3
+                    ],
+                    "r": [
+                        4,
+                        7
+                    ],
+                    "expect": 0
+                }
+            ]
+        },
+        {
+            "id": "activity_21",
+            "source_type": "memory_game",
+            "format": "match_following",
+            "concept_id": 24785,
+            "difficulty": "Easy",
+            "bloom": "Remember",
+            "dok": 1,
+            "title": "Memory game: pair each point with its position.",
+            "pairs": [
+                [
+                    "(-5, 2)",
+                    "Quadrant II"
+                ],
+                [
+                    "(6, -1)",
+                    "Quadrant IV"
+                ],
+                [
+                    "(-2, -8)",
+                    "Quadrant III"
+                ],
+                [
+                    "(9, 5)",
+                    "Quadrant I"
+                ],
+                [
+                    "(0, -3)",
+                    "On the y-axis"
+                ]
+            ],
+            "explanation": "The signs of the coordinates give the quadrant; a zero coordinate puts the point on an axis.",
+            "checks": [
+                {
+                    "t": "quad",
+                    "p": [
+                        -5,
+                        2
+                    ],
+                    "expect": "II"
+                },
+                {
+                    "t": "quad",
+                    "p": [
+                        6,
+                        -1
+                    ],
+                    "expect": "IV"
+                },
+                {
+                    "t": "quad",
+                    "p": [
+                        -2,
+                        -8
+                    ],
+                    "expect": "III"
+                },
+                {
+                    "t": "quad",
+                    "p": [
+                        9,
+                        5
+                    ],
+                    "expect": "I"
+                },
+                {
+                    "t": "pos",
+                    "p": [
+                        0,
+                        -3
+                    ],
+                    "expect": "On the y-axis"
+                }
+            ]
+        },
+        {
+            "id": "activity_22",
+            "source_type": "memory_game",
+            "format": "match_following",
+            "concept_id": 24787,
+            "difficulty": "Medium",
+            "bloom": "Remember",
+            "dok": 1,
+            "title": "Memory game: pair each formula name with its formula.",
+            "pairs": [
+                [
+                    "Distance formula",
+                    "√((x₂−x₁)²+(y₂−y₁)²)"
+                ],
+                [
+                    "Midpoint formula",
+                    "((x₁+x₂)/2, (y₁+y₂)/2)"
+                ],
+                [
+                    "Section formula (m : n)",
+                    "((mx₂+nx₁)/(m+n), (my₂+ny₁)/(m+n))"
+                ],
+                [
+                    "Area of triangle",
+                    "½ × abs[ x₁(y₂−y₃) + x₂(y₃−y₁) + x₃(y₁−y₂) ]"
+                ],
+                [
+                    "Distance from origin",
+                    "√(x²+y²)"
+                ]
+            ],
+            "explanation": "Each card pair joins a standard Class 10 formula to its name.",
+            "checks": []
+        },
+        {
+            "id": "activity_23",
+            "source_type": "memory_game",
+            "format": "match_following",
+            "concept_id": 24786,
+            "difficulty": "Medium",
+            "bloom": "Apply",
+            "dok": 2,
+            "title": "Memory game: pair each expression with its result.",
+            "pairs": [
+                [
+                    "Distance from (0, 0) to (6, 8)",
+                    "10 units"
+                ],
+                [
+                    "Midpoint of (2, 4) and (6, 10)",
+                    "(4, 7)"
+                ],
+                [
+                    "Distance between (1, -1) and (4, 3)",
+                    "5 units"
+                ],
+                [
+                    "Midpoint of (-5, -2) and (-1, 6)",
+                    "(-3, 2)"
+                ],
+                [
+                    "Distance from (0, 0) to (5, 12)",
+                    "13 units"
+                ]
+            ],
+            "explanation": "Apply the distance formula or the midpoint formula to find each result.",
+            "checks": [
+                {
+                    "t": "dist",
+                    "p": [
+                        0,
+                        0
+                    ],
+                    "q": [
+                        6,
+                        8
+                    ],
+                    "expect": 10
+                },
+                {
+                    "t": "mid",
+                    "p": [
+                        2,
+                        4
+                    ],
+                    "q": [
+                        6,
+                        10
+                    ],
+                    "expect": [
+                        4,
+                        7
+                    ]
+                },
+                {
+                    "t": "dist",
+                    "p": [
+                        1,
+                        -1
+                    ],
+                    "q": [
+                        4,
+                        3
+                    ],
+                    "expect": 5
+                },
+                {
+                    "t": "mid",
+                    "p": [
+                        -5,
+                        -2
+                    ],
+                    "q": [
+                        -1,
+                        6
+                    ],
+                    "expect": [
+                        -3,
+                        2
+                    ]
+                },
+                {
+                    "t": "dist",
+                    "p": [
+                        0,
+                        0
+                    ],
+                    "q": [
+                        5,
+                        12
+                    ],
+                    "expect": 13
+                }
+            ]
+        },
+        {
+            "id": "activity_24",
+            "source_type": "memory_game",
+            "format": "match_following",
+            "concept_id": 24784,
+            "difficulty": "Medium",
+            "bloom": "Remember",
+            "dok": 1,
+            "title": "Memory game: pair each coordinate term with its meaning.",
+            "pairs": [
+                [
+                    "Origin",
+                    "The point (0, 0)"
+                ],
+                [
+                    "Abscissa",
+                    "The x-coordinate"
+                ],
+                [
+                    "Ordinate",
+                    "The y-coordinate"
+                ],
+                [
+                    "Collinear points",
+                    "Triangle area = 0"
+                ],
+                [
+                    "Midpoint",
+                    "Divides in ratio 1 : 1"
+                ],
+                [
+                    "Quadrant III",
+                    "x < 0 and y < 0"
+                ]
+            ],
+            "explanation": "These are the basic terms of the Cartesian plane and the conditions that follow from them.",
+            "checks": []
+        }
+    ],
+    "excluded": [
+        {
+            "id": "activity_25",
+            "source_type": "match_profile",
+            "reason": "Unsupported: no catalogue form, table, player or mapping exists for Match Profile. Not mapped to any other format."
+        },
+        {
+            "id": "activity_26",
+            "source_type": "match_profile",
+            "reason": "Unsupported: no catalogue form, table, player or mapping exists for Match Profile. Not mapped to any other format."
+        },
+        {
+            "id": "activity_27",
+            "source_type": "match_profile",
+            "reason": "Unsupported: no catalogue form, table, player or mapping exists for Match Profile. Not mapped to any other format."
+        },
+        {
+            "id": "activity_28",
+            "source_type": "match_profile",
+            "reason": "Unsupported: no catalogue form, table, player or mapping exists for Match Profile. Not mapped to any other format."
+        }
+    ]
+}

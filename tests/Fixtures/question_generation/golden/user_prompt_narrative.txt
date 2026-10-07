@@ -1,0 +1,212 @@
+TASK: Write 2 narrative (constructed-response) rows for the concept below.
+
+SEMANTIC_CONCEPT_KEY (echo it back unchanged in your response): MULTIPLICATION_0123
+
+## QUOTA TABLE (binding)
+| Bloom's Level | Count | dok_level | difficulty | sub_type | points |
+|---|---|---|---|---|---|
+| Remember | 1 | 1 | Easy | Very Short Answer | 1 |
+| Analyze | 1 | 3 | Hard | Long Answer | 4 |
+
+
+## CONCEPT SLICE
+{
+    "concept": "Multiplication of integers with different signs",
+    "concept_description": "Product of a positive and a negative integer.",
+    "knowledge_items": [
+        {
+            "knowledge": "The product of a positive and a negative integer is negative."
+        }
+    ],
+    "abilities": [
+        {
+            "ability": "Multiply integers of different signs",
+            "verb": "Calculate"
+        }
+    ],
+    "competency": [],
+    "dok": [],
+    "evidence": [],
+    "prerequisites": [
+        {
+            "prerequisite": "Multiplication of whole numbers"
+        }
+    ],
+    "misconceptions": [
+        {
+            "misconception": "A negative times a positive is positive",
+            "correction": "The sign is negative."
+        }
+    ],
+    "real_world_applications": [
+        {
+            "application": "A diver descends 3 m every minute."
+        }
+    ],
+    "learning_objectives": [],
+    "learning_outcomes": [
+        {
+            "outcome": "Multiplies integers with unlike signs"
+        }
+    ]
+}
+
+## DEDUP CORPUS (do not reproduce or rephrase)
+- Existing stem one
+
+
+## CONSTRUCTION RULES (NARRATIVE)
+
+question_title
+- Open with the command verb matching the Bloom level, taken from the `verb` field of
+  the `abilities[]` entry you cite:
+    Remember    → State / List / Define / Name
+    Understand  → Explain / Describe / Differentiate / Interpret
+    Apply       → Apply / Calculate / Predict / Determine / Identify
+    Analyze     → Analyse / Compare / Examine / Justify why
+    Evaluate    → Evaluate / Assess / Critique / Argue whether
+    Create      → Design / Propose / Construct
+- The number of things demanded equals `points`. A 3-mark item asks for three
+  creditable elements. Never "some" or "a few".
+- Apply level and above open with a 1–2 sentence scenario from
+  `real_world_applications` or `evidence`. Recall items must not.
+- Assertion Reason: Assertion (A) and Reason (R) on separate lines, then the four
+  standard CBSE options. Build it so a slice misconception leads to the wrong option.
+- Case Study: 60–90 word stimulus in `answer.stimulus`, then 2–3 `sub_parts` whose
+  marks sum to `points`.
+
+answer.model_answer
+- A full-credit student answer, in student voice, at the ladder length.
+- No meta-language ("The answer is…", "Students should…"). Slice content only.
+
+answer.marking_points — the load-bearing field. One entry per mark.
+    mark           always 1. Half-marks are not permitted.
+    criterion      what the student must have written to earn it
+    accept         2–4 acceptable alternative phrasings
+    reject         1–2 near-answers that must NOT earn the mark
+    knowledge_ref  the knowledge item this mark tests
+  count(marking_points) MUST equal points.
+
+answer.keywords — 4–8 scoring keywords, each with `weight` (0.0–1.0) and `synonyms[]`.
+  These drive keyword-overlap auto-scoring. A keyword appearing in `question_title` is
+  disqualified — it rewards copying the question.
+
+answer.common_errors — for each related `misconceptions[]` entry: what the erroneous
+  answer looks like, and the `mark_ceiling` it should receive.
+
+answer.full_credit_threshold — minimum marks to count as "mastered" for adaptive
+  routing. Default ceil(0.75 × points).
+
+description (≤ 240 chars) — "Tests <ability_ref> at <bloom_level>, <points> marks;
+  common error: <misconception>."
+
+## RESPONSE SCHEMA
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["semantic_concept_key", "question_type", "rows"],
+  "properties": {
+    "semantic_concept_key": { "type": "string" },
+    "question_type": { "const": "narrative" },
+    "underfilled": { "type": "boolean" },
+    "reason": { "type": ["string", "null"] },
+    "rows": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["question_title", "description", "subconcept", "points", "multiple_answer", "answer", "hint_text", "learning_outcome"],
+        "properties": {
+          "question_title": { "type": "string", "minLength": 15, "maxLength": 1200 },
+          "description": { "type": "string", "minLength": 10, "maxLength": 240 },
+          "subconcept": { "type": "string", "minLength": 1, "maxLength": 240 },
+          "points": { "type": "integer", "minimum": 1, "maximum": 6 },
+          "multiple_answer": { "const": 0 },
+          "hint_text": { "type": ["string", "null"], "maxLength": 200 },
+          "learning_outcome": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+          "answer": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["v", "question_type", "sub_type", "bloom_level", "dok_level", "difficulty", "model_answer", "marking_points", "keywords", "common_errors", "full_credit_threshold", "explanation", "remediation", "knowledge_refs", "ability_ref", "misconception_refs", "estimated_time_seconds"],
+            "properties": {
+              "v": { "const": "ans-2.0" },
+              "question_type": { "const": "narrative" },
+              "sub_type": { "enum": ["Very Short Answer", "Short Answer", "Long Answer", "Assertion Reason", "Case Study"] },
+              "competency_ref": { "type": ["string", "null"] },
+              "bloom_level": { "enum": ["Remember", "Understand", "Apply", "Analyze", "Evaluate", "Create"] },
+              "dok_level": { "enum": [1, 2, 3, 4] },
+              "difficulty": { "enum": ["Easy", "Medium", "Hard"] },
+              "stimulus": { "type": ["string", "null"], "maxLength": 700 },
+              "estimated_time_seconds": { "type": "integer", "minimum": 60, "maximum": 900 },
+              "sub_parts": {
+                "type": ["array", "null"],
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["label", "text", "marks"],
+                  "properties": {
+                    "label": { "type": "string" },
+                    "text": { "type": "string" },
+                    "marks": { "type": "integer", "minimum": 1 }
+                  }
+                }
+              },
+              "model_answer": { "type": "string", "minLength": 20 },
+              "marking_points": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["mark", "criterion", "accept", "reject", "knowledge_ref"],
+                  "properties": {
+                    "mark": { "const": 1 },
+                    "criterion": { "type": "string", "minLength": 10 },
+                    "accept": { "type": "array", "minItems": 2, "maxItems": 4, "items": { "type": "string" } },
+                    "reject": { "type": "array", "minItems": 1, "maxItems": 2, "items": { "type": "string" } },
+                    "knowledge_ref": { "type": "string" }
+                  }
+                }
+              },
+              "keywords": {
+                "type": "array",
+                "minItems": 4,
+                "maxItems": 8,
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["term", "weight", "synonyms"],
+                  "properties": {
+                    "term": { "type": "string" },
+                    "weight": { "type": "number", "minimum": 0, "maximum": 1 },
+                    "synonyms": { "type": "array", "items": { "type": "string" } }
+                  }
+                }
+              },
+              "common_errors": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["erroneous_answer", "mark_ceiling"],
+                  "properties": {
+                    "misconception_ref": { "type": ["string", "null"] },
+                    "erroneous_answer": { "type": "string" },
+                    "mark_ceiling": { "type": "integer", "minimum": 0 }
+                  }
+                }
+              },
+              "full_credit_threshold": { "type": "integer", "minimum": 1 },
+              "explanation": { "type": "string", "minLength": 30 },
+              "remediation": { "type": "string", "minLength": 10 },
+              "knowledge_refs": { "type": "array", "minItems": 1, "items": { "type": "string" } },
+              "ability_ref": { "type": ["string", "null"] },
+              "misconception_refs": { "type": "array", "items": { "type": "string" } }
+            }
+          }
+        }
+      }
+    }
+  }
+}

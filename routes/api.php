@@ -652,6 +652,14 @@ Route::middleware(['api.session', 'staff.only', 'throttle.qgen'])->group(functio
     Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);
 });
 
+// The question formats a teacher can generate: present in question_type_catalog AND
+// implemented in QuestionFormatRegistry. It spends nothing, so it sits behind the
+// same session and staff gates as generate but NOT behind throttle.qgen -- listing
+// formats must not eat the per-user generation allowance.
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::get('intelligence/questions/formats', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'formats']);
+});
+
 // Intelligence Content Generation - chapter content via Claude -> content_master
 //
 // The authenticated sibling of lms/gamma-content-master. Same service, same
