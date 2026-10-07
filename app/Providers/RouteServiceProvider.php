@@ -104,6 +104,8 @@ class RouteServiceProvider extends ServiceProvider
         $this->mapSkillRoutes();
 
         $this->mapCustomModuleApiRoutes();
+
+        $this->mapPlatformRoutes();
     }
 
     /**
@@ -298,5 +300,24 @@ class RouteServiceProvider extends ServiceProvider
         RateLimiter::for('api', function (Request $request) {
             return Limit::perMinute(1000)->by($request->user()?->id ?: $request->ip());
         });
+    }
+
+    /**
+     * Platform services API (notifications, scheduler, workflow, event bus).
+     * Mounted at api/platform so routes/api.php is not touched.
+     */
+    protected function mapPlatformRoutes()
+    {
+        Route::prefix('api/platform')
+            ->middleware('api')
+            ->group(function () {
+                require base_path('routes/platform.php');
+
+                // One file per platform service (audit, integrations, engines,
+                // files), so services can be added without editing a shared file.
+                foreach (glob(base_path('routes/platform/*.php')) ?: [] as $file) {
+                    require $file;
+                }
+            });
     }
 }

@@ -118,3 +118,30 @@ Route::prefix('v1')->group(function () {
 });
 
 
+
+// Document Templates module - stateless JSON entry points for the Next.js
+// frontend's drag-and-drop template designer (/document-templates). Distinct
+// from the legacy `template_master` screens, which are unchanged.
+// Literal segments (`merge-fields`, `merge-data`, `preview-students`) are
+// declared before the `{id}` routes so they are not swallowed by them, and the
+// same holds for `{id}/...` sub-paths against `{id}`.
+Route::get('document-templates/merge-fields', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'mergeFields']);
+Route::get('document-templates/merge-data', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'mergeData']);
+Route::get('document-templates/preview-students', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'previewStudents']);
+Route::get('document-templates', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'index']);
+Route::get('document-templates/{id}/versions', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'versions']);
+Route::get('document-templates/{id}/versions/{version}', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'versionContent']);
+Route::get('document-templates/{id}', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'show']);
+Route::post('document-templates', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'store']);
+Route::post('document-templates/{id}/duplicate', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'duplicate']);
+Route::post('document-templates/{id}/restore/{version}', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'restore']);
+Route::post('document-templates/{id}/delete', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'destroy']);
+Route::post('document-templates/{id}', [\App\Http\Controllers\api\DocumentTemplateApiController::class, 'update']);
+// Import Data API - stateless JSON entry points for the Next.js frontend.
+// These mirror the legacy web import routes but return JSON instead of HTML.
+Route::middleware('api.session')->prefix('import')->group(function () {
+    Route::get('tables', [\App\Http\Controllers\api\ImportApiController::class, 'tables']);
+    Route::post('parse', [\App\Http\Controllers\api\ImportApiController::class, 'parse']);
+    Route::post('process', [\App\Http\Controllers\api\ImportApiController::class, 'process']);
+    Route::post('match-fields', [\App\Http\Controllers\api\ImportApiController::class, 'matchFields']);
+});

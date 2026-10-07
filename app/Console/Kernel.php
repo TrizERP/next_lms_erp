@@ -17,6 +17,7 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('check:broken-links')->everyMinute();
         $schedule->command('documents:purge-trash')->dailyAt('02:30');
+        $schedule->command('platform:schedule-run')->everyMinute()->withoutOverlapping();
     }
 
     /**
