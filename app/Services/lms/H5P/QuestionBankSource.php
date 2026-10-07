@@ -2,6 +2,7 @@
 
 namespace App\Services\lms\H5P;
 
+use App\Services\QuestionGeneration\QuestionFormResolver;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -110,10 +111,16 @@ class QuestionBankSource
     public function effectiveCode(): string
     {
         $sidecar = $this->hasSidecar() ? 'x.question_type_code' : 'NULL';
-        $generated = $this->hasGeneratedCode() ? 'q.g_qtype_code' : 'NULL';
 
-        return "COALESCE($sidecar, $generated, "
-            . "CASE WHEN q.question_type_id = 1 THEN 'mcq' ELSE 'narrative' END)";
+        // One ladder for every reader -- see QuestionFormResolver. This used to
+        // stop at g_qtype_code, so a form recorded in question_format_code or in
+        // the envelope's item_form was invisible to the H5P pickers.
+        return QuestionFormResolver::sqlExpression(
+            'q',
+            $sidecar,
+            $this->hasColumn('question_format_code'),
+            $this->hasGeneratedCode()
+        );
     }
 
     /**
@@ -257,6 +264,10 @@ class QuestionBankSource
         }
         if ($this->hasGeneratedCode()) {
             $query->groupBy('q.g_qtype_code');
+        }
+        // effectiveCode() reads this column too, so a strict GROUP BY needs it.
+        if ($this->hasColumn('question_format_code')) {
+            $query->groupBy('q.question_format_code');
         }
 
         if ($level !== null && trim($level) !== '') {

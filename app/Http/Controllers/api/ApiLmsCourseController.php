@@ -12,6 +12,8 @@ use App\Models\lms\topicModel;
 use App\Models\student\tblstudentEnrollmentModel;
 use App\Services\lms\Content\ContentOwnershipDecorator;
 use App\Services\lms\Content\H5PContentAdapter;
+use App\Services\QuestionGeneration\QuestionEnvelope;
+use App\Services\QuestionGeneration\QuestionFormResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -1795,10 +1797,16 @@ $restrict_date = $request->input('restrict_date');
             // nothing and displayed as the coarse "narrative", so the form
             // dropdown could not see them.
             ->leftJoin('question_type_catalog', function ($join) {
+                // The shared ladder, minus its grading-type tier: a legacy row has
+                // no catalogue form, and matching it to 'mcq' would relabel it.
                 $join->on('question_type_catalog.code', '=', DB::raw(
-                    'COALESCE(lms_question_extraction.question_type_code, '
-                    . 'lms_question_master.question_format_code, '
-                    . 'lms_question_master.g_qtype_code)'
+                    QuestionFormResolver::sqlExpression(
+                        'lms_question_master',
+                        'lms_question_extraction.question_type_code',
+                        true,
+                        true,
+                        false
+                    )
                 ))
                     // The catalog carries one row per (code, publisher) --
                     // 'case_study' has a KVS RO Agra row and a NODIA Press
@@ -1847,6 +1855,7 @@ $restrict_date = $request->input('restrict_date');
                 'question_type_master.question_type as lms_question_type',
                 'lms_question_extraction.question_type_code as question_type_code',
                 'lms_question_master.g_qtype_code as derived_type_code',
+                'lms_question_master.question_format_code as format_code',
                 'lms_question_extraction.exam_section',
                 'lms_question_extraction.item_number',
                 'lms_question_extraction.attribution',
@@ -1990,8 +1999,16 @@ $restrict_date = $request->input('restrict_date');
             // Sidecar code first -- that one was read off the source document --
             // then the tag derived from the stem. Null only when neither exists,
             // which is now just the untagged legacy estate.
-            $resolvedTypeCode = $question['question_type_code'] ?? $question['derived_type_code'] ?? null;
-            $resolvedTypeCode = $resolvedTypeCode !== null ? (string) $resolvedTypeCode : null;
+            // The shared ladder (QuestionFormResolver) so this endpoint, the
+            // facet counts and PAL agree. Null still means "no catalogue form is
+            // recorded", which keeps the MCQ|Narrative label fallback below.
+            $resolvedTypeCode = QuestionFormResolver::resolve(
+                $question['question_type_code'] ?? null,
+                $question['format_code'] ?? null,
+                $question['model_answer'] ?? null,
+                $question['derived_type_code'] ?? null,
+                null
+            );
 
             $data[] = [
                 'id' => (int) $question['id'],
@@ -2053,6 +2070,13 @@ $restrict_date = $request->input('restrict_date');
                 'assertion' => $this->envelopeValue($question['model_answer'] ?? null, 'assertion'),
                 'reason' => $this->envelopeValue($question['model_answer'] ?? null, 'reason'),
                 'sub_part_labels' => $this->envelopeValue($question['model_answer'] ?? null, 'sub_part_labels') ?? [],
+                // Structured fields a format stores beyond the text answer (pairs,
+                // distractors); each null on every row that has none.
+                ...QuestionEnvelope::clientFields(
+                    is_string($question['model_answer'] ?? null)
+                        ? $this->decodeAnswerEnvelope($question['model_answer'])
+                        : null
+                ),
                 'correct_option' => $this->envelopeValue($question['model_answer'] ?? null, 'correct_option'),
             ];
         }

@@ -3,7 +3,16 @@
 namespace App\Services;
 
 use App\Models\lms\lmsQuestionMasterModel;
+use App\Services\QuestionGeneration\H5p\ClaudeQuestionClient;
+use App\Services\QuestionGeneration\H5p\H5pContentType;
+use App\Services\QuestionGeneration\H5p\H5pContentTypeRegistry;
+use App\Services\QuestionGeneration\H5p\H5pPrompts;
+use App\Services\QuestionGeneration\QuestionFormat;
+use App\Services\QuestionGeneration\QuestionFormatRegistry;
+use App\Services\QuestionGeneration\QuestionFormResolver;
+use App\Services\QuestionGeneration\SourcesOwnRows;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -61,8 +70,12 @@ class QuestionGenerationService
         'Create'   => ['dok' => 4, 'difficulty' => 'Hard',   'points' => 5, 'sub_type' => 'Case Study'],
     ];
 
-    public function __construct()
+    /** Resolved lazily so `new QuestionGenerationService()` stays dependency-free. */
+    protected ?QuestionFormatRegistry $formatRegistry;
+
+    public function __construct(?QuestionFormatRegistry $formatRegistry = null)
     {
+        $this->formatRegistry = $formatRegistry;
         $this->model         = config('deepseek.model', 'deepseek-chat');
         $this->temperature   = config('deepseek.temperature_mcq', 0.4);
         $this->timeout       = (int) config('deepseek.timeout_seconds', 600);
@@ -94,6 +107,12 @@ class QuestionGenerationService
         $this->subInstituteId = $subInstituteId;
 
         return $this;
+    }
+
+    /** The formats this service can write; see QuestionFormatRegistry. */
+    public function formats(): QuestionFormatRegistry
+    {
+        return $this->formatRegistry ??= app(QuestionFormatRegistry::class);
     }
 
     /**
@@ -595,8 +614,34 @@ class QuestionGenerationService
      * Deduplication corpus + semantic key
      * ---------------------------------------------------------------- */
 
-    protected function buildDedupCorpus(int $conceptId, int $questionTypeId, int $limit = 200): array
+    protected function buildDedupCorpus(int $conceptId, int $questionTypeId, int $limit = 200, ?string $formatCode = null): array
     {
+        // A format-scoped run dedups against its own FORMAT, not the coarse type id:
+        // every narrative-typed format shares question_type_id 2, so a type-id corpus
+        // would feed true/false stems to a fill-in-the-blank run. Extracted questions
+        // of the same form are included on purpose -- a generated item must not
+        // restate a textbook one either.
+        if ($formatCode !== null) {
+            $hasSidecar = Schema::hasTable('lms_question_extraction');
+            $query = DB::table('lms_question_master as q')
+                ->where('q.concept_id', $conceptId)
+                ->whereNull('q.deleted_at')
+                ->whereRaw(
+                    QuestionFormResolver::sqlExpression('q', $hasSidecar ? 'x.question_type_code' : 'NULL') . ' = ?',
+                    [$formatCode]
+                )
+                ->orderByDesc('q.id')
+                ->limit($limit);
+
+            if ($hasSidecar) {
+                $query->leftJoin('lms_question_extraction as x', 'x.question_id', '=', 'q.id');
+            }
+
+            return $query->pluck('q.question_title')
+                ->map(fn($t) => mb_substr((string) $t, 0, 300))
+                ->all();
+        }
+
         return DB::table('lms_question_master')
             ->where('concept_id', $conceptId)
             ->where('question_type_id', $questionTypeId)
@@ -628,12 +673,18 @@ class QuestionGenerationService
         array $slice,
         array $input,
         int $questionTypeId,
-        string $semanticKey
+        string $semanticKey,
+        ?QuestionFormat $format = null
     ): array {
         $concept = $slice['concept'];
         $chapter = $slice['chapter'] ?? null;
 
         return [
+            // The catalogue form to record (question_format_code + answer.item_form),
+            // or null for the legacy narrative alias. scope_dedup narrows the
+            // content-hash collision check to that form.
+            'format_code'                  => $format?->persistedFormatCode(),
+            'scope_dedup'                  => $format?->scopesDedupByFormat() ?? false,
             'concept_id'                   => (int) $concept->id,
             'concept_name'                 => $concept->name ?? 'CONCEPT',
             'question_type_id'             => $questionTypeId,
@@ -768,25 +819,25 @@ SYSPROMPT;
         return implode("\n", array_map(fn($s) => '- ' . $s, $stems));
     }
 
-    protected function userPrompt(string $type, array $quota, array $slice, array $stems, string $semanticKey, bool $hasContent = true, ?string $diagnosticStage = null): string
-    {
-        $total = array_sum(array_column($quota, 'count'));
-        $quotaTable = $this->quotaTableMarkdown($quota, $type);
-        $dedup = $this->dedupMarkdown($stems);
-        $sliceJson = json_encode($slice, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-        $schema = $type === 'mcq' ? $this->mcqColumnSchema() : $this->narrativeColumnSchema();
-        $taskType = $type === 'mcq' ? 'multiple-choice' : 'narrative (constructed-response)';
-
-        $bestEffortNote = '';
-        if (!$hasContent) {
-            $bestEffortNote = "\nNOTE: The structured CONCEPT SLICE for this concept is empty in our records "
-                . "(no extracted knowledge_items / abilities / misconceptions). Return fewer rows or no rows and "
-                . "set `underfilled` true with a clear reason. Do not use general knowledge to fill the batch.\n";
-        }
-
-        $stageInstruction = $diagnosticStage === null ? '' : "\n## ESO DIAGNOSTIC STAGE\nEvery generated item in this batch is for the ESO stage `{$diagnosticStage}`. Keep every stem focused on the concept itself and make the item suitable for that diagnostic purpose.\n";
-
-        $common = <<<PROMPT
+    /**
+     * The part of the user prompt every format shares: task line, quota table,
+     * concept slice, dedup corpus and the best-effort / diagnostic-stage notes.
+     *
+     * Lifted out of userPrompt() unchanged so the legacy MCQ and narrative prompts
+     * and the generic format prompt are built from one header; the golden tests
+     * pin that the legacy output did not move.
+     */
+    protected function promptHeader(
+        int $total,
+        string $taskType,
+        string $semanticKey,
+        string $quotaTable,
+        string $sliceJson,
+        string $dedup,
+        string $bestEffortNote,
+        string $stageInstruction
+    ): string {
+        return <<<PROMPT
 TASK: Write {$total} {$taskType} rows for the concept below.
 
 SEMANTIC_CONCEPT_KEY (echo it back unchanged in your response): {$semanticKey}
@@ -802,6 +853,179 @@ SEMANTIC_CONCEPT_KEY (echo it back unchanged in your response): {$semanticKey}
 {$bestEffortNote}
 {$stageInstruction}
 PROMPT;
+    }
+
+    protected function bestEffortNote(bool $hasContent): string
+    {
+        if ($hasContent) {
+            return '';
+        }
+
+        return "\nNOTE: The structured CONCEPT SLICE for this concept is empty in our records "
+            . "(no extracted knowledge_items / abilities / misconceptions). Return fewer rows or no rows and "
+            . "set `underfilled` true with a clear reason. Do not use general knowledge to fill the batch.\n";
+    }
+
+    protected function stageInstruction(?string $diagnosticStage): string
+    {
+        return $diagnosticStage === null ? '' : "\n## ESO DIAGNOSTIC STAGE\nEvery generated item in this batch is for the ESO stage `{$diagnosticStage}`. Keep every stem focused on the concept itself and make the item suitable for that diagnostic purpose.\n";
+    }
+
+    /**
+     * The user prompt for every format that is not a legacy one.
+     *
+     * Same header as the legacy prompts, then a FORMAT CONTRACT that names the one
+     * format this run may produce -- the model never chooses it -- then the
+     * format's own construction rules and JSON Schema.
+     */
+    protected function formatUserPrompt(
+        QuestionFormat $format,
+        array $quota,
+        array $slice,
+        array $stems,
+        string $semanticKey,
+        bool $hasContent = true,
+        ?string $diagnosticStage = null
+    ): string {
+        $total = array_sum(array_column($quota, 'count'));
+        $code = $format->responseType();
+
+        $header = $this->promptHeader(
+            $total,
+            $format->taskLabel(),
+            $semanticKey,
+            $this->formatQuotaTable($quota),
+            json_encode($slice, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT),
+            $this->dedupMarkdown($stems),
+            $this->bestEffortNote($hasContent),
+            $this->stageInstruction($diagnosticStage)
+        );
+
+        return $header
+            . "\n\n## FORMAT CONTRACT\n"
+            . "Every row you write is a `{$code}` item and nothing else. Set the top-level `question_type` to \"{$code}\" "
+            . "and `answer.question_type` to \"{$code}\" on every row. Do not mix in any other question format, "
+            . "even where the concept slice would suit one.\n"
+            . "\n## CONSTRUCTION RULES (" . strtoupper($format->taskLabel()) . ")\n\n"
+            . trim($format->constructionRules($total))
+            . "\n\n## RESPONSE SCHEMA\n"
+            . $format->responseSchema();
+    }
+
+    protected function formatQuotaTable(array $quota): string
+    {
+        $rows = "| Bloom's Level | Count | dok_level | difficulty | points |\n|---|---|---|---|---|\n";
+        foreach ($quota as $q) {
+            $rows .= "| {$q['level']} | {$q['count']} | {$q['dok']} | {$q['difficulty']} | {$q['points']} |\n";
+        }
+
+        return $rows;
+    }
+
+    /** Default Bloom spread for a format run with no intelligence-derived weights. */
+    protected const FORMAT_DEFAULT_WEIGHTS = [
+        'Remember' => 0.15,
+        'Understand' => 0.30,
+        'Apply' => 0.30,
+        'Analyze' => 0.15,
+        'Evaluate' => 0.10,
+        'Create' => 0.00,
+    ];
+
+    /**
+     * The binding quota for a format run.
+     *
+     * Differs from buildQuota() in three ways: the format's allowed Bloom levels
+     * are enforced (an explicit level it cannot honestly be written at is refused,
+     * not silently dropped, because dropping it would make the counts lie), marks
+     * are held inside the format's range, and Auto weights are renormalised over the
+     * allowed levels only.
+     *
+     * @throws \InvalidArgumentException when an explicit quota asks for a level the format excludes
+     */
+    protected function buildFormatQuota(
+        QuestionFormat $format,
+        int $total,
+        array $input,
+        array $slice,
+        array $intelligence,
+        int $defaultPoints
+    ): array {
+        $allowed = $format->allowedBloomLevels();
+        [$minPoints, $maxPoints] = $format->marksRange();
+        $availableDok = (!empty($slice) && !empty($intelligence))
+            ? $this->availableDokLevels($slice, $intelligence)
+            : [];
+
+        $row = function (string $level, int $count, array $override = []) use ($format, $defaultPoints, $minPoints, $maxPoints, $availableDok): array {
+            $meta = self::BLOOM_META[$level];
+            $points = isset($override['points']) ? (int) $override['points'] : $defaultPoints;
+
+            return [
+                'level'      => $level,
+                'count'      => $count,
+                'dok'        => $this->clampDok((int) ($override['dok'] ?? $meta['dok']), $availableDok),
+                'difficulty' => $override['difficulty'] ?? $meta['difficulty'],
+                'points'     => max($minPoints, min($maxPoints, $points)),
+                'sub_type'   => $format->subTypeFor($level),
+            ];
+        };
+
+        if (!empty($input['quota']) && is_array($input['quota'])) {
+            $quota = [];
+            foreach ($input['quota'] as $explicit) {
+                $level = $explicit['level'] ?? null;
+                $count = (int) ($explicit['count'] ?? 0);
+                if (!in_array($level, self::BLOOM_LEVELS, true) || $count <= 0) {
+                    continue;
+                }
+                if (!in_array($level, $allowed, true)) {
+                    throw new \InvalidArgumentException(
+                        "{$format->label()} cannot be written at the {$level} level. Allowed: " . implode(', ', $allowed) . '.'
+                    );
+                }
+                $quota[] = $row($level, $count, $explicit);
+            }
+
+            return $quota;
+        }
+
+        $weights = (!empty($slice) && !empty($intelligence))
+            ? $this->bloomWeightsFromIntelligence($slice, $intelligence)
+            : [];
+        $weights = array_intersect_key($weights, array_flip($allowed));
+
+        if (array_sum($weights) <= 0) {
+            $weights = array_intersect_key(self::FORMAT_DEFAULT_WEIGHTS, array_flip($allowed));
+        }
+        if (array_sum($weights) <= 0) {
+            $weights = array_fill_keys($allowed, 1.0);
+        }
+
+        $counts = $this->largestRemainder($weights, $total);
+        $quota = [];
+        foreach (self::BLOOM_LEVELS as $level) {
+            if (($counts[$level] ?? 0) > 0) {
+                $quota[] = $row($level, $counts[$level]);
+            }
+        }
+
+        return $quota;
+    }
+
+    protected function userPrompt(string $type, array $quota, array $slice, array $stems, string $semanticKey, bool $hasContent = true, ?string $diagnosticStage = null): string
+    {
+        $total = array_sum(array_column($quota, 'count'));
+        $quotaTable = $this->quotaTableMarkdown($quota, $type);
+        $dedup = $this->dedupMarkdown($stems);
+        $sliceJson = json_encode($slice, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+        $schema = $type === 'mcq' ? $this->mcqColumnSchema() : $this->narrativeColumnSchema();
+        $taskType = $type === 'mcq' ? 'multiple-choice' : 'narrative (constructed-response)';
+
+        $bestEffortNote = $this->bestEffortNote($hasContent);
+        $stageInstruction = $this->stageInstruction($diagnosticStage);
+
+        $common = $this->promptHeader($total, $taskType, $semanticKey, $quotaTable, $sliceJson, $dedup, $bestEffortNote, $stageInstruction);
 
         if ($type === 'mcq') {
             return $common . <<<PROMPT
@@ -1373,6 +1597,190 @@ SCHEMA;
         }
     }
 
+    /* ----------------------------------------------------------------
+     * H5P content-type driven generation (Claude)
+     *
+     * For a format that has an active H5P content type the selected type chooses the
+     * prompt, the JSON Claude returns and the validator. What it hands back is a list of
+     * ordinary rows, so everything after the model call -- validateRows(), prepareRow(),
+     * dedup, persist() -- is the existing pipeline, unchanged.
+     * ---------------------------------------------------------------- */
+
+    /** The H5P content type this format is generated from, or null for the existing path. */
+    protected function h5pContentTypeFor(QuestionFormat $format): ?H5pContentType
+    {
+        $code = $format->persistedFormatCode();
+
+        return $code === null ? null : app(H5pContentTypeRegistry::class)->activeFor($code);
+    }
+
+    /** One Claude call, in callDeepSeek()'s return shape. */
+    protected function callClaude(string $system, string $user, array $opts): array
+    {
+        return app(ClaudeQuestionClient::class)->complete($system, $user, $this->subInstituteId);
+    }
+
+    /**
+     * Each question's slot, in order: the Bloom level, DOK, difficulty and marks the
+     * quota assigned to it. Server-owned, so the model is never asked for them.
+     *
+     * @return list<array{level: string, dok: int, difficulty: string, points: int}>
+     */
+    protected function h5pSlots(array $quota): array
+    {
+        $slots = [];
+        foreach ($quota as $row) {
+            for ($i = 0; $i < (int) ($row['count'] ?? 0); $i++) {
+                $slots[] = [
+                    'level' => (string) $row['level'],
+                    'dok' => (int) $row['dok'],
+                    'difficulty' => (string) $row['difficulty'],
+                    'points' => max(1, (int) ($row['points'] ?? 1)),
+                ];
+            }
+        }
+
+        return $slots;
+    }
+
+    /**
+     * The user prompt: the same context the DeepSeek prompts carry (concept slice, dedup
+     * corpus, thin-content note, diagnostic stage), the slots to fill, then the selected
+     * content type's own rules and schema.
+     */
+    protected function h5pUserPrompt(H5pContentType $h5p, array $slots, array $slice, array $stems, string $semanticKey, bool $hasContent, ?string $diagnosticStage): string
+    {
+        $count = count($slots);
+
+        $slotLines = [];
+        foreach ($slots as $i => $slot) {
+            $slotLines[] = 'Question ' . ($i + 1) . " -> Bloom's level: {$slot['level']}; difficulty: {$slot['difficulty']}";
+        }
+
+        return "TASK: Write {$count} {$h5p->taskLabel()} question(s) for the concept below, designed from the start "
+            . "as an H5P \"{$h5p->h5pLabel()}\" ({$h5p->h5pType()}) activity.\n\n"
+            . "SEMANTIC_CONCEPT_KEY (context only; do not return it): {$semanticKey}\n\n"
+            . "## QUESTION SLOTS (binding)\n" . implode("\n", $slotLines) . "\n\n"
+            . "## CONCEPT SLICE\n" . json_encode($slice, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . "\n\n"
+            . "## DEDUP CORPUS (do not reproduce or rephrase)\n" . $this->dedupMarkdown($stems) . "\n"
+            . $this->bestEffortNote($hasContent)
+            . $this->stageInstruction($diagnosticStage)
+            . "\n## H5P CONTENT TYPE: " . strtoupper($h5p->h5pLabel()) . "\n\n"
+            . trim($h5p->prompt($count))
+            . "\n\n## RESPONSE SCHEMA\n" . $h5p->responseSchema()
+            . "\n\nReturn ONLY valid JSON matching the schema. Do not return markdown. Do not return anything outside the JSON. "
+            . 'Do not wrap the JSON in ```json fences.';
+    }
+
+    /**
+     * Why Claude's decoded answer is not acceptable for this content type, as a list of
+     * reasons (empty when it is). Count, shape, each question, then the set.
+     *
+     * @return list<string>
+     */
+    protected function h5pCheckResponse(H5pContentType $h5p, array $data, int $expected): array
+    {
+        $questions = $data['questions'] ?? null;
+        if (!is_array($questions) || !array_is_list($questions)) {
+            return ['the top-level object must have a "questions" list'];
+        }
+        if (count($questions) !== $expected) {
+            return ['exactly ' . $expected . ' question(s) are required, got ' . count($questions)];
+        }
+
+        $reasons = [];
+        foreach ($questions as $i => $question) {
+            $reason = is_array($question) ? $h5p->validateQuestion($question) : 'not an object';
+            if ($reason !== null) {
+                $reasons[] = 'question ' . ($i + 1) . ': ' . $reason;
+            }
+        }
+        if ($reasons !== []) {
+            return $reasons;
+        }
+
+        $set = $h5p->validateSet($questions);
+
+        return $set === null ? [] : [$set];
+    }
+
+    /**
+     * One batch for an H5P content type: ask Claude, validate against the type, and on
+     * failure ask again with the reasons -- at most config('question_formats.h5p.max_attempts')
+     * calls. Nothing is returned unless every question passed.
+     *
+     * @return array{ok: bool, error?: string, rows?: list<array>, model?: string, usage?: array<string, int>}
+     */
+    protected function generateH5pBatch(
+        H5pContentType $h5p,
+        array $batchQuota,
+        array $slice,
+        array $stems,
+        string $semanticKey,
+        bool $hasContent,
+        ?string $diagnosticStage,
+        array $opts
+    ): array {
+        // Without extracted knowledge there is nothing to ground the questions in, and the
+        // system prompt forbids filling the gap from general knowledge. Say so up front
+        // instead of spending a call on an answer that cannot pass.
+        if (!$hasContent) {
+            return ['ok' => false, 'error' => 'This concept has no extracted knowledge items, abilities, misconceptions or outcomes yet, '
+                . 'so grounded ' . $h5p->h5pLabel() . ' questions cannot be written. Add concept intelligence for it first.'];
+        }
+
+        $slots = $this->h5pSlots($batchQuota);
+        $expected = count($slots);
+        $attempts = max(1, (int) config('question_formats.h5p.max_attempts', 3));
+        $system = H5pPrompts::system();
+        $base = $this->h5pUserPrompt($h5p, $slots, $slice, $stems, $semanticKey, $hasContent, $diagnosticStage);
+
+        $usage = ['prompt_tokens' => 0, 'completion_tokens' => 0];
+        $model = $opts['model'] ?? null;
+        $reasons = [];
+
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            $user = $reasons === [] ? $base : $base . H5pPrompts::retryNotice($reasons, $expected);
+
+            $call = $this->callClaude($system, $user, $opts);
+            if (!$call['ok']) {
+                // Provider / credential failures are not something a second prompt fixes.
+                return ['ok' => false, 'error' => $call['error']];
+            }
+
+            $model = $call['model'] ?? $model;
+            $usage['prompt_tokens'] += (int) ($call['usage']['prompt_tokens'] ?? 0);
+            $usage['completion_tokens'] += (int) ($call['usage']['completion_tokens'] ?? 0);
+
+            if (($call['finish_reason'] ?? null) === 'length') {
+                $reasons = ['the response was cut off before the JSON was complete; keep every field short'];
+                continue;
+            }
+
+            $parsed = $this->parseResponse((string) $call['content']);
+            if (!$parsed['ok']) {
+                $reasons = ['the response was not a single valid JSON object (' . $parsed['error'] . ')'];
+                continue;
+            }
+
+            $reasons = $this->h5pCheckResponse($h5p, $parsed['data'], $expected);
+            if ($reasons !== []) {
+                Log::warning('QuestionGeneration: ' . $h5p->h5pLabel() . " answer rejected (attempt {$attempt}/{$attempts}): " . implode(' | ', $reasons));
+                continue;
+            }
+
+            $rows = [];
+            foreach ($parsed['data']['questions'] as $i => $question) {
+                $rows[] = $h5p->toRow($question, $slots[$i], $this->envelopeVersion);
+            }
+
+            return ['ok' => true, 'rows' => $rows, 'model' => $model, 'usage' => $usage];
+        }
+
+        return ['ok' => false, 'error' => "Claude's {$h5p->h5pLabel()} questions failed validation after {$attempts} attempt(s): "
+            . implode('; ', array_slice($reasons, 0, 5))];
+    }
+
     protected function extractJsonCandidate(string $raw): ?string
     {
         $text = trim(preg_replace('/^\xEF\xBB\xBF/', '', $raw) ?? $raw);
@@ -1503,7 +1911,7 @@ SCHEMA;
      * Validation (gates G1–G10, pragmatic)
      * ---------------------------------------------------------------- */
 
-    protected function validateRows(string $type, array $rows, array $quota): array
+    protected function validateRows(string $type, array $rows, array $quota, ?QuestionFormat $format = null): array
     {
         $valid = [];
         $skipped = [];
@@ -1527,6 +1935,10 @@ SCHEMA;
                 $reason = "row {$i}: multiple_answer must be 0";
             } elseif (!is_array($row['learning_outcome']) || empty($row['learning_outcome'])) {
                 $reason = "row {$i}: learning_outcome must be a non-empty array";
+            } elseif ($format !== null && !$format->isLegacy()) {
+                // A non-legacy format: the shared checks above have passed, so only
+                // what makes THIS format what it claims to be is left to check.
+                $reason = $this->formatRowReason($format, $row, $i);
             } else {
                 $ans = $row['answer'];
                 if ($type === 'mcq') {
@@ -1560,6 +1972,34 @@ SCHEMA;
         }
 
         return ['valid' => $valid, 'skipped' => $skipped];
+    }
+
+    /**
+     * Why a row is not the requested format, or null when it is.
+     *
+     * The format is the teacher's choice, never the model's, so a row that says it
+     * is anything else is rejected here rather than stored under the wrong form.
+     */
+    protected function formatRowReason(QuestionFormat $format, array $row, int|string $i): ?string
+    {
+        $code = $format->responseType();
+        $ans = $row['answer'];
+
+        if (($ans['question_type'] ?? null) !== $code) {
+            return "row {$i}: answer.question_type must be \"{$code}\", got \"" . (is_scalar($ans['question_type'] ?? null) ? $ans['question_type'] : 'none') . '"';
+        }
+        if (!in_array($ans['bloom_level'], $format->allowedBloomLevels(), true)) {
+            return "row {$i}: {$format->label()} is not written at the {$ans['bloom_level']} level";
+        }
+
+        [$minPoints, $maxPoints] = $format->marksRange();
+        if ($row['points'] < $minPoints || $row['points'] > $maxPoints) {
+            return "row {$i}: points must be between {$minPoints} and {$maxPoints} for {$format->label()}";
+        }
+
+        $reason = $format->validateRow($row);
+
+        return $reason === null ? null : "row {$i}: {$reason}";
     }
 
     /* ----------------------------------------------------------------
@@ -1715,6 +2155,129 @@ SCHEMA;
         return $rows;
     }
 
+    /**
+     * The lms_question_master insert for one validated row, and the answer
+     * envelope it carries: caller-owned columns, the dual-written format code, the
+     * generator-known g_* metadata and the LLM-owned fields.
+     *
+     * Split out of persist() so the stored shape can be tested without a database.
+     *
+     * @return array{0: array<string, mixed>, 1: array<string, mixed>} [insert row, answer envelope]
+     */
+    protected function buildMasterRow(array $row, array $resp, array $ctx, array $meta, string $hash): array
+    {
+        $conceptId = $ctx['concept_id'];
+        $questionTypeId = $ctx['question_type_id'];
+        $answer = $row['answer'];
+        $answer['semantic_concept_key'] = $resp['semantic_concept_key'] ?? $ctx['semantic_concept_key'];
+        $answer['v'] = $answer['v'] ?? $this->envelopeVersion;
+        $answer['content_hash'] = $hash;
+        $answer['generation_meta'] = $meta;
+        $answer['times_served'] = 0;
+        $answer['times_correct'] = 0;
+        $answer['p_value'] = null;
+        $answer['discrimination'] = null;
+
+        // Dual-write the selected catalogue form: here (item_form, which PAL and
+        // the bank's shape() already read) and in question_format_code below.
+        // Both carry the same code. Null for the legacy narrative alias, which
+        // is a mixed bag and not a catalogue form.
+        if (!empty($ctx['format_code'])) {
+            $answer['item_form'] = $ctx['format_code'];
+        }
+
+        // mb_substr is a backstop, not a strategy — log if it ever fires.
+        $desc = mb_substr((string) $row['description'], 0, 250);
+        if (mb_strlen((string) $row['description']) > 250) {
+            Log::warning("QuestionGeneration: description truncated for concept {$conceptId}");
+        }
+        $sub = mb_substr((string) $row['subconcept'], 0, 250);
+        if (mb_strlen((string) $row['subconcept']) > 250) {
+            Log::warning("QuestionGeneration: subconcept truncated for concept {$conceptId}");
+        }
+
+        $insert = [
+            // caller-owned — never from the LLM
+            'question_type_id' => $questionTypeId,
+            'grade_id'         => $ctx['grade_id'] ?? null,
+            'standard_id'      => $ctx['standard_id'] ?? null,
+            'subject_id'       => $ctx['subject_id'] ?? null,
+            'chapter_id'       => $ctx['chapter_id'] ?? null,
+            'concept_id'       => $conceptId,
+            'sub_institute_id' => $ctx['sub_institute_id'] ?? null,
+            'status'           => 1,
+            'created_by'       => $ctx['created_by'] ?? null,
+            'created_on'       => now(),
+
+            // deterministic from the slice — never from the LLM
+            'concept'                      => $ctx['concept_name'],
+            'pre_grade_topic'              => $ctx['pre_grade_topic'] ?? null,
+            'post_grade_topic'             => $ctx['post_grade_topic'] ?? null,
+            'cross_curriculum_grade_topic' => $ctx['cross_curriculum_grade_topic'] ?? null,
+
+            // LLM-owned
+            'question_title'   => $row['question_title'],
+            'description'      => $desc,
+            'subconcept'       => $sub,
+            'points'           => $row['points'],
+            'multiple_answer'  => 0,
+            'hint_text'        => $row['hint_text'],
+            'learning_outcome' => json_encode($row['learning_outcome'], JSON_UNESCAPED_UNICODE),
+            'answer'           => json_encode($answer, JSON_UNESCAPED_UNICODE),
+
+            // Derived, not LLM-owned: the Question Bank filters on this.
+            'category'         => $this->learningFlowCategory($answer, $row, $meta['diagnostic_stage'] ?? null),
+        ];
+
+        // The authoritative catalogue form. Only where the column exists, and
+        // only for a catalogue form: g_qtype_code (the tagger's) and
+        // g_content_hash are deliberately left alone.
+        if (!empty($ctx['format_code']) && $this->questionMasterHasColumn('question_format_code')) {
+            $insert['question_format_code'] = $ctx['format_code'];
+        }
+
+        // What the generator knows for certain, so a generated item is reachable
+        // by the difficulty / Bloom / DOK filters the bank and the H5P pickers use
+        // instead of waiting for the out-of-band tagger.
+        // Each value is clamped to the vocabulary its column holds: g_difficulty is
+        // varchar(8), and a stray model value must not fail the whole transaction.
+        foreach ([
+            'g_bloom'      => in_array($answer['bloom_level'] ?? null, self::BLOOM_LEVELS, true) ? $answer['bloom_level'] : null,
+            'g_difficulty' => in_array($answer['difficulty'] ?? null, ['Easy', 'Medium', 'Hard'], true) ? $answer['difficulty'] : null,
+            'g_dok'        => in_array((int) ($answer['dok_level'] ?? 0), [1, 2, 3, 4], true) ? (int) $answer['dok_level'] : null,
+        ] as $column => $value) {
+            if ($value !== null && $this->questionMasterHasColumn($column)) {
+                $insert[$column] = $value;
+            }
+        }
+
+        return [$insert, $answer];
+    }
+
+    /**
+     * The idempotency check: is there already a question with this content hash for
+     * this concept and type?
+     *
+     * A format-scoped run only collides with its own format: narrative-typed formats
+     * share question_type_id 2, and the same words as a different form (a true/false
+     * statement and a fill-in-the-blank stem) are not the same question. Legacy MCQ
+     * and narrative runs keep the original concept + type + hash check unchanged.
+     *
+     * Returned unexecuted so the scoping can be asserted from its SQL.
+     */
+    protected function contentHashQuery(array $ctx, int $conceptId, int $questionTypeId, string $hash): \Illuminate\Database\Query\Builder
+    {
+        $query = DB::table('lms_question_master')
+            ->where('concept_id', $conceptId)
+            ->where('question_type_id', $questionTypeId)
+            ->whereRaw("JSON_EXTRACT(answer, '$.content_hash') = ?", [$hash]);
+
+        if (!empty($ctx['scope_dedup']) && !empty($ctx['format_code'])) {
+            $query->where('question_format_code', $ctx['format_code']);
+        }
+
+        return $query;
+    }
     protected function persist(array $resp, string $type, array $ctx, array $meta): array
     {
         $insertedIds = [];
@@ -1731,73 +2294,22 @@ SCHEMA;
                 strtolower(preg_replace('/\s+/', ' ', trim($row['question_title']))));
             $hash = hash('sha256', $norm);
 
-            $exists = DB::table('lms_question_master')
-                ->where('concept_id', $conceptId)
-                ->where('question_type_id', $questionTypeId)
-                ->whereRaw("JSON_EXTRACT(answer, '$.content_hash') = ?", [$hash])
-                ->exists();
+            $exists = $this->contentHashQuery($ctx, $conceptId, $questionTypeId, $hash)->exists();
 
             if ($exists) {
                 $skippedDup++;
                 continue;
             }
 
-            $answer = $row['answer'];
-            $answer['semantic_concept_key'] = $resp['semantic_concept_key'] ?? $ctx['semantic_concept_key'];
-            $answer['v'] = $answer['v'] ?? $this->envelopeVersion;
-            $answer['content_hash'] = $hash;
-            $answer['generation_meta'] = $meta;
-            $answer['times_served'] = 0;
-            $answer['times_correct'] = 0;
-            $answer['p_value'] = null;
-            $answer['discrimination'] = null;
+            [$insert, $answer] = $this->buildMasterRow($row, $resp, $ctx, $meta, $hash);
 
-            // mb_substr is a backstop, not a strategy — log if it ever fires.
-            $desc = mb_substr((string) $row['description'], 0, 250);
-            if (mb_strlen((string) $row['description']) > 250) {
-                Log::warning("QuestionGeneration: description truncated for concept {$conceptId}");
-            }
-            $sub = mb_substr((string) $row['subconcept'], 0, 250);
-            if (mb_strlen((string) $row['subconcept']) > 250) {
-                Log::warning("QuestionGeneration: subconcept truncated for concept {$conceptId}");
-            }
-
-            $id = DB::table('lms_question_master')->insertGetId([
-                // caller-owned — never from the LLM
-                'question_type_id' => $questionTypeId,
-                'grade_id'         => $ctx['grade_id'] ?? null,
-                'standard_id'      => $ctx['standard_id'] ?? null,
-                'subject_id'       => $ctx['subject_id'] ?? null,
-                'chapter_id'       => $ctx['chapter_id'] ?? null,
-                'concept_id'       => $conceptId,
-                'sub_institute_id' => $ctx['sub_institute_id'] ?? null,
-                'status'           => 1,
-                'created_by'       => $ctx['created_by'] ?? null,
-                'created_on'       => now(),
-
-                // deterministic from the slice — never from the LLM
-                'concept'                      => $ctx['concept_name'],
-                'pre_grade_topic'              => $ctx['pre_grade_topic'] ?? null,
-                'post_grade_topic'             => $ctx['post_grade_topic'] ?? null,
-                'cross_curriculum_grade_topic' => $ctx['cross_curriculum_grade_topic'] ?? null,
-
-                // LLM-owned
-                'question_title'   => $row['question_title'],
-                'description'      => $desc,
-                'subconcept'       => $sub,
-                'points'           => $row['points'],
-                'multiple_answer'  => 0,
-                'hint_text'        => $row['hint_text'],
-                'learning_outcome' => json_encode($row['learning_outcome'], JSON_UNESCAPED_UNICODE),
-                'answer'           => json_encode($answer, JSON_UNESCAPED_UNICODE),
-
-                // Derived, not LLM-owned: the Question Bank filters on this.
-                'category'         => $this->learningFlowCategory($answer, $row, $meta['diagnostic_stage'] ?? null),
-            ]);
+            $id = DB::table('lms_question_master')->insertGetId($insert);
 
             if ($id) {
                 $insertedIds[] = $id;
-                $insertedQuestions[] = $this->questionPreview((int) $id, $row, $type);
+                // The preview reports the form the teacher asked for; the legacy
+                // narrative alias has none and keeps reporting 'narrative'.
+                $insertedQuestions[] = $this->questionPreview((int) $id, $row, $ctx['format_code'] ?? $type);
                 // Auto-tag DOK + Bloom in lms_question_mapping from the answer envelope.
                 $mappingRows = array_merge($mappingRows, $this->buildQuestionMappings((int) $id, $answer));
                 // Materialise the options the quiz runtime actually reads.
@@ -1821,6 +2333,20 @@ SCHEMA;
             'mappings_inserted' => count($mappingRows),
             'answers_inserted'  => count($answerRows),
         ];
+    }
+
+    /** The one DB transaction a run writes in. A seam so tests can run generate() with no database. */
+    protected function runInTransaction(callable $callback): mixed
+    {
+        return DB::transaction($callback);
+    }
+
+    /** Whether lms_question_master has this column; cached for the life of the service. */
+    protected function questionMasterHasColumn(string $column): bool
+    {
+        static $cache = [];
+
+        return $cache[$column] ??= Schema::hasColumn('lms_question_master', $column);
     }
 
     protected function questionBatchSize(string $type): int
@@ -1943,9 +2469,194 @@ SCHEMA;
         return 'concept_understanding';
     }
 
+    /**
+     * Generate several formats in one request.
+     *
+     * Every selected format is validated first, through the same rules a single
+     * `question_format_code` meets (implemented AND catalogued), so one bad code
+     * rejects the request before any model call. The total is then split evenly
+     * across the formats (QuestionFormatRegistry::distribute) and each share is run
+     * through the ordinary single-format generate(), which is why concept lookup, the
+     * tenant check, the per-format Bloom quota, dedup and persistence behave exactly
+     * as they do for one format.
+     *
+     * A format that fails does not discard the others: each persists in its own
+     * transaction (generate() already does), and the response reports every format's
+     * outcome. The request fails only when NO format produced anything, or when the
+     * tenant check refuses it (a 403 is never softened into a partial result).
+     */
+    protected function generateMany(array $input): array
+    {
+        $codes = is_array($input['question_format_codes']) ? array_values($input['question_format_codes']) : [];
+
+        $errors = null;
+        $formats = $this->formats()->resolveMany($codes, $errors);
+        if ($formats === []) {
+            return $this->fail(implode(' ', $errors ?: ['Select at least one question format.']));
+        }
+
+        $total = (int) ($input['total_questions'] ?? 0);
+        if ($total <= 0) {
+            return $this->fail('concept_id and total_questions are required and must be positive.');
+        }
+        if ($total > QuestionFormatRegistry::MAX_QUESTIONS) {
+            return $this->fail('total_questions may not exceed ' . QuestionFormatRegistry::MAX_QUESTIONS . '.');
+        }
+        if (count($formats) > 1 && !empty($input['quota'])) {
+            return $this->fail('A custom Bloom mix can only be used with a single question format. Remove the quota or select one format.');
+        }
+        if ($total < count($formats)) {
+            return $this->fail(
+                "total_questions ({$total}) must be at least the number of selected formats (" . count($formats) . ').'
+            );
+        }
+
+        $split = $this->formats()->distribute($total, $formats);
+
+        $entries = [];
+        $results = [];
+        foreach ($formats as $format) {
+            $code = $format->code();
+            $count = $split[$code];
+
+            $sub = $input;
+            unset($sub['question_format_codes'], $sub['question_type']);
+            $sub['question_format_code'] = $code;
+            $sub['total_questions'] = $count;
+
+            $result = $this->generate($sub);
+
+            // A tenant refusal applies to the whole request, whatever the format.
+            if (!$result['status'] && ($result['code'] ?? null) === 'forbidden') {
+                return $result;
+            }
+
+            $results[$code] = $result;
+            $data = $result['data'] ?? [];
+            $entries[] = [
+                'question_format_code' => $code,
+                'label'                => $this->formats()->catalogue()->find($code)['label'] ?? $format->label(),
+                'question_type_id'     => $data['question_type_id'] ?? $this->formats()->questionTypeIdFor($format),
+                'status'               => (bool) $result['status'],
+                'message'              => $result['message'] ?? '',
+                'requested'            => (int) ($data['requested'] ?? $count),
+                'generated'            => (int) ($data['generated'] ?? 0),
+                'inserted'             => (int) ($data['inserted'] ?? 0),
+                'skipped_duplicate'    => (int) ($data['skipped_duplicate'] ?? 0),
+                'skipped_invalid'      => (int) ($data['skipped_invalid'] ?? 0),
+            ];
+        }
+
+        $succeeded = array_filter($results, fn (array $r) => $r['status']);
+        if ($succeeded === []) {
+            $reasons = [];
+            foreach ($entries as $entry) {
+                $reasons[] = "{$entry['label']}: {$entry['message']}";
+            }
+
+            return [
+                'status'  => false,
+                'message' => 'No question could be generated. ' . implode(' | ', $reasons),
+                'code'    => null,
+                'data'    => ['question_format_codes' => array_column($entries, 'question_format_code'), 'formats' => $entries],
+            ];
+        }
+
+        $sum = function (string $key) use ($succeeded): int {
+            return array_sum(array_map(fn (array $r) => (int) ($r['data'][$key] ?? 0), $succeeded));
+        };
+
+        $questions = [];
+        $questionIds = [];
+        $invalidReasons = [];
+        $reasons = [];
+        $missingSlice = false;
+        $failed = [];
+        foreach ($results as $code => $result) {
+            if (!$result['status']) {
+                $failed[] = $code;
+                continue;
+            }
+            $data = $result['data'];
+            $questions = array_merge($questions, $data['questions'] ?? []);
+            $questionIds = array_merge($questionIds, $data['question_ids'] ?? []);
+            foreach ($data['invalid_reasons'] ?? [] as $reason) {
+                $invalidReasons[] = "{$code}: {$reason}";
+            }
+            if (!empty($data['reason'])) {
+                $reasons[] = "{$code}: {$data['reason']}";
+            }
+            $missingSlice = $missingSlice || !empty($data['missing_slice']);
+        }
+
+        $requested = array_sum(array_column($entries, 'requested'));
+        $generated = array_sum(array_column($entries, 'generated'));
+        $underfilled = $failed !== [] || $generated < $requested
+            || array_filter($succeeded, fn (array $r) => !empty($r['data']['underfilled'])) !== [];
+
+        $first = reset($succeeded)['data'];
+        $single = count($formats) === 1;
+
+        if ($failed !== []) {
+            $names = [];
+            foreach ($entries as $entry) {
+                if (!$entry['status']) {
+                    $names[] = $entry['label'];
+                }
+            }
+            $message = "Generated {$generated} of {$requested} - " . implode(', ', $names) . ' could not be generated.';
+        } elseif ($underfilled) {
+            $message = "Generated {$generated} of {$requested} - concept intelligence may be thin.";
+        } else {
+            $message = 'Questions generated successfully.';
+        }
+
+        return [
+            'status'  => true,
+            'message' => $message,
+            'data'    => [
+                'semantic_concept_key'  => $first['semantic_concept_key'] ?? null,
+                'question_type'         => $single ? $formats[0]->persistedFormatCode() : null,
+                'question_format_code'  => $single ? $formats[0]->persistedFormatCode() : null,
+                'question_format_codes' => array_column($entries, 'question_format_code'),
+                'question_type_id'      => $single ? ($entries[0]['question_type_id'] ?? null) : null,
+                'requested'             => $requested,
+                'generated'             => $generated,
+                'inserted'              => $sum('inserted'),
+                'mappings_inserted'     => $sum('mappings_inserted'),
+                'answers_inserted'      => $sum('answers_inserted'),
+                'skipped_duplicate'     => $sum('skipped_duplicate'),
+                'skipped_invalid'       => $sum('skipped_invalid'),
+                'invalid_reasons'       => $invalidReasons,
+                'underfilled'           => $underfilled,
+                'reason'                => $reasons !== [] ? implode(' | ', $reasons) : null,
+                'question_ids'          => $questionIds,
+                'questions'             => $questions,
+                'model'                 => $first['model'] ?? null,
+                'batches'               => $sum('batches'),
+                'input_tokens'          => $sum('input_tokens'),
+                'output_tokens'         => $sum('output_tokens'),
+                'missing_slice'         => $missingSlice,
+                'formats'               => $entries,
+            ],
+        ];
+    }
     public function generate(array $input): array
     {
-        $type = strtolower((string) ($input['question_type'] ?? ''));
+        // Several formats in one request: validated together, split evenly, then each
+        // share runs through the ordinary single-format path below.
+        if (array_key_exists('question_format_codes', $input) && $input['question_format_codes'] !== null) {
+            return $this->generateMany($input);
+        }
+
+        // The format is the teacher's choice: question_format_code, or the legacy
+        // question_type alias. The model never picks it.
+        $formatError = null;
+        $format = $this->formats()->resolveRequest($input, $formatError);
+        if ($format === null) {
+            return $this->fail($formatError ?? 'Unsupported question format.');
+        }
+        $type = $format->engine();
         $diagnosticStage = $input['diagnostic_stage'] ?? null;
         if ($diagnosticStage !== null && !in_array($diagnosticStage, [
             'prerequisite_concept_check',
@@ -1954,20 +2665,30 @@ SCHEMA;
         ], true)) {
             return $this->fail('diagnostic_stage must be a supported ESO stage.');
         }
-        if (!in_array($type, ['mcq', 'narrative'], true)) {
-            return $this->fail('question_type must be "mcq" or "narrative".');
-        }
-
         $conceptId = (int) ($input['concept_id'] ?? 0);
         $subInstituteId = $input['sub_institute_id'] ?? null;
-        $questionTypeId = (int) ($input['question_type_id'] ?? 0);
+        // Resolved server-side from the catalogue's lms_question_type_id. A
+        // client-supplied question_type_id is never read: historic rows carry ids
+        // such as 4, 7 and 8 precisely because it used to be trusted.
+        $questionTypeId = $this->formats()->questionTypeIdFor($format);
         $total = (int) ($input['total_questions'] ?? 0);
+        $h5p = $this->h5pContentTypeFor($format);
+        if ($h5p !== null) {
+            // An H5P content type is written in a fixed, server-owned number of questions.
+            // The client's total (already split across formats) and any custom Bloom mix
+            // are not used for it: the count is the same for every caller.
+            $total = (int) app(H5pContentTypeRegistry::class)->questionsPerType();
+            unset($input['quota']);
+        }
         $chapterId = (int) ($input['chapter_id'] ?? 0);
         $subjectId = (int) ($input['subject_id'] ?? 0);
         $standardId = (int) ($input['standard_id'] ?? 0);
 
         if ($conceptId <= 0 || $questionTypeId <= 0 || $total <= 0) {
-            return $this->fail('concept_id, question_type_id and total_questions are required and must be positive.');
+            return $this->fail('concept_id and total_questions are required and must be positive.');
+        }
+        if ($total > QuestionFormatRegistry::MAX_QUESTIONS) {
+            return $this->fail('total_questions may not exceed ' . QuestionFormatRegistry::MAX_QUESTIONS . '.');
         }
 
         $slice = $this->loadConceptSlice(
@@ -2012,12 +2733,35 @@ SCHEMA;
         $builtSlice = $this->buildConceptSlice($slice, $conceptIntelligence);
         $sliceHasContent = $this->sliceHasContent($builtSlice);
 
-        $quota = $this->buildQuota($type, $total, $input, $slice, $conceptIntelligence);
+        if ($format->isLegacy()) {
+            $quota = $this->buildQuota($type, $total, $input, $slice, $conceptIntelligence);
+        } else {
+            try {
+                $quota = $this->buildFormatQuota(
+                    $format,
+                    $total,
+                    $input,
+                    $slice,
+                    $conceptIntelligence,
+                    $this->formats()->defaultMarksFor($format)
+                );
+            } catch (\InvalidArgumentException $e) {
+                return $this->fail($e->getMessage());
+            }
+        }
         if (empty($quota)) {
             return $this->fail('Could not build a quota (check explicit quota or total_questions).');
         }
+        if ($this->quotaCount($quota) > QuestionFormatRegistry::MAX_QUESTIONS) {
+            return $this->fail('The quota may not total more than ' . QuestionFormatRegistry::MAX_QUESTIONS . ' questions.');
+        }
 
-        $stems = $this->buildDedupCorpus($conceptId, $questionTypeId);
+        $stems = $this->buildDedupCorpus(
+            $conceptId,
+            $questionTypeId,
+            200,
+            $format->scopesDedupByFormat() ? $format->persistedFormatCode() : null
+        );
 
         $system = $this->systemPrompt();
 
@@ -2026,13 +2770,13 @@ SCHEMA;
         // client-selected model is a direct spend vector on the tenant's key.
         $opts = [
             'model'       => $this->model,
-            'temperature' => $type === 'narrative'
-                ? config('deepseek.temperature_narrative', 0.6)
-                : config('deepseek.temperature_mcq', 0.4),
+            // The legacy formats read the same config/deepseek.php keys as before;
+            // every other format carries its own temperature.
+            'temperature' => $format->temperature(),
             'seed'        => $input['seed'] ?? null,
         ];
 
-        $quotaBatches = $this->splitQuotaIntoBatches($quota, $this->questionBatchSize($type));
+        $quotaBatches = $this->splitQuotaIntoBatches($quota, $format->batchSize());
         if (empty($quotaBatches)) {
             return $this->fail('Could not split quota into generation batches.');
         }
@@ -2052,16 +2796,69 @@ SCHEMA;
                 $batchOpts['seed'] = ((int) $input['seed']) + $batchIndex;
             }
 
-            $user = $this->userPrompt(
-                $type,
-                $batchQuota,
-                $builtSlice,
-                $stems,
-                $semanticKey,
-                $sliceHasContent,
-                $input['diagnostic_stage'] ?? null
-            );
-            $call = $this->callDeepSeek($system, $user, $batchOpts);
+            // Legacy formats keep their prompt exactly as it was; every other format
+            // is built from its own construction rules and schema.
+            $user = $format->isLegacy()
+                ? $this->userPrompt(
+                    $type,
+                    $batchQuota,
+                    $builtSlice,
+                    $stems,
+                    $semanticKey,
+                    $sliceHasContent,
+                    $input['diagnostic_stage'] ?? null
+                )
+                : $this->formatUserPrompt(
+                    $format,
+                    $batchQuota,
+                    $builtSlice,
+                    $stems,
+                    $semanticKey,
+                    $sliceHasContent,
+                    $input['diagnostic_stage'] ?? null
+                );
+            if ($h5p !== null) {
+                // The selected H5P content type writes its own prompt and validates its own
+                // JSON; what comes back is ordinary rows, re-encoded below so the existing
+                // parse, row validation, dedup and persistence run on them unchanged.
+                $produced = $this->generateH5pBatch(
+                    $h5p,
+                    $batchQuota,
+                    $builtSlice,
+                    $stems,
+                    $semanticKey,
+                    $sliceHasContent,
+                    $input['diagnostic_stage'] ?? null,
+                    $batchOpts
+                );
+                if (!$produced['ok']) {
+                    return $this->fail("Batch {$batchNumber} failed: " . ($produced['error'] ?? 'no questions could be produced.'));
+                }
+                $call = ['ok' => true, 'finish_reason' => 'stop', 'model' => $produced['model'], 'usage' => $produced['usage'], 'content' => json_encode([
+                    'question_type' => $format->responseType(),
+                    'rows'          => $produced['rows'],
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
+            } elseif ($format instanceof SourcesOwnRows) {
+                // The model cannot write this form (it needs a picture and places in it),
+                // so the format sources its own rows. They rejoin the ordinary path here:
+                // the same validation, de-duplication and persistence follow.
+                $sourced = $format->sourceRows($batchQuota, $builtSlice, [
+                    'concept_id'       => $conceptId,
+                    'concept_name'     => $conceptName,
+                    'sub_institute_id' => $subInstituteId,
+                ]);
+                if (!$sourced['ok']) {
+                    return $this->fail("Batch {$batchNumber} failed: " . ($sourced['error'] ?? 'no rows could be produced.'));
+                }
+                $call = ['ok' => true, 'finish_reason' => 'stop', 'model' => 'vision', 'usage' => [], 'content' => json_encode([
+                    'question_type' => $format->responseType(),
+                    'rows'          => $sourced['rows'] ?? [],
+                    'underfilled'   => $sourced['underfilled'] ?? false,
+                    'reason'        => $sourced['reason'] ?? null,
+                ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)];
+            } else {
+                $call = $this->callDeepSeek($system, $user, $batchOpts);
+            }
             if (!$call['ok']) {
                 return $this->fail("Batch {$batchNumber} failed: {$call['error']}");
             }
@@ -2082,12 +2879,19 @@ SCHEMA;
             if (!isset($resp['rows']) || !is_array($resp['rows'])) {
                 return $this->fail("Batch {$batchNumber} LLM response missing \"rows\".");
             }
-            if (($resp['question_type'] ?? null) !== $type) {
-                return $this->fail('LLM returned question_type "' . ($resp['question_type'] ?? '') . '" but "' . $type . '" was requested.');
+            // The format is the teacher's, not the model's: a response that names any
+            // other form is refused whole, and each row repeats the check in
+            // formatRowReason(). For the legacy formats this is the same comparison as
+            // ever, since their responseType() is 'mcq' / 'narrative'.
+            if (($resp['question_type'] ?? null) !== $format->responseType()) {
+                return $this->fail('LLM returned question_type "' . ($resp['question_type'] ?? '') . '" but "' . $format->responseType() . '" was requested.');
             }
 
-            $validated = $this->validateRows($type, $resp['rows'], $batchQuota);
+            $validated = $this->validateRows($type, $resp['rows'], $batchQuota, $format);
             $validRows = array_slice($validated['valid'], 0, $this->quotaCount($batchQuota));
+            if (!$format->isLegacy()) {
+                $validRows = array_map(fn (array $row) => $format->prepareRow($row), $validRows);
+            }
             if (empty($validRows)) {
                 return $this->fail("Batch {$batchNumber} returned no valid rows for the prompt-pack schema.");
             }
@@ -2114,13 +2918,21 @@ SCHEMA;
             'temperature'     => $opts['temperature'],
             'seed'            => $opts['seed'] ?? null,
             'prompt_version'  => $this->promptVersion,
+            // Additive: which catalogue form was asked for and the version of its
+            // own prompt block. prompt_version above stays the system prompt's.
+            'format_code'     => $format->persistedFormatCode(),
+            'format_prompt_version' => $format->isLegacy() ? $this->promptVersion : $format->promptVersion(),
             'batch_id'        => (string) \Illuminate\Support\Str::uuid(),
             'input_tokens'    => $inputTokens,
             'output_tokens'   => $outputTokens,
             'diagnostic_stage' => $input['diagnostic_stage'] ?? null,
         ];
+        if ($h5p !== null) {
+            // Additive, and only for H5P-driven runs: which H5P content type shaped the item.
+            $meta['h5p_type'] = $h5p->h5pType();
+        }
 
-        $ctx = $this->buildPersistenceContext($slice, $input, $questionTypeId, $semanticKey);
+        $ctx = $this->buildPersistenceContext($slice, $input, $questionTypeId, $semanticKey, $format);
         $resp = [
             'semantic_concept_key' => $semanticKey,
             'question_type'        => $type,
@@ -2128,7 +2940,7 @@ SCHEMA;
         ];
 
         try {
-            $persist = DB::transaction(fn() => $this->persist($resp, $type, $ctx, $meta));
+            $persist = $this->runInTransaction(fn() => $this->persist($resp, $type, $ctx, $meta));
         } catch (Throwable $e) {
             Log::error('QuestionGeneration persist failed: ' . $e->getMessage());
             return $this->fail('Insert failed: ' . $e->getMessage());
@@ -2145,7 +2957,9 @@ SCHEMA;
                 : 'Questions generated successfully.',
             'data' => [
                 'semantic_concept_key'  => $semanticKey,
-                'question_type'         => $type,
+                'question_type'         => $format->persistedFormatCode() ?? $type,
+                'question_format_code'  => $format->persistedFormatCode(),
+                'question_type_id'      => $questionTypeId,
                 'requested'             => $requested,
                 'generated'             => $generated,
                 'inserted'              => $persist['inserted'],

@@ -1,0 +1,278 @@
+{
+    "mcq_default_10": [
+        {
+            "level": "Remember",
+            "count": 2,
+            "dok": 1,
+            "difficulty": "Easy",
+            "points": 1,
+            "sub_type": "MCQ"
+        },
+        {
+            "level": "Understand",
+            "count": 3,
+            "dok": 1,
+            "difficulty": "Easy",
+            "points": 1,
+            "sub_type": "MCQ"
+        },
+        {
+            "level": "Apply",
+            "count": 3,
+            "dok": 2,
+            "difficulty": "Medium",
+            "points": 1,
+            "sub_type": "MCQ"
+        },
+        {
+            "level": "Analyze",
+            "count": 1,
+            "dok": 3,
+            "difficulty": "Hard",
+            "points": 1,
+            "sub_type": "MCQ"
+        },
+        {
+            "level": "Evaluate",
+            "count": 1,
+            "dok": 4,
+            "difficulty": "Hard",
+            "points": 1,
+            "sub_type": "MCQ"
+        }
+    ],
+    "mcq_default_7": [
+        {
+            "level": "Remember",
+            "count": 1,
+            "dok": 1,
+            "difficulty": "Easy",
+            "points": 1,
+            "sub_type": "MCQ"
+        },
+        {
+            "level": "Understand",
+            "count": 2,
+            "dok": 1,
+            "difficulty": "Easy",
+            "points": 1,
+            "sub_type": "MCQ"
+        },
+        {
+            "level": "Apply",
+            "count": 2,
+            "dok": 2,
+            "difficulty": "Medium",
+            "points": 1,
+            "sub_type": "MCQ"
+        },
+        {
+            "level": "Analyze",
+            "count": 1,
+            "dok": 3,
+            "difficulty": "Hard",
+            "points": 1,
+            "sub_type": "MCQ"
+        },
+        {
+            "level": "Evaluate",
+            "count": 1,
+            "dok": 4,
+            "difficulty": "Hard",
+            "points": 1,
+            "sub_type": "MCQ"
+        }
+    ],
+    "narrative_default_10": [
+        {
+            "level": "Remember",
+            "count": 2,
+            "dok": 1,
+            "difficulty": "Easy",
+            "points": 1,
+            "sub_type": "Very Short Answer"
+        },
+        {
+            "level": "Understand",
+            "count": 3,
+            "dok": 1,
+            "difficulty": "Easy",
+            "points": 2,
+            "sub_type": "Short Answer"
+        },
+        {
+            "level": "Apply",
+            "count": 3,
+            "dok": 2,
+            "difficulty": "Medium",
+            "points": 3,
+            "sub_type": "Short Answer"
+        },
+        {
+            "level": "Analyze",
+            "count": 1,
+            "dok": 3,
+            "difficulty": "Hard",
+            "points": 4,
+            "sub_type": "Long Answer"
+        },
+        {
+            "level": "Evaluate",
+            "count": 1,
+            "dok": 4,
+            "difficulty": "Hard",
+            "points": 5,
+            "sub_type": "Long Answer"
+        }
+    ],
+    "mcq_explicit": [
+        {
+            "level": "Apply",
+            "count": 3,
+            "dok": 2,
+            "difficulty": "Hard",
+            "points": 1,
+            "sub_type": "MCQ"
+        },
+        {
+            "level": "Remember",
+            "count": 2,
+            "dok": 1,
+            "difficulty": "Easy",
+            "points": 1,
+            "sub_type": "MCQ"
+        }
+    ],
+    "narrative_explicit": [
+        {
+            "level": "Understand",
+            "count": 2,
+            "dok": 1,
+            "difficulty": "Easy",
+            "points": 3,
+            "sub_type": "Short Answer"
+        },
+        {
+            "level": "Create",
+            "count": 3,
+            "dok": 4,
+            "difficulty": "Hard",
+            "points": 5,
+            "sub_type": "Case Study"
+        }
+    ],
+    "batches_mcq_25": [
+        [
+            {
+                "level": "Remember",
+                "count": 4,
+                "dok": 1,
+                "difficulty": "Easy",
+                "points": 1,
+                "sub_type": "MCQ"
+            },
+            {
+                "level": "Understand",
+                "count": 6,
+                "dok": 1,
+                "difficulty": "Easy",
+                "points": 1,
+                "sub_type": "MCQ"
+            }
+        ],
+        [
+            {
+                "level": "Understand",
+                "count": 2,
+                "dok": 1,
+                "difficulty": "Easy",
+                "points": 1,
+                "sub_type": "MCQ"
+            },
+            {
+                "level": "Apply",
+                "count": 7,
+                "dok": 2,
+                "difficulty": "Medium",
+                "points": 1,
+                "sub_type": "MCQ"
+            },
+            {
+                "level": "Analyze",
+                "count": 1,
+                "dok": 3,
+                "difficulty": "Hard",
+                "points": 1,
+                "sub_type": "MCQ"
+            }
+        ],
+        [
+            {
+                "level": "Analyze",
+                "count": 3,
+                "dok": 3,
+                "difficulty": "Hard",
+                "points": 1,
+                "sub_type": "MCQ"
+            },
+            {
+                "level": "Evaluate",
+                "count": 2,
+                "dok": 4,
+                "difficulty": "Hard",
+                "points": 1,
+                "sub_type": "MCQ"
+            }
+        ]
+    ],
+    "batches_narrative_7": [
+        [
+            {
+                "level": "Remember",
+                "count": 1,
+                "dok": 1,
+                "difficulty": "Easy",
+                "points": 1,
+                "sub_type": "Very Short Answer"
+            },
+            {
+                "level": "Understand",
+                "count": 2,
+                "dok": 1,
+                "difficulty": "Easy",
+                "points": 2,
+                "sub_type": "Short Answer"
+            }
+        ],
+        [
+            {
+                "level": "Apply",
+                "count": 2,
+                "dok": 2,
+                "difficulty": "Medium",
+                "points": 3,
+                "sub_type": "Short Answer"
+            },
+            {
+                "level": "Analyze",
+                "count": 1,
+                "dok": 3,
+                "difficulty": "Hard",
+                "points": 4,
+                "sub_type": "Long Answer"
+            }
+        ],
+        [
+            {
+                "level": "Evaluate",
+                "count": 1,
+                "dok": 4,
+                "difficulty": "Hard",
+                "points": 5,
+                "sub_type": "Long Answer"
+            }
+        ]
+    ],
+    "batch_size_mcq": 10,
+    "batch_size_narrative": 3
+}

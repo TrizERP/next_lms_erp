@@ -59,6 +59,25 @@ return [
     // Matches the drawer's own 10-minute client abort.
     'timeout_seconds' => (int) env('CLAUDE_TIMEOUT_SECONDS', 600),
 
+    /*
+    | Question generation (H5P-driven formats).
+    |
+    | App\Services\QuestionGeneration\H5p\ClaudeQuestionClient reads this block.
+    | The key itself is NOT duplicated here: it resolves exactly as above
+    | (ai_api_keys row for `api_type`, then ANTHROPIC_API_KEY), school-scoped.
+    | The model defaults to the one chosen for content generation; set
+    | ANTHROPIC_QUESTION_MODEL to give question generation a cheaper one.
+    | temperature / top_p / top_k stay absent for the reason given above.
+    */
+    'question_generation' => [
+        'model' => env('ANTHROPIC_QUESTION_MODEL', env('ANTHROPIC_MODEL', 'claude-opus-5')),
+        'base_url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com'),
+        'api_version' => env('ANTHROPIC_API_VERSION', '2023-06-01'),
+        // A handful of short questions as JSON; far below the content writer's ceiling.
+        'max_output_tokens' => (int) env('CLAUDE_QUESTION_MAX_OUTPUT_TOKENS', 8000),
+        'timeout_seconds' => (int) env('CLAUDE_QUESTION_TIMEOUT_SECONDS', 180),
+    ],
+
     // Per-user rate limit on the billable generation path, applied by
     // App\Http\Middleware\ThrottleContentGeneration. Generating every content
     // type is 5 sequential Opus 5 calls, so this is a spend control.

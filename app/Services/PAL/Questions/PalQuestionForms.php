@@ -2,6 +2,8 @@
 
 namespace App\Services\PAL\Questions;
 
+use App\Services\QuestionGeneration\QuestionEnvelope;
+use App\Services\QuestionGeneration\QuestionFormResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -177,11 +179,16 @@ class PalQuestionForms
             ? "(SELECT x.question_type_code FROM lms_question_extraction x "
                 . "WHERE x.question_id = {$questionIdColumn} LIMIT 1)"
             : 'NULL';
-        $envelopeForm = "NULLIF(JSON_UNQUOTE(JSON_EXTRACT({$table}.answer, '$.item_form')), 'null')";
-        $generated = $this->hasGeneratedCode() ? "{$table}.g_qtype_code" : 'NULL';
 
-        return "COALESCE({$sidecar}, {$envelopeForm}, {$generated}, "
-            . "CASE WHEN {$table}.question_type_id = 1 THEN 'mcq' ELSE 'narrative' END)";
+        // The ladder is QuestionFormResolver's, shared with the question bank, so
+        // PAL draws a question as the form the bank counts it under. It gained
+        // question_format_code as tier 2; item_form (tier 3) was already here.
+        return QuestionFormResolver::sqlExpression(
+            $table,
+            $sidecar,
+            $this->hasColumn('question_format_code'),
+            $this->hasGeneratedCode()
+        );
     }
 
     /**
@@ -217,10 +224,13 @@ class PalQuestionForms
             $rawType = strtolower(trim((string) ($row->lms_question_type ?? '')));
             $isMcq = in_array($rawType, ['mcq', 'multiple', 'multiple choice', 'multiple_choice'], true);
 
-            $code = $sidecarCodes[$id]
-                ?? ($envelope['item_form'] ?? null)
-                ?? ($row->derived_type_code ?? null)
-                ?? ($isMcq ? 'mcq' : 'narrative');
+            $code = QuestionFormResolver::resolve(
+                $sidecarCodes[$id] ?? null,
+                $row->format_code ?? null,
+                $envelope,
+                $row->derived_type_code ?? null,
+                $isMcq ? 'mcq' : 'narrative'
+            );
 
             $described[$id] = [
                 'question_type_code' => $code,
@@ -236,6 +246,9 @@ class PalQuestionForms
                 'assertion' => $envelope['assertion'] ?? null,
                 'reason' => $envelope['reason'] ?? null,
                 'sub_part_labels' => $envelope['sub_part_labels'] ?? [],
+                // Structured fields a format stores beyond the text answer (pairs,
+                // distractors); each null on every row that has none.
+                ...QuestionEnvelope::clientFields($envelope),
                 'standard_id' => $row->standard_id !== null ? (int) $row->standard_id : null,
                 'subject_id' => $row->subject_id !== null ? (int) $row->subject_id : null,
                 'chapter_id' => $row->chapter_id !== null ? (int) $row->chapter_id : null,
@@ -278,6 +291,9 @@ class PalQuestionForms
         $select[] = $this->hasColumn('g_difficulty')
             ? DB::raw('q.g_difficulty as difficulty')
             : DB::raw('NULL as difficulty');
+        $select[] = $this->hasColumn('question_format_code')
+            ? DB::raw('q.question_format_code as format_code')
+            : DB::raw('NULL as format_code');
 
         return $select;
     }

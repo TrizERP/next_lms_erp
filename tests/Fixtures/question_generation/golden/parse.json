@@ -1,0 +1,26 @@
+{
+    "fenced": {
+        "ok": true,
+        "data": {
+            "a": 1,
+            "rows": []
+        }
+    },
+    "bare": {
+        "ok": true,
+        "data": {
+            "a": 1,
+            "rows": []
+        }
+    },
+    "prose": {
+        "ok": false,
+        "error": "Could not find a complete JSON object in the DeepSeek response."
+    },
+    "trailing_comma": {
+        "ok": true,
+        "data": {
+            "a": 1
+        }
+    }
+}

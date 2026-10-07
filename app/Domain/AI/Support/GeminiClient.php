@@ -29,7 +29,7 @@ use Throwable;
  * schema complaint rather than "wrong provider", which is why this lives behind the
  * ModelClient interface instead of at each call site.
  */
-class GeminiClient implements ModelClient, SupportsImageGeneration
+class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisionAnalysis
 {
     /** The school this client resolves credentials for. Null means platform keys only. */
     private int|string|null $subInstituteId = null;
@@ -228,6 +228,65 @@ class GeminiClient implements ModelClient, SupportsImageGeneration
                 // null, nothing ever matched, and the retry that this whole block exists
                 // for never once fired. A 503 went straight to whoever pressed the
                 // button, which is exactly what the comment below says it must not.
+                $status = $exception instanceof RequestException && $exception->response !== null
+                    ? $exception->response->status()
+                    : null;
+
+                return in_array($status, self::RETRY_STATUSES, true);
+            }, throw: false)
+            ->post($this->endpoint($model ?? $this->defaultModel()), $body);
+
+        if (! $response->successful()) {
+            throw $this->failure($response);
+        }
+
+        return $this->textFrom($response->json());
+    }
+
+    /**
+     * Read one image and answer in JSON.
+     *
+     * Same endpoint, key resolution and error handling as chat(); the only difference is
+     * a `inlineData` part carrying the image next to the text. Temperature is pinned low
+     * because the caller is asking where things ARE, which has one answer, not for
+     * variety. A 429 surfaces immediately, as in chat().
+     */
+    public function analyzeImage(
+        string $prompt,
+        string $imageBytes,
+        string $mimeType,
+        ?string $model = null,
+        ?int $timeout = null,
+    ): ?string {
+        $key = $this->resolveApiKey();
+
+        if ($key === null) {
+            throw new RuntimeException('No usable AI API key is configured.');
+        }
+
+        $body = [
+            'contents' => [[
+                'role' => 'user',
+                'parts' => [
+                    ['text' => $prompt],
+                    ['inlineData' => ['mimeType' => $mimeType, 'data' => base64_encode($imageBytes)]],
+                ],
+            ]],
+            'generationConfig' => [
+                'temperature' => 0.1,
+                'responseMimeType' => 'application/json',
+                // Higher than chat()'s default: gemini-2.5-flash spends output tokens on
+                // reasoning before any text, and a box list cut off mid-array is unusable.
+                'maxOutputTokens' => (int) config('ai.provider.gemini.vision_max_output_tokens', 4096),
+            ],
+        ];
+
+        $response = Http::withHeaders([
+            'x-goog-api-key' => $key['api_key'],
+            'Content-Type' => 'application/json',
+        ])
+            ->timeout($timeout ?? (int) config('ai.provider.gemini.timeout', self::DEFAULT_TIMEOUT))
+            ->retry(self::MAX_ATTEMPTS, self::backoff(...), function ($exception, $request): bool {
                 $status = $exception instanceof RequestException && $exception->response !== null
                     ? $exception->response->status()
                     : null;
