@@ -61,6 +61,9 @@ class Kernel extends HttpKernel
      * @var array<string, class-string|string>
      */
     protected $routeMiddleware = [
+        'api.session' => \App\Http\Middleware\ApiSessionHydrator::class,
+        'lms.auth' => \App\Http\Middleware\LmsApiAuth::class,
+        'perm' => \App\Http\Middleware\RequirePermission::class,
         'auth' => \App\Http\Middleware\Authenticate::class,
         'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
         'bindings' => \Illuminate\Routing\Middleware\SubstituteBindings::class,
