@@ -2,8 +2,10 @@
 
 namespace App\Console;
 
+use App\Services\PAL\Coherence\ConceptTagger;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class Kernel extends ConsoleKernel
@@ -158,6 +160,62 @@ class Kernel extends ConsoleKernel
                 }
             }
         })->dailyAt('03:00')->name('coherence-map-nightly-sync')->withoutOverlapping(120);
+
+        // Phase 6.6 — auto-tag uploaded curriculum content and questions
+        // against the concept graph.
+        //
+        // pal:coherence-tag (ConceptTagger) already does this correctly, but
+        // takes an explicit --tenant/--standard/--subject triple and had no
+        // scheduled entry — like coherence-map-nightly-sync above, it only
+        // ever ran when someone typed it by hand. This enumerates the same
+        // scopes coherence-map-nightly-sync does (any tenant/standard/subject
+        // with at least one lms_concept row) and proposes links for both
+        // estates. Heuristic only, by design (Phase 6.6 decision) — no AI
+        // spend, no non-determinism, running nightly across every tenant.
+        // Every write is a draft proposal (C5) and skips any row a human has
+        // already reviewed, so a run that finds nothing new to do is a no-op.
+        $schedule->call(function () {
+            $tagger = app(ConceptTagger::class);
+
+            $scopes = DB::table('lms_concept')
+                ->select('sub_institute_id', 'standard_id', 'subject_id')
+                ->distinct()
+                ->get();
+
+            foreach ($scopes as $scope) {
+                $tenant = (int) $scope->sub_institute_id;
+                $standard = (int) $scope->standard_id;
+                $subject = (int) $scope->subject_id;
+
+                if ($tenant <= 0 || $standard <= 0 || $subject <= 0) {
+                    continue;
+                }
+
+                try {
+                    $tagger->tagContent($tenant, $standard, $subject);
+                    $tagger->tagQuestions($tenant, $standard, $subject);
+                } catch (\Throwable $e) {
+                    Log::channel('daily')->error('Coherence content tagging failed for scope', [
+                        'tenant' => $tenant, 'standard' => $standard, 'subject' => $subject,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+        })->dailyAt('02:00')->name('coherence-content-tagging')->withoutOverlapping(120);
+
+        // Phase 6.6 — heuristic Bloom/difficulty/pedagogy/cultural tagging
+        // over the untagged content and question estate. --engine=ai is
+        // deliberately not scheduled (Phase 6.6 decision): heuristic only,
+        // no recurring AI spend. Each run only touches rows with no existing
+        // proposal yet (TagContentCommand's default), so this is a catch-up
+        // sweep for newly uploaded content, not a full re-tag.
+        $schedule->command('pal:tag-content --estate=content --engine=heuristic')
+            ->dailyAt('01:30')->withoutOverlapping(120)
+            ->onFailure(fn () => Log::channel('daily')->error('pal:tag-content --estate=content failed'));
+
+        $schedule->command('pal:tag-content --estate=questions --engine=heuristic')
+            ->dailyAt('01:45')->withoutOverlapping(120)
+            ->onFailure(fn () => Log::channel('daily')->error('pal:tag-content --estate=questions failed'));
     }
 
     /**

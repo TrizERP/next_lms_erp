@@ -1,38 +1,61 @@
 <?php
 
 namespace App\Services;
+use App\Exceptions\GraphUnavailableException;
 use Illuminate\Support\Facades\Log;
 use Laudis\Neo4j\Authentication\Authenticate;
 use Laudis\Neo4j\ClientBuilder;
+use Throwable;
 
 class Neo4jService
 {
     protected $client;
+    protected ?Throwable $buildError = null;
 
     public function __construct()
     {
-        $this->client = ClientBuilder::create()
-        ->withDriver(
-            'neo4j',
-            config('neo4j.uri'),
-            Authenticate::basic(
-                config('neo4j.username'),
-                config('neo4j.password')
+        try {
+            $this->client = ClientBuilder::create()
+            ->withDriver(
+                'neo4j',
+                config('neo4j.uri'),
+                Authenticate::basic(
+                    config('neo4j.username'),
+                    config('neo4j.password')
+                )
             )
-        )
-        ->build();
+            ->build();
+        } catch (Throwable $e) {
+            Log::error('Neo4j client could not be built: ' . $e->getMessage());
+            $this->buildError = $e;
+        }
+    }
+
+    /**
+     * @throws GraphUnavailableException if the client could not be built (bad/blank credentials).
+     */
+    protected function client()
+    {
+        if ($this->client === null) {
+            throw new GraphUnavailableException(
+                'Neo4j client is not available: ' . ($this->buildError?->getMessage() ?? 'unknown build error'),
+                previous: $this->buildError,
+            );
+        }
+
+        return $this->client;
     }
 
     public function getClient()
     {
-        return $this->client;
+        return $this->client();
     }
 
     // ✅ ADD THIS METHOD
     public function testConnection()
     {
         try {
-            $result = $this->client->run('RETURN 1 AS status');
+            $result = $this->client()->run('RETURN 1 AS status');
             return 'Neo4j Connected Successfully';
         } catch (\Exception $e) {
             Log::error('Neo4j Connection Error: ' . $e->getMessage());
@@ -47,29 +70,14 @@ class Neo4jService
         $query = 'CREATE (n:Content {Organization : $Organization , Departments : $Departments , 
                   JobRoles: $JobRoles, Skill: $Skill,EducationLevel: $EducationLevel,ExperienceLevel: $ExperienceLevel }) RETURN n';
 
-        return $this->client->run($query, [
+        return $this->client()->run($query, [
             'Organization'   => $data->Organization ,
             'Departments'    => $data->Departments ,
             'JobRoles'       => $data->JobRoles,
             'Skill'          => $data->Skill,
-            'EducationLevel' => $data->EducationLevel,  
-            'ExperienceLevel' => $data->ExperienceLevel,  
+            'EducationLevel' => $data->EducationLevel,
+            'ExperienceLevel' => $data->ExperienceLevel,
         ]);
-         if ($result->count() > 0) {
-        // Node was created successfully
-        $node = $result->first()->get('n')->getProperties();
-        return [
-            'status' => true,
-            'message' => 'Node created successfully ',
-            'data' => $node
-        ];
-    }
-
-    // If no record returned
-    return [
-        'status' => false,
-        'message' => 'Node not created '
-    ];
     }
 
     public function createOrGetNode($label, $property, $value)
@@ -80,7 +88,7 @@ class Neo4jService
     $params = ['value' => $value];
     
     // Execute the query
-    $result = $this->client->run($query, $params);
+    $result = $this->client()->run($query, $params);
 
     // Get the first record from the result
     $record = $result->first();
@@ -130,7 +138,7 @@ class Neo4jService
   
       // Execute the query with timeout settings
       try {
-          $checkRelation = $this->client->run($query, $params);
+          $checkRelation = $this->client()->run($query, $params);
           
           if ($checkRelation) {
               $message = response()->json($checkRelation);
@@ -147,7 +155,15 @@ class Neo4jService
   
   public function run($query, $params = [])
 {
-    return $this->client->run($query, $params);
+    try {
+        return $this->client()->run($query, $params);
+    } catch (GraphUnavailableException $e) {
+        throw $e;
+    } catch (Throwable $e) {
+        Log::error('Neo4j query failed: ' . $e->getMessage());
+
+        throw new GraphUnavailableException('Neo4j query failed: ' . $e->getMessage(), $e);
+    }
 }
 }
 

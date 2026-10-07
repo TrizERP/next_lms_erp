@@ -8,9 +8,11 @@ use App\CareerIntelligence\Ingestion\SubjectEnrolmentAdapter;
 use App\Models\lms\counselling\StudentAspiration;
 use App\Services\Neo4jService;
 use DateTimeInterface;
+ use Illuminate\Support\Facades\Log;
 use Laudis\Neo4j\Types\CypherList;
 use Laudis\Neo4j\Types\CypherMap;
 use Laudis\Neo4j\Types\Date;
+use Throwable;
 
 /**
  * CI-GUIDE-DEV-001 Group C. Computes ALIGNED / MISALIGNED / INSUFFICIENT_DATA
@@ -34,6 +36,16 @@ class CaiCoreService
      * naming an occupation not in this map means the pathway graph has
      * nothing to compare against — that is INSUFFICIENT_DATA, never a guess
      * (e.g. never fuzzy-matched by occupation_name).
+     */
+    /**
+     * Adding an occupation here with nothing matching under
+     * database/neo4j/cai/occupations/ means evaluate() will MATCH nothing in
+     * the graph for it. Seeding a new `.cypher` file there with nothing
+     * added here means evaluate() returns INSUFFICIENT_DATA for it forever —
+     * the two sides are never cross-checked by anything else, including the
+     * seed command itself. logOccupationSyncGapsOnce() below only logs the
+     * gap; it does not fix it, because fixing it means adding the real
+     * occupation data, not inventing a placeholder.
      */
     private const OCCUPATION_MAP = [
         '17-1011.00' => 'OCC-ARCHITECT', // O*NET: "Architects, Except Landscape and Naval"
@@ -109,10 +121,73 @@ class CaiCoreService
         RETURN collect(DISTINCT s.code) AS codes
         CYPHER;
 
+    /** Guards logOccupationSyncGapsOnce() to a single filesystem read per process. */
+    private static bool $occupationSyncChecked = false;
+
     public function __construct(
         private readonly Neo4jService $neo4j,
         private readonly SubjectEnrolmentAdapter $subjectAdapter = new ErpSubjectEnrolmentAdapter(),
     ) {
+        $this->logOccupationSyncGapsOnce();
+    }
+
+    /**
+     * Warn (never fail) when OCCUPATION_MAP and the seeded `.cypher` files
+     * disagree. The one existing "architect" occupation must keep evaluating
+     * identically whether or not this check itself has a problem — hence the
+     * outer try/catch swallowing everything.
+     */
+    private function logOccupationSyncGapsOnce(): void
+    {
+        if (self::$occupationSyncChecked) {
+            return;
+        }
+        self::$occupationSyncChecked = true;
+
+        try {
+            $seeded = $this->seededOccupationIds();
+            $mapped = array_values(self::OCCUPATION_MAP);
+
+            foreach (array_diff($seeded, $mapped) as $id) {
+                Log::warning(
+                    "CareerIntelligence: occupation_id '{$id}' is seeded under database/neo4j/cai/occupations/ "
+                    . "but has no CaiCoreService::OCCUPATION_MAP entry — evaluate() will return INSUFFICIENT_DATA "
+                    . 'for every student aspiring to it until one is added.'
+                );
+            }
+
+            foreach (array_diff($mapped, $seeded) as $id) {
+                Log::warning(
+                    "CareerIntelligence: CaiCoreService::OCCUPATION_MAP declares occupation_id '{$id}' but no "
+                    . 'seeded .cypher file under database/neo4j/cai/occupations/ declares that occupation_id — '
+                    . 'evaluate() will never find this node in the graph.'
+                );
+            }
+        } catch (Throwable $e) {
+            // The consistency check itself must never break occupation evaluation.
+        }
+    }
+
+    /** @return array<int, string> every `occupation_id` any occupations/*.cypher file MERGEs. */
+    private function seededOccupationIds(): array
+    {
+        $ids = [];
+
+        foreach (glob(database_path('neo4j/cai/occupations/*.cypher')) ?: [] as $file) {
+            $content = file_get_contents($file);
+
+            if ($content === false) {
+                continue;
+            }
+
+            if (preg_match_all("/occupation_id\s*:\s*'([^']+)'/", $content, $matches)) {
+                foreach ($matches[1] as $id) {
+                    $ids[$id] = true;
+                }
+            }
+        }
+
+        return array_keys($ids);
     }
 
     /**

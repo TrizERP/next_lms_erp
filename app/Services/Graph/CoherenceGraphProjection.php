@@ -1471,6 +1471,56 @@ class CoherenceGraphProjection
             $chapterQualifying
         );
 
+        // ---- HAS_OUTCOME: Curriculum -> CurriculumOutcome, chapter_id = 0 ----
+        // The top-level Goals (CG-n) hang off the CURRICULUM, not a chapter (see
+        // the chapter_id != 0 block above) - the controller reads these via
+        // `outcomesByCurriculum` (CurriculumPlanningApiController::index(),
+        // keyed by curriculum_id). Before this, a Goal row's curriculum_id was
+        // only a PROPERTY on :CurriculumOutcome, never a traversable edge, so
+        // "every competency this curriculum declares" had no graph path from
+        // :Curriculum at all. Same chId-unsafe-for-retraction lesson as the
+        // chapter block: `curriculumRef` is stamped onto the edge itself.
+        $curriculumRows = $rows->filter(fn ($r) => (int) $r->chapter_id === 0 && (int) $r->curriculum_id !== 0);
+        $hasOutcomeByCurriculum = 0;
+        $curriculumQualifying = [];
+
+        $curriculumCypher = 'UNWIND $rows AS row '
+            . 'MATCH (lo:CurriculumOutcome {outcomeId: row.outcomeId}) '
+            . 'OPTIONAL MATCH (curByUid:Curriculum {uid: row.curriculumUid}) '
+            . 'OPTIONAL MATCH (curByCurId:Curriculum {curriculumId: row.curriculumId}) '
+            . 'WITH lo, row, curByUid, curByCurId, '
+            . '     CASE WHEN curByUid IS NOT NULL THEN curByUid ELSE curByCurId END AS cur '
+            . 'FOREACH (_ IN CASE WHEN cur IS NULL THEN [] ELSE [1] END | '
+            . '    MERGE (cur)-[e3:HAS_OUTCOME]->(lo) '
+            . '    SET e3.curriculumRef = row.curriculumId ) '
+            . 'RETURN count(cur) AS linked';
+
+        foreach ($curriculumRows->chunk(self::BATCH) as $chunk) {
+            $payload = [];
+
+            foreach ($chunk as $r) {
+                $curriculumQualifying[(int) $r->curriculum_id . ':' . (int) $r->id] = true;
+                $payload[] = [
+                    'outcomeId'     => (int) $r->id,
+                    'curriculumUid' => 'Curriculum:' . $tenant . ':0:' . (int) $r->curriculum_id,
+                    'curriculumId'  => (int) $r->curriculum_id,
+                ];
+            }
+
+            $first = $this->neo4j->run($curriculumCypher, ['rows' => $payload])->first();
+            $hasOutcomeByCurriculum += $first ? (int) $first->get('linked') : 0;
+        }
+
+        $hasOutcomeByCurriculumRetracted = $this->retract(
+            'MATCH (cur:Curriculum)-[e:HAS_OUTCOME]->(lo:CurriculumOutcome {sub_institute_id: $tenant, standard_id: $standardId, subject_id: $subjectId}) '
+                . 'RETURN e.curriculumRef AS fromId, lo.outcomeId AS toId',
+            ['tenant' => $tenant, 'standardId' => (string) $standardId, 'subjectId' => (string) $subjectId],
+            'UNWIND $rows AS row '
+                . 'MATCH (lo:CurriculumOutcome {outcomeId: row.toId})<-[e:HAS_OUTCOME {curriculumRef: row.fromId}]-(:Curriculum) '
+                . 'DELETE e',
+            $curriculumQualifying
+        );
+
         // ---- ADDRESSES: Concept -> CurriculumOutcome, from lms_concept_outcome
         // Scoped on the OUTCOME side (lo.standard_id/subject_id), not the
         // concept side - verified live 2026-09-29 that `lms_concept_outcome`
@@ -1545,15 +1595,260 @@ class CoherenceGraphProjection
         );
 
         return [
-            'outcomes'              => $outcomes,
-            'part_of'               => $partOf,
-            'part_of_retracted'     => $partOfRetracted,
-            'has_outcome'           => $hasOutcome,
-            'has_outcome_retracted' => $hasOutcomeRetracted,
-            'addresses'             => $bridgeResult['addresses'],
-            'unresolved_addresses'  => $bridgeResult['unresolved_addresses'],
-            'retracted'             => $partOfRetracted + $hasOutcomeRetracted + $bridgeResult['retracted'],
+            'outcomes'                   => $outcomes,
+            'part_of'                    => $partOf,
+            'part_of_retracted'          => $partOfRetracted,
+            'has_outcome'                => $hasOutcome,
+            'has_outcome_retracted'      => $hasOutcomeRetracted,
+            'has_outcome_by_curriculum'  => $hasOutcomeByCurriculum,
+            'addresses'                  => $bridgeResult['addresses'],
+            'unresolved_addresses'       => $bridgeResult['unresolved_addresses'],
+            'retracted'                  => $partOfRetracted + $hasOutcomeRetracted
+                + $hasOutcomeByCurriculumRetracted + $bridgeResult['retracted'],
         ];
+    }
+
+    // ==================================================================
+    // 8. Topic nodes - topic_master, previously entirely unrepresented
+    // ==================================================================
+
+    /**
+     * Project topic_master into the graph as its own label:
+     *
+     *   (:Chapter)-[:HAS_TOPIC]->(:Topic)-[:HAS_CONCEPT]->(:Concept)
+     *
+     * `CurriculumPlanningApiController` (the live `/lms/curriculum-planning`
+     * screen) already renders a full Curriculum->Unit->Chapter->Topic->Concept
+     * tree straight from SQL; Neo4j had every level except Topic (Unit has had
+     * a pipeline-A spec since the original load - `config/neo4j.php`'s
+     * `lms_units` entry - this was the one level actually missing).
+     *
+     * Keyed on `topicId` (native `topic_master.id`), same "native id, no
+     * pre-existing convention to clash with" reasoning :Misconception and
+     * :ConceptNode already use.
+     *
+     * SCOPING. topic_master carries no standard_id/subject_id of its own, only
+     * chapter_id, so this INNER JOINs chapter_master to resolve scope - which
+     * as a side effect only ever projects topics whose chapter_id resolves to
+     * a real row. Measured live 2026-10-06: only 2,597 of 16,116 topic_master
+     * rows do (83.9% dangling chapter_id - an upstream data-quality defect,
+     * not something to paper over by inventing a scope for an orphan row).
+     * `lms_concept.topic_id`, by contrast, is 100% healthy (7,532/7,532
+     * resolve), so the Topic->Concept edge below is not weakened the same way.
+     *
+     * @return array{topics: int, has_topic: int, has_topic_retracted: int, has_concept: int, unresolved_has_concept: int, retracted: int}
+     */
+    public function projectTopics(int $tenant, int $standardId, int $subjectId): array
+    {
+        $rows = DB::table('topic_master as t')
+            ->join('chapter_master as c', 'c.id', '=', 't.chapter_id')
+            ->where('t.sub_institute_id', $tenant)
+            ->where('c.standard_id', $standardId)
+            ->where('c.subject_id', $subjectId)
+            ->select(['t.id', 't.chapter_id', 't.main_topic_id', 't.name', 't.description', 't.topic_show_hide', 't.topic_sort_order'])
+            ->get();
+
+        $nodeCypher = 'UNWIND $rows AS row '
+            . 'MERGE (t:Topic {topicId: row.topicId}) '
+            . 'SET t += row.props, t.coherence_synced_at = datetime() '
+            . 'RETURN count(t) AS c';
+
+        $topics = 0;
+
+        foreach ($rows->chunk(self::BATCH) as $chunk) {
+            $payload = [];
+
+            foreach ($chunk as $r) {
+                $payload[] = [
+                    'topicId' => (int) $r->id,
+                    'props'   => array_filter([
+                        'name'             => $this->str($r->name) ?: null,
+                        'description'      => $this->str($r->description) ?: null,
+                        'chapter_id'       => (int) $r->chapter_id,
+                        'main_topic_id'    => $this->intOrNull($r->main_topic_id),
+                        'show_hide'        => $this->intOrNull($r->topic_show_hide),
+                        'sort_order'       => $this->intOrNull($r->topic_sort_order),
+                        'sub_institute_id' => $tenant,
+                        'standard_id'      => (string) $standardId,
+                        'subject_id'       => (string) $subjectId,
+                    ], fn ($v) => $v !== null),
+                ];
+            }
+
+            $first = $this->neo4j->run($nodeCypher, ['rows' => $payload])->first();
+            $topics += $first ? (int) $first->get('c') : 0;
+        }
+
+        // ---- HAS_TOPIC: Chapter -> Topic ----
+        // Same dual uid/chId MATCH and edge-stamped-ref retraction pattern as
+        // projectLearningOutcomes()'s HAS_OUTCOME block, for the same reason:
+        // a chapter matched only via the uid fallback is not guaranteed to
+        // carry `chId`, so reading it back off the Chapter node for retraction
+        // is unsafe - the id travels on the edge itself instead.
+        $hasTopicCypher = 'UNWIND $rows AS row '
+            . 'MATCH (t:Topic {topicId: row.topicId}) '
+            . 'OPTIONAL MATCH (chByUid:Chapter {uid: row.chapterUid}) '
+            . 'OPTIONAL MATCH (chByChId:Chapter {chId: row.chapterId}) '
+            . 'WITH t, row, chByUid, chByChId, '
+            . '     CASE WHEN chByUid IS NOT NULL THEN chByUid ELSE chByChId END AS ch '
+            . 'FOREACH (_ IN CASE WHEN ch IS NULL THEN [] ELSE [1] END | '
+            . '    MERGE (ch)-[e:HAS_TOPIC]->(t) '
+            . '    SET e.chapterRef = row.chapterId ) '
+            . 'RETURN count(ch) AS linked';
+
+        $hasTopic = 0;
+        $hasTopicQualifying = [];
+
+        foreach ($rows->chunk(self::BATCH) as $chunk) {
+            $payload = [];
+
+            foreach ($chunk as $r) {
+                $hasTopicQualifying[(int) $r->chapter_id . ':' . (int) $r->id] = true;
+                $payload[] = [
+                    'topicId'    => (int) $r->id,
+                    'chapterUid' => 'Chapter:' . $tenant . ':0:' . (int) $r->chapter_id,
+                    'chapterId'  => (int) $r->chapter_id,
+                ];
+            }
+
+            $first = $this->neo4j->run($hasTopicCypher, ['rows' => $payload])->first();
+            $hasTopic += $first ? (int) $first->get('linked') : 0;
+        }
+
+        $hasTopicRetracted = $this->retract(
+            'MATCH (ch:Chapter)-[e:HAS_TOPIC]->(t:Topic {sub_institute_id: $tenant, standard_id: $standardId, subject_id: $subjectId}) '
+                . 'RETURN e.chapterRef AS fromId, t.topicId AS toId',
+            ['tenant' => $tenant, 'standardId' => (string) $standardId, 'subjectId' => (string) $subjectId],
+            'UNWIND $rows AS row '
+                . 'MATCH (t:Topic {topicId: row.toId})<-[e:HAS_TOPIC {chapterRef: row.fromId}]-(:Chapter) '
+                . 'DELETE e',
+            $hasTopicQualifying
+        );
+
+        // ---- HAS_CONCEPT: Topic -> Concept, from lms_concept.topic_id ----
+        // Scoped by lms_concept directly (it carries standard_id/subject_id of
+        // its own), unlike the chapter-scoped block above - no dangling-FK
+        // concern here, topic_id resolves 100% of the time where set.
+        $conceptRows = DB::table('lms_concept as k')
+            ->where('k.sub_institute_id', $tenant)
+            ->where('k.standard_id', $standardId)
+            ->where('k.subject_id', $subjectId)
+            ->whereNotNull('k.topic_id')
+            ->where('k.topic_id', '!=', 0)
+            ->select(['k.id', 'k.topic_id'])
+            ->get();
+
+        $topicConceptCypher = 'UNWIND $rows AS row '
+            . 'MATCH (t:Topic {topicId: row.topicId}) '
+            . 'MATCH (c:Concept {conceptId: row.conceptId}) '
+            . 'MERGE (t)-[e:HAS_CONCEPT]->(c) '
+            . 'RETURN count(e) AS c';
+
+        $conceptQualifying = [];
+        foreach ($conceptRows as $r) {
+            $conceptQualifying[(int) $r->topic_id . ':' . (int) $r->id] = true;
+        }
+
+        $conceptResult = $this->linkDelivery(
+            $conceptRows,
+            fn ($r) => ['topicId' => (int) $r->topic_id, 'conceptId' => (int) $r->id],
+            $topicConceptCypher,
+            'has_concept',
+            'unresolved_has_concept'
+        );
+
+        $conceptRetracted = $this->retract(
+            'MATCH (t:Topic)-[e:HAS_CONCEPT]->(c:Concept {sub_institute_id: $tenant, standard_id: $standardId, subject_id: $subjectId}) '
+                . 'RETURN t.topicId AS fromId, c.conceptId AS toId',
+            ['tenant' => $tenant, 'standardId' => (string) $standardId, 'subjectId' => (string) $subjectId],
+            'UNWIND $rows AS row '
+                . 'MATCH (t:Topic {topicId: row.fromId})-[e:HAS_CONCEPT]->(c:Concept {conceptId: row.toId}) '
+                . 'DELETE e',
+            $conceptQualifying
+        );
+
+        return [
+            'topics'                  => $topics,
+            'has_topic'               => $hasTopic,
+            'has_topic_retracted'     => $hasTopicRetracted,
+            'has_concept'             => $conceptResult['has_concept'],
+            'unresolved_has_concept'  => $conceptResult['unresolved_has_concept'],
+            'retracted'               => $hasTopicRetracted + $conceptRetracted,
+        ];
+    }
+
+    // ==================================================================
+    // 9. Chapter enrichment - semantic_intelligence + document_extractions
+    // ==================================================================
+
+    /**
+     * SET-only enrichment of existing :Chapter nodes from the document
+     * extraction / AI chapter-intelligence pipeline - no new label, no new
+     * edge, just properties the curriculum-planning screen already surfaces
+     * per chapter (`learning_objective`, `total_concepts`, document
+     * provenance). This is the other half of the "document-extraction/
+     * semantic-intelligence" gap alongside Topic above.
+     *
+     * `blooms_level` is deliberately NOT copied: it is a per-concept JSON blob
+     * on this table, not a chapter-level scalar - the controller itself keeps
+     * it out of the roll-up for the same reason (its own comment: "reads like
+     * a scalar but holds a per-concept JSON blob"). `pdf_url`/`md_content`
+     * stay in MariaDB too - large, and not something a graph traversal needs.
+     *
+     * @return array{enriched: int, unresolved: int}
+     */
+    public function projectChapterIntelligence(int $tenant, int $standardId, int $subjectId): array
+    {
+        $rows = DB::table('chapter_master as c')
+            ->leftJoin('semantic_intelligence as si', 'si.chapter_id', '=', 'c.id')
+            ->leftJoin('document_extractions as de', 'de.id', '=', 'c.extraction_id')
+            ->where('c.sub_institute_id', $tenant)
+            ->where('c.standard_id', $standardId)
+            ->where('c.subject_id', $subjectId)
+            ->select([
+                'c.id as chapter_id',
+                'si.learning_objective', 'si.total_concepts',
+                'de.document_type', 'de.document_tittle as document_title', 'de.board', 'de.page_count',
+            ])
+            ->get();
+
+        $cypher = 'UNWIND $rows AS row '
+            . 'OPTIONAL MATCH (chByUid:Chapter {uid: row.chapterUid}) '
+            . 'OPTIONAL MATCH (chByChId:Chapter {chId: row.chapterId}) '
+            . 'WITH row, CASE WHEN chByUid IS NOT NULL THEN chByUid ELSE chByChId END AS ch '
+            . 'FOREACH (_ IN CASE WHEN ch IS NULL THEN [] ELSE [1] END | SET ch += row.props) '
+            . 'RETURN count(ch) AS c';
+
+        // A chapter with neither a semantic_intelligence nor a document_extractions
+        // row would otherwise build a completely empty `props` map. The Bolt
+        // driver (unlike the HTTP transaction API copy-lms-pal now uses) cannot
+        // tell an empty PHP array bound as a map parameter from an empty list and
+        // sends it as the latter, which Neo4j's `SET ch += row.props` then
+        // rejects outright ("Expected row.props to be a map, but it was List{}")
+        // - measured live 2026-10-06 on 5/40 scopes. Nothing to enrich for such a
+        // chapter anyway, so it is simply excluded rather than sent empty.
+        $enrichable = $rows
+            ->map(fn ($r) => [
+                'chapterUid' => 'Chapter:' . $tenant . ':0:' . (int) $r->chapter_id,
+                'chapterId'  => (int) $r->chapter_id,
+                'props'      => array_filter([
+                    'learning_objective' => $this->str($r->learning_objective) ?: null,
+                    'total_concepts'     => $this->intOrNull($r->total_concepts),
+                    'document_type'      => $this->str($r->document_type) ?: null,
+                    'document_title'     => $this->str($r->document_title) ?: null,
+                    'document_board'     => $this->str($r->board) ?: null,
+                    'document_pages'     => $this->intOrNull($r->page_count),
+                ], fn ($v) => $v !== null),
+            ])
+            ->filter(fn ($row) => $row['props'] !== []);
+
+        return $this->linkDelivery(
+            $enrichable,
+            fn ($row) => $row,
+            $cypher,
+            'enriched',
+            'unresolved'
+        );
     }
 
     // ==================================================================
