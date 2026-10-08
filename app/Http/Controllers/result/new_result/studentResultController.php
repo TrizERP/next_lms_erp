@@ -4177,11 +4177,16 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
         $extra_term  = $extra_exam = "1=1";
+        $standard_array = [3299,3965]; //std-10 display teacher remark added in term-2
+
         $att_term = "atd.term_id = 1";
         if ($format != "yearly") {
             $extra_term = "term_id = 2";
             $extra_exam = "rce.term_id = 2";
-            $att_term = "atd.term_id = 1";
+            if(in_array($standard_id, $standard_array, true))
+                $att_term = "atd.term_id = 2";
+            else
+                $att_term = "atd.term_id = 1";
         }
 
         // get term_name 
@@ -4393,7 +4398,9 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
                             if (count($obtained_mark_arr) > 1) {
                                 $convert_mark = max($numeric_marks); // get greatest max
                             } else {
-                                $convert_mark = (($obtained_mark_sum / $t_m) * $w_m);// $obtained_mark_sum; // for PT
+                                $convert_mark = $t_m > 0
+                                                ? (($obtained_mark_sum / $t_m) * $w_m)
+                                                : 0;
                             }
                         } else {
                             $convert_mark = ($obtained_mark_sum != 0) ? (($obtained_mark_sum / $t_m) * $w_m) : 0;
@@ -4577,19 +4584,15 @@ if (isset($explodeTermAtten) && in_array($sub_institute_id, $subInstituteArray))
     {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
-        $standard_array = [3300,3305,3306];
+        $standard_array = [3300, 3305, 3306];
 
-        // Initialize variables
-        $extra_term = $extra_exam = "1=1";
-        //$att_term = "atd.term_id = 2";
-        if ($format != "yearly" && !in_array($standard_id, $standard_array)) {
-            $extra_term = "term_id = 2";
-            $extra_exam = "rce.term_id = 2";
-            $att_term = "atd.term_id = 2";
-        }else{
-            $extra_term = "term_id = $format";
-            $extra_exam = "rce.term_id = $format";
-            $att_term = "atd.term_id = $format";
+        $extra_term = 'term_id = 2';
+        $extra_exam = 'rce.term_id = 2';
+
+        if ($format != 'yearly' && !in_array($standard_id, $standard_array, true)) {
+            $att_term = 'atd.term_id = 2';
+        } else {
+            $att_term = "atd.term_id = {$format}";
         }
 
         // Retrieve data from database
@@ -6850,20 +6853,18 @@ $table .= '</div>';
     {
         $syear = session()->get('syear');
         $sub_institute_id = session()->get('sub_institute_id');
-        $standard_array = [3303,3316,3301,3304,3307];
+        $standard_array = [3299,3965,3301,3304,3307];//std-10,12 co_scholastic added in term-2
 
         $extra_term = "1=1";
         $extra_term_co = "1=1";
         $extra_exam = "1=1";
 
         if ($academic_type != "primary") {
-
-            // Upper / non-primary should use Term 2
-            $extra_term = "term_id = 2";
-
             if (in_array($standard_id, $standard_array)) {
+                $extra_term = "term_id = 2";
                 $extra_exam = "comark.term_id = 2";
             }else{
+                $extra_term = "term_id = $format";
                 $extra_exam = "comark.term_id = $format";
             }
 
@@ -7011,7 +7012,7 @@ $table .= '</div>';
         }
         $break = 7;
         if ($academic_type == "primary") {
-            $break = 6;
+            $break = 7;
         }
         // Split grouped data into two parts
         $groupedData1 = array_slice($groupedData, 0, $break, true);
@@ -12165,9 +12166,9 @@ if ($format === 'yearly') {
                         if (!$found) {
                             $marks = 0;
                         }
-                        if ($subject->elective_subject != "Yes") {
+                        //if ($subject->elective_subject != "Yes") {
                             $overallTotal += $points;
-                        }
+                        //}
 
                         // If marks is not numeric (like "AB", "N.A.", etc.), handle accordingly
                         if (!is_numeric($marks)) {
@@ -12182,9 +12183,11 @@ if ($format === 'yearly') {
                     }
 
                     // Display the calculated marks for this ExamTitle group
-                    if ($subject->elective_subject == "Yes") {
+                    /*if ($subject->elective_subject == "Yes") {
                         $table .= "<td style='text-align:center !important;'>".$examGroupPoints."</td><td style='text-align:center !important;'>-</td>";
-                    } else {
+                    } else 
+                    */
+                    {
                         // If we have non-numeric value, display it, otherwise display calculated total
                         if (!is_numeric($examGroupTotal)) {
                             $table .= "<td style='text-align:center !important;'>".$examGroupPoints."</td><td style='text-align:center !important;'>" . $examGroupTotal . "</td>";
@@ -12205,9 +12208,10 @@ if ($format === 'yearly') {
                 }
 
                 // Handle total column
-                if ($subject->elective_subject == "Yes") {
+                /*if ($subject->elective_subject == "Yes") {
                     $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "total_marks" => $totalPoints]) . "><b>-</b></td>";
-                } else {
+                } else */
+                {
                     if (!is_numeric($obtainedTotal)) {
                         $table .= "<td style='text-align:center!important;' data-json=" . json_encode(["standard" => $standard_id, "subject" => $subject->subject_id, "obtained_marks" => $obtainedTotal, "total_marks" => $totalPoints]) . "><b>" . $obtainedTotal . "</b></td>";
                     } else {
@@ -12216,9 +12220,10 @@ if ($format === 'yearly') {
                 }
 
                 // Handle grade column
-                if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
+                /*if ($subject->elective_subject == "Yes" || !is_numeric($obtainedTotal)) {
                     $table .= "<td style='text-align:center!important;'><b>-</b></td>";
-                } else {
+                } else 
+                */{
                     $table .= "<td style='text-align:center!important;'><b>" . $this->getGrade($grade_arr, $totalPoints, $obtainedTotal) . "</b></td>";
                 }
 
