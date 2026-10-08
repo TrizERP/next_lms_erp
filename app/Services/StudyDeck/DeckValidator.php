@@ -13,8 +13,9 @@ use DOMXPath;
  * on every slide, labelled callouts, alt text, no emoji, 3 Bloom levels) and adds what
  * a study deck needs on top:
  *   - slide count, and every concept TAUGHT (a real explanation), not merely named
- *   - concept -> slide and concept -> question mapping
- *   - question count per slide, none on framing slides, each with a stored explanation
+ *   - concept -> slide mapping, and the concept -> question mapping of whatever optional practice is placed
+ *   - practice questions: few, at most one per slide, none on framing slides, each with a stored explanation
+ *   - interactions (hotspots, scenarios, reveals): well-formed, on a slide that can carry them, and grounded
  *   - questions that stand on their own (context-dependence re-checked on the exact text)
  *   - activity specs that name a target the runtime can play, and branching only where a
  *     real decision exists
@@ -65,10 +66,10 @@ class DeckValidator
         }
 
         $this->teaching($map, $deck, $errors);
-        $this->mapping($map, $deck, $eligible, $errors);
         $this->questionRules($deck, $eligible, $flagged, $errors, $warnings);
         $this->activityRules($deck, $eligible, $errors);
         $this->patternRules($deck, $errors);
+        $this->interactionRules($deck, $errors, $warnings);
         $this->imageRules($deck, $errors, $warnings);
         $this->duplicateRules($deck, $errors);
         $this->markup($rendered['html'], $map, $deck, $errors);
@@ -86,6 +87,10 @@ class DeckValidator
                 'images' => count(array_filter($deck['slides'], fn ($s) => $s['image'] !== null)),
                 'visuals_planned' => count(array_filter($deck['slides'], fn ($s) => $s['visual'] !== null)),
                 'wording_flagged' => count($flagged),
+                'interactions' => array_count_values(array_filter(array_map(fn ($s) => $s['interaction']['kind'] ?? null, $deck['slides']))),
+                'interactive_slides' => count(array_filter($deck['slides'], fn ($s) => ($s['interaction'] ?? null) !== null)),
+                'learning_slides' => count(array_filter($deck['slides'], fn ($s) => $s['slide_type'] !== 'cover')),
+                'discussion_prompts' => count(array_filter($deck['slides'], fn ($s) => !empty($s['content']['discussion']))),
             ],
         ];
     }
@@ -122,19 +127,6 @@ class DeckValidator
         }
     }
 
-    private function mapping(array $map, array $deck, array $eligible, array &$errors): void
-    {
-        $noQuestion = [];
-        foreach ($eligible as $cid => $list) {
-            if ($list && empty($deck['concept_questions'][$cid])) {
-                $noQuestion[] = $map['concepts'][$cid]['name'] ?? (string) $cid;
-            }
-        }
-        if ($noQuestion) {
-            $errors[] = 'Concepts with eligible bank questions but none in the deck: ' . implode('; ', $noQuestion);
-        }
-    }
-
     private function questionRules(array $deck, array $eligible, array $flagged, array &$errors, array &$warnings): void
     {
         $byId = [];
@@ -144,6 +136,11 @@ class DeckValidator
             }
         }
         $flags = array_column($flagged, 'flags', 'id');
+
+        $placed = array_sum(array_map(fn ($s) => count($s['question_ids']), $deck['slides']));
+        if ($placed > SlidePlanner::MAX_PRACTICE) {
+            $errors[] = "The deck places $placed practice questions; practice is optional, so the limit is " . SlidePlanner::MAX_PRACTICE . '.';
+        }
 
         $seen = [];
         foreach ($deck['slides'] as $s) {
@@ -223,6 +220,113 @@ class DeckValidator
         }
     }
 
+    /**
+     * Interactions are lesson content, so they are held to the lesson's rules: the right slide,
+     * a well-formed shape, labels that really are on the drawn picture, a scenario graph that
+     * ends, and a stated reason. The grounding check reads their wording too.
+     */
+    private function interactionRules(array $deck, array &$errors, array &$warnings): void
+    {
+        $count = [];
+
+        foreach ($deck['slides'] as $s) {
+            $i = $s['interaction'] ?? null;
+            if ($i === null) {
+                continue;
+            }
+            $n = $s['n'];
+            $kind = $i['kind'] ?? '';
+            if (!in_array($kind, InteractionPlanner::KINDS, true)) {
+                $errors[] = "Slide $n: interaction kind \"$kind\" is not one of " . implode(', ', InteractionPlanner::KINDS) . '.';
+                continue;
+            }
+            if (trim((string) ($i['reason'] ?? '')) === '') {
+                $errors[] = "Slide $n: the $kind interaction does not say why it is there.";
+            }
+            if ($s['slide_type'] === 'cover') {
+                $errors[] = "Slide $n: the title slide carries no interaction.";
+            }
+            $count[$kind] = ($count[$kind] ?? 0) + 1;
+
+            if ($kind === 'hotspots') {
+                $labels = array_map('mb_strtolower', (array) ($s['image']['texts'] ?? []));
+                if (($s['image']['type'] ?? '') !== 'diagram') {
+                    $errors[] = "Slide $n: hotspots need a drawn diagram to sit on.";
+                }
+                if (count($i['spots'] ?? []) < 2) {
+                    $errors[] = "Slide $n: hotspots need at least two spots.";
+                }
+                foreach ((array) ($i['spots'] ?? []) as $sp) {
+                    if (!in_array(mb_strtolower((string) $sp['label']), $labels, true)) {
+                        $errors[] = "Slide $n: hotspot \"{$sp['label']}\" is not a label on the diagram.";
+                    }
+                    if ($sp['x'] < 0 || $sp['x'] > 100 || $sp['y'] < 0 || $sp['y'] > 100) {
+                        $errors[] = "Slide $n: hotspot \"{$sp['label']}\" is outside the picture.";
+                    }
+                }
+            } elseif ($kind === 'scenario') {
+                if (!in_array($s['slide_type'], InteractionPlanner::SCENARIO_SLIDES, true)) {
+                    $errors[] = "Slide $n: a scenario needs a slide that is a real situation; this is a {$s['slide_type']} slide.";
+                }
+                $ids = array_column((array) ($i['nodes'] ?? []), 'id');
+                if (!in_array($i['start'] ?? null, $ids, true)) {
+                    $errors[] = "Slide $n: the scenario has no starting decision.";
+                }
+                foreach ((array) ($i['nodes'] ?? []) as $node) {
+                    if (count($node['choices'] ?? []) < 2) {
+                        $errors[] = "Slide $n: a scenario decision needs at least two choices.";
+                    }
+                    foreach ((array) ($node['choices'] ?? []) as $ch) {
+                        if ($ch['next'] !== null && !in_array($ch['next'], $ids, true)) {
+                            $errors[] = "Slide $n: a scenario choice leads to a decision that does not exist.";
+                        }
+                    }
+                }
+            } elseif (in_array($kind, InteractionPlanner::ITEM_KINDS, true)) {
+                $items = (array) ($i['items'] ?? []);
+                $min = match ($kind) {
+                    'steps', 'timeline' => 3,
+                    default => 2,
+                };
+                if (count($items) < $min) {
+                    $errors[] = "Slide $n: a $kind interaction needs at least $min items.";
+                }
+                foreach ($items as $item) {
+                    if (trim((string) ($item['label'] ?? '')) === '' || trim((string) ($item['text'] ?? '')) === '') {
+                        $errors[] = "Slide $n: a $kind item has no label or no explanation.";
+                    }
+                    if ($kind === 'timeline' && trim((string) ($item['when'] ?? '')) === '') {
+                        $errors[] = "Slide $n: a timeline event has no date.";
+                    }
+                }
+                if ($kind === 'compare' && trim((string) ($i['wrapup'] ?? '')) === '') {
+                    $errors[] = "Slide $n: a compare has no line saying how the items compare.";
+                }
+            } elseif ($kind === 'match') {
+                if (count($i['pairs'] ?? []) < 3) {
+                    $errors[] = "Slide $n: a match needs at least three pairs.";
+                }
+            } elseif ($kind === 'order' && count($i['items'] ?? []) < 3) {
+                $errors[] = "Slide $n: an order needs at least three items.";
+            }
+        }
+
+        foreach (InteractionPlanner::CAPS as $kind => $limit) {
+            if (($count[$kind] ?? 0) > $limit) {
+                $errors[] = "The deck has {$count[$kind]} $kind interactions; the limit is $limit.";
+            }
+        }
+
+        $bare = [];
+        foreach ($deck['slides'] as $x) {
+            if ($x['slide_type'] !== 'cover' && ($x['interaction'] ?? null) === null) {
+                $bare[] = $x['n'];
+            }
+        }
+        if ($bare) {
+            $warnings[] = 'Slides with no interaction (' . count($bare) . '): ' . implode(', ', $bare) . '. Every learning slide is meant to have one that teaches; check these were left plain for a reason.';
+        }
+    }
     private function patternRules(array $deck, array &$errors): void
     {
         foreach ($deck['slides'] as $s) {
@@ -441,6 +545,8 @@ class DeckValidator
             if (($s['image']['type'] ?? '') === 'diagram') {
                 $text .= ' ' . implode(' ', $s['image']['texts']);
             }
+            // Discussion prompts and interactions are slide wording too.
+            $text .= ' ' . implode(' ', array_map(fn ($v) => rtrim((string) $v, '.') . '.', array_merge($this->wording($s['content']['discussion'] ?? null), $this->wording($s['interaction'] ?? null), $this->wording($s['content']['key_idea'] ?? null))));
         }
 
         preg_match_all('/\d+(?:[.,]\d+)?/u', $text, $nums);
@@ -469,5 +575,24 @@ class DeckValidator
         if ($badNames) {
             $warnings[] = 'Capitalised names in slide text that are not in the chapter text (review): ' . implode(', ', array_slice(array_keys($badNames), 0, 12));
         }
+    }
+
+    /** Every string in a nested structure, in order, skipping machine fields (ids, kinds, flags, coordinates). @return array<int,string> */
+    private function wording(mixed $node): array
+    {
+        $skip = ['id', 'kind', 'start', 'next', 'sound', 'x', 'y', 'w', 'h', 'reason', 'style'];
+        $out = [];
+        $walk = function ($v, $key = null) use (&$walk, &$out, $skip) {
+            if (is_array($v)) {
+                foreach ($v as $k => $x) {
+                    $walk($x, is_string($k) ? $k : $key);
+                }
+            } elseif (is_string($v) && $v !== '' && !in_array($key, $skip, true)) {
+                $out[] = $v;
+            }
+        };
+        $walk($node);
+
+        return $out;
     }
 }

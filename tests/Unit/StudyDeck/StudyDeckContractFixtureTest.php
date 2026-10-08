@@ -5,6 +5,7 @@ namespace Tests\Unit\StudyDeck;
 use App\Services\StudyDeck\ConceptContextBuilder;
 use App\Services\StudyDeck\DeckValidator;
 use App\Services\StudyDeck\ImagePlanner;
+use App\Services\StudyDeck\InteractionPlanner;
 use App\Services\StudyDeck\LearningPlanBuilder;
 use App\Services\StudyDeck\QuestionSelector;
 use App\Services\StudyDeck\SlideContentGenerator;
@@ -32,12 +33,12 @@ class StudyDeckContractFixtureTest extends TestCase
 
     private function build(): array
     {
-        $c = $this->completer([json_encode($this->plan()), json_encode($this->slideText())]);
+        $c = $this->completer([json_encode($this->planWithRoom()), json_encode($this->slideText()), json_encode($this->interactionReply())]);
         $images = new ImagePlanner($this->imageSearch($this->goodImage()), $this->memoryStore(), fn () => $this->png());
         $service = new StudyDeckService(
             new ConceptContextBuilder(), new QuestionSelector(), new LearningPlanBuilder(),
             new SlidePlanner($c), new SlideContentGenerator($c, 8), $images,
-            new SlideHtmlRenderer(), new DeckValidator(images: $images),
+            new SlideHtmlRenderer(), new DeckValidator(images: $images), interactionPlanner: new InteractionPlanner($c),
         );
 
         return $service->fromRaw($this->raw(), ['min_slides' => 6, 'max_slides' => 8]);
@@ -60,6 +61,15 @@ class StudyDeckContractFixtureTest extends TestCase
             $json,
             'The deck contract changed. If that is intended, regenerate the golden file and copy it to the player repo.'
         );
+    }
+
+    public function test_the_golden_deck_carries_all_three_interactions_for_the_player(): void
+    {
+        $deck = json_decode((string) file_get_contents(self::GOLDEN), true);
+
+        $kinds = array_values(array_filter(array_map(fn ($s) => $s['interaction']['kind'] ?? null, $deck['slides'])));
+        $this->assertSame(['compare', 'hotspots', 'reveal', 'scenario', 'steps', 'match'], $kinds);
+        $this->assertSame(3, $deck['version']);
     }
 
     public function test_the_golden_deck_asks_for_no_branching_player_and_no_h5p_rows(): void

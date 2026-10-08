@@ -155,6 +155,7 @@ class GenerateStudyDeckCommand extends Command
         file_put_contents($dir . '/questions-excluded.json', $json($r['selection']['excluded']));
         file_put_contents($dir . '/questions-flagged.json', $json($r['selection']['flagged'] ?? []));
         file_put_contents($dir . '/activities.json', $json($r['activities'] ?? []));
+        file_put_contents($dir . '/interactions.json', $json($r['interactions'] ?? []));
         file_put_contents($dir . '/report.json', $json($r['report']));
         file_put_contents($dir . '/out/presentation.html', $r['html']);
     }
@@ -168,17 +169,12 @@ class GenerateStudyDeckCommand extends Command
         }
         copy($dir . '/deck.json', $target . '/deck.json');
 
-        // Only the pictures this deck uses; earlier runs leave others behind in out/images.
+        // Copy the pictures this deck uses. Nothing already in the folder is ever deleted.
         $deck = json_decode((string) file_get_contents($dir . '/deck.json'), true) ?: [];
         $used = [];
         foreach ((array) ($deck['slides'] ?? []) as $slide) {
             if (!empty($slide['image']['url'])) {
                 $used[basename((string) $slide['image']['url'])] = true;
-            }
-        }
-        foreach (glob($target . '/images/*') ?: [] as $stale) {
-            if (!isset($used[basename($stale)])) {
-                unlink($stale);
             }
         }
         foreach (array_keys($used) as $name) {

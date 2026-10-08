@@ -19,7 +19,7 @@ namespace App\Services\StudyDeck;
  */
 class SlideHtmlRenderer
 {
-    public const DECK_VERSION = 2;
+    public const DECK_VERSION = 3;
 
     /**
      * @param array<string,mixed> $context
@@ -29,9 +29,10 @@ class SlideHtmlRenderer
      * @param array<int,array<string,mixed>> $images
      * @param array<int,array<int,array<string,mixed>>> $eligible concept_id => questions
      * @param array<int,array<int,array<string,mixed>>> $activities slide number => activity specs
+     * @param array<int,array{interaction:?array<string,mixed>,reason:string}> $interactions slide number => hotspots / scenario / reveal, or why none
      * @return array{html:string, deck:array<string,mixed>}
      */
-    public function render(array $context, array $map, array $plan, array $content, array $images, array $eligible, array $activities = []): array
+    public function render(array $context, array $map, array $plan, array $content, array $images, array $eligible, array $activities = [], array $interactions = []): array
     {
         $questions = [];
         foreach ($eligible as $list) {
@@ -52,6 +53,9 @@ class SlideHtmlRenderer
             $html[] = $slide['slide_type'] === 'cover'
                 ? $this->cover($context, $c)
                 : $this->slide($map, $slide, $c, $img, $questions, $acts);
+            $discussion = $slide['slide_type'] !== 'cover' && $slide['question_ids'] === [] && !empty($c['check'])
+                ? ['prompt' => $c['check']['question'], 'answer' => $c['check']['answer']]
+                : null;
 
             $deckSlides[] = [
                 'n' => $n,
@@ -69,10 +73,14 @@ class SlideHtmlRenderer
                     'example' => $c['example'],
                     'misconception' => $c['misconception'],
                     'relationship_note' => $c['relationship_note'],
+                    'key_idea' => $c['key_idea'] ?? null,
                     'bloom' => $c['bloom'],
                     'dok' => $c['dok'],
                     'minutes' => $c['minutes'],
+                    'discussion' => $discussion,
                 ],
+                'interaction' => $interactions[$n]['interaction'] ?? null,
+                'interaction_reason' => $interactions[$n]['reason'] ?? '',
                 'question_ids' => $slide['question_ids'],
                 'activities' => $acts,
                 'h5p_pattern' => $slide['h5p_pattern'],
@@ -238,12 +246,12 @@ class SlideHtmlRenderer
             $a = $byQuestion[$qid] ?? ['label' => 'Check'];
             $out .= $this->bankCheck($q, $a['label'], $attrs('check', $name($q['concept_id']), $q['bloom']));
         }
-        foreach ($acts as $a) {
-            if (($a['source'] ?? '') === 'authored' && isset($a['question'])) {
-                $out .= '<section class="callout callout-try"' . $attrs('check', $firstName, $c['bloom']) . '><span class="callout-label">' . $this->e($a['label']) . '</span>'
-                    . '<p>' . $this->e($a['question']['question']) . '</p>'
-                    . '<p><strong>Answer:</strong> ' . $this->e($a['question']['model_answer']) . '</p></section>';
-            }
+        // A discussion prompt for the class, with a possible answer the PPTX reveals on its own click.
+        // A slide that carries a bank question has that instead.
+        if ($slide['question_ids'] === [] && !empty($c['check'])) {
+            $out .= '<section class="callout callout-try"' . $attrs('check', $firstName, $c['bloom']) . '><span class="callout-label">Discuss</span>'
+                . '<p>' . $this->e($c['check']['question']) . '</p>'
+                . '<p><strong>Answer:</strong> ' . $this->e($c['check']['answer']) . '</p></section>';
         }
 
         return $out . '</section>';

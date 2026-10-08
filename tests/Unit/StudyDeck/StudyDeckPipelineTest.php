@@ -52,7 +52,7 @@ class StudyDeckPipelineTest extends TestCase
         $this->assertSame([1 => [2, 3], 2 => [3], 3 => [4, 5], 4 => [5]], $r['deck']['concept_slides']);
         $this->assertSame([1 => [2], 2 => [3], 3 => [4], 4 => [5]], $r['deck']['taught_by']);
         $this->assertSame([1 => [101], 2 => [103], 3 => [104]], $r['deck']['concept_questions']);
-        $this->assertSame(2, $r['deck']['version']);
+        $this->assertSame(3, $r['deck']['version']);
     }
 
     public function test_output_uses_the_existing_design_system_markup(): void
@@ -88,7 +88,7 @@ class StudyDeckPipelineTest extends TestCase
         $labels = array_unique(array_diff($m[1], ['Worked example', 'Common misconception', 'How these connect', 'Image credits']));
         $this->assertGreaterThan(1, count($labels), 'activity labels should vary');
         foreach ($labels as $label) {
-            $this->assertContains($label, ['Try it', 'Apply', 'Explain', 'Check', 'Think about it']);
+            $this->assertContains($label, ['Try it', 'Apply', 'Explain', 'Check', 'Think about it', 'Discuss']);
         }
     }
 
@@ -165,22 +165,6 @@ class StudyDeckPipelineTest extends TestCase
         $r = $this->deck(null, [], null, null, $raw);
 
         $this->assertStringContainsString('40 | 10', $r['html']);
-        $this->assertSame([], $r['report']['errors']);
-    }
-
-    public function test_branching_is_dropped_when_there_is_no_decision_to_branch_on(): void
-    {
-        $plan = $this->plan();
-        $plan['slides'][2]['slide_type'] = 'scenario';
-        $plan['slides'][2]['h5p_pattern'] = ['type' => 'branching', 'reason' => 'a choice with consequences'];
-
-        $r = $this->deck($plan);
-        $slide = $r['deck']['slides'][2];
-
-        $this->assertNull($slide['h5p_pattern'], 'the deck must not claim a pattern it does not use');
-        $this->assertSame('branching', $slide['pattern_dropped']['type']);
-        $this->assertStringContainsString('recall-level concept has no decision to make', $slide['pattern_dropped']['reason']);
-        $this->assertFalse($slide['activities'][0]['decision']);
         $this->assertSame([], $r['report']['errors']);
     }
 
@@ -289,10 +273,12 @@ class StudyDeckPipelineTest extends TestCase
         $p['slides'][3]['title'] = $p['slides'][1]['title'];
         $this->assertStringContainsString('repeats the title', $errors($p));
 
-        // Branching is for a real decision, never a recall slide.
+        // Branching and hotspots are interactions the system writes itself, not ways to ask a bank question.
         $p = $this->plan();
         $p['slides'][3]['h5p_pattern'] = ['type' => 'branching', 'reason' => 'x'];
-        $this->assertStringContainsString('a branching pattern needs a scenario, application or worked_example slide', $errors($p));
+        $this->assertStringContainsString('is not a way to ask a bank question', $errors($p));
+        $p['slides'][3]['h5p_pattern'] = ['type' => 'image_hotspots', 'reason' => 'x'];
+        $this->assertStringContainsString('is not a way to ask a bank question', $errors($p));
 
         // Framing slides teach nothing and carry no bank question.
         $p = $this->plan();
@@ -310,7 +296,7 @@ class StudyDeckPipelineTest extends TestCase
         $p['slides'][1]['question_ids'] = [101, 103, 104];
         $p['slides'][2]['question_ids'] = [];
         $p['slides'][4]['question_ids'] = [];
-        $this->assertStringContainsString('the limit is 2', $errors($p));
+        $this->assertStringContainsString('the limit is 1', $errors($p));
 
         // Every concept needs its own explanation: not three crammed onto one slide.
         $p = $this->plan();
@@ -363,7 +349,7 @@ class StudyDeckPipelineTest extends TestCase
 
         $content[3]['example'] = null;
         $content[4]['check'] = null;
-        $this->assertStringContainsString('no check', implode(' ', $gen->problems($planSlides, $content)[4]));
+        $this->assertStringContainsString('no discussion prompt', implode(' ', $gen->problems($planSlides, $content)[4]));
 
         $content[4]['check'] = ['question' => 'q', 'answer' => 'a'];
         $content[4]['bullets'] = [str_repeat('word ', 60)];
@@ -420,7 +406,7 @@ class StudyDeckPipelineTest extends TestCase
 
         $deck = $r['deck'];
         $deck['slides'][1]['question_ids'] = [101, 103, 104];
-        $this->assertStringContainsString('the limit is 2', $run($deck));
+        $this->assertStringContainsString('the limit is 1', $run($deck));
 
         $deck = $r['deck'];
         $deck['slides'][0]['question_ids'] = [101];
@@ -611,9 +597,9 @@ class StudyDeckPipelineTest extends TestCase
         $this->assertSame('single_choice_set', $s['activities'][0]['as']);
         $this->assertSame('apply', $s['activities'][0]['bloom']);
 
-        $authored = $d['slides'][3]['activities'][0];
-        $this->assertSame('authored', $authored['source']);
-        $this->assertSame('short', $authored['question']['question_type_code']);
-        $this->assertLessThan(0, $authored['question']['id']);
+        // A slide the bank gave nothing to carries a discussion prompt for the class, not a quiz question.
+        $this->assertSame([], $d['slides'][3]['activities']);
+        $this->assertSame(['prompt' => 'What does a law describe?', 'answer' => 'A repeated pattern.'], $d['slides'][3]['content']['discussion']);
+        $this->assertNull($d['slides'][1]['content']['discussion'], 'a slide with a practice question has no discussion prompt');
     }
 }

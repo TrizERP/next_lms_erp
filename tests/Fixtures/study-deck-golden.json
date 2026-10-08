@@ -1,5 +1,5 @@
 {
-    "version": 2,
+    "version": 3,
     "chapter": {
         "id": 1,
         "name": "Ideas in exploration",
@@ -97,10 +97,14 @@
                 "example": null,
                 "misconception": null,
                 "relationship_note": null,
+                "key_idea": null,
                 "bloom": "remember",
                 "dok": 2,
-                "minutes": 2
+                "minutes": 2,
+                "discussion": null
             },
+            "interaction": null,
+            "interaction_reason": "the title slide only opens the chapter",
             "question_ids": [],
             "activities": [],
             "h5p_pattern": null,
@@ -145,10 +149,31 @@
                     "correction": "A model keeps only needed features."
                 },
                 "relationship_note": null,
+                "key_idea": null,
                 "bloom": "understand",
                 "dok": 2,
-                "minutes": 2
+                "minutes": 2,
+                "discussion": null
             },
+            "interaction": {
+                "kind": "compare",
+                "intro": "Select each one to see how it differs.",
+                "items": [
+                    {
+                        "id": "i1",
+                        "label": "A model",
+                        "text": "A model is a simplified representation that keeps only what the question needs."
+                    },
+                    {
+                        "id": "i2",
+                        "label": "An exact copy",
+                        "text": "An exact copy would keep every detail, which a model ignores on purpose."
+                    }
+                ],
+                "wrapup": "A model keeps what matters; a copy keeps everything.",
+                "reason": "a model is easily mistaken for an exact copy, so the two are set side by side"
+            },
+            "interaction_reason": "a model is easily mistaken for an exact copy, so the two are set side by side",
             "question_ids": [
                 101
             ],
@@ -248,10 +273,39 @@
                 "example": "A map shows roads but ignores trees.",
                 "misconception": null,
                 "relationship_note": "You can only ignore details once you have a model.",
+                "key_idea": null,
                 "bloom": "analyze",
                 "dok": 2,
-                "minutes": 2
+                "minutes": 2,
+                "discussion": null
             },
+            "interaction": {
+                "kind": "hotspots",
+                "intro": "Select each part of the diagram to read about it.",
+                "spots": [
+                    {
+                        "id": "h1",
+                        "label": "Ignore details",
+                        "x": 50,
+                        "y": 28.9,
+                        "w": 25,
+                        "h": 18.1,
+                        "text": "A map shows roads but ignores trees, because trees do not help you find your way."
+                    },
+                    {
+                        "id": "h2",
+                        "label": "Keep the question",
+                        "x": 50,
+                        "y": 87.8,
+                        "w": 25,
+                        "h": 18.1,
+                        "text": "A model keeps only what the question needs, so the same system can have different models."
+                    }
+                ],
+                "wrapup": "Now connect these two ideas to the next slide.",
+                "reason": "the diagram has two parts, each worth a sentence"
+            },
+            "interaction_reason": "the diagram has two parts, each worth a sentence",
             "question_ids": [
                 103
             ],
@@ -274,8 +328,38 @@
             ],
             "h5p_pattern": null,
             "pattern_dropped": null,
-            "visual": null,
-            "image": null,
+            "visual": {
+                "required": true,
+                "role": "diagram",
+                "query": "model ignores details",
+                "purpose": "Shows the two ideas a model balances"
+            },
+            "image": {
+                "type": "diagram",
+                "url": "images/3af39a126a506c9bc8a4d489904524e8765b433e.png",
+                "width": 1280,
+                "height": 720,
+                "sha1": "3af39a126a506c9bc8a4d489904524e8765b433e",
+                "layout": "hub",
+                "texts": [
+                    "What a model keeps and ignores",
+                    "A model",
+                    "Ignore details",
+                    "Keep the question"
+                ],
+                "alt": "Diagram: What a model keeps and ignores. 'A model' connected to Ignore details, Keep the question.",
+                "caption": "What a model keeps and ignores",
+                "licence": null,
+                "source_url": null,
+                "creator": null,
+                "attribution_required": false,
+                "attribution": "",
+                "review": {
+                    "relevant": true,
+                    "reason": "drawn from the plan's own diagram spec"
+                },
+                "purpose": "Shows the two ideas a model balances"
+            },
             "image_missing": null,
             "sources": {
                 "concept_intelligence": true,
@@ -311,42 +395,36 @@
                 "example": null,
                 "misconception": null,
                 "relationship_note": null,
+                "key_idea": "A law describes a repeated pattern.",
                 "bloom": "remember",
                 "dok": 2,
-                "minutes": 2
-            },
-            "question_ids": [],
-            "activities": [
-                {
-                    "source": "authored",
-                    "question_id": null,
-                    "concept_id": 3,
-                    "as": "essay",
-                    "default_as": "essay",
-                    "pattern": null,
-                    "decision": false,
-                    "connects_concept": null,
-                    "label": "Explain",
-                    "bloom": "remember",
-                    "difficulty": null,
-                    "dok": 2,
-                    "why": "a quick check written for a slide the question bank has nothing for",
-                    "question": {
-                        "id": -41,
-                        "question": "What does a law describe?",
-                        "question_type_code": "short",
-                        "question_type": "Narrative",
-                        "marks": 1,
-                        "options": [],
-                        "model_answer": "A repeated pattern.",
-                        "chapter_id": 1,
-                        "standard_id": 9,
-                        "subject_id": 2,
-                        "concept_id": 3,
-                        "authored": true
-                    }
+                "minutes": 2,
+                "discussion": {
+                    "prompt": "What does a law describe?",
+                    "answer": "A repeated pattern."
                 }
-            ],
+            },
+            "interaction": {
+                "kind": "reveal",
+                "intro": "Select a card to see what it says.",
+                "items": [
+                    {
+                        "id": "i1",
+                        "label": "A law",
+                        "text": "A law describes a repeated pattern that scientists keep finding."
+                    },
+                    {
+                        "id": "i2",
+                        "label": "A theory",
+                        "text": "A theory explains why a pattern occurs, not only that it does."
+                    }
+                ],
+                "wrapup": "",
+                "reason": "two ideas that are better discovered than listed"
+            },
+            "interaction_reason": "two ideas that are better discovered than listed",
+            "question_ids": [],
+            "activities": [],
             "h5p_pattern": null,
             "pattern_dropped": null,
             "visual": null,
@@ -362,7 +440,7 @@
         {
             "n": 5,
             "section": "Topic",
-            "slide_type": "relationship",
+            "slide_type": "application",
             "title": "Laws and theories together",
             "concept_ids": [
                 3,
@@ -391,10 +469,66 @@
                 "example": null,
                 "misconception": null,
                 "relationship_note": null,
+                "key_idea": null,
                 "bloom": "apply",
                 "dok": 2,
-                "minutes": 2
+                "minutes": 2,
+                "discussion": null
             },
+            "interaction": {
+                "kind": "scenario",
+                "situation": "You notice that a ball always falls when you let go of it. A friend asks you what that tells us.",
+                "start": "n1",
+                "nodes": [
+                    {
+                        "id": "n1",
+                        "prompt": "What do you tell your friend first?",
+                        "choices": [
+                            {
+                                "id": "n1-1",
+                                "text": "It is a repeated pattern, so it can be stated as a law.",
+                                "outcome": "Your friend agrees and asks why it happens.",
+                                "why": "A law describes a repeated pattern.",
+                                "sound": true,
+                                "next": "n2"
+                            },
+                            {
+                                "id": "n1-2",
+                                "text": "It happened once, so nothing can be said.",
+                                "outcome": "Your friend tries again and sees it fall every time.",
+                                "why": "A repeated pattern is exactly what a law describes.",
+                                "sound": false,
+                                "next": null
+                            }
+                        ]
+                    },
+                    {
+                        "id": "n2",
+                        "prompt": "Your friend asks why it falls. What do you say?",
+                        "choices": [
+                            {
+                                "id": "n2-1",
+                                "text": "A theory explains why the pattern occurs.",
+                                "outcome": "You agree to look for an explanation together.",
+                                "why": "A theory explains why patterns occur.",
+                                "sound": true,
+                                "next": null
+                            },
+                            {
+                                "id": "n2-2",
+                                "text": "The law already explains why.",
+                                "outcome": "Your friend is still puzzled about the reason.",
+                                "why": "A law only describes the pattern; a theory explains it.",
+                                "sound": false,
+                                "next": null
+                            }
+                        ]
+                    }
+                ],
+                "conclusion": "A law says what happens and a theory says why it happens.",
+                "reason": "a real choice with consequences about how a theory relates to a law"
+            },
+            "interaction_reason": "a real choice with consequences about how a theory relates to a law",
             "question_ids": [
                 104
             ],
@@ -446,42 +580,41 @@
                 "example": null,
                 "misconception": null,
                 "relationship_note": null,
+                "key_idea": null,
                 "bloom": "evaluate",
                 "dok": 2,
-                "minutes": 2
-            },
-            "question_ids": [],
-            "activities": [
-                {
-                    "source": "authored",
-                    "question_id": null,
-                    "concept_id": null,
-                    "as": "essay",
-                    "default_as": "essay",
-                    "pattern": null,
-                    "decision": false,
-                    "connects_concept": null,
-                    "label": "Think about it",
-                    "bloom": "evaluate",
-                    "difficulty": null,
-                    "dok": 2,
-                    "why": "a quick check written for a slide the question bank has nothing for",
-                    "question": {
-                        "id": -61,
-                        "question": "Which idea explains why a pattern occurs?",
-                        "question_type_code": "short",
-                        "question_type": "Narrative",
-                        "marks": 1,
-                        "options": [],
-                        "model_answer": "A theory.",
-                        "chapter_id": 1,
-                        "standard_id": 9,
-                        "subject_id": 2,
-                        "concept_id": null,
-                        "authored": true
-                    }
+                "minutes": 2,
+                "discussion": {
+                    "prompt": "Which idea explains why a pattern occurs?",
+                    "answer": "A theory."
                 }
-            ],
+            },
+            "interaction": {
+                "kind": "steps",
+                "intro": "Select each step to see what it adds.",
+                "items": [
+                    {
+                        "id": "i1",
+                        "label": "Build a model",
+                        "text": "A model is a simplified representation of a real system."
+                    },
+                    {
+                        "id": "i2",
+                        "label": "State a law",
+                        "text": "A law describes a repeated pattern that the model helps to see."
+                    },
+                    {
+                        "id": "i3",
+                        "label": "Give a theory",
+                        "text": "A theory explains why the pattern occurs."
+                    }
+                ],
+                "wrapup": "",
+                "reason": "the chapter map is a short chain of ideas"
+            },
+            "interaction_reason": "the chapter map is a short chain of ideas",
+            "question_ids": [],
+            "activities": [],
             "h5p_pattern": null,
             "pattern_dropped": null,
             "visual": null,
@@ -510,42 +643,41 @@
                 "example": null,
                 "misconception": null,
                 "relationship_note": null,
+                "key_idea": null,
                 "bloom": "create",
                 "dok": 2,
-                "minutes": 2
-            },
-            "question_ids": [],
-            "activities": [
-                {
-                    "source": "authored",
-                    "question_id": null,
-                    "concept_id": null,
-                    "as": "essay",
-                    "default_as": "essay",
-                    "pattern": null,
-                    "decision": false,
-                    "connects_concept": null,
-                    "label": "Try it",
-                    "bloom": "create",
-                    "difficulty": null,
-                    "dok": 2,
-                    "why": "a quick check written for a slide the question bank has nothing for",
-                    "question": {
-                        "id": -71,
-                        "question": "What does the symbol m stand for?",
-                        "question_type_code": "short",
-                        "question_type": "Narrative",
-                        "marks": 1,
-                        "options": [],
-                        "model_answer": "Mass.",
-                        "chapter_id": 1,
-                        "standard_id": 9,
-                        "subject_id": 2,
-                        "concept_id": null,
-                        "authored": true
-                    }
+                "minutes": 2,
+                "discussion": {
+                    "prompt": "What does the symbol m stand for?",
+                    "answer": "Mass."
                 }
-            ],
+            },
+            "interaction": {
+                "kind": "match",
+                "intro": "Pair each term with what it means.",
+                "pairs": [
+                    {
+                        "id": "p1",
+                        "term": "Model",
+                        "meaning": "A simplified representation of a real system."
+                    },
+                    {
+                        "id": "p2",
+                        "term": "Law",
+                        "meaning": "Describes a repeated pattern."
+                    },
+                    {
+                        "id": "p3",
+                        "term": "Theory",
+                        "meaning": "Explains why patterns occur."
+                    }
+                ],
+                "wrapup": "",
+                "reason": "three terms the chapter defines"
+            },
+            "interaction_reason": "three terms the chapter defines",
+            "question_ids": [],
+            "activities": [],
             "h5p_pattern": null,
             "pattern_dropped": null,
             "visual": null,

@@ -14,7 +14,8 @@ use App\Services\StudyDeck\Contracts\Completer;
  *   -> learning map                    (deterministic)
  *   -> stage 1: slide plan             (Claude)
  *   -> stage 2: slide content          (Claude, chunked)
- *   -> images: Openverse, licensed, downloaded
+ *   -> images: Openverse, licensed, downloaded, or drawn diagrams
+ *   -> stage 3: interactions (hotspots, scenarios, reveals) where a concept earns one   (Claude)
  *   -> render to the .cover / .slide design-system markup
  *   -> validate
  *
@@ -35,6 +36,7 @@ class StudyDeckService
         private readonly SlideHtmlRenderer $renderer,
         private readonly DeckValidator $validator,
         private readonly ActivityPlanner $activityPlanner = new ActivityPlanner(),
+        private readonly ?InteractionPlanner $interactionPlanner = null,
     ) {
     }
 
@@ -53,6 +55,7 @@ class StudyDeckService
             new SlideHtmlRenderer(),
             new DeckValidator(images: $imagePlanner),
             new ActivityPlanner($patterns),
+            new InteractionPlanner($completer),
         );
     }
 
@@ -118,11 +121,15 @@ class StudyDeckService
             $say('images', isset($r['missing']) ? "slide $n: none ({$r['missing']})" : "slide $n: " . (($r['type'] ?? 'photo') === 'diagram' ? 'drawn diagram' : $r['licence']));
         });
 
+        $say('interact', 'Stage 3: deciding which slides earn an interaction');
+        $interactions = $this->interactionPlanner?->plan($context, $map, $plan, $content, $images, fn ($found, $total) => $say('interact', "$found interaction(s) so far")) ?? [];
+
         $activities = $this->activities($context, $map, $plan, $content, $eligible);
         $plan = $this->dropUnjustifiedPatterns($plan, $activities, $map, $eligible);
-        $say('activities', array_sum(array_map('count', $activities)) . ' activities planned');
+        $say('activities', array_sum(array_map('count', $activities)) . ' practice question(s) placed, '
+            . count(array_filter($interactions, fn ($d) => $d['interaction'] !== null)) . ' interaction(s)');
 
-        $rendered = $this->renderer->render($context, $map, $plan, $content, $images, $eligible, $activities);
+        $rendered = $this->renderer->render($context, $map, $plan, $content, $images, $eligible, $activities, $interactions);
         $report = $this->validator->validate($context, $map, $eligible, $rendered, $selection['flagged'] ?? []);
         $say('validate', $report['ok'] ? 'Validation passed' : count($report['errors']) . ' validation error(s)');
 
@@ -134,6 +141,7 @@ class StudyDeckService
             'content' => $content,
             'images' => $images,
             'activities' => $activities,
+            'interactions' => $interactions,
             'html' => $rendered['html'],
             'deck' => $rendered['deck'],
             'report' => $report,
@@ -181,8 +189,8 @@ class StudyDeckService
     }
 
     /**
-     * How each placed question is played, per slide, plus an authored check for a slide the
-     * bank gave nothing to. Specs only: nothing is converted or stored.
+     * How each placed practice question is played, per slide. Specs only: nothing is converted or
+     * stored. A slide the bank gave nothing to gets a discussion prompt (SlideHtmlRenderer), not a quiz.
      *
      * @return array<int,array<int,array<string,mixed>>> slide number => activity specs
      */
@@ -202,41 +210,6 @@ class StudyDeckService
             $questions = array_map(fn ($id) => $byId[$id], $slide['question_ids']);
             $acts = $this->activityPlanner->plan($slide, $questions, $map['concepts'], $level);
 
-            $check = $content[$n]['check'] ?? null;
-            // The cover is a title, not a lesson step: a question there would be asked before anything is taught.
-            if ($check !== null && $slide['question_ids'] === [] && $slide['slide_type'] !== 'cover') {
-                $concept = $slide['taught_concept_ids'][0] ?? $slide['concept_ids'][0] ?? null;
-                $acts[] = [
-                    'source' => 'authored',
-                    'question_id' => null,
-                    'concept_id' => $concept,
-                    'as' => 'essay',
-                    'default_as' => 'essay',
-                    'pattern' => null,
-                    'decision' => false,
-                    'connects_concept' => null,
-                    'label' => $this->activityPlanner->label($content[$n]['bloom'], 'short_answer', false, 0),
-                    'bloom' => $content[$n]['bloom'],
-                    'difficulty' => null,
-                    'dok' => $content[$n]['dok'],
-                    'why' => 'a quick check written for a slide the question bank has nothing for',
-                    // A bank-shaped row so the same native player can ask it; never stored.
-                    'question' => [
-                        'id' => -($n * 10 + 1),
-                        'question' => $check['question'],
-                        'question_type_code' => 'short',
-                        'question_type' => 'Narrative',
-                        'marks' => 1,
-                        'options' => [],
-                        'model_answer' => $check['answer'],
-                        'chapter_id' => (int) $context['chapter']['id'],
-                        'standard_id' => (int) $context['chapter']['standard_id'],
-                        'subject_id' => (int) $context['chapter']['subject_id'],
-                        'concept_id' => $concept,
-                        'authored' => true,
-                    ],
-                ];
-            }
             $out[$n] = $acts;
         }
 

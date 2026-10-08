@@ -34,9 +34,21 @@ class SlidePlanner
     public const VISUAL_ROLES = ['object', 'instrument', 'phenomenon', 'diagram'];
 
     /** Most visuals a deck may ask for: pictures earn their place or are left out. */
-    public const MAX_VISUALS = 9;
+    public const MAX_VISUALS = 10;
 
-    public const MAX_QUESTIONS_PER_SLIDE = 2;
+    /**
+     * Question-bank practice is OPTIONAL in a study deck: it is offered, never the lesson. One question
+     * on a slide, and a handful in the whole deck, on the concepts where practice helps most.
+     */
+    public const MAX_QUESTIONS_PER_SLIDE = 1;
+
+    public const MAX_PRACTICE = 10;
+
+    /** Slide types that are practice rather than teaching: a few at most. */
+    public const PRACTICE_SLIDES = ['recall', 'practice', 'exit_ticket'];
+
+    /** Patterns that are interactions the system writes itself (InteractionPlanner), not bank-question shapes. */
+    public const NOT_FOR_BANK = ['branching', 'image_hotspots'];
 
     public const MAX_TAUGHT_PER_SLIDE = 2;
 
@@ -225,8 +237,8 @@ class SlidePlanner
             if ($p !== null) {
                 if (!is_array($p) || !$this->patterns->isValid($p['type'] ?? null) || trim((string) ($p['reason'] ?? '')) === '') {
                     $errors[] = "Slide $n: h5p_pattern needs a valid type (" . implode(', ', $this->patterns->ids()) . ') and a reason, or must be null.';
-                } elseif (($p['type'] ?? '') === 'branching' && !in_array($type, ['scenario', 'application', 'worked_example'], true)) {
-                    $errors[] = "Slide $n: a branching pattern needs a scenario, application or worked_example slide (a real decision), not $type.";
+                } elseif (in_array($p['type'] ?? '', self::NOT_FOR_BANK, true)) {
+                    $errors[] = "Slide $n: h5p_pattern \"{$p['type']}\" is not a way to ask a bank question; scenarios and hotspots are planned separately. Use null or another pattern.";
                 }
             }
 
@@ -250,6 +262,13 @@ class SlidePlanner
             }
         }
 
+        if (count($usedQuestions) > self::MAX_PRACTICE) {
+            $errors[] = 'The plan places ' . count($usedQuestions) . ' bank questions; practice is optional, so place at most ' . self::MAX_PRACTICE . ' in the whole deck.';
+        }
+        $practiceSlides = count(array_filter($slides, fn ($s) => in_array($s['slide_type'] ?? '', self::PRACTICE_SLIDES, true)));
+        if ($practiceSlides > 3) {
+            $errors[] = "The plan has $practiceSlides recall/practice/exit_ticket slides; at most 3. Teach, show and discuss instead.";
+        }
         if ($visuals > self::MAX_VISUALS) {
             $errors[] = "The plan asks for $visuals visuals; ask for at most " . self::MAX_VISUALS . ', only where a picture or diagram truly teaches.';
         }
@@ -258,17 +277,6 @@ class SlidePlanner
         if ($missing) {
             $names = array_map(fn ($id) => $map['concepts'][$id]['name'] . " ($id)", $missing);
             $errors[] = 'Concepts that no slide teaches (taught_concept_ids): ' . implode('; ', $names);
-        }
-
-        // A concept with eligible questions must reach the learner through at least one of them.
-        $conceptsWithQuestion = [];
-        foreach ($usedQuestions as $qid => $_) {
-            $conceptsWithQuestion[$eligibleById[$qid]['concept_id']] = true;
-        }
-        $starved = array_filter(array_keys($eligible), fn ($cid) => $eligible[$cid] && !isset($conceptsWithQuestion[$cid]));
-        if ($starved) {
-            $errors[] = 'Concepts that have eligible bank questions but none placed: '
-                . implode('; ', array_map(fn ($id) => ($map['concepts'][$id]['name'] ?? $id) . " ($id)", $starved));
         }
 
         return $errors;
@@ -320,12 +328,14 @@ class SlidePlanner
             'existing_ai_lesson' => array_map(fn ($b) => ['category' => $b['category'], 'excerpt' => mb_substr($b['text'], 0, 2500)], $context['baseline']),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-        $patterns = json_encode($this->patterns->catalogue(), JSON_UNESCAPED_UNICODE);
+        $patterns = json_encode(array_values(array_filter($this->patterns->catalogue(), fn ($p) => !in_array($p['id'], self::NOT_FOR_BANK, true))), JSON_UNESCAPED_UNICODE);
         $types = implode(', ', self::SLIDE_TYPES);
         $min = $map['target_slides']['min'];
         $max = $map['target_slides']['max'];
         $count = count($concepts);
         $maxQ = self::MAX_QUESTIONS_PER_SLIDE;
+        $maxP = self::MAX_PRACTICE;
+        $maxScenario = InteractionPlanner::MAX_SCENARIOS;
         $maxT = self::MAX_TAUGHT_PER_SLIDE;
         $maxV = self::MAX_VISUALS;
         $roles = implode(', ', self::VISUAL_ROLES);
@@ -334,17 +344,18 @@ class SlidePlanner
         return <<<PROMPT
 Plan a classroom study presentation of between {$min} and {$max} slides for the chapter below. Nothing is written yet; you are only planning.
 
-WHAT TO TEACH comes from the chapter text and the concept data. HOW TO TEACH comes from concept relationships and the instructional patterns. HOW TO PRACTISE comes from the listed bank questions. The "existing_ai_lesson" is a baseline to IMPROVE: find where it is weak, repetitive, thin or badly ordered, and do better; do not copy its structure.
+This is a TEACHER-LED CLASSROOM LESSON that students also study on their own, like a digital textbook: explain, show a large picture or diagram, explore it, work an example, discuss, then move on. It is not a quiz. WHAT TO TEACH comes from the chapter text and the concept data. HOW TO TEACH comes from concept relationships and what each concept IS. Practice from the listed bank questions is an optional extra. The "existing_ai_lesson" is a baseline to IMPROVE: find where it is weak, repetitive, thin or badly ordered, and do better; do not copy its structure.
 
 Rules
 - There are {$count} concepts. EVERY concept must be TAUGHT: list it in "taught_concept_ids" of the slide that explains it, and in that slide's "concept_ids". A concept that is only mentioned, summarised or named in a list is not taught. At most {$maxT} taught concepts per slide; combine closely related concepts only where that teaches better. Do not pad to reach the count.
 - Respect the order given in topics_in_order unless a concept's "requires" says otherwise. When one concept helps explain another, plan a slide (slide_type "relationship") that makes the link explicit and fill "relationship".
-- Frame the lesson: a hook and objectives at the start; review, a concept map or summary, a challenge and an exit ticket at the end. The {$framing} slides teach no concept (empty taught_concept_ids) and carry no bank question.
-- Place each question by its id on the slide that follows the teaching of its concept, at most once, and at most {$maxQ} per slide: spread a concept's questions over its own slide and later practice slides. Every concept that has questions must receive at least one. Do not invent question ids.
-- Visuals: at most {$maxV} in the whole deck, and only where seeing the thing teaches the concept. Give "role": one of {$roles}. A PHOTOGRAPH (role object, instrument or phenomenon) is for a concrete thing worth seeing in itself: an instrument, a natural phenomenon, a specimen. A photo of something merely MENTIONED as an example, or of anything for an abstract idea, a definition, a classification or a chain of reasoning, teaches nothing: leave "visual" null, or give role "diagram" and put a "diagram" spec on the SLIDE (a sibling of "visual", never inside it) which the system will draw. A diagram spec is {"layout": "flow" | "compare" | "hub", "title": "...", ...}: flow has "nodes": 2 to 6 short labels in order; hub has "center" and "nodes": 2 to 6 labels; compare has "left" and "right", each {"heading", "items": 1 to 5}. Every label must use words and numbers from the chapter text. The query is a plain 2 to 5 word search phrase naming the thing itself (for example "magnetic compass"), never a generic classroom or student photo.
-- Choose an h5p_pattern only where it truly fits the concept (reason required); otherwise null. Patterns are teaching moves, not content: {$patterns}. A pattern only counts if one of THAT slide's questions can really be asked that way, so check the question forms you placed: flashcards needs a recall-level question; fill_blanks needs a short factual answer; true_false needs a true/false question; matching needs a match-the-following question; drag_drop needs a drag-and-drop question; image_hotspots is not available. If none of the slide's questions fit, use null. "branching" needs a real decision with consequences and may only sit on a scenario, application or worked_example slide, with a multiple-choice question for the decision.
+- Frame the lesson: a hook and objectives at the start; a concept map or summary at the end. Use recall, practice and exit_ticket slides sparingly (at most 3 in all): the lesson is made of teaching, seeing, discussing and doing, not of questions. The {$framing} slides teach no concept (empty taught_concept_ids) and carry no bank question.
+- Bank questions are OPTIONAL PRACTICE. Place at most {$maxP} in the whole deck, at most {$maxQ} per slide, each at most once, and only where practising that concept really helps (a term to recall, a misconception to confront, a skill to apply). Most concepts will have none, and that is right. Put one on the slide that follows the teaching of its concept, never on a framing slide. Prefer a question that can be asked as flashcards, true/false, fill in the blanks or matching over a plain multiple-choice one. Do not invent question ids.
+- Where the chapter shows a real SITUATION with a decision or a cause-and-effect (an experiment to design, a choice between approaches, an everyday problem to reason through), plan up to {$maxScenario} slides of type "scenario" or "application" for it; the system will write a short branching scenario for them. Only where the chapter text supports it; never invent a situation.
+- Visuals: at most {$maxV} in the whole deck, and only where seeing the thing teaches the concept. Give "role": one of {$roles}. A PHOTOGRAPH (role object, instrument or phenomenon) is for a concrete thing worth seeing in itself: an instrument, a natural phenomenon, a specimen. A photo of something merely MENTIONED as an example, or of anything for an abstract idea, a definition, a classification or a chain of reasoning, teaches nothing: leave "visual" null, or give role "diagram" and put a "diagram" spec on the SLIDE (a sibling of "visual", never inside it) which the system will draw. Prefer a drawn diagram (role "diagram") for any concept with several meaningful named parts, ways, steps or kinds: the student will be able to select each part of it and read an explanation, so such a diagram earns a slide of its own and a large size. A diagram spec is {"layout": "flow" | "compare" | "hub", "title": "...", ...}: flow has "nodes": 2 to 6 short labels in order; hub has "center" and "nodes": 2 to 6 labels; compare has "left" and "right", each {"heading", "items": 1 to 5}. Every label must use words and numbers from the chapter text. The query is a plain 2 to 5 word search phrase naming the thing itself (for example "magnetic compass"), never a generic classroom or student photo.
+- Choose an h5p_pattern only where it truly fits the concept and a question you placed on THAT slide (reason required); otherwise null. Patterns here are ways to ask a bank question: {$patterns}. flashcards needs a recall-level question; fill_blanks needs a short factual answer; true_false needs a true/false question; matching needs a match-the-following question; drag_drop needs a drag-and-drop question. If the slide has no question, or none of its questions fit, use null. Never use branching or image_hotspots here; hotspots and scenarios are written separately by the system.
 - Slide types allowed: {$types}
-- No slide may repeat another's title. Every slide must make the learner do something.
+- No slide may repeat another's title. Every slide has one clear idea and something to look at, think about or discuss.
 
 Reply with this JSON and nothing else:
 {

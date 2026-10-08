@@ -25,6 +25,11 @@ class DiagramRenderer
 {
     public const LAYOUTS = ['flow', 'compare', 'hub'];
 
+    /** The size of a hub node's box; `anchors()` reports the same box the drawing uses. */
+    private const HUB_W = 320;
+
+    private const HUB_H = 130;
+
     private const W = 1280;
     private const H = 720;
 
@@ -123,7 +128,8 @@ class DiagramRenderer
         imageantialias($im, true);
         imagefill($im, 0, 0, $this->c($im, self::WHITE));
 
-        $this->text($im, $font, 34, self::INK, 60, 70, (string) $spec['title'], self::W - 120, true);
+        [$titleSize] = $this->fit($font, (string) $spec['title'], self::W - 120, 44, [34, 30, 26, 22], 1.2);
+        $this->text($im, $font, $titleSize, self::INK, 60, 70, (string) $spec['title'], self::W - 120, true);
         imagefilledrectangle($im, 60, 96, 180, 100, $this->c($im, self::INDIGO));
 
         match ($spec['layout']) {
@@ -140,19 +146,21 @@ class DiagramRenderer
         return ['bytes' => $bytes, 'mime' => 'image/png', 'width' => self::W, 'height' => self::H];
     }
 
-    private function flow($im, string $font, array $nodes): void
+    /**
+     * Where each flow box sits. Rows snake: the second row runs right to left, so the arrow that
+     * leaves the end of one row lands directly on the first box of the next.
+     *
+     * @return array{perRow:int,bw:int,bh:int,gap:int,place:callable}
+     */
+    private static function flowGeometry(int $count): array
     {
-        $nodes = array_values(array_map('trim', $nodes));
-        $perRow = count($nodes) <= 4 ? count($nodes) : (int) ceil(count($nodes) / 2);
-        $rows = (int) ceil(count($nodes) / $perRow);
+        $perRow = $count <= 4 ? $count : (int) ceil($count / 2);
+        $rows = (int) ceil($count / $perRow);
         $gap = 54;
         $bw = (int) ((self::W - 120 - $gap * ($perRow - 1)) / $perRow);
         $bh = $rows === 1 ? 190 : 150;
         $top = $rows === 1 ? 280 : 200;
-        $last = count($nodes) - 1;
 
-        // Where a node sits. Rows snake: the second row runs right to left, so the arrow that
-        // leaves the end of one row lands directly on the first box of the next.
         $place = function (int $i) use ($perRow, $bw, $gap, $bh, $top): array {
             $row = intdiv($i, $perRow);
             $col = $i % $perRow;
@@ -160,6 +168,69 @@ class DiagramRenderer
 
             return [60 + $slot * ($bw + $gap), $top + $row * ($bh + 70), $row, $col];
         };
+
+        return ['perRow' => $perRow, 'bw' => $bw, 'bh' => $bh, 'gap' => $gap, 'place' => $place];
+    }
+
+    /** Hub node centres, shared by the drawing and by `anchors()`. @return array<int,array{0:int,1:int}> */
+    private static function hubPositions(int $count): array
+    {
+        $out = [];
+        for ($i = 0; $i < $count; $i++) {
+            $angle = (-90 + (360 / $count) * $i) * M_PI / 180;
+            $out[] = [(int) (self::W / 2 + cos($angle) * 410), (int) (420 + sin($angle) * 212)];
+        }
+
+        return $out;
+    }
+
+    /**
+     * The clickable places on a drawn diagram: each label with its box (centre and size) as a share
+     * of the picture (0-100). The student player lays hotspots over the image at these points, so
+     * the picture and its hotspots can never disagree about where a label is.
+     *
+     * Flow and hub: every node. Compare: the two headings.
+     *
+     * @return array<int,array{label:string,x:float,y:float,w:float,h:float}>
+     */
+    public static function anchors(array $spec): array
+    {
+        $at = fn (string $label, float $x, float $y, float $w, float $h) => [
+            'label' => $label,
+            'x' => round($x / self::W * 100, 1), 'y' => round($y / self::H * 100, 1),
+            'w' => round($w / self::W * 100, 1), 'h' => round($h / self::H * 100, 1),
+        ];
+        $text = static fn ($n) => trim((string) (is_array($n) ? ($n['text'] ?? '') : $n));
+        $layout = $spec['layout'] ?? '';
+
+        if ($layout === 'compare') {
+            return [
+                $at(trim((string) $spec['left']['heading']), 60 + 280, 200, 560, 80),
+                $at(trim((string) $spec['right']['heading']), 660 + 280, 200, 560, 80),
+            ];
+        }
+
+        $nodes = array_values(array_map($text, (array) ($spec['nodes'] ?? [])));
+        if ($layout === 'hub') {
+            $points = self::hubPositions(count($nodes));
+
+            return array_map(fn ($i) => $at($nodes[$i], $points[$i][0], $points[$i][1], self::HUB_W, self::HUB_H), array_keys($nodes));
+        }
+
+        $g = self::flowGeometry(count($nodes));
+
+        return array_map(function ($i) use ($nodes, $g, $at) {
+            [$x, $y] = ($g['place'])($i);
+
+            return $at($nodes[$i], $x + $g['bw'] / 2, $y + $g['bh'] / 2, $g['bw'], $g['bh']);
+        }, array_keys($nodes));
+    }
+
+    private function flow($im, string $font, array $nodes): void
+    {
+        $nodes = array_values(array_map('trim', $nodes));
+        ['perRow' => $perRow, 'bw' => $bw, 'bh' => $bh, 'gap' => $gap, 'place' => $place] = self::flowGeometry(count($nodes));
+        $last = count($nodes) - 1;
 
         foreach ($nodes as $i => $label) {
             [$x, $y, $row, $col] = $place($i);
@@ -185,11 +256,9 @@ class DiagramRenderer
     {
         $cx = self::W / 2;
         $cy = 420;
-        $n = count($nodes);
         $positions = [];
-        foreach (array_values($nodes) as $i => $label) {
-            $angle = (-90 + (360 / $n) * $i) * M_PI / 180;
-            $positions[] = [(int) ($cx + cos($angle) * 430 * 0.95), (int) ($cy + sin($angle) * 235), trim($label)];
+        foreach (self::hubPositions(count($nodes)) as $i => [$px, $py]) {
+            $positions[] = [$px, $py, trim(array_values($nodes)[$i])];
         }
         foreach ($positions as [$x, $y]) {
             imagesetthickness($im, 3);
@@ -197,13 +266,19 @@ class DiagramRenderer
         }
         imagesetthickness($im, 1);
         foreach ($positions as [$x, $y, $label]) {
-            $this->box($im, $font, $x - 150, $y - 55, 300, 110, $label, false);
+            $this->box($im, $font, $x - intdiv(self::HUB_W, 2), $y - intdiv(self::HUB_H, 2), self::HUB_W, self::HUB_H, $label, false);
         }
         $this->box($im, $font, (int) $cx - 170, $cy - 70, 340, 140, trim($center), true);
     }
 
     private function compare($im, string $font, array $spec): void
     {
+        // Both headings share one size (the smaller of what each needs), so the two columns read as a pair.
+        $headSize = min(array_map(
+            fn ($side) => $this->fit($font, trim((string) $spec[$side]['heading']), 560 - 48, 62, [28, 24, 22, 20], 1.25)[0],
+            ['left', 'right']
+        ));
+
         foreach (['left' => 60, 'right' => 660] as $side => $x) {
             $col = $spec[$side];
             $w = 560;
@@ -212,7 +287,13 @@ class DiagramRenderer
             $lineH = (int) ($size * 1.4);
 
             imagefilledrectangle($im, $x, 160, $x + $w, 240, $this->c($im, self::INDIGO));
-            $this->text($im, $font, 28, self::WHITE, $x + 24, 212, trim((string) $col['heading']), $w - 48, true);
+            $hs = $headSize;
+            $hl = $this->wrap($font, $hs, trim((string) $col['heading']), $w - 48);
+            $hh = (int) round($hs * 1.25);
+            $top = 200 - intdiv(count($hl) * $hh, 2);
+            foreach ($hl as $n => $line) {
+                imagettftext($im, $hs, 0, $x + 24, $top + ($n + 1) * $hh - (int) round($hh * 0.22), $this->c($im, self::WHITE), $font, $line);
+            }
 
             $y = 262;
             foreach ($items as $item) {
@@ -235,13 +316,13 @@ class DiagramRenderer
         imagefilledrectangle($im, $x, $y, $x + $w, $y + $h, $this->c($im, $accent ? self::INDIGO : self::INDIGO_SOFT));
         imagerectangle($im, $x, $y, $x + $w, $y + $h, $this->c($im, $accent ? self::INDIGO : self::SLATE_BORDER));
         $ink = $accent ? self::WHITE : self::INK;
-        $lines = $this->wrap($font, 26, $label, $w - 36);
-        $lineH = 38;
-        $startY = $y + intdiv($h - count($lines) * $lineH, 2) + 28;
+        [$size, $lines] = $this->fit($font, $label, $w - 36, $h - 20, [26, 24, 22, 20, 18], 1.45);
+        $lineH = (int) round($size * 1.45);
+        $startY = $y + intdiv($h - count($lines) * $lineH, 2) + (int) round($size * 1.05);
         foreach ($lines as $i => $line) {
-            $box = imagettfbbox(26, 0, $font, $line);
+            $box = imagettfbbox($size, 0, $font, $line);
             $tx = $x + intdiv($w - ($box[2] - $box[0]), 2);
-            imagettftext($im, 26, 0, $tx, $startY + $i * $lineH, $this->c($im, $ink), $font, $line);
+            imagettftext($im, $size, 0, $tx, $startY + $i * $lineH, $this->c($im, $ink), $font, $line);
         }
     }
 
@@ -265,6 +346,26 @@ class DiagramRenderer
         foreach ($this->wrap($font, $size, $text, $maxWidth) as $i => $line) {
             imagettftext($im, $size, 0, $x, $y + $i * (int) ($size * 1.35), $this->c($im, $rgb), $font, $line);
         }
+    }
+
+    /**
+     * The largest of `$sizes` at which `$text` wraps into `$maxHeight`; the smallest if none does.
+     * A label always stays inside its box: it gets smaller before it spills.
+     *
+     * @param array<int,int> $sizes largest first
+     * @return array{0:int,1:array<int,string>} [size, wrapped lines]
+     */
+    public function fit(string $font, string $text, int $maxWidth, int $maxHeight, array $sizes, float $lineHeight = 1.4): array
+    {
+        foreach ($sizes as $size) {
+            $lines = $this->wrap($font, $size, $text, $maxWidth);
+            if (count($lines) * $size * $lineHeight <= $maxHeight) {
+                return [$size, $lines];
+            }
+        }
+        $size = end($sizes);
+
+        return [$size, $this->wrap($font, $size, $text, $maxWidth)];
     }
 
     /** @return array<int,string> */
@@ -294,7 +395,7 @@ class DiagramRenderer
         return imagecolorallocate($im, $rgb[0], $rgb[1], $rgb[2]);
     }
 
-    private function font(): string
+    public function font(): string
     {
         $path = base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans.ttf');
         if (!is_file($path)) {

@@ -89,12 +89,93 @@ trait StudyDeckFixture
         ];
     }
 
+    /**
+     * raw()'s plan with one slide that can carry hotspots (a drawn diagram), one that can carry a scenario
+     * (an application slide) and, separately, one for a reveal.
+     *
+     * @return array<string,mixed>
+     */
+    protected function planWithRoom(): array
+    {
+        $p = $this->plan();
+        $p['slides'][2]['visual'] = ['required' => true, 'role' => 'diagram', 'query' => 'model ignores details', 'purpose' => 'Shows the two ideas a model balances'];
+        $p['slides'][2]['diagram'] = ['layout' => 'hub', 'title' => 'What a model keeps and ignores', 'center' => 'A model', 'nodes' => ['Ignore details', 'Keep the question']];
+        $p['slides'][4]['slide_type'] = 'application';
+
+        return $p;
+    }
+
+    /** What InteractionPlanner is told to reply for planWithRoom(): a hotspot slide, a reveal and a scenario. @return array<string,mixed> */
+    protected function interactionReply(array $over = []): array
+    {
+        $reply = ['slides' => [
+            ['n' => 2, 'reason' => 'a model is easily mistaken for an exact copy, so the two are set side by side', 'interaction' => [
+                'kind' => 'compare', 'intro' => 'Select each one to see how it differs.',
+                'items' => [
+                    ['label' => 'A model', 'text' => 'A model is a simplified representation that keeps only what the question needs.'],
+                    ['label' => 'An exact copy', 'text' => 'An exact copy would keep every detail, which a model ignores on purpose.'],
+                ],
+                'wrapup' => 'A model keeps what matters; a copy keeps everything.',
+            ]],
+            ['n' => 3, 'reason' => 'the diagram has two parts, each worth a sentence', 'interaction' => [
+                'kind' => 'hotspots', 'intro' => 'Select each part of the diagram to read about it.',
+                'spots' => [
+                    ['label' => 'Ignore details', 'text' => 'A map shows roads but ignores trees, because trees do not help you find your way.'],
+                    ['label' => 'Keep the question', 'text' => 'A model keeps only what the question needs, so the same system can have different models.'],
+                ],
+                'wrapup' => 'Now connect these two ideas to the next slide.',
+            ]],
+            ['n' => 4, 'reason' => 'two ideas that are better discovered than listed', 'interaction' => [
+                'kind' => 'reveal', 'intro' => 'Select a card to see what it says.',
+                'items' => [
+                    ['label' => 'A law', 'text' => 'A law describes a repeated pattern that scientists keep finding.'],
+                    ['label' => 'A theory', 'text' => 'A theory explains why a pattern occurs, not only that it does.'],
+                ],
+                'wrapup' => '',
+            ]],
+            ['n' => 5, 'reason' => 'a real choice with consequences about how a theory relates to a law', 'interaction' => [
+                'kind' => 'scenario',
+                'situation' => 'You notice that a ball always falls when you let go of it. A friend asks you what that tells us.',
+                'nodes' => [
+                    ['id' => 'n1', 'prompt' => 'What do you tell your friend first?', 'choices' => [
+                        ['text' => 'It is a repeated pattern, so it can be stated as a law.', 'outcome' => 'Your friend agrees and asks why it happens.', 'why' => 'A law describes a repeated pattern.', 'sound' => true, 'next' => 'n2'],
+                        ['text' => 'It happened once, so nothing can be said.', 'outcome' => 'Your friend tries again and sees it fall every time.', 'why' => 'A repeated pattern is exactly what a law describes.', 'sound' => false, 'next' => null],
+                    ]],
+                    ['id' => 'n2', 'prompt' => 'Your friend asks why it falls. What do you say?', 'choices' => [
+                        ['text' => 'A theory explains why the pattern occurs.', 'outcome' => 'You agree to look for an explanation together.', 'why' => 'A theory explains why patterns occur.', 'sound' => true, 'next' => null],
+                        ['text' => 'The law already explains why.', 'outcome' => 'Your friend is still puzzled about the reason.', 'why' => 'A law only describes the pattern; a theory explains it.', 'sound' => false, 'next' => null],
+                    ]],
+                ],
+                'conclusion' => 'A law says what happens and a theory says why it happens.',
+            ]],
+            ['n' => 6, 'reason' => 'the chapter map is a short chain of ideas', 'interaction' => [
+                'kind' => 'steps', 'intro' => 'Select each step to see what it adds.',
+                'items' => [
+                    ['label' => 'Build a model', 'text' => 'A model is a simplified representation of a real system.'],
+                    ['label' => 'State a law', 'text' => 'A law describes a repeated pattern that the model helps to see.'],
+                    ['label' => 'Give a theory', 'text' => 'A theory explains why the pattern occurs.'],
+                ],
+                'wrapup' => '',
+            ]],
+            ['n' => 7, 'reason' => 'three terms the chapter defines', 'interaction' => [
+                'kind' => 'match', 'intro' => 'Pair each term with what it means.',
+                'pairs' => [
+                    ['term' => 'Model', 'meaning' => 'A simplified representation of a real system.'],
+                    ['term' => 'Law', 'meaning' => 'Describes a repeated pattern.'],
+                    ['term' => 'Theory', 'meaning' => 'Explains why patterns occur.'],
+                ],
+                'wrapup' => '',
+            ]],
+        ]];
+
+        return array_replace_recursive($reply, $over);
+    }
     /** @return array<string,mixed> */
     protected function slideText(array $over = []): array
     {
         $one = fn (int $n, string $title, string $body, string $bloom, array $extra = []) => $extra + [
             'n' => $n, 'title' => $title, 'body' => $body, 'explanations' => [], 'bullets' => [], 'example' => null, 'misconception' => null,
-            'relationship_note' => null, 'check' => null, 'bloom' => $bloom, 'dok' => 2, 'minutes' => 2,
+            'relationship_note' => null, 'key_idea' => null, 'check' => null, 'bloom' => $bloom, 'dok' => 2, 'minutes' => 2,
         ];
         $quick = fn (string $q, string $a) => ['question' => $q, 'answer' => $a];
         $exp = fn (int $id, string $text) => ['concept_id' => $id, 'text' => $text];
@@ -113,6 +194,7 @@ trait StudyDeckFixture
             $one(4, 'What a law is', '', 'remember', [
                 'explanations' => [$exp(3, 'A law describes a repeated pattern.')],
                 'check' => $quick('What does a law describe?', 'A repeated pattern.'),
+                'key_idea' => 'A law describes a repeated pattern.',
             ]),
             $one(5, 'Laws and theories together', '', 'apply', [
                 'explanations' => [$exp(4, 'A theory explains why patterns occur.')],

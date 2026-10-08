@@ -144,7 +144,7 @@ class SlideContentGenerator
             }
 
             if (empty($plan['question_ids']) && $c['check'] === null) {
-                $out[$n][] = 'It has no check. Write one short question the slide has just taught, with its answer.';
+                $out[$n][] = 'It has no discussion prompt. Write one open question for the class to talk about, with a short possible answer.';
             }
 
             if ($c['example'] !== null && self::overlap($c['example'], self::explanationText($c) . ' ' . $c['body'] . ' ' . implode(' ', $c['bullets'])) >= 0.7) {
@@ -240,6 +240,7 @@ class SlideContentGenerator
             'example' => ($e = $this->str($s['example'] ?? '')) !== '' ? $e : null,
             'misconception' => $mis,
             'relationship_note' => ($r = $this->str($s['relationship_note'] ?? '')) !== '' ? $r : null,
+            'key_idea' => ($k = $this->str($s['key_idea'] ?? '')) !== '' ? $k : null,
             'check' => $check,
             'bloom' => in_array($bloom, ['remember', 'understand', 'apply', 'analyze', 'evaluate', 'create'], true) ? $bloom : 'understand',
             'dok' => in_array((int) ($s['dok'] ?? 2), [1, 2, 3, 4], true) ? (int) $s['dok'] : 2,
@@ -298,14 +299,15 @@ Rules
 - Numbers, names and examples must appear in the chapter text. If the concept data and the chapter text disagree, the chapter text wins.
 - A "misconception" is allowed only from the concept's listed misconceptions (same idea, tidied wording): {"wrong_idea": "...", "correction": "..."}. Otherwise null.
 - If "relationship" is set, put one sentence in "relationship_note" saying how the two ideas connect.
-- "check": if bank_question_attached is true, set check to null (the stored question is shown for you). Otherwise write one short question the slide itself has just taught, with its answer: {"question": "...", "answer": "..."}. Never a question about "the passage" or "the text", and never about something taught on a later slide.
+- "key_idea": the one sentence a student should remember from this slide, in plain words (at most 20 words), taken from the chapter text. Not a repeat of the title. Null on the cover.
+- "check" is the DISCUSSION prompt the teacher puts to the class after this slide, with a short possible answer for the teacher: {"question": "...", "answer": "..."}. It is open and makes students think (why, how, what would happen if, which would you choose, how do these connect), and can be answered from what the slide just taught or from the chapter text. It is not a quiz item with a one-word answer, never about "the passage" or "the text", and never about something taught on a later slide. If bank_question_attached is true, set check to null (the stored practice question stands in for it).
 - Do not write alt text or captions; pictures are described after they are chosen.
 - "bloom" is one of remember, understand, apply, analyze, evaluate, create. "dok" is 1 to 4. "minutes" is whole minutes.
 - The cover slide has no question: set its check to null.
 - Cover and hook slides: "body" is the one-line promise to the learner. Objectives slides: bullets are the objectives in "you will" form, and they must be things this deck teaches.
 
 Reply with:
-{"slides": [{"n": 1, "title": "", "body": "", "explanations": [{"concept_id": 0, "text": ""}], "bullets": [], "example": null, "misconception": null, "relationship_note": null, "check": null, "bloom": "understand", "dok": 2, "minutes": 2}]}
+{"slides": [{"n": 1, "title": "", "body": "", "explanations": [{"concept_id": 0, "text": ""}], "bullets": [], "example": null, "misconception": null, "relationship_note": null, "key_idea": null, "check": null, "bloom": "understand", "dok": 2, "minutes": 2}]}
 
 DECK OUTLINE
 {$outlineText}
