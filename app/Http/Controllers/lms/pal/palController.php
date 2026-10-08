@@ -2786,12 +2786,7 @@ public function getData($request)
             $subInstituteId
         );
 
-        $latestAttempts = \App\Models\PAL\DiagnosticAttempt::forStudent($studentId)
-            ->submitted()
-            ->orderByDesc('id')
-            ->get()
-            ->unique('chapter_id')
-            ->keyBy('chapter_id');
+        $latestAttempts = \App\Models\PAL\DiagnosticAttempt::latestSubmittedByChapter($studentId);
 
         $grouped = [];
 
@@ -2811,6 +2806,7 @@ public function getData($request)
                 'has_diagnostic' => $attempt !== null,
                 'level' => $attempt?->level,
                 'percentage' => $attempt !== null ? (float) $attempt->percentage : null,
+                'attempt_number' => $attempt?->attempt_number,
                 'last_attempt_id' => $attempt?->id,
                 'last_attempted_at' => $attempt?->submitted_at,
             ];
@@ -2837,11 +2833,35 @@ public function getData($request)
         $subInstituteId = $ctx['sub_institute_id'];
         $syear = $ctx['syear'];
         $standardId = $request->input('standard_id');
+        // An explicit retake request bypasses the "already attempted" gate
+        // and forces a fresh draw. Never implicit - a bare GET on this
+        // route must never silently start a second paper over a result the
+        // learner hasn't seen yet.
+        $forceNew = $request->boolean('retake');
 
         // subject_id and standard_id are resolved from the chapter inside the
         // service; passing them here only overrides that.
         $diagnosticService = app(\App\Services\PAL\Diagnostic\DiagnosticService::class);
-        $result = $diagnosticService->start($studentId, (int) $chapterId, $subInstituteId, $syear, null, $standardId);
+        $result = $diagnosticService->start($studentId, (int) $chapterId, $subInstituteId, $syear, null, $standardId, $forceNew);
+
+        if (($result['status'] ?? null) === 'already_attempted') {
+            $res = [
+                'status_code' => 1,
+                'message' => 'You have already attempted this diagnostic.',
+                // Named attempt_status, NOT status: is_mobile() overwrites
+                // any 'status' key with strtoupper(status_code) for
+                // type=API/JSON responses, which would silently clobber
+                // this discriminator.
+                'attempt_status' => 'already_attempted',
+                'attempt_id' => null,
+                'chapter_id' => (int) $chapterId,
+                'questions' => [],
+                'previous_attempt' => $result['previous_attempt'],
+                'student_id' => $studentId,
+            ];
+
+            return is_mobile($type, 'lms/pal/diagnostic-already-attempted', $res, 'view');
+        }
 
         if ($result['attempt_id'] === null) {
             $message = match ($result['reason']) {
@@ -2879,6 +2899,10 @@ public function getData($request)
             'selection_report' => $result['selection_report'],
             'student_id' => $studentId,
             'time_allowed' => 30, // minutes for 15 questions
+            // 'new' | 'resumed' - 'already_attempted' never reaches here, it
+            // returns above. Named attempt_status, not status - see the
+            // comment on the already_attempted branch above for why.
+            'attempt_status' => $result['status'] ?? 'new',
             // True when this is an unfinished attempt being handed back rather
             // than a new paper, with the count already answered on it. The UI
             // needs both to say so instead of implying a fresh start.
