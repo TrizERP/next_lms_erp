@@ -226,6 +226,8 @@ Route::match(['get', 'post'], 'lms-courses/search', [ApiLmsCourseController::cla
 Route::post('lms-chapter-concepts', [ApiLmsCourseController::class, 'getChapterConcepts']);
 Route::post('lms-chapters', [ApiLmsCourseController::class, 'chapters']);
 Route::post('lms-chapter-content', [ApiLmsCourseController::class, 'chapterContent']);
+// The interactive deck behind a chapter's study-deck presentation (read-only; see StudyDeckApiController).
+Route::post('lms-study-deck', [\App\Http\Controllers\api\lms\StudyDeckApiController::class, 'show']);
 Route::post('lms-questions', [ApiLmsCourseController::class, 'getLmsQuestions']);
 Route::post('lms-question-bank', [ApiLmsCourseController::class, 'getQuestionBank']);
 Route::post('lms-question-bank/create', [ApiLmsCourseController::class, 'createQuestionBank']);

@@ -39,12 +39,16 @@ class IntelligenceContentGenerationApiController extends Controller
         // default 60s.
         set_time_limit((int) config('claude.timeout_seconds', 600) + 120);
 
+        // "Study deck" is built server-side from the chapter's own data, so the
+        // caller sends no prompt for it. Every other type still must.
+        $isStudyDeck = strtolower(trim((string) $request->input('content_type'))) === 'study deck';
+
         $validator = Validator::make($request->all(), [
             // Addressed by id, not by name. The legacy route looks the chapter
             // up by chapter_name, which is neither unique by contract nor
             // tenant-scoped.
             'chapter_id' => 'required|integer|min:1',
-            'prompt' => 'required|string|max:400000',
+            'prompt' => ($isStudyDeck ? 'nullable' : 'required') . '|string|max:400000',
             'content_type' => 'required|string|max:250',
             'concept_id' => 'nullable|integer',
             // sub_institute_id and created_by are deliberately NOT accepted
@@ -104,6 +108,22 @@ class IntelligenceContentGenerationApiController extends Controller
                 'status_code' => 0,
                 'message' => 'Grade could not be resolved for this chapter.',
             ], 422);
+        }
+
+        if ($isStudyDeck) {
+            $result = $this->service->generateStudyDeck([
+                'content_type' => 'Classroom Presentation',
+                'chapter' => $chapter,
+                'chapter_name' => $chapter->chapter_name,
+                'grade_id' => $gradeId,
+                'concept_id' => null,
+                'sub_institute_id' => $subInstituteId,
+                'syear' => $request->session()->get('syear') ?? $chapter->syear,
+                'created_by' => (int) $request->session()->get('user_id'),
+                'user_profile_name' => $request->input('user_profile_name'),
+            ]);
+
+            return response()->json($result['body'], $result['http']);
         }
 
         $contentType = trim($input['content_type']);

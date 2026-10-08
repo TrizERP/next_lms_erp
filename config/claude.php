@@ -78,6 +78,18 @@ return [
         'timeout_seconds' => (int) env('CLAUDE_QUESTION_TIMEOUT_SECONDS', 180),
     ],
 
+    /*
+    | Which completer the study-deck pipeline uses: `api` (default, the
+    | Anthropic API via ContentGenerationService) or `cli` - DEV ONLY, shells out
+    | to the `claude` CLI with every tool disabled, for tenants with no API key.
+    */
+    'executor' => env('CLAUDE_EXECUTOR', 'api'),
+    'cli' => [
+        'binary' => env('CLAUDE_CLI_BINARY', 'claude'),
+        'model' => env('CLAUDE_CLI_MODEL', ''),
+        'timeout_seconds' => (int) env('CLAUDE_CLI_TIMEOUT_SECONDS', 900),
+    ],
+
     // Per-user rate limit on the billable generation path, applied by
     // App\Http\Middleware\ThrottleContentGeneration. Generating every content
     // type is 5 sequential Opus 5 calls, so this is a spend control.

@@ -1,0 +1,603 @@
+{
+    "version": 2,
+    "chapter": {
+        "id": 1,
+        "name": "Ideas in exploration",
+        "standard_id": 9,
+        "subject_id": 2,
+        "standard_name": "9",
+        "subject_name": "Science"
+    },
+    "chapter_id": 1,
+    "slide_count": 7,
+    "teaching_strategy": "Models first, then laws and theories.",
+    "baseline_review": {
+        "weaknesses": [
+            "thin"
+        ],
+        "improvements": [
+            "added checks"
+        ]
+    },
+    "outline": [
+        {
+            "topic_id": 10,
+            "name": "Models",
+            "concept_ids": [
+                1,
+                2
+            ]
+        },
+        {
+            "topic_id": 11,
+            "name": "Laws and theories",
+            "concept_ids": [
+                3,
+                4
+            ]
+        }
+    ],
+    "concepts": {
+        "1": {
+            "id": 1,
+            "name": "Models",
+            "topic_id": 10,
+            "requires": [],
+            "related": [
+                {
+                    "concept_id": 2,
+                    "type": "related_to"
+                }
+            ],
+            "definition": "A model is a simplified representation."
+        },
+        "2": {
+            "id": 2,
+            "name": "Ignoring details",
+            "topic_id": 10,
+            "requires": [
+                1
+            ],
+            "related": [],
+            "definition": null
+        },
+        "3": {
+            "id": 3,
+            "name": "Laws",
+            "topic_id": 11,
+            "requires": [],
+            "related": [],
+            "definition": null
+        },
+        "4": {
+            "id": 4,
+            "name": "Theories",
+            "topic_id": 11,
+            "requires": [
+                3
+            ],
+            "related": [],
+            "definition": null
+        }
+    },
+    "slides": [
+        {
+            "n": 1,
+            "section": "Topic",
+            "slide_type": "cover",
+            "title": "Ideas in exploration",
+            "concept_ids": [],
+            "taught_concept_ids": [],
+            "concepts": [],
+            "relationship": null,
+            "content": {
+                "body": "Today you meet models, laws and theories.",
+                "explanations": [],
+                "bullets": [],
+                "example": null,
+                "misconception": null,
+                "relationship_note": null,
+                "bloom": "remember",
+                "dok": 2,
+                "minutes": 2
+            },
+            "question_ids": [],
+            "activities": [],
+            "h5p_pattern": null,
+            "pattern_dropped": null,
+            "visual": null,
+            "image": null,
+            "image_missing": null,
+            "sources": {
+                "concept_intelligence": false,
+                "existing_ai_content": true,
+                "question_bank": false,
+                "h5p_pattern_reference": false
+            }
+        },
+        {
+            "n": 2,
+            "section": "Topic",
+            "slide_type": "concept_intro",
+            "title": "What a model is",
+            "concept_ids": [
+                1
+            ],
+            "taught_concept_ids": [
+                1
+            ],
+            "concepts": [
+                "Models"
+            ],
+            "relationship": null,
+            "content": {
+                "body": "",
+                "explanations": [
+                    {
+                        "concept_id": 1,
+                        "text": "A scientific model is a simplified representation of a real system."
+                    }
+                ],
+                "bullets": [],
+                "example": null,
+                "misconception": {
+                    "wrong_idea": "A model is an exact copy.",
+                    "correction": "A model keeps only needed features."
+                },
+                "relationship_note": null,
+                "bloom": "understand",
+                "dok": 2,
+                "minutes": 2
+            },
+            "question_ids": [
+                101
+            ],
+            "activities": [
+                {
+                    "source": "bank",
+                    "question_id": 101,
+                    "concept_id": 1,
+                    "as": "single_choice_set",
+                    "default_as": "single_choice_set",
+                    "pattern": null,
+                    "decision": false,
+                    "connects_concept": null,
+                    "label": "Apply",
+                    "bloom": "apply",
+                    "difficulty": "medium",
+                    "dok": 2,
+                    "why": "the question's own form"
+                }
+            ],
+            "h5p_pattern": null,
+            "pattern_dropped": null,
+            "visual": {
+                "required": true,
+                "role": "object",
+                "query": "scientific model simplified representation",
+                "purpose": "Shows a map as a simplified model"
+            },
+            "image": {
+                "type": "photo",
+                "alt": "Photograph: Map as a simplified scientific model. Tags: map, model.",
+                "caption": "Map as a simplified scientific model",
+                "url": "images/c7a9c45fd419815a5ab1998503a9f03514c0e229.png",
+                "width": 1,
+                "height": 1,
+                "query": "scientific model simplified representation",
+                "source_image_url": "https://upload.example.org/map.png",
+                "source_url": "https://commons.example.org/File:Map.png",
+                "title": "Map as a simplified scientific model",
+                "creator": "A. Person",
+                "provider": "wikimedia",
+                "licence": "BY-SA 4.0",
+                "attribution_required": true,
+                "attribution": "\"Map\" by A. Person is licensed under BY-SA 4.0",
+                "sha1": "c7a9c45fd419815a5ab1998503a9f03514c0e229",
+                "match": {
+                    "shared": 3,
+                    "of": 4,
+                    "terms": [
+                        "scientific",
+                        "model",
+                        "simplified"
+                    ]
+                },
+                "review": null,
+                "purpose": "Shows a map as a simplified model"
+            },
+            "image_missing": null,
+            "sources": {
+                "concept_intelligence": true,
+                "existing_ai_content": true,
+                "question_bank": true,
+                "h5p_pattern_reference": false
+            }
+        },
+        {
+            "n": 3,
+            "section": "Topic",
+            "slide_type": "relationship",
+            "title": "Why models ignore details",
+            "concept_ids": [
+                1,
+                2
+            ],
+            "taught_concept_ids": [
+                2
+            ],
+            "concepts": [
+                "Models",
+                "Ignoring details"
+            ],
+            "relationship": {
+                "from": 2,
+                "to": 1,
+                "kind": "depends_on",
+                "idea": "Ignoring only makes sense for a model."
+            },
+            "content": {
+                "body": "",
+                "explanations": [
+                    {
+                        "concept_id": 2,
+                        "text": "A model ignores some details on purpose."
+                    }
+                ],
+                "bullets": [],
+                "example": "A map shows roads but ignores trees.",
+                "misconception": null,
+                "relationship_note": "You can only ignore details once you have a model.",
+                "bloom": "analyze",
+                "dok": 2,
+                "minutes": 2
+            },
+            "question_ids": [
+                103
+            ],
+            "activities": [
+                {
+                    "source": "bank",
+                    "question_id": 103,
+                    "concept_id": 2,
+                    "as": "single_choice_set",
+                    "default_as": "single_choice_set",
+                    "pattern": null,
+                    "decision": false,
+                    "connects_concept": 2,
+                    "label": "Think about it",
+                    "bloom": "understand",
+                    "difficulty": "medium",
+                    "dok": 2,
+                    "why": "the question's own form"
+                }
+            ],
+            "h5p_pattern": null,
+            "pattern_dropped": null,
+            "visual": null,
+            "image": null,
+            "image_missing": null,
+            "sources": {
+                "concept_intelligence": true,
+                "existing_ai_content": true,
+                "question_bank": true,
+                "h5p_pattern_reference": false
+            }
+        },
+        {
+            "n": 4,
+            "section": "Topic",
+            "slide_type": "concept_intro",
+            "title": "What a law is",
+            "concept_ids": [
+                3
+            ],
+            "taught_concept_ids": [
+                3
+            ],
+            "concepts": [
+                "Laws"
+            ],
+            "relationship": null,
+            "content": {
+                "body": "",
+                "explanations": [
+                    {
+                        "concept_id": 3,
+                        "text": "A law describes a repeated pattern."
+                    }
+                ],
+                "bullets": [],
+                "example": null,
+                "misconception": null,
+                "relationship_note": null,
+                "bloom": "remember",
+                "dok": 2,
+                "minutes": 2
+            },
+            "question_ids": [],
+            "activities": [
+                {
+                    "source": "authored",
+                    "question_id": null,
+                    "concept_id": 3,
+                    "as": "essay",
+                    "default_as": "essay",
+                    "pattern": null,
+                    "decision": false,
+                    "connects_concept": null,
+                    "label": "Explain",
+                    "bloom": "remember",
+                    "difficulty": null,
+                    "dok": 2,
+                    "why": "a quick check written for a slide the question bank has nothing for",
+                    "question": {
+                        "id": -41,
+                        "question": "What does a law describe?",
+                        "question_type_code": "short",
+                        "question_type": "Narrative",
+                        "marks": 1,
+                        "options": [],
+                        "model_answer": "A repeated pattern.",
+                        "chapter_id": 1,
+                        "standard_id": 9,
+                        "subject_id": 2,
+                        "concept_id": 3,
+                        "authored": true
+                    }
+                }
+            ],
+            "h5p_pattern": null,
+            "pattern_dropped": null,
+            "visual": null,
+            "image": null,
+            "image_missing": null,
+            "sources": {
+                "concept_intelligence": true,
+                "existing_ai_content": true,
+                "question_bank": false,
+                "h5p_pattern_reference": false
+            }
+        },
+        {
+            "n": 5,
+            "section": "Topic",
+            "slide_type": "relationship",
+            "title": "Laws and theories together",
+            "concept_ids": [
+                3,
+                4
+            ],
+            "taught_concept_ids": [
+                4
+            ],
+            "concepts": [
+                "Laws",
+                "Theories"
+            ],
+            "relationship": null,
+            "content": {
+                "body": "",
+                "explanations": [
+                    {
+                        "concept_id": 4,
+                        "text": "A theory explains why patterns occur."
+                    }
+                ],
+                "bullets": [
+                    "Law: what happens",
+                    "Theory: why"
+                ],
+                "example": null,
+                "misconception": null,
+                "relationship_note": null,
+                "bloom": "apply",
+                "dok": 2,
+                "minutes": 2
+            },
+            "question_ids": [
+                104
+            ],
+            "activities": [
+                {
+                    "source": "bank",
+                    "question_id": 104,
+                    "concept_id": 3,
+                    "as": "flashcards",
+                    "default_as": "essay",
+                    "pattern": "flashcards",
+                    "decision": false,
+                    "connects_concept": null,
+                    "label": "Explain",
+                    "bloom": "remember",
+                    "difficulty": "easy",
+                    "dok": 1,
+                    "why": "a recall question on a term or definition suits a flip card"
+                }
+            ],
+            "h5p_pattern": {
+                "type": "flashcards",
+                "reason": "A law is a term to recall."
+            },
+            "pattern_dropped": null,
+            "visual": null,
+            "image": null,
+            "image_missing": null,
+            "sources": {
+                "concept_intelligence": true,
+                "existing_ai_content": true,
+                "question_bank": true,
+                "h5p_pattern_reference": true
+            }
+        },
+        {
+            "n": 6,
+            "section": "Topic",
+            "slide_type": "concept_map",
+            "title": "How the ideas connect",
+            "concept_ids": [],
+            "taught_concept_ids": [],
+            "concepts": [],
+            "relationship": null,
+            "content": {
+                "body": "Models help us state laws and build theories.",
+                "explanations": [],
+                "bullets": [],
+                "example": null,
+                "misconception": null,
+                "relationship_note": null,
+                "bloom": "evaluate",
+                "dok": 2,
+                "minutes": 2
+            },
+            "question_ids": [],
+            "activities": [
+                {
+                    "source": "authored",
+                    "question_id": null,
+                    "concept_id": null,
+                    "as": "essay",
+                    "default_as": "essay",
+                    "pattern": null,
+                    "decision": false,
+                    "connects_concept": null,
+                    "label": "Think about it",
+                    "bloom": "evaluate",
+                    "difficulty": null,
+                    "dok": 2,
+                    "why": "a quick check written for a slide the question bank has nothing for",
+                    "question": {
+                        "id": -61,
+                        "question": "Which idea explains why a pattern occurs?",
+                        "question_type_code": "short",
+                        "question_type": "Narrative",
+                        "marks": 1,
+                        "options": [],
+                        "model_answer": "A theory.",
+                        "chapter_id": 1,
+                        "standard_id": 9,
+                        "subject_id": 2,
+                        "concept_id": null,
+                        "authored": true
+                    }
+                }
+            ],
+            "h5p_pattern": null,
+            "pattern_dropped": null,
+            "visual": null,
+            "image": null,
+            "image_missing": null,
+            "sources": {
+                "concept_intelligence": false,
+                "existing_ai_content": true,
+                "question_bank": false,
+                "h5p_pattern_reference": false
+            }
+        },
+        {
+            "n": 7,
+            "section": "Topic",
+            "slide_type": "exit_ticket",
+            "title": "Exit ticket",
+            "concept_ids": [],
+            "taught_concept_ids": [],
+            "concepts": [],
+            "relationship": null,
+            "content": {
+                "body": "Show what you know.",
+                "explanations": [],
+                "bullets": [],
+                "example": null,
+                "misconception": null,
+                "relationship_note": null,
+                "bloom": "create",
+                "dok": 2,
+                "minutes": 2
+            },
+            "question_ids": [],
+            "activities": [
+                {
+                    "source": "authored",
+                    "question_id": null,
+                    "concept_id": null,
+                    "as": "essay",
+                    "default_as": "essay",
+                    "pattern": null,
+                    "decision": false,
+                    "connects_concept": null,
+                    "label": "Try it",
+                    "bloom": "create",
+                    "difficulty": null,
+                    "dok": 2,
+                    "why": "a quick check written for a slide the question bank has nothing for",
+                    "question": {
+                        "id": -71,
+                        "question": "What does the symbol m stand for?",
+                        "question_type_code": "short",
+                        "question_type": "Narrative",
+                        "marks": 1,
+                        "options": [],
+                        "model_answer": "Mass.",
+                        "chapter_id": 1,
+                        "standard_id": 9,
+                        "subject_id": 2,
+                        "concept_id": null,
+                        "authored": true
+                    }
+                }
+            ],
+            "h5p_pattern": null,
+            "pattern_dropped": null,
+            "visual": null,
+            "image": null,
+            "image_missing": null,
+            "sources": {
+                "concept_intelligence": false,
+                "existing_ai_content": true,
+                "question_bank": false,
+                "h5p_pattern_reference": false
+            }
+        }
+    ],
+    "concept_slides": {
+        "1": [
+            2,
+            3
+        ],
+        "2": [
+            3
+        ],
+        "3": [
+            4,
+            5
+        ],
+        "4": [
+            5
+        ]
+    },
+    "taught_by": {
+        "1": [
+            2
+        ],
+        "2": [
+            3
+        ],
+        "3": [
+            4
+        ],
+        "4": [
+            5
+        ]
+    },
+    "concept_questions": {
+        "1": [
+            101
+        ],
+        "2": [
+            103
+        ],
+        "3": [
+            104
+        ]
+    }
+}

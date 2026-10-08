@@ -8,6 +8,11 @@ use Anthropic\Lib\Streaming\MessageAccumulator;
 use App\Models\lms\contentModel;
 use App\Services\Content\RendersContentPresentation;
 use App\Services\Content\RendersGeneratedContent;
+use App\Services\StudyDeck\ClaudeApiCompleter;
+use App\Services\StudyDeck\ClaudeCliCompleter;
+use App\Services\StudyDeck\Contracts\Completer;
+use App\Services\StudyDeck\StudyDeckService;
+use App\Services\StudyDeck\StudyImageStores;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -226,6 +231,115 @@ class ContentGenerationService
     }
 
     /**
+     * Generate a classroom study deck for a chapter from its Chapter -> Topic ->
+     * Concept -> Concept Intelligence data, existing AI content and question
+     * bank, and store it as an ordinary content_master presentation.
+     *
+     * Same architecture as generate(): the key, model and streaming call are
+     * this class's own (callClaude); StudyDeckService only supplies the prompts
+     * and the pipeline around them. Nothing is stored unless validation passes.
+     *
+     * $input takes the same chapter/tenant fields as generate(), minus `prompt`.
+     * `claude.executor=cli` swaps in the dev-only CLI completer when no API key
+     * exists; it is never chosen implicitly.
+     *
+     * @return array{http:int, body:array<string,mixed>}
+     */
+    public function generateStudyDeck(array $input, ?Completer $completer = null): array
+    {
+        @set_time_limit((int) config('claude.timeout_seconds', 600) * 6 + 120);
+
+        if ($completer === null) {
+            if (config('claude.executor', 'api') === 'cli') {
+                $completer = new ClaudeCliCompleter();
+            } else {
+                $apiKey = $this->resolveApiKey();
+                if ($apiKey === '') {
+                    return $this->fail('Claude API key is not configured. Set ANTHROPIC_API_KEY or an ai_api_keys row.', 500);
+                }
+                $model = (string) config('claude.model', 'claude-opus-5');
+                $completer = new ClaudeApiCompleter(
+                    fn (string $system, string $prompt, int $max): array => $this->callClaude($apiKey, $model, $prompt, $system, $max)
+                );
+            }
+        }
+
+        try {
+            $result = StudyDeckService::make($completer, StudyImageStores::spaces())
+                ->generate((int) $input['chapter']->id, (int) ($input['sub_institute_id'] ?? 1));
+        } catch (APIStatusException $e) {
+            return $this->fail($this->readableApiError($e), 502);
+        } catch (Throwable $e) {
+            Log::error('Study deck generation failed', ['chapter_id' => $input['chapter']->id ?? null, 'error' => $e->getMessage()]);
+
+            return $this->fail('Study deck generation failed: ' . $e->getMessage(), 500);
+        }
+
+        if (!$result['report']['ok']) {
+            return [
+                'http' => 422,
+                'body' => [
+                    'success' => false,
+                    'status_code' => 0,
+                    'message' => 'The study deck failed validation and was not stored.',
+                    'errors' => $result['report']['errors'],
+                    'warnings' => $result['report']['warnings'],
+                ],
+            ];
+        }
+
+        return $this->storeStudyDeck($input, $result['html'], $result['deck'], (string) config('claude.model', 'claude-opus-5'));
+    }
+
+    /**
+     * Where a study deck's player data lives: beside its presentation file, named after it.
+     *
+     * Deriving the path from the content_master row's own filename means no extra column,
+     * no `meta_tags` marker and no lookup table: a row that has a deck has this file.
+     */
+    public static function studyDeckSidecarPath(string $filename): string
+    {
+        return 'public/lms_content_file/' . $filename . '.deck.json';
+    }
+
+    /**
+     * Persist an already validated study deck.
+     *
+     * The presentation is an ordinary content_master row. The structured deck the
+     * native student player reads (slide content, activity specs, concept maps, image
+     * licences) has no content_master column, so it is written as a JSON sidecar next to
+     * the file. `meta_tags` is deliberately left empty: the concept tagger and the video
+     * relevance scorer read that column as text, and a marker string there would feed them.
+     *
+     * @param array<string,mixed> $deck SlideHtmlRenderer deck metadata
+     * @return array{http:int, body:array<string,mixed>}
+     */
+    public function storeStudyDeck(array $input, string $html, array $deck, string $authoredBy = 'study-deck'): array
+    {
+        $input['is_presentation'] = true;
+        $input['content_type'] = $input['content_type'] ?? 'Classroom Presentation';
+        $input['meta_tags'] = null;
+
+        $result = $this->storeAuthoredContent($input, $html, $authoredBy);
+        if (($result['http'] ?? 0) !== 201) {
+            return $result;
+        }
+
+        $sidecar = self::studyDeckSidecarPath((string) $result['body']['data']['filename']);
+        try {
+            Storage::disk('digitalocean')->put($sidecar, json_encode($deck, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 'public');
+            $result['body']['data']['deck_metadata_url'] = Storage::disk('digitalocean')->url($sidecar);
+        } catch (Throwable $e) {
+            // The presentation exists; only the interactive deck is missing. Say so plainly.
+            Log::error('Study deck sidecar upload failed', ['path' => $sidecar, 'error' => $e->getMessage()]);
+            $result['body']['warnings'] = ['The presentation was stored but its interactive deck data could not be saved: ' . $e->getMessage()];
+        }
+        $result['body']['data']['slide_count'] = $deck['slide_count'] ?? null;
+
+        return $result;
+    }
+
+    /**
      * One streamed Messages API call.
      *
      * Streamed rather than a plain create() because max_output_tokens is well
@@ -239,16 +353,16 @@ class ContentGenerationService
      *
      * @return array{text:string, stop_reason:?string, input_tokens:int, output_tokens:int}
      */
-    protected function callClaude(string $apiKey, string $model, string $prompt): array
+    protected function callClaude(string $apiKey, string $model, string $prompt, ?string $system = null, ?int $maxTokens = null): array
     {
         $client = new AnthropicClient(apiKey: $apiKey);
 
         $stream = $client->messages->createStream(
-            maxTokens: (int) config('claude.max_output_tokens', 32000),
+            maxTokens: $maxTokens ?? (int) config('claude.max_output_tokens', 32000),
             messages: [['role' => 'user', 'content' => $prompt]],
             model: $model,
             outputConfig: ['effort' => config('claude.effort', 'high')],
-            system: self::OUTPUT_FORMAT_SYSTEM,
+            system: $system ?? self::OUTPUT_FORMAT_SYSTEM,
             thinking: ['type' => 'adaptive'],
             requestOptions: ['timeout' => (float) config('claude.timeout_seconds', 600)],
         );
@@ -338,7 +452,7 @@ class ContentGenerationService
             'file_size' => strlen($binary) ?: null,
             'show_hide' => '1',
             'sort_order' => null,
-            'meta_tags' => null,
+            'meta_tags' => $input['meta_tags'] ?? null,
             'content_category' => $contentType,
             'source' => config('claude.source_label', 'Claude AI'),
             'created_by' => $input['created_by'] ?? null,
