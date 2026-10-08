@@ -96,6 +96,8 @@ Route::post('api-login', [ApiLoginController::class, 'login'])->middleware('thro
 Route::get('academic-terms', [ApiLoginController::class, 'academicTerms'])->name('api.academic-terms');
 // Isolated mobile Own Profile API; legacy profile controllers are unchanged.
 Route::middleware('api.session')->get('own-profile', [\App\Http\Controllers\api\OwnProfileApiController::class, 'show']);
+// Native mobile shell bootstrap: identity + role menu, all derived from the JWT.
+Route::middleware('api.session')->get('mobile/bootstrap', [\App\Http\Controllers\api\MobileBootstrapApiController::class, 'show']);
 
 // Exchanges the app's JWT for a single-use ticket that opens an ERP web page
 // already logged in, for menu rows whose render_type is 'webview'.
