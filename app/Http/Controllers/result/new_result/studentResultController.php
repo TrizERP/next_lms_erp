@@ -7992,6 +7992,9 @@ $table .= '</div>';
                     continue;
                 }
 
+                $table_before_sub_title = $table;
+                $rendered_activity_rows = 0;
+                $get_result_activity_masters = [];
                 $table .= '<tr><th style="text-align:left;font-size:medium;background:white !important;"><b>' . $value . '</b></th>';
                 $get_result_activity_marks = $get_sub_activity = $sub_sub_id = [];
 
@@ -8069,6 +8072,11 @@ if ($format === 'yearly') {
                         $activity_master_id = explode(',', $get_result_activity_master->ids);
 
                         foreach ($activity_master_id as $ak => $activity_id) {
+                            // skip blank activities so an empty parent heading is not rendered
+                            if (!isset($activity_master_title[$ak]) || trim($activity_master_title[$ak]) === '') {
+                                continue;
+                            }
+                            $rendered_activity_rows++;
                             if (isset($get_sub_activity[$activity_id]) && !empty($get_sub_activity[$activity_id])) {
                                 $table .= '<tr><td style="text-align:left;font-size:medium;width:60%;background:white !important;"><b>' . $activity_master_title[$ak] . '</b></td>';
                                 foreach ($sub_sub_title as $key1 => $value1) {
@@ -8146,6 +8154,10 @@ if ($format === 'yearly') {
                             }
                         }
                     }
+                }
+                // no activity under this sub title -> drop the heading row as well
+                if ($rendered_activity_rows === 0) {
+                    $table = $table_before_sub_title;
                 }
                 // if(isset($get_result_activity_masters) && !empty($get_result_activity_masters))
                 // {
