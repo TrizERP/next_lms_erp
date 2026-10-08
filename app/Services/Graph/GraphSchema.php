@@ -285,6 +285,12 @@ class GraphSchema
         return isset(self::LABELS[$label]);
     }
 
+    /** @return string[] every label the sync pipeline may write */
+    public static function labels(): array
+    {
+        return array_keys(self::LABELS);
+    }
+
     public static function knowsRelationship(string $type): bool
     {
         return in_array($type, self::RELATIONSHIPS, true);

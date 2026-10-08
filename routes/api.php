@@ -586,6 +586,13 @@ Route::match(['GET', 'POST'], 'intelligence/curriculum-planning', [\App\Http\Con
 // for chapters nobody opens. Scoped by sub_institute_id inside the controller.
 Route::match(['GET', 'POST'], 'intelligence/curriculum-planning/chapter', [\App\Http\Controllers\api\lms\CurriculumPlanningApiController::class, 'chapter']);
 
+// Curriculum Outcomes & Delivery Analytics - EXPECTED -> PLANNED -> DELIVERED ->
+// ASSESSED -> ACHIEVED -> GAP chain for one curriculum. Sibling of
+// intelligence/curriculum-planning above; scoped by sub_institute_id inside the
+// controller, same as that pair of routes (no session middleware).
+Route::match(['GET', 'POST'], 'intelligence/curriculum-outcomes', [\App\Http\Controllers\api\lms\CurriculumOutcomesApiController::class, 'index']);
+Route::match(['GET', 'POST'], 'intelligence/curriculum-outcomes/outcome', [\App\Http\Controllers\api\lms\CurriculumOutcomesApiController::class, 'outcomeDetail']);
+
 // Monthly Plan - calendar view of scheduled periods for a given month
 Route::match(['GET', 'POST'], 'intelligence/monthly-plan', [\App\Http\Controllers\api\lms\MonthlyPlanApiController::class, 'index']);
 

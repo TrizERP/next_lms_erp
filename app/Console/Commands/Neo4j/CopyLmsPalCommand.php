@@ -3,17 +3,26 @@
 namespace App\Console\Commands\Neo4j;
 
 use Illuminate\Console\Command;
-use Laudis\Neo4j\Authentication\Authenticate;
-use Laudis\Neo4j\ClientBuilder;
-use Laudis\Neo4j\Contracts\ClientInterface;
+use Illuminate\Support\Facades\Http;
 
 /**
  * One-time seed copy of the LMS+PAL-scoped slice of the K12 graph into a brand-new,
  * separate Neo4j instance dedicated to LMS+PAL work (`config('neo4j.targets.lms_pal')`).
  *
- * SOURCE (config('neo4j.uri'), the existing K12 graph) is READ-ONLY here — every
- * statement sent to it is a MATCH, never a write. TARGET is the only database this
+ * SOURCE (config('neo4j.uri')/'http_uri', the existing K12 graph) is READ-ONLY here —
+ * every statement sent to it is a MATCH, never a write. TARGET is the only database this
  * command ever writes to.
+ *
+ * TRANSPORT: HTTP transaction API, not Bolt. The Bolt driver (laudis/neo4j-php-client +
+ * stefanak-michal/bolt) proved unreliable for this transfer over this link — repeated
+ * "Undefined property StreamSocket::$stream" / errno=10054 crashes, including runs that
+ * died identically at the exact same resume point across 4 consecutive attempts with
+ * ZERO successful retries out of 10. Direct comparison settled it: the identical query
+ * (300 real StuDetail rows, full properties) against the identical server succeeded
+ * instantly and reliably over HTTP every single time, while Bolt kept dying on it. Since
+ * every diagnostic curl run throughout this migration was HTTP and never once failed,
+ * this command now speaks HTTP exclusively — no persistent session to corrupt, no
+ * driver-level connection-teardown bug to hit.
  *
  * SCOPE. Both endpoints of a relationship must carry a label in SCOPE_LABELS for the
  * edge to be copied — computed live via labels(a)/labels(b), not a hand-enumerated
@@ -35,9 +44,10 @@ class CopyLmsPalCommand extends Command
         {--confirm     : required — acknowledges this writes to the target instance}
         {--dry-run     : print per-label SOURCE counts only, write nothing}
         {--batch=1000  : rows per page/transaction}
-        {--backup-dir= : directory for a JSON copy of every node/edge before it is written to target}';
+        {--backup-dir= : directory for a JSON copy of every node/edge before it is written to target}
+        {--force=      : comma-separated labels to re-copy even when source/target counts already match}';
 
-    protected $description = 'One-time copy of LMS+PAL-scoped nodes/edges from the K12 graph into the dedicated LMS+PAL Neo4j instance';
+    protected $description = 'One-time copy of LMS+PAL-scoped nodes/edges from the K12 graph into the dedicated LMS+PAL Neo4j instance (HTTP transport)';
 
     /**
      * LMS core + the PAL coherence layer added 2026-09-28/29 + the anchor labels
@@ -49,16 +59,15 @@ class CopyLmsPalCommand extends Command
         'Lesson', 'Assessment', 'Question', 'QuestionType',
         // PAL coherence layer (CoherenceGraphProjection, 2026-09-28/29)
         'Misconception', 'CorrectiveContent', 'ConceptNode', 'CurriculumOutcome', 'Content',
+        // Topic (topic_master), added to live sync 2026-10-06 — see projectTopics()
+        'Topic',
         // anchors, so HAS_MASTERY / TEACHES are not dropped
         'StuDetail', 'Teacher',
     ];
 
-    private ClientInterface $source;
-    private ?ClientInterface $target = null;
-
-    /** @var array{uri:?string,username:?string,password:?string} */
+    /** @var array{http_uri:?string,username:?string,password:?string} */
     private array $sourceConn;
-    /** @var array{uri:?string,username:?string,password:?string} */
+    /** @var array{http_uri:?string,username:?string,password:?string} */
     private array $targetConn;
 
     /** source id(n) => target id(n) */
@@ -71,24 +80,27 @@ class CopyLmsPalCommand extends Command
             return 1;
         }
 
-        $targetUri = config('neo4j.targets.lms_pal.uri');
+        $targetHttp = config('neo4j.targets.lms_pal.http_uri');
         $targetPass = config('neo4j.targets.lms_pal.password');
-        if (!$this->option('dry-run') && (!$targetUri || !$targetPass)) {
-            $this->error('NEO4J_LMSPAL_URI / NEO4J_LMSPAL_PASSWORD are not set — nothing to copy into.');
+        if (!$this->option('dry-run') && (!$targetHttp || !$targetPass)) {
+            $this->error('NEO4J_LMSPAL_HTTP_URI / NEO4J_LMSPAL_PASSWORD are not set — nothing to copy into.');
             $this->line('Fill them in once the new instance is provisioned (see the migration plan, Part A).');
             return 1;
         }
 
         $this->sourceConn = [
-            'uri' => config('neo4j.uri'), 'username' => config('neo4j.username'), 'password' => config('neo4j.password'),
+            'http_uri' => config('neo4j.http_uri'), 'username' => config('neo4j.username'), 'password' => config('neo4j.password'),
         ];
-        $this->source = $this->client($this->sourceConn['uri'], $this->sourceConn['username'], $this->sourceConn['password'], 'source');
+        if (!$this->sourceConn['http_uri']) {
+            $this->error('NEO4J_HTTP_URI is not set.');
+            return 1;
+        }
 
         if (!$this->option('dry-run')) {
             $this->targetConn = [
-                'uri' => $targetUri, 'username' => config('neo4j.targets.lms_pal.username'), 'password' => $targetPass,
+                'http_uri' => $targetHttp, 'username' => config('neo4j.targets.lms_pal.username'), 'password' => $targetPass,
             ];
-            $this->target = $this->client($this->targetConn['uri'], $this->targetConn['username'], $this->targetConn['password'], 'target');
+            $this->ensureConstraints();
         }
 
         $batch = max(1, (int) $this->option('batch'));
@@ -103,9 +115,11 @@ class CopyLmsPalCommand extends Command
         }
         $this->line(str_repeat('-', 78));
 
+        $forced = array_filter(array_map('trim', explode(',', (string) $this->option('force'))));
+
         $nodeSummary = [];
         foreach (self::SCOPE_LABELS as $label) {
-            $nodeSummary[$label] = $this->copyLabel($label, $batch, $backupDir);
+            $nodeSummary[$label] = $this->copyLabel($label, $batch, $backupDir, in_array($label, $forced, true));
         }
 
         $this->line(str_repeat('-', 78));
@@ -128,6 +142,23 @@ class CopyLmsPalCommand extends Command
         return 0;
     }
 
+    /**
+     * Every MERGE in this command keys on `_migrated_from_id`, which starts out completely
+     * unindexed on a fresh target — meaning every MERGE was a full label scan, growing
+     * linearly slower as each label filled up. This is what actually caused the repeated
+     * timeouts on the big labels (Question/Content/StuDetail) after they'd grown large
+     * enough, not network flakiness — confirmed by zero indexes existing on target beyond
+     * the two default LOOKUP ones. `IF NOT EXISTS` makes this safe to run on every restart.
+     */
+    private function ensureConstraints(): void
+    {
+        foreach (self::SCOPE_LABELS as $label) {
+            $this->cypher('target',
+                "CREATE CONSTRAINT IF NOT EXISTS ON (n:`$label`) ASSERT n._migrated_from_id IS UNIQUE"
+            );
+        }
+    }
+
     private function backupDir(): string
     {
         if ($dir = $this->option('backup-dir')) {
@@ -141,36 +172,70 @@ class CopyLmsPalCommand extends Command
      * Copy every node of one label, paginated by internal id. Returns
      * ['source' => int, 'target' => int|null] (null in --dry-run).
      */
-    private function copyLabel(string $label, int $batch, string $backupDir): array
+    private function copyLabel(string $label, int $batch, string $backupDir, bool $force = false): array
     {
-        $sourceCount = (int) $this->runOn('source', "MATCH (n:`$label`) RETURN count(n) AS c", [])->first()->get('c');
+        $sourceCount = (int) $this->cypher('source', "MATCH (n:`$label`) RETURN count(n) AS c")[0]['c'];
 
         if ($this->option('dry-run')) {
             $this->line(sprintf('  %-20s source=%s', $label, number_format($sourceCount)));
             return ['source' => $sourceCount, 'target' => null];
         }
 
-        $fh = fopen("$backupDir/nodes_{$label}.jsonl", 'w');
-        $skip = 0;
+        // Every restart otherwise re-walks and re-MERGEs the WHOLE label from scratch, even one
+        // already fully copied — wasting most of each retry re-doing finished work. When the
+        // counts already match, skip the expensive paginated property transfer entirely and
+        // just cheaply rebuild the id map (every already-copied target node already carries
+        // _migrated_from_id, so no source read is even needed for this).
+        //
+        // --force bypasses this: a count match does NOT mean a label's properties are still
+        // current — a source label whose rows were later enriched in place (new properties,
+        // same row count, e.g. :Chapter after projectChapterIntelligence()) would otherwise
+        // never get those new properties copied at all.
+        $targetCountEarly = (int) $this->cypher('target', "MATCH (n:`$label`) RETURN count(n) AS c")[0]['c'];
+        if ($sourceCount === $targetCountEarly && !$force) {
+            $this->populateIdMapFromTarget($label, $batch);
+            $this->line(sprintf('  %-20s source=%s  target=%s  <fg=cyan>(already matches, skipped)</>',
+                $label, number_format($sourceCount), number_format($targetCountEarly)));
+            return ['source' => $sourceCount, 'target' => $targetCountEarly];
+        }
+        if ($sourceCount === $targetCountEarly && $force) {
+            $this->line(sprintf('  %-20s <fg=yellow>forced re-copy (counts already matched)</>', $label));
+        }
+
+        // Resume mid-label too, not just whole-label skip above — otherwise every restart of a
+        // label that's PARTIALLY done redoes all its prior pages from SKIP 0. Pages are always
+        // written in strict ascending id(n) order and a page either fully succeeds or the whole
+        // command aborts, so "targetCountEarly rows already in target" reliably means "the first
+        // targetCountEarly source rows by id(n) are already done" — safe to resume right there.
+        // A forced re-copy always starts at 0 instead: the whole point is to re-send every row's
+        // CURRENT properties, not just whatever was missing last time.
+        $skipFrom = $force ? 0 : $targetCountEarly;
+        $fh = fopen("$backupDir/nodes_{$label}.jsonl", $skipFrom > 0 ? 'a' : 'w');
+        if ($skipFrom > 0) {
+            $this->populateIdMapFromTarget($label, $batch);
+            $this->line(sprintf('  %-20s <fg=cyan>resuming at %s of %s</>',
+                $label, number_format($targetCountEarly), number_format($sourceCount)));
+        }
+        $skip = $skipFrom;
         $copied = 0;
 
         while (true) {
-            $page = $this->runOn('source',
+            $page = $this->cypher('source',
                 "MATCH (n:`$label`) RETURN id(n) AS srcId, properties(n) AS props "
                 . 'ORDER BY id(n) SKIP $skip LIMIT $limit',
                 ['skip' => $skip, 'limit' => $batch]
             );
-            if ($page->count() === 0) break;
+            if (count($page) === 0) break;
 
             $rows = [];
             foreach ($page as $rec) {
-                $srcId = (int) $rec->get('srcId');
-                $props = $rec->get('props')->toArray();
+                $srcId = (int) $rec['srcId'];
+                $props = $rec['props'];
                 fwrite($fh, json_encode(['srcId' => $srcId, 'label' => $label, 'props' => $props]) . "\n");
                 $rows[] = ['srcId' => $srcId, 'props' => $props];
             }
 
-            $written = $this->runOn('target',
+            $written = $this->cypher('target',
                 "UNWIND \$rows AS row
                  MERGE (n:`$label` {_migrated_from_id: row.srcId})
                  SET n += row.props
@@ -178,7 +243,7 @@ class CopyLmsPalCommand extends Command
                 ['rows' => $rows]
             );
             foreach ($written as $rec) {
-                $this->idMap[(int) $rec->get('srcId')] = (int) $rec->get('newId');
+                $this->idMap[(int) $rec['srcId']] = (int) $rec['newId'];
             }
 
             $copied += count($rows);
@@ -188,11 +253,29 @@ class CopyLmsPalCommand extends Command
         fclose($fh);
         $this->newLine();
 
-        $targetCount = (int) $this->runOn('target', "MATCH (n:`$label`) RETURN count(n) AS c", [])->first()->get('c');
+        $targetCount = (int) $this->cypher('target', "MATCH (n:`$label`) RETURN count(n) AS c")[0]['c'];
         $this->line(sprintf('  %-20s source=%s  target=%s%s', $label, number_format($sourceCount), number_format($targetCount),
             $sourceCount !== $targetCount ? '  <fg=red>MISMATCH</>' : ''));
 
         return ['source' => $sourceCount, 'target' => $targetCount];
+    }
+
+    /** Rebuild idMap entries for a label already fully present in target, with no source read. */
+    private function populateIdMapFromTarget(string $label, int $batch): void
+    {
+        $skip = 0;
+        while (true) {
+            $page = $this->cypher('target',
+                "MATCH (n:`$label`) WHERE n._migrated_from_id IS NOT NULL "
+                . 'RETURN n._migrated_from_id AS srcId, id(n) AS newId ORDER BY id(n) SKIP $skip LIMIT $limit',
+                ['skip' => $skip, 'limit' => $batch]
+            );
+            if (count($page) === 0) break;
+            foreach ($page as $rec) {
+                $this->idMap[(int) $rec['srcId']] = (int) $rec['newId'];
+            }
+            $skip += $batch;
+        }
     }
 
     /**
@@ -210,30 +293,30 @@ class CopyLmsPalCommand extends Command
         $summary = [];
 
         while (true) {
-            $page = $this->runOn('source',
+            $page = $this->cypher('source',
                 'MATCH (a)-[r]->(b)
                  WHERE any(l IN labels(a) WHERE l IN $labels) AND any(l IN labels(b) WHERE l IN $labels)
                  RETURN id(a) AS fromId, type(r) AS relType, id(b) AS toId, properties(r) AS props
                  ORDER BY id(r) SKIP $skip LIMIT $limit',
                 ['labels' => self::SCOPE_LABELS, 'skip' => $skip, 'limit' => $batch]
             );
-            if ($page->count() === 0) break;
+            if (count($page) === 0) break;
 
             $byType = [];
             foreach ($page as $rec) {
-                $fromId = (int) $rec->get('fromId');
-                $toId = (int) $rec->get('toId');
+                $fromId = (int) $rec['fromId'];
+                $toId = (int) $rec['toId'];
                 if (!isset($this->idMap[$fromId], $this->idMap[$toId])) {
                     continue; // endpoint was not copied — should not happen given the WHERE clause above
                 }
-                $relType = $rec->get('relType');
-                $props = $rec->get('props')->toArray();
+                $relType = $rec['relType'];
+                $props = $rec['props'];
                 fwrite($fh, json_encode(['fromId' => $fromId, 'type' => $relType, 'toId' => $toId, 'props' => $props]) . "\n");
                 $byType[$relType][] = ['from' => $this->idMap[$fromId], 'to' => $this->idMap[$toId], 'props' => $props];
             }
 
             foreach ($byType as $relType => $rows) {
-                $this->runOn('target',
+                $this->cypher('target',
                     "UNWIND \$rows AS row
                      MATCH (a) WHERE id(a) = row.from
                      MATCH (b) WHERE id(b) = row.to
@@ -257,39 +340,81 @@ class CopyLmsPalCommand extends Command
         return $summary;
     }
 
-    private function client(?string $uri, ?string $username, ?string $password, string $alias): ClientInterface
+    /**
+     * PHP cannot distinguish an empty map from an empty list — both are just `[]` — so an
+     * empty `properties(r)` (any structural relationship with no properties, e.g. BELONGS_TO)
+     * round-trips through json_encode as `[]` and Neo4j rejects it: "Expected row.props to be
+     * a map, but it was List{}". Recursively force every empty array to an object so it
+     * serializes as `{}`; non-empty arrays keep list-vs-map exactly as PHP already has them.
+     */
+    private function jsonSafe(mixed $value): mixed
     {
-        return ClientBuilder::create()
-            ->withDriver($alias, $uri, Authenticate::basic((string) $username, (string) $password))
-            ->build();
+        if (!is_array($value)) return $value;
+        if ($value === []) return (object) [];
+        $out = [];
+        foreach ($value as $k => $v) { $out[$k] = $this->jsonSafe($v); }
+        return array_is_list($value) ? $out : (object) $out;
     }
 
     /**
-     * Bolt drops occasionally over a long transfer (observed here: "Undefined property
-     * StreamSocket::$stream" surfacing from a reset socket during disconnect()) — the same
-     * failure mode `LoadCommand`/`CypherRunCommand` already guard against. Every statement
-     * this command sends is either a plain MATCH (source) or an idempotent MERGE (target),
-     * so replaying after reconnecting is always safe.
+     * Run one Cypher statement over the HTTP transaction API (commit-immediately, single
+     * statement) and return its rows as plain associative arrays (column => value).
+     *
+     * Retries a handful of times on a transport-level failure (timeout, connection reset) —
+     * observed far less often over HTTP than Bolt ever managed here, but cheap insurance.
+     * A Neo4j-level error (bad Cypher, constraint violation) is NOT retried — it throws
+     * immediately, since retrying an identical bad statement can't succeed.
+     *
+     * @return array<int, array<string, mixed>>
      */
-    private function runOn(string $which, string $cypher, array $params, int $attempts = 10)
+    private function cypher(string $which, string $statement, array $params = [], int $attempts = 5): array
     {
+        $conn = $which === 'source' ? $this->sourceConn : $this->targetConn;
+        $url = rtrim($conn['http_uri'], '/') . '/db/neo4j/tx/commit';
+
         for ($i = 1; ; $i++) {
             try {
-                return ($which === 'source' ? $this->source : $this->target)->run($cypher, $params);
+                $response = Http::withBasicAuth($conn['username'], $conn['password'])
+                    ->timeout(60)
+                    ->asJson()
+                    ->post($url, [
+                        'statements' => [[
+                            'statement' => $statement,
+                            'parameters' => $this->jsonSafe($params),
+                        ]],
+                    ]);
+
+                if ($response->failed()) {
+                    throw new \RuntimeException("HTTP {$response->status()} from $which: " . substr($response->body(), 0, 300));
+                }
+
+                $json = $response->json();
+                $errors = $json['errors'] ?? [];
+                if ($errors) {
+                    // A Cypher-level error — retrying the exact same statement would just fail
+                    // the same way, so this is the one case runOn-style retrying never helped.
+                    throw new \RuntimeException('Neo4j error from ' . $which . ': ' . json_encode($errors));
+                }
+
+                $result = $json['results'][0] ?? ['columns' => [], 'data' => []];
+                $columns = $result['columns'];
+                $rows = [];
+                foreach ($result['data'] as $entry) {
+                    $rows[] = array_combine($columns, $entry['row']);
+                }
+
+                if ($i > 1) { $this->output->write("<fg=green>OK({$i})</> "); }
+                return $rows;
+            } catch (\RuntimeException $e) {
+                // Cypher-level error (not a transport failure) — fail immediately, don't retry.
+                if (str_starts_with($e->getMessage(), 'Neo4j error')) throw $e;
+                if ($i >= $attempts) throw $e;
+                $this->output->write("<fg=yellow>r{$i}</> ");
+                usleep(500000 * min($i, 4));
             } catch (\Throwable $e) {
                 if ($i >= $attempts) throw $e;
-                $this->output->write('<fg=yellow>r</>');
-                // Scales up to 6s by the later attempts — long enough to ride out a short-lived
-                // rate-limit/ban on the remote side (observed: repeated resets clustered right
-                // around the same point, not one-off blips), not just a network hiccup.
-                usleep(1000000 * min($i, 6));
-                try {
-                    $conn = $which === 'source' ? $this->sourceConn : $this->targetConn;
-                    $rebuilt = $this->client($conn['uri'], $conn['username'], $conn['password'], $which);
-                    if ($which === 'source') { $this->source = $rebuilt; } else { $this->target = $rebuilt; }
-                } catch (\Throwable $ignored) {
-                    // retried again next loop
-                }
+                $this->output->write("<fg=yellow>r{$i}</> ");
+                usleep(500000 * min($i, 4));
             }
         }
     }
