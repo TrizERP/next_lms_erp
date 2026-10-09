@@ -608,7 +608,7 @@ class ApiLmsCourseController extends Controller
         return $name;
     }
 
-    private function getChapterContentCategories($chapter_id, $subject_id, $standard_id, $sub_institute_id, ?string $source = null): array
+    private function getChapterContentCategories($chapter_id, $subject_id, $standard_id, $sub_institute_id, ?string $source = null, ?array $callerIdentity = null): array
     {
         $getIsLms = DB::table('school_setup')
             ->where('Id', $sub_institute_id)
@@ -698,6 +698,25 @@ class ApiLmsCourseController extends Controller
                 ->apply($h5pAssets, $sub_institute_id, 'h5p');
         }
 
+        // Prayogshala: practical / experiment activities, merged in exactly like H5P above
+        // so they appear under "All content" and under their own tab from the same
+        // response - nothing is copied into content_master and the frontend aggregates
+        // nothing. The institute comes from the VERIFIED token, never from the request
+        // body this route also accepts; with no valid token there are no rows. A learner
+        // token sees published activities only. Uploaded/Generated source views are about
+        // files, so authored activities are left out of them.
+        if ($callerIdentity !== null && ! in_array(trim((string) $source), array_merge(self::GENERATED_CONTENT_SOURCES, ['Uploaded']), true)) {
+            $prayogshala = app(\App\Services\lms\Prayogshala\PrayogshalaService::class);
+            $chapterRow = $prayogshala->visibleChapter((int) $chapter_id, $callerIdentity['tenant']);
+            if ($chapterRow) {
+                $content_by_category[\App\Services\lms\Prayogshala\PrayogshalaService::CATEGORY] = $prayogshala->assetsForChapter(
+                    $chapterRow,
+                    $callerIdentity['tenant'],
+                    $callerIdentity['is_student']
+                );
+            }
+        }
+
         return $content_by_category;
     }
 
@@ -746,7 +765,8 @@ class ApiLmsCourseController extends Controller
             $chapter->subject_id,
             $chapter->standard_id,
             $sub_institute_id,
-            $request->input('source')
+            $request->input('source'),
+            app(\App\Services\lms\Prayogshala\PrayogshalaService::class)->identityFromToken($request)
         );
 
         return response()->json([
