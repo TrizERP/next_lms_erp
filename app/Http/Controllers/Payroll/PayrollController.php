@@ -361,7 +361,7 @@ class PayrollController extends Controller
         $res['allowance'] = $allowance;
         $res['years'] = Helpers::getPairYears();
 
-        $res['salaryStructure'] = EmployeeSalaryStructure::join('tbluser as u',function($join){
+        $res['salaryStructure'] = EmployeeSalaryStructure::join('tbluser as u',function($join) use($year){
             $join->on('u.id','=','employee_salary_structures.employee_id')->where('u.status',1)->where('employee_salary_structures.year',$year); // 23-04-24 by uma
         })
         ->join('hrms_departments as hd',function($join){
