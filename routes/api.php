@@ -670,8 +670,11 @@ Route::middleware(['api.session', 'staff.only', 'throttle.qgen'])->group(functio
 Route::middleware(['api.session'])->prefix('lms/prayogshala')->group(function () {
     $c = \App\Http\Controllers\api\lms\PrayogshalaApiController::class;
     Route::match(['get', 'post'], '/', [$c, 'index']);
+    Route::match(['get', 'post'], 'coverage', [$c, 'coverage']);
     Route::get('{id}', [$c, 'show'])->whereNumber('id');
     Route::middleware(['lms.auth', 'perm:lms.content,create'])->group(function () use ($c) {
+        // Spends an AI call: a per-user allowance, like question generation.
+        Route::post('generate', [$c, 'generate'])->middleware('throttle:20,1');
         Route::post('store', [$c, 'store']);
         Route::post('{id}/update', [$c, 'update'])->whereNumber('id');
         Route::post('{id}/delete', [$c, 'destroy'])->whereNumber('id');

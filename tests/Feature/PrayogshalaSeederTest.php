@@ -63,6 +63,7 @@ class PrayogshalaSeederTest extends TestCase
             $t->string('name');
         });
         (require base_path('database/migrations/2026_10_08_100000_create_lms_prayogshala_activity_table.php'))->up();
+        (require base_path('database/migrations/2026_10_09_100000_add_generation_tracking_to_lms_prayogshala_activity_table.php'))->up();
 
         DB::table('school_setup')->insert([['Id' => 1, 'is_Lms' => 'Y'], ['Id' => 7, 'is_Lms' => 'Y'], ['Id' => 8, 'is_Lms' => 'N']]);
         DB::table('standard')->insert([['id' => 1, 'name' => '9'], ['id' => 2, 'name' => '10']]);
