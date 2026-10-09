@@ -1044,3 +1044,27 @@ Route::prefix('v1')->group(function () {
     Route::get('tags', [\App\Http\Controllers\api\v1\DocumentController::class, 'tags']);
     Route::get('audit', [\App\Http\Controllers\api\v1\DocumentController::class, 'audit']);
 });
+
+// ------------------------------------------------------------------
+// Capture Class Attendance via photo (Next.js). Stateless counterpart of
+// front_desk\classFaceAttendanceController; the Blade routes are unchanged.
+// Staff only - students/parents get 403.
+// ------------------------------------------------------------------
+Route::middleware(['api.session', 'staff.only'])->prefix('face-attendance')->group(function () {
+    Route::match(['GET', 'POST'], 'class-options', [\App\Http\Controllers\api\FaceAttendanceApiController::class, 'classOptions']);
+    Route::post('capture', [\App\Http\Controllers\api\FaceAttendanceApiController::class, 'capture']);
+    Route::post('save', [\App\Http\Controllers\api\FaceAttendanceApiController::class, 'save']);
+});
+
+// ------------------------------------------------------------------
+// Capture Photo (student reference photos for face attendance, Next.js).
+// Stateless counterpart of front_desk\studentFaceAttendanceController; the Blade
+// routes are unchanged. Students may list/add their own; search and delete are
+// admin-only, enforced in the controller.
+// ------------------------------------------------------------------
+Route::middleware('api.session')->prefix('capture-photo')->group(function () {
+    Route::match(['GET', 'POST'], 'list', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'index']);
+    Route::match(['GET', 'POST'], 'students', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'searchStudents']);
+    Route::post('store', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'store']);
+    Route::post('delete', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'destroy']);
+});
