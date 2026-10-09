@@ -13,6 +13,7 @@ use App\Services\StudyDeck\ClaudeCliCompleter;
 use App\Services\StudyDeck\Contracts\Completer;
 use App\Services\StudyDeck\StudyDeckPdfRenderer;
 use App\Services\StudyDeck\StudyDeckPublisher;
+use App\Services\StudyDeck\StudyDeckQuestions;
 use App\Services\StudyDeck\StudyDeckService;
 use App\Services\StudyDeck\StudyImageStores;
 use Illuminate\Support\Facades\DB;
@@ -426,7 +427,7 @@ class ContentGenerationService
                 // `refresh_pdf` replaces a PDF made by an older layout. The new one is rendered completely BEFORE the
                 // stored one is touched, and the object is replaced in a single put, so a failure leaves the old PDF.
                 if (!$disk->exists($pdfPath) || !empty($input['refresh_pdf'])) {
-                    $pdf = $this->renderStudyDeckPdf($prepared['deck']);
+                    $pdf = $this->renderStudyDeckPdf($prepared['deck'], ['content_id' => (int) $existing->id]);
                     if ($pdf === '' || !str_starts_with($pdf, '%PDF-')) {
                         throw new \RuntimeException('the PDF came out empty');
                     }
@@ -523,11 +524,98 @@ class ContentGenerationService
      *
      * @param array<string,mixed> $deck
      */
-    protected function renderStudyDeckPdf(array $deck): string
+    protected function renderStudyDeckPdf(array $deck, array $options = []): string
     {
-        $html = (new StudyDeckPdfRenderer($this->studyDeckPublisher()->baseUrl()))->html($deck, $this->generatedContentCss());
+        $base = $this->studyDeckPublisher()->baseUrl();
+        $disk = Storage::disk('digitalocean');
+        // Stored pictures are read from the store (not fetched over the network) when a hotspot diagram gets its numbered markers.
+        $bytes = function (string $url) use ($disk, $base): ?string {
+            $path = substr($url, strlen($base));
 
-        return (string) $this->renderHtmlToPdf($html);
+            return $path !== '' && $disk->exists($path) ? (string) $disk->get($path) : null;
+        };
+        $renderer = new StudyDeckPdfRenderer($base, $bytes, base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf'));
+        $html = $renderer->html($deck, $this->generatedContentCss(), [
+            'variant' => $options['variant'] ?? StudyDeckPdfRenderer::REVISION,
+            'questions' => $this->loadStudyDeckQuestions(StudyDeckQuestions::idsIn($deck)),
+            'link_base' => $this->studyDeckLinkBase($deck),
+            'content_id' => $options['content_id'] ?? null,
+        ]);
+
+        $title = StudyDeckPdfRenderer::runningTitle($deck);
+        $subject = StudyDeckPdfRenderer::runningSubject($deck);
+
+        return $this->renderHtmlToPdf($html, function ($dompdf) use ($title, $subject): void {
+            // A running header and footer with the page number, on every page but the cover.
+            $dompdf->getCanvas()->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) use ($title, $subject): void {
+                if ($pageNumber === 1) {
+                    return;
+                }
+                $font = $fontMetrics->getFont('DejaVu Sans', 'normal');
+                $bold = $fontMetrics->getFont('DejaVu Sans', 'bold');
+                $w = $canvas->get_width();
+                $h = $canvas->get_height();
+                $ink = [0.26, 0.22, 0.79];
+                $grey = [0.39, 0.45, 0.55];
+                $fit = function (string $text, $f, float $size, float $max) use ($fontMetrics): string {
+                    while (mb_strlen($text) > 4 && $fontMetrics->getTextWidth($text, $f, $size) > $max) {
+                        $text = rtrim(mb_substr($text, 0, -2)) . '…';
+                    }
+
+                    return $text;
+                };
+                $canvas->line(31.5, 38, $w - 31.5, 38, [0.78, 0.82, 0.99], 0.8);
+                $canvas->text(31.5, 26, $fit($title, $bold, 8, $w - 63 - 140), $bold, 8, $ink);
+                $canvas->text($w - 31.5 - $fontMetrics->getTextWidth($subject, $font, 8), 26, $subject, $font, 8, $grey);
+                $canvas->line(31.5, $h - 38, $w - 31.5, $h - 38, [0.89, 0.91, 0.94], 0.8);
+                $canvas->text(31.5, $h - 28, 'Study Deck', $font, 8, $grey);
+                $label = 'Page ' . $pageNumber . ' of ' . $pageCount;
+                $canvas->text($w - 31.5 - $fontMetrics->getTextWidth($label, $font, 8), $h - 28, $label, $font, 8, $grey);
+            });
+        });
+    }
+
+    /**
+     * The student app's address for this deck, or null when it is not configured (the PDF then has no links).
+     *
+     * @param array<string,mixed> $deck
+     */
+    protected function studyDeckLinkBase(array $deck): ?string
+    {
+        $base = rtrim((string) config('claude.study_deck_frontend_url', ''), '/');
+        $chapter = (int) ($deck['chapter']['id'] ?? 0);
+
+        return $base !== '' && $chapter > 0 ? $base . '/student/study-deck/' . $chapter : null;
+    }
+
+    /**
+     * The bank questions a deck points at, normalised. A SELECT only.
+     *
+     * @param array<int,int> $ids
+     * @return array<int,array<string,mixed>>
+     */
+    protected function loadStudyDeckQuestions(array $ids): array
+    {
+        try {
+            return (new StudyDeckQuestions())->load($ids);
+        } catch (Throwable $e) {
+            // The questions are an addition to the lesson; the PDF is still made without them.
+            Log::warning('Study deck PDF: practice questions could not be read', ['error' => $e->getMessage()]);
+
+            return [];
+        }
+    }
+
+    /**
+     * The PDF bytes for a stored deck, drawn now: the revision copy (answers shown) or the practice copy (answers left
+     * out). The default copy is stored; the practice copy is only ever made on request and is not kept.
+     *
+     * @param array<string,mixed> $deck
+     * @param array{variant?:string, content_id?:?int} $options
+     */
+    public function studyDeckPdfBytes(array $deck, array $options = []): string
+    {
+        return $this->renderStudyDeckPdf($deck, $options);
     }
 
     protected function studyDeckPublisher(): StudyDeckPublisher

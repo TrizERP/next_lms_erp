@@ -145,7 +145,7 @@ class StudyDeckPublishTest extends TestCase
                 return true;
             }
 
-            protected function renderStudyDeckPdf(array $deck): string
+            protected function renderStudyDeckPdf(array $deck, array $options = []): string
             {
                 $this->pdfRenders++;
                 $this->pdfDeck = $deck;

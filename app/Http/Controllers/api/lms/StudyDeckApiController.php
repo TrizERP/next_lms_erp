@@ -61,6 +61,28 @@ class StudyDeckApiController extends Controller
 
         $disk = Storage::disk('digitalocean');
         $path = ContentGenerationService::studyDeckPdfPath($row->filename);
+
+        // The practice copy (no answers) is drawn on request from the stored deck and is not kept anywhere.
+        if ($request->input('variant') === 'practice') {
+            try {
+                $deck = json_decode((string) $disk->get(ContentGenerationService::studyDeckSidecarPath($row->filename)), true);
+                if (!is_array($deck) || ($deck['version'] ?? 0) < 3) {
+                    return response()->json(['status_code' => 0, 'message' => 'The stored study deck could not be read.'], 502);
+                }
+                $bytes = app(ContentGenerationService::class)->studyDeckPdfBytes($deck, ['variant' => 'practice', 'content_id' => (int) $row->id]);
+            } catch (Throwable $e) {
+                return response()->json(['status_code' => 0, 'message' => 'The practice copy could not be made.'], 502);
+            }
+
+            return response($bytes, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'attachment; filename="' . preg_replace('/\.pdf$/', '', basename($path)) . '-practice.pdf"',
+                'Content-Length' => (string) strlen($bytes),
+                'Cache-Control' => 'private, max-age=0, must-revalidate',
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
+        }
+
         try {
             if (!$disk->exists($path)) {
                 return response()->json(['status_code' => 0, 'message' => 'This study deck has no PDF yet.'], 404);

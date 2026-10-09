@@ -44,6 +44,13 @@ return [
     'source_label' => env('CLAUDE_CONTENT_SOURCE_LABEL', 'Claude AI'),
 
     /*
+    | The student app's public address, used for the links a study deck's PDF prints beside each interactive
+    | activity (<this>/student/study-deck/<chapter>?content=<id>&slide=<n>). Falls back to the mobile page builder's
+    | frontend address. Empty means the PDF carries no links.
+    */
+    'study_deck_frontend_url' => env('STUDY_DECK_FRONTEND_URL', env('MOBILE_PAGE_BUILDER_FRONTEND_URL', 'https://k12.scholarclone.com')),
+
+    /*
     | Runtime controls.
     |
     | NOTE: temperature / top_p / top_k are deliberately absent. Claude Opus 5

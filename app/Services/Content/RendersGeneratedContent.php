@@ -68,7 +68,7 @@ trait RendersGeneratedContent
     }
 
     /** A finished HTML document to A4 portrait PDF bytes. */
-    protected function renderHtmlToPdf(string $html): string
+    protected function renderHtmlToPdf(string $html, ?callable $afterRender = null): string
     {
         $options = new Options();
         $options->set('isHtml5ParserEnabled', true);
@@ -80,6 +80,10 @@ trait RendersGeneratedContent
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
+        // Lets the caller draw on the rendered pages (a running header, footer and page numbers) before the bytes are made.
+        if ($afterRender) {
+            $afterRender($dompdf);
+        }
 
         return $dompdf->output();
     }
