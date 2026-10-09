@@ -51,6 +51,22 @@ return [
     'study_deck_frontend_url' => env('STUDY_DECK_FRONTEND_URL', env('MOBILE_PAGE_BUILDER_FRONTEND_URL', 'https://k12.scholarclone.com')),
 
     /*
+    | The student app's public/study-deck folder, where `lms:generate-study-deck --export-player` puts a review copy of a
+    | deck. `study-deck:images-migrate` looks here for picture files left by older runs. Unset: the lms_k12 checkout
+    | beside this one, if there is one.
+    */
+    'study_deck_player_dir' => env('STUDY_DECK_PLAYER_DIR'),
+
+    /*
+    | Study documents. For a chapter Claude serves (`chapter_ids` above), a teacher's "Revision Notes", "Remedial
+    | Class" and "Classroom Activity" are written by the study-deck pipeline: from the chapter's own concept data and
+    | question bank, checked before they are stored, stored as one content row with its structured source and a PDF
+    | (App\Services\StudyDeck\Documents). Set false to go back to the earlier single-prompt documents for every chapter
+    | at once, with no deploy.
+    */
+    'study_documents' => (bool) env('CLAUDE_STUDY_DOCUMENTS', true),
+
+    /*
     | Runtime controls.
     |
     | NOTE: temperature / top_p / top_k are deliberately absent. Claude Opus 5

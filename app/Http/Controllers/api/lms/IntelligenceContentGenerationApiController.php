@@ -5,6 +5,7 @@ namespace App\Http\Controllers\api\lms;
 use App\Http\Controllers\Controller;
 use App\Models\lms\chapterModel;
 use App\Services\ContentGenerationService;
+use App\Services\StudyDeck\Documents\DocumentKind;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -42,15 +43,21 @@ class IntelligenceContentGenerationApiController extends Controller
         // "Study deck" is built server-side from the chapter's own data, so the
         // caller sends no prompt for it. Every other type still must.
         $isStudyDeck = strtolower(trim((string) $request->input('content_type'))) === 'study deck';
+        // Revision notes, a remedial class and classroom activities are built the same way (see ContentGenerationService::
+        // studyDocumentKindFor), so they too need no prompt from the caller.
+        $isStudyDocument = (bool) config('claude.study_documents', true) && DocumentKind::fromCategory((string) $request->input('content_type')) !== null;
 
         $validator = Validator::make($request->all(), [
             // Addressed by id, not by name. The legacy route looks the chapter
             // up by chapter_name, which is neither unique by contract nor
             // tenant-scoped.
             'chapter_id' => 'required|integer|min:1',
-            'prompt' => ($isStudyDeck ? 'nullable' : 'required') . '|string|max:400000',
+            'prompt' => (($isStudyDeck || $isStudyDocument) ? 'nullable' : 'required') . '|string|max:400000',
             'content_type' => 'required|string|max:250',
             'concept_id' => 'nullable|integer',
+            // A study document may be limited to some of the chapter's concepts.
+            'concept_ids' => 'nullable|array|max:300',
+            'concept_ids.*' => 'integer|min:1',
             // sub_institute_id and created_by are deliberately NOT accepted
             // from the request; they are injected from the verified session
             // below. `model` and `effort` are absent for the same reason they
@@ -127,6 +134,24 @@ class IntelligenceContentGenerationApiController extends Controller
         }
 
         $contentType = trim($input['content_type']);
+
+        if ($kind = $this->service->studyDocumentKindFor($contentType, $chapter->id)) {
+            $result = $this->service->generateStudyDocument($kind, [
+                'chapter' => $chapter,
+                'chapter_name' => $chapter->chapter_name,
+                'grade_id' => $gradeId,
+                'concept_id' => null,
+                // Only concepts of THIS chapter are used: the pipeline drops any other id, and refuses a request left with none.
+                'concept_ids' => array_map('intval', (array) ($input['concept_ids'] ?? [])),
+                'sub_institute_id' => $subInstituteId,
+                'syear' => $request->session()->get('syear') ?? $chapter->syear,
+                'created_by' => (int) $request->session()->get('user_id'),
+                'user_profile_name' => $request->input('user_profile_name'),
+            ]);
+
+            return response()->json($result['body'], $result['http']);
+        }
+
         $normalized = strtolower(str_replace(['-', ' '], '_', $contentType));
         $isPresentation = in_array($normalized, ['presentation', 'teacher_training_presentation'], true);
 

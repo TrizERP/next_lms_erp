@@ -2,130 +2,139 @@
 
 namespace App\Services\StudyDeck;
 
-use Illuminate\Contracts\Filesystem\Filesystem;
-use Illuminate\Support\Facades\Storage;
-
 /**
- * Turns a reviewed study-deck bundle into something that can be stored: every picture in the
- * shared object store, and a deck whose pictures are referenced by that store and nothing else.
+ * Turns a reviewed study-deck bundle into something that can be stored: every picture in the database,
+ * and a deck whose pictures are referenced by that store and nothing else.
  *
- * FILES ONLY. This class never touches the database (the content_master row is
- * ContentGenerationService's job), so what it does can be tested, dry-run and cleaned up without one.
+ * It never touches content_master (that is ContentGenerationService's job) and never writes a file or an
+ * object-store key. The only thing it writes is a picture into `study_deck_images`, through StudyDeckImages.
  *
  * Pictures
- *   There is no media table in this application: content pictures live in the DigitalOcean Spaces
- *   disk and are referenced by URL (the same disk and `public/lms_content_file/` prefix as every
- *   other content file, and the only host the PPTX/PDF renderers accept for <img>). So a picture is
- *   "registered" by being stored there under a name made from its own hash:
+ *   A deck made by the current pipeline already refers to its pictures by `study-deck-image:<id>`: they were
+ *   stored while the deck was generated. Publishing confirms each one is there and that the deck's school may
+ *   see it. A bundle written before that (its deck says `images/<name>` and the file sits in the bundle's
+ *   folder) is brought in here: the file is stored, the reference replaces the path in the deck and in the
+ *   presentation, and the folder is not needed again.
  *
- *     public/lms_content_file/studydeck/<sha1>.<ext>
- *
- *   The hash name is the idempotency rule: the same picture is stored once however many times, and
- *   by however many decks, it is published. Everything else that would be a media row (source page,
- *   licence, creator, attribution, alt text, size, type) is already in the deck's own image record and
- *   is kept; the deck also gets an `assets` map and each image an `asset_id`.
+ *   Everything else that would be a media row (source page, licence, creator, attribution, alt text) is already
+ *   in the deck's own image record and is kept; the deck also gets an `assets` map (id, checksum, type, size,
+ *   dimensions) and each image an `asset_id`.
  *
  * Failure safety
- *   Nothing is trusted until it is read back: each stored object must exist and have the size that
- *   was sent. Any problem throws, and `$created` (the objects THIS run created) can be removed with
- *   `cleanup()`, so a failed publish leaves no orphan.
+ *   A picture brought in from a bundle is read back from the database (size and checksum) before the deck is
+ *   allowed to point at it. Any problem throws, and the pictures THIS run stored for the first time can be
+ *   removed with `cleanup()` (only those no deck uses), so a failed publish leaves no orphan.
  */
 class StudyDeckPublisher
 {
-    public const IMAGE_DIR = 'public/lms_content_file/studydeck';
+    /**
+     * Where a stored item keeps the parts that can carry a picture: a study deck's `slides`, and a study document's
+     * (revision notes, remedial class, classroom activities) `sections`. Both name the picture the same way (`image`).
+     */
+    private const PARTS = ['slides', 'sections'];
 
-    private const MIME_EXT = ['image/png' => 'png', 'image/jpeg' => 'jpg', 'image/webp' => 'webp'];
+    /** What a bundle picture is called in a dry run, when it has no id yet. */
+    private const PENDING = '~^study-deck-image:new-[0-9a-f]{12}$~';
 
-    /** @var array<int,string> object keys this instance created (and therefore may remove again) */
+    /** @var array<int,int> ids of the pictures this instance stored for the first time (and so may remove again) */
     private array $created = [];
 
-    public function __construct(private readonly Filesystem $disk, private readonly ?string $baseUrl = null)
+    public function __construct(private readonly StudyDeckImages $images, private readonly int $tenant)
     {
     }
 
-    public static function make(): self
+    public static function make(int $tenant): self
     {
-        return new self(Storage::disk('digitalocean'));
+        return new self(new StudyDeckImages(), $tenant);
     }
 
-    /** The public base every stored picture's URL must start with, e.g. https://bucket.region.digitaloceanspaces.com/ */
-    public function baseUrl(): string
-    {
-        // url('') is rejected by the S3 driver (empty key), so take the prefix of a real key's URL.
-        return rtrim($this->baseUrl ?? substr($this->disk->url('x'), 0, -1), '/') . '/';
-    }
-
-    /** @return array<int,string> */
+    /** @return array<int,int> */
     public function created(): array
     {
         return $this->created;
     }
 
     /**
-     * @param array<string,mixed> $deck SlideHtmlRenderer deck
-     * @param string|null $imageDir folder holding the bundle's `images/<name>` files; null when the deck
+     * @param array<string,mixed> $deck SlideHtmlRenderer deck (or a study document)
+     * @param string|null $imageDir folder holding a legacy bundle's `images/<name>` files; null when the deck
      *                              already refers to stored pictures
-     * @param bool $write false for a dry run: nothing is uploaded, missing pictures are only reported
+     * @param bool $write false for a dry run: nothing is stored, bundle pictures are only checked
      * @return array{deck:array<string,mixed>, html:string, assets:array<string,array<string,mixed>>, uploaded:array<int,string>, reused:array<int,string>, missing:array<int,string>}
      */
     public function prepare(array $deck, string $html, ?string $imageDir, bool $write = true): array
     {
         $assets = [];
-        $uploaded = [];
+        $stored = [];
         $reused = [];
         $missing = [];
         $rewrites = [];
 
-        foreach ($deck['slides'] as $i => $slide) {
-            $image = $slide['image'] ?? null;
-            if (!is_array($image) || empty($image['url'])) {
-                continue;
-            }
+        foreach (self::PARTS as $part) {
+            foreach ($deck[$part] ?? [] as $i => $slide) {
+                $image = $slide['image'] ?? null;
+                if (!is_array($image) || empty($image['url'])) {
+                    continue;
+                }
 
-            $url = (string) $image['url'];
-            [$asset, $how] = $this->resolve($url, $image, $imageDir, $write);
-            $key = $asset['sha1'] ?? $asset['path'];
-            if (($asset['missing'] ?? false) === true) {
-                $missing[$asset['path']] = $asset['path'];
-            } elseif (!isset($assets[$key])) {
-                $assets[$key] = $asset;
-                $how === 'uploaded' ? $uploaded[] = $asset['path'] : $reused[] = $asset['path'];
-            }
+                $url = (string) $image['url'];
+                [$asset, $how] = $this->resolve($url, $image, $deck, $imageDir, $write);
+                if (($asset['missing'] ?? false) === true) {
+                    $missing[$url] = $url;
+                    continue;
+                }
 
-            $deck['slides'][$i]['image']['url'] = $asset['url'];
-            $deck['slides'][$i]['image']['asset_id'] = $key;
-            $rewrites[$url] = $asset['url'];
+                $key = $asset['sha256'];
+                if (!isset($assets[$key])) {
+                    $assets[$key] = $asset;
+                    $how === 'stored' ? $stored[] = $asset['ref'] : $reused[] = $asset['ref'];
+                }
+
+                $deck[$part][$i]['image']['url'] = $asset['ref'];
+                $deck[$part][$i]['image']['asset_id'] = $key;
+                $rewrites[$url] = $asset['ref'];
+            }
         }
 
-        // The picture keys are hashes of the picture, so the map is stable and sorted.
+        // The keys are checksums of the pictures, so the map is stable and sorted.
         ksort($assets);
         $deck['assets'] = $assets;
 
         foreach ($rewrites as $from => $to) {
-            $html = str_replace('src="' . htmlspecialchars($from, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"', 'src="' . $to . '"', $html);
+            if ($from !== $to) {
+                $html = str_replace('src="' . htmlspecialchars($from, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '"', 'src="' . $to . '"', $html);
+            }
         }
 
-        $this->assertNoLocalReferences($deck, $html);
+        $this->assertNoLocalReferences($deck, $html, !$write);
 
-        return ['deck' => $deck, 'html' => $html, 'assets' => $assets, 'uploaded' => $uploaded, 'reused' => $reused, 'missing' => array_values($missing)];
+        return ['deck' => $deck, 'html' => $html, 'assets' => $assets, 'uploaded' => $stored, 'reused' => $reused, 'missing' => array_values($missing)];
     }
 
     /**
-     * One picture: either a bundle file to store, or a picture that is already stored.
+     * The ids of the stored pictures a prepared deck uses.
+     *
+     * @param array<string,mixed> $prepared the result of prepare()
+     * @return array<int,int>
+     */
+    public static function imageIds(array $prepared): array
+    {
+        return array_values(array_filter(array_map(fn ($a) => (int) ($a['image_id'] ?? 0), $prepared['assets'])));
+    }
+
+    /**
+     * One picture: either a stored picture to confirm, or a bundle file to store.
      *
      * @param array<string,mixed> $image
-     * @return array{0:array<string,mixed>,1:string} the asset record, and 'uploaded' | 'reused'
+     * @param array<string,mixed> $deck
+     * @return array{0:array<string,mixed>,1:string} the asset record, and 'stored' | 'reused'
      */
-    private function resolve(string $url, array $image, ?string $imageDir, bool $write): array
+    private function resolve(string $url, array $image, array $deck, ?string $imageDir, bool $write): array
     {
-        // Already a stored picture: confirm it is really there rather than trusting the string.
-        if (str_starts_with($url, $this->baseUrl())) {
-            $path = substr($url, strlen($this->baseUrl()));
-            if (!$this->disk->exists($path)) {
-                return [['path' => $path, 'url' => $url, 'missing' => true], 'reused'];
-            }
+        // Already a stored picture: confirm it is really there, and that this school may use it.
+        if (($id = StudyDeckImages::idFromRef($url)) !== null) {
+            $meta = $this->images->visibleMeta($id, $this->tenant);
 
-            return [$this->record($path, $url, (string) ($image['sha1'] ?? ''), (int) $this->disk->size($path), $image), 'reused'];
+            return $meta === null ? [['ref' => $url, 'missing' => true], 'reused'] : [$this->record($meta), 'reused'];
         }
 
         if (preg_match('~^(?:[a-z][a-z0-9+.-]*:|/|[A-Za-z]:)~i', $url) || str_contains($url, '..') || str_contains($url, '\\')) {
@@ -135,57 +144,59 @@ class StudyDeckPublisher
             throw new \RuntimeException("Image \"$url\" is a bundle file but no bundle folder was given.");
         }
 
-        // Bundle layout: the deck says `images/<name>`, the file is `<imageDir>/<name>`.
+        // Legacy bundle layout: the deck says `images/<name>`, the file is `<imageDir>/<name>`.
         $file = rtrim($imageDir, '/\\') . '/' . basename($url);
         $bytes = is_file($file) ? (string) file_get_contents($file) : '';
         if ($bytes === '') {
             throw new \RuntimeException("Image file {$file} is missing or empty.");
         }
-
-        $sha = sha1($bytes);
-        if (!empty($image['sha1']) && $image['sha1'] !== $sha) {
+        if (!empty($image['sha1']) && $image['sha1'] !== sha1($bytes)) {
             throw new \RuntimeException("Image {$url} does not match the hash the deck recorded for it; the bundle is inconsistent.");
         }
-        $info = @getimagesizefromstring($bytes);
-        $mime = (string) ($info['mime'] ?? '');
-        if (!isset(self::MIME_EXT[$mime])) {
-            throw new \RuntimeException("Image {$url} is not a PNG, JPEG or WebP picture (found \"{$mime}\").");
+        try {
+            $info = $this->images->inspect($bytes);
+        } catch (\InvalidArgumentException $e) {
+            throw new \RuntimeException("Image {$url}: " . $e->getMessage());
         }
+        $sha256 = hash('sha256', $bytes);
 
-        $path = self::IMAGE_DIR . '/' . $sha . '.' . self::MIME_EXT[$mime];
-        $publicUrl = $this->baseUrl() . $path;
-        $exists = $this->disk->exists($path);
-
-        if (!$exists && !$write) {
-            return [$this->record($path, $publicUrl, $sha, strlen($bytes), $image + ['width' => $info[0] ?? 0, 'height' => $info[1] ?? 0], $mime), 'uploaded'];
-        }
-        if (!$exists) {
-            $this->disk->put($path, $bytes, 'public');
-            $this->created[] = $path;
-            // Read it back: an upload that did not land must not become a deck that points at it.
-            if (!$this->disk->exists($path) || (int) $this->disk->size($path) !== strlen($bytes)) {
-                throw new \RuntimeException("Image {$path} was not stored correctly.");
+        if (!$write) {
+            $existing = $this->images->idForBytes($bytes, $this->tenant);
+            $asset = $this->record(['id' => $existing ?? 0, 'sha256' => $sha256, 'mime' => $info['mime'], 'format' => $info['format'], 'bytes' => strlen($bytes), 'width' => $info['width'], 'height' => $info['height']]);
+            if ($existing === null) {
+                $asset['ref'] = 'study-deck-image:new-' . substr($sha256, 0, 12);
             }
+
+            return [$asset, $existing === null ? 'stored' : 'reused'];
         }
 
-        return [$this->record($path, $publicUrl, $sha, strlen($bytes), $image + ['width' => $info[0] ?? 0, 'height' => $info[1] ?? 0], $mime), $exists ? 'reused' : 'uploaded'];
+        $put = $this->images->put($bytes, $this->tenant, isset($deck['chapter']['id']) ? (int) $deck['chapter']['id'] : null);
+        if ($put['created']) {
+            $this->created[] = $put['id'];
+        }
+        // Read it back: a write that did not land must not become a deck that points at it.
+        if (!$this->images->verify($put['id'], $put['sha256'], $put['bytes'])) {
+            throw new \RuntimeException("Image {$url} was not stored correctly.");
+        }
+
+        return [$this->record($put), $put['created'] ? 'stored' : 'reused'];
     }
 
     /**
-     * @param array<string,mixed> $image the deck's own record of the picture
+     * @param array<string,mixed> $meta id, sha256, mime, format, bytes, width, height
      * @return array<string,mixed>
      */
-    private function record(string $path, string $url, string $sha, int $bytes, array $image, ?string $mime = null): array
+    private function record(array $meta): array
     {
-        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-
         return [
-            'sha1' => $sha !== '' ? $sha : pathinfo($path, PATHINFO_FILENAME),
-            'path' => $path,
-            'url' => $url,
-            'mime' => $mime ?? (array_flip(self::MIME_EXT)[$ext] ?? 'image/jpeg'),
-            'filename' => basename($path),
-            'bytes' => $bytes,
+            'image_id' => (int) $meta['id'],
+            'ref' => StudyDeckImages::ref((int) $meta['id']),
+            'sha256' => (string) $meta['sha256'],
+            'mime' => (string) $meta['mime'],
+            'format' => (string) $meta['format'],
+            'bytes' => (int) $meta['bytes'],
+            'width' => (int) $meta['width'],
+            'height' => (int) $meta['height'],
         ];
     }
 
@@ -193,13 +204,16 @@ class StudyDeckPublisher
      * A deck that works on another machine refers to nothing on this one.
      *
      * @param array<string,mixed> $deck
+     * @param bool $allowPending a dry run, where a bundle picture has no id yet
      */
-    public function assertNoLocalReferences(array $deck, string $html): void
+    public function assertNoLocalReferences(array $deck, string $html, bool $allowPending = false): void
     {
-        foreach ($deck['slides'] as $slide) {
-            $url = (string) ($slide['image']['url'] ?? '');
-            if ($url !== '' && !str_starts_with($url, $this->baseUrl())) {
-                throw new \RuntimeException("Slide {$slide['n']}'s picture \"$url\" is not on the shared store.");
+        foreach (self::PARTS as $part) {
+            foreach ($deck[$part] ?? [] as $slide) {
+                $url = (string) ($slide['image']['url'] ?? '');
+                if ($url !== '' && StudyDeckImages::idFromRef($url) === null && !($allowPending && preg_match(self::PENDING, $url))) {
+                    throw new \RuntimeException(($part === 'slides' ? 'Slide' : 'Section') . " {$slide['n']}'s picture \"$url\" is not a stored picture reference.");
+                }
             }
         }
 
@@ -209,8 +223,8 @@ class StudyDeckPublisher
         if (preg_match('~(?:(?<![A-Za-z0-9])[A-Za-z]:[\\\\/]|\\\\\\\\|/public/study-deck|study-deck/chapter-|storage/app|localhost|127\.0\.0\.1|file://)~i', $text, $m)) {
             throw new \RuntimeException('The deck still refers to a local path or host (' . $m[0] . '); refusing to publish it.');
         }
-        if (preg_match('~src="(?!https://)[^"]*"~i', $html, $m)) {
-            throw new \RuntimeException('The presentation still has a picture that is not on the shared store (' . $m[0] . ').');
+        if (preg_match('~src="(?!study-deck-image:)[^"]*"~i', $html, $m)) {
+            throw new \RuntimeException('The presentation still has a picture that is not a stored picture (' . $m[0] . ').');
         }
     }
 
@@ -223,14 +237,14 @@ class StudyDeckPublisher
         return 'study_deck_' . substr($slug, 0, 80) . '_' . $hash . '.pptx';
     }
 
-    /** Remove the pictures this run created (and no others). Used when a later step failed. */
+    /** Remove the pictures this run stored for the first time, unless a deck uses them. Used when a later step failed. */
     public function cleanup(): void
     {
-        foreach ($this->created as $path) {
+        if ($this->created) {
             try {
-                $this->disk->delete($path);
+                $this->images->deleteUnlinked($this->created);
             } catch (\Throwable) {
-                // Best effort: the deck was never stored, so nothing points at it either way.
+                // Best effort: the deck was never stored, so nothing points at them either way.
             }
         }
         $this->created = [];

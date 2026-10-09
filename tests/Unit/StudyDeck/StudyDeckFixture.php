@@ -5,6 +5,7 @@ namespace Tests\Unit\StudyDeck;
 use App\Services\PAL\Integration\ConceptImageSearchService;
 use App\Services\QuestionGeneration\DragDrop\Contracts\DiagramImageStore;
 use App\Services\StudyDeck\Contracts\Completer;
+use App\Services\StudyDeck\StudyDeckImages;
 
 /** A tiny synthetic chapter. Subject-neutral on purpose: nothing in the code under test knows these names. */
 trait StudyDeckFixture
@@ -249,12 +250,18 @@ trait StudyDeckFixture
         };
     }
 
+    /** A picture store with no database: the same picture is the same reference, as the real store behaves. */
     protected function memoryStore(): DiagramImageStore
     {
         return new class implements DiagramImageStore {
-            public function store(string $bytes, string $mime): string
+            /** @var array<string,int> */
+            private array $ids = [];
+
+            public function store(string $bytes, string $mime, ?string $sourceUrl = null): string
             {
-                return 'images/' . sha1($bytes) . '.png';
+                $this->ids[sha1($bytes)] ??= count($this->ids) + 1;
+
+                return StudyDeckImages::ref($this->ids[sha1($bytes)]);
             }
         };
     }

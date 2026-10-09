@@ -230,6 +230,12 @@ Route::post('lms-chapter-content', [ApiLmsCourseController::class, 'chapterConte
 Route::post('lms-study-deck', [\App\Http\Controllers\api\lms\StudyDeckApiController::class, 'show']);
 // The same deck's classroom PDF, scoped to the chapter, school and content item named in the request.
 Route::post('lms-study-deck/pdf', [\App\Http\Controllers\api\lms\StudyDeckApiController::class, 'pdf']);
+// Study-deck pictures live in the database (study_deck_images). A browser <img> cannot send a token, so the picture is
+// opened by a signed address that StudyDeckImageUrls issues to a caller that already passed the deck's school check;
+// `image-urls` issues the same addresses for a deck the player holds locally (it needs the caller's token).
+Route::post('lms-study-deck/image-urls', [\App\Http\Controllers\api\lms\StudyDeckApiController::class, 'imageUrls']);
+Route::get('study-deck/images/{id}', [\App\Http\Controllers\api\lms\StudyDeckImageController::class, 'show'])
+    ->whereNumber('id')->middleware('signed:relative')->name('study-deck.image');
 Route::post('lms-questions', [ApiLmsCourseController::class, 'getLmsQuestions']);
 Route::post('lms-question-bank', [ApiLmsCourseController::class, 'getQuestionBank']);
 Route::post('lms-question-bank/create', [ApiLmsCourseController::class, 'createQuestionBank']);

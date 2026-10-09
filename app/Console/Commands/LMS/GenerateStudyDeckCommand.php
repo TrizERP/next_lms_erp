@@ -13,10 +13,12 @@ use Illuminate\Console\Command;
 /**
  * Generate a classroom study deck for one chapter and write a REVIEW BUNDLE.
  *
- * By default this only READS the database and writes files under
- * storage/app/study-deck/chapter-<id>/. Nothing reaches content_master or
- * shared storage unless --store is passed, and --store refuses a deck that
- * failed validation. --store hands the bundle it just wrote to
+ * By default this READS the chapter and writes the deck's text files under
+ * storage/app/study-deck/chapter-<id>/, plus the deck's pictures into the
+ * study_deck_images table (they are kept in the database, never as files).
+ * Nothing reaches content_master or the shared object store unless --store is
+ * passed, and --store refuses a deck that failed validation. Pictures of a run
+ * that is never stored are removed by `study-deck:images-prune`. --store hands the bundle it just wrote to
  * `lms:store-study-deck`, so what is stored is exactly what was written here
  * (and can be reviewed first: run without --store, look, then store).
  *
@@ -33,7 +35,7 @@ class GenerateStudyDeckCommand extends Command
         {--min-slides=30}
         {--max-slides=35}
         {--per-concept=4 : most bank questions offered per concept}
-        {--export-player= : copy deck.json and images to this directory so the local student player can load the review bundle (no database or storage writes)}
+        {--export-player= : copy deck.json (picture references only, no picture files) to this directory so the local student player can load the review bundle}
         {--store : on a passing validation, store THIS bundle (see lms:store-study-deck: writes to the DB and shared storage)}';
 
     protected $description = 'Generate a 30-35 slide classroom study deck from a chapter\'s LMS data';
@@ -50,8 +52,9 @@ class GenerateStudyDeckCommand extends Command
 
         try {
             $completer = $this->completer($executor, $content);
-            // Pictures always go into the bundle; storing them in the shared store is lms:store-study-deck's job.
-            $images = StudyImageStores::directory($dir . '/out/images');
+            // Pictures go straight into the database (study_deck_images) and the bundle carries only their
+            // references: a run writes no picture file anywhere. Publishing is lms:store-study-deck's job.
+            $images = StudyImageStores::database($tenant, $chapterId);
             $service = StudyDeckService::make($completer, $images);
 
             $result = $service->generate($chapterId, $tenant, [
@@ -145,28 +148,19 @@ class GenerateStudyDeckCommand extends Command
         file_put_contents($dir . '/out/presentation.html', $r['html']);
     }
 
-    /** Copy the review bundle's deck and images to a folder the local player can serve. Local files only. */
+    /**
+     * Copy the review bundle's deck to a folder the local player can serve.
+     *
+     * Only deck.json: its pictures are `study-deck-image:<id>` references to rows in the database, which the player
+     * turns into addresses through the API. No picture is copied, so nothing accumulates in that folder.
+     */
     private function exportPlayer(string $dir, string $target): void
     {
         $target = rtrim($target, '/\\');
-        if (!is_dir($target . '/images')) {
-            mkdir($target . '/images', 0775, true);
+        if (!is_dir($target)) {
+            mkdir($target, 0775, true);
         }
         copy($dir . '/deck.json', $target . '/deck.json');
-
-        // Copy the pictures this deck uses. Nothing already in the folder is ever deleted.
-        $deck = json_decode((string) file_get_contents($dir . '/deck.json'), true) ?: [];
-        $used = [];
-        foreach ((array) ($deck['slides'] ?? []) as $slide) {
-            if (!empty($slide['image']['url'])) {
-                $used[basename((string) $slide['image']['url'])] = true;
-            }
-        }
-        foreach (array_keys($used) as $name) {
-            if (is_file($dir . '/out/images/' . $name)) {
-                copy($dir . '/out/images/' . $name, $target . '/images/' . $name);
-            }
-        }
-        $this->line('Player fixture: ' . $target);
+        $this->line('Player fixture: ' . $target . '/deck.json');
     }
 }

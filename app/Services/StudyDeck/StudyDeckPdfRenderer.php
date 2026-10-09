@@ -26,7 +26,9 @@ namespace App\Services\StudyDeck;
  * things (a legend of many rows, a long explanation) are left to run over the page. That is the whole pagination
  * rule: no slide-sized block is ever "avoid break", so no page is left mostly empty to protect one.
  *
- * Dompdf has no flexbox or grid, so layout is tables. Only pictures on the shared store ($imageBase) are drawn.
+ * Dompdf has no flexbox or grid, so layout is tables. Only stored pictures (`study-deck-image:<id>` references that
+ * `$imageBytes` can resolve) are drawn, and each is embedded as a data: URI, so the renderer never fetches anything and
+ * leaves no picture file behind.
  */
 class StudyDeckPdfRenderer
 {
@@ -37,20 +39,20 @@ class StudyDeckPdfRenderer
 
     public const PRACTICE = 'practice';
 
-    private const STAGE = [
+    protected const STAGE = [
         'cover' => 'Chapter', 'hook' => 'Introduction', 'objectives' => 'What you will do', 'prior_knowledge' => 'What you already know',
         'concept_intro' => 'Explanation', 'concept_visual' => 'See it', 'worked_example' => 'Worked example', 'relationship' => 'How ideas connect',
         'misconception' => 'Common mistake', 'scenario' => 'Decide', 'recall' => 'Recall', 'practice' => 'Practice', 'application' => 'Use it',
         'summary' => 'Summary', 'concept_map' => 'Big picture', 'challenge' => 'Challenge', 'exit_ticket' => 'Exit ticket',
     ];
 
-    private const HEADING = [
+    protected const HEADING = [
         'hotspots' => 'Explore the diagram', 'scenario' => 'What would you do?', 'reveal' => 'Discover', 'steps' => 'Step by step',
         'timeline' => 'Timeline', 'compare' => 'Compare', 'match' => 'Match', 'order' => 'Put in order',
     ];
 
     /** What the learner does with each kind of activity in the Study Deck. */
-    private const TRY = [
+    protected const TRY = [
         'hotspots' => 'Select each numbered part of the diagram to see what it is.',
         'reveal' => 'Open each card to read its explanation.',
         'steps' => 'Open each step in turn to follow the process.',
@@ -62,24 +64,27 @@ class StudyDeckPdfRenderer
     ];
 
     /** Rows a legend may have and still be kept on one page; longer ones are left to run on. */
-    private const KEEP_ROWS = 5;
+    protected const KEEP_ROWS = 5;
 
     /** About how much text (characters) a table may hold and still be kept on one page. */
-    private const KEEP_CHARS = 600;
+    protected const KEEP_CHARS = 600;
 
-    /** @var callable|null fn(string $url): ?string  raw bytes of a stored picture, for the numbered markers */
-    private $imageBytes;
+    /** @var callable|null fn(string $ref): ?array{bytes:string,mime:string}  a stored picture, ready to embed */
+    protected $imageBytes;
 
-    private string $variant = self::REVISION;
+    /** @var array{0:string,1:?array{bytes:string,mime:string}}|null the last picture read, so a figure and its markers cost one read */
+    private ?array $lastPicture = null;
+
+    protected string $variant = self::REVISION;
 
     /** @var array<int,array<string,mixed>> */
-    private array $questions = [];
+    protected array $questions = [];
 
-    private ?string $linkBase = null;
+    protected ?string $linkBase = null;
 
-    private ?int $contentId = null;
+    protected ?int $contentId = null;
 
-    public function __construct(private readonly string $imageBase, ?callable $imageBytes = null, private readonly ?string $markerFont = null)
+    public function __construct(?callable $imageBytes = null, protected readonly ?string $markerFont = null)
     {
         $this->imageBytes = $imageBytes;
     }
@@ -108,6 +113,12 @@ class StudyDeckPdfRenderer
         return '<!doctype html><html><head><meta charset="utf-8"><style>' . $baseCss . $this->css() . '</style></head><body>' . $body . '</body></html>';
     }
 
+    /** What the contents page calls one numbered part of the document ("Slide 5"). The study documents say "Note", "Unit", "Activity". */
+    protected function unitName(): string
+    {
+        return 'Slide';
+    }
+
     /** What the running header and footer say. */
     public static function runningTitle(array $deck): string
     {
@@ -125,7 +136,7 @@ class StudyDeckPdfRenderer
     // Cover and contents
 
     /** @param array<string,mixed> $deck */
-    private function cover(array $deck): string
+    protected function cover(array $deck): string
     {
         $ch = $deck['chapter'] ?? [];
         $cover = null;
@@ -170,7 +181,7 @@ class StudyDeckPdfRenderer
     }
 
     /** @param array<string,mixed> $deck */
-    private function contents(array $deck): string
+    protected function contents(array $deck): string
     {
         $taughtBy = $deck['taught_by'] ?? [];
         $concepts = $deck['concepts'] ?? [];
@@ -186,7 +197,7 @@ class StudyDeckPdfRenderer
                 }
                 $count++;
                 $slides = $taughtBy[(string) $cid] ?? [];
-                $rows .= '<tr><td class="ct-c">' . $this->e((string) $c['name']) . '</td><td class="ct-s">' . ($slides ? $this->e('Slide ' . implode(', ', $slides)) : '') . '</td></tr>';
+                $rows .= '<tr><td class="ct-c">' . $this->e((string) $c['name']) . '</td><td class="ct-s">' . ($slides ? $this->e($this->unitName() . ' ' . implode(', ', $slides)) : '') . '</td></tr>';
             }
             $blocks[] = ['rows' => $count, 'html' => '<div class="keep"><table class="ct-topic"><tr><td class="ct-no">' . ($i + 1) . '</td><td class="ct-name">' . $this->e((string) ($topic['name'] ?? '')) . '</td></tr></table><table class="ct-rows">' . $rows . '</table></div>'];
         }
@@ -205,7 +216,7 @@ class StudyDeckPdfRenderer
     // One slide
 
     /** @param array<string,mixed> $slide */
-    private function slide(array $deck, array $slide, ?int &$lastTopic): string
+    protected function slide(array $deck, array $slide, ?int &$lastTopic): string
     {
         $c = $slide['content'] ?? [];
         $n = (int) ($slide['n'] ?? 0);
@@ -279,7 +290,7 @@ class StudyDeckPdfRenderer
     }
 
     /** A topic band at the first slide of each topic. Returns '' when the topic has not changed. */
-    private function topicBand(array $deck, array $slide, ?int &$lastTopic): string
+    protected function topicBand(array $deck, array $slide, ?int &$lastTopic): string
     {
         $cid = ($slide['taught_concept_ids'][0] ?? $slide['concept_ids'][0] ?? null);
         $topicId = $cid !== null ? ($deck['concepts'][(string) $cid]['topic_id'] ?? null) : null;
@@ -297,7 +308,7 @@ class StudyDeckPdfRenderer
     }
 
     /** One labelled card. Whole on a page: every card is short. */
-    private function card(string $kind, string $label, string $text): string
+    protected function card(string $kind, string $label, string $text): string
     {
         return '<div class="keep card c-' . $kind . '"><div class="lb lb-' . $kind . '">' . $this->e($label) . '</div><p>' . $this->e($text) . '</p></div>';
     }
@@ -306,7 +317,7 @@ class StudyDeckPdfRenderer
     // Interactions, as static content
 
     /** @param array<string,mixed> $slide */
-    private function interaction(array $slide): string
+    protected function interaction(array $slide): string
     {
         $i = $slide['interaction'] ?? null;
         if (!is_array($i) || empty($i['kind'])) {
@@ -362,7 +373,7 @@ class StudyDeckPdfRenderer
     }
 
     /** @param array<string,mixed> $i */
-    private function intro(array $i): string
+    protected function intro(array $i): string
     {
         $text = trim((string) ($i['intro'] ?? $i['situation'] ?? ''));
         // "Select each quantity..." tells a learner to click; on paper it is noise. A scenario's situation is content and stays.
@@ -374,7 +385,7 @@ class StudyDeckPdfRenderer
     }
 
     /** The panel that points at this slide in the Study Deck. */
-    private function activityNote(array $slide, string $instruction): string
+    protected function activityNote(array $slide, string $instruction): string
     {
         $url = $this->linkTo((int) $slide['n']);
 
@@ -382,7 +393,7 @@ class StudyDeckPdfRenderer
             . ($url !== null ? '<div class="act-u"><a href="' . $this->e($url) . '">' . $this->e($url) . '</a></div>' : '') . '</td></tr></table></div>';
     }
 
-    private function linkTo(int $slide): ?string
+    protected function linkTo(int $slide): ?string
     {
         if ($this->linkBase === null) {
             return null;
@@ -398,7 +409,7 @@ class StudyDeckPdfRenderer
      * @param array<int,string> $rows
      * @return array<int,string>
      */
-    private function tableOf(string $header, array $rows, string $class = 'lgd'): array
+    protected function tableOf(string $header, array $rows, string $class = 'lgd'): array
     {
         $table = fn (array $r, bool $withHeader) => '<table class="' . $class . '">' . ($withHeader ? $header : '') . implode('', $r) . '</table>';
         if (count($rows) <= self::KEEP_ROWS) {
@@ -413,7 +424,7 @@ class StudyDeckPdfRenderer
      *
      * @param array<int,array{0:string,1:string}> $rows
      */
-    private function legend(array $rows, string $numberPrefix = ''): array
+    protected function legend(array $rows, string $numberPrefix = ''): array
     {
         $html = [];
         foreach (array_values($rows) as $index => [$label, $text]) {
@@ -424,7 +435,7 @@ class StudyDeckPdfRenderer
     }
 
     /** @param array<int,array<string,mixed>> $items */
-    private function compare(array $items): string
+    protected function compare(array $items): string
     {
         if (!$items) {
             return '';
@@ -439,7 +450,7 @@ class StudyDeckPdfRenderer
      * @param array<string,mixed> $i
      * @return array<int,string> one chunk per decision
      */
-    private function scenario(array $i, bool $revision): array
+    protected function scenario(array $i, bool $revision): array
     {
         $chunks = [];
         foreach (array_values($i['nodes'] ?? []) as $index => $node) {
@@ -470,7 +481,7 @@ class StudyDeckPdfRenderer
     // Practice questions from the bank
 
     /** @param array<string,mixed> $deck */
-    private function practiceCount(array $deck): int
+    protected function practiceCount(array $deck): int
     {
         $n = 0;
         foreach (StudyDeckQuestions::idsIn($deck) as $id) {
@@ -483,7 +494,7 @@ class StudyDeckPdfRenderer
     }
 
     /** @param array<string,mixed> $slide */
-    private function practice(array $deck, array $slide): string
+    protected function practice(array $deck, array $slide): string
     {
         $out = '';
         $shown = [];
@@ -500,11 +511,12 @@ class StudyDeckPdfRenderer
     }
 
     /** @param array<string,mixed> $q */
-    private function question(array $q, string $label, int $slideNo): string
+    protected function question(array $q, string $label, int $slideNo, string $lead = ''): string
     {
         $revision = $this->variant === self::REVISION;
         $choice = !empty($q['options']);
-        $out = '<div class="qc"><div class="keep"><div class="qc-h"><span class="qc-tag">PRACTICE QUESTION</span> ' . $this->e($label) . '</div>'
+        // `$lead` is markup that must travel with the question (a study document's level and hint), kept on its page.
+        $out = '<div class="qc"><div class="keep">' . $lead . '<div class="qc-h"><span class="qc-tag">PRACTICE QUESTION</span> ' . $this->e($label) . '</div>'
             . '<div class="qc-s">' . (new SlideHtmlRenderer())->stem((string) ($q['stem'] ?? '')) . '</div>';
 
         if ($choice) {
@@ -548,11 +560,12 @@ class StudyDeckPdfRenderer
     // Pictures
 
     /** @param array<string,mixed> $slide */
-    private function figure(array $slide): string
+    protected function figure(array $slide): string
     {
         $img = $slide['image'] ?? null;
         $url = (string) ($img['url'] ?? '');
-        if (!is_array($img) || $url === '' || !str_starts_with($url, $this->imageBase)) {
+        $picture = is_array($img) ? $this->picture($url) : null;
+        if ($picture === null) {
             return '';
         }
         // A diagram is a teaching element: as wide as the page allows, in its own proportions. A tall photo is limited in
@@ -564,7 +577,7 @@ class StudyDeckPdfRenderer
         $credit = !$isDiagram ? trim((($img['creator'] ?? '') ?: 'Openverse') . ', ' . ($img['licence'] ?? '')) : '';
         $caption = trim(rtrim((string) ($img['caption'] ?? ''), '.') . ($credit !== '' ? '. ' . $credit : ''));
 
-        $src = $this->markedPicture($slide, $url) ?? $url;
+        $src = $this->markedPicture($slide, $url) ?? 'data:' . $picture['mime'] . ';base64,' . base64_encode($picture['bytes']);
 
         $attribution = '';
         if (!$isDiagram) {
@@ -578,12 +591,31 @@ class StudyDeckPdfRenderer
     }
 
     /**
+     * The stored picture a reference names, ready to embed; null when it is not a stored-picture reference or the
+     * resolver has nothing for it (not found, or not this school's).
+     *
+     * @return array{bytes:string,mime:string}|null
+     */
+    protected function picture(string $url): ?array
+    {
+        if (!$this->imageBytes || StudyDeckImages::idFromRef($url) === null) {
+            return null;
+        }
+        if ($this->lastPicture === null || $this->lastPicture[0] !== $url) {
+            $found = ($this->imageBytes)($url);
+            $this->lastPicture = [$url, is_array($found) && isset($found['bytes'], $found['mime']) && $found['bytes'] !== '' ? $found : null];
+        }
+
+        return $this->lastPicture[1];
+    }
+
+    /**
      * A hotspot diagram with its parts numbered on the picture, so the legend below can be read against it. Done with GD
      * from the stored picture; where that is not possible the plain picture is used.
      *
      * @param array<string,mixed> $slide
      */
-    private function markedPicture(array $slide, string $url): ?string
+    protected function markedPicture(array $slide, string $url): ?string
     {
         $i = $slide['interaction'] ?? null;
         if (!$this->imageBytes || !$this->markerFont || !is_file($this->markerFont) || !is_array($i) || ($i['kind'] ?? '') !== 'hotspots' || empty($i['spots'])) {
@@ -593,7 +625,7 @@ class StudyDeckPdfRenderer
             return null;
         }
         try {
-            $bytes = ($this->imageBytes)($url);
+            $bytes = $this->picture($url)['bytes'] ?? null;
             $im = $bytes ? @imagecreatefromstring($bytes) : false;
             if (!$im) {
                 return null;
@@ -633,7 +665,7 @@ class StudyDeckPdfRenderer
 
     // ---------------------------------------------------------------------------------------------------------
 
-    private function css(): string
+    protected function css(): string
     {
         return <<<'CSS'
 
@@ -760,12 +792,12 @@ p { margin: 0 0 6px; }
 CSS;
     }
 
-    private function norm(string $s): string
+    protected function norm(string $s): string
     {
         return mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', $s)));
     }
 
-    private function e(string $s): string
+    protected function e(string $s): string
     {
         return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }

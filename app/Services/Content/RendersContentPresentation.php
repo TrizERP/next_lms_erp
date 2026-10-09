@@ -2,12 +2,14 @@
 
 namespace App\Services\Content;
 
+use App\Services\StudyDeck\StudyDeckImages;
 use DOMDocument;
 use DOMElement;
 use DOMNode;
 use PhpOffice\PhpPresentation\DocumentLayout;
 use PhpOffice\PhpPresentation\IOFactory;
 use PhpOffice\PhpPresentation\PhpPresentation;
+use PhpOffice\PhpPresentation\Shape\Drawing\Base64;
 use PhpOffice\PhpPresentation\Shape\Placeholder;
 use PhpOffice\PhpPresentation\Shape\RichText;
 use PhpOffice\PhpPresentation\Shape\Table;
@@ -673,14 +675,27 @@ trait RendersContentPresentation
      */
     private function drawFigure(Slide $slide, array $figure, int $x, int $y, int $width, int $height): bool
     {
-        $path = $this->localiseImage((string) $figure['src']);
-        if ($path === null) {
-            return false;
-        }
+        $src = (string) $figure['src'];
 
         try {
-            $shape = $slide->createDrawingShape();
-            $shape->setPath($path, false);
+            if (StudyDeckImages::idFromRef($src) !== null) {
+                // A stored study-deck picture comes out of the database and goes into the file from memory: no download
+                // and no temporary file.
+                $picture = $this->storedPicture($src);
+                if ($picture === null) {
+                    return false;
+                }
+                $shape = new Base64();
+                $shape->setData('data:' . $picture['mime'] . ';base64,' . base64_encode($picture['bytes']));
+                $slide->addShape($shape);
+            } else {
+                $path = $this->localiseImage($src);
+                if ($path === null) {
+                    return false;
+                }
+                $shape = $slide->createDrawingShape();
+                $shape->setPath($path, false);
+            }
             $shape->setName(($figure['alt'] ?? '') !== '' ? (string) $figure['alt'] : 'Figure');
             $shape->setDescription((string) ($figure['alt'] ?? ''));
             $shape->setOffsetX($x)->setOffsetY($y)->setWidth($width)->setHeight($height);
@@ -855,6 +870,22 @@ trait RendersContentPresentation
     // -----------------------------------------------------------------------
     // Helpers
     // -----------------------------------------------------------------------
+
+    /**
+     * A stored study-deck picture, from the resolver the caller installed for this render; null when there is no
+     * resolver (the reference means nothing then) or the picture is not there or not this school's.
+     *
+     * @return array{bytes:string,mime:string}|null
+     */
+    private function storedPicture(string $src): ?array
+    {
+        if (!property_exists($this, 'deckImageResolver') || $this->deckImageResolver === null) {
+            return null;
+        }
+        $picture = ($this->deckImageResolver)($src);
+
+        return is_array($picture) && ($picture['bytes'] ?? '') !== '' && ($picture['mime'] ?? '') !== '' ? $picture : null;
+    }
 
     private function localiseImage(string $src): ?string
     {

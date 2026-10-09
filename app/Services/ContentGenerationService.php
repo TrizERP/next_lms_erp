@@ -11,11 +11,16 @@ use App\Services\Content\RendersGeneratedContent;
 use App\Services\StudyDeck\ClaudeApiCompleter;
 use App\Services\StudyDeck\ClaudeCliCompleter;
 use App\Services\StudyDeck\Contracts\Completer;
+use App\Services\StudyDeck\Documents\DocumentKind;
+use App\Services\StudyDeck\Documents\StudyDocumentPdfRenderer;
+use App\Services\StudyDeck\Documents\StudyDocumentService;
+use App\Services\StudyDeck\StudyDeckImages;
 use App\Services\StudyDeck\StudyDeckPdfRenderer;
 use App\Services\StudyDeck\StudyDeckPublisher;
 use App\Services\StudyDeck\StudyDeckQuestions;
 use App\Services\StudyDeck\StudyDeckService;
 use App\Services\StudyDeck\StudyImageStores;
+use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -38,6 +43,9 @@ class ContentGenerationService
 {
     use RendersContentPresentation;
     use RendersGeneratedContent;
+
+    /** The school whose stored pictures the study-deck render in progress may read (see withStudyDeckImages). */
+    protected ?int $deckImageTenant = null;
 
     /**
      * Output-format instruction only - no pedagogy, no subject matter.
@@ -268,8 +276,10 @@ class ContentGenerationService
         }
 
         try {
-            $result = StudyDeckService::make($completer, StudyImageStores::spaces())
-                ->generate((int) $input['chapter']->id, (int) ($input['sub_institute_id'] ?? 1));
+            // Pictures are stored in the database as they are found; the deck refers to them by reference.
+            $tenant = (int) ($input['sub_institute_id'] ?? 1);
+            $result = StudyDeckService::make($completer, StudyImageStores::database($tenant, (int) $input['chapter']->id))
+                ->generate((int) $input['chapter']->id, $tenant);
         } catch (APIStatusException $e) {
             return $this->fail($this->readableApiError($e), 502);
         } catch (Throwable $e) {
@@ -378,7 +388,50 @@ class ContentGenerationService
      */
     public function publishStudyDeck(array $input, array $deck, string $html, ?string $imageDir, bool $dryRun = false, string $authoredBy = 'study-deck'): array
     {
-        $publisher = $this->studyDeckPublisher();
+        $tenant = (int) ($input['sub_institute_id'] ?? 1);
+
+        // The presentation and the PDF are drawn from pictures read out of the database for this school.
+        return $this->withStudyDeckImages($tenant, fn () => $this->publishStudyDeckNow($input, $deck, $html, $imageDir, $dryRun, $authoredBy));
+    }
+
+    /**
+     * Run a step that draws a deck's pictures (the presentation, the PDF) with those pictures readable: by reference,
+     * from the database, and only the ones this school may see. Nothing is written to disk for them.
+     *
+     * @template T
+     * @param callable():T $step
+     * @return T
+     */
+    protected function withStudyDeckImages(int $tenant, callable $step): mixed
+    {
+        $previous = [$this->deckImageResolver, $this->deckImageTenant];
+        $this->deckImageResolver = Closure::fromCallable($this->studyImageBytes($tenant));
+        $this->deckImageTenant = $tenant;
+
+        try {
+            return $step();
+        } finally {
+            [$this->deckImageResolver, $this->deckImageTenant] = $previous;
+        }
+    }
+
+    /**
+     * Reads a stored picture by its `study-deck-image:<id>` reference: bytes and type, ready to put in a PDF or a
+     * presentation (WebP comes out as PNG), or null when it is not there or not visible to this school.
+     *
+     * @return callable(string):?array{bytes:string,mime:string}
+     */
+    protected function studyImageBytes(int $tenant): callable
+    {
+        $images = new StudyDeckImages();
+
+        return fn (string $ref): ?array => ($id = StudyDeckImages::idFromRef($ref)) !== null ? $images->forDocument($id, $tenant) : null;
+    }
+
+    private function publishStudyDeckNow(array $input, array $deck, string $html, ?string $imageDir, bool $dryRun, string $authoredBy): array
+    {
+        $tenant = (int) ($input['sub_institute_id'] ?? 1);
+        $publisher = $this->studyDeckPublisher($tenant);
 
         try {
             $prepared = $publisher->prepare($deck, $html, $imageDir, !$dryRun);
@@ -390,11 +443,10 @@ class ContentGenerationService
         if ($prepared['missing'] !== []) {
             $publisher->cleanup();
 
-            return $this->fail('The study deck refers to pictures that are not in the shared store: ' . implode(', ', $prepared['missing']), 422);
+            return $this->fail('The study deck refers to pictures that are not stored for this school: ' . implode(', ', $prepared['missing']), 422);
         }
 
         $chapter = $input['chapter'];
-        $tenant = (int) ($input['sub_institute_id'] ?? 1);
         $filename = StudyDeckPublisher::filenameFor((string) $input['chapter_name'], $prepared['deck']);
         $sidecar = self::studyDeckSidecarPath($filename);
         $disk = Storage::disk('digitalocean');
@@ -422,12 +474,16 @@ class ContentGenerationService
                     $disk->put($sidecar, $this->studyDeckJson($prepared['deck']), 'public');
                     $repaired = $disk->exists($sidecar);
                 }
+                // Its pictures are recorded as in use by this deck (a deck stored before the links existed gets them now).
+                if ($this->linkStudyDeckImages((int) $existing->id, $prepared['deck'], (int) $chapter->id) > 0) {
+                    $repaired = true;
+                }
                 // A deck stored before the PDF existed (or whose PDF went missing) gets it now, under the same row.
                 $pdfPath = self::studyDeckPdfPath($filename);
                 // `refresh_pdf` replaces a PDF made by an older layout. The new one is rendered completely BEFORE the
                 // stored one is touched, and the object is replaced in a single put, so a failure leaves the old PDF.
                 if (!$disk->exists($pdfPath) || !empty($input['refresh_pdf'])) {
-                    $pdf = $this->renderStudyDeckPdf($prepared['deck'], ['content_id' => (int) $existing->id]);
+                    $pdf = $this->renderStudyDeckPdf($prepared['deck'], ['content_id' => (int) $existing->id, 'tenant' => $tenant]);
                     if ($pdf === '' || !str_starts_with($pdf, '%PDF-')) {
                         throw new \RuntimeException('the PDF came out empty');
                     }
@@ -497,10 +553,15 @@ class ContentGenerationService
         ];
         $chapterId = (int) $input['chapter']->id;
         $tenant = (int) ($input['sub_institute_id'] ?? 1);
-        $input['in_transaction'] = fn (int $id) => $this->hidePreviousStudyDecks($chapterId, $tenant, $id);
+        $input['tenant'] = $tenant;
+        // Inside the transaction that inserts the row: the deck and the record of which pictures it uses land together or not at all.
+        $input['in_transaction'] = function (int $id) use ($chapterId, $tenant, $deck): void {
+            $this->hidePreviousStudyDecks($chapterId, $tenant, $id);
+            $this->linkStudyDeckImages($id, $deck, $chapterId);
+        };
 
         try {
-            $result = $this->storeAuthoredContent($input, $html, $authoredBy);
+            $result = $this->withStudyDeckImages($tenant, fn () => $this->storeAuthoredContent($input, $html, $authoredBy));
         } catch (Throwable $e) {
             Log::error('Study deck storage failed', ['chapter_id' => $chapterId, 'error' => $e->getMessage()]);
 
@@ -526,15 +587,16 @@ class ContentGenerationService
      */
     protected function renderStudyDeckPdf(array $deck, array $options = []): string
     {
-        $base = $this->studyDeckPublisher()->baseUrl();
-        $disk = Storage::disk('digitalocean');
-        // Stored pictures are read from the store (not fetched over the network) when a hotspot diagram gets its numbered markers.
-        $bytes = function (string $url) use ($disk, $base): ?string {
-            $path = substr($url, strlen($base));
+        // `tenant` is the school that owns the deck: the pictures it may draw are that school's (and the platform library's).
+        $tenant = (int) ($options['tenant'] ?? $this->deckImageTenant ?? 1);
 
-            return $path !== '' && $disk->exists($path) ? (string) $disk->get($path) : null;
-        };
-        $renderer = new StudyDeckPdfRenderer($base, $bytes, base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf'));
+        return $this->withStudyDeckImages($tenant, fn () => $this->drawStudyDeckPdf($deck, $options));
+    }
+
+    private function drawStudyDeckPdf(array $deck, array $options): string
+    {
+        // Stored pictures are read from the database and embedded in the page (never fetched over the network).
+        $renderer = new StudyDeckPdfRenderer($this->deckImageResolver, base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf'));
         $html = $renderer->html($deck, $this->generatedContentCss(), [
             'variant' => $options['variant'] ?? StudyDeckPdfRenderer::REVISION,
             'questions' => $this->loadStudyDeckQuestions(StudyDeckQuestions::idsIn($deck)),
@@ -545,9 +607,20 @@ class ContentGenerationService
         $title = StudyDeckPdfRenderer::runningTitle($deck);
         $subject = StudyDeckPdfRenderer::runningSubject($deck);
 
-        return $this->renderHtmlToPdf($html, function ($dompdf) use ($title, $subject): void {
+        return $this->renderHtmlToPdf($html, $this->studyPageFurniture($title, $subject, 'Study Deck'));
+    }
+
+    /**
+     * The running header and footer of a study deck's PDF (and of a study document's): the title and the class and
+     * subject on top, the kind of document and "Page n of N" below, on every page but the cover.
+     *
+     * @return callable(\Dompdf\Dompdf):void
+     */
+    protected function studyPageFurniture(string $title, string $subject, string $footerLabel): callable
+    {
+        return function ($dompdf) use ($title, $subject, $footerLabel): void {
             // A running header and footer with the page number, on every page but the cover.
-            $dompdf->getCanvas()->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) use ($title, $subject): void {
+            $dompdf->getCanvas()->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) use ($title, $subject, $footerLabel): void {
                 if ($pageNumber === 1) {
                     return;
                 }
@@ -568,11 +641,11 @@ class ContentGenerationService
                 $canvas->text(31.5, 26, $fit($title, $bold, 8, $w - 63 - 140), $bold, 8, $ink);
                 $canvas->text($w - 31.5 - $fontMetrics->getTextWidth($subject, $font, 8), 26, $subject, $font, 8, $grey);
                 $canvas->line(31.5, $h - 38, $w - 31.5, $h - 38, [0.89, 0.91, 0.94], 0.8);
-                $canvas->text(31.5, $h - 28, 'Study Deck', $font, 8, $grey);
+                $canvas->text(31.5, $h - 28, $footerLabel, $font, 8, $grey);
                 $label = 'Page ' . $pageNumber . ' of ' . $pageCount;
                 $canvas->text($w - 31.5 - $fontMetrics->getTextWidth($label, $font, 8), $h - 28, $label, $font, 8, $grey);
             });
-        });
+        };
     }
 
     /**
@@ -611,16 +684,29 @@ class ContentGenerationService
      * out). The default copy is stored; the practice copy is only ever made on request and is not kept.
      *
      * @param array<string,mixed> $deck
-     * @param array{variant?:string, content_id?:?int} $options
+     * @param array{variant?:string, content_id?:?int, tenant?:int} $options `tenant` is the school that owns the deck
      */
     public function studyDeckPdfBytes(array $deck, array $options = []): string
     {
         return $this->renderStudyDeckPdf($deck, $options);
     }
 
-    protected function studyDeckPublisher(): StudyDeckPublisher
+    protected function studyDeckPublisher(int $tenant): StudyDeckPublisher
     {
-        return StudyDeckPublisher::make();
+        return StudyDeckPublisher::make($tenant);
+    }
+
+    /**
+     * Record that a stored deck uses the pictures its `assets` map lists, so they are not removed as leftovers.
+     *
+     * @param array<string,mixed> $deck a prepared deck (see StudyDeckPublisher::prepare)
+     * @return int how many links were new
+     */
+    protected function linkStudyDeckImages(int $contentId, array $deck, ?int $chapterId): int
+    {
+        $ids = StudyDeckPublisher::imageIds(['assets' => (array) ($deck['assets'] ?? [])]);
+
+        return $ids === [] ? 0 : (new StudyDeckImages())->link($contentId, $ids, $chapterId);
     }
 
     protected function studyDeckJson(array $deck): string
@@ -661,6 +747,406 @@ class ContentGenerationService
             return true;
         });
     }
+
+    // =============================================================================================================
+    // Study documents: revision notes, a remedial class, classroom activities
+    //
+    // The same architecture as a study deck with the kind-specific middle swapped (see StudyDeck\Documents): the same
+    // Completer, the same pictures in the database, the same Dompdf pipeline and print stylesheet, the same content row
+    // convention (ONE content_master row, its structured source and its PDF beside it), and the same checks before
+    // anything is stored. The category a row is filed under is the one the content library already uses for it
+    // ("Revision Notes", "Remedial Class", "Classroom Activity"); the row's PDF is its primary file.
+
+    /**
+     * Which kind of study document a requested content type should be written as for this chapter, or null when it
+     * should be written the way it always was (a chapter Claude does not serve, a type that is not one of the three,
+     * or `claude.study_documents` switched off, which restores the earlier single-prompt documents at once).
+     */
+    public function studyDocumentKindFor(string $contentType, $chapterId): ?DocumentKind
+    {
+        if (!(bool) config('claude.study_documents', true) || !$this->handles($chapterId)) {
+            return null;
+        }
+
+        return DocumentKind::fromCategory($contentType);
+    }
+
+    /** Which study document, if any, is this content_master file name? (Its name is its identity: no extra column.) */
+    public static function studyDocumentKind(?string $filename): ?DocumentKind
+    {
+        return DocumentKind::fromFilename($filename);
+    }
+
+    public static function isStudyDocumentFilename(?string $filename): bool
+    {
+        return DocumentKind::fromFilename($filename) !== null;
+    }
+
+    /** A study document's PDF is its primary file: the row's own file name. */
+    public static function studyDocumentPdfPath(string $filename): string
+    {
+        return 'public/lms_content_file/' . $filename;
+    }
+
+    /** Where a study document's structured source lives: beside its PDF, named after it. */
+    public static function studyDocumentSidecarPath(string $filename): string
+    {
+        return 'public/lms_content_file/' . $filename . '.doc.json';
+    }
+
+    /**
+     * The PDF's canonical URL for a content_master row, only when the row is a study document of the category its
+     * name says and the file is really stored. Never built from anything the caller sent.
+     *
+     * @param array<string,mixed> $row a content_master row
+     */
+    public static function studyDocumentPdfUrl(array $row): ?string
+    {
+        $kind = DocumentKind::fromFilename($row['filename'] ?? null);
+        if ($kind === null || DocumentKind::fromCategory($row['content_category'] ?? null) !== $kind) {
+            return null;
+        }
+        try {
+            $disk = Storage::disk('digitalocean');
+            $path = self::studyDocumentPdfPath((string) $row['filename']);
+
+            return $disk->exists($path) ? $disk->url($path) : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Write a study document for a chapter from its Chapter -> Topic -> Concept -> Concept Intelligence data, its
+     * prerequisite graph and its question bank, and store it as an ordinary content_master row.
+     *
+     * $input takes the same chapter/tenant fields as generateStudyDeck(), plus optional `concept_ids` to limit the
+     * document to some of the chapter's concepts. Nothing is stored unless validation passes.
+     *
+     * @return array{http:int, body:array<string,mixed>}
+     */
+    public function generateStudyDocument(DocumentKind $kind, array $input, ?Completer $completer = null): array
+    {
+        @set_time_limit((int) config('claude.timeout_seconds', 600) * 4 + 120);
+        // A long chapter takes many model calls, longer than a browser or a proxy will wait. If the person who asked gives up
+        // waiting, the document is still written and stored (it then shows up in the list), instead of the work being lost.
+        ignore_user_abort(true);
+
+        $completer ??= $this->studyCompleter();
+        if ($completer === null) {
+            return $this->fail('Claude API key is not configured. Set ANTHROPIC_API_KEY or an ai_api_keys row.', 500);
+        }
+
+        $tenant = (int) ($input['sub_institute_id'] ?? 1);
+        $chapterId = (int) $input['chapter']->id;
+        $name = strtolower($kind->label());
+
+        try {
+            $result = $this->studyDocumentService($completer, $tenant, $chapterId)
+                ->generate($kind, $chapterId, $tenant, ['concept_ids' => (array) ($input['concept_ids'] ?? [])]);
+        } catch (APIStatusException $e) {
+            return $this->fail($this->readableApiError($e), 502);
+        } catch (\InvalidArgumentException $e) {
+            return $this->fail($e->getMessage(), 422);
+        } catch (Throwable $e) {
+            Log::error('Study document generation failed', ['kind' => $kind->value, 'chapter_id' => $chapterId, 'error' => $e->getMessage()]);
+
+            return $this->fail('The ' . $name . ' could not be written: ' . $e->getMessage(), 500);
+        }
+
+        if (!$result['report']['ok']) {
+            return [
+                'http' => 422,
+                'body' => [
+                    'success' => false,
+                    'status_code' => 0,
+                    'message' => 'The ' . $name . ' failed validation and was not stored.',
+                    'errors' => $result['report']['errors'],
+                    'warnings' => $result['report']['warnings'],
+                ],
+            ];
+        }
+
+        return $this->publishStudyDocument($kind, $input, $result['document'], $result['html'], false, (string) config('claude.model', 'claude-opus-5'));
+    }
+
+    /** The pipeline, built for one school and chapter: its diagrams are stored in the database as they are drawn. */
+    protected function studyDocumentService(Completer $completer, int $tenant, int $chapterId): StudyDocumentService
+    {
+        return StudyDocumentService::make($completer, StudyImageStores::database($tenant, $chapterId));
+    }
+
+    /**
+     * The model to ask: the dev-only CLI when `claude.executor=cli`, otherwise the Anthropic API with the key this
+     * class resolves. Null when there is no key (the CLI is never chosen implicitly).
+     */
+    protected function studyCompleter(): ?Completer
+    {
+        if (config('claude.executor', 'api') === 'cli') {
+            return new ClaudeCliCompleter();
+        }
+        $apiKey = $this->resolveApiKey();
+        if ($apiKey === '') {
+            return null;
+        }
+        $model = (string) config('claude.model', 'claude-opus-5');
+
+        return new ClaudeApiCompleter(fn (string $system, string $prompt, int $max): array => $this->callClaude($apiKey, $model, $prompt, $system, $max));
+    }
+
+    /**
+     * Publish a validated study document: its diagrams confirmed in the database, one content_master row, one PDF,
+     * one structured-source file.
+     *
+     * Everything that can fail is done BEFORE a row exists (the PDF drawn and checked, the source file stored and
+     * read back), and a failure removes what this run stored, so no row points at a missing file and no file is left
+     * without a row. Safe to repeat: a document is identified by the hash of its content (part of the file name), so
+     * storing the same document again finds its row and changes nothing; a changed one is a new row, and the
+     * documents of the same kind and scope that it replaces are hidden in the same transaction.
+     *
+     * @param array<string,mixed> $input chapter, chapter_name, grade_id, sub_institute_id, syear, created_by, user_profile_name
+     * @param array<string,mixed> $document the assembled study document
+     * @return array{http:int, body:array<string,mixed>}
+     */
+    public function publishStudyDocument(DocumentKind $kind, array $input, array $document, string $html, bool $dryRun = false, string $authoredBy = 'study-document'): array
+    {
+        $tenant = (int) ($input['sub_institute_id'] ?? 1);
+
+        return $this->withStudyDeckImages($tenant, fn () => $this->publishStudyDocumentNow($kind, $input, $document, $html, $dryRun, $authoredBy));
+    }
+
+    private function publishStudyDocumentNow(DocumentKind $kind, array $input, array $document, string $html, bool $dryRun, string $authoredBy): array
+    {
+        $tenant = (int) ($input['sub_institute_id'] ?? 1);
+        $name = strtolower($kind->label());
+        $publisher = $this->studyDeckPublisher($tenant);
+
+        try {
+            $prepared = $publisher->prepare($document, $html, null, !$dryRun);
+        } catch (Throwable $e) {
+            $publisher->cleanup();
+
+            return $this->fail('The ' . $name . ' was not stored: ' . $e->getMessage(), 422);
+        }
+        if ($prepared['missing'] !== []) {
+            $publisher->cleanup();
+
+            return $this->fail('The ' . $name . ' refers to pictures that are not stored for this school: ' . implode(', ', $prepared['missing']), 422);
+        }
+
+        $chapter = $input['chapter'];
+        $doc = $prepared['deck'];
+        $filename = $kind->filenameFor((string) $input['chapter_name'], $doc);
+        $sidecar = self::studyDocumentSidecarPath($filename);
+        $pdfPath = self::studyDocumentPdfPath($filename);
+        $disk = Storage::disk('digitalocean');
+        $existing = $this->findStudyDocumentRow((int) $chapter->id, $tenant, $filename);
+
+        $summary = [
+            'kind' => $kind->value,
+            'filename' => $filename,
+            'document_metadata_path' => $sidecar,
+            'pdf_path' => $pdfPath,
+            'section_count' => count($doc['sections'] ?? []),
+            'images' => array_values($prepared['assets']),
+            'images_uploaded' => $prepared['uploaded'],
+            'images_reused' => $prepared['reused'],
+        ];
+
+        if ($dryRun) {
+            return ['http' => 200, 'body' => ['success' => true, 'status_code' => 1, 'status' => $existing ? 'unchanged' : 'would_create', 'dry_run' => true, 'content_id' => $existing->id ?? null] + $summary];
+        }
+
+        // The same document, already stored: make sure its files are all there and change nothing else.
+        if ($existing) {
+            $repaired = false;
+            try {
+                if (!$disk->exists($sidecar)) {
+                    $disk->put($sidecar, $this->studyDeckJson($doc), 'public');
+                    $repaired = $disk->exists($sidecar);
+                }
+                if ($this->linkStudyDeckImages((int) $existing->id, $doc, (int) $chapter->id) > 0) {
+                    $repaired = true;
+                }
+                // `refresh_pdf` replaces a PDF made by an older layout. The new one is drawn completely BEFORE the
+                // stored one is touched, and the object is replaced in a single put, so a failure leaves the old PDF.
+                if (!$disk->exists($pdfPath) || !empty($input['refresh_pdf'])) {
+                    $pdf = $this->renderStudyDocumentPdf($doc, ['tenant' => $tenant]);
+                    if ($pdf === '' || !str_starts_with($pdf, '%PDF-')) {
+                        throw new \RuntimeException('the PDF came out empty');
+                    }
+                    $disk->put($pdfPath, $pdf, 'public');
+                    if (!$disk->exists($pdfPath) || (int) $disk->size($pdfPath) !== strlen($pdf)) {
+                        throw new \RuntimeException('the PDF was not stored correctly');
+                    }
+                    $repaired = true;
+                }
+                $restored = (int) $existing->show_hide === 0
+                    ? $this->restoreStudyDocumentRow($kind, (int) $existing->id, (int) $chapter->id, $tenant, (string) $input['chapter_name'], DocumentKind::scopeToken($doc))
+                    : false;
+            } catch (Throwable $e) {
+                $publisher->cleanup();
+
+                return $this->fail('The ' . $name . ' exists but could not be verified: ' . $e->getMessage(), 500);
+            }
+
+            return ['http' => 200, 'body' => ['success' => true, 'status_code' => 1, 'status' => $repaired || $restored ? 'repaired' : 'unchanged', 'content_id' => (int) $existing->id, 'file_url' => $existing->url] + $summary];
+        }
+
+        $input['filename'] = $filename;
+        $result = $this->storeStudyDocument($kind, $input, $prepared['html'], $doc, $authoredBy);
+        if (($result['http'] ?? 0) !== 201) {
+            $publisher->cleanup();
+
+            return $result;
+        }
+
+        $result['body']['data'] += $summary + ['status' => 'created'];
+        $result['body']['status'] = 'created';
+        $result['body']['content_id'] = (int) $result['body']['data']['id'];
+
+        return $result;
+    }
+
+    /**
+     * Persist an already validated, already published (see publishStudyDocument) study document.
+     *
+     * The PDF is the row's primary file. The structured source the online practice and the PDF are drawn from has no
+     * content_master column, so it is a JSON file next to the PDF, named after it. `meta_tags` is deliberately left
+     * empty (the concept tagger and the video relevance scorer read that column as text), and `description` holds the
+     * design-system markup, so the document is readable straight out of the database.
+     *
+     * @param array<string,mixed> $input
+     * @param array<string,mixed> $document a prepared document (pictures are stored references)
+     * @return array{http:int, body:array<string,mixed>}
+     */
+    public function storeStudyDocument(DocumentKind $kind, array $input, string $html, array $document, string $authoredBy = 'study-document'): array
+    {
+        $chapterId = (int) $input['chapter']->id;
+        $tenant = (int) ($input['sub_institute_id'] ?? 1);
+        $name = strtolower($kind->label());
+        $chapterName = (string) $input['chapter_name'];
+
+        $input['is_presentation'] = false;
+        $input['content_type'] = $kind->category();
+        $input['meta_tags'] = null;
+        $input['title'] = $input['title'] ?? $kind->title($chapterName);
+        $input['tenant'] = $tenant;
+        // A document for exactly one concept is filed under it; a document for the chapter, or for several, under none.
+        $only = array_map('intval', (array) ($document['scope']['concept_ids'] ?? []));
+        $input['concept_id'] = !empty($document['scope']['all']) || count($only) !== 1 ? null : $only[0];
+
+        // The PDF is made before anything is stored, so one that cannot be drawn stops the whole publish.
+        try {
+            $pdf = $this->renderStudyDocumentPdf($document, ['tenant' => $tenant]);
+        } catch (Throwable $e) {
+            return $this->fail('The ' . $name . ' was not stored: its PDF could not be made: ' . $e->getMessage(), 500);
+        }
+        if ($pdf === '') {
+            return $this->fail('The ' . $name . ' was not stored: its PDF came out empty.', 500);
+        }
+        $input['binary'] = $pdf;
+        $input['extra_files'] = [self::studyDocumentSidecarPath((string) $input['filename']) => $this->studyDeckJson($document)];
+
+        $scope = DocumentKind::scopeToken($document);
+        // Inside the transaction that inserts the row: the document, the record of which pictures it uses and the
+        // hiding of what it replaces land together or not at all.
+        $input['in_transaction'] = function (int $id) use ($kind, $chapterId, $tenant, $chapterName, $scope, $document): void {
+            $this->hidePreviousStudyDocuments($kind, $chapterId, $tenant, $chapterName, $scope, $id);
+            $this->linkStudyDeckImages($id, $document, $chapterId);
+        };
+
+        try {
+            $result = $this->withStudyDeckImages($tenant, fn () => $this->storeAuthoredContent($input, $html, $authoredBy));
+        } catch (Throwable $e) {
+            Log::error('Study document storage failed', ['kind' => $kind->value, 'chapter_id' => $chapterId, 'error' => $e->getMessage()]);
+
+            return $this->fail('The ' . $name . ' was not stored: ' . $e->getMessage(), 500);
+        }
+
+        if (($result['http'] ?? 0) === 201) {
+            $disk = Storage::disk('digitalocean');
+            $result['body']['data']['document_metadata_url'] = $disk->url(self::studyDocumentSidecarPath((string) $input['filename']));
+            $result['body']['data']['pdf_path'] = self::studyDocumentPdfPath((string) $input['filename']);
+            $result['body']['data']['pdf_url'] = $disk->url(self::studyDocumentPdfPath((string) $input['filename']));
+            $result['body']['data']['section_count'] = count($document['sections'] ?? []);
+        }
+
+        return $result;
+    }
+
+    /**
+     * A study document's PDF, drawn from its stored source by the study deck's own Dompdf pipeline and print stylesheet.
+     * The default (teacher / answers shown) copy is stored; the other copy is only ever drawn on request.
+     *
+     * @param array<string,mixed> $document
+     * @param array{variant?:string, tenant?:int} $options `tenant` is the school that owns the document
+     */
+    protected function renderStudyDocumentPdf(array $document, array $options = []): string
+    {
+        $tenant = (int) ($options['tenant'] ?? $this->deckImageTenant ?? 1);
+
+        return $this->withStudyDeckImages($tenant, fn () => $this->drawStudyDocumentPdf($document, $options));
+    }
+
+    private function drawStudyDocumentPdf(array $document, array $options): string
+    {
+        $renderer = new StudyDocumentPdfRenderer($this->deckImageResolver, base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf'));
+        $html = $renderer->html($document, $this->generatedContentCss(), [
+            'variant' => $options['variant'] ?? StudyDocumentPdfRenderer::TEACHER,
+            'questions' => $this->loadStudyDeckQuestions(StudyDeckQuestions::idsIn($document)),
+        ]);
+
+        return $this->renderHtmlToPdf($html, $this->studyPageFurniture(
+            StudyDocumentPdfRenderer::runningTitle($document),
+            StudyDocumentPdfRenderer::runningSubject($document),
+            StudyDocumentPdfRenderer::footerLabel($document)
+        ));
+    }
+
+    /**
+     * The PDF bytes for a stored study document, drawn now: the stored copy (teacher edition / answers shown) or the
+     * other copy (student handout / answers hidden), which is not kept anywhere.
+     *
+     * @param array<string,mixed> $document
+     * @param array{variant?:string, tenant?:int} $options
+     */
+    public function studyDocumentPdfBytes(array $document, array $options = []): string
+    {
+        return $this->renderStudyDocumentPdf($document, $options);
+    }
+
+    /** The row for this exact document on this chapter and school, visible or hidden. */
+    protected function findStudyDocumentRow(int $chapterId, int $tenant, string $filename): ?object
+    {
+        return $this->findStudyDeckRow($chapterId, $tenant, $filename);
+    }
+
+    /** Hide the other documents of this kind and scope for this chapter and school: the new one replaces them. */
+    protected function hidePreviousStudyDocuments(DocumentKind $kind, int $chapterId, int $tenant, string $chapterName, string $scope, int $keepId): int
+    {
+        return DB::table('content_master')
+            ->where('chapter_id', $chapterId)
+            ->where('sub_institute_id', $tenant)
+            ->where('file_type', 'pdf')
+            ->where('content_category', $kind->category())
+            ->where('filename', 'like', $kind->replaceablePattern($chapterName, $scope))
+            ->where('id', '<>', $keepId)
+            ->where(fn ($q) => $q->whereNull('show_hide')->orWhere('show_hide', '<>', 0))
+            ->update(['show_hide' => 0]);
+    }
+
+    /** Make an older, hidden study document the current one again (and hide the rest of its kind and scope). */
+    protected function restoreStudyDocumentRow(DocumentKind $kind, int $id, int $chapterId, int $tenant, string $chapterName, string $scope): bool
+    {
+        return (bool) DB::transaction(function () use ($kind, $id, $chapterId, $tenant, $chapterName, $scope) {
+            DB::table('content_master')->where('id', $id)->update(['show_hide' => 1]);
+            $this->hidePreviousStudyDocuments($kind, $chapterId, $tenant, $chapterName, $scope, $id);
+
+            return true;
+        });
+    }
+
     /**
      * One streamed Messages API call.
      *
@@ -738,8 +1224,11 @@ class ContentGenerationService
         $html = $this->formatGeneratedPdfBody($generated['text']);
 
         $isPresentation = (bool) ($input['is_presentation'] ?? false);
-        $renderer = $this->resolvePresentationRenderer($isPresentation);
-        $binary = $renderer($generated['text'], $chapterName, $contentType);
+        // A caller that has already drawn the file itself (a study document's PDF is drawn from its structured source,
+        // not from this markup) hands it over; every other caller has it rendered from the markup, as always.
+        $binary = isset($input['binary']) && is_string($input['binary']) && $input['binary'] !== ''
+            ? $input['binary']
+            : $this->resolvePresentationRenderer($isPresentation)($generated['text'], $chapterName, $contentType);
         // A presentation is now a real .pptx, so the extension and the stored
         // file_type have to follow the renderer rather than assuming PDF - the
         // content library uses file_type to decide how to offer the file.

@@ -14,11 +14,16 @@ use Illuminate\Support\Facades\DB;
  */
 class StudyDeckQuestions
 {
-    /** @return array<int,int> every bank question id a deck refers to, once each */
+    /**
+     * @return array<int,int> every bank question id a deck (or study document) refers to, once each
+     *
+     * A study deck keeps its parts in `slides`; a study document (revision notes, remedial class, classroom
+     * activities) keeps them in `sections`. Both name a question the same way, so both are read.
+     */
     public static function idsIn(array $deck): array
     {
         $ids = [];
-        foreach ($deck['slides'] ?? [] as $slide) {
+        foreach (array_merge($deck['slides'] ?? [], $deck['sections'] ?? []) as $slide) {
             foreach ($slide['activities'] ?? [] as $activity) {
                 if (($activity['source'] ?? '') === 'bank' && !empty($activity['question_id'])) {
                     $ids[(int) $activity['question_id']] = true;
