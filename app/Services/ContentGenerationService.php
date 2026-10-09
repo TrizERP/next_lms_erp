@@ -11,6 +11,8 @@ use App\Services\Content\RendersGeneratedContent;
 use App\Services\StudyDeck\ClaudeApiCompleter;
 use App\Services\StudyDeck\ClaudeCliCompleter;
 use App\Services\StudyDeck\Contracts\Completer;
+use App\Services\StudyDeck\StudyDeckPdfRenderer;
+use App\Services\StudyDeck\StudyDeckPublisher;
 use App\Services\StudyDeck\StudyDeckService;
 use App\Services\StudyDeck\StudyImageStores;
 use Illuminate\Support\Facades\DB;
@@ -288,7 +290,60 @@ class ContentGenerationService
             ];
         }
 
-        return $this->storeStudyDeck($input, $result['html'], $result['deck'], (string) config('claude.model', 'claude-opus-5'));
+        // The pictures were stored while the deck was generated; publishing checks they are really there.
+        return $this->publishStudyDeck($input, $result['deck'], $result['html'], null, false, (string) config('claude.model', 'claude-opus-5'));
+    }
+
+    /** Is this content_master file name a study deck? (Its name is its identity: no extra column.) */
+    public static function isStudyDeckFilename(?string $filename): bool
+    {
+        return str_starts_with((string) $filename, 'study_deck_') && str_ends_with((string) $filename, '.pptx');
+    }
+
+    /**
+     * Where a study deck's classroom PDF lives: beside the presentation, same name, `.pdf`. content_master holds one
+     * file per row, so (like the deck file) the second file is found from the row's own file name - no extra column,
+     * no second row. Null for anything that is not a study deck.
+     */
+    public static function studyDeckPdfPath(string $filename): string
+    {
+        return 'public/lms_content_file/' . preg_replace('/\.pptx$/i', '.pdf', $filename);
+    }
+
+    /**
+     * The PDF's canonical URL for a content_master row, only when the row is a study deck and the file is really
+     * stored (a row without one simply offers no download). Never built from anything the caller sent.
+     *
+     * @param array<string,mixed> $row a content_master row
+     */
+    public static function studyDeckPdfUrl(array $row): ?string
+    {
+        if (!self::isStudyDeckFilename($row['filename'] ?? null)) {
+            return null;
+        }
+        try {
+            $disk = Storage::disk('digitalocean');
+            $path = self::studyDeckPdfPath((string) $row['filename']);
+
+            return $disk->exists($path) ? $disk->url($path) : null;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * Where a study deck row opens: the interactive player, keyed by the content item so it is exactly that deck.
+     * Null for every other row. The Classroom Resource list uses it the way it uses an H5P item's `deep_link`.
+     *
+     * @param array<string,mixed> $row a content_master row
+     */
+    public static function studyDeckDeepLink(array $row): ?string
+    {
+        if (!self::isStudyDeckFilename($row['filename'] ?? null) || empty($row['id']) || empty($row['chapter_id'])) {
+            return null;
+        }
+
+        return '/student/study-deck/' . (int) $row['chapter_id'] . '?content=' . (int) $row['id'];
     }
 
     /**
@@ -303,15 +358,121 @@ class ContentGenerationService
     }
 
     /**
-     * Persist an already validated study deck.
+     * Publish a reviewed study deck: pictures in the shared object store, one content_master row, one deck file.
      *
-     * The presentation is an ordinary content_master row. The structured deck the
-     * native student player reads (slide content, activity specs, concept maps, image
-     * licences) has no content_master column, so it is written as a JSON sidecar next to
-     * the file. `meta_tags` is deliberately left empty: the concept tagger and the video
-     * relevance scorer read that column as text, and a marker string there would feed them.
+     * Everything that can fail is done BEFORE a row exists, in this order: pictures stored and read back, the
+     * presentation rendered and stored, the deck file stored and read back, and only then the row inserted. A
+     * failure at any step removes what this run stored, so no row points at a missing file and no file is left
+     * without a row.
      *
-     * @param array<string,mixed> $deck SlideHtmlRenderer deck metadata
+     * Safe to repeat. A deck is identified by the hash of its content (it is part of the file name), so storing
+     * the same deck again finds its row and changes nothing; a changed deck is a new row, and the study-deck
+     * rows it replaces for the chapter are hidden in the same transaction (show_hide = 0, the convention
+     * `lms:import-deck --replace` already uses).
+     *
+     * @param array<string,mixed> $input chapter, chapter_name, grade_id, sub_institute_id, syear, created_by, user_profile_name
+     * @param array<string,mixed> $deck SlideHtmlRenderer deck
+     * @param string|null $imageDir bundle folder holding `images/<name>` files, or null when the pictures are already stored
+     * @return array{http:int, body:array<string,mixed>}
+     */
+    public function publishStudyDeck(array $input, array $deck, string $html, ?string $imageDir, bool $dryRun = false, string $authoredBy = 'study-deck'): array
+    {
+        $publisher = $this->studyDeckPublisher();
+
+        try {
+            $prepared = $publisher->prepare($deck, $html, $imageDir, !$dryRun);
+        } catch (Throwable $e) {
+            $publisher->cleanup();
+
+            return $this->fail('The study deck was not stored: ' . $e->getMessage(), 422);
+        }
+        if ($prepared['missing'] !== []) {
+            $publisher->cleanup();
+
+            return $this->fail('The study deck refers to pictures that are not in the shared store: ' . implode(', ', $prepared['missing']), 422);
+        }
+
+        $chapter = $input['chapter'];
+        $tenant = (int) ($input['sub_institute_id'] ?? 1);
+        $filename = StudyDeckPublisher::filenameFor((string) $input['chapter_name'], $prepared['deck']);
+        $sidecar = self::studyDeckSidecarPath($filename);
+        $disk = Storage::disk('digitalocean');
+        $existing = $this->findStudyDeckRow((int) $chapter->id, $tenant, $filename);
+
+        $summary = [
+            'filename' => $filename,
+            'deck_metadata_path' => $sidecar,
+            'pdf_path' => self::studyDeckPdfPath($filename),
+            'slide_count' => $prepared['deck']['slide_count'] ?? null,
+            'images' => array_values($prepared['assets']),
+            'images_uploaded' => $prepared['uploaded'],
+            'images_reused' => $prepared['reused'],
+        ];
+
+        if ($dryRun) {
+            return ['http' => 200, 'body' => ['success' => true, 'status_code' => 1, 'status' => $existing ? 'unchanged' : 'would_create', 'dry_run' => true, 'content_id' => $existing->id ?? null] + $summary];
+        }
+
+        // Same deck, already stored: make sure its files are all there and change nothing else.
+        if ($existing) {
+            $repaired = false;
+            try {
+                if (!$disk->exists($sidecar)) {
+                    $disk->put($sidecar, $this->studyDeckJson($prepared['deck']), 'public');
+                    $repaired = $disk->exists($sidecar);
+                }
+                // A deck stored before the PDF existed (or whose PDF went missing) gets it now, under the same row.
+                $pdfPath = self::studyDeckPdfPath($filename);
+                // `refresh_pdf` replaces a PDF made by an older layout. The new one is rendered completely BEFORE the
+                // stored one is touched, and the object is replaced in a single put, so a failure leaves the old PDF.
+                if (!$disk->exists($pdfPath) || !empty($input['refresh_pdf'])) {
+                    $pdf = $this->renderStudyDeckPdf($prepared['deck']);
+                    if ($pdf === '' || !str_starts_with($pdf, '%PDF-')) {
+                        throw new \RuntimeException('the PDF came out empty');
+                    }
+                    $disk->put($pdfPath, $pdf, 'public');
+                    if (!$disk->exists($pdfPath) || (int) $disk->size($pdfPath) !== strlen($pdf)) {
+                        throw new \RuntimeException('the PDF was not stored correctly');
+                    }
+                    $repaired = true;
+                }
+                $restored = (int) $existing->show_hide === 0 ? $this->restoreStudyDeckRow((int) $existing->id, (int) $chapter->id, $tenant) : false;
+            } catch (Throwable $e) {
+                $publisher->cleanup();
+
+                return $this->fail('The study deck exists but could not be verified: ' . $e->getMessage(), 500);
+            }
+
+            return ['http' => 200, 'body' => ['success' => true, 'status_code' => 1, 'status' => $repaired || $restored ? 'repaired' : 'unchanged', 'content_id' => (int) $existing->id, 'file_url' => $existing->url] + $summary];
+        }
+
+        $input['filename'] = $filename;
+        $input['title'] = mb_substr((string) $input['chapter_name'] . ' Study Deck', 0, 250);
+        $result = $this->storeStudyDeck($input, $prepared['html'], $prepared['deck'], $authoredBy);
+        if (($result['http'] ?? 0) !== 201) {
+            $publisher->cleanup();
+
+            return $result;
+        }
+
+        $result['body']['data'] += $summary + ['status' => 'created'];
+        $result['body']['status'] = 'created';
+        $result['body']['content_id'] = (int) $result['body']['data']['id'];
+
+        return $result;
+    }
+
+    /**
+     * Persist an already validated, already published (see publishStudyDeck) study deck.
+     *
+     * The presentation is an ordinary content_master row. The structured deck the native student player reads
+     * has no content_master column, so it is a JSON file next to the presentation, named after it. `meta_tags`
+     * is deliberately left empty: the concept tagger and the video relevance scorer read that column as text.
+     *
+     * The deck file is stored BEFORE the row, so a row never exists without its deck, and the previous study
+     * decks of the chapter are hidden in the same transaction as the insert.
+     *
+     * @param array<string,mixed> $deck SlideHtmlRenderer deck
      * @return array{http:int, body:array<string,mixed>}
      */
     public function storeStudyDeck(array $input, string $html, array $deck, string $authoredBy = 'study-deck'): array
@@ -319,26 +480,99 @@ class ContentGenerationService
         $input['is_presentation'] = true;
         $input['content_type'] = $input['content_type'] ?? 'Classroom Presentation';
         $input['meta_tags'] = null;
-
-        $result = $this->storeAuthoredContent($input, $html, $authoredBy);
-        if (($result['http'] ?? 0) !== 201) {
-            return $result;
-        }
-
-        $sidecar = self::studyDeckSidecarPath((string) $result['body']['data']['filename']);
+        // The classroom PDF is a second file of the same content item (like the deck file), not a second row.
+        // It is made before anything is stored, so a PDF that cannot be rendered stops the whole publish.
         try {
-            Storage::disk('digitalocean')->put($sidecar, json_encode($deck, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES), 'public');
-            $result['body']['data']['deck_metadata_url'] = Storage::disk('digitalocean')->url($sidecar);
+            $pdf = $this->renderStudyDeckPdf($deck);
         } catch (Throwable $e) {
-            // The presentation exists; only the interactive deck is missing. Say so plainly.
-            Log::error('Study deck sidecar upload failed', ['path' => $sidecar, 'error' => $e->getMessage()]);
-            $result['body']['warnings'] = ['The presentation was stored but its interactive deck data could not be saved: ' . $e->getMessage()];
+            return $this->fail('The study deck was not stored: its PDF could not be made: ' . $e->getMessage(), 500);
         }
-        $result['body']['data']['slide_count'] = $deck['slide_count'] ?? null;
+        if ($pdf === '') {
+            return $this->fail('The study deck was not stored: its PDF came out empty.', 500);
+        }
+        $input['extra_files'] = [
+            self::studyDeckSidecarPath((string) $input['filename']) => $this->studyDeckJson($deck),
+            self::studyDeckPdfPath((string) $input['filename']) => $pdf,
+        ];
+        $chapterId = (int) $input['chapter']->id;
+        $tenant = (int) ($input['sub_institute_id'] ?? 1);
+        $input['in_transaction'] = fn (int $id) => $this->hidePreviousStudyDecks($chapterId, $tenant, $id);
+
+        try {
+            $result = $this->storeAuthoredContent($input, $html, $authoredBy);
+        } catch (Throwable $e) {
+            Log::error('Study deck storage failed', ['chapter_id' => $chapterId, 'error' => $e->getMessage()]);
+
+            return $this->fail('The study deck was not stored: ' . $e->getMessage(), 500);
+        }
+
+        if (($result['http'] ?? 0) === 201) {
+            $result['body']['data']['deck_metadata_url'] = Storage::disk('digitalocean')->url(self::studyDeckSidecarPath((string) $input['filename']));
+            $result['body']['data']['pdf_path'] = self::studyDeckPdfPath((string) $input['filename']);
+            $result['body']['data']['pdf_url'] = Storage::disk('digitalocean')->url(self::studyDeckPdfPath((string) $input['filename']));
+            $result['body']['data']['slide_count'] = $deck['slide_count'] ?? null;
+        }
 
         return $result;
     }
 
+    /**
+     * The classroom PDF, drawn from the stored deck so that what the interactive player reveals (hotspot and card
+     * explanations, steps, scenarios, definitions) is written out in full. Same Dompdf pipeline and print stylesheet
+     * every other generated document uses.
+     *
+     * @param array<string,mixed> $deck
+     */
+    protected function renderStudyDeckPdf(array $deck): string
+    {
+        $html = (new StudyDeckPdfRenderer($this->studyDeckPublisher()->baseUrl()))->html($deck, $this->generatedContentCss());
+
+        return (string) $this->renderHtmlToPdf($html);
+    }
+
+    protected function studyDeckPublisher(): StudyDeckPublisher
+    {
+        return StudyDeckPublisher::make();
+    }
+
+    protected function studyDeckJson(array $deck): string
+    {
+        return (string) json_encode($deck, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    }
+
+    /** The row for this exact deck on this chapter and school, visible or hidden. */
+    protected function findStudyDeckRow(int $chapterId, int $tenant, string $filename): ?object
+    {
+        return DB::table('content_master')
+            ->where('chapter_id', $chapterId)
+            ->where('sub_institute_id', $tenant)
+            ->where('filename', $filename)
+            ->first(['id', 'url', 'show_hide']);
+    }
+
+    /** Hide the other study decks of this chapter and school: the new one replaces them. */
+    protected function hidePreviousStudyDecks(int $chapterId, int $tenant, int $keepId): int
+    {
+        return DB::table('content_master')
+            ->where('chapter_id', $chapterId)
+            ->where('sub_institute_id', $tenant)
+            ->where('file_type', 'pptx')
+            ->where('filename', 'like', 'study\\_deck\\_%')
+            ->where('id', '<>', $keepId)
+            ->where(fn ($q) => $q->whereNull('show_hide')->orWhere('show_hide', '<>', 0))
+            ->update(['show_hide' => 0]);
+    }
+
+    /** Make an older, hidden study deck the current one again (and hide the rest). */
+    protected function restoreStudyDeckRow(int $id, int $chapterId, int $tenant): bool
+    {
+        return (bool) DB::transaction(function () use ($id, $chapterId, $tenant) {
+            DB::table('content_master')->where('id', $id)->update(['show_hide' => 1]);
+            $this->hidePreviousStudyDecks($chapterId, $tenant, $id);
+
+            return true;
+        });
+    }
     /**
      * One streamed Messages API call.
      *
@@ -424,11 +658,33 @@ class ContentGenerationService
         $extension = $this->presentationFileType($isPresentation);
 
         $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '_', $contentType . '_' . $chapterName));
-        $fileName = trim($slug, '_') . '_' . time() . '.' . $extension;
+        // A caller that needs a stable name (so a repeat finds the same row) supplies it.
+        $fileName = $input['filename'] ?? (trim($slug, '_') . '_' . time() . '.' . $extension);
         $spacesPath = 'public/lms_content_file/' . $fileName;
 
-        Storage::disk('digitalocean')->put($spacesPath, $binary, 'public');
-        $fileUrl = Storage::disk('digitalocean')->url($spacesPath);
+        // Everything is stored and read back BEFORE the row exists; if any step fails what this call stored is
+        // removed, so a row never points at a missing file and a file is never left without its row.
+        $disk = Storage::disk('digitalocean');
+        $stored = [];
+        try {
+            $disk->put($spacesPath, $binary, 'public');
+            $stored[] = $spacesPath;
+            foreach ((array) ($input['extra_files'] ?? []) as $extraPath => $extraBytes) {
+                $disk->put($extraPath, $extraBytes, 'public');
+                $stored[] = $extraPath;
+                if (!$disk->exists($extraPath)) {
+                    throw new \RuntimeException('Could not store ' . $extraPath);
+                }
+            }
+            if (!$disk->exists($spacesPath)) {
+                throw new \RuntimeException('Could not store ' . $spacesPath);
+            }
+        } catch (Throwable $e) {
+            $this->forget($stored);
+
+            throw $e;
+        }
+        $fileUrl = $disk->url($spacesPath);
 
         $content = [
             'grade_id' => $input['grade_id'],
@@ -440,7 +696,7 @@ class ContentGenerationService
             // varchar(250) / varchar(10) respectively on the live table.
             // The Gemini branch writes both raw; truncate so a long chapter
             // name or profile label cannot fail the insert under strict mode.
-            'title' => mb_substr($chapterName . ' ' . $contentType, 0, 250),
+            'title' => mb_substr((string) ($input['title'] ?? ($chapterName . ' ' . $contentType)), 0, 250),
             // The generated document itself. The Gamma/Gemini branches store the
             // prompt here instead; this is the column that makes the content
             // readable straight out of the database.
@@ -471,8 +727,13 @@ class ContentGenerationService
         // they have never been applied to this database - content_master has
         // neither column, so including them here fails with "Unknown column".
 
-        contentModel::insert($content);
-        $lastId = DB::getPDO()->lastInsertId();
+        try {
+            $lastId = $this->insertContentRow($content, $input['in_transaction'] ?? null);
+        } catch (Throwable $e) {
+            $this->forget($stored);
+
+            throw $e;
+        }
 
         return [
             'http' => 201,
@@ -494,6 +755,35 @@ class ContentGenerationService
                 ],
             ],
         ];
+    }
+
+    /**
+     * Insert the content_master row, and anything that must change with it, in one transaction.
+     *
+     * @param (callable(int):mixed)|null $inTransaction runs with the new id, inside the transaction
+     */
+    protected function insertContentRow(array $content, ?callable $inTransaction = null): int|string
+    {
+        return DB::transaction(function () use ($content, $inTransaction) {
+            contentModel::insert($content);
+            $id = DB::getPDO()->lastInsertId();
+            if ($inTransaction) {
+                $inTransaction((int) $id);
+            }
+
+            return $id;
+        });
+    }
+
+    /** Remove objects this call stored when a later step failed. Best effort: nothing points at them. */
+    private function forget(array $paths): void
+    {
+        foreach ($paths as $path) {
+            try {
+                Storage::disk('digitalocean')->delete($path);
+            } catch (Throwable) {
+            }
+        }
     }
 
     /**

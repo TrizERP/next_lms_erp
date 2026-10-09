@@ -64,6 +64,12 @@ trait RendersGeneratedContent
 
     protected function renderGeneratedContentPdf($content, $chapterName, $contentType)
     {
+        return $this->renderHtmlToPdf($this->generatedContentHtml($content, $chapterName, $contentType));
+    }
+
+    /** A finished HTML document to A4 portrait PDF bytes. */
+    protected function renderHtmlToPdf(string $html): string
+    {
         $options = new Options();
         $options->set('isHtml5ParserEnabled', true);
         $options->set('isFontSubsettingEnabled', true);
@@ -71,7 +77,6 @@ trait RendersGeneratedContent
         $options->set('isRemoteEnabled', true);
 
         $dompdf = new Dompdf($options);
-        $html = $this->generatedContentHtml($content, $chapterName, $contentType);
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();

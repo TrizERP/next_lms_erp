@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands\LMS;
 
-use App\Models\lms\chapterModel;
 use App\Services\ContentGenerationService;
 use App\Services\StudyDeck\ClaudeApiCompleter;
 use App\Services\StudyDeck\ClaudeCliCompleter;
@@ -10,7 +9,6 @@ use App\Services\StudyDeck\Contracts\Completer;
 use App\Services\StudyDeck\StudyDeckService;
 use App\Services\StudyDeck\StudyImageStores;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 
 /**
  * Generate a classroom study deck for one chapter and write a REVIEW BUNDLE.
@@ -18,7 +16,9 @@ use Illuminate\Support\Facades\DB;
  * By default this only READS the database and writes files under
  * storage/app/study-deck/chapter-<id>/. Nothing reaches content_master or
  * shared storage unless --store is passed, and --store refuses a deck that
- * failed validation.
+ * failed validation. --store hands the bundle it just wrote to
+ * `lms:store-study-deck`, so what is stored is exactly what was written here
+ * (and can be reviewed first: run without --store, look, then store).
  *
  * The bundle is laid out so the existing validator runs on it unchanged:
  *   php artisan lms:validate-content storage/app/study-deck/chapter-8592 --file=presentation.html
@@ -34,7 +34,7 @@ class GenerateStudyDeckCommand extends Command
         {--max-slides=35}
         {--per-concept=4 : most bank questions offered per concept}
         {--export-player= : copy deck.json and images to this directory so the local student player can load the review bundle (no database or storage writes)}
-        {--store : on a passing validation, store as a content_master Presentation (writes to the DB and shared storage)}';
+        {--store : on a passing validation, store THIS bundle (see lms:store-study-deck: writes to the DB and shared storage)}';
 
     protected $description = 'Generate a 30-35 slide classroom study deck from a chapter\'s LMS data';
 
@@ -50,7 +50,8 @@ class GenerateStudyDeckCommand extends Command
 
         try {
             $completer = $this->completer($executor, $content);
-            $images = $store ? StudyImageStores::spaces() : StudyImageStores::directory($dir . '/out/images');
+            // Pictures always go into the bundle; storing them in the shared store is lms:store-study-deck's job.
+            $images = StudyImageStores::directory($dir . '/out/images');
             $service = StudyDeckService::make($completer, $images);
 
             $result = $service->generate($chapterId, $tenant, [
@@ -88,29 +89,13 @@ class GenerateStudyDeckCommand extends Command
         $this->info('Validation passed.');
 
         if (!$store) {
-            $this->line('Review the bundle; re-run with --store to save it to content_master.');
+            $this->line('Review the bundle; then run: php artisan lms:store-study-deck ' . $chapterId . ' --dry-run   (and without --dry-run to store it)');
 
             return self::SUCCESS;
         }
 
-        $chapter = chapterModel::find($chapterId);
-        $gradeId = $chapter->grade_id ?: DB::table('standard')->where('id', $chapter->standard_id)->value('grade_id');
-        $stored = $content->storeStudyDeck([
-            'chapter' => $chapter,
-            'chapter_name' => $chapter->chapter_name,
-            'grade_id' => $gradeId,
-            'concept_id' => null,
-            'sub_institute_id' => $tenant,
-            'syear' => $chapter->syear,
-            'created_by' => null,
-            'user_profile_name' => null,
-        ], $result['html'], $result['deck'], 'study-deck');
-
-        $this->line(json_encode($stored['body']));
-
-        return $stored['http'] === 201 ? self::SUCCESS : self::FAILURE;
+        return $this->call('lms:store-study-deck', ['chapter' => $chapterId, '--bundle' => $dir, '--tenant' => $tenant]);
     }
-
     private function completer(string $executor, ContentGenerationService $content): Completer
     {
         if ($executor === 'cli') {
