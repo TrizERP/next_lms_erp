@@ -665,6 +665,21 @@ Route::middleware(['api.session', 'staff.only', 'throttle.qgen'])->group(functio
     Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);
 });
 
+// Prayogshala - chapter-scoped practical / experiment / activity resources.
+// Every route is behind `api.session`: the institute and user come from the verified
+// JWT, never from the body (see PrayogshalaApiController). Reads are open to any
+// authenticated role so learners can see published activities; writes additionally run
+// the same `lms.content` create gate the content upload routes use, plus a role check in
+// the controller.
+Route::middleware(['api.session'])->prefix('lms/prayogshala')->group(function () {
+    $c = \App\Http\Controllers\api\lms\PrayogshalaApiController::class;
+    Route::match(['get', 'post'], '/', [$c, 'index']);
+    Route::get('{id}', [$c, 'show'])->whereNumber('id');
+    Route::middleware(['lms.auth', 'perm:lms.content,create'])->group(function () use ($c) {
+        Route::post('store', [$c, 'store']);
+        Route::post('{id}/update', [$c, 'update'])->whereNumber('id');
+        Route::post('{id}/delete', [$c, 'destroy'])->whereNumber('id');
+    });
 // The question formats a teacher can generate: present in question_type_catalog AND
 // implemented in QuestionFormatRegistry. It spends nothing, so it sits behind the
 // same session and staff gates as generate but NOT behind throttle.qgen -- listing
