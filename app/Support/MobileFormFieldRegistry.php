@@ -242,6 +242,215 @@ class MobileFormFieldRegistry
                 ],
             ],
         ],
+
+        /**
+         * Traced from D:\lms_k12\app\student\add_house\page.tsx ->
+         * app\student\_components\StudentSetupMaster.tsx + setup-api.ts
+         * (resource="house"), and Laravel StudentSetupApiController
+         * (routes/adminapi.php `POST student-setup/{resource}`). Body keys are
+         * `name` + `sort_order` (controller maps `name` -> house_master.house_name).
+         * The web page also lists / edits / deletes existing houses; only the
+         * "add" form is imported here.
+         */
+        'add_house' => [
+            'type' => 'form',
+            'label' => 'Add House',
+            // Derived from the Next.js folder path -- not confirmed against tblmenumaster.
+            'matchLink' => 'student/add_house',
+            'submit' => [
+                'method' => 'POST',
+                'endpoint' => 'student-setup/house',
+                'successMessage' => 'House added.',
+            ],
+            'fields' => [
+                ['key' => 'name', 'label' => 'House Name', 'inputType' => 'text', 'required' => true],
+                ['key' => 'sort_order', 'label' => 'Sort Order', 'inputType' => 'number', 'required' => false],
+            ],
+        ],
+
+        /**
+         * Traced from D:\lms_k12\app\student\student_quota\page.tsx ->
+         * StudentSetupMaster.tsx + setup-api.ts (resource="quota"), and
+         * StudentSetupApiController (`POST student-setup/{resource}`,
+         * `name` -> student_quota.title). Only the "add" form is imported
+         * (list/edit/delete omitted).
+         */
+        'student_quota' => [
+            'type' => 'form',
+            'label' => 'Add Student Quota',
+            // Derived from the Next.js folder path -- not confirmed against tblmenumaster.
+            'matchLink' => 'student/student_quota',
+            'submit' => [
+                'method' => 'POST',
+                'endpoint' => 'student-setup/quota',
+                'successMessage' => 'Quota added.',
+            ],
+            'fields' => [
+                ['key' => 'name', 'label' => 'Quota Title', 'inputType' => 'text', 'required' => true],
+                ['key' => 'sort_order', 'label' => 'Sort Order', 'inputType' => 'number', 'required' => false],
+            ],
+        ],
+
+        /**
+         * Traced from D:\lms_k12\app\student\dicipline\page.tsx ->
+         * app\student\_components\StudentCareModule.tsx + student-care-api.ts,
+         * and StudentCareApiController (`POST student-care/{module}`, module
+         * 'discipline' -> table `dicipline`; validatePayload requires
+         * student_id, message, date_). The web page picks the student with a
+         * live search box (not expressible as a mobile block), so `student_id`
+         * is a plain numeric Input. Existing-record list/edit/delete omitted.
+         * Flag values -1/0/1 are what the controller accepts.
+         */
+        'dicipline' => [
+            'type' => 'form',
+            'label' => 'Student Discipline',
+            // Derived from the Next.js folder path -- not confirmed against tblmenumaster.
+            'matchLink' => 'student/dicipline',
+            'submit' => [
+                'method' => 'POST',
+                'endpoint' => 'student-care/discipline',
+                'successMessage' => 'Discipline record added.',
+            ],
+            'fields' => [
+                ['key' => 'student_id', 'label' => 'Student ID', 'inputType' => 'number', 'required' => true, 'placeholder' => 'The student record id'],
+                [
+                    'key' => 'dicipline', 'label' => 'Discipline Type', 'inputType' => 'select', 'required' => true,
+                    'options' => [
+                        ['value' => 'Bad', 'label' => 'Bad'], ['value' => 'Good', 'label' => 'Good'],
+                        ['value' => 'Check', 'label' => 'Check'], ['value' => 'Excellent', 'label' => 'Excellent'],
+                    ],
+                ],
+                ['key' => 'message', 'label' => 'Message', 'inputType' => 'text', 'required' => true],
+                [
+                    'key' => 'flag', 'label' => 'Flag', 'inputType' => 'select', 'required' => false,
+                    'options' => [
+                        ['value' => '1', 'label' => 'Positive'], ['value' => '0', 'label' => 'Neutral'], ['value' => '-1', 'label' => 'Negative'],
+                    ],
+                ],
+                ['key' => 'date_', 'label' => 'Date', 'inputType' => 'date', 'required' => true],
+            ],
+        ],
+
+        /**
+         * Traced from D:\lms_k12\app\student\student_hw\page.tsx (module
+         * 'height-weight'), the shared StudentCareModule.tsx and
+         * student-care-api.ts, and StudentCareApiController (module
+         * 'height-weight' -> table student_height_weight; required: date,
+         * student_id). Add form only: `POST student-care/height-weight`. The
+         * web page picks the student via a type-ahead search; imported here as
+         * a plain "Student ID" field (see edit_student). List/edit/delete are
+         * not represented.
+         */
+        'student_height_weight' => [
+            'type' => 'form',
+            'label' => 'Student Height & Weight',
+            // Verified in migration 2026_08_25_150100_fix_student_role_menu_link_conventions.
+            'matchLink' => 'student/student_hw',
+            'submit' => [
+                'method' => 'POST',
+                'endpoint' => 'student-care/height-weight',
+                'successMessage' => 'Height & weight saved.',
+            ],
+            'fields' => [
+                ['key' => 'student_id', 'label' => 'Student ID', 'inputType' => 'text', 'required' => true, 'placeholder' => 'The student record id'],
+                ['key' => 'date', 'label' => 'Date', 'inputType' => 'date', 'required' => true],
+                ['key' => 'height', 'label' => 'Height', 'inputType' => 'number', 'required' => false],
+                ['key' => 'weight', 'label' => 'Weight', 'inputType' => 'number', 'required' => false],
+                ['key' => 'doctor_name', 'label' => 'Doctor Name', 'inputType' => 'text', 'required' => false],
+                ['key' => 'doctor_contact', 'label' => 'Doctor Contact', 'inputType' => 'text', 'required' => false, 'placeholder' => '10-digit mobile number'],
+            ],
+        ],
+
+        /**
+         * Traced from D:\lms_k12\app\student\student_health\page.tsx (module
+         * 'health'), StudentCareModule.tsx / student-care-api.ts, and
+         * StudentCareApiController (module 'health' -> table student_health;
+         * required: date, student_id). Add form only:
+         * `POST student-care/health`. OMITTED: the web form's "Document" file
+         * upload -- mobile blocks have no file input. "Remarks" is a textarea
+         * on web, imported as text.
+         */
+        'student_health' => [
+            'type' => 'form',
+            'label' => 'Student Health',
+            // Verified in migration 2026_08_25_150100_fix_student_role_menu_link_conventions.
+            'matchLink' => 'student/student_health',
+            'submit' => [
+                'method' => 'POST',
+                'endpoint' => 'student-care/health',
+                'successMessage' => 'Health record saved.',
+            ],
+            'fields' => [
+                ['key' => 'student_id', 'label' => 'Student ID', 'inputType' => 'text', 'required' => true, 'placeholder' => 'The student record id'],
+                ['key' => 'date', 'label' => 'Date', 'inputType' => 'date', 'required' => true],
+                ['key' => 'doctor_name', 'label' => 'Doctor Name', 'inputType' => 'text', 'required' => false],
+                ['key' => 'doctor_contact', 'label' => 'Doctor Contact', 'inputType' => 'text', 'required' => false, 'placeholder' => '10-digit mobile number'],
+                ['key' => 'remarks', 'label' => 'Remarks', 'inputType' => 'text', 'required' => false],
+            ],
+        ],
+
+        /**
+         * Traced from D:\lms_k12\app\student\student_vaccination\page.tsx
+         * (module 'vaccination'), StudentCareModule.tsx / student-care-api.ts,
+         * and StudentCareApiController (module 'vaccination' -> table
+         * student_vaccination; required: date, student_id). Add form only:
+         * `POST student-care/vaccination`. "Note" is a textarea on web,
+         * imported as text.
+         */
+        'student_vaccination' => [
+            'type' => 'form',
+            'label' => 'Student Vaccination',
+            // Verified in migration 2026_08_25_150100_fix_student_role_menu_link_conventions.
+            'matchLink' => 'student/student_vaccination',
+            'submit' => [
+                'method' => 'POST',
+                'endpoint' => 'student-care/vaccination',
+                'successMessage' => 'Vaccination record saved.',
+            ],
+            'fields' => [
+                ['key' => 'student_id', 'label' => 'Student ID', 'inputType' => 'text', 'required' => true, 'placeholder' => 'The student record id'],
+                ['key' => 'date', 'label' => 'Date', 'inputType' => 'date', 'required' => true],
+                ['key' => 'vaccination_type', 'label' => 'Vaccination Type', 'inputType' => 'text', 'required' => false],
+                ['key' => 'doctor_name', 'label' => 'Doctor Name', 'inputType' => 'text', 'required' => false],
+                ['key' => 'doctor_contact', 'label' => 'Doctor Contact', 'inputType' => 'text', 'required' => false, 'placeholder' => '10-digit mobile number'],
+                ['key' => 'note', 'label' => 'Note', 'inputType' => 'text', 'required' => false],
+            ],
+        ],
+
+        /**
+         * Traced from D:\lms_k12\app\student\student_infirmary\page.tsx and
+         * api.ts, and StudentInfirmaryApiController (validateRecord). Add form
+         * only: `POST student-infirmary`. Unlike the student-care pages,
+         * `medical_case_no` is REQUIRED by the backend; the web page prefills
+         * it read-only from `GET student-infirmary` -> data.next_case_number,
+         * which mobile cannot do, so it is a required text field the user
+         * types. Records table, summary tiles and edit/delete are not
+         * represented.
+         */
+        'student_infirmary' => [
+            'type' => 'form',
+            'label' => 'Student Infirmary',
+            // Verified in migration 2026_08_25_150100_fix_student_role_menu_link_conventions.
+            'matchLink' => 'student/student_infirmary',
+            'submit' => [
+                'method' => 'POST',
+                'endpoint' => 'student-infirmary',
+                'successMessage' => 'Infirmary record saved.',
+            ],
+            'fields' => [
+                ['key' => 'student_id', 'label' => 'Student ID', 'inputType' => 'text', 'required' => true, 'placeholder' => 'The student record id'],
+                ['key' => 'medical_case_no', 'label' => 'Medical Case No.', 'inputType' => 'text', 'required' => true],
+                ['key' => 'date', 'label' => 'Open Date', 'inputType' => 'date', 'required' => true],
+                ['key' => 'doctor_name', 'label' => 'Doctor Name', 'inputType' => 'text', 'required' => false],
+                ['key' => 'doctor_contact', 'label' => 'Doctor Contact', 'inputType' => 'text', 'required' => false, 'placeholder' => '10-digit mobile number'],
+                ['key' => 'complaint', 'label' => 'Complaint', 'inputType' => 'text', 'required' => false],
+                ['key' => 'symptoms', 'label' => 'Symptoms', 'inputType' => 'text', 'required' => false],
+                ['key' => 'disease', 'label' => 'Disease', 'inputType' => 'text', 'required' => false],
+                ['key' => 'treatments', 'label' => 'Treatments', 'inputType' => 'text', 'required' => false],
+                ['key' => 'medical_close_date', 'label' => 'Close Date', 'inputType' => 'date', 'required' => false],
+                ['key' => 'health_center', 'label' => 'Health Center', 'inputType' => 'text', 'required' => false],
+            ],
+        ],
     ];
 
     /** @return list<array{key:string,label:string}> */

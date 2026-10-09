@@ -211,11 +211,25 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     // engine - see palController::learnContent().
     Route::get('pal/learn/concept/{conceptId}', [palController::class, 'learnContent'])->whereNumber('conceptId')->name('pal.learn.concept');
 
+    // "Learn this concept visually" — a live, openly-licensed image pick for
+    // this concept (see palController::learnConceptImage() / ConceptImageSearchService).
+    // GET and side-effect-free for the same reason learnContent() is: opening
+    // the Learn page never mutates anything, only acknowledging it does.
+    Route::get('pal/learn/concept/{conceptId}/image', [palController::class, 'learnConceptImage'])->whereNumber('conceptId')->name('pal.learn.concept.image');
+
     // POST, because it is the one thing on the Learn screen that changes state:
     // it tells the engine the lesson was read, so the next resolve stops serving
     // `teach` and the learner is not shown a second lesson screen they have
     // already worked through.
     Route::post('pal/learn/concept/{conceptId}/read', [palController::class, 'learnAcknowledge'])->whereNumber('conceptId')->name('pal.learn.acknowledge');
+
+    // The image-based "Your Journey" map -- one live, openly-licensed picture
+    // per journey stage, searched from this learner's own subject/chapter/
+    // concept (see JourneyImageService). GET and side-effect-free for the same
+    // reason learnContent() is; the whole map is cached server-side. Both ids
+    // are optional and either one alone is enough, because a concept screen
+    // knows its concept and a chapter screen knows its chapter.
+    Route::get('pal/journey/images', [palController::class, 'journeyImages'])->name('pal.journey.images');
 
     // palController
     Route::resource('pal', palController::class)->whereNumber('pal');

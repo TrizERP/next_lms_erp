@@ -43,6 +43,7 @@ use App\Http\Controllers\api\TeacherFeeDuesApiController;
 use App\Http\Controllers\api\TeacherIcardApiController;
 use App\Http\Controllers\api\UserDashboardPreferenceApiController;
 
+
 // Student Assessment API - Get student assessment data with scores and levels
 Route::get('/student-assessment', [StudentGraphController::class, 'getStudentAssessment']);
 Route::middleware('api.session')->group(function () { Route::post('teacher/assignments/standards', [TeacherAssignmentMobileApiController::class, 'standards']); Route::post('teacher/assignments/divisions', [TeacherAssignmentMobileApiController::class, 'divisions']); });
@@ -95,6 +96,8 @@ Route::post('api-login', [ApiLoginController::class, 'login'])->middleware('thro
 Route::get('academic-terms', [ApiLoginController::class, 'academicTerms'])->name('api.academic-terms');
 // Isolated mobile Own Profile API; legacy profile controllers are unchanged.
 Route::middleware('api.session')->get('own-profile', [\App\Http\Controllers\api\OwnProfileApiController::class, 'show']);
+// Native mobile shell bootstrap: identity + role menu, all derived from the JWT.
+Route::middleware('api.session')->get('mobile/bootstrap', [\App\Http\Controllers\api\MobileBootstrapApiController::class, 'show']);
 
 // Exchanges the app's JWT for a single-use ticket that opens an ERP web page
 // already logged in, for menu rows whose render_type is 'webview'.
@@ -583,6 +586,13 @@ Route::match(['GET', 'POST'], 'intelligence/curriculum-planning', [\App\Http\Con
 // for chapters nobody opens. Scoped by sub_institute_id inside the controller.
 Route::match(['GET', 'POST'], 'intelligence/curriculum-planning/chapter', [\App\Http\Controllers\api\lms\CurriculumPlanningApiController::class, 'chapter']);
 
+// Curriculum Outcomes & Delivery Analytics - EXPECTED -> PLANNED -> DELIVERED ->
+// ASSESSED -> ACHIEVED -> GAP chain for one curriculum. Sibling of
+// intelligence/curriculum-planning above; scoped by sub_institute_id inside the
+// controller, same as that pair of routes (no session middleware).
+Route::match(['GET', 'POST'], 'intelligence/curriculum-outcomes', [\App\Http\Controllers\api\lms\CurriculumOutcomesApiController::class, 'index']);
+Route::match(['GET', 'POST'], 'intelligence/curriculum-outcomes/outcome', [\App\Http\Controllers\api\lms\CurriculumOutcomesApiController::class, 'outcomeDetail']);
+
 // Monthly Plan - calendar view of scheduled periods for a given month
 Route::match(['GET', 'POST'], 'intelligence/monthly-plan', [\App\Http\Controllers\api\lms\MonthlyPlanApiController::class, 'index']);
 
@@ -666,6 +676,12 @@ Route::middleware(['api.session'])->prefix('lms/prayogshala')->group(function ()
         Route::post('{id}/update', [$c, 'update'])->whereNumber('id');
         Route::post('{id}/delete', [$c, 'destroy'])->whereNumber('id');
     });
+// The question formats a teacher can generate: present in question_type_catalog AND
+// implemented in QuestionFormatRegistry. It spends nothing, so it sits behind the
+// same session and staff gates as generate but NOT behind throttle.qgen -- listing
+// formats must not eat the per-user generation allowance.
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::get('intelligence/questions/formats', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'formats']);
 });
 
 // Intelligence Content Generation - chapter content via Claude -> content_master
@@ -1015,8 +1031,55 @@ Route::prefix('attendance')->group(function () {
     Route::get('/kpi', [\App\Http\Controllers\api\Attendance\AttendanceDashboardApiController::class, 'kpi']);
 });
 
+/*
+|--------------------------------------------------------------------------
+| Intelligent Document Management System (IDMS) API v1
+|--------------------------------------------------------------------------
+*/
+Route::prefix('v1')->group(function () {
+    Route::get('documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'index']);
+    Route::post('documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'store']);
+    Route::get('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'show']);
+    Route::patch('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'update']);
+    Route::delete('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'destroy']);
+    Route::get('trash/documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'trash']);
+    Route::post('trash/documents/{id}/restore', [\App\Http\Controllers\api\v1\DocumentController::class, 'restore']);
+    Route::delete('trash/documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'purge']);
+    Route::post('documents/{id}/confirm', [\App\Http\Controllers\api\v1\DocumentController::class, 'confirm']);
+    Route::post('documents/{id}/tags', [\App\Http\Controllers\api\v1\DocumentController::class, 'updateTags']);
+    Route::get('documents/{id}/preview', [\App\Http\Controllers\api\v1\DocumentController::class, 'preview']);
+    Route::get('documents/{id}/download', [\App\Http\Controllers\api\v1\DocumentController::class, 'download']);
+    Route::get('documents/{id}/versions', [\App\Http\Controllers\api\v1\DocumentController::class, 'getVersions']);
+    Route::post('documents/{id}/versions', [\App\Http\Controllers\api\v1\DocumentController::class, 'addVersion']);
+    Route::post('documents/{id}/versions/{versionNumber}/restore', [\App\Http\Controllers\api\v1\DocumentController::class, 'restoreVersion']);
+    Route::get('documents/{id}/related', [\App\Http\Controllers\api\v1\DocumentController::class, 'related']);
 
+    Route::post('search/parse', [\App\Http\Controllers\api\v1\DocumentController::class, 'parseSearch']);
+    Route::get('browse/tree', [\App\Http\Controllers\api\v1\DocumentController::class, 'tree']);
+    Route::get('tags', [\App\Http\Controllers\api\v1\DocumentController::class, 'tags']);
+    Route::get('audit', [\App\Http\Controllers\api\v1\DocumentController::class, 'audit']);
+});
 
+// ------------------------------------------------------------------
+// Capture Class Attendance via photo (Next.js). Stateless counterpart of
+// front_desk\classFaceAttendanceController; the Blade routes are unchanged.
+// Staff only - students/parents get 403.
+// ------------------------------------------------------------------
+Route::middleware(['api.session', 'staff.only'])->prefix('face-attendance')->group(function () {
+    Route::match(['GET', 'POST'], 'class-options', [\App\Http\Controllers\api\FaceAttendanceApiController::class, 'classOptions']);
+    Route::post('capture', [\App\Http\Controllers\api\FaceAttendanceApiController::class, 'capture']);
+    Route::post('save', [\App\Http\Controllers\api\FaceAttendanceApiController::class, 'save']);
+});
 
-
-
+// ------------------------------------------------------------------
+// Capture Photo (student reference photos for face attendance, Next.js).
+// Stateless counterpart of front_desk\studentFaceAttendanceController; the Blade
+// routes are unchanged. Students may list/add their own; search and delete are
+// admin-only, enforced in the controller.
+// ------------------------------------------------------------------
+Route::middleware('api.session')->prefix('capture-photo')->group(function () {
+    Route::match(['GET', 'POST'], 'list', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'index']);
+    Route::match(['GET', 'POST'], 'students', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'searchStudents']);
+    Route::post('store', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'store']);
+    Route::post('delete', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'destroy']);
+});

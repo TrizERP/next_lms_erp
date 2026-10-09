@@ -346,6 +346,14 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
         // AI tagging proposals
         Route::post('/suggest-tags', [PalH5PModelController::class, 'suggestTags']);
 
+        // Generation from existing PAL content ("Generate Interactive Version")
+        Route::post('/concepts/{conceptId}/generate/flashcard', [PalH5PModelController::class, 'generateFlashcardFromConcept'])
+            ->where('conceptId', $numericId);
+        Route::post('/chapters/{chapterId}/generate/course-presentation', [PalH5PModelController::class, 'generateCoursePresentationFromChapter'])
+            ->where('chapterId', $numericId);
+        Route::post('/chapters/{chapterId}/generate/true-false', [PalH5PModelController::class, 'generateTrueFalseFromChapter'])
+            ->where('chapterId', $numericId);
+
         // xAPI ingestion
         Route::post('/xapi/batch', [PalH5PModelController::class, 'ingestXapiBatch']);
         Route::post('/xapi', [PalH5PModelController::class, 'ingestXapi']);

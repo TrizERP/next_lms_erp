@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\lms;
 
 use App\Http\Controllers\Controller;
+use App\Services\Curriculum\LearningOutcomeTreeBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -14,6 +15,10 @@ use Throwable;
 
 class CurriculumPlanningApiController extends Controller
 {
+    public function __construct(private LearningOutcomeTreeBuilder $outcomes = new LearningOutcomeTreeBuilder())
+    {
+    }
+
     /**
      * Yearly syllabus overview across subjects: summary stats, a subject x
      * month topic grid, upcoming lessons and per-subject chapter progress.
@@ -246,7 +251,7 @@ class CurriculumPlanningApiController extends Controller
                                 return [
                                     'chapter_id'         => $chapter->id,
                                     'chapter_name'       => $chapter->chapter_name,
-                                    'chapter_desc'       => $this->blankToNull($chapter->chapter_desc ?? null),
+                                    'chapter_desc'       => $this->outcomes->blankToNull($chapter->chapter_desc ?? null),
                                     'sort_order'         => $chapter->sort_order,
                                     'availability'       => $chapter->availability,
                                     'show_hide'          => $chapter->show_hide,
@@ -261,7 +266,7 @@ class CurriculumPlanningApiController extends Controller
                                     // The key_concepts blob itself stays out of this
                                     // payload (~231KB across the roll-up); only its
                                     // size travels, and the list comes from chapter().
-                                    'key_concept_count'  => count($this->decodeJsonArray($chapter->key_concepts ?? null)),
+                                    'key_concept_count'  => count($this->outcomes->decodeJsonArray($chapter->key_concepts ?? null)),
                                     'learning_objective' => $semantic->learning_objective ?? null,
                                     'total_concepts'     => isset($semantic->total_concepts) ? (int) $semantic->total_concepts : null,
                                     // blooms_level is deliberately absent: it reads
@@ -286,7 +291,7 @@ class CurriculumPlanningApiController extends Controller
                         // Round"), so any name matching here would invent links
                         // that do not exist. chapter_master.unit_id is the only
                         // authoritative join.
-                        $declaredChapters = $this->decodeJsonArray($unit->unit_chapters ?? null);
+                        $declaredChapters = $this->outcomes->decodeJsonArray($unit->unit_chapters ?? null);
 
                         return [
                             'unit_id'                 => $unit->id,
@@ -327,15 +332,15 @@ class CurriculumPlanningApiController extends Controller
                     // UI has to be able to tell "nobody has written this yet"
                     // from "written, and deliberately blank".
                     'details'         => [
-                        'curriculum_alignment' => $this->blankToNull($curriculum->curriculum_alignment ?? null),
-                        'holistic_curriculum'  => $this->blankToNull($curriculum->holistic_curriculum ?? null),
-                        'model_integration'    => $this->blankToNull($curriculum->model_integration ?? null),
-                        'objective'            => $this->blankToNull($curriculum->objective ?? null),
-                        'chapter'              => $this->blankToNull($curriculum->chapter ?? null),
-                        'outcome'              => $this->blankToNull($curriculum->outcome ?? null),
-                        'assessment_tool'      => $this->blankToNull($curriculum->assessment_tool ?? null),
+                        'curriculum_alignment' => $this->outcomes->blankToNull($curriculum->curriculum_alignment ?? null),
+                        'holistic_curriculum'  => $this->outcomes->blankToNull($curriculum->holistic_curriculum ?? null),
+                        'model_integration'    => $this->outcomes->blankToNull($curriculum->model_integration ?? null),
+                        'objective'            => $this->outcomes->blankToNull($curriculum->objective ?? null),
+                        'chapter'              => $this->outcomes->blankToNull($curriculum->chapter ?? null),
+                        'outcome'              => $this->outcomes->blankToNull($curriculum->outcome ?? null),
+                        'assessment_tool'      => $this->outcomes->blankToNull($curriculum->assessment_tool ?? null),
                     ],
-                    'outcomes'        => $this->outcomeTree($outcomesByCurriculum->get($curriculum->id) ?? collect()),
+                    'outcomes'        => $this->outcomes->outcomeTree($outcomesByCurriculum->get($curriculum->id) ?? collect()),
                     'coverage'        => [
                         'declared_chapters'         => $curriculumUnits->sum('declared_chapter_count'),
                         'extracted_chapters'        => $totalChapters,
@@ -575,7 +580,7 @@ class CurriculumPlanningApiController extends Controller
                 'data'    => [
                     'chapter_id'        => (int) $chapter->id,
                     'chapter_name'      => $chapter->chapter_name,
-                    'chapter_desc'      => $this->blankToNull($chapter->chapter_desc ?? null),
+                    'chapter_desc'      => $this->outcomes->blankToNull($chapter->chapter_desc ?? null),
                     'sort_order'        => $chapter->sort_order,
                     'availability'      => $chapter->availability,
                     'show_hide'         => $chapter->show_hide,
@@ -584,7 +589,7 @@ class CurriculumPlanningApiController extends Controller
                     'topics'            => $topics,
                     'concepts'          => $concepts,
                     'learning_outcomes' => $learningOutcomes,
-                    'key_concepts'      => $this->decodeJsonArray($chapter->key_concepts ?? null),
+                    'key_concepts'      => $this->outcomes->decodeJsonArray($chapter->key_concepts ?? null),
                     'semantic'          => $semantic,
                     'source'            => $source,
                 ],
@@ -663,12 +668,12 @@ class CurriculumPlanningApiController extends Controller
                     return [
                         'chapter_id'         => (int) $row->id,
                         'chapter_name'       => $row->chapter_name,
-                        'chapter_desc'       => $this->blankToNull($row->chapter_desc ?? null),
+                        'chapter_desc'       => $this->outcomes->blankToNull($row->chapter_desc ?? null),
                         'sort_order'         => $row->sort_order,
                         'extraction_id'      => $row->extraction_id,
                         'topic_count'        => (int) ($topicCounts->get($row->id) ?? 0),
                         'concept_count'      => (int) ($conceptCounts->get($row->id) ?? 0),
-                        'key_concept_count'  => count($this->decodeJsonArray($row->key_concepts ?? null)),
+                        'key_concept_count'  => count($this->outcomes->decodeJsonArray($row->key_concepts ?? null)),
                         'learning_objective' => $semantic->learning_objective ?? null,
                         'total_concepts'     => isset($semantic->total_concepts) ? (int) $semantic->total_concepts : null,
                         'has_intelligence'   => $semantic !== null,
@@ -689,89 +694,4 @@ class CurriculumPlanningApiController extends Controller
             ->values();
     }
 
-    /**
-     * Nest the flat outcome rows into goals with their competencies beneath.
-     *
-     * Parenthood is read from `parent_id`, never from `type`: the enum stores
-     * an empty string for every goal row on this estate, so `type = 'goal'`
-     * matches nothing and would silently flatten the tree.
-     */
-    private function outcomeTree($rows)
-    {
-        $rows = collect($rows);
-
-        $children = $rows->filter(fn ($row) => !empty($row->parent_id))->groupBy('parent_id');
-
-        $goals = $rows
-            ->filter(fn ($row) => empty($row->parent_id))
-            ->map(fn ($goal) => [
-                'id'           => (int) $goal->id,
-                'code'         => $goal->code,
-                'type'         => $this->blankToNull($goal->type ?? null) ?? 'goal',
-                'description'  => $goal->description,
-                'competencies' => ($children->get($goal->id) ?? collect())
-                    ->map(fn ($child) => [
-                        'id'          => (int) $child->id,
-                        'code'        => $child->code,
-                        'type'        => $this->blankToNull($child->type ?? null) ?? 'competency',
-                        'description' => $child->description,
-                    ])
-                    ->values(),
-            ])
-            ->values();
-
-        // A competency whose goal is missing would otherwise vanish. Keep it
-        // visible under a null-coded parent rather than lose curriculum data.
-        $orphans = $children
-            ->reject(fn ($group, $parentId) => $rows->contains(fn ($row) => (int) $row->id === (int) $parentId))
-            ->flatten(1);
-
-        if ($orphans->isNotEmpty()) {
-            $goals->push([
-                'id'           => null,
-                'code'         => null,
-                'type'         => 'goal',
-                'description'  => 'Competencies with no parent goal recorded',
-                'competencies' => $orphans->map(fn ($child) => [
-                    'id'          => (int) $child->id,
-                    'code'        => $child->code,
-                    'type'        => $this->blankToNull($child->type ?? null) ?? 'competency',
-                    'description' => $child->description,
-                ])->values(),
-            ]);
-        }
-
-        return $goals;
-    }
-
-    /**
-     * Decode a JSON array column, tolerating null, '' and malformed content.
-     * Always an array, so callers can count() it without guarding.
-     */
-    private function decodeJsonArray($value): array
-    {
-        if ($value === null || $value === '') {
-            return [];
-        }
-
-        $decoded = json_decode($value, true);
-
-        return is_array($decoded) ? $decoded : [];
-    }
-
-    /**
-     * Empty and whitespace-only strings become null.
-     *
-     * Every authoring column on lms_curriculum holds '' rather than NULL, and
-     * the difference between "never written" and "written blank" is the whole
-     * point of showing these fields, so the UI is given one unambiguous value.
-     */
-    private function blankToNull($value)
-    {
-        if ($value === null) {
-            return null;
-        }
-
-        return trim((string) $value) === '' ? null : $value;
-    }
 }

@@ -26,6 +26,8 @@ use App\Models\lms\contentmappingtypeModel;
 use App\Models\lms\topicModel;
 use App\Models\school_setup\sub_std_mapModel;
 use App\Services\OpenAIService;
+use App\Services\PAL\Integration\ConceptImageSearchService;
+use App\Services\PAL\Integration\JourneyImageService;
 use App\Services\PAL\Integration\PedagogySuggestedContentService;
 use App\Services\PAL\Runtime\BktEngine;
 use App\Services\PAL\Intelligence\MisconceptionIntelligenceEngine;
@@ -2784,12 +2786,7 @@ public function getData($request)
             $subInstituteId
         );
 
-        $latestAttempts = \App\Models\PAL\DiagnosticAttempt::forStudent($studentId)
-            ->submitted()
-            ->orderByDesc('id')
-            ->get()
-            ->unique('chapter_id')
-            ->keyBy('chapter_id');
+        $latestAttempts = \App\Models\PAL\DiagnosticAttempt::latestSubmittedByChapter($studentId);
 
         $grouped = [];
 
@@ -2809,6 +2806,7 @@ public function getData($request)
                 'has_diagnostic' => $attempt !== null,
                 'level' => $attempt?->level,
                 'percentage' => $attempt !== null ? (float) $attempt->percentage : null,
+                'attempt_number' => $attempt?->attempt_number,
                 'last_attempt_id' => $attempt?->id,
                 'last_attempted_at' => $attempt?->submitted_at,
             ];
@@ -2835,11 +2833,35 @@ public function getData($request)
         $subInstituteId = $ctx['sub_institute_id'];
         $syear = $ctx['syear'];
         $standardId = $request->input('standard_id');
+        // An explicit retake request bypasses the "already attempted" gate
+        // and forces a fresh draw. Never implicit - a bare GET on this
+        // route must never silently start a second paper over a result the
+        // learner hasn't seen yet.
+        $forceNew = $request->boolean('retake');
 
         // subject_id and standard_id are resolved from the chapter inside the
         // service; passing them here only overrides that.
         $diagnosticService = app(\App\Services\PAL\Diagnostic\DiagnosticService::class);
-        $result = $diagnosticService->start($studentId, (int) $chapterId, $subInstituteId, $syear, null, $standardId);
+        $result = $diagnosticService->start($studentId, (int) $chapterId, $subInstituteId, $syear, null, $standardId, $forceNew);
+
+        if (($result['status'] ?? null) === 'already_attempted') {
+            $res = [
+                'status_code' => 1,
+                'message' => 'You have already attempted this diagnostic.',
+                // Named attempt_status, NOT status: is_mobile() overwrites
+                // any 'status' key with strtoupper(status_code) for
+                // type=API/JSON responses, which would silently clobber
+                // this discriminator.
+                'attempt_status' => 'already_attempted',
+                'attempt_id' => null,
+                'chapter_id' => (int) $chapterId,
+                'questions' => [],
+                'previous_attempt' => $result['previous_attempt'],
+                'student_id' => $studentId,
+            ];
+
+            return is_mobile($type, 'lms/pal/diagnostic-already-attempted', $res, 'view');
+        }
 
         if ($result['attempt_id'] === null) {
             $message = match ($result['reason']) {
@@ -2877,6 +2899,10 @@ public function getData($request)
             'selection_report' => $result['selection_report'],
             'student_id' => $studentId,
             'time_allowed' => 30, // minutes for 15 questions
+            // 'new' | 'resumed' - 'already_attempted' never reaches here, it
+            // returns above. Named attempt_status, not status - see the
+            // comment on the already_attempted branch above for why.
+            'attempt_status' => $result['status'] ?? 'new',
             // True when this is an unfinished attempt being handed back rather
             // than a new paper, with the count already answered on it. The UI
             // needs both to say so instead of implying a fresh start.
@@ -3266,6 +3292,113 @@ public function getData($request)
             'misconceptions' => $misconceptions,
             'student_id' => $studentId,
         ]);
+    }
+
+    /**
+     * "Learn this concept visually" — one openly-licensed educational image
+     * for this concept, picked live from Openverse, no human review gate
+     * (see ConceptImageSearchService's own note on why this differs from
+     * concept videos' CONTENT LAW C4/C5 approval pipeline).
+     *
+     * Read-only and side-effect-free, same as learnContent(): a repeat visit
+     * to the same concept re-serves the cached pick rather than searching
+     * again (see ConceptImageSearchService::search()'s own cache).
+     *
+     * Response shape is the frontend's contract, not this controller's usual
+     * {status, message, ...} envelope — {success, image, query} either way,
+     * never a 4xx/5xx for "no image found", so the frontend can tell "this
+     * concept has no usable image right now" apart from "the request itself
+     * failed" without inspecting an HTTP status.
+     */
+    public function learnConceptImage(Request $request, $conceptId)
+    {
+        $concept = DB::table('lms_concept')
+            ->where('id', $conceptId)
+            ->first(['id', 'name', 'chapter_id', 'subject_id', 'standard_id']);
+
+        if ($concept === null) {
+            return response()->json(['success' => false, 'image' => null, 'query' => null], 404);
+        }
+
+        $chapter = DB::table('chapter_master')
+            ->where('id', (int) ($concept->chapter_id ?? 0))
+            ->first(['chapter_name', 'subject_id', 'standard_id']);
+
+        $subjectId = (int) ($concept->subject_id ?? ($chapter->subject_id ?? 0));
+        $standardId = (int) ($concept->standard_id ?? ($chapter->standard_id ?? 0));
+
+        // The frontend already has this concept's authored description on
+        // screen (Learn already fetched it via learnContent()) — passed
+        // through rather than re-resolved, so this endpoint needs no second
+        // join to get real vocabulary from it.
+        $description = trim((string) $request->query('description', ''));
+
+        $query = app(ConceptImageSearchService::class)->queryFor(
+            (string) $concept->name,
+            $chapter->chapter_name ?? null,
+            $description !== '' ? $description : null,
+            $subjectId > 0 ? (string) DB::table('subject')->where('id', $subjectId)->value('subject_name') : null,
+            $standardId > 0 ? (string) DB::table('standard')->where('id', $standardId)->value('name') : null,
+        );
+
+        $result = app(ConceptImageSearchService::class)->bestImageFor($query);
+
+        if ($result === null) {
+            return response()->json(['success' => false, 'image' => null, 'query' => $query]);
+        }
+
+        $image = $result['image'];
+
+        return response()->json([
+            'success' => true,
+            'image' => [
+                'url' => $image['url'],
+                'thumbnail_url' => $image['thumbnail_url'],
+                'title' => $image['title'],
+                'source_url' => $image['source_url'],
+                'creator' => $image['creator'],
+                'license' => $image['license'],
+                'attribution' => $image['attribution'],
+            ],
+            'query' => $result['query'],
+        ]);
+    }
+
+    /**
+     * The image-based "Your Journey" map — one openly-licensed picture per
+     * journey stage, searched live from this learner's own subject, chapter
+     * and concept (see JourneyImageService).
+     *
+     * CHAPTER OR CONCEPT, EITHER ALONE
+     *
+     * `chapter_id` and `concept_id` are both optional and both sufficient. The
+     * diagnostic exam screen only knows its chapter; a Learn or Feedback
+     * screen only knows its concept. Neither is made to go and fetch the
+     * other's id first — the service resolves the missing half itself (a
+     * concept carries its `chapter_id`, a chapter carries its `subject_id`),
+     * which is what lets one image-map component sit behind the journey rail
+     * on every PAL screen without each screen first resolving anything.
+     *
+     * Read-only and side-effect-free, like learnConceptImage() above and for
+     * the same reason: the whole map is cached server-side, so re-opening it
+     * costs a cache read rather than ten searches.
+     *
+     * The response shape is deliberately `{success, subject, chapter, concept,
+     * poster, stages}` and never a 4xx/5xx for "no image found" — including
+     * when neither id resolves at all. A missing picture is an ordinary
+     * outcome the frontend renders as an icon tile, and it must be
+     * distinguishable from "the request itself failed" without the frontend
+     * having to inspect an HTTP status.
+     */
+    public function journeyImages(Request $request)
+    {
+        $chapterId = (int) $request->query('chapter_id', 0);
+        $conceptId = (int) $request->query('concept_id', 0);
+
+        return response()->json(app(JourneyImageService::class)->forContext(
+            $chapterId > 0 ? $chapterId : null,
+            $conceptId > 0 ? $conceptId : null,
+        ));
     }
 
     /**

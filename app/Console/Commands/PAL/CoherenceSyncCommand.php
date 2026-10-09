@@ -65,7 +65,7 @@ class CoherenceSyncCommand extends Command
     private function projectMap(CoherenceGraphProjection $projection, int $tenant, int $standard, int $subject): void
     {
         $this->newLine();
-        $this->info('1/9  Concepts + HAS_CONCEPT');
+        $this->info('1/11  Concepts + HAS_CONCEPT');
         $concepts = $projection->projectConcepts($tenant, $standard, $subject);
         $this->report($concepts);
 
@@ -81,7 +81,7 @@ class CoherenceSyncCommand extends Command
             ));
         }
 
-        $this->info('2/9  REQUIRES + CROSS_LINKS');
+        $this->info('2/11  REQUIRES + CROSS_LINKS');
         $relations = $projection->projectRelations($tenant, $standard, $subject);
         $this->report($relations);
 
@@ -93,16 +93,16 @@ class CoherenceSyncCommand extends Command
             ));
         }
 
-        $this->info('3/9  TEACHES (Content -> Concept)');
+        $this->info('3/11  TEACHES (Content -> Concept)');
         $this->report($projection->projectTeaches($tenant, $standard, $subject));
 
-        $this->info('4/9  ASSESSES (Question -> Concept)');
+        $this->info('4/11  ASSESSES (Question -> Concept)');
         $this->report($projection->projectAssesses($tenant, $standard, $subject));
 
-        $this->info('5/9  Chapter-grain REQUIRES (pal_learning_relations)');
+        $this->info('5/11  Chapter-grain REQUIRES (pal_learning_relations)');
         $this->report($projection->projectLearningRelations($tenant, $standard, $subject));
 
-        $this->info('6/9  Misconceptions: AFFECTS + CORRECTS_WITH');
+        $this->info('6/11  Misconceptions: AFFECTS + CORRECTS_WITH');
         $misconceptions = $projection->projectMisconceptions($tenant, $standard, $subject);
         $this->report($misconceptions);
 
@@ -114,13 +114,13 @@ class CoherenceSyncCommand extends Command
             ));
         }
 
-        $this->info('7/9  ConceptNode identity (pal_concept_nodes, K/A/S)');
+        $this->info('7/11  ConceptNode identity (pal_concept_nodes, K/A/S)');
         $this->report($projection->projectConceptNodes($tenant, $standard, $subject));
 
-        $this->info('8/9  Node-level mastery (learner_node_state)');
+        $this->info('8/11  Node-level mastery (learner_node_state)');
         $this->report($projection->projectNodeMastery($tenant, $standard, $subject));
 
-        $this->info('9/9  Learning outcomes: PART_OF + HAS_OUTCOME + ADDRESSES');
+        $this->info('9/11  Learning outcomes: PART_OF + HAS_OUTCOME + ADDRESSES');
         $outcomes = $projection->projectLearningOutcomes($tenant, $standard, $subject);
         $this->report($outcomes);
 
@@ -130,6 +130,21 @@ class CoherenceSyncCommand extends Command
                 $outcomes['unresolved_addresses']
             ));
         }
+
+        $this->info('10/11 Topics: HAS_TOPIC + HAS_CONCEPT (topic_master)');
+        $topics = $projection->projectTopics($tenant, $standard, $subject);
+        $this->report($topics);
+
+        if (($topics['unresolved_has_concept'] ?? 0) > 0) {
+            $this->warn(sprintf(
+                '     %d concept(s) reference a topic_id not in the graph for this scope.',
+                $topics['unresolved_has_concept']
+            ));
+        }
+
+        $this->info('11/11 Chapter enrichment: semantic_intelligence + document_extractions');
+        $enrichment = $projection->projectChapterIntelligence($tenant, $standard, $subject);
+        $this->report($enrichment);
     }
 
     private function sweepMastery(CoherenceGraphProjection $projection, int $tenant): void

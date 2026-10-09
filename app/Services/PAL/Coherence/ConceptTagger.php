@@ -54,7 +54,7 @@ class ConceptTagger
     /**
      * Propose concept links for content in one standard+subject.
      *
-     * @return array{scanned: int, tagged: int, ambiguous: int, no_concepts: int, samples: array}
+     * @return array{scanned: int, tagged: int, ambiguous: int, no_concepts: int, already_reviewed: int, samples: array}
      */
     public function tagContent(int $tenant, int $standardId, int $subjectId, bool $dryRun = false, bool $chapterFallback = false): array
     {
@@ -84,7 +84,7 @@ class ConceptTagger
      * included in the match text because where they DO exist they are the
      * strongest signal available.
      *
-     * @return array{scanned: int, tagged: int, ambiguous: int, no_concepts: int, samples: array}
+     * @return array{scanned: int, tagged: int, ambiguous: int, no_concepts: int, already_reviewed: int, samples: array}
      */
     public function tagQuestions(int $tenant, int $standardId, int $subjectId, bool $dryRun = false, bool $chapterFallback = false): array
     {
@@ -117,6 +117,7 @@ class ConceptTagger
      *
      * @param  iterable<object>  $rows
      * @param  array<int, array<int, array{id: int, name: string, tokens: array<int, string>}>>  $byChapter
+     * @param  callable(int, int, float): bool  $write  returns false when skipped as already human-reviewed
      */
     private function tagEstate(
         iterable $rows,
@@ -130,6 +131,7 @@ class ConceptTagger
         $tagged = 0;
         $ambiguous = 0;
         $noConcepts = 0;
+        $alreadyReviewed = 0;
         $samples = [];
 
         foreach ($rows as $row) {
@@ -188,18 +190,24 @@ class ConceptTagger
             }
 
             if (! $dryRun) {
-                $write((int) $row->id, $best['id'], $bestScore);
+                $wrote = $write((int) $row->id, $best['id'], $bestScore);
+
+                if (! $wrote) {
+                    $alreadyReviewed++;
+                    continue;
+                }
             }
 
             $tagged++;
         }
 
         return [
-            'scanned'     => $scanned,
-            'tagged'      => $tagged,
-            'ambiguous'   => $ambiguous,
-            'no_concepts' => $noConcepts,
-            'samples'     => $samples,
+            'scanned'          => $scanned,
+            'tagged'           => $tagged,
+            'ambiguous'        => $ambiguous,
+            'no_concepts'      => $noConcepts,
+            'already_reviewed' => $alreadyReviewed,
+            'samples'          => $samples,
         ];
     }
 
@@ -252,8 +260,32 @@ class ConceptTagger
         return $byChapter;
     }
 
-    private function writeContentLink(int $tenant, int $contentId, int $conceptId, float $confidence): void
+    /**
+     * C5, enforced here rather than assumed: a row already reviewed by a
+     * human (tagged_by='human', or any status past 'draft') must never be
+     * overwritten by a proposal. Safe to call on an unreviewed row every
+     * time this runs on a schedule - this was previously an unconditional
+     * updateOrInsert, which only stayed harmless because nothing ran it on a
+     * recurring basis yet.
+     */
+    private function alreadyReviewed(string $table, string $idColumn, int $id, int $tenant): bool
     {
+        $existing = DB::table($table)
+            ->where($idColumn, $id)
+            ->where('sub_institute_id', $tenant)
+            ->first(['tagged_by', 'quality_status']);
+
+        return $existing !== null
+            && ($existing->tagged_by === 'human' || $existing->quality_status !== 'draft');
+    }
+
+    /** @return bool true if written, false if skipped because the row is already human-reviewed */
+    private function writeContentLink(int $tenant, int $contentId, int $conceptId, float $confidence): bool
+    {
+        if ($this->alreadyReviewed('pal_content_metadata', 'content_master_id', $contentId, $tenant)) {
+            return false;
+        }
+
         DB::table('pal_content_metadata')->updateOrInsert(
             ['content_master_id' => $contentId, 'sub_institute_id' => $tenant],
             [
@@ -265,10 +297,17 @@ class ConceptTagger
                 'created_at'     => DB::raw('COALESCE(created_at, NOW())'),
             ]
         );
+
+        return true;
     }
 
-    private function writeQuestionLink(int $tenant, int $questionId, int $conceptId, float $confidence): void
+    /** @return bool true if written, false if skipped because the row is already human-reviewed */
+    private function writeQuestionLink(int $tenant, int $questionId, int $conceptId, float $confidence): bool
     {
+        if ($this->alreadyReviewed('pal_question_metadata', 'question_id', $questionId, $tenant)) {
+            return false;
+        }
+
         DB::table('pal_question_metadata')->updateOrInsert(
             ['question_id' => $questionId, 'sub_institute_id' => $tenant],
             [
@@ -280,6 +319,8 @@ class ConceptTagger
                 'created_at'     => DB::raw('COALESCE(created_at, NOW())'),
             ]
         );
+
+        return true;
     }
 
     /**

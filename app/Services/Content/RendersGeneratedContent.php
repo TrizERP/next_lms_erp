@@ -35,6 +35,23 @@ trait RendersGeneratedContent
     ];
 
     /**
+     * Pedagogical metadata a content block carries.
+     *
+     * These are what make the Content Design System checkable rather than
+     * decorative: `lms:validate-content` reads them to prove every concept in a
+     * chapter was actually covered, that each slide asks the student something,
+     * and that the Bloom range is not flat. Declared as an explicit list rather
+     * than a `data-*` wildcard so the allowlist stays closed - an unknown
+     * `data-` attribute is still dropped.
+     *
+     * Inert by construction: no handler, no URL, no styling. See
+     * docs/content-design-system/README.md section 4.2.
+     */
+    protected array $generatedContentDataAttributes = [
+        'data-block', 'data-concept', 'data-bloom', 'data-dok', 'data-minutes',
+    ];
+
+    /**
      * Attributes kept per tag. Everything else - every `on*` handler, every
      * inline `style`, every `srcset`/`formaction` - is dropped.
      */
@@ -170,7 +187,8 @@ trait RendersGeneratedContent
             $tag = strtolower($node->nodeName);
             $allowed = array_merge(
                 $this->generatedContentAttributes['*'],
-                $this->generatedContentAttributes[$tag] ?? []
+                $this->generatedContentAttributes[$tag] ?? [],
+                $this->generatedContentDataAttributes
             );
 
             foreach (iterator_to_array($node->attributes ?? []) as $attr) {

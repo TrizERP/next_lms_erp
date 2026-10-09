@@ -33,7 +33,7 @@ class DiagnosticAttempt extends Model
 
     protected $fillable = [
         'student_id', 'subject_id', 'chapter_id', 'standard_id', 'sub_institute_id', 'syear',
-        'status', 'total_questions', 'correct', 'incorrect', 'unanswered', 'percentage', 'level',
+        'status', 'attempt_number', 'total_questions', 'correct', 'incorrect', 'unanswered', 'percentage', 'level',
         'difficulty_breakdown', 'concept_breakdown', 'selection_report',
         'started_at', 'submitted_at',
     ];
@@ -45,6 +45,7 @@ class DiagnosticAttempt extends Model
         'standard_id'      => 'integer',
         'sub_institute_id' => 'integer',
         'syear'            => 'integer',
+        'attempt_number'   => 'integer',
         'total_questions'  => 'integer',
         'correct'          => 'integer',
         'incorrect'        => 'integer',
@@ -91,5 +92,22 @@ class DiagnosticAttempt extends Model
     public function isSubmitted(): bool
     {
         return $this->status === self::STATUS_SUBMITTED;
+    }
+
+    /**
+     * Latest submitted attempt per chapter for a student - the one fact
+     * both the Subjects-list "already attempted" badge
+     * (PalWorkspaceController::workspace()) and the legacy
+     * palController::diagnosticSubjects() need, kept in one place so the
+     * two can't drift apart.
+     */
+    public static function latestSubmittedByChapter($studentId)
+    {
+        return static::forStudent($studentId)
+            ->submitted()
+            ->orderByDesc('id')
+            ->get()
+            ->unique('chapter_id')
+            ->keyBy('chapter_id');
     }
 }

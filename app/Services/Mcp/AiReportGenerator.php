@@ -145,7 +145,31 @@ class AiReportGenerator
         // The school's configured layout for this module, if it has one. Resolved before
         // the rows because the layout is what decides where they come from: its bound
         // MCP tool, not the service this class happens to have been given.
-        $layout = $this->layouts->find($module, $context->selectedInstituteId);
+        // A caller may name which published report to build when the module has several.
+        // It is a choice of layout, not a data argument, so it is taken out before the
+        // arguments reach the data source or are recorded for refresh (the marker keeps
+        // the layout id itself). Naming one that is not usable is an error, never a
+        // silent fall-back to a different report than the one asked for.
+        $requestedLayout = (int) ($arguments['layout_template_id'] ?? 0);
+        unset($arguments['layout_template_id']);
+
+        if ($requestedLayout > 0) {
+            $layout = $this->layouts->findById($requestedLayout, $context->selectedInstituteId);
+
+            if ($layout === null
+                || (string) $layout->status !== 'published'
+                || mb_strtolower((string) $layout->module_key) !== $module
+                || trim((string) $layout->html_layout) === ''
+                || ! $this->layouts->isUsable($layout)) {
+                return ToolResult::failure(
+                    'ai.templates.generate',
+                    'That report is not available for this module. It may have been unpublished or belongs to another module.',
+                    'layout_unavailable'
+                );
+            }
+        } else {
+            $layout = $this->layouts->find($module, $context->selectedInstituteId);
+        }
 
         $data = $this->rowsFor($module, $context, $arguments, $layout);
 

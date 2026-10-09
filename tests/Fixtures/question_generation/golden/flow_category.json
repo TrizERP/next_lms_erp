@@ -1,0 +1,7 @@
+{
+    "mcq_apply": "concept_diagnostic",
+    "mcq_misconception": "misconception_detection",
+    "case": "mastery_reverification",
+    "stage": "adaptive_diagnostic",
+    "semantic_key": "MULTIPLICATION_OF_INTEGERS_0123"
+}

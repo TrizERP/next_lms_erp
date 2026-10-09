@@ -5,7 +5,9 @@ namespace App\Brain\Intelligence;
 use App\Brain\Support\LmsOrganization;
 use App\Brain\Support\LmsQueryScope;
 use App\Brain\Support\SchemaCache;
+use App\Services\Neo4jService;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * The organization as a graph, built from vivek_erp's own foreign keys.
@@ -69,6 +71,13 @@ final class GraphExplorer
             ['type' => 'person', 'label' => 'Staff', 'count' => $this->lmsCount('tbluser')],
             ['type' => 'student', 'label' => 'Students', 'count' => $this->lmsCount('tblstudent')],
             ['type' => 'subject', 'label' => 'Subjects', 'count' => $this->count('subject')],
+            // Skill/JobRole are a global occupational taxonomy, not this
+            // institute's own data (sub_institute_id on these nodes is a
+            // loader artefact, not a tenant scope — same reason the capability
+            // explorer never forwarded subInstituteId to its old iframe, per
+            // LMS-AUDIT-282). Every institute sees the same taxonomy.
+            ['type' => 'skill', 'label' => 'Skills (occupational taxonomy)', 'count' => $this->neo4jCount('Skill')],
+            ['type' => 'jobrole', 'label' => 'Job roles (occupational taxonomy)', 'count' => $this->neo4jCount('JobRole')],
         ];
 
         return array_values(array_filter($types, fn ($t) => $t['count'] > 0));
@@ -88,6 +97,8 @@ final class GraphExplorer
             'student' => $this->studentNodes($search, $limit),
             'subject' => $this->subjectNodes($search, $limit),
             'organization' => [$this->organizationNode()],
+            'skill' => $this->skillNodes($search, $limit),
+            'jobrole' => $this->jobRoleNodes($search, $limit),
             default => [],
         };
     }
@@ -106,6 +117,8 @@ final class GraphExplorer
             'student' => $this->expandStudent($id),
             'subject' => $this->expandSubject($id),
             'organization' => $this->expandOrganization(),
+            'skill' => $this->expandSkill($id),
+            'jobrole' => $this->expandJobRole($id),
             default => ['available' => false, 'reason' => 'That kind of node is not in this graph.'],
         };
     }
@@ -272,6 +285,85 @@ final class GraphExplorer
         $code = trim((string) ($row->subject_code ?? ''));
 
         return $code !== '' ? $code : 'Subject '.$row->id;
+    }
+
+    /**
+     * Skills, most-required-first. This is the same global taxonomy for every
+     * institute — see the note on roots() — so there is no tenant filter here.
+     */
+    private function skillNodes(string $search, int $limit): array
+    {
+        $neo4j = $this->neo4j();
+        if (! $neo4j) {
+            return [];
+        }
+
+        $limit = max(1, min($limit, 200));
+
+        try {
+            $result = $neo4j->run(
+                'MATCH (s:Skill)
+                 WHERE $search = "" OR toLower(s.title) CONTAINS toLower($search)
+                 OPTIONAL MATCH (s)<-[:REQUIRES_SKILL]-(jr:JobRole)
+                 WITH s, count(jr) AS degree
+                 RETURN s.skillId AS id, s.title AS title, s.category AS category, s.status AS status, degree
+                 ORDER BY degree DESC
+                 LIMIT '.$limit,
+                ['search' => $search]
+            );
+        } catch (Throwable $e) {
+            return [];
+        }
+
+        return array_map(fn ($r) => [
+            'type' => 'skill',
+            'id' => (string) $r->get('id'),
+            'label' => (string) ($r->get('title') ?? ('Skill '.$r->get('id'))),
+            'degree' => (int) $r->get('degree'),
+            'metrics' => array_values(array_filter([
+                $r->get('category') ? ['label' => 'Category', 'value' => (string) $r->get('category')] : null,
+                ['label' => 'Required by', 'value' => number_format((int) $r->get('degree')).' job roles'],
+            ])),
+        ], iterator_to_array($result));
+    }
+
+    /**
+     * Job roles, most-skills-required-first. Same global taxonomy, no tenant filter.
+     */
+    private function jobRoleNodes(string $search, int $limit): array
+    {
+        $neo4j = $this->neo4j();
+        if (! $neo4j) {
+            return [];
+        }
+
+        $limit = max(1, min($limit, 200));
+
+        try {
+            $result = $neo4j->run(
+                'MATCH (jr:JobRole)
+                 WHERE $search = "" OR toLower(jr.jobrole) CONTAINS toLower($search)
+                 OPTIONAL MATCH (jr)-[:REQUIRES_SKILL]->(s:Skill)
+                 WITH jr, count(s) AS degree
+                 RETURN jr.jobroleId AS id, jr.jobrole AS label, jr.track AS track, jr.status AS status, degree
+                 ORDER BY degree DESC
+                 LIMIT '.$limit,
+                ['search' => $search]
+            );
+        } catch (Throwable $e) {
+            return [];
+        }
+
+        return array_map(fn ($r) => [
+            'type' => 'jobrole',
+            'id' => (string) $r->get('id'),
+            'label' => (string) ($r->get('label') ?? ('Job role '.$r->get('id'))),
+            'degree' => (int) $r->get('degree'),
+            'metrics' => array_values(array_filter([
+                $r->get('track') ? ['label' => 'Track', 'value' => (string) $r->get('track')] : null,
+                ['label' => 'Requires', 'value' => number_format((int) $r->get('degree')).' skills'],
+            ])),
+        ], iterator_to_array($result));
     }
 
     /* -------------------------------------------------------------- expanders */
@@ -508,6 +600,135 @@ final class GraphExplorer
         ];
     }
 
+    /**
+     * One skill and the job roles whose taxonomy entry requires it.
+     */
+    private function expandSkill(string $id): array
+    {
+        $neo4j = $this->neo4j();
+        if (! $neo4j || ! ctype_digit($id)) {
+            return ['available' => false, 'reason' => 'The skill taxonomy is not reachable right now.'];
+        }
+
+        try {
+            $node = $neo4j->run(
+                'MATCH (s:Skill) WHERE s.skillId = $id
+                 RETURN s.skillId AS id, s.title AS title, s.category AS category, s.sub_category AS subCategory, s.status AS status',
+                ['id' => (int) $id]
+            )->first();
+
+            if ($node === null) {
+                return ['available' => false, 'reason' => 'No such skill in the taxonomy.'];
+            }
+
+            $requiredBy = iterator_to_array($neo4j->run(
+                'MATCH (jr:JobRole)-[:REQUIRES_SKILL]->(s:Skill) WHERE s.skillId = $id
+                 RETURN jr.jobroleId AS id, jr.jobrole AS label, jr.track AS track
+                 ORDER BY jr.jobrole LIMIT 60',
+                ['id' => (int) $id]
+            ));
+            $total = (int) $neo4j->run(
+                'MATCH (jr:JobRole)-[:REQUIRES_SKILL]->(s:Skill) WHERE s.skillId = $id RETURN count(jr) AS c',
+                ['id' => (int) $id]
+            )->first()->get('c');
+        } catch (Throwable $e) {
+            return ['available' => false, 'reason' => 'The skill taxonomy is not reachable right now.'];
+        }
+
+        $jobRoles = array_map(fn ($r) => [
+            'type' => 'jobrole',
+            'id' => (string) $r->get('id'),
+            'label' => (string) $r->get('label'),
+            'degree' => 0,
+            'metrics' => array_values(array_filter([
+                $r->get('track') ? ['label' => 'Track', 'value' => (string) $r->get('track')] : null,
+            ])),
+        ], $requiredBy);
+
+        return [
+            'available' => true,
+            'node' => [
+                'type' => 'skill',
+                'id' => (string) $node->get('id'),
+                'label' => (string) $node->get('title'),
+                'degree' => $total,
+                'metrics' => array_values(array_filter([
+                    $node->get('category') ? ['label' => 'Category', 'value' => (string) $node->get('category')] : null,
+                    $node->get('subCategory') ? ['label' => 'Sub-category', 'value' => (string) $node->get('subCategory')] : null,
+                    ['label' => 'Required by', 'value' => number_format($total).' job roles'],
+                ])),
+            ],
+            'edges' => array_values(array_filter([
+                $this->edge('Job roles requiring this skill', 'jobrole', $jobRoles, $total),
+            ])),
+            'signals' => [],
+        ];
+    }
+
+    /**
+     * One job role and the skills its taxonomy entry requires.
+     */
+    private function expandJobRole(string $id): array
+    {
+        $neo4j = $this->neo4j();
+        if (! $neo4j || ! ctype_digit($id)) {
+            return ['available' => false, 'reason' => 'The job role taxonomy is not reachable right now.'];
+        }
+
+        try {
+            $node = $neo4j->run(
+                'MATCH (jr:JobRole) WHERE jr.jobroleId = $id
+                 RETURN jr.jobroleId AS id, jr.jobrole AS label, jr.track AS track, jr.description AS description, jr.status AS status',
+                ['id' => (int) $id]
+            )->first();
+
+            if ($node === null) {
+                return ['available' => false, 'reason' => 'No such job role in the taxonomy.'];
+            }
+
+            $requires = iterator_to_array($neo4j->run(
+                'MATCH (jr:JobRole)-[:REQUIRES_SKILL]->(s:Skill) WHERE jr.jobroleId = $id
+                 RETURN s.skillId AS id, s.title AS label, s.category AS category
+                 ORDER BY s.title LIMIT 60',
+                ['id' => (int) $id]
+            ));
+            $total = (int) $neo4j->run(
+                'MATCH (jr:JobRole)-[:REQUIRES_SKILL]->(s:Skill) WHERE jr.jobroleId = $id RETURN count(s) AS c',
+                ['id' => (int) $id]
+            )->first()->get('c');
+        } catch (Throwable $e) {
+            return ['available' => false, 'reason' => 'The job role taxonomy is not reachable right now.'];
+        }
+
+        $skills = array_map(fn ($r) => [
+            'type' => 'skill',
+            'id' => (string) $r->get('id'),
+            'label' => (string) $r->get('label'),
+            'degree' => 0,
+            'metrics' => array_values(array_filter([
+                $r->get('category') ? ['label' => 'Category', 'value' => (string) $r->get('category')] : null,
+            ])),
+        ], $requires);
+
+        return [
+            'available' => true,
+            'node' => [
+                'type' => 'jobrole',
+                'id' => (string) $node->get('id'),
+                'label' => (string) $node->get('label'),
+                'degree' => $total,
+                'metrics' => array_values(array_filter([
+                    $node->get('track') ? ['label' => 'Track', 'value' => (string) $node->get('track')] : null,
+                    ['label' => 'Requires', 'value' => number_format($total).' skills'],
+                ])),
+            ],
+            'edges' => array_values(array_filter([
+                $this->edge('Skills this role requires', 'skill', $skills, $total),
+            ])),
+            'signals' => [],
+        ];
+    }
+
     private function expandPerson(string $id): array
     {
         if (! SchemaCache::hasTable('tbluser')) {
@@ -703,6 +924,33 @@ final class GraphExplorer
         }
 
         return (int) DB::table($table)->where('sub_institute_id', $this->tenantId)->count();
+    }
+
+    /** The Skill/JobRole taxonomy lives in Neo4j, not this institute's MySQL schema. */
+    private function neo4j(): ?Neo4jService
+    {
+        try {
+            $service = app(Neo4jService::class);
+            $service->getClient();
+
+            return $service;
+        } catch (Throwable $e) {
+            return null;
+        }
+    }
+
+    private function neo4jCount(string $label): int
+    {
+        $neo4j = $this->neo4j();
+        if (! $neo4j) {
+            return 0;
+        }
+
+        try {
+            return (int) $neo4j->run("MATCH (n:{$label}) RETURN count(n) AS c")->first()->get('c');
+        } catch (Throwable $e) {
+            return 0;
+        }
     }
 
     private static function num($value): string

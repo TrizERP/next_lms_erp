@@ -12,6 +12,10 @@ return [
     'username' => env('NEO4J_USERNAME', 'neo4j'),
     'password' => env('NEO4J_PASSWORD', 'neo4j'),
     'uri' => env('NEO4J_URI', 'bolt://localhost:7687'),
+    // HTTP transaction endpoint, same server/credentials, different port. Used only by
+    // neo4j:copy-lms-pal, which switched off the Bolt driver entirely after it proved
+    // unreliable for this one-time bulk transfer — see that command's docblock.
+    'http_uri' => env('NEO4J_HTTP_URI'),
 
     /*
     |--------------------------------------------------------------------------
@@ -28,6 +32,7 @@ return [
     'targets' => [
         'lms_pal' => [
             'uri'      => env('NEO4J_LMSPAL_URI'),
+            'http_uri' => env('NEO4J_LMSPAL_HTTP_URI'),
             'username' => env('NEO4J_LMSPAL_USERNAME', 'neo4j'),
             'password' => env('NEO4J_LMSPAL_PASSWORD'),
         ],
