@@ -192,6 +192,53 @@ class ConceptImageSearchService
     }
 
     /**
+     * Up to `$limit` ranked, relevance-filtered candidates instead of only the top one.
+     *
+     * Same search, ranking, licence-presence and score floor as bestImageFor(); the
+     * difference is that the caller (the study-deck image planner) gets several to
+     * choose between, because for abstract topics the best keyword match is often the
+     * wrong picture. URLs are NOT pre-resolved here: the caller downloads the one it
+     * picks, which is the stronger check.
+     *
+     * @return array<int, array<string, mixed>> each candidate plus the `query` variant that found it
+     */
+    public function rankedImagesFor(string $query, int $limit = 5, ?float $minScore = null, ?string $source = null): array
+    {
+        if (! $this->available()) {
+            return [];
+        }
+
+        $floor = $minScore ?? (float) config('pal_content.image.external.min_score', 1.0);
+        $out = [];
+
+        foreach ($this->queryVariants($query) as $variant) {
+            $variant = $this->clipQuery($variant);
+            if ($variant === '') {
+                continue;
+            }
+
+            $candidates = $this->search($variant, $source);
+            if ($candidates === []) {
+                continue;
+            }
+
+            foreach ($this->rank($candidates, $variant, $minScore) as $row) {
+                if ($row['score'] < $floor || isset($out[$row['url']])) {
+                    continue;
+                }
+                unset($row['score']);
+                $out[$row['url']] = $row + ['query' => $variant];
+
+                if (count($out) >= $limit) {
+                    break 2;
+                }
+            }
+        }
+
+        return array_values($out);
+    }
+
+    /**
      * `$query` itself, then its first 3 and first 2 significant words, then
      * its single first word — each one strictly narrower in word count but
      * broader in what it can match. Deduplicated and never empty-string.

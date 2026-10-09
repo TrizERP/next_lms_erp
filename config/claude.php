@@ -44,6 +44,13 @@ return [
     'source_label' => env('CLAUDE_CONTENT_SOURCE_LABEL', 'Claude AI'),
 
     /*
+    | The student app's public address, used for the links a study deck's PDF prints beside each interactive
+    | activity (<this>/student/study-deck/<chapter>?content=<id>&slide=<n>). Falls back to the mobile page builder's
+    | frontend address. Empty means the PDF carries no links.
+    */
+    'study_deck_frontend_url' => env('STUDY_DECK_FRONTEND_URL', env('MOBILE_PAGE_BUILDER_FRONTEND_URL', 'https://k12.scholarclone.com')),
+
+    /*
     | Runtime controls.
     |
     | NOTE: temperature / top_p / top_k are deliberately absent. Claude Opus 5
@@ -76,6 +83,18 @@ return [
         // A handful of short questions as JSON; far below the content writer's ceiling.
         'max_output_tokens' => (int) env('CLAUDE_QUESTION_MAX_OUTPUT_TOKENS', 8000),
         'timeout_seconds' => (int) env('CLAUDE_QUESTION_TIMEOUT_SECONDS', 180),
+    ],
+
+    /*
+    | Which completer the study-deck pipeline uses: `api` (default, the
+    | Anthropic API via ContentGenerationService) or `cli` - DEV ONLY, shells out
+    | to the `claude` CLI with every tool disabled, for tenants with no API key.
+    */
+    'executor' => env('CLAUDE_EXECUTOR', 'api'),
+    'cli' => [
+        'binary' => env('CLAUDE_CLI_BINARY', 'claude'),
+        'model' => env('CLAUDE_CLI_MODEL', ''),
+        'timeout_seconds' => (int) env('CLAUDE_CLI_TIMEOUT_SECONDS', 900),
     ],
 
     // Per-user rate limit on the billable generation path, applied by

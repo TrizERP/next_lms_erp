@@ -649,6 +649,14 @@ class ApiLmsCourseController extends Controller
         foreach ($content_data as $content) {
             $contentArray = (array)$content;
             $contentArray['url'] = $this->resolveContentUrl($contentArray);
+            // A study deck is an ordinary presentation row that opens in the interactive player. Adds a field only.
+            if ($deepLink = \App\Services\ContentGenerationService::studyDeckDeepLink($contentArray)) {
+                $contentArray['deep_link'] = $deepLink;
+            }
+            // Its classroom PDF (a second file of the same item), offered only when it is really stored.
+            if ($pdfUrl = \App\Services\ContentGenerationService::studyDeckPdfUrl($contentArray)) {
+                $contentArray['pdf_url'] = $pdfUrl;
+            }
             // concept_id is unstamped on virtually every row, so the lms_concept
             // join alone leaves the concept blank. Generated content still records
             // it in the description, which is the only place it survives.
