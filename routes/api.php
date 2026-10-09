@@ -686,6 +686,7 @@ Route::middleware(['api.session'])->prefix('lms/prayogshala')->group(function ()
         Route::post('{id}/update', [$c, 'update'])->whereNumber('id');
         Route::post('{id}/delete', [$c, 'destroy'])->whereNumber('id');
     });
+    
 // The question formats a teacher can generate: present in question_type_catalog AND
 // implemented in QuestionFormatRegistry. It spends nothing, so it sits behind the
 // same session and staff gates as generate but NOT behind throttle.qgen -- listing
