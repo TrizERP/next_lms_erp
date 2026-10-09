@@ -110,7 +110,7 @@ class PrayogshalaService
      *
      * @return \Illuminate\Support\Collection<int,object>
      */
-    public function rowsForChapter(object $chapter, int $tenant, bool $publishedOnly)
+    public function rowsForChapter(object $chapter, int $tenant, bool $publishedOnly, ?int $topicId = null)
     {
         $query = DB::table('lms_prayogshala_activity')
             ->whereNull('deleted_at')
@@ -119,11 +119,22 @@ class PrayogshalaService
             ->where('subject_id', $chapter->subject_id)
             ->whereIn('sub_institute_id', $this->visibleTenants($tenant));
 
+        if ($topicId !== null) {
+            $query->where('topic_id', $topicId);
+        }
         if ($publishedOnly) {
-            $query->where('show_hide', 1)->where('status', 'published');
+            // Published AND real: a placeholder that is still generating, or failed, has no lab.
+            $query->where('show_hide', 1)->where('status', 'published')
+                ->where(fn ($q) => $q->whereNull('generation_status')->orWhere('generation_status', 'ready'));
         }
 
-        return $query->orderBy('sort_order')->orderBy('id')->get();
+        // One activity per topic: when an institute has its own and can also read the platform's,
+        // its own wins. Chapter-wide rows (no topic) are never merged.
+        return $query->orderBy('sort_order')->orderBy('id')->get()
+            ->sortByDesc(fn ($r) => (int) ((int) $r->sub_institute_id === $tenant))
+            ->unique(fn ($r) => $r->topic_id !== null ? 't' . $r->topic_id : 'r' . $r->id)
+            ->sortBy([['sort_order', 'asc'], ['id', 'asc']])
+            ->values();
     }
 
     /**
@@ -142,6 +153,9 @@ class PrayogshalaService
             }
             if ($row->concept_id) {
                 $conceptIds[] = (int) $row->concept_id;
+            }
+            foreach ((array) json_decode((string) ($row->concept_ids ?? ''), true) as $cid) {
+                $conceptIds[] = (int) $cid;
             }
         }
 
@@ -175,6 +189,7 @@ class PrayogshalaService
         $names ??= $this->names([$row]);
         $decode = fn ($v) => $v ? (json_decode($v, true) ?: []) : [];
         $lab = $row->lab_config ? json_decode($row->lab_config, true) : null;
+        $concepts = array_values(array_map('intval', (array) json_decode((string) ($row->concept_ids ?? ''), true)));
         // Teacher-only material never leaves the server for a learner.
         if ($forLearner && is_array($lab)) {
             unset($lab['teacher_script']);
@@ -205,6 +220,14 @@ class PrayogshalaService
             'resources'            => $decode($row->resources),
             'slug'                 => $row->slug,
             'status'               => $row->status,
+            'generation_status'    => $row->generation_status,
+            'generation_version'   => (int) $row->generation_version,
+            'generated_at'         => $row->generated_at,
+            // Provider diagnostics and source provenance are staff material.
+            'generation_error'     => $forLearner ? null : $row->generation_error,
+            'source_refs'          => $forLearner ? null : ($row->source_refs ? json_decode($row->source_refs, true) : null),
+            'concept_ids'          => $concepts,
+            'concept_names'        => array_values(array_filter(array_map(fn ($id) => $names['concepts'][$id] ?? null, $concepts))),
             'lab_config'           => is_array($lab) ? $lab : null,
             'show_hide'            => (int) $row->show_hide,
             'sort_order'           => (int) $row->sort_order,
@@ -214,6 +237,59 @@ class PrayogshalaService
             'created_at'           => $row->created_at,
             'updated_at'           => $row->updated_at,
         ];
+    }
+
+    /**
+     * The chapter's topics, each with the one activity filed against it (or none).
+     *
+     * This is the topic-wise view the UI is built on, and it is also the honest coverage report:
+     * a topic with no row is "not generated"; a row says whether it is generating, ready, failed
+     * or needs more source content. A learner only gets topics that have a published activity
+     * attached, and none of the generation fields.
+     *
+     * @return list<array<string,mixed>>
+     */
+    public function topicCoverage(object $chapter, int $tenant, bool $forLearner): array
+    {
+        $topics = DB::table('topic_master')->where('chapter_id', $chapter->id)
+            ->orderBy('topic_sort_order')->orderBy('id')->get(['id', 'name', 'description']);
+        $rows = $this->rowsForChapter($chapter, $tenant, $forLearner);
+        $byTopic = $rows->filter(fn ($r) => $r->topic_id !== null)->keyBy('topic_id');
+        $presented = collect($this->presentMany($byTopic->values(), $tenant, $forLearner))->keyBy('topic_id');
+        $conceptCounts = DB::table('lms_concept')->where('chapter_id', $chapter->id)->whereIn('topic_id', $topics->pluck('id'))
+            ->selectRaw('topic_id, count(*) as n')->groupBy('topic_id')->pluck('n', 'topic_id');
+
+        $out = [];
+        foreach ($topics as $topic) {
+            $activity = $presented->get($topic->id);
+            if ($forLearner && ! $activity) {
+                continue;
+            }
+            $out[] = [
+                'topic_id'      => (int) $topic->id,
+                'topic_name'    => $topic->name,
+                'concept_count' => (int) ($conceptCounts[$topic->id] ?? 0),
+                'has_description' => mb_strlen(trim((string) $topic->description)) >= 40,
+                'state'         => $this->topicState($activity),
+                'activity'      => $activity,
+            ];
+        }
+
+        return $out;
+    }
+
+    /** not_generated | generating | ready | published | failed | needs_content */
+    private function topicState(?array $activity): string
+    {
+        if (! $activity) {
+            return 'not_generated';
+        }
+        $gen = $activity['generation_status'];
+        if (in_array($gen, ['generating', 'failed', 'needs_content'], true)) {
+            return $gen;
+        }
+
+        return $activity['status'] === 'published' ? 'published' : 'ready';
     }
 
     /**
@@ -235,7 +311,11 @@ class PrayogshalaService
             return [];
         }
 
-        $rows = $this->rowsForChapter($chapter, $tenant, $publishedOnly);
+        // A topic still generating, failed, or short of source has no activity to open yet: it
+        // lives in the topic list, not in the content list as a card.
+        $rows = $this->rowsForChapter($chapter, $tenant, $publishedOnly)
+            ->reject(fn ($r) => in_array($r->generation_status, ['generating', 'failed', 'needs_content'], true) && $r->lab_config === null)
+            ->values();
         $context = $rows->isEmpty() ? null : $this->chapterContext($chapter);
         $assets = [];
         foreach ($this->presentMany($rows, $tenant, $publishedOnly) as $activity) {

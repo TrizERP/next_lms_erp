@@ -74,6 +74,7 @@ class PrayogshalaStandard9ScienceSeeder extends Seeder
                     'standard_id'          => $chapter->standard_id,
                     'subject_id'           => $chapter->subject_id,
                     'topic_id'             => $topicId,
+                    'topic_slot'           => $topicId,
                     'concept_id'           => $conceptId,
                     'title'                => $a['title'],
                     'activity_type'        => $a['type'],
