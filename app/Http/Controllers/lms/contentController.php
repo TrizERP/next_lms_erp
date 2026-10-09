@@ -1539,6 +1539,29 @@ public function generateGammaPDF(Request $request)
     }
 
     /**
+     * The lms_concept ids for the concept names a teacher ticked in the drawer.
+     *
+     * Empty means every concept (nothing was narrowed). Null means names were sent and none of them is a concept of this
+     * chapter, which is a mistake to report, never a reason to write the whole chapter.
+     *
+     * @param array<int,mixed> $names
+     * @return array<int,int>|null
+     */
+    private function resolveStudyDocumentConceptIds($chapterId, array $names): ?array
+    {
+        $wanted = array_values(array_filter(array_map(fn ($n) => mb_strtolower(trim((string) $n)), $names), fn ($n) => $n !== ''));
+        if ($wanted === []) {
+            return [];
+        }
+
+        $ids = DB::table('lms_concept')->where('chapter_id', $chapterId)->get(['id', 'name'])
+            ->filter(fn ($c) => in_array(mb_strtolower(trim((string) $c->name)), $wanted, true))
+            ->pluck('id')->map(fn ($v) => (int) $v)->values()->all();
+
+        return $ids === [] ? null : $ids;
+    }
+
+    /**
      * The lms_concept row a generated item belongs to.
      *
      * Prefers the id the caller sent, but only after checking it really belongs to
@@ -1598,6 +1621,9 @@ public function generateGammaPDF(Request $request)
             'slide_count' => 'nullable|integer|min:1|max:50',
             'concept_id' => 'nullable|integer',
             'concept_name' => 'nullable|string|max:250',
+            // The concepts a teacher ticked in the drawer, when they narrowed the list (a study document covers just those).
+            'concept_names' => 'nullable|array|max:300',
+            'concept_names.*' => 'nullable|string|max:250',
         ]);
 
         $chapterName = $request->chapter_name;
@@ -1722,6 +1748,29 @@ public function generateGammaPDF(Request $request)
         // service only chooses the model and stores the result. Any other
         // chapter falls through to the two provider branches below unchanged.
         if ($this->contentGeneration->handles($chapterData->id)) {
+            // Revision notes, a remedial class and classroom activities are STUDY DOCUMENTS: written from the chapter's own
+            // concept data, prerequisites and question bank, checked, and stored with a PDF the app reads in place. The
+            // prompt the drawer assembled is not used for them (the pipeline builds its own from the same data).
+            if ($kind = $this->contentGeneration->studyDocumentKindFor($contentType, $chapterData->id)) {
+                $conceptIds = $this->resolveStudyDocumentConceptIds($chapterData->id, (array) $request->input('concept_names', []));
+                if ($conceptIds === null) {
+                    return response()->json(['success' => false, 'status_code' => 0, 'message' => 'None of the selected concepts could be matched to this chapter.'], 422);
+                }
+                $result = $this->contentGeneration->generateStudyDocument($kind, [
+                    'chapter' => $chapterData,
+                    'chapter_name' => (string) ($chapterData->chapter_name ?: $chapterName),
+                    'grade_id' => $gradeId,
+                    'concept_id' => null,
+                    'concept_ids' => $conceptIds,
+                    'sub_institute_id' => $sub_institute_id,
+                    'syear' => $syear,
+                    'created_by' => $user_id,
+                    'user_profile_name' => $request->user_profile_name,
+                ]);
+
+                return response()->json($result['body'], $result['http']);
+            }
+
             $result = $this->contentGeneration->generate([
                 'prompt' => $prompt,
                 'content_type' => $contentType,

@@ -4,6 +4,7 @@ namespace App\Services\StudyDeck;
 
 use App\Services\PAL\Integration\ConceptImageSearchService;
 use App\Services\QuestionGeneration\DragDrop\Contracts\DiagramImageStore;
+use App\Services\StudyDeck\Contracts\SourceImageCache;
 use Illuminate\Support\Facades\Http;
 
 /**
@@ -12,10 +13,12 @@ use Illuminate\Support\Facades\Http;
  * Source: Openverse only (openly licensed), through the estate's existing
  * ConceptImageSearchService - no AI image generation.
  *
- * Every accepted picture is DOWNLOADED and stored under our own storage, never
- * hot-linked: an earlier pilot lost images to hot-linking (blocked or moved
- * third-party URLs). The record it keeps - source page, licence, creator,
- * attribution and the match evidence - is what DeckValidator checks.
+ * Every accepted picture is DOWNLOADED and stored in our own database (see
+ * StudyDeckImages), never hot-linked: an earlier pilot lost images to
+ * hot-linking (blocked or moved third-party URLs). Nothing is written to a
+ * folder; the record's `url` is the picture's stable reference. The record it
+ * keeps - source page, licence, creator, attribution and the match evidence -
+ * is what DeckValidator checks.
  *
  * LIMIT, stated plainly: "does this picture show the concept" is judged here by
  * the words the picture's own title and tags share with the query. That catches
@@ -35,7 +38,7 @@ class ImagePlanner
     /** Ranked candidates examined per search pass. */
     private const CANDIDATES = 4;
 
-    /** @var callable(string):?array{bytes:string,mime:string,width:int,height:int} */
+    /** @var callable(string):?array{bytes:string,mime:string,width:int,height:int,source?:string} */
     private $download;
 
     /** Real downloads are paced so a deck full of images is not read as a burst. */
@@ -115,6 +118,7 @@ class ImagePlanner
             'width' => $file['width'],
             'height' => $file['height'],
             'sha1' => sha1($file['bytes']),
+            'sha256' => hash('sha256', $file['bytes']),
             'layout' => $spec['layout'],
             'texts' => DiagramRenderer::texts($spec),
             'alt' => DiagramRenderer::describe($spec),
@@ -217,7 +221,8 @@ class ImagePlanner
                 // what the plan hoped it would show.
                 'alt' => $this->altFor($image),
                 'caption' => $this->cleanTitle((string) ($image['title'] ?? '')),
-                'url' => $this->store->store($file['bytes'], $file['mime']),
+                // The store also learns where the picture came from, so a re-run reads it back instead of downloading it again.
+                'url' => $this->store->store($file['bytes'], $file['mime'], (string) ($file['source'] ?? $image['url'])),
                 'width' => $file['width'],
                 'height' => $file['height'],
                 'query' => $image['query'] ?? $query,
@@ -230,6 +235,7 @@ class ImagePlanner
                 'attribution_required' => $needsCredit,
                 'attribution' => $credit,
                 'sha1' => sha1($file['bytes']),
+                'sha256' => hash('sha256', $file['bytes']),
                 'match' => $match,
                 'review' => $this->judge ? ['relevant' => true, 'reason' => (string) ($verdict['reasons'][$i] ?? '')] : null,
             ];
@@ -302,17 +308,14 @@ class ImagePlanner
         return '';
     }
 
-    /** @return array{bytes:string,mime:string,width:int,height:int}|null */
+    /** @return array{bytes:string,mime:string,width:int,height:int,source:string}|null */
     private function fetch(string $url): ?array
     {
         $url = $this->preferThumbnail($url);
-        $cached = storage_path('app/study-deck/_image-cache/' . sha1($url));
-        if (is_file($cached)) {
-            $bytes = (string) file_get_contents($cached);
-            $info = @getimagesizefromstring($bytes);
-            if ($info !== false) {
-                return ['bytes' => $bytes, 'mime' => (string) $info['mime'], 'width' => (int) $info[0], 'height' => (int) $info[1]];
-            }
+
+        // A picture downloaded for this school before is in the database already; nothing is kept in a folder.
+        if ($this->store instanceof SourceImageCache && ($hit = $this->store->cached($url)) !== null) {
+            return $hit + ['source' => $url];
         }
 
         try {
@@ -339,12 +342,7 @@ class ImagePlanner
                 return null;
             }
 
-            if (!is_dir(dirname($cached))) {
-                @mkdir(dirname($cached), 0775, true);
-            }
-            @file_put_contents($cached, $bytes);
-
-            return ['bytes' => $bytes, 'mime' => (string) $info['mime'], 'width' => (int) $info[0], 'height' => (int) $info[1]];
+            return ['bytes' => $bytes, 'mime' => (string) $info['mime'], 'width' => (int) $info[0], 'height' => (int) $info[1], 'source' => $url];
         } catch (\Throwable) {
             return null;
         }

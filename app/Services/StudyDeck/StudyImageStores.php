@@ -3,57 +3,41 @@
 namespace App\Services\StudyDeck;
 
 use App\Services\QuestionGeneration\DragDrop\Contracts\DiagramImageStore;
-use Illuminate\Support\Facades\Storage;
+use App\Services\StudyDeck\Contracts\SourceImageCache;
 
 /**
- * Where study-deck pictures are kept. Two stores, one contract:
+ * Where study-deck pictures are kept: the database, and nowhere else.
  *
- *   directory - writes beside the generated bundle; used for the review run
- *               and never touches shared storage
- *   spaces    - the DigitalOcean disk, the only host RendersGeneratedContent
- *               accepts for <img>; used when the deck is actually stored
- *
- * Both name files by content hash, so one picture is kept once.
+ * `store()` returns the picture's stable reference (`study-deck-image:<id>`), which is what the deck, the
+ * rendered presentation and the stored deck file carry. A picture is never written to a folder, so a
+ * generation run leaves no files behind; the same picture is stored once per school (see StudyDeckImages).
  */
 final class StudyImageStores
 {
-    private const EXT = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
-
-    public static function directory(string $dir): DiagramImageStore
+    public static function database(int $tenant, ?int $chapterId = null, ?StudyDeckImages $images = null): DiagramImageStore
     {
-        return new class($dir) implements DiagramImageStore {
-            public function __construct(private readonly string $dir)
-            {
+        return new class($images ?? new StudyDeckImages(), $tenant, $chapterId) implements DiagramImageStore, SourceImageCache {
+            public function __construct(
+                private readonly StudyDeckImages $images,
+                private readonly int $tenant,
+                private readonly ?int $chapterId,
+            ) {
             }
 
-            public function store(string $bytes, string $mime): string
+            /**
+             * @param string $mime ignored: the type is read from the bytes
+             * @param string|null $sourceUrl where a downloaded picture came from, so it is not downloaded again
+             * @return string the picture's reference
+             */
+            public function store(string $bytes, string $mime, ?string $sourceUrl = null): string
             {
-                if (!is_dir($this->dir) && !mkdir($this->dir, 0775, true) && !is_dir($this->dir)) {
-                    throw new \RuntimeException('Could not create ' . $this->dir);
-                }
-                $name = sha1($bytes) . '.' . (StudyImageStores::EXT_FOR[$mime] ?? 'jpg');
-                file_put_contents($this->dir . '/' . $name, $bytes);
+                return $this->images->put($bytes, $this->tenant, $this->chapterId, $sourceUrl)['ref'];
+            }
 
-                return 'images/' . $name;
+            public function cached(string $url): ?array
+            {
+                return $this->images->cachedDownload($this->tenant, $url);
             }
         };
     }
-
-    public static function spaces(): DiagramImageStore
-    {
-        return new class implements DiagramImageStore {
-            public function store(string $bytes, string $mime): string
-            {
-                $path = 'public/lms_content_file/studydeck/' . sha1($bytes) . '.' . (StudyImageStores::EXT_FOR[$mime] ?? 'jpg');
-                $disk = Storage::disk('digitalocean');
-                if (!$disk->exists($path)) {
-                    $disk->put($path, $bytes, 'public');
-                }
-
-                return $disk->url($path);
-            }
-        };
-    }
-
-    public const EXT_FOR = self::EXT;
 }

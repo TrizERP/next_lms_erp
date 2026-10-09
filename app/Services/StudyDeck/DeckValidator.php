@@ -416,7 +416,7 @@ class DeckValidator
         }
     }
 
-    private function markup(string $html, array $map, array $deck, array &$errors): void
+    public function markup(string $html, array $map, array $deck, array &$errors): void
     {
         $doc = new DOMDocument();
         $prev = libxml_use_internal_errors(true);
@@ -508,6 +508,36 @@ class DeckValidator
      */
     private function grounding(string $html, array $deck, array $context, array $eligible, array &$errors, array &$warnings): void
     {
+        $extra = '';
+        foreach ($deck['slides'] as $s) {
+            if (($s['image']['type'] ?? '') === 'diagram') {
+                $extra .= ' ' . implode(' ', $s['image']['texts']);
+            }
+            // Discussion prompts and interactions are slide wording too.
+            $extra .= ' ' . implode(' ', array_map(fn ($v) => rtrim((string) $v, '.') . '.', array_merge($this->wording($s['content']['discussion'] ?? null), $this->wording($s['interaction'] ?? null), $this->wording($s['content']['key_idea'] ?? null))));
+        }
+
+        $this->groundingCheck($html, $extra, $context, $eligible, $errors, $warnings);
+    }
+
+    /**
+     * The grounding rule itself, for any generated wording: numbers that neither the chapter text nor an attached
+     * question mentions (errors), and capitalised names that appear nowhere in them (warnings, for a human).
+     *
+     * `$extraText` is wording that is part of the item but not in `$html` (a deck keeps its interactions and discussion
+     * prompts outside the presentation markup; a study document passes none, because its markup holds everything).
+     * Shared by the deck and by the study documents (revision notes, remedial class, classroom activities).
+     *
+     * `$ignore` are further XPath expressions for markup that is furniture or procedure, not a claim about the subject
+     * (a study document's numbering and the group sizes and minutes in its teacher instructions).
+     *
+     * @param array<int,array<int,array<string,mixed>>> $eligible concept_id => questions
+     * @param array<int,string> $errors
+     * @param array<int,string> $warnings
+     * @param array<int,string> $ignore
+     */
+    public function groundingCheck(string $html, string $extraText, array $context, array $eligible, array &$errors, array &$warnings, array $ignore = []): void
+    {
         $allowed = mb_strtolower($context['ground_truth']);
         foreach ($eligible as $list) {
             foreach ($list as $q) {
@@ -532,6 +562,7 @@ class DeckValidator
             '//*[contains(@class,"slide-num")]|//figure'
             . '|//section[contains(@class,"callout") and ./span[contains(@class,"callout-label") and normalize-space()="Image credits"]]'
             . '|//*[contains(@class,"cover")]'
+            . implode('', array_map(fn ($expression) => '|' . $expression, $ignore))
         )) as $furniture) {
             $furniture->parentNode?->removeChild($furniture);
         }
@@ -541,13 +572,7 @@ class DeckValidator
         foreach ($x->query('//text()') as $node) {
             $text .= ' ' . $node->nodeValue;
         }
-        foreach ($deck['slides'] as $s) {
-            if (($s['image']['type'] ?? '') === 'diagram') {
-                $text .= ' ' . implode(' ', $s['image']['texts']);
-            }
-            // Discussion prompts and interactions are slide wording too.
-            $text .= ' ' . implode(' ', array_map(fn ($v) => rtrim((string) $v, '.') . '.', array_merge($this->wording($s['content']['discussion'] ?? null), $this->wording($s['interaction'] ?? null), $this->wording($s['content']['key_idea'] ?? null))));
-        }
+        $text .= $extraText;
 
         preg_match_all('/\d+(?:[.,]\d+)?/u', $text, $nums);
         $badNumbers = [];
@@ -578,7 +603,7 @@ class DeckValidator
     }
 
     /** Every string in a nested structure, in order, skipping machine fields (ids, kinds, flags, coordinates). @return array<int,string> */
-    private function wording(mixed $node): array
+    public function wording(mixed $node): array
     {
         $skip = ['id', 'kind', 'start', 'next', 'sound', 'x', 'y', 'w', 'h', 'reason', 'style'];
         $out = [];

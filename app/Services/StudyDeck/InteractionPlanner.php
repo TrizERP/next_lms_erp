@@ -198,11 +198,18 @@ class InteractionPlanner
     }
 
     /**
+     * The rules every interaction must pass, shared by the deck and by the study documents (revision notes, remedial
+     * class, classroom activities), so one set of word budgets, shapes and labels governs both.
+     *
+     * A document writer asks `check` about an interaction it drafted: `$got` is `[key => ['interaction' => draft,
+     * 'reason' => why it is there]]` and `$chunk` is `[key => ['_anchors' => the labels of a drawn diagram (hotspots
+     * only), 'scenario_allowed' => bool, 'slide_type' => string]]`.
+     *
      * @param array<int,array<string,mixed>> $got
      * @param array<int,array<string,mixed>> $chunk
      * @return array{0:array<int,array{interaction:?array,reason:string}>,1:array<int,array<int,string>>} accepted, rejected-with-reasons
      */
-    private function check(array $got, array $chunk): array
+    public function check(array $got, array $chunk): array
     {
         $ok = [];
         $bad = [];

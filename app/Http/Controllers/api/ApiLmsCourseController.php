@@ -657,6 +657,16 @@ class ApiLmsCourseController extends Controller
             if ($pdfUrl = \App\Services\ContentGenerationService::studyDeckPdfUrl($contentArray)) {
                 $contentArray['pdf_url'] = $pdfUrl;
             }
+            // A study document (revision notes, remedial class, classroom activities): its PDF is its primary file, and
+            // the app reads it in place, with an online practice beside it. Says which kind it is, only when the file
+            // name and the library category agree. Adds fields only.
+            if (($docKind = \App\Services\ContentGenerationService::studyDocumentKind($contentArray['filename'] ?? null))
+                && \App\Services\StudyDeck\Documents\DocumentKind::fromCategory($contentArray['content_category'] ?? null) === $docKind) {
+                $contentArray['study_doc_kind'] = $docKind->value;
+                if ($pdfUrl = \App\Services\ContentGenerationService::studyDocumentPdfUrl($contentArray)) {
+                    $contentArray['pdf_url'] = $pdfUrl;
+                }
+            }
             // concept_id is unstamped on virtually every row, so the lms_concept
             // join alone leaves the concept blank. Generated content still records
             // it in the description, which is the only place it survives.

@@ -2,6 +2,7 @@
 
 namespace App\Services\Content;
 
+use App\Services\StudyDeck\StudyDeckImages;
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
@@ -55,6 +56,14 @@ trait RendersGeneratedContent
      * Attributes kept per tag. Everything else - every `on*` handler, every
      * inline `style`, every `srcset`/`formaction` - is dropped.
      */
+    /**
+     * Reads a stored study-deck picture for a document that is being rendered: fn(string $ref): ?array{bytes,mime}.
+     * Null outside a study-deck render, which is what keeps `study-deck-image:` references out of every other document.
+     *
+     * @var \Closure|null
+     */
+    protected ?\Closure $deckImageResolver = null;
+
     protected array $generatedContentAttributes = [
         '*' => ['class'],
         'img' => ['class', 'src', 'alt'],
@@ -118,6 +127,13 @@ trait RendersGeneratedContent
 
     protected function isAllowedImageSrc(string $src): bool
     {
+        // A stored study-deck picture (`study-deck-image:<id>`) is not a URL and is never fetched: it is read from the
+        // database, by a resolver the caller installs and that only returns pictures the school may see. Without a
+        // resolver the reference means nothing here, so it is refused like any other source.
+        if ($this->deckImageResolver !== null && StudyDeckImages::idFromRef(trim($src)) !== null) {
+            return true;
+        }
+
         $parts = parse_url(trim($src));
         if (!$parts || ($parts['scheme'] ?? '') !== 'https' || empty($parts['host'])) {
             return false;

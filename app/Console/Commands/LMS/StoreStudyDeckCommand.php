@@ -16,7 +16,9 @@ use Illuminate\Support\Facades\DB;
  *   php artisan lms:store-study-deck 8592               store it
  *
  * What it writes (see ContentGenerationService::publishStudyDeck):
- *   - each picture, once, into the shared object store under a name made from its hash
+ *   - nothing for the pictures themselves: a bundle made by lms:generate-study-deck already has them in the
+ *     study_deck_images table, and publishing only checks they are there and records that this deck uses them. (A bundle
+ *     from before that, with an out/images folder, has its pictures stored in the table first: see study-deck:images-migrate.)
  *   - the presentation (.pptx) and the interactive deck (.deck.json) beside it
  *   - ONE content_master row, a Classroom Presentation, which is how the Classroom Resource list finds it
  * and nothing else: no h5p_* row, no question-bank row, no new table.
@@ -34,7 +36,7 @@ class StoreStudyDeckCommand extends Command
         {--redraw-pdf : draw the PDF again (after a layout change) and replace the stored one; the row, presentation and deck file are left as they are}
         {--dry-run : check everything and report, write nothing}';
 
-    protected $description = 'Store a reviewed study-deck bundle: pictures in the shared store, one content_master presentation, one deck file';
+    protected $description = 'Store a reviewed study-deck bundle: confirm its pictures (kept in the database), one content_master presentation, one deck file';
 
     public function handle(ContentGenerationService $content): int
     {
@@ -91,7 +93,7 @@ class StoreStudyDeckCommand extends Command
             'created_by' => (int) $this->option('user'),
             'user_profile_name' => (string) $this->option('profile'),
             'refresh_pdf' => (bool) $this->option('redraw-pdf'),
-        ], $deck, (string) file_get_contents($files['html']), $dir . '/out/images', $dry, 'study-deck');
+        ], $deck, (string) file_get_contents($files['html']), is_dir($dir . '/out/images') ? $dir . '/out/images' : null, $dry, 'study-deck');
 
         $body = $result['body'];
         if (($result['http'] ?? 0) >= 400) {
@@ -107,7 +109,7 @@ class StoreStudyDeckCommand extends Command
         $this->line('filename:          ' . ($data['filename'] ?? ''));
         $this->line('deck file:         ' . ($data['deck_metadata_path'] ?? ''));
         $this->line('pdf file:          ' . ($data['pdf_path'] ?? ''));
-        $this->line('pictures:          ' . count($data['images'] ?? []) . ' (' . count($data['images_uploaded'] ?? []) . ' to upload / uploaded, ' . count($data['images_reused'] ?? []) . ' already stored)');
+        $this->line('pictures:          ' . count($data['images'] ?? []) . ' (' . count($data['images_uploaded'] ?? []) . ' newly stored in the database, ' . count($data['images_reused'] ?? []) . ' already stored)');
 
         return self::SUCCESS;
     }

@@ -114,6 +114,7 @@ return [
         'lms-courses', 'lms-courses/*',
         'lms-homework/*',
         'lms-question-bank', 'lms-question-bank/*', 'lms-questions',
+        'lms-study-deck/image-urls',
         'lms/concept-intelligence/*',
         'lms/gamma-content-master',
         'master-menu-rights', 'menu-rights',
