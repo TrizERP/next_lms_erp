@@ -3,6 +3,7 @@
 namespace App\Services\StudyDeck\Documents\Writers;
 
 use App\Services\StudyDeck\Contracts\Completer;
+use App\Services\StudyDeck\Documents\CompactActivitiesPdfRenderer;
 use App\Services\StudyDeck\Documents\DocumentKind;
 use App\Services\StudyDeck\InteractionPlanner;
 
@@ -42,13 +43,42 @@ class ActivityWriter extends DocumentWriter
 
     public const MAX_CONCEPTS = 4;
 
+    /**
+     * The COMPACT profile: activities for a set that must fit a few printed pages, as cards. Fewer activities (every
+     * concept still covered), no matching or sequencing (they need on-screen exercises), exactly three short steps for
+     * the teacher and for the students, and no discussion, differentiation, setup or interaction. The bank's quiz
+     * questions are not attached to an activity up front: they are fitted to the page count and printed after the cards.
+     * The validator applies the same limits to the finished document.
+     */
+    public const COMPACT_ACTIVITIES_MAX = 10;
+
+    public const COMPACT_FORMATS = ['inquiry', 'quiz', 'problem_solving', 'discussion', 'role_play', 'reflection'];
+
+    public const COMPACT_OBJECTIVE_WORDS = 20;
+
+    public const COMPACT_MATERIALS = 4;
+
+    public const COMPACT_MATERIAL_WORDS = 6;
+
+    public const COMPACT_STEP_WORDS = 12;
+
+    public const COMPACT_OUTCOME_WORDS = 14;
+
+    public const COMPACT_CRITERION_WORDS = 3;
+
+    public const COMPACT_EVIDENCE_WORDS = 12;
+
+    public const COMPACT_REFLECTION_WORDS = 14;
+
+    public const COMPACT_MISCONCEPTION_WORDS = [10, 12];
+
     /** Most bank questions one activity carries, by format. */
     public const QUESTIONS = ['quiz' => 5, 'matching' => 2, 'sequencing' => 2, 'default' => 3];
 
     private const SYSTEM = 'You are an experienced classroom teacher and instructional designer planning inquiry-led classroom activities for one textbook chapter. '
         . 'You reply with a single JSON object and nothing else. You never add facts that are not in the chapter text.';
 
-    public function __construct(Completer $completer, int $chunkSize = 3, private readonly ?InteractionPlanner $checker = null)
+    public function __construct(Completer $completer, int $chunkSize = 3, private readonly ?InteractionPlanner $checker = null, private readonly bool $compact = false)
     {
         parent::__construct($completer, $chunkSize);
     }
@@ -59,9 +89,13 @@ class ActivityWriter extends DocumentWriter
     }
 
     /** How many activities a chapter of this many concepts gets: enough to cover them all, not so many it becomes a workbook. @return array{0:int,1:int} */
-    public static function range(int $concepts): array
+    public static function range(int $concepts, bool $compact = false): array
     {
         $min = max(min(3, $concepts), (int) ceil($concepts / 4));
+        if ($compact) {
+            // Few enough to fit a few pages as cards, and still enough that every concept is in one (at most MAX_CONCEPTS each).
+            return [$min, max($min, min(self::COMPACT_ACTIVITIES_MAX, (int) ceil($concepts / 3)))];
+        }
         $max = min(self::MAX_ACTIVITIES, max($min, (int) ceil($concepts / 2)));
 
         return [$min, $max];
@@ -84,7 +118,8 @@ class ActivityWriter extends DocumentWriter
         $work = [];
         foreach ($plan as $a) {
             $limit = self::QUESTIONS[$a['format']] ?? self::QUESTIONS['default'];
-            $questions[$a['id']] = $allocate($a['concept_ids'], $limit);
+            // A compact set attaches no quiz to an activity: its questions are fitted to the page count afterwards.
+            $questions[$a['id']] = $this->compact ? [] : $allocate($a['concept_ids'], $limit);
 
             $concepts = [];
             foreach ($a['concept_ids'] as $cid) {
@@ -109,14 +144,15 @@ class ActivityWriter extends DocumentWriter
             ];
         }
 
+        $compact = $this->compact;
         $activities = $this->inChunks(
             $work,
             self::SYSTEM,
-            14000,
+            $compact ? 8000 : 14000,
             'classroom activities',
-            fn (array $chunk) => $this->writePrompt($context, $chunk),
+            fn (array $chunk) => $compact ? $this->compactWritePrompt($context, $chunk) : $this->writePrompt($context, $chunk),
             fn (array $json, array $chunk) => $this->parse($json, $chunk),
-            fn (array $activity, array $item) => self::problems($activity, $item, $this->checker),
+            fn (array $activity, array $item) => self::problems($activity, $item, $this->checker, $compact),
             $progress
         );
 
@@ -132,7 +168,7 @@ class ActivityWriter extends DocumentWriter
      */
     public function plan(array $context, array $map, array $scope): array
     {
-        [$min, $max] = self::range(count($scope));
+        [$min, $max] = self::range(count($scope), $this->compact);
         $prompt = $this->planPrompt($context, $map, $scope, $min, $max);
 
         $plan = [];
@@ -147,7 +183,7 @@ class ActivityWriter extends DocumentWriter
                 continue;
             }
             $plan = $this->cleanPlan($json, $scope);
-            $errors = self::planProblems($plan, $scope, $map, $min, $max);
+            $errors = self::planProblems($plan, $scope, $map, $min, $max, $this->compact);
             if ($errors === []) {
                 return $plan;
             }
@@ -192,7 +228,7 @@ class ActivityWriter extends DocumentWriter
      * @param array<int,int> $scope
      * @return array<int,string>
      */
-    public static function planProblems(array $plan, array $scope, array $map, int $min, int $max): array
+    public static function planProblems(array $plan, array $scope, array $map, int $min, int $max, bool $compact = false): array
     {
         $out = [];
         if (count($plan) < $min || count($plan) > $max) {
@@ -212,6 +248,8 @@ class ActivityWriter extends DocumentWriter
             }
             if (!isset(self::FORMATS[$a['format']])) {
                 $out[] = "Activity $n: format \"{$a['format']}\" is not one of " . implode(', ', array_keys(self::FORMATS)) . '.';
+            } elseif ($compact && !in_array($a['format'], self::COMPACT_FORMATS, true)) {
+                $out[] = "Activity $n: format \"{$a['format']}\" is not one of " . implode(', ', self::COMPACT_FORMATS) . ' (matching and sequencing need on-screen exercises a printed set does not have).';
             }
             if (!isset(self::GROUPINGS[$a['grouping']])) {
                 $out[] = "Activity $n: grouping \"{$a['grouping']}\" is not one of " . implode(', ', array_keys(self::GROUPINGS)) . '.';
@@ -285,8 +323,11 @@ class ActivityWriter extends DocumentWriter
             'class' => $context['chapter']['standard_name'] . ' ' . $context['chapter']['subject_name'],
             'concepts_in_teaching_order' => $concepts,
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-        $formats = implode(', ', array_keys(self::FORMATS));
+        $formats = implode(', ', $this->compact ? self::COMPACT_FORMATS : array_keys(self::FORMATS));
         $groupings = implode(', ', array_keys(self::GROUPINGS));
+        $compactNote = $this->compact
+            ? "\n- This set is printed on five pages as cards, so keep it small. Do NOT use the matching or sequencing formats: they need on-screen exercises a printed set does not have."
+            : '';
         [$minM, $maxM] = self::MINUTES;
         $maxC = self::MAX_CONCEPTS;
         $count = count($scope);
@@ -306,7 +347,7 @@ Rules
 - "grouping" is one of: {$groupings}.
 - Vary both. With six or more activities, include at least one individual, one pair and one group activity; at least one quiz or matching; at least one inquiry, problem_solving or role_play; and at least one discussion or reflection.
 - "minutes": whole minutes, {$minM} to {$maxM}, honest for a real class.
-- "title": short, sentence case, different from every other title. "focus": one sentence saying what students do and what they learn.
+- "title": short, sentence case, different from every other title. "focus": one sentence saying what students do and what they learn.{$compactNote}
 
 Reply with:
 {"activities": [{"title": "", "format": "inquiry", "grouping": "pair", "minutes": 15, "concept_ids": [0], "focus": ""}]}
@@ -326,9 +367,10 @@ PROMPT;
      *
      * @param array<string,mixed> $activity a cleaned activity
      * @param array<string,mixed> $work the planned activity it was written for
+     * @param bool $compact the compact profile (a set that must fit a few pages): tighter limits, see COMPACT_*
      * @return array<int,string>
      */
-    public static function problems(array $activity, array $work, ?InteractionPlanner $checker = null): array
+    public static function problems(array $activity, array $work, ?InteractionPlanner $checker = null, bool $compact = false): array
     {
         $out = [];
 
@@ -413,6 +455,59 @@ PROMPT;
             }
         }
 
+        return $compact ? array_merge($out, self::compactProblems($activity)) : $out;
+    }
+
+    /**
+     * What is wrong with a COMPACT activity beyond the usual rules: every limit of the profile, and the text of each half
+     * of its card against the box it is printed in.
+     *
+     * @param array<string,mixed> $a a cleaned activity
+     * @return array<int,string>
+     */
+    private static function compactProblems(array $a): array
+    {
+        $out = [];
+        $words = fn (array $list) => array_map(fn ($x) => self::words((string) $x), $list);
+
+        if (isset($a['objectives'][0]) && self::words($a['objectives'][0]['text']) > self::COMPACT_OBJECTIVE_WORDS + 2) {
+            $out[] = 'The first objective is over ' . self::COMPACT_OBJECTIVE_WORDS . ' words; it is the one printed on the card, so make it the main aim in one short sentence.';
+        }
+        if (count($a['materials']) > self::COMPACT_MATERIALS || max([0, ...$words($a['materials'])]) > self::COMPACT_MATERIAL_WORDS) {
+            $out[] = 'List at most ' . self::COMPACT_MATERIALS . ' materials of at most ' . self::COMPACT_MATERIAL_WORDS . ' words each.';
+        }
+        if (count($a['teacher_steps']) !== 3 || max([0, ...$words(array_column($a['teacher_steps'], 'text'))]) > self::COMPACT_STEP_WORDS) {
+            $out[] = 'Write exactly 3 teacher steps of at most ' . self::COMPACT_STEP_WORDS . ' words each.';
+        }
+        if (count($a['student_steps']) !== 3 || max([0, ...$words($a['student_steps'])]) > self::COMPACT_STEP_WORDS) {
+            $out[] = 'Write exactly 3 student steps of at most ' . self::COMPACT_STEP_WORDS . ' words each.';
+        }
+        if (count($a['expected_outcomes']) > 2 || max([0, ...$words($a['expected_outcomes'])]) > self::COMPACT_OUTCOME_WORDS) {
+            $out[] = 'Give 1 or 2 expected outcomes of at most ' . self::COMPACT_OUTCOME_WORDS . ' words each.';
+        }
+        if (count($a['assessment']) !== 2
+            || max([0, ...$words(array_column($a['assessment'], 'criterion'))]) > self::COMPACT_CRITERION_WORDS
+            || max([0, ...$words(array_column($a['assessment'], 'evidence'))]) > self::COMPACT_EVIDENCE_WORDS) {
+            $out[] = 'Give exactly 2 assessment criteria: a criterion of at most ' . self::COMPACT_CRITERION_WORDS . ' words and evidence of at most ' . self::COMPACT_EVIDENCE_WORDS . '.';
+        }
+        if (count($a['reflection']) !== 1 || max([0, ...$words($a['reflection'])]) > self::COMPACT_REFLECTION_WORDS) {
+            $out[] = 'Give exactly 1 reflection prompt of at most ' . self::COMPACT_REFLECTION_WORDS . ' words.';
+        }
+        if ($a['misconception'] !== null
+            && (self::words($a['misconception']['wrong_idea']) > self::COMPACT_MISCONCEPTION_WORDS[0] || self::words($a['misconception']['correction']) > self::COMPACT_MISCONCEPTION_WORDS[1])) {
+            $out[] = 'The misconception is at most ' . self::COMPACT_MISCONCEPTION_WORDS[0] . ' words and its correction at most ' . self::COMPACT_MISCONCEPTION_WORDS[1] . '.';
+        }
+        if ($a['discussion'] !== [] || ($a['interaction'] ?? null) !== null) {
+            $out[] = 'A compact activity has no discussion questions and no interaction.';
+        }
+
+        foreach ([false => 'student', true => 'teacher'] as $teacher => $name) {
+            $lines = CompactActivitiesPdfRenderer::halfLines($a, (bool) $teacher);
+            if ($lines > CompactActivitiesPdfRenderer::HALF_LINES) {
+                $out[] = 'The ' . $name . ' half of the card runs to ' . $lines . ' lines; its box holds ' . CompactActivitiesPdfRenderer::HALF_LINES . '. Shorten the ' . ($teacher ? 'teacher steps, criteria and misconception' : 'aim, materials, student steps and reflection') . '.';
+            }
+        }
+
         return $out;
     }
 
@@ -465,10 +560,79 @@ PROMPT;
             if (!is_array($a) || !isset($chunk[$id])) {
                 continue;
             }
-            $out[$id] = $this->clean($a, $chunk[$id]);
+            $activity = $this->clean($a, $chunk[$id]);
+            $out[$id] = $this->compact ? $this->compactOnly($activity) : $activity;
         }
 
         return $out;
+    }
+
+    /**
+     * A compact activity has no setup, discussion, differentiation or interaction, and at most the steps, outcomes,
+     * criteria and prompts the card prints. Whatever the model sends beyond that is dropped here.
+     *
+     * @param array<string,mixed> $a a cleaned activity
+     * @return array<string,mixed>
+     */
+    private function compactOnly(array $a): array
+    {
+        $a['setup'] = null;
+        $a['discussion'] = [];
+        $a['differentiation'] = null;
+        $a['interaction'] = null;
+        $a['materials'] = array_slice($a['materials'], 0, self::COMPACT_MATERIALS);
+        $a['teacher_steps'] = array_slice($a['teacher_steps'], 0, 3);
+        $a['student_steps'] = array_slice($a['student_steps'], 0, 3);
+        $a['expected_outcomes'] = array_slice($a['expected_outcomes'], 0, 2);
+        $a['assessment'] = array_slice($a['assessment'], 0, 2);
+        $a['reflection'] = array_slice($a['reflection'], 0, 1);
+
+        return $a;
+    }
+
+    /**
+     * The compact profile's prompt: the same structured fields as a full activity, tighter, and fewer of them.
+     *
+     * @param array<string,array<string,mixed>> $chunk work items by activity id
+     */
+    private function compactWritePrompt(array $context, array $chunk): string
+    {
+        $input = json_encode(array_values($chunk), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $ground = self::GROUND_RULES;
+        $obj = self::COMPACT_OBJECTIVE_WORDS;
+        $mat = self::COMPACT_MATERIALS;
+        $matW = self::COMPACT_MATERIAL_WORDS;
+        $step = self::COMPACT_STEP_WORDS;
+        $out = self::COMPACT_OUTCOME_WORDS;
+        $crit = self::COMPACT_CRITERION_WORDS;
+        $evid = self::COMPACT_EVIDENCE_WORDS;
+        $refl = self::COMPACT_REFLECTION_WORDS;
+        [$misW, $corW] = self::COMPACT_MISCONCEPTION_WORDS;
+
+        return <<<PROMPT
+Write the COMPACT classroom activities listed under ACTIVITIES TO WRITE, one each, exactly as planned: keep each one's format, grouping, minutes and concepts. The whole set is printed on five pages as cards, so every field is short, and a teacher must still be able to run each activity without further interpretation.
+
+Rules
+{$ground}
+- "objectives": one for EVERY concept the activity covers, {"concept_id": id, "text": "Students will ..."}, one sentence each, at most {$obj} words. The card prints the FIRST one, so make it the activity's main aim.
+- "materials": at most {$mat} short items (at most {$matW} words each), from common classroom items or things the chapter mentions: ["..."]. Write ["No materials needed"] if none.
+- "teacher_steps": EXACTLY 3 steps in order, each {"minutes": whole minutes, "text": "what the teacher does or says, at most {$step} words"}. The minutes add up to about the planned minutes.
+- "student_steps": EXACTLY 3 steps written to the student ("You ..."), in order, at most {$step} words each.
+- "expected_outcomes": 1 or 2 things the teacher should see or hear when it goes well, at most {$out} words each, consistent with the chapter text.
+- "misconception": the one misconception to surface on purpose, ONLY from the listed misconceptions of the concepts it covers: {"wrong_idea": "at most {$misW} words", "correction": "at most {$corW} words"}; null if none are listed.
+- "assessment": EXACTLY 2 criteria a teacher can observe, each {"criterion": "at most {$crit} words", "evidence": "what a student says or does that shows it, at most {$evid} words"}.
+- "reflection": EXACTLY 1 prompt for the students to answer at the end, at most {$refl} words.
+- "bloom" is one of remember, understand, apply, analyze, evaluate, create: the thinking level the activity asks of students. Across the whole set use at least three different levels, so vary them. "dok" is 1 to 4.
+- Do not write setup, discussion questions, differentiation or an interaction: this set does not print them.
+
+Reply with:
+{"activities": [{"id": "a1", "objectives": [{"concept_id": 0, "text": "Students will ..."}], "materials": [""], "teacher_steps": [{"minutes": 3, "text": ""}], "student_steps": [""], "expected_outcomes": [""], "misconception": null, "assessment": [{"criterion": "", "evidence": ""}], "reflection": [""], "bloom": "apply", "dok": 2}]}
+
+ACTIVITIES TO WRITE
+{$input}
+
+{$this->chapterBlock($context)}
+PROMPT;
     }
 
     /**

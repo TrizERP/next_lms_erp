@@ -49,11 +49,20 @@ class DocumentHtmlRenderer
                 }
             }
 
+            $titled = fn (string $body) => '<h2>' . $this->e((string) $s['title']) . '</h2>' . $body;
             $out .= match ($s['type']) {
                 'overview' => $this->overview($kind, $s, $document),
                 'note' => $this->note($s, $meta),
                 'unit' => $this->unit($s, $meta, $questions, $document),
                 'activity' => $this->activity($s, $document, $questions),
+                'topic' => $this->topic($s, $document, $meta),
+                'glossary' => $this->glossaryPart($s),
+                'check', 'independent' => $titled('<p>' . $this->e((string) $s['content']['intro']) . '</p>' . $this->questionSet($s, $document, $questions, 'Question')),
+                'diagnostic' => $titled($this->diagnostic($s, $document, $questions)),
+                'gaps' => $titled($this->gaps($s, $document)),
+                'clinic' => $titled($this->clinic($s, $document)),
+                'exit' => $titled($this->exitCheck($s, $document, $questions)),
+                'teacher' => $titled($this->teacher($s, $document)),
                 default => '',
             };
 
@@ -62,7 +71,7 @@ class DocumentHtmlRenderer
             }
         }
 
-        if ($kind === DocumentKind::RevisionNotes) {
+        if ($kind === DocumentKind::RevisionNotes && ($document['profile'] ?? '') !== 'purpose') {
             $out .= $this->glossary($document);
         }
 
@@ -90,8 +99,24 @@ class DocumentHtmlRenderer
             foreach ($c['method'] as $m) {
                 $out .= '<li><strong>' . $this->e($m['label']) . '.</strong> ' . $this->e($m['text']) . '</li>';
             }
+            $out .= '</ol>';
 
-            return $out . '</ol>';
+            if (!empty($c['objectives'])) {
+                $out .= '<h2>What you will be able to do</h2><table><tr><th>Topic</th><th>By the end of the class</th></tr>';
+                foreach ($c['objectives'] as $o) {
+                    $out .= '<tr><td>' . $this->e((string) $o['name']) . '</td><td>' . $this->e((string) $o['text']) . '</td></tr>';
+                }
+                $out .= '</table>';
+            }
+            if (!empty($c['pathway'])) {
+                $out .= '<h2>The parts of this class</h2><table><tr><th>Part</th><th>Title</th></tr>';
+                foreach ($c['pathway'] as $p) {
+                    $out .= '<tr><td class="doc-num">' . (int) $p['n'] . '</td><td>' . $this->e((string) $p['title']) . '</td></tr>';
+                }
+                $out .= '</table>';
+            }
+
+            return $out;
         }
 
         $out .= '<h2>Run sheet</h2><table class="doc-num"><tr><th>Activity</th><th>Format</th><th>Groups</th><th>Minutes</th></tr>';
@@ -246,6 +271,162 @@ class DocumentHtmlRenderer
     }
 
     // ---------------------------------------------------------------------------------------------------------
+
+    // ---------------------------------------------------------------------------------------------------------
+    // The parts of the purpose-based documents
+
+    /**
+     * A revision sheet: the big idea, one paragraph for each concept, the comparison table, the mix-ups, the recall points and
+     * the checklist. Each concept's paragraph names it (`data-concept`) at its own thinking level.
+     *
+     * @param array<string,mixed> $s
+     */
+    private function topic(array $s, array $document, callable $meta): string
+    {
+        $c = $s['content'];
+        $first = $c['rows'][0] ?? null;
+        $m = $first ? $this->attrs((string) $first['name'], (string) $first['bloom'], (int) $first['dok'], (int) $c['minutes']) : '';
+        $out = '<p data-block="explain"' . $m . '><strong>Big idea.</strong> ' . $this->e((string) $c['big_idea']) . '</p>';
+
+        foreach ($c['rows'] as $row) {
+            $terms = $row['terms'] ? ' <em>Key terms: ' . $this->e(implode('; ', $row['terms'])) . '.</em>' : '';
+            $out .= '<p data-block="explain"' . $this->attrs((string) $row['name'], (string) $row['bloom'], (int) $row['dok'], 2) . '><strong>' . $this->e((string) $row['name']) . '.</strong> ' . $this->e((string) $row['essential']) . $terms . '</p>';
+        }
+
+        if ($c['compare']) {
+            $cmp = $c['compare'];
+            $out .= '<p><strong>' . $this->e((string) $cmp['title']) . '</strong></p><table><tr>'
+                . implode('', array_map(fn ($h) => '<th>' . $this->e((string) $h) . '</th>', $cmp['columns'])) . '</tr>'
+                . implode('', array_map(fn ($row) => '<tr>' . implode('', array_map(fn ($cell) => '<td>' . $this->e((string) $cell) . '</td>', $row)) . '</tr>', $cmp['rows']))
+                . '</table>';
+        }
+        foreach ($c['mixups'] as $mx) {
+            $out .= $this->callout('warn', 'misconception', 'Do not confuse', '<p>' . $this->e((string) $mx['wrong_idea']) . '</p><p><strong>Instead:</strong> ' . $this->e((string) $mx['correct']) . '</p>', $m);
+        }
+        if ($c['recall']) {
+            $out .= $this->callout('key', 'summary', 'Recall', '<ul>' . implode('', array_map(fn ($r) => '<li>' . $this->e((string) $r) . '</li>', $c['recall'])) . '</ul>', $m);
+        }
+        $out .= $this->figure($s, $m) . $this->interaction($s, $m);
+        if ($c['checklist']) {
+            $out .= $this->callout('try', 'check', 'Revision checklist', '<ul>' . implode('', array_map(fn ($i) => '<li>' . $this->e((string) $i) . '</li>', $c['checklist'])) . '</ul>', $m);
+        }
+
+        return $out;
+    }
+
+    /** @param array<string,mixed> $s */
+    private function glossaryPart(array $s): string
+    {
+        $rows = implode('', array_map(fn ($t) => '<tr><td>' . $this->e((string) $t['term']) . '</td><td>' . $this->e((string) $t['meaning']) . '</td></tr>', $s['content']['terms']));
+
+        return $rows === '' ? '' : '<h2>Key terms</h2><table><tr><th>Term</th><th>Meaning</th></tr>' . $rows . '</table>';
+    }
+
+    /**
+     * The bank questions of a part, each marked with its own concept and thinking level.
+     *
+     * @param array<string,mixed> $s
+     * @param array<int,array<string,mixed>> $questions
+     * @param callable(int):string $extra the markup that goes with question number n (1-based), or ''
+     */
+    private function questionSet(array $s, array $document, array $questions, string $label, ?callable $extra = null): string
+    {
+        $out = '';
+        foreach (array_values($s['question_ids']) as $i => $qid) {
+            $q = $questions[$qid] ?? null;
+            if ($q === null) {
+                continue;
+            }
+            $name = (string) ($document['concepts'][(string) $q['concept_id']]['name'] ?? '');
+            $meta = $this->attrs($name, (string) ($q['bloom'] !== '' ? $q['bloom'] : 'understand'), (int) ($q['dok'] ?? 2), 2);
+            $out .= $this->question($q, $label . ' <span class="doc-num">' . ($i + 1) . '</span>', $meta, $extra ? $extra($i + 1) : '', [], true);
+        }
+
+        return $out;
+    }
+
+    /** @param array<string,mixed> $s */
+    private function diagnostic(array $s, array $document, array $questions): string
+    {
+        $c = $s['content'];
+        $missed = function (int $k) use ($c): string {
+            $item = $c['items'][$k - 1] ?? null;
+            if (!$item || !$item['if_missed']) {
+                return '';
+            }
+
+            return '<p><strong>If missed:</strong> ' . implode('; ', array_map(fn ($u) => 'Unit <span class="doc-num">' . (int) $u['n'] . '</span>: ' . $this->e((string) $u['title']), $item['if_missed'])) . '</p>';
+        };
+
+        return '<p>' . $this->e((string) $c['intro']) . '</p><p>' . $this->e((string) $c['scoring']) . '</p>' . $this->questionSet($s, $document, $questions, 'Check question', $missed);
+    }
+
+    /** @param array<string,mixed> $s */
+    private function gaps(array $s, array $document): string
+    {
+        $c = $s['content'];
+        $out = '<p>' . $this->e((string) $c['note']) . '</p>';
+        foreach ($c['rows'] as $r) {
+            $concept = $document['concepts'][(string) $r['concept_id']] ?? [];
+            $out .= '<p data-block="explain"' . $this->attrs((string) ($concept['name'] ?? ''), 'understand', 2, 2) . '><strong>' . $this->e((string) $r['name']) . '</strong> (priority ' . $this->e((string) $r['priority']) . '). '
+                . $this->e(implode(' ', $r['reasons']))
+                . ($r['check_first'] ? ' Check first: ' . $this->e(implode('; ', $r['check_first'])) . '.' : '')
+                . ' Dealt with in: ' . preg_replace('/\d+/', '<span class="doc-num">$0</span>', $this->e((string) $r['covered_in'])) . '.</p>';
+        }
+        if ($c['others']) {
+            $out .= '<p>Lower priority, not retaught here: ' . $this->e(implode('; ', $c['others'])) . '.</p>';
+        }
+
+        return $out;
+    }
+
+    /** @param array<string,mixed> $s */
+    private function clinic(array $s, array $document): string
+    {
+        $c = $s['content'];
+        $out = '<p>' . $this->e((string) $c['intro']) . '</p>';
+        foreach ($c['items'] as $it) {
+            $name = (string) ($document['concepts'][(string) $it['concept_id']]['name'] ?? '');
+            $out .= $this->callout('warn', 'misconception', 'Mix-up to settle', '<p>' . $this->e((string) $it['wrong_idea']) . '</p>'
+                . '<p><strong>Why it seems right:</strong> ' . $this->e((string) $it['why_it_seems_true']) . '</p>'
+                . '<p><strong>What is true:</strong> ' . $this->e((string) $it['correction']) . '</p>'
+                . '<p><strong>Test it:</strong> ' . $this->e((string) $it['check_it']) . '</p>', $this->attrs($name, 'analyze', 3, 3));
+        }
+
+        return $out;
+    }
+
+    /** @param array<string,mixed> $s */
+    private function exitCheck(array $s, array $document, array $questions): string
+    {
+        $c = $s['content'];
+        $out = '<p>' . $this->e((string) $c['intro']) . '</p>' . $this->questionSet($s, $document, $questions, 'Exit question');
+        if ($c['criteria']) {
+            $out .= '<table><tr><th>You are ready when</th></tr>' . implode('', array_map(fn ($x) => '<tr><td>' . $this->e((string) $x['text']) . '</td></tr>', $c['criteria'])) . '</table>';
+        }
+        $out .= '<p>Ready: <span class="doc-num">' . (int) $c['ready_at'] . '</span> of <span class="doc-num">' . (int) $c['total'] . '</span> exit questions correct without help. If fewer, go back to: '
+            . implode('; ', array_map(fn ($r) => $this->e((string) $r['name']) . ' (unit <span class="doc-num">' . (int) $r['n'] . '</span>)', $c['revisit'])) . '.</p>';
+
+        return $out;
+    }
+
+    /** @param array<string,mixed> $s */
+    private function teacher(array $s, array $document): string
+    {
+        $c = $s['content'];
+        $out = '<p>' . $this->e((string) $c['purpose']) . '</p><ol>' . implode('', array_map(fn ($x) => '<li>' . $this->e((string) $x) . '</li>', $c['how_to_run'])) . '</ol>'
+            . '<table><tr><th>Part</th><th>Minutes</th></tr>'
+            . implode('', array_map(fn ($p) => '<tr><td>' . $this->e((string) $p['title']) . '</td><td class="doc-num">' . (int) $p['minutes'] . '</td></tr>', $c['pacing']))
+            . '<tr><td>In all</td><td class="doc-num">' . (int) $c['total_minutes'] . '</td></tr></table>';
+        foreach ($c['interventions'] as $iv) {
+            $name = (string) ($document['concepts'][(string) $iv['concept_id']]['name'] ?? '');
+            $out .= $this->callout('try', 'activity', 'Teacher: ' . $name, '<p><strong>You may notice:</strong> ' . $this->e((string) $iv['look_for']) . '</p>'
+                . '<p><strong>Try this:</strong> ' . $this->e((string) $iv['try_this']) . '</p>'
+                . '<p><strong>If still stuck:</strong> ' . $this->e((string) $iv['if_still_stuck']) . '</p>', $this->attrs($name, 'apply', 2, 3));
+        }
+
+        return $out;
+    }
 
     /**
      * @param array<string,mixed> $s

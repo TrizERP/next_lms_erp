@@ -84,6 +84,11 @@ class StudyDeckPdfRenderer
 
     protected ?int $contentId = null;
 
+    /** The largest a drawn diagram is printed, in CSS px; a document that shares its page with notes sets smaller ones. */
+    protected int $diagramWidth = 560;
+
+    protected int $diagramHeight = 300;
+
     public function __construct(?callable $imageBytes = null, protected readonly ?string $markerFont = null)
     {
         $this->imageBytes = $imageBytes;
@@ -573,7 +578,7 @@ class StudyDeckPdfRenderer
         $w = max(1, (int) ($img['width'] ?? 1280));
         $h = max(1, (int) ($img['height'] ?? 720));
         $isDiagram = ($img['type'] ?? 'photo') === 'diagram';
-        $width = (int) min($isDiagram ? 560 : 440, ($isDiagram ? 300 : 330) * $w / $h);
+        $width = (int) min($isDiagram ? $this->diagramWidth : 440, ($isDiagram ? $this->diagramHeight : 330) * $w / $h);
         $credit = !$isDiagram ? trim((($img['creator'] ?? '') ?: 'Openverse') . ', ' . ($img['licence'] ?? '')) : '';
         $caption = trim(rtrim((string) ($img['caption'] ?? ''), '.') . ($credit !== '' ? '. ' . $credit : ''));
 

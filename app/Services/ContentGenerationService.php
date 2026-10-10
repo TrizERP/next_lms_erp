@@ -11,7 +11,9 @@ use App\Services\Content\RendersGeneratedContent;
 use App\Services\StudyDeck\ClaudeApiCompleter;
 use App\Services\StudyDeck\ClaudeCliCompleter;
 use App\Services\StudyDeck\Contracts\Completer;
+use App\Services\StudyDeck\Documents\CompactRevisionPdfRenderer;
 use App\Services\StudyDeck\Documents\DocumentKind;
+use App\Services\StudyDeck\Documents\PurposePdfRenderer;
 use App\Services\StudyDeck\Documents\StudyDocumentPdfRenderer;
 use App\Services\StudyDeck\Documents\StudyDocumentService;
 use App\Services\StudyDeck\StudyDeckImages;
@@ -614,14 +616,16 @@ class ContentGenerationService
      * The running header and footer of a study deck's PDF (and of a study document's): the title and the class and
      * subject on top, the kind of document and "Page n of N" below, on every page but the cover.
      *
+     * @param bool $firstPageHasContent a pack with no cover (its first page is notes under a title band): that page has
+     *        the footer and its page number like the rest, and no running header (the title band is its header)
      * @return callable(\Dompdf\Dompdf):void
      */
-    protected function studyPageFurniture(string $title, string $subject, string $footerLabel): callable
+    protected function studyPageFurniture(string $title, string $subject, string $footerLabel, bool $firstPageHasContent = false): callable
     {
-        return function ($dompdf) use ($title, $subject, $footerLabel): void {
+        return function ($dompdf) use ($title, $subject, $footerLabel, $firstPageHasContent): void {
             // A running header and footer with the page number, on every page but the cover.
-            $dompdf->getCanvas()->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) use ($title, $subject, $footerLabel): void {
-                if ($pageNumber === 1) {
+            $dompdf->getCanvas()->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) use ($title, $subject, $footerLabel, $firstPageHasContent): void {
+                if ($pageNumber === 1 && !$firstPageHasContent) {
                     return;
                 }
                 $font = $fontMetrics->getFont('DejaVu Sans', 'normal');
@@ -637,9 +641,11 @@ class ContentGenerationService
 
                     return $text;
                 };
-                $canvas->line(31.5, 38, $w - 31.5, 38, [0.78, 0.82, 0.99], 0.8);
-                $canvas->text(31.5, 26, $fit($title, $bold, 8, $w - 63 - 140), $bold, 8, $ink);
-                $canvas->text($w - 31.5 - $fontMetrics->getTextWidth($subject, $font, 8), 26, $subject, $font, 8, $grey);
+                if ($pageNumber > 1) {
+                    $canvas->line(31.5, 38, $w - 31.5, 38, [0.78, 0.82, 0.99], 0.8);
+                    $canvas->text(31.5, 26, $fit($title, $bold, 8, $w - 63 - 140), $bold, 8, $ink);
+                    $canvas->text($w - 31.5 - $fontMetrics->getTextWidth($subject, $font, 8), 26, $subject, $font, 8, $grey);
+                }
                 $canvas->line(31.5, $h - 38, $w - 31.5, $h - 38, [0.89, 0.91, 0.94], 0.8);
                 $canvas->text(31.5, $h - 28, $footerLabel, $font, 8, $grey);
                 $label = 'Page ' . $pageNumber . ' of ' . $pageCount;
@@ -792,6 +798,16 @@ class ContentGenerationService
     public static function studyDocumentSidecarPath(string $filename): string
     {
         return 'public/lms_content_file/' . $filename . '.doc.json';
+    }
+
+    /**
+     * Where the OTHER copy of a study document's PDF (answers hidden / student handout) is kept: beside the stored one, named
+     * after it. It is made when the document is stored, so opening it never draws anything. It is not a file name a document
+     * can have (`DocumentKind::fromFilename` does not accept it), so it can never be mistaken for a row's own file.
+     */
+    public static function studyDocumentPracticePdfPath(string $filename): string
+    {
+        return 'public/lms_content_file/' . $filename . '.practice.pdf';
     }
 
     /**
@@ -981,6 +997,19 @@ class ContentGenerationService
                     }
                     $repaired = true;
                 }
+                // The other copy beside it: added for a document stored before it was kept, replaced with the PDF on a redraw.
+                $practicePath = self::studyDocumentPracticePdfPath($filename);
+                if (!$disk->exists($practicePath) || !empty($input['refresh_pdf'])) {
+                    $practice = $this->renderStudyDocumentPdf($doc, ['tenant' => $tenant, 'variant' => StudyDocumentPdfRenderer::STUDENT]);
+                    if (!str_starts_with($practice, '%PDF-')) {
+                        throw new \RuntimeException('the other copy of the PDF came out empty');
+                    }
+                    $disk->put($practicePath, $practice, 'public');
+                    if (!$disk->exists($practicePath) || (int) $disk->size($practicePath) !== strlen($practice)) {
+                        throw new \RuntimeException('the other copy of the PDF was not stored correctly');
+                    }
+                    $repaired = true;
+                }
                 $restored = (int) $existing->show_hide === 0
                     ? $this->restoreStudyDocumentRow($kind, (int) $existing->id, (int) $chapter->id, $tenant, (string) $input['chapter_name'], DocumentKind::scopeToken($doc))
                     : false;
@@ -1036,17 +1065,22 @@ class ContentGenerationService
         $only = array_map('intval', (array) ($document['scope']['concept_ids'] ?? []));
         $input['concept_id'] = !empty($document['scope']['all']) || count($only) !== 1 ? null : $only[0];
 
-        // The PDF is made before anything is stored, so one that cannot be drawn stops the whole publish.
+        // Both copies are drawn before anything is stored, so one that cannot be drawn stops the whole publish.
         try {
             $pdf = $this->renderStudyDocumentPdf($document, ['tenant' => $tenant]);
+            $practice = $this->renderStudyDocumentPdf($document, ['tenant' => $tenant, 'variant' => StudyDocumentPdfRenderer::STUDENT]);
         } catch (Throwable $e) {
             return $this->fail('The ' . $name . ' was not stored: its PDF could not be made: ' . $e->getMessage(), 500);
         }
-        if ($pdf === '') {
+        if ($pdf === '' || !str_starts_with($practice, '%PDF-')) {
             return $this->fail('The ' . $name . ' was not stored: its PDF came out empty.', 500);
         }
         $input['binary'] = $pdf;
-        $input['extra_files'] = [self::studyDocumentSidecarPath((string) $input['filename']) => $this->studyDeckJson($document)];
+        // The other copy is stored with the document (so opening it is a read, not a draw), in the same all-or-nothing step as the source.
+        $input['extra_files'] = [
+            self::studyDocumentSidecarPath((string) $input['filename']) => $this->studyDeckJson($document),
+            self::studyDocumentPracticePdfPath((string) $input['filename']) => $practice,
+        ];
 
         $scope = DocumentKind::scopeToken($document);
         // Inside the transaction that inserts the row: the document, the record of which pictures it uses and the
@@ -1091,7 +1125,16 @@ class ContentGenerationService
 
     private function drawStudyDocumentPdf(array $document, array $options): string
     {
-        $renderer = new StudyDocumentPdfRenderer($this->deckImageResolver, base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf'));
+        // A compact pack (`profile: compact`) and a purpose-based document (`profile: purpose`) are laid out by their own
+        // renderers; every other document by the usual one.
+        $compact = CompactRevisionPdfRenderer::isCompact($document);
+        $purpose = PurposePdfRenderer::isPurpose($document);
+        $font = base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf');
+        $renderer = match (true) {
+            $purpose => new PurposePdfRenderer($this->deckImageResolver, $font),
+            $compact => CompactRevisionPdfRenderer::for($document, $this->deckImageResolver, $font),
+            default => new StudyDocumentPdfRenderer($this->deckImageResolver, $font),
+        };
         $html = $renderer->html($document, $this->generatedContentCss(), [
             'variant' => $options['variant'] ?? StudyDocumentPdfRenderer::TEACHER,
             'questions' => $this->loadStudyDeckQuestions(StudyDeckQuestions::idsIn($document)),
@@ -1100,7 +1143,8 @@ class ContentGenerationService
         return $this->renderHtmlToPdf($html, $this->studyPageFurniture(
             StudyDocumentPdfRenderer::runningTitle($document),
             StudyDocumentPdfRenderer::runningSubject($document),
-            StudyDocumentPdfRenderer::footerLabel($document)
+            StudyDocumentPdfRenderer::footerLabel($document),
+            $compact || $purpose
         ));
     }
 
