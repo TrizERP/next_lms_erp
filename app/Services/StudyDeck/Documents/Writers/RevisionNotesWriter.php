@@ -24,8 +24,27 @@ class RevisionNotesWriter extends DocumentWriter
 
     public const REMEMBER_WORDS = 25;
 
+    /**
+     * The COMPACT profile: notes for a pack that must fit a few printed pages. A gist of one sentence, two or three
+     * short points, the chapter's own definition when it has one, and one "I can" line; no rules box, example,
+     * misconception or "remember" line (a formula or a value the chapter states goes in a point). The same rules the
+     * writer repairs against are the ones the validator applies, so `problems()` takes the profile.
+     */
+    public const COMPACT_SUMMARY_WORDS = [6, 24];
+
+    public const COMPACT_POINTS = [2, 3];
+
+    public const COMPACT_POINT_WORDS = 16;
+
+    public const COMPACT_DEFINITION_WORDS = 26;
+
     private const SYSTEM = 'You are an experienced teacher writing concise exam revision notes for one textbook chapter. '
         . 'You reply with a single JSON object and nothing else. You never add facts that are not in the chapter text.';
+
+    public function __construct(\App\Services\StudyDeck\Contracts\Completer $completer, int $chunkSize = 6, private readonly bool $compact = false)
+    {
+        parent::__construct($completer, $chunkSize);
+    }
 
     public function kind(): DocumentKind
     {
@@ -63,16 +82,21 @@ class RevisionNotesWriter extends DocumentWriter
                 'dok_levels' => $c['dok'],
                 'builds_on' => array_values(array_filter(array_map(fn ($r) => $map['concepts'][$r]['name'] ?? null, $c['requires']))),
             ];
+            if ($this->compact) {
+                // A compact note has no misconception box or worked example, so the model is not shown what it cannot use.
+                unset($work[$id]['misconceptions'], $work[$id]['real_world']);
+            }
         }
 
+        $compact = $this->compact;
         $notes = $this->inChunks(
             $work,
             self::SYSTEM,
-            12000,
+            $compact ? 8000 : 12000,
             'revision notes',
-            fn (array $chunk) => $this->prompt($context, $chunk, count($scope)),
+            fn (array $chunk) => $compact ? $this->compactPrompt($context, $chunk, count($scope)) : $this->prompt($context, $chunk, count($scope)),
             fn (array $json, array $chunk) => $this->parse($json, $chunk),
-            fn (array $note, array $item) => self::problems($note, $item),
+            fn (array $note, array $item) => self::problems($note, $item, $compact),
             $progress
         );
 
@@ -85,24 +109,29 @@ class RevisionNotesWriter extends DocumentWriter
      *
      * @param array<string,mixed> $note a cleaned note
      * @param array<string,mixed> $concept the work item it was written for
+     * @param bool $compact the compact profile (a pack that must fit a few pages): tighter limits, see COMPACT_*
      * @return array<int,string>
      */
-    public static function problems(array $note, array $concept): array
+    public static function problems(array $note, array $concept, bool $compact = false): array
     {
         $out = [];
 
+        $summaryWords = $compact ? self::COMPACT_SUMMARY_WORDS : self::SUMMARY_WORDS;
+        $points = $compact ? self::COMPACT_POINTS : self::POINTS;
+        $pointWords = $compact ? self::COMPACT_POINT_WORDS : self::POINT_WORDS;
+
         $w = self::words($note['summary']);
-        if ($w < self::SUMMARY_WORDS[0] || $w > self::SUMMARY_WORDS[1]) {
-            $out[] = 'The summary has ' . $w . ' words; it must be ' . self::SUMMARY_WORDS[0] . ' to ' . self::SUMMARY_WORDS[1] . ' and say what the concept is.';
+        if ($w < $summaryWords[0] || $w > $summaryWords[1]) {
+            $out[] = 'The summary has ' . $w . ' words; it must be ' . $summaryWords[0] . ' to ' . $summaryWords[1] . ' and say what the concept is.';
         }
 
         $n = count($note['key_points']);
-        if ($n < self::POINTS[0] || $n > self::POINTS[1]) {
-            $out[] = 'There are ' . $n . ' key points; there must be ' . self::POINTS[0] . ' to ' . self::POINTS[1] . '.';
+        if ($n < $points[0] || $n > $points[1]) {
+            $out[] = 'There are ' . $n . ' key points; there must be ' . $points[0] . ' to ' . $points[1] . '.';
         }
         foreach ($note['key_points'] as $p) {
-            if (self::words($p) > self::POINT_WORDS) {
-                $out[] = 'A key point is over ' . self::POINT_WORDS . ' words ("' . mb_substr($p, 0, 40) . '..."); keep each to one short idea.';
+            if (self::words($p) > $pointWords) {
+                $out[] = 'A key point is over ' . $pointWords . ' words ("' . mb_substr($p, 0, 40) . '..."); keep each to one short idea.';
             }
         }
         if (count(array_unique(array_map('mb_strtolower', $note['key_points']))) !== $n) {
@@ -111,6 +140,12 @@ class RevisionNotesWriter extends DocumentWriter
 
         if ($note['definition'] !== null && self::words($note['definition']['text']) < 4) {
             $out[] = 'The definition is too short to define anything; give the chapter text\'s own wording or set definition to null.';
+        }
+        if ($compact && $note['definition'] !== null && self::words($note['definition']['text']) > self::COMPACT_DEFINITION_WORDS) {
+            $out[] = 'The definition is over ' . self::COMPACT_DEFINITION_WORDS . ' words; give the chapter text\'s own short wording, or set definition to null.';
+        }
+        if ($compact && count($note['checklist']) !== 1) {
+            $out[] = 'Write exactly one checklist statement starting "I can".';
         }
 
         if ($note['checklist'] === []) {
@@ -126,7 +161,7 @@ class RevisionNotesWriter extends DocumentWriter
             $out[] = '"remember" is over ' . self::REMEMBER_WORDS . ' words; make it one line.';
         }
 
-        if ($note['misconception'] !== null && !self::traces($note['misconception']['wrong_idea'], array_column($concept['misconceptions'], 'wrong_idea'))) {
+        if ($note['misconception'] !== null && !self::traces($note['misconception']['wrong_idea'], array_column($concept['misconceptions'] ?? [], 'wrong_idea'))) {
             $out[] = 'The misconception is not one of this concept\'s listed misconceptions; use one of them (same idea, tidier words) or set it to null.';
         }
 
@@ -142,7 +177,7 @@ class RevisionNotesWriter extends DocumentWriter
      * @param array<int,int> $scope
      * @return array{lede:string, summary:string, topics:array<int,string>}
      */
-    private function overview(array $context, array $map, array $scope): array
+    protected function overview(array $context, array $map, array $scope): array
     {
         $topics = [];
         foreach ($map['topics'] as $t) {
@@ -250,10 +285,67 @@ PROMPT;
             if (!is_array($n) || !isset($chunk[$id]) || $this->str($n['summary'] ?? '') === '') {
                 continue;
             }
-            $out[$id] = $this->clean($n);
+            $out[$id] = $this->compact ? $this->compactOnly($this->clean($n)) : $this->clean($n);
         }
 
         return $out;
+    }
+
+    /**
+     * A compact note has no rules box, worked example, misconception box or "remember" line, and one checklist line.
+     * Whatever the model sends beyond that is dropped here, so the rest of the pipeline never sees it.
+     *
+     * @param array<string,mixed> $note a cleaned note
+     * @return array<string,mixed>
+     */
+    private function compactOnly(array $note): array
+    {
+        $note['rules'] = [];
+        $note['example'] = null;
+        $note['misconception'] = null;
+        $note['remember'] = null;
+        $note['key_points'] = array_slice($note['key_points'], 0, self::COMPACT_POINTS[1]);
+        $note['checklist'] = array_slice($note['checklist'], 0, 1);
+
+        return $note;
+    }
+
+    /**
+     * The compact profile's prompt: the same structured fields, tighter. The pack is printed on a few pages, so every
+     * word has to earn its place, and what is left out (the rules box, the example, the misconception, the "remember"
+     * line) is left out of the reply format too.
+     *
+     * @param array<int,array<string,mixed>> $chunk work items by concept id
+     */
+    private function compactPrompt(array $context, array $chunk, int $total): string
+    {
+        $input = json_encode(array_values($chunk), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        [$sumMin, $sumMax] = self::COMPACT_SUMMARY_WORDS;
+        [$pointMin, $pointMax] = self::COMPACT_POINTS;
+        $pointWords = self::COMPACT_POINT_WORDS;
+        $defWords = self::COMPACT_DEFINITION_WORDS;
+        $ground = self::GROUND_RULES;
+
+        return <<<PROMPT
+Write COMPACT exam revision notes for the concepts listed under CONCEPTS TO WRITE. The whole pack of {$total} concepts is printed on five pages, so each note is a few short lines a learner can scan in seconds the night before an examination: only the most important facts, the exact definition, the key terms and the points an examiner asks about. It is not a re-teaching of the chapter. Write ONE note for EVERY listed concept.
+
+Rules
+{$ground}
+- "summary": ONE sentence, {$sumMin} to {$sumMax} words, saying what the concept is.
+- "key_points": {$pointMin} to {$pointMax} short points, each at most {$pointWords} words: the facts, conditions, steps, differences or values to remember. One idea each, no filler, not a repeat of the summary. A formula, law or value the chapter states goes in a point, exactly as the chapter states it.
+- "definition": {"term": "...", "text": "..."} in the chapter text's own words, at most {$defWords} words, when the chapter defines this concept; null when it does not.
+- "checklist": exactly ONE statement starting "I can", built from the listed objectives.
+- "diagram" and "diagram_notes": at most ONE diagram in this whole reply, and only where the concept has several named parts, steps or kinds that the chapter text lists and a picture would help recall; most notes have none (null and []). A diagram is {"layout": "flow" | "compare" | "hub", "title": "...", ...}: flow has "nodes": 3 to 6 short labels in order; hub has "center" and "nodes": 3 to 6 labels; compare has "left" and "right", each {"heading": "...", "items": [2 to 5 labels]}. Every label uses words from the chapter text and is at most 40 characters. "diagram_notes" has one entry for EVERY label drawn: [{"label": "the label exactly", "text": "5 to 25 words saying what it is"}].
+- "bloom" is one of remember, understand, apply, analyze, evaluate, create. "dok" is 1 to 4. "minutes" is whole minutes to revise it.
+
+Reply with:
+{"notes": [{"concept_id": 0, "summary": "", "key_points": [""], "definition": null, "checklist": ["I can ..."], "diagram": null, "diagram_notes": [], "bloom": "understand", "dok": 2, "minutes": 2}]}
+
+THE PACK HAS {$total} CONCEPTS IN ALL. CONCEPTS TO WRITE
+{$input}
+
+{$this->chapterBlock($context)}
+PROMPT;
     }
 
     /**

@@ -5,6 +5,7 @@ namespace App\Console\Commands\LMS;
 use App\Services\ContentGenerationService;
 use App\Services\StudyDeck\ClaudeCliCompleter;
 use App\Services\StudyDeck\Contracts\Completer;
+use App\Services\StudyDeck\Documents\CompactRevisionPdfRenderer;
 use App\Services\StudyDeck\Documents\DocumentKind;
 use App\Services\StudyDeck\Documents\StudyDocumentService;
 use App\Services\StudyDeck\StudyImageStores;
@@ -33,9 +34,13 @@ class GenerateStudyDocumentCommand extends Command
         {kind : revision_notes | remedial | activities}
         {--tenant=1 : sub_institute_id}
         {--executor= : api | cli (cli is dev-only; default from config claude.executor)}
-        {--out= : bundle directory (default storage/app/study-deck/chapter-<id>/<kind>)}
+        {--out= : bundle directory (default storage/app/study-deck/chapter-<id>/<kind>_purpose for revision notes and a remedial class, <kind>_compact with --compact, <kind> for activities)}
         {--concepts= : comma-separated concept ids to write about (default: every concept of the chapter)}
         {--per-concept=4 : most bank questions offered per concept}
+        {--compact : a compact pack of any kind: every part written short and the bank questions fitted to --pages}
+        {--pages=5 : with --compact, the exact number of pages both copies of the PDF must come to}
+        {--draft= : the draft.json of an earlier compact or purpose-based run: its wording is reused and only the page fit is made again (no model call)}
+        {--lessons= : a remedial class: how many concepts get a lesson (default about a fifth of the chapter, 4 to 8)}
         {--store : on a passing validation, store THIS bundle (see lms:store-study-document: writes to the DB and shared storage)}';
 
     protected $description = 'Write revision notes, a remedial class or classroom activities for a chapter from its LMS data';
@@ -52,12 +57,31 @@ class GenerateStudyDocumentCommand extends Command
         $chapterId = (int) $this->argument('chapter');
         $tenant = (int) $this->option('tenant');
         $executor = (string) ($this->option('executor') ?: config('claude.executor', 'api'));
-        $dir = rtrim((string) ($this->option('out') ?: storage_path('app/study-deck/chapter-' . $chapterId . '/' . $kind->value)), '/\\');
+        $compact = (bool) $this->option('compact');
+        $pages = max(1, (int) $this->option('pages'));
+        // Revision notes and a remedial class have a purpose-based design by default; activities have only the standard one.
+        $purpose = !$compact && $kind !== DocumentKind::Activities;
+        $draft = null;
+        if ($this->option('draft')) {
+            if ((!$compact && !$purpose) || !is_file((string) $this->option('draft'))) {
+                $this->error('--draft needs a compact or purpose-based run and the path of an earlier run\'s draft.json.');
+
+                return self::FAILURE;
+            }
+            $draft = json_decode((string) file_get_contents((string) $this->option('draft')), true);
+            if (!is_array($draft)) {
+                $this->error('That draft.json is not valid JSON.');
+
+                return self::FAILURE;
+            }
+        }
+        // A run never writes into the bundle of another design: the earlier bundles are kept as they were.
+        $dir = rtrim((string) ($this->option('out') ?: storage_path('app/study-deck/chapter-' . $chapterId . '/' . $kind->value . ($compact ? '_compact' : ($purpose ? '_purpose' : '')))), '/\\');
         $store = (bool) $this->option('store');
         $concepts = array_values(array_unique(array_filter(array_map('intval', array_map('trim', explode(',', (string) $this->option('concepts')))))));
 
         $this->line('Executor: <options=bold>' . $executor . '</>' . ($executor === 'cli' ? ' (dev-only, tools disabled)' : ''));
-        $this->line($kind->label() . ' for chapter ' . $chapterId . ($concepts ? ' (' . count($concepts) . ' concept(s) chosen)' : ' (the whole chapter)'));
+        $this->line($kind->label() . ' for chapter ' . $chapterId . ($concepts ? ' (' . count($concepts) . ' concept(s) chosen)' : ' (the whole chapter)') . ($compact ? ', compact: ' . $pages . ' pages' : ($purpose ? ', purpose-based design: 5 to 15 pages' : '')));
 
         try {
             $service = $this->service($this->completer($executor), $tenant, $chapterId);
@@ -65,6 +89,15 @@ class GenerateStudyDocumentCommand extends Command
             $result = $service->generate($kind, $chapterId, $tenant, [
                 'concept_ids' => $concepts,
                 'per_concept' => (int) $this->option('per-concept'),
+                'compact' => $compact,
+                'pages' => $pages,
+                'draft' => $draft,
+                'lessons' => $this->option('lessons') !== null ? (int) $this->option('lessons') : null,
+                // How the fit is measured: both copies of the PDF, drawn from the document exactly as they will be stored.
+                'measure' => fn (array $document) => [
+                    'revision' => CompactRevisionPdfRenderer::pageCount($content->studyDocumentPdfBytes($document, ['variant' => 'revision', 'tenant' => $tenant])),
+                    'practice' => CompactRevisionPdfRenderer::pageCount($content->studyDocumentPdfBytes($document, ['variant' => 'practice', 'tenant' => $tenant])),
+                ],
             ], fn ($stage, $msg) => $this->line(sprintf('  <fg=cyan>%-8s</> %s', $stage, $msg)));
         } catch (\Throwable $e) {
             $this->error($e->getMessage());
@@ -153,7 +186,23 @@ class GenerateStudyDocumentCommand extends Command
             }
             $file = $dir . '/out/' . $kind->value . '-' . Str::slug($label) . '.pdf';
             file_put_contents($file, $bytes);
-            $lines[] = sprintf('%s (%s, %s)', $file, $label, number_format(strlen($bytes) / 1024, 0) . ' KiB');
+            $count = CompactRevisionPdfRenderer::pageCount($bytes);
+            $lines[] = sprintf('%s (%s, %s, %d pages)', $file, $label, number_format(strlen($bytes) / 1024, 0) . ' KiB', $count);
+            // What was written is what was measured: a compact pack that drifted from its page target is not a result.
+            $target = (int) ($document['compact']['target_pages'] ?? 0);
+            if ($target > 0 && $count !== $target) {
+                throw new \RuntimeException('the "' . $label . '" copy came out at ' . $count . ' pages, not ' . $target);
+            }
+            // A purpose-based document has a range, not a count; what was written must be what was measured and be inside it.
+            $range = $document['purpose'] ?? null;
+            if (is_array($range) && isset($range['pages'][$variant])) {
+                if ($count !== (int) $range['pages'][$variant]) {
+                    throw new \RuntimeException('the "' . $label . '" copy came out at ' . $count . ' pages; it was measured at ' . $range['pages'][$variant]);
+                }
+                if ($count < (int) $range['min_pages'] || $count > (int) $range['max_pages']) {
+                    throw new \RuntimeException('the "' . $label . '" copy came out at ' . $count . ' pages; it must be ' . $range['min_pages'] . ' to ' . $range['max_pages']);
+                }
+            }
         }
 
         return $lines;

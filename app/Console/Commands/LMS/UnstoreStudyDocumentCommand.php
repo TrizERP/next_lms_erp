@@ -42,7 +42,11 @@ class UnstoreStudyDocumentCommand extends Command
             return self::FAILURE;
         }
 
-        $paths = [ContentGenerationService::studyDocumentPdfPath($row->filename), ContentGenerationService::studyDocumentSidecarPath($row->filename)];
+        $paths = [
+            ContentGenerationService::studyDocumentPdfPath($row->filename),
+            ContentGenerationService::studyDocumentSidecarPath($row->filename),
+            ContentGenerationService::studyDocumentPracticePdfPath($row->filename),
+        ];
 
         $mine = $images->linkedImageIds((int) $row->id);
         $removable = $this->option('images') ? array_values(array_diff($mine, $images->usedElsewhere($mine, (int) $row->id))) : [];

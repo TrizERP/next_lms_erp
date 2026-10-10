@@ -183,6 +183,16 @@ class StudyDeckApiController extends Controller
         $name = preg_replace('/[^A-Za-z0-9._-]+/', '_', basename(ContentGenerationService::studyDocumentPdfPath($row->filename))) ?: 'study-document.pdf';
 
         if ($request->input('variant') === 'practice') {
+            // The other copy is stored with the document: opening it is a read. Only a document stored before that was kept falls through to drawing.
+            try {
+                $disk = Storage::disk('digitalocean');
+                $kept = ContentGenerationService::studyDocumentPracticePdfPath($row->filename);
+                if ($disk->exists($kept)) {
+                    return $this->pdfResponse((string) $disk->get($kept), preg_replace('/\.pdf$/', '', $name) . '-practice.pdf', $disposition);
+                }
+            } catch (Throwable $e) {
+                // not readable now: draw it, as before
+            }
             $document = $this->readDocument($row);
             if ($document === null) {
                 return response()->json(['status_code' => 0, 'message' => 'The stored document could not be read.'], 502);
