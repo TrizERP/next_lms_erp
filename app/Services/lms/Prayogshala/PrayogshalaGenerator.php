@@ -222,6 +222,35 @@ class PrayogshalaGenerator
     }
 
     /**
+     * File an activity that was written outside the model call (an authoring session, an import)
+     * against its topic. It goes through exactly the same checks as a generated one: the topic must
+     * be visible to the institute, the row is claimed under the same unique index (so it cannot
+     * duplicate or overwrite an existing activity unless `$replace` is true), the activity and its
+     * lab_config are validated, and it lands in `review`, never published.
+     *
+     * @param  array<string,mixed>  $activity  the same shape the model is asked for
+     * @return array{outcome:string,activity_id:?int,message:string}
+     */
+    public function storeAuthored(int $topicId, int $tenant, ?int $userId, array $activity, string $authoredBy, bool $replace = false): array
+    {
+        $ctx = $this->context($topicId, $tenant);
+        if (! $ctx) {
+            return $this->result('not_found', null, 'Topic not found.');
+        }
+        $problems = $this->validateActivity($activity);
+        if ($problems !== []) {
+            return $this->result('failed', null, 'Rejected by the validator: ' . implode(' ', array_slice($problems, 0, 5)));
+        }
+
+        [$state, $row] = $this->claim($ctx, $tenant, $userId, $replace);
+        if ($state !== 'claimed') {
+            return $this->result($state === 'forbidden' ? 'forbidden' : $state, (int) $row->id, 'This topic already has an activity or is being generated.');
+        }
+
+        return $this->finishReady($row, $ctx, ['activity' => $activity, 'model' => 'authored: ' . $authoredBy], $replace && $row->lab_config !== null);
+    }
+
+    /**
      * Take the topic's row, or learn why it cannot be taken.
      *
      * @param  array<string,mixed>  $ctx
@@ -317,7 +346,7 @@ class PrayogshalaGenerator
             $prompt = $attempt === 1 ? $user : $user . "\n\nYour previous answer was rejected by the validator:\n- "
                 . implode("\n- ", array_slice($problems, 0, 8)) . "\nReturn the corrected full JSON object only.";
 
-            $response = $this->client->complete($system, $prompt, $tenant);
+            $response = $this->complete($system, $prompt, $tenant);
             if (! ($response['ok'] ?? false)) {
                 return ['kind' => 'failed', 'error' => (string) ($response['error'] ?? 'The AI provider did not answer.')];
             }
@@ -339,6 +368,45 @@ class PrayogshalaGenerator
         }
 
         return ['kind' => 'failed', 'error' => 'The generated activity did not pass validation: ' . implode(' ', array_slice($problems, 0, 4))];
+    }
+
+    /**
+     * One model call. The Claude client is tried first (same key resolution as the question and
+     * content generators). If no Claude key is configured at all, the call goes to whatever
+     * provider the LMS has configured for content generation (AiModelClientFactory, e.g. Gemini),
+     * so generation works on any installation that has any AI key. A configured-but-failing
+     * Claude key is reported as it is and is NOT silently swapped for another provider.
+     *
+     * @return array{ok:bool,content?:string,model?:string,error?:string}
+     */
+    private function complete(string $system, string $user, int $tenant): array
+    {
+        $claude = $this->client->complete($system, $user, $tenant);
+        if (($claude['ok'] ?? false) || ! str_contains((string) ($claude['error'] ?? ''), 'key is not configured')) {
+            return $claude;
+        }
+
+        try {
+            $client = app(\App\Domain\AI\Configuration\AiModelClientFactory::class)->for('content_generation', $tenant);
+            if (! $client->isConfigured()) {
+                return $claude;
+            }
+            $text = $client->chat(
+                [['role' => 'system', 'content' => $system], ['role' => 'user', 'content' => $user]],
+                null,
+                (int) config('prayogshala.max_output_tokens', 16000),
+                0.5,
+                true,
+                (int) config('prayogshala.timeout_seconds', 240)
+            );
+        } catch (\Throwable $e) {
+            return ['ok' => false, 'error' => 'The configured AI provider failed: ' . mb_substr($e->getMessage(), 0, 300)];
+        }
+        if ($text === null || trim($text) === '') {
+            return ['ok' => false, 'error' => 'The configured AI provider returned no text.'];
+        }
+
+        return ['ok' => true, 'content' => $text, 'model' => $client->defaultModel()];
     }
 
     /** @return list<string> */
@@ -459,6 +527,10 @@ GROUNDING RULES
 - This is a virtual simulation. Never claim a physical experiment happened. Say honestly where the model is simplified.
 - Plain text only: no HTML, no markdown, no code. Write for the student's standard.
 
+MAKE IT FEEL PRACTICAL AND ALIVE
+The student must DO something and SEE the result move: drag a slider and watch the picture change, flip a switch, reorder stages, sort examples. Prefer a "variable_model" with an animated visual whenever the topic involves a process, a force, motion, heat, light, electricity, waves, particles, measurement, shapes or quantities - and choose the visual that matches the topic (not always the same one). Never a text-only quiz dressed as an experiment.
+Make this activity clearly different from the other activities of the same chapter (listed below): a different concept focus, a different engine or visual, a different scenario.
+
 CHOOSE THE FORMAT FROM THE SUBJECT AND THE LEARNING GOAL (not every topic is a lab experiment)
 - A quantity that responds to a control (temperature, angle, current, speed, length): simulation.type "variable_model".
 - A calculation or estimate from stated values: "calculator".
@@ -497,6 +569,10 @@ ENGINES AND THEIR params (ids: letters, digits, underscore, start with a letter)
    "observations":[{"when","text"}] (1-10, first true one is shown; text may use {controlId} and {derivedId} placeholders),
    "warnings":[{"when","text"}]}
    visual binds (each value is an expression): heating {"temperature","heat" (0..1),"boiling_point"}; particles {"energy" (0..1),"spacing" (0..1)};
+   motion {"position" (0..1 along the track),"speed" (0..1)}; wave {"amplitude" (0..1),"frequency" (1..8)};
+   lever {"left_load","left_distance","right_load","right_distance"} (balance beam); atom {"protons","neutrons","electrons"} (counts, 0..20);
+   scenery {"sun","clouds","rain","water","plants"} (each 0..1: sky, weather, water level, plant growth); mixture {"separated" (0..1),"energy" (0..1)};
+   pendulum {"length" (0..1),"swing" (0..1)};
    ray {"incidence" (degrees),"reflection" (degrees)}; circuit {"closed" (0|1),"brightness" (0..1)};
    rectangle {"width","height"}; bars {"bars":[{"label","value","max"}]}.
    Facts: every control id and derived id.
@@ -507,6 +583,25 @@ ENGINES AND THEIR params (ids: letters, digits, underscore, start with a letter)
 
 The Observe text and the Explain cases must follow from the simulation's own facts so they can never contradict what the student sees.
 PROMPT;
+    }
+
+    /**
+     * Titles of the chapter's other live activities, so a new one is steered away from repeating them.
+     *
+     * @param  array<string,mixed>  $ctx
+     * @return list<string>
+     */
+    private function siblingTitles(array $ctx): array
+    {
+        return DB::table('lms_prayogshala_activity')
+            ->where('chapter_id', $ctx['chapter']->id)
+            ->where('topic_id', '!=', $ctx['topic']->id)
+            ->whereNull('deleted_at')
+            ->whereNotNull('lab_config')
+            ->limit(6)
+            ->pluck('title')
+            ->map(fn ($t) => mb_substr((string) $t, 0, 120))
+            ->all();
     }
 
     /** @param array<string,mixed> $ctx */
@@ -527,6 +622,11 @@ PROMPT;
         }
         if ($ctx['concepts'] === []) {
             $lines[] = '(none recorded)';
+        }
+        $others = $this->siblingTitles($ctx);
+        if ($others !== []) {
+            $lines[] = '';
+            $lines[] = 'Other activities already in this chapter (yours must differ from these): ' . implode(' | ', $others);
         }
         $lines[] = '';
         $lines[] = $ctx['excerpt'] !== ''

@@ -18,6 +18,10 @@ use Illuminate\Support\Facades\DB;
  * is listed here. A topic that already has an activity is skipped, so a re-run continues where the
  * last one stopped. --limit bounds every run (default 10, hard cap 200) so a typo cannot start an
  * unbounded run of paid AI calls. --regenerate replaces existing content and so needs --topic.
+ *
+ * --per-chapter=3 is the "every chapter gets 2-3 different activities" mode: for each chapter it counts the
+ * activities that already exist and nominates only enough extra topics to reach N, choosing the topics with
+ * the most concepts (the most material to build a faithful activity from). Run it again to continue.
  */
 class PrayogshalaGenerateCommand extends Command
 {
@@ -27,6 +31,7 @@ class PrayogshalaGenerateCommand extends Command
         {--subject= : subject.id or subject.subject_name}
         {--chapter= : chapter_master.id}
         {--topic= : topic_master.id}
+        {--per-chapter= : Aim for N activities in every selected chapter (1-5): picks the richest topics (most concepts) that have none yet}
         {--limit=10 : Max topics to generate this run (1-200)}
         {--queue : Dispatch one job per topic instead of generating inline}
         {--regenerate : Replace the activity of --topic}
@@ -88,8 +93,25 @@ class PrayogshalaGenerateCommand extends Command
                 || in_array($row->generation_status, ['failed', 'needs_content', 'generating'], true);
         })->values();
 
+        $withActivity = $topics->count() - $pending->count();
+        $perChapter = (int) $this->option('per-chapter');
+        if ($perChapter > 0) {
+            $perChapter = min(5, $perChapter);
+            $conceptCount = DB::table('lms_concept')->whereIn('topic_id', $pending->pluck('id'))
+                ->selectRaw('topic_id, count(*) as n')->groupBy('topic_id')->pluck('n', 'topic_id');
+            $have = DB::table('lms_prayogshala_activity')->where('sub_institute_id', $tenant)->whereNull('deleted_at')
+                ->whereNotNull('lab_config')->whereIn('chapter_id', $topics->pluck('chapter_id')->unique())
+                ->selectRaw('chapter_id, count(*) as n')->groupBy('chapter_id')->pluck('n', 'chapter_id');
+            $order = $topics->pluck('id')->flip();
+            $pending = $pending->groupBy('chapter_id')->flatMap(function ($group, $chapterId) use ($perChapter, $conceptCount, $have) {
+                $need = max(0, $perChapter - (int) ($have[$chapterId] ?? 0));
+
+                return $group->sortByDesc(fn ($t) => (int) ($conceptCount[$t->id] ?? 0))->take($need);
+            })->sortBy(fn ($t) => $order[$t->id])->values();
+        }
+
         $this->info(sprintf('%d topics selected, %d already have an activity, %d to generate (limit %d).',
-            $topics->count(), $topics->count() - $pending->count(), $pending->count(), $limit));
+            $topics->count(), $withActivity, $pending->count(), $limit));
 
         $counts = [];
         foreach ($pending->take($limit) as $t) {
