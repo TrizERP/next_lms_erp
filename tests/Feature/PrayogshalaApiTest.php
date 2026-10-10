@@ -59,6 +59,7 @@ class PrayogshalaApiTest extends TestCase
             $t->integer('id')->primary();
             $t->integer('chapter_id');
             $t->string('name');
+            $t->text('description')->nullable();
             $t->integer('topic_sort_order')->default(0);
         });
         Schema::create('lms_concept', function ($t) {
@@ -69,6 +70,7 @@ class PrayogshalaApiTest extends TestCase
         });
         // The real migration, so the test also proves it creates what the controller reads.
         (require base_path('database/migrations/2026_10_08_100000_create_lms_prayogshala_activity_table.php'))->up();
+        (require base_path('database/migrations/2026_10_09_100000_add_generation_tracking_to_lms_prayogshala_activity_table.php'))->up();
 
         DB::table('school_setup')->insert([
             ['Id' => 1, 'is_Lms' => 'Y'],   // platform tenant

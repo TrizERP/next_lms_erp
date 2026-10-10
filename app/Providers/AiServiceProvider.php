@@ -404,10 +404,18 @@ class AiServiceProvider extends ServiceProvider
         // migrated to it cannot have its provider changed underneath it by a row
         // somebody saved on the admin screen.
         $this->app->singleton(\App\Domain\AI\Support\ModelClient::class, function ($app) {
-            return match ((string) config('ai.provider.driver', 'gemini')) {
+            $driver = match ((string) config('ai.provider.driver', 'gemini')) {
                 'openrouter' => $app->make(\App\Domain\AI\Support\OpenRouterClient::class),
                 default => $app->make(\App\Domain\AI\Support\GeminiClient::class),
             };
+
+            // D6 (shared cross-product AI gateway), minimal first step: every
+            // caller that resolves ModelClient from the container gets usage
+            // recorded (provider/model/outcome/latency) without any of them
+            // changing. AiModelClientFactory's own construction path is
+            // wrapped separately (see its fromConfiguration()) since it
+            // bypasses this binding — see UsageTrackingModelClient's docblock.
+            return new \App\Domain\AI\Support\UsageTrackingModelClient($driver);
         });
 
         $this->app->singleton(

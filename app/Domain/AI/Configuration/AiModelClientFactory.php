@@ -100,8 +100,18 @@ final class AiModelClientFactory
             $client = $client->forProvider($configuration->provider);
         }
 
-        return $client
+        $client = $client
             ->forInstitute($subInstituteId)
             ->withConfiguration($configuration);
+
+        // D6 (shared cross-product AI gateway), minimal first step: the
+        // container-singleton ModelClient binding wraps itself the same way
+        // (see AiServiceProvider) for every caller that resolves it directly;
+        // this is the other half - the module-aware path this factory builds
+        // its own client for, bypassing that binding entirely. Calling
+        // forInstitute() again on an already-configured client is a second
+        // immutable copy, not a re-resolution - safe per ModelClient's own
+        // contract - and is what lets the wrapper record which institute asked.
+        return (new \App\Domain\AI\Support\UsageTrackingModelClient($client))->forInstitute($subInstituteId);
     }
 }
