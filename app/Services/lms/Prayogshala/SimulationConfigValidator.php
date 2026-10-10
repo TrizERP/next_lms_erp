@@ -21,7 +21,7 @@ class SimulationConfigValidator
     public const ENGINES = ['calculator', 'relevance', 'osmosis', 'variable_model', 'sequence', 'classify'];
 
     /** Visual primitives variable_model may draw. Each is a trusted frontend component. */
-    public const VISUALS = ['heating', 'particles', 'ray', 'circuit', 'bars', 'rectangle'];
+    public const VISUALS = ['heating', 'particles', 'ray', 'circuit', 'bars', 'rectangle', 'motion', 'wave', 'lever', 'atom', 'scenery', 'mixture', 'pendulum'];
 
     private const STEP_KEYS = ['mission', 'predict', 'do', 'observe', 'explain', 'concept', 'apply', 'reflect'];
 
@@ -163,6 +163,13 @@ class SimulationConfigValidator
                 'ray'       => ['incidence', 'reflection'],
                 'circuit'   => ['closed', 'brightness'],
                 'rectangle' => ['width', 'height'],
+                'motion'    => ['position', 'speed'],
+                'wave'      => ['amplitude', 'frequency'],
+                'lever'     => ['left_load', 'left_distance', 'right_load', 'right_distance'],
+                'atom'      => ['protons', 'neutrons', 'electrons'],
+                'scenery'   => ['sun', 'clouds', 'rain', 'water', 'plants'],
+                'mixture'   => ['separated', 'energy'],
+                'pendulum'  => ['length', 'swing'],
                 'bars'      => [],
             ][$visual['kind']];
             foreach ($needs as $key) {
@@ -424,7 +431,7 @@ class SimulationConfigValidator
             foreach ($node as $k => $v) {
                 $this->checkTextLeaves($v, "$path.$k");
             }
-        } elseif (is_string($node) && preg_match('/<\s*[a-zA-Z\/!]|javascript:/i', $node) && ! str_contains($path, 'formula') && ! str_contains($path, '.when')) {
+        } elseif (is_string($node) && preg_match('/<[a-zA-Z\/!]|javascript:/i', $node) && ! str_contains($path, 'formula') && ! str_contains($path, '.when')) {
             $this->errors[] = "$path must be plain text (no HTML or script).";
         }
     }

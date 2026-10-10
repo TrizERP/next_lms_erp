@@ -224,6 +224,33 @@ class PrayogshalaGenerationTest extends TestCase
         $this->assertStringContainsString('visual.kind', implode(' ', $v->validate($bad)));
     }
 
+    public function test_motion_and_wave_visuals_are_accepted_and_need_their_bindings(): void
+    {
+        $v = new SimulationConfigValidator();
+        $lab = self::goodActivity()['lab_config'];
+        $lab['simulation']['params']['visual'] = ['kind' => 'motion', 'bind' => ['position' => 'heat/100', 'speed' => 'heat/100']];
+        $this->assertSame([], $v->validate($lab));
+
+        $lab['simulation']['params']['visual'] = ['kind' => 'wave', 'bind' => ['amplitude' => 'heat/100', 'frequency' => '3']];
+        $this->assertSame([], $v->validate($lab));
+
+        $lab['simulation']['params']['visual'] = ['kind' => 'wave', 'bind' => ['amplitude' => 'heat/100']];
+        $this->assertStringContainsString('visual.bind.frequency', implode(' ', $v->validate($lab)));
+    }
+
+    public function test_a_comparison_in_text_is_allowed_but_markup_is_not(): void
+    {
+        $v = new SimulationConfigValidator();
+        $lab = self::goodActivity()['lab_config'];
+        $lab['steps']['mission']['scenario'] = 'If x < y and y > 3 then x is smaller. Also 5 <6.';
+        $this->assertSame([], $v->validate($lab));
+
+        foreach (['<b>bold</b>', '<script>x</script>', 'a<img src=x>', '</p>', '<!-- c -->', 'javascript:alert(1)'] as $bad) {
+            $lab['steps']['mission']['scenario'] = $bad;
+            $this->assertNotSame([], $v->validate($lab), $bad);
+        }
+    }
+
     public function test_a_predict_condition_may_only_use_facts_the_engine_provides(): void
     {
         $lab = self::goodActivity()['lab_config'];
