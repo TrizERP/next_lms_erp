@@ -11,6 +11,7 @@ use App\Http\Controllers\api\PAL\PalArchitectureController;
 use App\Http\Controllers\api\PAL\PalContentIntelligenceController;
 use App\Http\Controllers\api\PAL\PalH5PModelController;
 use App\Http\Controllers\api\PAL\PalWorkspaceController;
+use App\Http\Controllers\api\PAL\RecommendationFeedController;
 
 /*
 |--------------------------------------------------------------------------
@@ -52,6 +53,19 @@ Route::prefix('api/pal')->middleware('pal.auth')->group(function () {
     Route::get('/workspace/preview', [PalWorkspaceController::class, 'preview']);
     Route::get('/workspace/{learnerId}', [PalWorkspaceController::class, 'workspace'])
         ->where('learnerId', '[0-9]+');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Recommendation feed — "what should this student do next"
+    |--------------------------------------------------------------------------
+    |
+    | One real, read-only aggregation of recommendation-shaped outputs that
+    | already existed separately: RecommendationEngine's deterministic next
+    | best action + content match, the content-embedding pipeline's concept
+    | -> content retrieval, and Career Quest's narrative. See
+    | RecommendationFeedController's own docblock for the full accounting.
+    */
+    Route::get('/recommendations/next', [RecommendationFeedController::class, 'next']);
 
     /*
     |--------------------------------------------------------------------------

@@ -152,6 +152,9 @@ class Kernel extends ConsoleKernel
                     $projection->projectConceptNodes($tenant, $standard, $subject);
                     $projection->projectNodeMastery($tenant, $standard, $subject);
                     $projection->projectLearningOutcomes($tenant, $standard, $subject);
+                    $projection->projectTopics($tenant, $standard, $subject);
+                    $projection->projectChapterIntelligence($tenant, $standard, $subject);
+                    $projection->projectAssessmentConceptCoverage($tenant, $standard, $subject);
                 } catch (\Throwable $e) {
                     Log::channel('daily')->error('Coherence map nightly sync failed for scope', [
                         'tenant' => $tenant, 'standard' => $standard, 'subject' => $subject,

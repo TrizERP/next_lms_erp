@@ -14,10 +14,15 @@ use Illuminate\Support\Facades\DB;
  * projection written by `pal:coherence-sync`, and that projection cannot answer
  * this question for two independent reasons.
  *
- * First, it has no Unit and no Topic. CoherenceGraphProjection writes
- * (:Subject)-[:COVERS_CHAPTER]->(:Chapter)-[:HAS_CONCEPT]->(:Concept) and nothing
- * above or between; `topic_master` has no label anywhere in config/neo4j.php. The
- * map specified here is four levels deep, so two of them simply are not there.
+ * First, it still has no Unit integrated into this spine. `projectTopics()` was
+ * added 2026-10-06 and does write `topic_master` as (:Chapter)-[:HAS_TOPIC]->(:Topic)
+ * -[:HAS_CONCEPT]->(:Concept) (live count 2026-10-12: 16,158 Topic nodes, 8,746
+ * HAS_TOPIC edges) - so Topic is no longer missing. Unit is a separate story: bare
+ * `:Unit` nodes exist (194, via the generic `lms_units` trigger in config/neo4j.php,
+ * not CoherenceGraphProjection), but nothing in this class links them into the
+ * Subject/Chapter/Topic/Concept chain - only 66 HAS_UNIT edges exist graph-wide, none
+ * written here. The map specified here is four levels deep; one of them, Unit, is
+ * still not there.
  *
  * Second, the sync is a deployment gap rather than a guarantee - it runs where the
  * command has been scheduled, and a teacher-facing screen that renders blank on a

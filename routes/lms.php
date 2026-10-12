@@ -432,6 +432,9 @@ Route::middleware(['session'])->group(function () {
     // Knowledge-Based Career Recommendation Engine — additive, dynamic
     // knowledge-vs-occupation matching. GET only, same reasoning.
     Route::get('careerRecommendation', [\App\Http\Controllers\lms\counselling\CareerRecommendationController::class, 'recommend']);
+    // Career Counselling — AI counsellor narrative (CaiCoreService
+    // evaluation + real concept-mastery state). GET only, same reasoning.
+    Route::get('careerCounsellingNarrative', [\App\Http\Controllers\lms\counselling\CareerCounsellingNarrativeController::class, 'narrate']);
 });
 Route::post('/ai/processData',[contentController::class,'processAIData'])->name('ai.processData');
 Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan');

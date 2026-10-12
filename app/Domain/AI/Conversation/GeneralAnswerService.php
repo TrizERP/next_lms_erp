@@ -53,6 +53,11 @@ class GeneralAnswerService
     public function __construct(
         private readonly ModelClient $client,
         private readonly ?AiModelClientFactory $clients = null,
+        // Optional, same reason $clients is: existing unit tests construct this
+        // service with one positional arg and must keep working unchanged. The
+        // container always supplies the real one, so grounding is live in
+        // production without any caller needing to know this exists.
+        private readonly ?PalGraphContext $palContext = null,
     ) {
     }
 
@@ -85,7 +90,13 @@ class GeneralAnswerService
         array $history = [],
         ?callable $onToken = null,
         ?McpRequestContext $scope = null,
-        ?string $productModuleKey = null
+        ?string $productModuleKey = null,
+        // The student a console button pinned to this turn, when there is one —
+        // see PalGraphContext's own docblock for exactly when this lets a PAL
+        // question be grounded rather than answered as general knowledge. Null
+        // for every existing caller (none pass it), which resolves exactly as
+        // before: no grounding, same behaviour this method always had.
+        ?int $pinnedStudentId = null
     ): ?array {
         if (trim($question) === '') {
             return null;
@@ -103,6 +114,7 @@ class GeneralAnswerService
 
         $messages = array_merge(
             [['role' => 'system', 'content' => $this->systemPrompt()]],
+            $this->groundingMessages($question, $scope, $pinnedStudentId),
             $this->recentHistory($history),
             [['role' => 'user', 'content' => $question]]
         );
@@ -142,6 +154,41 @@ class GeneralAnswerService
             'answer' => $answer,
             'follow_ups' => $this->followUps($question),
         ];
+    }
+
+    /**
+     * The PAL knowledge-graph facts for this turn, as an extra system message
+     * pair — or no messages at all, which is what every turn without a
+     * pinned student (the overwhelming majority) gets, unchanged from today.
+     *
+     * Deliberately a message PAIR rather than folding the facts into
+     * systemPrompt(): that prompt's own "never state a fact about this
+     * school" rule must stay load-bearing for every other question this
+     * method answers, so the exception is scoped to exactly this one turn by
+     * a second, later system message rather than by editing the first one.
+     *
+     * @return array<int, array{role:string, content:string}>
+     */
+    private function groundingMessages(string $question, ?McpRequestContext $scope, ?int $pinnedStudentId): array
+    {
+        if ($this->palContext === null || $scope === null) {
+            return [];
+        }
+
+        $graphContext = $this->palContext->forQuestion($question, $scope, $pinnedStudentId);
+
+        if ($graphContext === null) {
+            return [];
+        }
+
+        return [[
+            'role' => 'system',
+            'content' => 'EXCEPTION to the rule above: the section below is real data retrieved for you '
+                . "from this school's own knowledge graph, verified before being handed to you. You MAY "
+                . "state these specific facts as known. You still may not state, infer or guess anything "
+                . "about this school beyond them.\n\n"
+                . $this->palContext->groundingPrompt($graphContext),
+        ]];
     }
 
     private function systemPrompt(): string

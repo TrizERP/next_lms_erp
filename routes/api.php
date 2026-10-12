@@ -45,7 +45,7 @@ use App\Http\Controllers\api\UserDashboardPreferenceApiController;
 
 
 // Student Assessment API - Get student assessment data with scores and levels
-Route::get('/student-assessment', [StudentGraphController::class, 'getStudentAssessment']);
+Route::middleware('api.session')->get('/student-assessment', [StudentGraphController::class, 'getStudentAssessment']);
 Route::middleware('api.session')->group(function () { Route::post('teacher/assignments/standards', [TeacherAssignmentMobileApiController::class, 'standards']); Route::post('teacher/assignments/divisions', [TeacherAssignmentMobileApiController::class, 'divisions']); });
 
 /*
@@ -59,7 +59,7 @@ Route::middleware('api.session')->group(function () { Route::post('teacher/assig
 |
 */
 
-Route::get('/student-results/{stuId}/graph', [StudentResultGraphController::class, 'show']);
+Route::middleware('api.session')->get('/student-results/{stuId}/graph', [StudentResultGraphController::class, 'show']);
 
 Route::post('whats-send-app',function (Request $request) {
     \Illuminate\Support\Facades\Log::info(json_encode($request->all()));
@@ -397,6 +397,15 @@ Route::middleware('api.session')->prefix('lms')->group(function () {
     Route::get('leaderboard/{userId}', [\App\Http\Controllers\api\lms\LmsLeaderboardApiController::class, 'show'])
         ->where('userId', '[0-9]+');
 
+    // Student Activity - real per-event engagement history (content viewed,
+    // concepts practised, homework submitted), read from `lms_student_engagement`
+    // via EngagementReportService. Read-only here too: the writers are the
+    // controller actions themselves (incrementContentVisit / submitPractice /
+    // HomeworkSubmissionApiController::submit), not this API.
+    Route::get('student-engagement', [\App\Http\Controllers\api\lms\StudentEngagementApiController::class, 'index']);
+    Route::get('student-engagement/{userId}', [\App\Http\Controllers\api\lms\StudentEngagementApiController::class, 'show'])
+        ->where('userId', '[0-9]+');
+
     // Leader Board Master - the admin points configuration (lb_master).
     // Staff-only: students and parents must not reach the configuration screen.
     Route::middleware('staff.only')->group(function () {
@@ -496,6 +505,21 @@ Route::post('inventory/receivables/multiple', [InventoryApiController::class, 's
 Route::match(['put', 'patch'], 'inventory/{module}/{id}', [InventoryApiController::class, 'update'])->where('module', '^(?!reports$).+');
 Route::delete('inventory/{module}/{id}', [InventoryApiController::class, 'destroy'])->where('module', '^(?!reports$).+');
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
+
+// LMS Quiz -- teacher-authored, non-adaptive quizzes (NOT the PAL Adaptive
+// Quiz under routes/pal_api.php, which this does not touch). A quiz is a
+// `question_paper` row with exam_type='quiz'; QuizAttemptApiController owns
+// publishing it and the student attempt lifecycle on top of it. Static
+// segments ('attempts', '{id}/attempts') are declared before the trailing
+// `quiz/{id}` GET so they are matched on their own terms rather than being
+// read as a `show` with an odd id.
+Route::get('quiz/attempts', [\App\Http\Controllers\api\QuizAttemptApiController::class, 'history']);
+Route::get('quiz/attempts/{attemptId}', [\App\Http\Controllers\api\QuizAttemptApiController::class, 'attemptShow']);
+Route::post('quiz/attempts/{attemptId}/submit', [\App\Http\Controllers\api\QuizAttemptApiController::class, 'submitAttempt']);
+Route::post('quiz/{id}/attempts', [\App\Http\Controllers\api\QuizAttemptApiController::class, 'startAttempt']);
+Route::get('quiz', [\App\Http\Controllers\api\QuizAttemptApiController::class, 'index']);
+Route::post('quiz', [\App\Http\Controllers\api\QuizAttemptApiController::class, 'store']);
+Route::get('quiz/{id}', [\App\Http\Controllers\api\QuizAttemptApiController::class, 'show']);
 
 // Question paper templates -- the reusable layouts behind LMS > Exam >
 // "Question paper templates". Blueprints are stored per school in
@@ -612,6 +636,11 @@ Route::post('intelligence/lesson-plan-periods/{id}/delete', [\App\Http\Controlle
 // Lesson Plan lookups - chapter and period-slot options for the "Add lesson" form
 Route::match(['GET', 'POST'], 'intelligence/lesson-plan-lookup/chapters', [\App\Http\Controllers\api\lms\LessonPlanLookupApiController::class, 'chapters']);
 Route::match(['GET', 'POST'], 'intelligence/lesson-plan-lookup/periods', [\App\Http\Controllers\api\lms\LessonPlanLookupApiController::class, 'periods']);
+
+// Lesson Plan document - read-only view of the static, manually-authored lesson plan
+// (lms_lesson_plan / lms_lessonplan_dayswise). NOT part of the AI Lesson Intelligence
+// engine above - a separate feature that happens to share the words "lesson plan".
+Route::match(['GET', 'POST'], 'lesson-plan-doc', [\App\Http\Controllers\api\lms\LessonPlanDocumentApiController::class, 'show']);
 
 /*
 | Lesson Intelligence - the four-phase lesson-plan generator.

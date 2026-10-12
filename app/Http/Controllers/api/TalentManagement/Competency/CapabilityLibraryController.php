@@ -4,6 +4,7 @@ namespace App\Http\Controllers\api\TalentManagement\Competency;
 
 use App\Http\Controllers\api\TalentManagement\Competency\Concerns\ResolvesCompetencyContext;
 use App\Http\Controllers\Controller;
+use App\Services\Integrations\G2GCompetencyGraphClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -2030,5 +2031,78 @@ class CapabilityLibraryController extends Controller
         }
 
         return $counts;
+    }
+
+    /* ================================================================== *
+     * Cross-product - G2G's (hp_erp) real Competency/KASBA/Framework graph
+     * ================================================================== *
+     *
+     * See routes/competency_management.php's comment at this route group,
+     * and G2GCompetencyGraphClient's class doc, for why these are additive
+     * routes rather than a replacement of skills()/kasa() above.
+     */
+
+    /**
+     * GET /api/competency/library/cross-product/status
+     *
+     * Whether this application currently holds a working hp_erp credential,
+     * without making a network call. Lets the frontend show "not connected"
+     * instead of firing a request that is guaranteed to fail.
+     */
+    public function crossProductStatus(Request $request)
+    {
+        $context = $this->competencyContext($request);
+        if (!is_array($context)) {
+            return $context;
+        }
+
+        $client = new G2GCompetencyGraphClient();
+
+        return $this->ok('Cross-product status', [
+            'configured' => $client->isConfigured(),
+            'gap' => $client->configurationGap(),
+        ]);
+    }
+
+    /**
+     * GET /api/competency/library/cross-product/kasba/{type}
+     *
+     * One KASBA facet (skill, knowledge, ability, attitude, behaviour) read
+     * LIVE from hp_erp's own `/api/competency/library/*` API - a real HTTP
+     * call out of this application, not a local-table read.
+     *
+     * Returns hp_erp's real rows when a working `G2G_API_TOKEN` is configured.
+     * Without one, returns `source: "unavailable"` with the exact reason
+     * (never an empty list dressed up as "nothing found", and never fabricated
+     * rows) - see G2GCompetencyGraphClient::configurationGap().
+     */
+    public function crossProductKasba(Request $request, $type)
+    {
+        $context = $this->competencyContext($request);
+        if (!is_array($context)) {
+            return $context;
+        }
+
+        $type = strtolower(trim((string) $type));
+        if ($type === 'behavior') {
+            $type = 'behaviour';
+        }
+        $validTypes = array_merge(['skill'], self::KASA_TYPES);
+        if (!in_array($type, $validTypes, true)) {
+            return $this->badRequest('Unknown KASBA facet. Expected skill, knowledge, ability, attitude or behaviour.', 404);
+        }
+
+        $client = new G2GCompetencyGraphClient();
+        $result = $client->fetchKasbaFacet($type);
+
+        return response()->json([
+            'status' => $result['ok'] ? 1 : 0,
+            'message' => $result['ok']
+                ? 'Fetched live from hp_erp'
+                : 'hp_erp could not be read: '.$result['error'],
+            'source' => $result['source'],
+            'type' => $type,
+            'data' => $result['data'],
+        ], $result['ok'] ? 200 : 200);
     }
 }

@@ -1571,17 +1571,39 @@ class lmsCounsellingController extends Controller
      * computation lives in CaiCoreService (Phase 3); this endpoint only
      * resolves the caller's identity from the session and shapes the
      * response envelope, matching studentAspiration's pattern.
+     *
+     * `data.narrative` is new: a bounded, grounded-only explanation of what
+     * the alignment result means for the student's current subjects and
+     * stream (CareerAlignmentNarrator), following the same
+     * retrieval-then-generation split CoherenceMapController::explain() and
+     * CareerQuestNarrator already use. A Neo4j outage during evaluate()
+     * itself is now caught here and turned into a clean 503 — previously
+     * unhandled, so the narrative's own distinct statuses (ok /
+     * insufficient_evidence / model_unavailable) have something real to sit
+     * behind rather than this endpoint hard-crashing before they're ever
+     * reached.
      */
     public function careerAlignment(Request $request)
     {
         $studentId = $request->session()->get('user_id');
         $syear = $request->session()->get('syear');
+        $subInstituteId = $request->session()->get('sub_institute_id');
 
         if (empty($studentId) || empty($syear)) {
             return response()->json(['status_code' => 0, 'message' => 'Unauthenticated.'], 401);
         }
 
-        $result = app(\App\CareerIntelligence\CaiCoreService::class)->evaluate((string) $studentId, (string) $syear);
+        try {
+            $result = app(\App\CareerIntelligence\CaiCoreService::class)->evaluate((string) $studentId, (string) $syear);
+        } catch (\App\Exceptions\GraphUnavailableException|\Throwable $exception) {
+            return response()->json([
+                'status_code' => 0,
+                'message' => 'The career knowledge graph is unavailable right now.',
+            ], 503);
+        }
+
+        $result['narrative'] = app(\App\CareerIntelligence\CareerAlignmentNarrator::class)
+            ->narrate($result, $subInstituteId !== null ? (int) $subInstituteId : null);
 
         return response()->json([
             'status_code' => 1,

@@ -15,6 +15,57 @@ class StudentResultGraphController extends Controller
         $this->neo4jService = $neo4jService;
     }
 
+    /**
+     * REBUILT 2026-10-10. The previous query matched `(:Student)-[:ACHIEVED]
+     * ->(:Result)` then `(:Result)-[:FOR_SUBJECT]->(:Subject)`,
+     * `[:PART_OF_EXAM]->(:Exam)`, `[:DURING_YEAR]->(:AcademicYear)` and
+     * `[:IN_STANDARD]->(:Standard)` — none of those five relationship types
+     * are in App\Services\Graph\GraphSchema's live-sync whitelist, and none
+     * exist anywhere in the graph (confirmed by direct Cypher count against
+     * dev.triz.co.in:7688 on 2026-10-10: `MATCH ()-[r]->() WHERE type(r) IN
+     * [...]` for all five returns zero). The very first MATCH required
+     * `ACHIEVED`, so this endpoint always returned `{rootNode: null, nodes:
+     * [], relationships: []}` for every student, with no error raised -
+     * exactly the "always empty" finding this rebuild exists to fix.
+     *
+     * WHAT IS ACTUALLY LIVE (measured the same way, same day):
+     *   (:Student)-[:HAS_RESULT]->(:Result)        517,827 edges
+     *   (:Result)-[:FOR_ASSESSMENT]->(:Assessment) 148,186 edges (the ONLY
+     *                                               outgoing edge type any
+     *                                               :Result node carries)
+     *   (:Assessment)-[:ASSESSES]->(:Concept)       16 edges (real, sparse)
+     *   (:Assessment)-[:ASSESSES_CHAPTER]->(:Chapter) 4 edges (real, sparse -
+     *                                               see StudentGraphController's
+     *                                               own docblock on why this
+     *                                               edge is write-gated)
+     *   (:Subject)-[:HAS_ASSESSMENT]->(:Assessment) 13 edges (real, sparse,
+     *                                               and note the DIRECTION:
+     *                                               Subject -> Assessment,
+     *                                               not the reverse the old
+     *                                               query assumed)
+     *
+     * `:Exam` is not a label anything in this graph uses (the result-card
+     * exam tables project to :Examination/:ExamType, a completely separate,
+     * unconnected part of the graph - no edge joins that subsystem to
+     * :Assessment/:Result at all). `:AcademicYear` is likewise never reached
+     * from :Assessment or :Result. Neither is faked here: there is no real
+     * edge to traverse, so none is written. What DOES carry the subject/
+     * standard/year context every one of those broken edges was reaching for
+     * is the :Assessment node's OWN properties (subject_id, standard_id,
+     * sub_institute_id, syear, total_marks, paper_name, exam_type -
+     * confirmed live on a sampled node) - already returned here with no
+     * traversal needed, because `ass` itself is now reachable.
+     *
+     * Subject/Standard are ALSO opportunistically resolved by their uid
+     * fallback key (`Standard:<sub_institute_id>:0:<standard_id>`,
+     * `Subject:<sub_institute_id>:0:<subject_id>` - the same dual-key
+     * convention GraphSchema::uidExpression() encodes, verified against live
+     * sampled nodes of both labels) built from the Assessment's own
+     * properties, since most live Standard/Subject nodes carry a uid rather
+     * than their native key and the real HAS_ASSESSMENT edge barely exists.
+     * An OPTIONAL MATCH on a uid built from a null property simply matches
+     * nothing - it cannot throw or fabricate a node.
+     */
     public function show($stuId)
     {
         $client = $this->neo4jService->getClient();
@@ -22,18 +73,26 @@ class StudentResultGraphController extends Controller
         $result = $client->run(
             'MATCH (stu:Student {stuId: $stuId})
              WITH stu
-             MATCH (stu)-[r1:ACHIEVED]->(r:Result)
+             MATCH (stu)-[r1:HAS_RESULT]->(r:Result)
              WITH stu, r, r1
              ORDER BY r.id
              LIMIT 2
              WITH stu, collect(r) as results, collect(r1) as r1s
              UNWIND range(0, size(results)-1) as i
              WITH stu, results[i] as r, r1s[i] as r1
-             OPTIONAL MATCH (r)-[r2:FOR_SUBJECT]->(sub:Subject)
-             OPTIONAL MATCH (r)-[r3:PART_OF_EXAM]->(ex:Exam)
-             OPTIONAL MATCH (r)-[r4:DURING_YEAR]->(y:AcademicYear)
-             OPTIONAL MATCH (r)-[r5:IN_STANDARD]->(st:Standard)
-             RETURN stu, r, sub, ex, y, st, r1, r2, r3, r4, r5;',
+             OPTIONAL MATCH (r)-[r2:FOR_ASSESSMENT]->(ass:Assessment)
+             OPTIONAL MATCH (ass)-[r3:ASSESSES]->(con:Concept)
+             OPTIONAL MATCH (ass)-[r4:ASSESSES_CHAPTER]->(ch:Chapter)
+             OPTIONAL MATCH (sub:Subject)-[r5:HAS_ASSESSMENT]->(ass)
+             OPTIONAL MATCH (stdUid:Standard {uid:
+                 CASE WHEN ass.sub_institute_id IS NOT NULL AND ass.standard_id IS NOT NULL
+                      THEN \'Standard:\' + toString(ass.sub_institute_id) + \':0:\' + toString(ass.standard_id)
+                      ELSE null END})
+             OPTIONAL MATCH (subUid:Subject {uid:
+                 CASE WHEN ass.sub_institute_id IS NOT NULL AND ass.subject_id IS NOT NULL
+                      THEN \'Subject:\' + toString(ass.sub_institute_id) + \':0:\' + toString(ass.subject_id)
+                      ELSE null END})
+             RETURN stu, r, ass, con, ch, sub, stdUid, subUid, r1, r2, r3, r4, r5;',
             ['stuId' => is_numeric($stuId) ? (int)$stuId : $stuId]
         );
 
@@ -48,34 +107,12 @@ class StudentResultGraphController extends Controller
                 $nodes[$rootNode['id']] = $rootNode;
             }
 
-            /* Result node */
-            if ($record->get('r')) {
-                $node = $this->formatNode($record->get('r'));
-                $nodes[$node['id']] = $node;
-            }
-
-            /* Subject node */
-            if ($record->get('sub')) {
-                $node = $this->formatNode($record->get('sub'));
-                $nodes[$node['id']] = $node;
-            }
-
-            /* Exam node */
-            if ($record->get('ex')) {
-                $node = $this->formatNode($record->get('ex'));
-                $nodes[$node['id']] = $node;
-            }
-
-            /* AcademicYear node */
-            if ($record->get('y')) {
-                $node = $this->formatNode($record->get('y'));
-                $nodes[$node['id']] = $node;
-            }
-
-            /* Standard node */
-            if ($record->get('st')) {
-                $node = $this->formatNode($record->get('st'));
-                $nodes[$node['id']] = $node;
+            /* Node-valued columns */
+            foreach (['r', 'ass', 'con', 'ch', 'sub', 'stdUid', 'subUid'] as $nodeKey) {
+                if ($record->get($nodeKey)) {
+                    $node = $this->formatNode($record->get($nodeKey));
+                    $nodes[$node['id']] = $node;
+                }
             }
 
             /* Relationships */

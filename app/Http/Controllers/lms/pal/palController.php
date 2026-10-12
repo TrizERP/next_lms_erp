@@ -1439,6 +1439,42 @@ public function incrementContentVisit(Request $request)
                 ->where('student_id', $student_id)
                 ->value('content_visited');
 
+            // Real engagement-event producer (added 2026-10-10). A student
+            // just opened a piece of PAL-suggested content — for the default
+            // `content_type` ('pal_content') `$content_id` IS a
+            // `content_master.id` (confirmed: palController's own
+            // `getPedagogySuggestedContent` joins `suggested_content.type_id`
+            // onto `content_master.id` and returns `cm.*`, which is exactly
+            // the `id` this frontend call sends back here). Logged alongside
+            // the existing `suggested_content.content_visited` increment
+            // above, not instead of it — see lms_student_engagement's live
+            // sync trigger / EngagementGraphProjection for what reads this.
+            if ($content_type === 'pal_content' && $content_id) {
+                try {
+                    DB::table('lms_student_engagement')->insert([
+                        'student_id' => $student_id,
+                        'sub_institute_id' => $sub_institute_id,
+                        'activity_type' => 'content_view',
+                        'activity_id' => $content_id,
+                        'time_spent_seconds' => 0,
+                        'started_at' => now(),
+                        'completed_at' => now(),
+                        'metadata' => json_encode([
+                            'source' => 'pal_suggested_content',
+                            'standard_id' => $standard_id,
+                            'subject_id' => $subject_id,
+                            'chapter_id' => $chapter_id,
+                        ]),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                } catch (\Exception $e) {
+                    // Engagement logging must never break the visit counter
+                    // the rest of this response already depends on.
+                    Log::error('Error logging content_view engagement: ' . $e->getMessage());
+                }
+            }
+
             return response()->json([
                 'status' => 1,
                 'message' => 'Content visit recorded',

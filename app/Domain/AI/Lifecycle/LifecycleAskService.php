@@ -389,6 +389,10 @@ class LifecycleAskService
             // And so a PRODUCT module that chose its own conversational model on its own
             // AI Stack uses that. A module that chose nothing resolves as before.
             $context->module->key,
+            // The student a console button pinned to this turn, so PalGraphContext can
+            // ground a PAL-shaped question that reached here for want of a bound tool.
+            // Null on every turn without one, which is most of them — same as today.
+            $context->payload('student_id'),
         );
     }
 

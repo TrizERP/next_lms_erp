@@ -29,7 +29,7 @@ use Throwable;
  * schema complaint rather than "wrong provider", which is why this lives behind the
  * ModelClient interface instead of at each call site.
  */
-class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisionAnalysis
+class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisionAnalysis, SupportsEmbedding
 {
     /** The school this client resolves credentials for. Null means platform keys only. */
     private int|string|null $subInstituteId = null;
@@ -300,6 +300,77 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
         }
 
         return $this->textFrom($response->json());
+    }
+
+    /**
+     * Embed one piece of text via Gemini's `:embedContent` endpoint.
+     *
+     * A different endpoint and a different model family from `chat()` — no
+     * `contents`/`systemInstruction`/`generationConfig` shape here, just one
+     * `content.parts[].text` in and one `embedding.values` float array out.
+     * Same key resolution and header-based auth as every other method on
+     * this class; no retry loop, deliberately — this is called once per
+     * chunk during ingestion and once per query at retrieval time
+     * (mirroring hpbrain_backend's `GeminiProvider::embed()`), not on a
+     * user-facing request path where a transient 503 would otherwise go
+     * unretried.
+     *
+     * @return float[]|null
+     */
+    public function embed(string $text, ?string $model = null, ?int $timeout = null): ?array
+    {
+        if (trim($text) === '') {
+            return null;
+        }
+
+        $key = $this->resolveApiKey();
+
+        if ($key === null) {
+            throw new RuntimeException('No usable AI API key is configured.');
+        }
+
+        $body = [
+            'content' => ['parts' => [['text' => $text]]],
+        ];
+
+        $response = Http::withHeaders([
+            'x-goog-api-key' => $key['api_key'],
+            'Content-Type' => 'application/json',
+        ])
+            ->timeout($timeout ?? (int) config('ai.provider.gemini.timeout', self::DEFAULT_TIMEOUT))
+            ->post($this->embedEndpoint($model ?? $this->defaultEmbeddingModel()), $body);
+
+        if (! $response->successful()) {
+            throw $this->failure($response);
+        }
+
+        $values = $response->json('embedding.values');
+
+        if (! is_array($values) || $values === []) {
+            return null;
+        }
+
+        return array_map(static fn ($v) => (float) $v, $values);
+    }
+
+    /**
+     * The embedding-capable model to use when a caller names none. A
+     * separate config key from `defaultModel()`/`defaultImageModel()` — a
+     * chat or image model name is not a valid argument to `:embedContent`.
+     */
+    private function defaultEmbeddingModel(): string
+    {
+        return (string) config('ai.provider.gemini.embedding_model', 'text-embedding-004');
+    }
+
+    private function embedEndpoint(string $model): string
+    {
+        $base = rtrim((string) config(
+            'ai.provider.gemini.base_url',
+            'https://generativelanguage.googleapis.com/v1beta'
+        ), '/');
+
+        return sprintf('%s/models/%s:embedContent', $base, $model);
     }
 
     /**
