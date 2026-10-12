@@ -40,8 +40,10 @@ class AuditTrail
     ): ?int {
         try {
             $auth = $request?->attributes->get('lms_auth');
+            // `lms_auth` is set by LmsApiAuth only. Routes behind `api.session` (the alumni module among them) carry the verified
+            // JWT user in the hydrated session instead, so fall back to that - otherwise every entry from those routes has no actor.
             $userId = $detail['actor_user_id']
-                ?? (isset($auth['user_id']) && is_numeric($auth['user_id']) ? (int) $auth['user_id'] : null);
+                ?? (isset($auth['user_id']) && is_numeric($auth['user_id']) ? (int) $auth['user_id'] : self::sessionUserId($request));
             $actorName = $detail['actor_name'] ?? self::nameFor($userId);
 
             $row = PlatformAuditLog::create([
@@ -74,11 +76,26 @@ class AuditTrail
             return null;
         }
 
-        $name = DB::table('tbluser')->where('id', $userId)
-            ->selectRaw('TRIM(CONCAT_WS(" ", first_name, last_name)) as n')->value('n');
-        $name = is_string($name) ? trim($name) : '';
+        // joined in PHP, not with CONCAT_WS: that function does not exist in sqlite, where a failure here would silently drop the whole audit row
+        try {
+            $u = DB::table('tbluser')->where('id', $userId)->first(['first_name', 'last_name']);
+        } catch (\Throwable $e) {
+            $u = null;   // a name is a convenience: failing to look it up must never lose the audit row
+        }
+        $name = $u ? trim(trim((string) ($u->first_name ?? '')) . ' ' . trim((string) ($u->last_name ?? ''))) : '';
 
         return $name !== '' ? $name : "User {$userId}";
+    }
+
+    /** The verified user of an `api.session` request (the JWT's user_id), or null when there is none. */
+    private static function sessionUserId(?Request $request): ?int
+    {
+        if ($request === null || ! $request->hasSession()) {
+            return null;
+        }
+        $id = $request->session()->get('user_id');
+
+        return is_numeric($id) && (int) $id > 0 ? (int) $id : null;
     }
 
     private static function encode(mixed $value): ?string
