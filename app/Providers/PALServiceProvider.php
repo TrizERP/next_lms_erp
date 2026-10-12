@@ -184,6 +184,23 @@ class PALServiceProvider extends ServiceProvider
             );
         });
 
+        // Graph RAG retrieval — promoted to an explicit shared binding. It was
+        // already container-resolvable from anywhere (both this class and its
+        // one dependency, CoherenceMapRepository, are plain concrete classes
+        // Laravel autowires unaided), but an explicit singleton here makes it
+        // read as an intentionally shared service rather than an accident of
+        // autowiring, and gives every consumer beyond CoherenceMapController
+        // — PalGraphContext (conversational AI grounding) and
+        // CareerQuestNarrator (Career Quest narrative) — one obvious place to
+        // see it declared. Singleton because the class is pure, stateless
+        // retrieval with nothing to invalidate between requests. No behaviour
+        // changes: still zero LLM calls, still the same two methods.
+        $this->app->singleton(\App\Services\PAL\Coherence\GraphRagRetriever::class, function ($app) {
+            return new \App\Services\PAL\Coherence\GraphRagRetriever(
+                $app->make(\App\Services\PAL\Coherence\CoherenceMapRepository::class)
+            );
+        });
+
         // Administration — the architecture control plane. The registry is
         // stateless; the health service memoises its probes for the life of a
         // request, so it is bound per request rather than as a singleton to

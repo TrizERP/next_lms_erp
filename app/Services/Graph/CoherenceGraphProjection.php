@@ -1852,6 +1852,138 @@ class CoherenceGraphProjection
     }
 
     // ==================================================================
+    // 10. Exam-level concept coverage - (:Assessment)-[:COVERS_CONCEPT]->(:Concept)
+    // ==================================================================
+
+    /**
+     * Aggregate, PER EXAM, how many of an Assessment's questions assess each
+     * Concept - distinct from the already-live per-question edge
+     * (:Question)-[:ASSESSES]->(:Concept) (built two ways already: pipeline A
+     * in config/neo4j.php from `lms_question_master.concept_id`, and
+     * projectAssesses() above from `pal_question_metadata` — see that
+     * method's docblock for the ownership split between them). That edge
+     * answers "does this question test this concept"; it cannot answer "how
+     * much of THIS EXAM is this concept" without a 2-hop walk through every
+     * Question the Assessment carries, on every request. This method
+     * computes that walk once and stores the result as
+     * (:Assessment)-[:COVERS_CONCEPT {question_count, pct}]->(:Concept).
+     *
+     * SOURCE / WHY NOT A TableGraphProjection SPEC. `question_paper.
+     * question_ids` is a comma-separated column with no normalised join
+     * table, so the join to `lms_question_master` is a `FIND_IN_SET`.
+     * TableGraphProjection's `list` feature (how
+     * (:Assessment)-[:HAS_QUESTION]->(:Question) is already built from this
+     * same column) only explodes that comma list into target node ids
+     * directly off THIS row — it cannot then hop from each exploded Question
+     * id into a SECOND table's column (`lms_question_master.concept_id`) to
+     * find the concept. This aggregate needs exactly that second hop, so it
+     * lives here, the same batch/bulk home every other multi-table join in
+     * this class already uses for what TableGraphProjection's one-row-one-
+     * spec model cannot express.
+     *
+     * Verified live 2026-10-10 against a real row: `question_paper#8406`
+     * ("PAL Test", tenant 341, standard 4261, subject 5492) has 10
+     * `question_ids`, all 10 resolving via FIND_IN_SET against
+     * `lms_question_master`, rolling up to 9 distinct concepts (one concept
+     * assessed by 2 of the 10 questions, the other eight by 1 each). Most
+     * `question_paper` rows are not this clean — many `question_ids` values
+     * reference ids outside `lms_question_master`'s current range entirely
+     * (e.g. `question_paper#1`'s ids 1-7 match zero rows there); those
+     * assessments simply produce no coverage rows here, the same "nothing to
+     * assert" outcome projectTeaches()/projectAssesses() already give a row
+     * with no resolvable match, not an error.
+     *
+     * Scoped on the Assessment's OWN `standard_id`/`subject_id` (columns the
+     * table carries directly), matching every other method in this class.
+     * `pct` is this concept's share of the exam's OWN resolved question
+     * count (not `total_ques`, which can diverge from how many ids actually
+     * parse/resolve) — so percentages across a single exam's COVERS_CONCEPT
+     * edges always sum to 100.
+     *
+     * @return array{covers: int, assessments_missing: int, retracted: int}
+     */
+    public function projectAssessmentConceptCoverage(int $tenant, int $standardId, int $subjectId): array
+    {
+        $rows = DB::select(
+            "SELECT qp.id AS assessment_id, q.concept_id AS concept_id, COUNT(*) AS question_count
+             FROM question_paper qp
+             JOIN lms_question_master q ON FIND_IN_SET(q.id, qp.question_ids) > 0
+             WHERE qp.sub_institute_id = ?
+               AND qp.standard_id = ?
+               AND qp.subject_id = ?
+               AND qp.question_ids IS NOT NULL
+               AND qp.question_ids <> ''
+               AND q.concept_id IS NOT NULL
+               AND q.concept_id > 0
+             GROUP BY qp.id, q.concept_id",
+            [$tenant, $standardId, $subjectId]
+        );
+
+        $byAssessment = [];
+
+        foreach ($rows as $r) {
+            $byAssessment[(int) $r->assessment_id][] = $r;
+        }
+
+        $cypher = 'UNWIND $rows AS row '
+            . 'MATCH (a:Assessment {assId: row.assessmentId}) '
+            . 'MATCH (c:Concept {conceptId: row.conceptId}) '
+            . 'MERGE (a)-[e:COVERS_CONCEPT]->(c) '
+            . 'SET e += row.props '
+            . 'RETURN count(e) AS c';
+
+        $payload = [];
+        $qualifying = [];
+
+        foreach ($byAssessment as $assessmentId => $group) {
+            $total = array_sum(array_map(static fn ($r) => (int) $r->question_count, $group));
+
+            foreach ($group as $r) {
+                $conceptId = (int) $r->concept_id;
+                $count = (int) $r->question_count;
+
+                $payload[] = [
+                    'assessmentId' => $assessmentId,
+                    'conceptId'    => $conceptId,
+                    'props'        => [
+                        'question_count' => $count,
+                        'pct'             => $total > 0 ? round($count * 100 / $total, 1) : 0.0,
+                    ],
+                ];
+
+                $qualifying[$assessmentId . ':' . $conceptId] = true;
+            }
+        }
+
+        $covers = 0;
+        $missing = 0;
+
+        foreach (array_chunk($payload, self::BATCH) as $chunk) {
+            $first = $this->neo4j->run($cypher, ['rows' => $chunk])->first();
+            $made = $first ? (int) $first->get('c') : 0;
+
+            $covers += $made;
+            $missing += count($chunk) - $made;
+        }
+
+        $retracted = $this->retract(
+            'MATCH (a:Assessment {sub_institute_id: $tenant, standard_id: $standardId, subject_id: $subjectId})-[e:COVERS_CONCEPT]->(c:Concept) '
+                . 'RETURN a.assId AS fromId, c.conceptId AS toId',
+            ['tenant' => $tenant, 'standardId' => $standardId, 'subjectId' => $subjectId],
+            'UNWIND $rows AS row '
+                . 'MATCH (a:Assessment {assId: row.fromId})-[e:COVERS_CONCEPT]->(c:Concept {conceptId: row.toId}) '
+                . 'DELETE e',
+            $qualifying
+        );
+
+        return [
+            'covers'               => $covers,
+            'assessments_missing'  => $missing,
+            'retracted'            => $retracted,
+        ];
+    }
+
+    // ==================================================================
 
     /**
      * Shared body for every edge pass: batch, run, count what did not match.

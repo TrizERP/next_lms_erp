@@ -8,6 +8,7 @@ use App\Http\Controllers\AI\AskController;
 use App\Http\Controllers\AI\CapabilityController;
 use App\Http\Controllers\AI\CaseController;
 use App\Http\Controllers\AI\GenerationController;
+use App\Http\Controllers\AI\KnowledgeRagController;
 use App\Http\Controllers\AI\OntologyController;
 use App\Http\Controllers\AI\OutcomeController;
 use App\Http\Controllers\AI\RecommendationController;
@@ -64,6 +65,15 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             Route::get('/capabilities', [CapabilityController::class, 'index']);
             Route::get('/capabilities/{capability}', [CapabilityController::class, 'show'])
                 ->where('capability', '[a-z0-9\-]+');
+
+            /*
+            | Knowledge & RAG — the one real capability behind the
+            | `knowledge-rag` console entry: ask a free-text question and get
+            | back an answer grounded in this institute's own ingested
+            | curriculum content, or an honest `insufficient_evidence` /
+            | `model_unavailable` when it cannot. See KnowledgeRagController.
+            */
+            Route::post('/knowledge-rag/ask', [KnowledgeRagController::class, 'ask']);
 
             /*
             | AI Provider & Model Management — the write half of the console.

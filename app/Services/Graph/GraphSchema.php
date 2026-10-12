@@ -199,6 +199,75 @@ class GraphSchema
         'Task'                => ['key' => 'taskId',               'uid_syear' => null, 'uid_tenant' => null],
         'TimeSlot'            => ['key' => 'timeslotId',           'uid_syear' => null, 'uid_tenant' => null],
         'LeaderboardRule'     => ['key' => 'leaderboardruleId',    'uid_syear' => null, 'uid_tenant' => null],
+
+        // -- teach-learn / chapter management (added 2026-10-10) --------------
+        // `content_master` (30,792 rows — lesson plans, presentations,
+        // worksheets, teacher training, revision notes...) is DELIBERATELY NOT
+        // labelled :Content or :LearningContent, even though both already exist
+        // and both look superficially like "the content label":
+        //
+        //   :Content          31,362 live nodes, keyed on a STRING property
+        //                      named `id` (not `contentNodeId` despite the
+        //                      entry below) — written by CoherenceGraphProjection
+        //                      from `pal_content_metadata.content_master_id`.
+        //                      MERGEing content_master rows onto this label
+        //                      through the generic TableGraphProjection path
+        //                      would key on `contentNodeId` (an int property no
+        //                      live :Content node carries) and mint a second,
+        //                      disjoint set of ~30,792 nodes next to the real
+        //                      31,362 — exactly the double-keying defect this
+        //                      whole effort exists to stop repeating.
+        //   :LearningContent   11 live nodes, keyed on `contentId`, sourced from
+        //                      `suggested_content.id` (a different table, a
+        //                      different id space). content_master.id=29 is a
+        //                      real row; LearningContent{contentId:29} is
+        //                      already a DIFFERENT real row of suggested_content
+        //                      — reusing this label would silently overwrite an
+        //                      unrelated node's properties the first time the
+        //                      ids collided.
+        //
+        // :TeachingResource is a fresh label with its own id space, so neither
+        // collision is possible.
+        'TeachingResource'    => ['key' => 'teachingresourceId',   'uid_syear' => null, 'uid_tenant' => null],
+
+        // -- LMS Quiz feature (added 2026-10-10) -------------------------------
+        // One attempt, one node — same shape as :OfflineExam just above it in
+        // config/neo4j.php's entity list. No new relationship type was needed:
+        // ATTEMPTED and FOR_ASSESSMENT were both already in RELATIONSHIPS.
+        'QuizAttempt'         => ['key' => 'quizattemptId',        'uid_syear' => null, 'uid_tenant' => null],
+
+        // -- Talent Management / Competency Framework Studio (added 2026-10-12) -
+        // K-12's OWN staff/HR competency framework hierarchy
+        // (`App\Http\Controllers\api\TalentManagement\Competency\CompetencyFrameworkController`
+        // / `CompetencyStudioController`), backed by `s_competency_frameworks`
+        // (5 live rows) -> `s_competency_framework_items` (36 rows, a pure join)
+        // -> `s_users_skills` (5,029 rows, the competency catalog). Confirmed via
+        // `DESCRIBE`/row counts against `vivek_erp` on 2026-10-12, not assumed.
+        //
+        // TWO DELIBERATELY SEPARATE COLLISIONS AVOIDED, NOT JUST ONE:
+        //   1. `:Framework` ALREADY EXISTS in this same graph, seeded by
+        //      `pal:seed-framework-graph` (database/neo4j/frameworks/*.cypher,
+        //      added 2026-10-10) for PAL's academic standards (NGSS), keyed on
+        //      `framework_code` (a string, e.g. 'NGSS') and never registered in
+        //      this whitelist on purpose (it is a one-off reference seed, not a
+        //      live-sync entity — see that command's own docblock). A Talent
+        //      Management framework is an unrelated, integer-keyed, tenant-owned
+        //      row; naming this label plain `Framework` would put two
+        //      semantically unrelated id-spaces under one label even though
+        //      distinct key PROPERTIES (`frameworkId` vs `framework_code`) would
+        //      stop them literally overwriting each other. `CompetencyFramework`
+        //      sidesteps the ambiguity entirely, the same way `:TeachingResource`
+        //      above sidesteps :Content/:LearningContent.
+        //   2. G2G's hp_erp is a SEPARATE Laravel application with its OWN,
+        //      separate Neo4j Competency/KASBA/Framework graph (see
+        //      `App\Services\Integrations\G2GCompetencyGraphClient`'s docblock —
+        //      a different database server entirely, not reachable or written by
+        //      this whitelist). No collision is possible there either way, but
+        //      `Competency` (not reused from anywhere — grepped the whole
+        //      codebase on 2026-10-12, no prior `:Competency` label existed in
+        //      this graph) is this app's own node for ITS own catalog.
+        'CompetencyFramework' => ['key' => 'competencyframeworkId', 'uid_syear' => null, 'uid_tenant' => null],
+        'Competency'          => ['key' => 'competencyId',          'uid_syear' => null, 'uid_tenant' => null],
     ];
 
     /**
@@ -278,6 +347,32 @@ class GraphSchema
         'HAS_CALENDAR_EVENT', 'ASSIGNED_TASK', 'CREATED_BY', 'BOOKED_PTM',
         'IN_SLOT', 'VIEWED', 'COMMUNICATION', 'SENT_COMMUNICATION',
         'EARNED_POINTS',
+
+        // teach-learn / chapter management (added 2026-10-10)
+        'HAS_CONTENT',
+
+        // exam-level concept coverage (added 2026-10-10) — see
+        // CoherenceGraphProjection::projectAssessmentConceptCoverage(). A NEW
+        // type, not an overload of the existing per-question ASSESSES edge:
+        // this one hangs off the Assessment itself, aggregated over all the
+        // questions it carries.
+        'COVERS_CONCEPT',
+
+        // student engagement (added 2026-10-10) — see
+        // EngagementGraphProjection. (:StuDetail)-[:ENGAGED_WITH]->
+        // (:Concept|:TeachingResource), MERGEd bare (no properties, matching
+        // ASSESSES's precedent) from real `lms_student_engagement` rows: a
+        // student viewing teaching content, or practising questions tagged to
+        // a concept. A NEW type — does not overload VIEWED, which is a
+        // different, pre-existing relationship with its own writer.
+        'ENGAGED_WITH',
+
+        // Talent Management / Competency Framework Studio (added 2026-10-12) —
+        // (:CompetencyFramework)-[:HAS_COMPETENCY]->(:Competency), from
+        // `s_competency_framework_items`. A NEW type: does not overload
+        // ASSESSES/MAPS_TO (PAL's `:Framework` seed uses MAPS_TO, a different
+        // edge for a different label) or REQUIRES_SKILL_ELEMENT (O*NET, above).
+        'HAS_COMPETENCY',
     ];
 
     public static function knowsLabel(string $label): bool

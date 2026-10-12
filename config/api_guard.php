@@ -66,7 +66,7 @@ return [
         'department-employee-list', 'department-employee-lists', 'departments', 'departments/*',
         'sub-department-list', 'jobroles-by-department',
         'exam-evaluation/*', 'get_marks_dd',
-        'intelligence/*', 'lesson-intelligence/*',
+        'intelligence/*', 'lesson-intelligence/*', 'lesson-plan-doc',
         'interactions', 'interactions/*',
         'inventory/reports/*',
         'lms-homework/store', 'lms-homework/update/*', 'lms-homework/delete/*',
@@ -75,6 +75,10 @@ return [
         'lms-question-bank/create', 'lms-question-bank/update',
         'lms-question-bank/delete', 'lms-question-bank/review',
         'POST question-paper', 'PUT question-paper/*', 'PATCH question-paper/*', 'DELETE question-paper/*',
+        // Publishing an LMS Quiz is a teacher action; starting/submitting an
+        // attempt and viewing history are not restricted here, so a student
+        // or parent can still reach them.
+        'POST quiz',
         'POST question-paper-templates', 'POST question-paper-templates/*',
         'PUT question-paper-templates/*', 'PATCH question-paper-templates/*', 'DELETE question-paper-templates/*',
         'lms/concept-intelligence/tab-labels/update', 'lms/concept-intelligence/tab-labels/reset',
@@ -108,7 +112,7 @@ return [
         'intelligence/*',
         'interactions', 'interactions/*',
         'inventory/reports/*',
-        'lesson-intelligence/*',
+        'lesson-intelligence/*', 'lesson-plan-doc',
         'lms-assignment/*',
         'lms-chapter-concepts', 'lms-chapter-content', 'lms-content-mapping-values',
         'lms-courses', 'lms-courses/*',
@@ -122,6 +126,7 @@ return [
         'pal/pedagogy-engine', 'pal/pedagogy-engine/*',
         'question-bank/*', 'question-mapping-levels',
         'question-paper', 'question-paper/*', 'question-paper-templates', 'question-paper-templates/*',
+        'quiz', 'quiz/*',
         'semantic-intelligence', 'semantic-intelligence/*',
         'student-assessment', 'student-results/*',
     ],

@@ -59,6 +59,20 @@ return [
             'model' => $geminiModel,
             'timeout' => (int) env('GEMINI_REQUEST_TIMEOUT', 45),
             'max_output_tokens' => (int) env('GEMINI_MAX_OUTPUT_TOKENS', 1466),
+            // The embedding model (added 2026-10-10 for the Content Authoring RAG
+            // row — ContentEmbeddingService). A SEPARATE endpoint from the chat
+            // model above (:embedContent, not :generateContent) and a separate
+            // model family. hpbrain_backend's own Embeddings.php/GeminiProvider
+            // default to `text-embedding-004`, but that model is RETIRED on this
+            // estate's live key — verified 2026-10-10, `:embedContent` against it
+            // returns 404 "not found ... or not supported for embedContent".
+            // `GET /v1beta/models` against the same key lists exactly three
+            // models whose supportedGenerationMethods include `embedContent`:
+            // gemini-embedding-001, gemini-embedding-2-preview, gemini-embedding-2.
+            // `gemini-embedding-001` is the stable (non-preview) one and is what
+            // this defaults to — the same "retired model -> its live replacement"
+            // mapping `$geminiModel` above already does for chat.
+            'embedding_model' => env('GEMINI_EMBEDDING_MODEL', 'gemini-embedding-001'),
             // The api_type used to look the key up in the ai_api_keys pool, which
             // takes precedence over the env value above. Lowercase `gemini` is not a
             // typo — it is what the rows in that table are actually tagged with, and
