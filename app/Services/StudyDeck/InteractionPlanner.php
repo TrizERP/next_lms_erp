@@ -58,6 +58,17 @@ class InteractionPlanner
     }
 
     /**
+     * The per-kind caps of a run: CAPS, with the scenario cap the run was planned under (SlidePlanner::limits).
+     *
+     * @param array<string,mixed> $map LearningPlanBuilder::build()
+     * @return array<string,int>
+     */
+    public static function capsFor(array $map): array
+    {
+        return ['scenario' => SlidePlanner::limits($map)['max_scenarios']] + self::CAPS;
+    }
+
+    /**
      * @param array<string,mixed> $context
      * @param array<string,mixed> $map
      * @param array<string,mixed> $plan SlidePlanner::plan()
@@ -67,6 +78,7 @@ class InteractionPlanner
      */
     public function plan(array $context, array $map, array $plan, array $content, array $images, ?callable $progress = null): array
     {
+        $caps = self::capsFor($map);
         $slides = [];
         $out = [];
         foreach ($plan['slides'] as $s) {
@@ -79,7 +91,7 @@ class InteractionPlanner
         }
 
         foreach (array_chunk($slides, $this->chunkSize, true) as $chunk) {
-            $prompt = $this->prompt($context, $plan, $chunk);
+            $prompt = $this->prompt($context, $plan, $chunk, $caps);
             $got = $this->parse($this->ask($prompt), $chunk);
 
             [$ok, $bad] = $this->check($got, $chunk);
@@ -92,7 +104,7 @@ class InteractionPlanner
                 foreach ($bad as $n => $issues) {
                     $notes[] = "Slide $n: " . implode(' ', $issues);
                 }
-                $retry = $this->prompt($context, $plan, array_intersect_key($chunk, $bad))
+                $retry = $this->prompt($context, $plan, array_intersect_key($chunk, $bad), $caps)
                     . "\n\nThese interactions were rejected. For each slide below, return a corrected interaction, or null with a reason if it cannot be fixed within the rules:\n"
                     . implode("\n", $notes);
                 [$fixed, $still] = $this->check($this->parse($this->ask($retry), array_intersect_key($chunk, $bad)), array_intersect_key($chunk, $bad));
@@ -113,13 +125,13 @@ class InteractionPlanner
 
         // Caps first: a deck may carry only so many scenarios, matches and the like, and a slide trimmed by a cap is a
         // slide still waiting for an interaction of a kind that is not capped.
-        $out = $this->capped($out, $plan);
+        $out = $this->capped($out, $plan, $caps);
 
         // Every learning slide is meant to have one. A slide that came back plain (or whose draft was dropped or trimmed)
         // gets one more chance, with the instruction made firmer; if it still cannot, it stays plain and says why.
         $missing = array_filter($slides, fn ($c, $n) => ($out[$n]['interaction'] ?? null) === null, ARRAY_FILTER_USE_BOTH);
         foreach (array_chunk($missing, $this->chunkSize, true) as $chunk) {
-            $retry = $this->prompt($context, $plan, $chunk)
+            $retry = $this->prompt($context, $plan, $chunk, $caps)
                 . "\n\nThese slides came back with no interaction. Every learning slide needs one that teaches, so give each the closest fit now: "
                 . '"reveal" (cards for the ideas on the slide), "compare" (two things set side by side), "steps" (a process), or "hotspots" (only with a diagram). '
                 . 'The deck already has all the scenarios, matches, orders and timelines it may carry, so do not use those kinds here. '
@@ -515,21 +527,22 @@ class InteractionPlanner
      * earliest slides first. A dropped one is recorded, not silently lost.
      *
      * @param array<int,array{interaction:?array,reason:string}> $out
+     * @param array<string,int> $caps self::capsFor()
      * @return array<int,array{interaction:?array,reason:string}>
      */
-    private function capped(array $out, array $plan): array
+    private function capped(array $out, array $plan, array $caps = self::CAPS): array
     {
         $seen = [];
 
         ksort($out);
         foreach ($out as $n => $d) {
             $kind = $d['interaction']['kind'] ?? null;
-            if (!isset(self::CAPS[$kind])) {
+            if (!isset($caps[$kind])) {
                 continue;
             }
             $seen[$kind] = ($seen[$kind] ?? 0) + 1;
-            if ($seen[$kind] > self::CAPS[$kind]) {
-                $out[$n] = ['interaction' => null, 'reason' => 'left to plain teaching: the lesson already has ' . self::CAPS[$kind] . ' ' . $kind . ' activities'];
+            if ($seen[$kind] > $caps[$kind]) {
+                $out[$n] = ['interaction' => null, 'reason' => 'left to plain teaching: the lesson already has ' . $caps[$kind] . ' ' . $kind . ' activities'];
             }
         }
         return $out;
@@ -549,8 +562,11 @@ class InteractionPlanner
         return count(array_filter(preg_split('/\s+/u', trim($s)) ?: []));
     }
 
-    /** @param array<int,array<string,mixed>> $chunk */
-    private function prompt(array $context, array $plan, array $chunk): string
+    /**
+     * @param array<int,array<string,mixed>> $chunk
+     * @param array<string,int> $caps self::capsFor()
+     */
+    private function prompt(array $context, array $plan, array $chunk, array $caps = self::CAPS): string
     {
         $work = array_map(function ($c) {
             unset($c['_anchors']);
@@ -559,7 +575,6 @@ class InteractionPlanner
         }, array_values($chunk));
         $input = json_encode($work, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $scenarios = implode(', ', self::SCENARIO_SLIDES);
-        $caps = self::CAPS;
 
         return <<<PROMPT
 This is a teacher-led classroom lesson that students also study on their own, shown as a full-screen presentation. The explanations, pictures and examples are already written. Your job: EVERY slide listed below should let the student DO something that teaches - explore, reveal, compare, connect, decide - not just read and press Continue. Write one interaction for each slide, choosing the kind that fits what the slide IS. It must feel like an interactive textbook, never like a quiz: nothing is scored and nothing has one right answer except where a real sequence or definition does.

@@ -18,6 +18,8 @@ use App\Services\StudyDeck\Documents\PurposePdfRenderer;
 use App\Services\StudyDeck\Documents\StudyDocumentPdfRenderer;
 use App\Services\StudyDeck\Documents\StudyDocumentService;
 use App\Services\StudyDeck\StudyDeckImages;
+use App\Services\StudyDeck\PdfOutline;
+use App\Services\StudyDeck\StudyDeckGuidePdfRenderer;
 use App\Services\StudyDeck\StudyDeckPdfRenderer;
 use App\Services\StudyDeck\StudyDeckPublisher;
 use App\Services\StudyDeck\StudyDeckQuestions;
@@ -599,7 +601,7 @@ class ContentGenerationService
     private function drawStudyDeckPdf(array $deck, array $options): string
     {
         // Stored pictures are read from the database and embedded in the page (never fetched over the network).
-        $renderer = new StudyDeckPdfRenderer($this->deckImageResolver, base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf'));
+        $renderer = new StudyDeckGuidePdfRenderer($this->deckImageResolver, base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf'));
         $html = $renderer->html($deck, $this->generatedContentCss(), [
             'variant' => $options['variant'] ?? StudyDeckPdfRenderer::REVISION,
             'questions' => $this->loadStudyDeckQuestions(StudyDeckQuestions::idsIn($deck)),
@@ -610,7 +612,48 @@ class ContentGenerationService
         $title = StudyDeckPdfRenderer::runningTitle($deck);
         $subject = StudyDeckPdfRenderer::runningSubject($deck);
 
-        return $this->renderHtmlToPdf($html, $this->studyPageFurniture($title, $subject, 'Study Deck'));
+        // The page furniture (running header, footer with a link back to the contents) and the document's own details, then
+        // the places the HTML named (an element's `id` is a destination), read back so they can be listed as bookmarks.
+        $furniture = $this->studyPageFurniture($title, $subject, 'Study Deck', false, 'contents');
+        $destinations = [];
+        $bytes = $this->renderHtmlToPdf($html, function ($dompdf) use ($furniture, &$destinations, $title, $subject, $deck): void {
+            $dompdf->addInfo('Title', $title . ' - study guide');
+            $dompdf->addInfo('Subject', $subject);
+            $dompdf->addInfo('Author', 'EduERP Study Deck');
+            $dompdf->addInfo('Keywords', implode(', ', array_slice(array_values(array_map(fn ($c) => (string) ($c['name'] ?? ''), $deck['concepts'] ?? [])), 0, 40)));
+            $furniture($dompdf);
+            $cpdf = method_exists($dompdf->getCanvas(), 'get_cpdf') ? $dompdf->getCanvas()->get_cpdf() : null;
+            $destinations = $cpdf ? (array) $cpdf->destinations : [];
+        });
+
+        return PdfOutline::add($bytes, $this->studyDeckBookmarks($renderer->outline($deck), $destinations));
+    }
+
+    /**
+     * The renderer's bookmark tree with each anchor turned into the destination object Dompdf wrote for it; a bookmark whose
+     * anchor was not written (nothing is drawn there) is left out.
+     *
+     * @param array<int,array{title:string,anchor:string,children:array<int,array{title:string,anchor:string}>}> $outline
+     * @param array<string,int> $destinations label => object number
+     * @return array<int,array{title:string,dest:int,children:array<int,array{title:string,dest:int}>}>
+     */
+    protected function studyDeckBookmarks(array $outline, array $destinations): array
+    {
+        $out = [];
+        foreach ($outline as $node) {
+            if (!isset($destinations[$node['anchor']])) {
+                continue;
+            }
+            $children = [];
+            foreach ($node['children'] ?? [] as $child) {
+                if (isset($destinations[$child['anchor']])) {
+                    $children[] = ['title' => $child['title'], 'dest' => (int) $destinations[$child['anchor']]];
+                }
+            }
+            $out[] = ['title' => $node['title'], 'dest' => (int) $destinations[$node['anchor']], 'children' => $children];
+        }
+
+        return $out;
     }
 
     /**
@@ -621,11 +664,11 @@ class ContentGenerationService
      *        the footer and its page number like the rest, and no running header (the title band is its header)
      * @return callable(\Dompdf\Dompdf):void
      */
-    protected function studyPageFurniture(string $title, string $subject, string $footerLabel, bool $firstPageHasContent = false): callable
+    protected function studyPageFurniture(string $title, string $subject, string $footerLabel, bool $firstPageHasContent = false, ?string $contentsAnchor = null): callable
     {
-        return function ($dompdf) use ($title, $subject, $footerLabel, $firstPageHasContent): void {
+        return function ($dompdf) use ($title, $subject, $footerLabel, $firstPageHasContent, $contentsAnchor): void {
             // A running header and footer with the page number, on every page but the cover.
-            $dompdf->getCanvas()->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) use ($title, $subject, $footerLabel, $firstPageHasContent): void {
+            $dompdf->getCanvas()->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) use ($title, $subject, $footerLabel, $firstPageHasContent, $contentsAnchor): void {
                 if ($pageNumber === 1 && !$firstPageHasContent) {
                     return;
                 }
@@ -649,6 +692,13 @@ class ContentGenerationService
                 }
                 $canvas->line(31.5, $h - 38, $w - 31.5, $h - 38, [0.89, 0.91, 0.94], 0.8);
                 $canvas->text(31.5, $h - 28, $footerLabel, $font, 8, $grey);
+                // A way back: a link to the named place the document's contents begin at, on every page after the first.
+                if ($contentsAnchor !== null && $pageNumber > 1) {
+                    $back = 'Back to contents';
+                    $x = 31.5 + $fontMetrics->getTextWidth($footerLabel, $font, 8) + 14;
+                    $canvas->text($x, $h - 28, $back, $bold, 8, $ink);
+                    $canvas->add_link('#' . $contentsAnchor, $x, $h - 28 - 1, $fontMetrics->getTextWidth($back, $bold, 8), 10);
+                }
                 $label = 'Page ' . $pageNumber . ' of ' . $pageCount;
                 $canvas->text($w - 31.5 - $fontMetrics->getTextWidth($label, $font, 8), $h - 28, $label, $font, 8, $grey);
             });

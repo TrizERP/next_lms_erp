@@ -52,6 +52,26 @@ class SlidePlanner
 
     public const MAX_TAUGHT_PER_SLIDE = 2;
 
+    /**
+     * The caps a run may raise (a chapter with many concepts and a bank to match, run with
+     * `lms:generate-study-deck --max-practice --per-slide --max-visuals --max-scenarios`). The constants above are the defaults;
+     * LearningPlanBuilder records the run's values on the map, so the planner and the validator agree on them.
+     *
+     * @param array<string,mixed> $map LearningPlanBuilder::build(); a map with no `limits` gets the defaults
+     * @return array{max_practice:int,questions_per_slide:int,max_visuals:int,max_scenarios:int}
+     */
+    public static function limits(array $map): array
+    {
+        $l = (array) ($map['limits'] ?? []);
+
+        return [
+            'max_practice' => max(0, (int) ($l['max_practice'] ?? self::MAX_PRACTICE)),
+            'questions_per_slide' => max(1, (int) ($l['questions_per_slide'] ?? self::MAX_QUESTIONS_PER_SLIDE)),
+            'max_visuals' => max(0, (int) ($l['max_visuals'] ?? self::MAX_VISUALS)),
+            'max_scenarios' => max(0, (int) ($l['max_scenarios'] ?? InteractionPlanner::MAX_SCENARIOS)),
+        ];
+    }
+
     public const SYSTEM = 'You are an experienced classroom teacher planning a lesson for one textbook chapter. '
         . 'You reply with a single JSON object and nothing else. You never add facts that are not in the chapter text.';
 
@@ -83,7 +103,7 @@ class SlidePlanner
                 . "\n\nReturn a corrected, COMPLETE plan as strictly valid JSON (every { closed by }, every [ by ], no trailing commas). "
                 . "Fixing one problem must not break another, so every rule still holds: "
                 . "between {$min} and {$max} slides in total, slide 1 has slide_type \"cover\" and no other slide does, every concept is in some slide's "
-                . 'taught_concept_ids, each question id is used at most once and at most ' . self::MAX_QUESTIONS_PER_SLIDE . ' per slide. '
+                . 'taught_concept_ids, each question id is used at most once and at most ' . self::limits($map)['questions_per_slide'] . ' per slide. '
                 . 'If you must cut slides, merge or remove practice or review slides, never the cover.';
             [$plan, $errors] = $this->read($this->ask($retry), $map, $eligible);
         }
@@ -143,6 +163,7 @@ class SlidePlanner
 
         $min = $map['target_slides']['min'];
         $max = $map['target_slides']['max'];
+        $lim = self::limits($map);
         if (count($slides) < $min || count($slides) > $max) {
             $errors[] = sprintf('Plan has %d slides; it must have between %d and %d.', count($slides), $min, $max);
         }
@@ -217,8 +238,8 @@ class SlidePlanner
             }
 
             $qids = array_map('intval', (array) ($s['question_ids'] ?? []));
-            if (count($qids) > self::MAX_QUESTIONS_PER_SLIDE) {
-                $errors[] = "Slide $n has " . count($qids) . ' questions; the limit is ' . self::MAX_QUESTIONS_PER_SLIDE . '. Spread them over practice slides.';
+            if (count($qids) > $lim['questions_per_slide']) {
+                $errors[] = "Slide $n has " . count($qids) . ' questions; the limit is ' . $lim['questions_per_slide'] . '. Spread them over the slides that teach their concepts.';
             }
             if ($qids && in_array($type, self::FRAMING, true)) {
                 $errors[] = "Slide $n is a $type slide; no bank question may sit on it.";
@@ -262,15 +283,15 @@ class SlidePlanner
             }
         }
 
-        if (count($usedQuestions) > self::MAX_PRACTICE) {
-            $errors[] = 'The plan places ' . count($usedQuestions) . ' bank questions; practice is optional, so place at most ' . self::MAX_PRACTICE . ' in the whole deck.';
+        if (count($usedQuestions) > $lim['max_practice']) {
+            $errors[] = 'The plan places ' . count($usedQuestions) . ' bank questions; place at most ' . $lim['max_practice'] . ' in the whole deck.';
         }
         $practiceSlides = count(array_filter($slides, fn ($s) => in_array($s['slide_type'] ?? '', self::PRACTICE_SLIDES, true)));
         if ($practiceSlides > 3) {
             $errors[] = "The plan has $practiceSlides recall/practice/exit_ticket slides; at most 3. Teach, show and discuss instead.";
         }
-        if ($visuals > self::MAX_VISUALS) {
-            $errors[] = "The plan asks for $visuals visuals; ask for at most " . self::MAX_VISUALS . ', only where a picture or diagram truly teaches.';
+        if ($visuals > $lim['max_visuals']) {
+            $errors[] = "The plan asks for $visuals visuals; ask for at most " . $lim['max_visuals'] . ', only where a picture or diagram truly teaches.';
         }
 
         $missing = array_diff($known, array_keys($taught));
@@ -296,6 +317,36 @@ class SlidePlanner
         }
 
         return $plan;
+    }
+
+    /**
+     * The bank-question rule of the prompt. At the default cap practice is an optional extra and most concepts have
+     * none; a run that raises the cap asks for practice spread through the lesson instead (see self::limits()).
+     */
+    private function practiceRule(int $maxP, int $maxQ): string
+    {
+        if ($maxP <= self::MAX_PRACTICE) {
+            return "- Bank questions are OPTIONAL PRACTICE. Place at most {$maxP} in the whole deck, at most {$maxQ} per slide, each at most once, and only where practising that concept really helps (a term to recall, a misconception to confront, a skill to apply). Most concepts will have none, and that is right. Put one on the slide that follows the teaching of its concept, never on a framing slide. Prefer a question that can be asked as flashcards, true/false, fill in the blanks or matching over a plain multiple-choice one. Do not invent question ids.";
+        }
+
+        $minP = intdiv($maxP * 2, 3);
+
+        return "- Bank questions are PRACTICE that follows the teaching, spread through the whole lesson and not gathered at the end. Place between {$minP} and {$maxP} in the whole deck, at most {$maxQ} per slide, each at most once. Give practice to the important concepts of EVERY topic (a term to recall, a misconception to confront, a skill to apply, a reason to explain); a concept with no listed question simply has none. Put each question on the slide that teaches its concept or on the one right after it, never on a framing slide, and never before its concept has been taught. Mix recall, understanding, application and reasoning questions as the listed bloom levels allow. Most of the practice should check itself and give feedback at once: choose multiple-choice questions where a concept has them; ask a short-answer question whose answer is a single term as fill in the blanks (h5p_pattern fill_blanks) and a plain recall question as flashcards. Written explanations are for the few questions where the reasoning is the point (about a quarter of the practice at most). Do not invent question ids.";
+    }
+
+    /**
+     * Extra guidance on pictures for a run that raised the visual cap (see self::limits()): real photographs and
+     * micrographs first, with the drawn diagram as the fallback ImagePlanner already supports. At the default cap
+     * it adds nothing, so a default run's prompt is unchanged.
+     */
+    private function pictureRule(int $maxV): string
+    {
+        if ($maxV <= self::MAX_VISUALS) {
+            return '';
+        }
+
+        return "- Real pictures first. Wherever a concept has something real to look at (a specimen, a micrograph, an instrument, an experiment set up), ask for the PHOTOGRAPH: give the visual a role of object, instrument or phenomenon and a short, concrete search query that names the thing, and ALSO put a \"diagram\" spec on the slide as the fallback (the system uses an openly licensed photograph when it finds a suitable one and draws your diagram when it does not). Use role \"diagram\" on its own only for a process, a comparison or a link between ideas that no single photograph shows. Aim for a real photograph on about half of the slides that have a visual.
+";
     }
 
     private function prompt(array $context, array $map, array $eligible): string
@@ -325,6 +376,14 @@ class SlidePlanner
             'class' => $context['chapter']['standard_name'] . ' ' . $context['chapter']['subject_name'],
             'topics_in_order' => $map['topics'],
             'concepts' => $concepts,
+            'practical_activities' => array_map(fn ($a) => [
+                'topic_id' => $a['topic_id'] ?? null,
+                'concept_id' => $a['concept_id'] ?? null,
+                'title' => $a['title'] ?? '',
+                'kind' => $a['activity_type'] ?? null,
+                'objective' => mb_substr(trim((string) ($a['objective'] ?? '')), 0, 240),
+                'what_students_do' => mb_substr(trim((string) ($a['description'] ?? '')), 0, 300),
+            ], (array) ($context['practicals'] ?? [])),
             'existing_ai_lesson' => array_map(fn ($b) => ['category' => $b['category'], 'excerpt' => mb_substr($b['text'], 0, 2500)], $context['baseline']),
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
@@ -333,13 +392,16 @@ class SlidePlanner
         $min = $map['target_slides']['min'];
         $max = $map['target_slides']['max'];
         $count = count($concepts);
-        $maxQ = self::MAX_QUESTIONS_PER_SLIDE;
-        $maxP = self::MAX_PRACTICE;
-        $maxScenario = InteractionPlanner::MAX_SCENARIOS;
+        $lim = self::limits($map);
+        $maxQ = $lim['questions_per_slide'];
+        $maxP = $lim['max_practice'];
+        $maxScenario = $lim['max_scenarios'];
         $maxT = self::MAX_TAUGHT_PER_SLIDE;
-        $maxV = self::MAX_VISUALS;
+        $maxV = $lim['max_visuals'];
         $roles = implode(', ', self::VISUAL_ROLES);
         $framing = implode(', ', self::FRAMING);
+        $practiceRule = $this->practiceRule($maxP, $maxQ);
+        $pictureRule = $this->pictureRule($maxV);
 
         return <<<PROMPT
 Plan a classroom study presentation of between {$min} and {$max} slides for the chapter below. Nothing is written yet; you are only planning.
@@ -350,10 +412,11 @@ Rules
 - There are {$count} concepts. EVERY concept must be TAUGHT: list it in "taught_concept_ids" of the slide that explains it, and in that slide's "concept_ids". A concept that is only mentioned, summarised or named in a list is not taught. At most {$maxT} taught concepts per slide; combine closely related concepts only where that teaches better. Do not pad to reach the count.
 - Respect the order given in topics_in_order unless a concept's "requires" says otherwise. When one concept helps explain another, plan a slide (slide_type "relationship") that makes the link explicit and fill "relationship".
 - Frame the lesson: a hook and objectives at the start; a concept map or summary at the end. Use recall, practice and exit_ticket slides sparingly (at most 3 in all): the lesson is made of teaching, seeing, discussing and doing, not of questions. The {$framing} slides teach no concept (empty taught_concept_ids) and carry no bank question.
-- Bank questions are OPTIONAL PRACTICE. Place at most {$maxP} in the whole deck, at most {$maxQ} per slide, each at most once, and only where practising that concept really helps (a term to recall, a misconception to confront, a skill to apply). Most concepts will have none, and that is right. Put one on the slide that follows the teaching of its concept, never on a framing slide. Prefer a question that can be asked as flashcards, true/false, fill in the blanks or matching over a plain multiple-choice one. Do not invent question ids.
+{$practiceRule}
+- "practical_activities" lists experiments the school already runs for this chapter (titles and aims only). Where one matches a situation the chapter text describes, base a "scenario", "application" or "worked_example" slide on it, so the lesson leads into the experiment; add no step, quantity or result that the chapter text does not give.
 - Where the chapter shows a real SITUATION with a decision or a cause-and-effect (an experiment to design, a choice between approaches, an everyday problem to reason through), plan up to {$maxScenario} slides of type "scenario" or "application" for it; the system will write a short branching scenario for them. Only where the chapter text supports it; never invent a situation.
 - Visuals: at most {$maxV} in the whole deck, and only where seeing the thing teaches the concept. Give "role": one of {$roles}. A PHOTOGRAPH (role object, instrument or phenomenon) is for a concrete thing worth seeing in itself: an instrument, a natural phenomenon, a specimen. A photo of something merely MENTIONED as an example, or of anything for an abstract idea, a definition, a classification or a chain of reasoning, teaches nothing: leave "visual" null, or give role "diagram" and put a "diagram" spec on the SLIDE (a sibling of "visual", never inside it) which the system will draw. Prefer a drawn diagram (role "diagram") for any concept with several meaningful named parts, ways, steps or kinds: the student will be able to select each part of it and read an explanation, so such a diagram earns a slide of its own and a large size. A diagram spec is {"layout": "flow" | "compare" | "hub", "title": "...", ...}: flow has "nodes": 2 to 6 short labels in order; hub has "center" and "nodes": 2 to 6 labels; compare has "left" and "right", each {"heading", "items": 1 to 5}. Every label must use words and numbers from the chapter text. The query is a plain 2 to 5 word search phrase naming the thing itself (for example "magnetic compass"), never a generic classroom or student photo.
-- Choose an h5p_pattern only where it truly fits the concept and a question you placed on THAT slide (reason required); otherwise null. Patterns here are ways to ask a bank question: {$patterns}. flashcards needs a recall-level question; fill_blanks needs a short factual answer; true_false needs a true/false question; matching needs a match-the-following question; drag_drop needs a drag-and-drop question. If the slide has no question, or none of its questions fit, use null. Never use branching or image_hotspots here; hotspots and scenarios are written separately by the system.
+{$pictureRule}- Choose an h5p_pattern only where it truly fits the concept and a question you placed on THAT slide (reason required); otherwise null. Patterns here are ways to ask a bank question: {$patterns}. flashcards needs a recall-level question; fill_blanks needs a short factual answer; true_false needs a true/false question; matching needs a match-the-following question; drag_drop needs a drag-and-drop question. If the slide has no question, or none of its questions fit, use null. Never use branching or image_hotspots here; hotspots and scenarios are written separately by the system.
 - Slide types allowed: {$types}
 - No slide may repeat another's title. Every slide has one clear idea and something to look at, think about or discuss.
 

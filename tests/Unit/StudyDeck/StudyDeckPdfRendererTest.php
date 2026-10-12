@@ -11,21 +11,76 @@ use PHPUnit\Framework\TestCase;
  */
 class StudyDeckPdfRendererTest extends TestCase
 {
-    private const BASE = 'https://s3-triz.fra1.digitaloceanspaces.com/';
+    protected const BASE = 'https://s3-triz.fra1.digitaloceanspaces.com/';
 
-    private function render(array $deck): string
+    /** The renderer under test. The guide renderer's tests run every one of these checks against it too. */
+    protected function make(?callable $imageBytes = null, ?string $markerFont = null): StudyDeckPdfRenderer
     {
-        return (new StudyDeckPdfRenderer(self::BASE))->html($deck, '');
+        return new StudyDeckPdfRenderer($imageBytes, $markerFont);
+    }
+
+    /** A small real PNG (GD). */
+    protected function png(int $w = 40, int $h = 24): string
+    {
+        $im = imagecreatetruecolor($w, $h);
+        imagefill($im, 0, 0, imagecolorallocate($im, 90, 120, 200));
+        ob_start();
+        imagepng($im);
+
+        return (string) ob_get_clean();
+    }
+
+    /** A picture store holding the given references; any other reference is not found. */
+    protected function store(array $refs): callable
+    {
+        $png = $this->png();
+
+        return fn (string $ref) => in_array($ref, $refs, true) ? ['bytes' => $png, 'mime' => 'image/png'] : null;
+    }
+
+    protected function render(array $deck): string
+    {
+        return ($this->make())->html($deck, '');
+    }
+
+    /** How many pictures a page draws. The guide's cover always has a background (a drawn pattern when the chapter has no picture). */
+    protected function pictures(string $html): int
+    {
+        return (int) preg_match_all('~<img (?!class="gc-bg")~', $html);
+    }
+
+    /** The width the first picture after the cover is drawn at. */
+    protected function pictureWidth(string $html): int
+    {
+        return preg_match('/<img (?!class="gc-bg")[^>]*width="(\d+)"/', $html, $m) ? (int) $m[1] : 0;
+    }
+
+    /** `page-break-after: always` rules in the stylesheet: the plain cover's, and (in the guide) the cover's and the contents'. */
+    protected function forcedBreaks(): int
+    {
+        return 1;
+    }
+
+    /** The height a tall photograph is held to. */
+    protected function photoHeightCap(): int
+    {
+        return 330;
+    }
+
+    /** The heading of the key at the foot of the contents. */
+    protected function readingKey(): string
+    {
+        return 'How to read this guide';
     }
 
     /** Text as a reader sees it: no tags, entities decoded, one space between words. */
-    private function text(string $html): string
+    protected function text(string $html): string
     {
         $html = (string) preg_replace('#<style.*?</style>#is', '', $html);
         return trim((string) preg_replace('/\s+/u', ' ', html_entity_decode(strip_tags(str_replace(['</td>', '</th>', '</p>', '</li>', '<br>'], ' ', $html)), ENT_QUOTES, 'UTF-8')));
     }
 
-    private function deck(array $slide, array $concepts = []): array
+    protected function deck(array $slide, array $concepts = []): array
     {
         $slide += [
             'n' => 5, 'slide_type' => 'concept_visual', 'title' => 'A title', 'taught_concept_ids' => [7], 'concept_ids' => [7],
@@ -146,22 +201,24 @@ class StudyDeckPdfRendererTest extends TestCase
         $this->assertStringContainsString('Look closely at the frame.', $t);
     }
 
-    public function test_only_pictures_on_the_shared_store_are_drawn_with_their_caption_and_alt(): void
+    public function test_only_stored_pictures_are_drawn_with_their_caption_and_alt(): void
     {
         $img = fn (string $url) => ['type' => 'diagram', 'url' => $url, 'alt' => 'Alt text', 'caption' => 'A caption', 'width' => 1280, 'height' => 720];
+        $r = $this->make($this->store(['study-deck-image:5']));
 
-        $ok = $this->render($this->deck(['image' => $img(self::BASE . 'public/lms_content_file/studydeck/a.png')]));
-        $this->assertStringContainsString('<img src="' . self::BASE . 'public/lms_content_file/studydeck/a.png"', $ok);
+        $ok = $r->html($this->deck(['image' => $img('study-deck-image:5')]), '');
+        $this->assertMatchesRegularExpression('~<img src="data:image/png;base64,[A-Za-z0-9+/=]+" width="\d+" alt="Alt text"~', $ok);
         $this->assertStringContainsString('A caption', $this->text($ok));
 
-        foreach (['http://localhost:3000/x.png', 'images/x.png', 'https://example.org/x.png', 'C:\\x.png'] as $bad) {
-            $this->assertStringNotContainsString('<img', $this->render($this->deck(['image' => $img($bad)])), $bad);
+        // An address is never fetched, and a stored picture the school may not see (the store has nothing) is left out.
+        foreach (['http://localhost:3000/x.png', 'images/x.png', 'https://example.org/x.png', 'C:\\x.png', 'study-deck-image:99'] as $bad) {
+            $this->assertSame(0, $this->pictures($r->html($this->deck(['image' => $img($bad)]), '')), $bad);
         }
     }
 
     public function test_a_photo_credit_is_kept(): void
     {
-        $html = $this->render($this->deck(['image' => ['type' => 'photo', 'url' => self::BASE . 'p.jpg', 'alt' => 'a', 'caption' => 'Cap', 'creator' => 'Jo', 'licence' => 'BY 2.0', 'attribution' => 'Jo, BY 2.0', 'source_url' => 'https://x', 'width' => 768, 'height' => 1024]]));
+        $html = $this->make($this->store(['study-deck-image:6']))->html($this->deck(['image' => ['type' => 'photo', 'url' => 'study-deck-image:6', 'alt' => 'a', 'caption' => 'Cap', 'creator' => 'Jo', 'licence' => 'BY 2.0', 'attribution' => 'Jo, BY 2.0', 'source_url' => 'https://x', 'width' => 768, 'height' => 1024]]), '');
         $t = $this->text($html);
         $this->assertStringContainsString('Jo, BY 2.0', $t);
         $this->assertStringContainsString('https://x', $t, 'the source is printed under the photo');
@@ -180,10 +237,10 @@ class StudyDeckPdfRendererTest extends TestCase
         $html = $this->render($deck);
 
         // The only forced page breaks are after the cover (and nothing after the contents): a short slide shares its page.
-        $this->assertSame(1, substr_count($html, 'page-break-after: always'), 'only the cover ends a page');
+        $this->assertSame($this->forcedBreaks(), substr_count($html, 'page-break-after: always'), 'only the cover (and the guide\'s contents) end a page');
         $this->assertStringNotContainsString('page-break-before: always', $html, 'no slide starts a new page');
         // A slide is never one unbreakable block: the slide container is not "keep", its small cards are.
-        $this->assertStringContainsString('<div class="sl"><div class="keep">', $html);
+        $this->assertMatchesRegularExpression('~<div class="sl[^"]*"><div class="keep">~', $html);
         $this->assertDoesNotMatchRegularExpression('/<div class="sl keep"|<div class="keep sl"/', $html);
     }
 
@@ -210,7 +267,7 @@ class StudyDeckPdfRendererTest extends TestCase
         ]];
         $deck = $this->deck(['activities' => [['source' => 'bank', 'question_id' => 901, 'as' => 'single_choice_set', 'label' => 'Think about it']], 'question_ids' => [901]]);
 
-        $t = $this->text((new StudyDeckPdfRenderer(self::BASE))->html($deck, '', ['questions' => $questions]));
+        $t = $this->text(($this->make())->html($deck, '', ['questions' => $questions]));
 
         foreach (['PRACTICE QUESTION', 'Think about it', 'Which is a unit of force?', 'Kilogram', 'Newton', 'Metre', 'Second', 'The newton measures force.'] as $needle) {
             $this->assertStringContainsString($needle, $t);
@@ -231,7 +288,7 @@ class StudyDeckPdfRendererTest extends TestCase
             'interaction' => ['kind' => 'scenario', 'situation' => 'S.', 'start' => 'n', 'conclusion' => 'C.', 'nodes' => [['id' => 'n', 'prompt' => 'P?', 'choices' => [['id' => 'c', 'text' => 'Go', 'outcome' => 'The outcome.', 'why' => 'The reason.', 'sound' => true, 'next' => null]]]]],
         ]);
 
-        $t = $this->text((new StudyDeckPdfRenderer(self::BASE))->html($deck, '', ['questions' => $questions, 'variant' => 'practice']));
+        $t = $this->text(($this->make())->html($deck, '', ['questions' => $questions, 'variant' => 'practice']));
 
         $this->assertStringContainsString('Which is a unit of force?', $t, 'the question and its options stay');
         $this->assertStringContainsString('Kilogram', $t);
@@ -246,8 +303,8 @@ class StudyDeckPdfRendererTest extends TestCase
         $q = [902 => ['id' => 902, 'form' => 'short_answer', 'stem' => 'Define a model.', 'options' => [], 'correct_label' => null, 'answer_text' => 'A simplified view.', 'explanation' => '']];
         $deck = $this->deck(['activities' => [['source' => 'bank', 'question_id' => 902, 'label' => 'Write']]]);
 
-        $revision = (new StudyDeckPdfRenderer(self::BASE))->html($deck, '', ['questions' => $q]);
-        $practice = (new StudyDeckPdfRenderer(self::BASE))->html($deck, '', ['questions' => $q, 'variant' => 'practice']);
+        $revision = ($this->make())->html($deck, '', ['questions' => $q]);
+        $practice = ($this->make())->html($deck, '', ['questions' => $q, 'variant' => 'practice']);
 
         $this->assertStringContainsString('A simplified view.', $this->text($revision));
         $this->assertStringContainsString('MODEL ANSWER', $this->text($revision));
@@ -266,17 +323,17 @@ class StudyDeckPdfRendererTest extends TestCase
     {
         $deck = $this->deck(['n' => 7, 'interaction' => ['kind' => 'reveal', 'intro' => '', 'wrapup' => '', 'items' => [['id' => 'a', 'label' => 'A', 'text' => 'Aa.']]]]);
 
-        $withId = (new StudyDeckPdfRenderer(self::BASE))->html($deck, '', ['link_base' => 'https://app.example.org/student/study-deck/8592/', 'content_id' => 61401]);
+        $withId = ($this->make())->html($deck, '', ['link_base' => 'https://app.example.org/student/study-deck/8592/', 'content_id' => 61401]);
         $this->assertStringContainsString('href="https://app.example.org/student/study-deck/8592?content=61401&amp;slide=7"', $withId);
-        $this->assertStringContainsString('Try it in the Study Deck.', $this->text($withId));
+        $this->assertStringContainsString('Try it in the Study Deck', $this->text($withId));
 
-        $noId = (new StudyDeckPdfRenderer(self::BASE))->html($deck, '', ['link_base' => 'https://app.example.org/student/study-deck/8592']);
+        $noId = ($this->make())->html($deck, '', ['link_base' => 'https://app.example.org/student/study-deck/8592']);
         $this->assertStringContainsString('href="https://app.example.org/student/study-deck/8592?slide=7"', $noId);
 
         foreach ([null, '', 'javascript:alert(1)', 'ftp://x/y', '/relative/path', 'file:///etc/passwd'] as $bad) {
-            $html = (new StudyDeckPdfRenderer(self::BASE))->html($deck, '', ['link_base' => $bad]);
-            $this->assertStringNotContainsString('href=', $html, (string) $bad);
-            $this->assertStringContainsString('Try it in the Study Deck.', $this->text($html), 'the instruction stays; only the address is withheld');
+            $html = ($this->make())->html($deck, '', ['link_base' => $bad]);
+            $this->assertDoesNotMatchRegularExpression('~href="(?!#)~', $html, (string) $bad . ' (a place in the same document, #..., is not an address)');
+            $this->assertStringContainsString('Try it in the Study Deck', $this->text($html), 'the instruction stays; only the address is withheld');
         }
     }
 
@@ -288,7 +345,7 @@ class StudyDeckPdfRendererTest extends TestCase
         $deck['taught_by'] = ['7' => [5]];
         $t = $this->text($this->render($deck));
 
-        foreach (['CLASS 9 · SCIENCE', 'Chapter one', 'STUDY GUIDE', 'Welcome.', 'How to read this guide', 'Chapter at a glance', 'Language of science', 'Slide 5'] as $needle) {
+        foreach (['CLASS 9 · SCIENCE', 'Chapter one', 'STUDY GUIDE', 'Welcome.', $this->readingKey(), 'Chapter at a glance', 'Language of science', 'Slide 5'] as $needle) {
             $this->assertStringContainsString($needle, $t);
         }
         $this->assertStringContainsString('TOPIC 1', $t, 'a topic band opens the topic');
@@ -305,7 +362,7 @@ class StudyDeckPdfRendererTest extends TestCase
         ob_start();
         imagepng($im);
         $png = (string) ob_get_clean();
-        $url = self::BASE . 'public/lms_content_file/studydeck/d.png';
+        $url = 'study-deck-image:7';
         $deck = $this->deck([
             'image' => ['type' => 'diagram', 'url' => $url, 'alt' => 'd', 'caption' => 'c', 'width' => 1280, 'height' => 720],
             'interaction' => ['kind' => 'hotspots', 'intro' => '', 'wrapup' => '', 'spots' => [
@@ -315,10 +372,10 @@ class StudyDeckPdfRendererTest extends TestCase
         ]);
 
         $seen = [];
-        $html = (new StudyDeckPdfRenderer(self::BASE, function (string $u) use ($png, &$seen) {
+        $html = ($this->make(function (string $u) use ($png, &$seen) {
             $seen[] = $u;
 
-            return $png;
+            return ['bytes' => $png, 'mime' => 'image/png'];
         }, $font))->html($deck, '');
 
         $this->assertSame([$url], $seen, 'the picture is read once, from the store');
@@ -326,27 +383,29 @@ class StudyDeckPdfRendererTest extends TestCase
         $this->assertStringNotContainsString('src="' . $url . '"', $html, 'the marked copy replaces the plain one');
 
         // The marked picture really differs from the original and keeps its size.
-        preg_match('~data:image/png;base64,([A-Za-z0-9+/=]+)~', $html, $m);
+        preg_match('~<img src="data:image/png;base64,([A-Za-z0-9+/=]+)"~', $html, $m);
         $marked = imagecreatefromstring((string) base64_decode($m[1]));
-        $this->assertSame(1280, imagesx($marked));
-        $this->assertSame(720, imagesy($marked));
+        $this->assertLessThanOrEqual(1280, imagesx($marked), 'never enlarged (the guide also shrinks a big picture to what a page can use)');
+        $this->assertEqualsWithDelta(1280 / 720, imagesx($marked) / imagesy($marked), 0.02, 'in its own proportions');
         $this->assertNotSame($png, base64_decode($m[1]));
 
         // Without the picture, the plain address is used and nothing breaks.
-        $plain = (new StudyDeckPdfRenderer(self::BASE, fn () => null, $font))->html($deck, '');
-        $this->assertStringContainsString('src="' . $url . '"', $plain);
+        $plain = ($this->make(fn () => null, $font))->html($deck, '');
+        $this->assertSame(0, $this->pictures($plain), 'nothing is drawn that the store cannot give');
     }
 
     public function test_a_diagram_keeps_its_proportions_and_a_tall_photo_is_limited_in_height(): void
     {
-        $img = fn (string $type, int $w, int $h) => ['type' => $type, 'url' => self::BASE . 'x.png', 'alt' => 'a', 'caption' => 'c', 'width' => $w, 'height' => $h, 'creator' => 'J', 'licence' => 'BY'];
+        $img = fn (string $type, int $w, int $h) => ['type' => $type, 'url' => 'study-deck-image:8', 'alt' => 'a', 'caption' => 'c', 'width' => $w, 'height' => $h, 'creator' => 'J', 'licence' => 'BY'];
+        $r = $this->make($this->store(['study-deck-image:8']));
 
-        preg_match('/width="(\d+)"/', $this->render($this->deck(['image' => $img('diagram', 1280, 720)])), $wide);
-        $this->assertGreaterThanOrEqual(500, (int) $wide[1], 'a wide diagram gets the width of the page');
+        $wide = $this->pictureWidth($r->html($this->deck(['image' => $img('diagram', 1280, 720)]), ''));
+        $this->assertGreaterThanOrEqual(500, $wide, 'a wide diagram gets the width of the page');
 
-        preg_match('/width="(\d+)"/', $this->render($this->deck(['image' => $img('photo', 768, 1024)])), $tall);
-        $this->assertLessThanOrEqual(260, (int) $tall[1], 'a tall photo is height-limited (width / aspect <= its cap)');
-        $this->assertEqualsWithDelta(768 / 1024, (int) $tall[1] / 330, 0.02, 'in its own proportions');
+        $tall = $this->pictureWidth($r->html($this->deck(['image' => $img('photo', 768, 1024)]), ''));
+        $this->assertGreaterThan(0, $tall);
+        $this->assertLessThanOrEqual(260, $tall, 'a tall photo is height-limited (width / aspect <= its cap)');
+        $this->assertEqualsWithDelta(768 / 1024, $tall / $this->photoHeightCap(), 0.02, 'in its own proportions');
     }
 
     public function test_the_running_header_text(): void
