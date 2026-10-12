@@ -113,6 +113,9 @@ class RouteServiceProvider extends ServiceProvider
 
         $this->mapTalentManagementRoutes();
 
+        $this->mapAlumniRoutes();
+        $this->mapAlumniPortalRoutes();
+
         $this->mapOrganizationManagementRoutes();
 
         $this->mapTaskManagementRoutes();
@@ -170,6 +173,48 @@ class RouteServiceProvider extends ServiceProvider
             ->middleware('api')
             ->namespace($this->namespace)
             ->group(base_path('routes/talent_management.php'));
+    }
+
+    /**
+     * Alumni Management APIs (staff side). See routes/alumni.php.
+     */
+    protected function mapAlumniRoutes()
+    {
+        // Named limiters, keyed per caller AND per action. A bare `throttle:30,1` keys on IP alone, so every
+        // route using one shares a single counter with all other API traffic and starts refusing ordinary use.
+        foreach (['alumni-upload' => 30, 'alumni-export' => 20, 'alumni-bulk' => 30, 'alumni-conversion' => 10, 'alumni-import' => 20, 'alumni-send' => 20, 'alumni-pay' => 20] as $name => $perMinute) {
+            RateLimiter::for($name, function (Request $request) use ($name, $perMinute) {
+                $who = $request->bearerToken() ? sha1((string) $request->bearerToken()) : (string) $request->ip();
+
+                return Limit::perMinute($perMinute)->by($name . '|' . $who);
+            });
+        }
+
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/alumni.php'));
+    }
+
+    /**
+     * Alumni portal APIs (the alumnus's own side). See routes/alumni_portal.php and section 8 of the alumni plan.
+     *
+     * Limits are keyed on the email (hashed) AND the address: the frontend relay hides the visitor's address from Laravel, so the
+     * email key is what actually protects an account, and the address key is a generous ceiling against floods.
+     */
+    protected function mapAlumniPortalRoutes()
+    {
+        $emailKey = fn (Request $r) => sha1(mb_strtolower(trim((string) $r->input('email'))));
+        RateLimiter::for('portal-login', fn (Request $r) => [Limit::perMinute(8)->by('login|' . $emailKey($r) . '|' . $r->ip()), Limit::perMinute(300)->by('login-ip|' . $r->ip())]);
+        RateLimiter::for('portal-register', fn (Request $r) => [Limit::perHour(3)->by('register|' . $emailKey($r)), Limit::perHour(200)->by('register-ip|' . $r->ip())]);
+        RateLimiter::for('portal-reset', fn (Request $r) => [Limit::perHour(5)->by('reset|' . $emailKey($r)), Limit::perHour(200)->by('reset-ip|' . $r->ip())]);
+        RateLimiter::for('portal-token', fn (Request $r) => Limit::perMinute(120)->by('token|' . $r->ip()));
+        RateLimiter::for('portal-api', fn (Request $r) => Limit::perMinute(120)->by('portal|' . sha1((string) $r->bearerToken())));
+
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/alumni_portal.php'));
     }
 
     /**

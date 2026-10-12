@@ -43,6 +43,16 @@ class Kernel extends ConsoleKernel
         // than the interval bounds the damage to one skipped pass.
         $schedule->command('neo4j:drain')->everyMinute()->withoutOverlapping(5);
 
+        // Alumni module. Each task is idempotent (messages are de-duplicated by unique keys), so a missed or doubled run is
+        // harmless. The overlap expiry is kept about as long as the interval, for the reason given above: a run killed
+        // part-way must not silence the task for a day. Times follow config('app.timezone') - one clock per installation.
+        $schedule->command('alumni:run scheduled')->everyFiveMinutes()->withoutOverlapping(10);
+        $schedule->command('alumni:run milestones')->dailyAt('08:00')->withoutOverlapping(120);
+        $schedule->command('alumni:run event-reminders')->dailyAt('08:30')->withoutOverlapping(120);
+        $schedule->command('alumni:run expire-opportunities')->dailyAt('01:00')->withoutOverlapping(60);
+        $schedule->command('alumni:run import-purge')->dailyAt('02:00')->withoutOverlapping(60);
+        $schedule->command('alumni:run auth-purge')->dailyAt('02:30')->withoutOverlapping(60);
+
         // Drift detection. A pipeline reporting all-SUCCESS proves only that
         // the events it was given were delivered — not that every row produced
         // one. This is what catches a row that never emitted an event at all.

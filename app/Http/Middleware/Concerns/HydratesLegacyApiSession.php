@@ -63,6 +63,12 @@ trait HydratesLegacyApiSession
      */
     protected function hydrateSessionFromClaims(array $payload, Request $request): ?JsonResponse
     {
+        // Defence in depth: an alumni-portal token is signed with a different secret and so should never get here, but if one ever
+        // did, `id` would be read as a staff user id. Refuse anything marked as an alumni token.
+        if (($payload['aud'] ?? null) === 'alumni' || ($payload['typ'] ?? null) === 'alumni_access') {
+            return $this->unauthorizedApiSession('Invalid token payload');
+        }
+
         $userId         = $payload['id'] ?? null;
         $subInstituteId = $payload['sub_institute_id'] ?? null;
         $userProfileId  = $payload['user_profile_id'] ?? null;

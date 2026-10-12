@@ -62,6 +62,7 @@ class Kernel extends HttpKernel
      */
     protected $routeMiddleware = [
         'api.session' => \App\Http\Middleware\ApiSessionHydrator::class,
+        'alumni.auth' => \App\Http\Middleware\AlumniAuthenticate::class,
         'lms.auth' => \App\Http\Middleware\LmsApiAuth::class,
         'perm' => \App\Http\Middleware\RequirePermission::class,
         'auth' => \App\Http\Middleware\Authenticate::class,
@@ -81,6 +82,7 @@ class Kernel extends HttpKernel
         'jwt' => \GenTux\Jwt\Http\JwtMiddleware::class,
         'check_permissions' =>\App\Http\Middleware\checkPermission::class,
         'api.session' => \App\Http\Middleware\ApiSessionHydrator::class,
+        'alumni.auth' => \App\Http\Middleware\AlumniAuthenticate::class,
         'api.jwt' => \App\Http\Middleware\RequireApiJwt::class,
         'pal.auth' => \App\Http\Middleware\PalApiAuth::class,
         'lms.auth' => \App\Http\Middleware\LmsApiAuth::class,
