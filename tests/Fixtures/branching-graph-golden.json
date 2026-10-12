@@ -1,0 +1,1102 @@
+[
+    {
+        "name": "sound tree",
+        "strict": true,
+        "nodes": [
+            {
+                "ref": "a",
+                "node_type": "text",
+                "title": "Screen a",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "d",
+                "options": []
+            },
+            {
+                "ref": "d",
+                "node_type": "branching_question",
+                "title": "Decision d",
+                "body": "<p>What do you do?</p>",
+                "options": [
+                    {
+                        "text": "Look closer",
+                        "next_ref": "b",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    },
+                    {
+                        "text": "Guess",
+                        "next_ref": "c",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    }
+                ]
+            },
+            {
+                "ref": "b",
+                "node_type": "text",
+                "title": "Screen b",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e1",
+                "options": []
+            },
+            {
+                "ref": "c",
+                "node_type": "text",
+                "title": "Screen c",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e2",
+                "options": []
+            },
+            {
+                "ref": "e1",
+                "node_type": "ending",
+                "title": "Ending e1",
+                "body": "<p>Where it stops.</p>",
+                "score": 100,
+                "options": []
+            },
+            {
+                "ref": "e2",
+                "node_type": "ending",
+                "title": "Ending e2",
+                "body": "<p>Where it stops.</p>",
+                "score": 40,
+                "options": []
+            }
+        ],
+        "errors": [],
+        "warnings": [],
+        "stats": {
+            "nodes": 6,
+            "screens": 3,
+            "decisions": 1,
+            "endings": 2,
+            "paths": 2,
+            "longest_path": 4,
+            "shortest_path": 4,
+            "endings_reached": 2,
+            "acyclic": true
+        }
+    },
+    {
+        "name": "orphan",
+        "strict": true,
+        "nodes": [
+            {
+                "ref": "a",
+                "node_type": "text",
+                "title": "Screen a",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "d",
+                "options": []
+            },
+            {
+                "ref": "d",
+                "node_type": "branching_question",
+                "title": "Decision d",
+                "body": "<p>What do you do?</p>",
+                "options": [
+                    {
+                        "text": "Look closer",
+                        "next_ref": "b",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    },
+                    {
+                        "text": "Guess",
+                        "next_ref": "c",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    }
+                ]
+            },
+            {
+                "ref": "b",
+                "node_type": "text",
+                "title": "Screen b",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e1",
+                "options": []
+            },
+            {
+                "ref": "c",
+                "node_type": "text",
+                "title": "Screen c",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e2",
+                "options": []
+            },
+            {
+                "ref": "e1",
+                "node_type": "ending",
+                "title": "Ending e1",
+                "body": "<p>Where it stops.</p>",
+                "score": 100,
+                "options": []
+            },
+            {
+                "ref": "e2",
+                "node_type": "ending",
+                "title": "Ending e2",
+                "body": "<p>Where it stops.</p>",
+                "score": 40,
+                "options": []
+            },
+            {
+                "ref": "x",
+                "node_type": "text",
+                "title": "Screen x",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e1",
+                "options": []
+            }
+        ],
+        "errors": [
+            "unreachable"
+        ],
+        "warnings": [],
+        "stats": {
+            "nodes": 7,
+            "screens": 4,
+            "decisions": 1,
+            "endings": 2,
+            "paths": 2,
+            "longest_path": 4,
+            "shortest_path": 4,
+            "endings_reached": 2,
+            "acyclic": true
+        }
+    },
+    {
+        "name": "branch into nothing",
+        "strict": true,
+        "nodes": [
+            {
+                "ref": "a",
+                "node_type": "text",
+                "title": "Screen a",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "d",
+                "options": []
+            },
+            {
+                "ref": "d",
+                "node_type": "branching_question",
+                "title": "Decision d",
+                "body": "<p>What do you do?</p>",
+                "options": [
+                    {
+                        "text": "Look closer",
+                        "next_ref": "b",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    },
+                    {
+                        "text": "Guess",
+                        "next_ref": "ghost",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    }
+                ]
+            },
+            {
+                "ref": "b",
+                "node_type": "text",
+                "title": "Screen b",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e1",
+                "options": []
+            },
+            {
+                "ref": "c",
+                "node_type": "text",
+                "title": "Screen c",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e2",
+                "options": []
+            },
+            {
+                "ref": "e1",
+                "node_type": "ending",
+                "title": "Ending e1",
+                "body": "<p>Where it stops.</p>",
+                "score": 100,
+                "options": []
+            },
+            {
+                "ref": "e2",
+                "node_type": "ending",
+                "title": "Ending e2",
+                "body": "<p>Where it stops.</p>",
+                "score": 40,
+                "options": []
+            }
+        ],
+        "errors": [
+            "bad_target",
+            "unreachable",
+            "unreachable"
+        ],
+        "warnings": [],
+        "stats": {
+            "nodes": 6,
+            "screens": 3,
+            "decisions": 1,
+            "endings": 2,
+            "paths": 1,
+            "longest_path": 4,
+            "shortest_path": 4,
+            "endings_reached": 1,
+            "acyclic": true
+        }
+    },
+    {
+        "name": "missing next and one choice",
+        "strict": true,
+        "nodes": [
+            {
+                "ref": "a",
+                "node_type": "text",
+                "title": "Screen a",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": null,
+                "options": []
+            },
+            {
+                "ref": "d",
+                "node_type": "branching_question",
+                "title": "Decision d",
+                "body": "<p>What do you do?</p>",
+                "options": [
+                    {
+                        "text": "Only",
+                        "next_ref": "b",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    }
+                ]
+            },
+            {
+                "ref": "b",
+                "node_type": "text",
+                "title": "Screen b",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e1",
+                "options": []
+            },
+            {
+                "ref": "c",
+                "node_type": "text",
+                "title": "Screen c",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e2",
+                "options": []
+            },
+            {
+                "ref": "e1",
+                "node_type": "ending",
+                "title": "Ending e1",
+                "body": "<p>Where it stops.</p>",
+                "score": 100,
+                "options": []
+            },
+            {
+                "ref": "e2",
+                "node_type": "ending",
+                "title": "Ending e2",
+                "body": "<p>Where it stops.</p>",
+                "score": 40,
+                "options": []
+            }
+        ],
+        "errors": [
+            "dead_end",
+            "missing_next",
+            "too_few_choices",
+            "unreachable",
+            "unreachable",
+            "unreachable",
+            "unreachable",
+            "unreachable"
+        ],
+        "warnings": [],
+        "stats": {
+            "nodes": 6,
+            "screens": 3,
+            "decisions": 1,
+            "endings": 2,
+            "paths": 0,
+            "longest_path": 0,
+            "shortest_path": 0,
+            "endings_reached": 0,
+            "acyclic": true
+        }
+    },
+    {
+        "name": "loop with no exit",
+        "strict": true,
+        "nodes": [
+            {
+                "ref": "a",
+                "node_type": "text",
+                "title": "Screen a",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "b",
+                "options": []
+            },
+            {
+                "ref": "b",
+                "node_type": "text",
+                "title": "Screen b",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "c",
+                "options": []
+            },
+            {
+                "ref": "c",
+                "node_type": "text",
+                "title": "Screen c",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "b",
+                "options": []
+            },
+            {
+                "ref": "e1",
+                "node_type": "ending",
+                "title": "Ending e1",
+                "body": "<p>Where it stops.</p>",
+                "score": 0,
+                "options": []
+            }
+        ],
+        "errors": [
+            "dead_end",
+            "dead_end",
+            "dead_end",
+            "unreachable"
+        ],
+        "warnings": [
+            "single_ending"
+        ],
+        "stats": {
+            "nodes": 4,
+            "screens": 3,
+            "decisions": 0,
+            "endings": 1,
+            "paths": 0,
+            "longest_path": 0,
+            "shortest_path": 0,
+            "endings_reached": 0,
+            "acyclic": false
+        }
+    },
+    {
+        "name": "loop that can finish",
+        "strict": true,
+        "nodes": [
+            {
+                "ref": "a",
+                "node_type": "text",
+                "title": "Screen a",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "d",
+                "options": []
+            },
+            {
+                "ref": "d",
+                "node_type": "branching_question",
+                "title": "Decision d",
+                "body": "<p>What do you do?</p>",
+                "options": [
+                    {
+                        "text": "Retry",
+                        "next_ref": "r",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    },
+                    {
+                        "text": "Finish",
+                        "next_ref": "e1",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    }
+                ]
+            },
+            {
+                "ref": "r",
+                "node_type": "text",
+                "title": "Screen r",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "d",
+                "options": []
+            },
+            {
+                "ref": "e1",
+                "node_type": "ending",
+                "title": "Ending e1",
+                "body": "<p>Where it stops.</p>",
+                "score": 100,
+                "options": []
+            }
+        ],
+        "errors": [],
+        "warnings": [
+            "single_ending"
+        ],
+        "stats": {
+            "nodes": 4,
+            "screens": 2,
+            "decisions": 1,
+            "endings": 1,
+            "paths": 1,
+            "longest_path": 3,
+            "shortest_path": 3,
+            "endings_reached": 1,
+            "acyclic": false
+        }
+    },
+    {
+        "name": "starts with an ending",
+        "strict": true,
+        "nodes": [
+            {
+                "ref": "e1",
+                "node_type": "ending",
+                "title": "Ending e1",
+                "body": "<p>Where it stops.</p>",
+                "score": 0,
+                "options": []
+            },
+            {
+                "ref": "a",
+                "node_type": "text",
+                "title": "Screen a",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e1",
+                "options": []
+            }
+        ],
+        "errors": [
+            "start_is_ending",
+            "unreachable"
+        ],
+        "warnings": [
+            "single_ending"
+        ],
+        "stats": {
+            "nodes": 2,
+            "screens": 1,
+            "decisions": 0,
+            "endings": 1,
+            "paths": 1,
+            "longest_path": 1,
+            "shortest_path": 1,
+            "endings_reached": 1,
+            "acyclic": true
+        }
+    },
+    {
+        "name": "no ending",
+        "strict": true,
+        "nodes": [
+            {
+                "ref": "a",
+                "node_type": "text",
+                "title": "Screen a",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "b",
+                "options": []
+            },
+            {
+                "ref": "b",
+                "node_type": "text",
+                "title": "Screen b",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "a",
+                "options": []
+            }
+        ],
+        "errors": [
+            "dead_end",
+            "dead_end",
+            "no_ending"
+        ],
+        "warnings": [],
+        "stats": {
+            "nodes": 2,
+            "screens": 2,
+            "decisions": 0,
+            "endings": 0,
+            "paths": 0,
+            "longest_path": 0,
+            "shortest_path": 0,
+            "endings_reached": 0,
+            "acyclic": false
+        }
+    },
+    {
+        "name": "single ending, one destination",
+        "strict": true,
+        "nodes": [
+            {
+                "ref": "a",
+                "node_type": "text",
+                "title": "Screen a",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "d",
+                "options": []
+            },
+            {
+                "ref": "d",
+                "node_type": "branching_question",
+                "title": "Decision d",
+                "body": "<p>What do you do?</p>",
+                "options": [
+                    {
+                        "text": "One",
+                        "next_ref": "e1",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    },
+                    {
+                        "text": "Two",
+                        "next_ref": "e1",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    }
+                ]
+            },
+            {
+                "ref": "e1",
+                "node_type": "ending",
+                "title": "Ending e1",
+                "body": "<p>Where it stops.</p>",
+                "score": 0,
+                "options": []
+            }
+        ],
+        "errors": [],
+        "warnings": [
+            "single_destination",
+            "single_ending"
+        ],
+        "stats": {
+            "nodes": 3,
+            "screens": 1,
+            "decisions": 1,
+            "endings": 1,
+            "paths": 1,
+            "longest_path": 3,
+            "shortest_path": 3,
+            "endings_reached": 1,
+            "acyclic": true
+        }
+    },
+    {
+        "name": "a check may rejoin",
+        "strict": true,
+        "nodes": [
+            {
+                "ref": "a",
+                "node_type": "text",
+                "title": "Screen a",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "d",
+                "options": []
+            },
+            {
+                "source_question_id": 5,
+                "ref": "d",
+                "node_type": "branching_question",
+                "title": "Decision d",
+                "body": "<p>What do you do?</p>",
+                "options": [
+                    {
+                        "text": "Right",
+                        "next_ref": "e1",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    },
+                    {
+                        "text": "Wrong",
+                        "next_ref": "e1",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    }
+                ]
+            },
+            {
+                "ref": "e1",
+                "node_type": "ending",
+                "title": "Ending e1",
+                "body": "<p>Where it stops.</p>",
+                "score": 0,
+                "options": []
+            }
+        ],
+        "errors": [],
+        "warnings": [
+            "single_ending"
+        ],
+        "stats": {
+            "nodes": 3,
+            "screens": 1,
+            "decisions": 1,
+            "endings": 1,
+            "paths": 1,
+            "longest_path": 3,
+            "shortest_path": 3,
+            "endings_reached": 1,
+            "acyclic": true
+        }
+    },
+    {
+        "name": "self loop",
+        "strict": true,
+        "nodes": [
+            {
+                "ref": "a",
+                "node_type": "text",
+                "title": "Screen a",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "a",
+                "options": []
+            },
+            {
+                "ref": "e1",
+                "node_type": "ending",
+                "title": "Ending e1",
+                "body": "<p>Where it stops.</p>",
+                "score": 0,
+                "options": []
+            }
+        ],
+        "errors": [
+            "dead_end",
+            "self_loop",
+            "unreachable"
+        ],
+        "warnings": [
+            "single_ending"
+        ],
+        "stats": {
+            "nodes": 2,
+            "screens": 1,
+            "decisions": 0,
+            "endings": 1,
+            "paths": 0,
+            "longest_path": 0,
+            "shortest_path": 0,
+            "endings_reached": 0,
+            "acyclic": true
+        }
+    },
+    {
+        "name": "picture without alt, publish",
+        "strict": true,
+        "nodes": [
+            {
+                "ref": "a",
+                "node_type": "text",
+                "title": "Screen a",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "d",
+                "options": [],
+                "media_path": "https://cdn.example.test/a.png",
+                "media_alt": ""
+            },
+            {
+                "ref": "d",
+                "node_type": "branching_question",
+                "title": "Decision d",
+                "body": "<p>What do you do?</p>",
+                "options": [
+                    {
+                        "text": "Look closer",
+                        "next_ref": "b",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    },
+                    {
+                        "text": "Guess",
+                        "next_ref": "c",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    }
+                ]
+            },
+            {
+                "ref": "b",
+                "node_type": "text",
+                "title": "Screen b",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e1",
+                "options": []
+            },
+            {
+                "ref": "c",
+                "node_type": "text",
+                "title": "Screen c",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e2",
+                "options": []
+            },
+            {
+                "ref": "e1",
+                "node_type": "ending",
+                "title": "Ending e1",
+                "body": "<p>Where it stops.</p>",
+                "score": 100,
+                "options": []
+            },
+            {
+                "ref": "e2",
+                "node_type": "ending",
+                "title": "Ending e2",
+                "body": "<p>Where it stops.</p>",
+                "score": 40,
+                "options": []
+            }
+        ],
+        "errors": [
+            "missing_alt"
+        ],
+        "warnings": [],
+        "stats": {
+            "nodes": 6,
+            "screens": 3,
+            "decisions": 1,
+            "endings": 2,
+            "paths": 2,
+            "longest_path": 4,
+            "shortest_path": 4,
+            "endings_reached": 2,
+            "acyclic": true
+        }
+    },
+    {
+        "name": "picture without alt, draft",
+        "strict": false,
+        "nodes": [
+            {
+                "ref": "a",
+                "node_type": "text",
+                "title": "Screen a",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "d",
+                "options": [],
+                "media_path": "https://cdn.example.test/a.png",
+                "media_alt": ""
+            },
+            {
+                "ref": "d",
+                "node_type": "branching_question",
+                "title": "Decision d",
+                "body": "<p>What do you do?</p>",
+                "options": [
+                    {
+                        "text": "Look closer",
+                        "next_ref": "b",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    },
+                    {
+                        "text": "Guess",
+                        "next_ref": "c",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    }
+                ]
+            },
+            {
+                "ref": "b",
+                "node_type": "text",
+                "title": "Screen b",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e1",
+                "options": []
+            },
+            {
+                "ref": "c",
+                "node_type": "text",
+                "title": "Screen c",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e2",
+                "options": []
+            },
+            {
+                "ref": "e1",
+                "node_type": "ending",
+                "title": "Ending e1",
+                "body": "<p>Where it stops.</p>",
+                "score": 100,
+                "options": []
+            },
+            {
+                "ref": "e2",
+                "node_type": "ending",
+                "title": "Ending e2",
+                "body": "<p>Where it stops.</p>",
+                "score": 40,
+                "options": []
+            }
+        ],
+        "errors": [],
+        "warnings": [
+            "missing_alt"
+        ],
+        "stats": {
+            "nodes": 6,
+            "screens": 3,
+            "decisions": 1,
+            "endings": 2,
+            "paths": 2,
+            "longest_path": 4,
+            "shortest_path": 4,
+            "endings_reached": 2,
+            "acyclic": true
+        }
+    },
+    {
+        "name": "empty screen and no feedback",
+        "strict": true,
+        "nodes": [
+            {
+                "ref": "a",
+                "node_type": "text",
+                "title": "Screen a",
+                "body": "<p>  </p>",
+                "next_ref": "d",
+                "options": []
+            },
+            {
+                "ref": "d",
+                "node_type": "branching_question",
+                "title": "Decision d",
+                "body": "<p>What do you do?</p>",
+                "options": [
+                    {
+                        "text": "Look closer",
+                        "next_ref": "b",
+                        "quality": "best",
+                        "feedback_title": "",
+                        "feedback_text": ""
+                    },
+                    {
+                        "text": "",
+                        "next_ref": "c",
+                        "quality": "misstep",
+                        "feedback_title": "x",
+                        "feedback_text": "<p>y</p>"
+                    }
+                ]
+            },
+            {
+                "ref": "b",
+                "node_type": "text",
+                "title": "Screen b",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e1",
+                "options": []
+            },
+            {
+                "ref": "c",
+                "node_type": "text",
+                "title": "Screen c",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e2",
+                "options": []
+            },
+            {
+                "ref": "e1",
+                "node_type": "ending",
+                "title": "Ending e1",
+                "body": "<p>Where it stops.</p>",
+                "score": 100,
+                "options": []
+            },
+            {
+                "ref": "e2",
+                "node_type": "ending",
+                "title": "Ending e2",
+                "body": "<p>Where it stops.</p>",
+                "score": 40,
+                "options": []
+            }
+        ],
+        "errors": [
+            "empty_choice",
+            "empty_screen"
+        ],
+        "warnings": [
+            "no_feedback"
+        ],
+        "stats": {
+            "nodes": 6,
+            "screens": 3,
+            "decisions": 1,
+            "endings": 2,
+            "paths": 2,
+            "longest_path": 4,
+            "shortest_path": 4,
+            "endings_reached": 2,
+            "acyclic": true
+        }
+    },
+    {
+        "name": "empty",
+        "strict": true,
+        "nodes": [],
+        "errors": [
+            "empty"
+        ],
+        "warnings": [],
+        "stats": {
+            "nodes": 0,
+            "screens": 0,
+            "decisions": 0,
+            "endings": 0,
+            "paths": 0,
+            "longest_path": 0,
+            "shortest_path": 0,
+            "endings_reached": 0,
+            "acyclic": true
+        }
+    },
+    {
+        "name": "a lot of branching",
+        "strict": true,
+        "nodes": [
+            {
+                "ref": "a",
+                "node_type": "text",
+                "title": "Screen a",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "d0",
+                "options": []
+            },
+            {
+                "ref": "d0",
+                "node_type": "branching_question",
+                "title": "Decision d0",
+                "body": "<p>What do you do?</p>",
+                "options": [
+                    {
+                        "text": "x",
+                        "next_ref": "m0",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    },
+                    {
+                        "text": "y",
+                        "next_ref": "n0",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    }
+                ]
+            },
+            {
+                "ref": "m0",
+                "node_type": "text",
+                "title": "Screen m0",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "d1",
+                "options": []
+            },
+            {
+                "ref": "n0",
+                "node_type": "text",
+                "title": "Screen n0",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "d1",
+                "options": []
+            },
+            {
+                "ref": "d1",
+                "node_type": "branching_question",
+                "title": "Decision d1",
+                "body": "<p>What do you do?</p>",
+                "options": [
+                    {
+                        "text": "x",
+                        "next_ref": "m1",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    },
+                    {
+                        "text": "y",
+                        "next_ref": "n1",
+                        "quality": "best",
+                        "feedback_title": "Why",
+                        "feedback_text": "<p>Because of the idea.</p>"
+                    }
+                ]
+            },
+            {
+                "ref": "m1",
+                "node_type": "text",
+                "title": "Screen m1",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e1",
+                "options": []
+            },
+            {
+                "ref": "n1",
+                "node_type": "text",
+                "title": "Screen n1",
+                "body": "<p>Words that teach something.</p>",
+                "next_ref": "e2",
+                "options": []
+            },
+            {
+                "ref": "e1",
+                "node_type": "ending",
+                "title": "Ending e1",
+                "body": "<p>Where it stops.</p>",
+                "score": 100,
+                "options": []
+            },
+            {
+                "ref": "e2",
+                "node_type": "ending",
+                "title": "Ending e2",
+                "body": "<p>Where it stops.</p>",
+                "score": 50,
+                "options": []
+            }
+        ],
+        "errors": [],
+        "warnings": [],
+        "stats": {
+            "nodes": 9,
+            "screens": 5,
+            "decisions": 2,
+            "endings": 2,
+            "paths": 4,
+            "longest_path": 6,
+            "shortest_path": 6,
+            "endings_reached": 2,
+            "acyclic": true
+        }
+    }
+]

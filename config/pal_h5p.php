@@ -157,7 +157,40 @@ return [
             'retry_allowed' => true,
             'offline_compatible' => false,
             'mobile_optimised' => true,
-            'implementation' => ['status' => 'planned'],
+            /*
+            | Native, like every other type here: a decision tree over its own
+            | tables, played by this product's own player, whose rows project
+            | onto H5P.BranchingScenario 1.11 params and exchange as .h5p
+            | packages. It is NOT the official H5P player -- see
+            | docs/h5p-branching-scenario.md for what was verified and what was
+            | not. `child_label` is "step" because a learner's unit of progress
+            | is a step, whichever of the three kinds it is.
+            */
+            'implementation' => [
+                'status' => 'native',
+                'source_table' => 'h5p_branching_scenario',
+                'child_table' => 'h5p_branching_nodes',
+                'child_foreign_key' => 'scenario_id',
+                'child_label' => 'step',
+                'columns' => [
+                    'id' => 'id',
+                    'title' => 'title',
+                    'body' => 'description',
+                    'chapter' => 'chapter_id',
+                    'subject' => 'subject_id',
+                    'standard' => 'standard_id',
+                    'tenant' => 'sub_institute_id',
+                    'created_by' => 'created_by',
+                    'created_at' => 'created_at',
+                    'soft_delete' => 'deleted_at',
+                ],
+                'route' => 'h5p_branching_scenario.index',
+                'module_title' => 'Branching Scenario',
+                'module_description' => 'Decision-based lessons: learners choose, see the consequence explained, and reach different endings.',
+                'module_category' => 'Interactive Content',
+                'icon' => 'mdi mdi-source-branch',
+                'sort_order' => 15,
+            ],
         ],
         'documentation_tool' => [
             'label' => 'Documentation Tool',
