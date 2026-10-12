@@ -8,6 +8,7 @@ use Anthropic\Lib\Streaming\MessageAccumulator;
 use App\Models\lms\contentModel;
 use App\Services\Content\RendersContentPresentation;
 use App\Services\Content\RendersGeneratedContent;
+use App\Services\StudyDeck\Branching\BranchingScenarioService;
 use App\Services\StudyDeck\ClaudeApiCompleter;
 use App\Services\StudyDeck\ClaudeCliCompleter;
 use App\Services\StudyDeck\Contracts\Completer;
@@ -884,6 +885,86 @@ class ContentGenerationService
         }
 
         return $this->publishStudyDocument($kind, $input, $result['document'], $result['html'], false, (string) config('claude.model', 'claude-opus-5'));
+    }
+
+    /**
+     * Write a branching scenario (a decision-based H5P lesson) for a chapter from its Chapter -> Topic -> Concept ->
+     * Concept Intelligence data and its question bank, and return it FOR REVIEW.
+     *
+     * Unlike generateStudyDeck() and generateStudyDocument() this stores nothing, not even on success: a scenario is
+     * saved as an H5P draft by the ordinary H5P save path once a teacher has looked at it, and published by a second,
+     * separate act. So the result is the draft payload plus a validation report, and `http` is 422 (with the findings,
+     * and no scenario) when validation failed.
+     *
+     * $input: `chapter`, `sub_institute_id`, and optionally `topic_ids`, `concept_ids`, `focus`, `length`
+     * (short|standard|extended), `use_questions` and `existing` (the scenarios already written for the chapter).
+     *
+     * @return array{http:int, body:array<string,mixed>}
+     */
+    public function generateBranchingScenario(array $input, ?Completer $completer = null): array
+    {
+        // The same gate every Claude-written content type passes: a chapter that is not listed in
+        // config('claude.chapter_ids') is not served by Claude at all.
+        if (!$this->handles((int) $input['chapter']->id)) {
+            return $this->fail('Claude content generation is not enabled for this chapter.', 422);
+        }
+
+        // Two model stages with several calls each; the web server's default would end it mid-way.
+        @set_time_limit((int) config('claude.timeout_seconds', 600) * 3 + 120);
+
+        $completer ??= $this->studyCompleter();
+        if ($completer === null) {
+            return $this->fail('Claude API key is not configured. Set ANTHROPIC_API_KEY or an ai_api_keys row.', 500);
+        }
+
+        $tenant = (int) ($input['sub_institute_id'] ?? 1);
+        $chapterId = (int) $input['chapter']->id;
+        $model = (string) config('claude.model', 'claude-opus-5');
+
+        try {
+            $result = BranchingScenarioService::make($completer)->generate($chapterId, $tenant, [
+                'topic_ids' => (array) ($input['topic_ids'] ?? []),
+                'concept_ids' => (array) ($input['concept_ids'] ?? []),
+                'focus' => $input['focus'] ?? null,
+                'length' => $input['length'] ?? 'standard',
+                'use_questions' => $input['use_questions'] ?? true,
+                'existing' => (array) ($input['existing'] ?? []),
+                'model' => config('claude.executor', 'api') === 'cli' ? 'claude-cli (dev)' : $model,
+            ]);
+        } catch (APIStatusException $e) {
+            return $this->fail($this->readableApiError($e), 502);
+        } catch (\InvalidArgumentException $e) {
+            return $this->fail($e->getMessage(), 422);
+        } catch (Throwable $e) {
+            Log::error('Branching scenario generation failed', ['chapter_id' => $chapterId, 'error' => $e->getMessage()]);
+
+            return $this->fail('The scenario could not be written: ' . $e->getMessage(), 500);
+        }
+
+        if (! $result['report']['ok']) {
+            return [
+                'http' => 422,
+                'body' => [
+                    'success' => false,
+                    'status_code' => 0,
+                    'message' => 'The scenario failed its checks and was not offered for review.',
+                    'errors' => $result['report']['errors'],
+                    'warnings' => $result['report']['warnings'],
+                    'report' => $result['report'],
+                ],
+            ];
+        }
+
+        return [
+            'http' => 200,
+            'body' => [
+                'success' => true,
+                'status_code' => 1,
+                'message' => 'Scenario ready for review. Nothing has been saved.',
+                'scenario' => $result['scenario'],
+                'report' => $result['report'],
+            ],
+        ];
     }
 
     /** The pipeline, built for one school and chapter: its diagrams are stored in the database as they are drawn. */

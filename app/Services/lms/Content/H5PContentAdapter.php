@@ -203,6 +203,18 @@ class H5PContentAdapter
             'h5p_type' => 'true_false',
             'published_only' => true,
         ],
+
+        // 2026-10-10. Own table, published only: a generated scenario is a
+        // draft until a teacher publishes it, and this list is read by every
+        // student-facing surface at once.
+        'branching_scenario' => [
+            'table' => 'h5p_branching_scenario',
+            'title' => 'title',
+            'route' => '/h5p/h5p_branching_scenario',
+            'label' => 'H5P branching scenario',
+            'h5p_type' => 'branching_scenario',
+            'published_only' => true,
+        ],
     ];
 
     /**
