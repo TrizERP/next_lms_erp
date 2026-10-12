@@ -66,11 +66,11 @@ class DeckValidator
         }
 
         $this->teaching($map, $deck, $errors);
-        $this->questionRules($deck, $eligible, $flagged, $errors, $warnings);
+        $this->questionRules($deck, $eligible, $flagged, $errors, $warnings, SlidePlanner::limits($map));
         $this->activityRules($deck, $eligible, $errors);
         $this->patternRules($deck, $errors);
-        $this->interactionRules($deck, $errors, $warnings);
-        $this->imageRules($deck, $errors, $warnings);
+        $this->interactionRules($deck, $errors, $warnings, InteractionPlanner::capsFor($map));
+        $this->imageRules($deck, $errors, $warnings, SlidePlanner::limits($map)['max_visuals']);
         $this->duplicateRules($deck, $errors);
         $this->markup($rendered['html'], $map, $deck, $errors);
         $this->grounding($rendered['html'], $deck, $context, $eligible, $errors, $warnings);
@@ -127,7 +127,8 @@ class DeckValidator
         }
     }
 
-    private function questionRules(array $deck, array $eligible, array $flagged, array &$errors, array &$warnings): void
+    /** @param array{max_practice:int,questions_per_slide:int,max_visuals:int} $limits */
+    private function questionRules(array $deck, array $eligible, array $flagged, array &$errors, array &$warnings, array $limits): void
     {
         $byId = [];
         foreach ($eligible as $list) {
@@ -138,14 +139,14 @@ class DeckValidator
         $flags = array_column($flagged, 'flags', 'id');
 
         $placed = array_sum(array_map(fn ($s) => count($s['question_ids']), $deck['slides']));
-        if ($placed > SlidePlanner::MAX_PRACTICE) {
-            $errors[] = "The deck places $placed practice questions; practice is optional, so the limit is " . SlidePlanner::MAX_PRACTICE . '.';
+        if ($placed > $limits['max_practice']) {
+            $errors[] = "The deck places $placed practice questions; practice is optional, so the limit is " . $limits['max_practice'] . '.';
         }
 
         $seen = [];
         foreach ($deck['slides'] as $s) {
-            if (count($s['question_ids']) > SlidePlanner::MAX_QUESTIONS_PER_SLIDE) {
-                $errors[] = "Slide {$s['n']} has " . count($s['question_ids']) . ' bank questions; the limit is ' . SlidePlanner::MAX_QUESTIONS_PER_SLIDE . '.';
+            if (count($s['question_ids']) > $limits['questions_per_slide']) {
+                $errors[] = "Slide {$s['n']} has " . count($s['question_ids']) . ' bank questions; the limit is ' . $limits['questions_per_slide'] . '.';
             }
             if ($s['question_ids'] && in_array($s['slide_type'], SlidePlanner::FRAMING, true)) {
                 $errors[] = "Slide {$s['n']} is a {$s['slide_type']} slide and must carry no bank question.";
@@ -225,7 +226,8 @@ class DeckValidator
      * a well-formed shape, labels that really are on the drawn picture, a scenario graph that
      * ends, and a stated reason. The grounding check reads their wording too.
      */
-    private function interactionRules(array $deck, array &$errors, array &$warnings): void
+    /** @param array<string,int> $caps InteractionPlanner::capsFor(): most of each capped kind the run may carry */
+    private function interactionRules(array $deck, array &$errors, array &$warnings, array $caps = InteractionPlanner::CAPS): void
     {
         $count = [];
 
@@ -311,7 +313,7 @@ class DeckValidator
             }
         }
 
-        foreach (InteractionPlanner::CAPS as $kind => $limit) {
+        foreach ($caps as $kind => $limit) {
             if (($count[$kind] ?? 0) > $limit) {
                 $errors[] = "The deck has {$count[$kind]} $kind interactions; the limit is $limit.";
             }
@@ -337,7 +339,7 @@ class DeckValidator
         }
     }
 
-    private function imageRules(array $deck, array &$errors, array &$warnings): void
+    private function imageRules(array $deck, array &$errors, array &$warnings, int $maxVisuals = SlidePlanner::MAX_VISUALS): void
     {
         $planned = 0;
         $missing = 0;
@@ -382,8 +384,8 @@ class DeckValidator
             }
         }
 
-        if ($planned > SlidePlanner::MAX_VISUALS) {
-            $errors[] = "The deck plans $planned visuals; the limit is " . SlidePlanner::MAX_VISUALS . '.';
+        if ($planned > $maxVisuals) {
+            $errors[] = "The deck plans $planned visuals; the limit is " . $maxVisuals . '.';
         }
         if ($planned > 0 && $missing / $planned > $this->maxMissingVisualShare) {
             $errors[] = sprintf('%d of %d planned visuals could not be sourced - too many for a visual lesson.', $missing, $planned);
@@ -545,8 +547,10 @@ class DeckValidator
                 $allowed .= ' ' . mb_strtolower(preg_replace('/<[^>]+>/', ' ', $q['stem'] . ' ' . implode(' ', array_column($q['options'], 'text')) . ' ' . $q['explanation'] . ' ' . $q['answer_text']));
             }
         }
+        // A concept's definition is a row of the school's own data, handed to the model with the chapter text: a number in it
+        // ("a 10x eyepiece with a 40x objective gives 400x") is as grounded as one in the text itself.
         foreach ($context['concepts'] as $c) {
-            $allowed .= ' ' . mb_strtolower($c['name']);
+            $allowed .= ' ' . mb_strtolower($c['name'] . ' ' . ($c['definition'] ?? ''));
         }
         $allowed .= ' ' . mb_strtolower($context['chapter']['chapter_name'] . ' ' . $context['chapter']['subject_name'] . ' ' . $context['chapter']['standard_name']);
 

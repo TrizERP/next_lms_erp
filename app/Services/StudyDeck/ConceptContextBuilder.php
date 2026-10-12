@@ -29,7 +29,7 @@ class ConceptContextBuilder
             ->join('standard as s', 's.id', '=', 'cm.standard_id')
             ->join('subject as sub', 'sub.id', '=', 'cm.subject_id')
             ->where('cm.id', $chapterId)
-            ->first(['cm.id', 'cm.chapter_name', 'cm.standard_id', 'cm.subject_id', 'cm.grade_id',
+            ->first(['cm.id', 'cm.chapter_name', 'cm.sort_order', 'cm.standard_id', 'cm.subject_id', 'cm.grade_id',
                 'cm.sub_institute_id', 'cm.syear', 's.name as standard_name', 'sub.subject_name']);
 
         if (!$chapter) {
@@ -83,6 +83,15 @@ class ConceptContextBuilder
             ->get(['q.id', 'q.concept_id', 'q.question_title', 'q.points', 'q.answer', 'q.g_bloom', 'q.g_difficulty', 'q.g_dok', 'q.question_format_code', 'q.g_qtype_code', 'e.question_type_code as sidecar_code', 't.question_type'])
             ->map(fn ($r) => (array) $r)->all() : [];
 
+        // The chapter's practical activities (Prayogshala), when it has any: what the school already does as an experiment.
+        // Planning context only: the deck's facts still come from the chapter text.
+        $practicals = DB::table('lms_prayogshala_activity')
+            ->where('chapter_id', $chapterId)->where('sub_institute_id', $tenantId)
+            ->whereNull('deleted_at')->where('show_hide', 1)
+            ->orderBy('sort_order')->orderBy('id')
+            ->get(['id', 'topic_id', 'concept_id', 'title', 'activity_type', 'objective', 'description', 'result'])
+            ->map(fn ($r) => (array) $r)->all();
+
         return [
             'chapter' => (array) $chapter,
             'ground_truth' => $this->utf8((string) ($si->md_content ?? '')),
@@ -93,6 +102,7 @@ class ConceptContextBuilder
             'prerequisites' => $prereqs,
             'baseline' => $baseline,
             'questions' => $questions,
+            'practicals' => $practicals,
         ];
     }
 
@@ -168,6 +178,7 @@ class ConceptContextBuilder
             'concepts' => $concepts,
             'prerequisite_edges' => $edges,
             'baseline' => $this->baseline((array) $raw['baseline']),
+            'practicals' => array_values((array) ($raw['practicals'] ?? [])),
             'unmatched_concepts' => $unmatched,
         ];
     }

@@ -229,13 +229,7 @@ class StudyDeckPdfRenderer
         $name = fn ($id) => (string) ($concepts[(string) $id]['name'] ?? '');
 
         // The heading is kept with whatever comes first under it, so a title is never left alone at the foot of a page.
-        $lead = $this->topicBand($deck, $slide, $lastTopic);
-        $lead .= '<table class="sh"><tr><td class="sh-n">' . $n . '</td><td class="sh-t"><div class="sh-e">' . $this->e(strtoupper(self::STAGE[$slide['slide_type'] ?? ''] ?? 'Lesson')) . '</div>'
-            . '<div class="sh-h">' . $this->e((string) ($slide['title'] ?? '')) . '</div></td></tr></table>';
-        $taught = array_values(array_filter(array_map($name, $slide['taught_concept_ids'] ?? [])));
-        if ($taught) {
-            $lead .= '<div class="sub">Concept: <strong>' . $this->e(implode(' and ', $taught)) . '</strong></div>';
-        }
+        $lead = $this->slideHead($deck, $slide, $lastTopic);
 
         $cards = [];
         $explanations = $c['explanations'] ?? [];
@@ -255,7 +249,7 @@ class StudyDeckPdfRenderer
         }
         // The first card travels with the heading; the rest follow on their own.
         $first = array_shift($cards);
-        $out = '<div class="sl"><div class="keep">' . $lead . ($first ?? '') . '</div>' . implode('', $cards);
+        $out = '<div class="' . $this->slideClass($deck, $slide) . '">' . $this->composeLead($lead, $first, $slide) . implode('', $cards);
 
         if (!empty($c['bullets'])) {
             $out .= '<ul class="pts">' . implode('', array_map(fn ($b) => '<li>' . $this->e((string) $b) . '</li>', $c['bullets'])) . '</ul>';
@@ -292,6 +286,45 @@ class StudyDeckPdfRenderer
         $out .= $this->practice($deck, $slide);
 
         return $out . '</div>';
+    }
+
+    /**
+     * The top of a slide: the topic band when a new topic starts, the numbered title and the concepts it teaches.
+     *
+     * @param array<string,mixed> $deck
+     * @param array<string,mixed> $slide
+     */
+    protected function slideHead(array $deck, array $slide, ?int &$lastTopic): string
+    {
+        $concepts = $deck['concepts'] ?? [];
+        $name = fn ($id) => (string) ($concepts[(string) $id]['name'] ?? '');
+        $lead = $this->topicBand($deck, $slide, $lastTopic);
+        $lead .= '<table class="sh"><tr><td class="sh-n">' . (int) ($slide['n'] ?? 0) . '</td><td class="sh-t"><div class="sh-e">' . $this->e(strtoupper(self::STAGE[$slide['slide_type'] ?? ''] ?? 'Lesson')) . '</div>'
+            . '<div class="sh-h">' . $this->e((string) ($slide['title'] ?? '')) . '</div></td></tr></table>';
+        $taught = array_values(array_filter(array_map($name, $slide['taught_concept_ids'] ?? [])));
+        if ($taught) {
+            $lead .= '<div class="sub">Concept: <strong>' . $this->e(implode(' and ', $taught)) . '</strong></div>';
+        }
+
+        return $lead;
+    }
+
+    /** The class of the block a slide is drawn in. */
+    protected function slideClass(array $deck, array $slide): string
+    {
+        return 'sl';
+    }
+
+    /** What is kept together at the top of a slide: the heading and its first card. */
+    protected function composeLead(string $lead, ?string $firstCard, array $slide): string
+    {
+        return '<div class="keep">' . $lead . ($firstCard ?? '') . '</div>';
+    }
+
+    /** The colour of the numbered markers drawn on a hotspot picture (RGB). */
+    protected function markerRgb(): array
+    {
+        return [79, 70, 229];
     }
 
     /** A topic band at the first slide of each topic. Returns '' when the topic has not changed. */
@@ -640,7 +673,8 @@ class StudyDeckPdfRenderer
             imagealphablending($im, true);
             imageantialias($im, true);
             $d = (int) max(26, round($W * 0.034));
-            $indigo = imagecolorallocate($im, 79, 70, 229);
+            [$mr, $mg, $mb] = $this->markerRgb();
+            $indigo = imagecolorallocate($im, $mr, $mg, $mb);
             $white = imagecolorallocate($im, 255, 255, 255);
             foreach (array_values($i['spots']) as $k => $s) {
                 // (x, y) is the box centre, as a share of the picture. The marker sits on the box's top-left corner.

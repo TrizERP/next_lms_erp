@@ -20,9 +20,10 @@ class LearningPlanBuilder
     /**
      * @param array<string,mixed> $context ConceptContextBuilder::assemble()
      * @param array<int,array<int,array<string,mixed>>> $eligibleQuestions concept_id => questions
+     * @param array<string,int> $limits max_practice, questions_per_slide, max_visuals; a key left out keeps SlidePlanner's default
      * @return array<string,mixed>
      */
-    public function build(array $context, array $eligibleQuestions, int $minSlides = 30, int $maxSlides = 35): array
+    public function build(array $context, array $eligibleQuestions, int $minSlides = 30, int $maxSlides = 35, array $limits = []): array
     {
         $concepts = $context['concepts'];
         $warnings = [];
@@ -81,6 +82,7 @@ class LearningPlanBuilder
 
         return [
             'target_slides' => ['min' => $minSlides, 'max' => $maxSlides],
+            'limits' => SlidePlanner::limits(['limits' => $limits]),
             'sequence' => $sequence,
             'topics' => $topicOrder,
             'concepts' => $map,

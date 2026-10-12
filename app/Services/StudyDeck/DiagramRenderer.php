@@ -18,8 +18,11 @@ namespace App\Services\StudyDeck;
  *   compare left/right: {heading, items[]}
  *   hub     center + nodes: 2-6 labels around one idea
  *
- * Colours are the design system's semantic tokens (indigo action, slate neutrals),
- * written once here because GD needs numbers; they are not new colours.
+ * Look: the lesson's own palette (blue, teal, violet, cyan, amber, rose, the same families the student player uses per
+ * topic), each box a pale tint with a band of its solid colour, soft shadows, rounded corners and a pale wash behind.
+ * It is drawn at twice the size and scaled down so edges are smooth. The GEOMETRY (where each box and heading sits) is
+ * unchanged by the look, because `anchors()` reports it and the player lays its hotspots over the picture at those points.
+ * Colours are written once here because GD needs numbers; they are the player's tokens, not new colours.
  */
 class DiagramRenderer
 {
@@ -33,6 +36,12 @@ class DiagramRenderer
     private const W = 1280;
     private const H = 720;
 
+    /** Drawing scale: the picture is drawn this many times larger and scaled down. */
+    private const SS = 2;
+
+    /** Height of the coloured band along the top of a pale box. */
+    private const BAND = 14;
+
     // EduERP tokens: --action-primary, --surface-subtle, --border-subtle, --content-primary, --content-secondary.
     private const INDIGO = [79, 70, 229];
     private const INDIGO_SOFT = [238, 242, 255];
@@ -40,6 +49,18 @@ class DiagramRenderer
     private const INK = [15, 23, 42];
     private const MUTED = [71, 85, 105];
     private const WHITE = [255, 255, 255];
+    private const SLATE_DISC = [51, 65, 85];
+    private const SHADOW = [15, 23, 42];
+
+    /** Solid colour and pale tint per step. Solids carry white text (4.5:1); tints carry the dark ink. */
+    private const TONES = [
+        ['solid' => [29, 78, 216], 'tint' => [219, 234, 254]],
+        ['solid' => [15, 118, 110], 'tint' => [204, 251, 241]],
+        ['solid' => [124, 58, 237], 'tint' => [237, 233, 254]],
+        ['solid' => [14, 116, 144], 'tint' => [207, 250, 254]],
+        ['solid' => [180, 83, 9], 'tint' => [254, 243, 199]],
+        ['solid' => [190, 24, 93], 'tint' => [252, 231, 243]],
+    ];
 
     /** @return array<int,string> problems with a spec; empty when it can be drawn */
     public static function problems(array $spec): array
@@ -124,26 +145,255 @@ class DiagramRenderer
             throw new \InvalidArgumentException('Diagram spec invalid: ' . implode('; ', $p));
         }
         $font = $this->font();
-        $im = imagecreatetruecolor(self::W, self::H);
+        $bold = $this->boldFont();
+
+        // Drawn at twice the size and scaled down, so the rounded corners and the text have smooth edges.
+        $im = imagecreatetruecolor(self::W * self::SS, self::H * self::SS);
+        imagealphablending($im, true);
         imageantialias($im, true);
-        imagefill($im, 0, 0, $this->c($im, self::WHITE));
+        $this->backdrop($im);
 
-        [$titleSize] = $this->fit($font, (string) $spec['title'], self::W - 120, 44, [34, 30, 26, 22], 1.2);
-        $this->text($im, $font, $titleSize, self::INK, 60, 70, (string) $spec['title'], self::W - 120, true);
-        imagefilledrectangle($im, 60, 96, 180, 100, $this->c($im, self::INDIGO));
+        [$titleSize] = $this->fit($bold, (string) $spec['title'], self::W - 120, 44, [34, 30, 26, 22], 1.2);
+        $this->text($im, $bold, $titleSize, self::INK, 60, 70, (string) $spec['title'], self::W - 120);
+        // A short bar in the three colours that carry through the diagram.
+        foreach ([self::TONES[0], self::TONES[1], self::TONES[2]] as $k => $tone) {
+            $this->rect($im, 60 + $k * 44, 96, 44, 6, $tone['solid']);
+        }
 
+        $nodes = fn () => array_map(fn ($n) => is_array($n) ? $n['text'] : $n, (array) $spec['nodes']);
         match ($spec['layout']) {
-            'flow' => $this->flow($im, $font, array_map(fn ($n) => is_array($n) ? $n['text'] : $n, (array) $spec['nodes'])),
-            'hub' => $this->hub($im, $font, (string) $spec['center'], array_map(fn ($n) => is_array($n) ? $n['text'] : $n, (array) $spec['nodes'])),
-            'compare' => $this->compare($im, $font, $spec),
+            'flow' => $this->flow($im, $bold, $nodes()),
+            'hub' => $this->hub($im, $bold, (string) $spec['center'], $nodes()),
+            'compare' => $this->compare($im, $font, $bold, $spec),
         };
 
-        ob_start();
-        imagepng($im);
-        $bytes = (string) ob_get_clean();
+        $out = imagecreatetruecolor(self::W, self::H);
+        imagecopyresampled($out, $im, 0, 0, 0, 0, self::W, self::H, self::W * self::SS, self::H * self::SS);
         imagedestroy($im);
+        ob_start();
+        imagepng($out);
+        $bytes = (string) ob_get_clean();
+        imagedestroy($out);
 
         return ['bytes' => $bytes, 'mime' => 'image/png', 'width' => self::W, 'height' => self::H];
+    }
+
+    /** A pale vertical wash and a few faint cells in the top-right corner: calm, and never behind a label. */
+    private function backdrop($im): void
+    {
+        $top = [248, 250, 252];
+        $bottom = [238, 242, 255];
+        $h = self::H * self::SS;
+        for ($y = 0; $y < $h; $y += 2) {
+            $t = $y / $h;
+            $col = $this->c($im, [(int) ($top[0] + ($bottom[0] - $top[0]) * $t), (int) ($top[1] + ($bottom[1] - $top[1]) * $t), (int) ($top[2] + ($bottom[2] - $top[2]) * $t)]);
+            imagefilledrectangle($im, 0, $y, self::W * self::SS, $y + 1, $col);
+        }
+        $this->circle($im, 1236, 38, 118, self::TONES[0]['solid'], 108);
+        $this->circle($im, 1236, 38, 74, self::TONES[0]['solid'], 112);
+        $this->circle($im, 1120, 14, 40, self::TONES[1]['solid'], 110);
+        $this->circle($im, 40, 700, 96, self::TONES[1]['solid'], 112);
+    }
+
+    private function flow($im, string $bold, array $nodes): void
+    {
+        $nodes = array_values(array_map('trim', $nodes));
+        ['perRow' => $perRow, 'bw' => $bw, 'bh' => $bh, 'gap' => $gap, 'place' => $place] = self::flowGeometry(count($nodes));
+        $last = count($nodes) - 1;
+
+        // Arrows first, so a box is never crossed by one.
+        foreach ($nodes as $i => $label) {
+            [$x, $y, $row, $col] = $place($i);
+            if ($i === $last) {
+                continue;
+            }
+            $mid = $y + intdiv($bh, 2);
+            $tone = self::TONES[$i % count(self::TONES)];
+            if ($col < $perRow - 1) {
+                // Within a row: right on even rows, left on odd rows.
+                if ($row % 2 === 0) {
+                    $this->arrow($im, $x + $bw + 6, $mid, $x + $bw + $gap - 6, $mid, $tone['solid']);
+                } else {
+                    $this->arrow($im, $x - 6, $mid, $x - $gap + 6, $mid, $tone['solid']);
+                }
+            } else {
+                $this->arrow($im, $x + intdiv($bw, 2), $y + $bh + 6, $x + intdiv($bw, 2), $y + $bh + 64, $tone['solid']);
+            }
+        }
+        foreach ($nodes as $i => $label) {
+            [$x, $y] = $place($i);
+            $this->box($im, $bold, $x, $y, $bw, $bh, $label, $i === 0 || $i === $last, self::TONES[$i % count(self::TONES)]);
+        }
+    }
+
+    private function hub($im, string $bold, string $center, array $nodes): void
+    {
+        $cx = (int) (self::W / 2);
+        $cy = 420;
+        $positions = [];
+        foreach (self::hubPositions(count($nodes)) as $i => [$px, $py]) {
+            $positions[] = [$px, $py, trim(array_values($nodes)[$i])];
+        }
+        foreach ($positions as $i => [$x, $y]) {
+            $this->line($im, $cx, $cy, $x, $y, 7, self::TONES[$i % count(self::TONES)]['solid']);
+        }
+        foreach ($positions as $i => [$x, $y, $label]) {
+            $this->box($im, $bold, $x - intdiv(self::HUB_W, 2), $y - intdiv(self::HUB_H, 2), self::HUB_W, self::HUB_H, $label, false, self::TONES[$i % count(self::TONES)]);
+        }
+        // The centre: a solid pill in the brand indigo.
+        $this->box($im, $bold, $cx - 170, $cy - 70, 340, 140, trim($center), true, ['solid' => self::INDIGO, 'tint' => self::INDIGO_SOFT], 70);
+    }
+
+    private function compare($im, string $font, string $bold, array $spec): void
+    {
+        // Both headings share one size (the smaller of what each needs), so the two columns read as a pair.
+        $headSize = min(array_map(
+            fn ($side) => $this->fit($bold, trim((string) $spec[$side]['heading']), 560 - 48, 62, [28, 24, 22, 20], 1.25)[0],
+            ['left', 'right']
+        ));
+
+        foreach (['left' => [60, self::TONES[0]], 'right' => [660, self::TONES[1]]] as $side => [$x, $tone]) {
+            $col = $spec[$side];
+            $w = 560;
+            $items = array_map(fn ($i) => trim((string) $i), (array) $col['items']);
+            $size = count($items) > 3 ? 20 : 24;
+            $lineH = (int) ($size * 1.4);
+
+            $this->shadow($im, $x, 160, $w, 80, 18);
+            $this->rrect($im, $x, 160, $w, 80, 18, $tone['solid']);
+            $hl = $this->wrap($bold, $headSize, trim((string) $col['heading']), $w - 48);
+            $hh = (int) round($headSize * 1.25);
+            $top = 200 - intdiv(count($hl) * $hh, 2);
+            foreach ($hl as $n => $line) {
+                $this->ttf($im, $bold, $headSize, self::WHITE, $x + 24, $top + ($n + 1) * $hh - (int) round($hh * 0.22), $line);
+            }
+
+            $y = 262;
+            foreach ($items as $item) {
+                // Each box is as tall as its own text, so a two-line item never spills out of it.
+                $lines = $this->wrap($font, $size, $item, $w - 52);
+                $h = max(64, count($lines) * $lineH + 28);
+                $this->shadow($im, $x, $y, $w, $h, 14);
+                $this->rrect($im, $x, $y, $w, $h, 14, $tone['solid']);
+                $this->rrect($im, $x + 14, $y + 3, $w - 17, $h - 6, 11, $tone['tint']);
+                $top = $y + intdiv($h - count($lines) * $lineH, 2) + (int) ($size * 1.05);
+                foreach ($lines as $n => $line) {
+                    $this->ttf($im, $font, $size, self::INK, $x + 32, $top + $n * $lineH, $line);
+                }
+                $y += $h + 14;
+            }
+        }
+
+        // The two sides are set against each other: a small disc where the columns meet.
+        $this->circle($im, 640, 200, 30, self::SLATE_DISC, 0);
+        $vs = 'VS';
+        $b = imagettfbbox(18 * self::SS, 0, $bold, $vs);
+        $this->ttf($im, $bold, 18, self::WHITE, 640 - (int) round(($b[2] - $b[0]) / self::SS / 2), 207, $vs);
+    }
+
+    private function box($im, string $bold, int $x, int $y, int $w, int $h, string $label, bool $accent, array $tone, int $radius = 22): void
+    {
+        $this->shadow($im, $x, $y, $w, $h, $radius);
+        if ($accent) {
+            $this->rrect($im, $x, $y, $w, $h, $radius, $tone['solid']);
+        } else {
+            // The outline and a band of the step's colour along the top are one shape; the tint sits inside it, below the band.
+            $this->rrect($im, $x, $y, $w, $h, $radius, $tone['solid']);
+            $this->rrect($im, $x + 3, $y + self::BAND, $w - 6, $h - self::BAND - 3, max(4, $radius - 3), $tone['tint']);
+        }
+        $ink = $accent ? self::WHITE : self::INK;
+        // The text sits in what is left under the band.
+        $band = $accent ? 0 : self::BAND - 3;
+        [$size, $lines] = $this->fit($bold, $label, $w - 36, $h - 20 - $band, [26, 24, 22, 20, 18], 1.45);
+        $lineH = (int) round($size * 1.45);
+        $startY = $y + $band + intdiv($h - $band - count($lines) * $lineH, 2) + (int) round($size * 1.05);
+        foreach ($lines as $i => $line) {
+            $box = imagettfbbox($size * self::SS, 0, $bold, $line);
+            $tx = $x + intdiv($w - (int) round(($box[2] - $box[0]) / self::SS), 2);
+            $this->ttf($im, $bold, $size, $ink, $tx, $startY + $i * $lineH, $line);
+        }
+    }
+
+    private function arrow($im, int $x1, int $y1, int $x2, int $y2, array $rgb): void
+    {
+        $this->line($im, $x1, $y1, $x2, $y2, 6, $rgb);
+        $a = atan2($y2 - $y1, $x2 - $x1);
+        $head = [
+            $x2 + (int) (6 * cos($a)), $y2 + (int) (6 * sin($a)),
+            (int) ($x2 - 22 * cos($a - 0.5)), (int) ($y2 - 22 * sin($a - 0.5)),
+            (int) ($x2 - 22 * cos($a + 0.5)), (int) ($y2 - 22 * sin($a + 0.5)),
+        ];
+        $this->poly($im, $head, $rgb);
+    }
+
+    // -- GD drawing in the picture's own units; every call scales to the 2x canvas --------------------------------
+
+    private function rect($im, int $x, int $y, int $w, int $h, array $rgb, int $alpha = 0): void
+    {
+        $s = self::SS;
+        imagefilledrectangle($im, $x * $s, $y * $s, ($x + $w) * $s - 1, ($y + $h) * $s - 1, $this->c($im, $rgb, $alpha));
+    }
+
+    private function rrect($im, int $x, int $y, int $w, int $h, int $r, array $rgb, int $alpha = 0): void
+    {
+        $s = self::SS;
+        $r = max(0, min($r, intdiv(min($w, $h), 2)));
+        $c = $this->c($im, $rgb, $alpha);
+        [$x1, $y1, $x2, $y2, $rr] = [$x * $s, $y * $s, ($x + $w) * $s - 1, ($y + $h) * $s - 1, $r * $s];
+        imagefilledrectangle($im, $x1 + $rr, $y1, $x2 - $rr, $y2, $c);
+        imagefilledrectangle($im, $x1, $y1 + $rr, $x2, $y2 - $rr, $c);
+        foreach ([[$x1 + $rr, $y1 + $rr], [$x2 - $rr, $y1 + $rr], [$x1 + $rr, $y2 - $rr], [$x2 - $rr, $y2 - $rr]] as [$cx, $cy]) {
+            imagefilledellipse($im, $cx, $cy, $rr * 2, $rr * 2, $c);
+        }
+    }
+
+    /**
+     * A soft shadow: three opaque, growing layers just below the shape, each a little darker than the wash behind.
+     * (Translucent layers double up where their rounded corners overlap and leave dark blobs.)
+     */
+    private function shadow($im, int $x, int $y, int $w, int $h, int $r): void
+    {
+        foreach ([[7, [229, 233, 246]], [4, [220, 225, 241]], [2, [210, 216, 235]]] as [$grow, $rgb]) {
+            $this->rrect($im, $x - $grow, $y + 6 - $grow + 2, $w + 2 * $grow, $h + 2 * $grow, $r + $grow, $rgb);
+        }
+    }
+
+    private function circle($im, int $cx, int $cy, int $r, array $rgb, int $alpha): void
+    {
+        $s = self::SS;
+        imagefilledellipse($im, $cx * $s, $cy * $s, $r * 2 * $s, $r * 2 * $s, $this->c($im, $rgb, $alpha));
+    }
+
+    private function line($im, int $x1, int $y1, int $x2, int $y2, int $thickness, array $rgb): void
+    {
+        $a = atan2($y2 - $y1, $x2 - $x1);
+        $dx = -sin($a) * $thickness / 2;
+        $dy = cos($a) * $thickness / 2;
+        $s = self::SS;
+        imagefilledpolygon($im, [
+            (int) round(($x1 + $dx) * $s), (int) round(($y1 + $dy) * $s),
+            (int) round(($x2 + $dx) * $s), (int) round(($y2 + $dy) * $s),
+            (int) round(($x2 - $dx) * $s), (int) round(($y2 - $dy) * $s),
+            (int) round(($x1 - $dx) * $s), (int) round(($y1 - $dy) * $s),
+        ], $this->c($im, $rgb));
+    }
+
+    /** @param array<int,int> $points x, y pairs */
+    private function poly($im, array $points, array $rgb): void
+    {
+        imagefilledpolygon($im, array_map(fn ($v) => $v * self::SS, $points), $this->c($im, $rgb));
+    }
+
+    private function ttf($im, string $font, int $size, array $rgb, int $x, int $y, string $text): void
+    {
+        imagettftext($im, $size * self::SS, 0, $x * self::SS, $y * self::SS, $this->c($im, $rgb), $font, $text);
+    }
+
+    private function text($im, string $font, int $size, array $rgb, int $x, int $y, string $text, int $maxWidth): void
+    {
+        foreach ($this->wrap($font, $size, $text, $maxWidth) as $i => $line) {
+            $this->ttf($im, $font, $size, $rgb, $x, $y + $i * (int) ($size * 1.35), $line);
+        }
     }
 
     /**
@@ -226,128 +476,6 @@ class DiagramRenderer
         }, array_keys($nodes));
     }
 
-    private function flow($im, string $font, array $nodes): void
-    {
-        $nodes = array_values(array_map('trim', $nodes));
-        ['perRow' => $perRow, 'bw' => $bw, 'bh' => $bh, 'gap' => $gap, 'place' => $place] = self::flowGeometry(count($nodes));
-        $last = count($nodes) - 1;
-
-        foreach ($nodes as $i => $label) {
-            [$x, $y, $row, $col] = $place($i);
-            $this->box($im, $font, $x, $y, $bw, $bh, $label, $i === 0 || $i === $last);
-            if ($i === $last) {
-                continue;
-            }
-            $mid = $y + intdiv($bh, 2);
-            if ($col < $perRow - 1) {
-                // Within a row: right on even rows, left on odd rows.
-                if ($row % 2 === 0) {
-                    $this->arrow($im, $x + $bw + 6, $mid, $x + $bw + $gap - 6, $mid);
-                } else {
-                    $this->arrow($im, $x - 6, $mid, $x - $gap + 6, $mid);
-                }
-            } else {
-                $this->arrow($im, $x + intdiv($bw, 2), $y + $bh + 6, $x + intdiv($bw, 2), $y + $bh + 64);
-            }
-        }
-    }
-
-    private function hub($im, string $font, string $center, array $nodes): void
-    {
-        $cx = self::W / 2;
-        $cy = 420;
-        $positions = [];
-        foreach (self::hubPositions(count($nodes)) as $i => [$px, $py]) {
-            $positions[] = [$px, $py, trim(array_values($nodes)[$i])];
-        }
-        foreach ($positions as [$x, $y]) {
-            imagesetthickness($im, 3);
-            imageline($im, (int) $cx, $cy, $x, $y, $this->c($im, self::MUTED));
-        }
-        imagesetthickness($im, 1);
-        foreach ($positions as [$x, $y, $label]) {
-            $this->box($im, $font, $x - intdiv(self::HUB_W, 2), $y - intdiv(self::HUB_H, 2), self::HUB_W, self::HUB_H, $label, false);
-        }
-        $this->box($im, $font, (int) $cx - 170, $cy - 70, 340, 140, trim($center), true);
-    }
-
-    private function compare($im, string $font, array $spec): void
-    {
-        // Both headings share one size (the smaller of what each needs), so the two columns read as a pair.
-        $headSize = min(array_map(
-            fn ($side) => $this->fit($font, trim((string) $spec[$side]['heading']), 560 - 48, 62, [28, 24, 22, 20], 1.25)[0],
-            ['left', 'right']
-        ));
-
-        foreach (['left' => 60, 'right' => 660] as $side => $x) {
-            $col = $spec[$side];
-            $w = 560;
-            $items = array_map(fn ($i) => trim((string) $i), (array) $col['items']);
-            $size = count($items) > 3 ? 20 : 24;
-            $lineH = (int) ($size * 1.4);
-
-            imagefilledrectangle($im, $x, 160, $x + $w, 240, $this->c($im, self::INDIGO));
-            $hs = $headSize;
-            $hl = $this->wrap($font, $hs, trim((string) $col['heading']), $w - 48);
-            $hh = (int) round($hs * 1.25);
-            $top = 200 - intdiv(count($hl) * $hh, 2);
-            foreach ($hl as $n => $line) {
-                imagettftext($im, $hs, 0, $x + 24, $top + ($n + 1) * $hh - (int) round($hh * 0.22), $this->c($im, self::WHITE), $font, $line);
-            }
-
-            $y = 262;
-            foreach ($items as $item) {
-                // Each box is as tall as its own text, so a two-line item never spills out of it.
-                $lines = $this->wrap($font, $size, $item, $w - 40);
-                $h = max(64, count($lines) * $lineH + 28);
-                imagefilledrectangle($im, $x, $y, $x + $w, $y + $h, $this->c($im, self::INDIGO_SOFT));
-                imagerectangle($im, $x, $y, $x + $w, $y + $h, $this->c($im, self::SLATE_BORDER));
-                $top = $y + intdiv($h - count($lines) * $lineH, 2) + (int) ($size * 1.05);
-                foreach ($lines as $n => $line) {
-                    imagettftext($im, $size, 0, $x + 20, $top + $n * $lineH, $this->c($im, self::INK), $font, $line);
-                }
-                $y += $h + 14;
-            }
-        }
-    }
-
-    private function box($im, string $font, int $x, int $y, int $w, int $h, string $label, bool $accent): void
-    {
-        imagefilledrectangle($im, $x, $y, $x + $w, $y + $h, $this->c($im, $accent ? self::INDIGO : self::INDIGO_SOFT));
-        imagerectangle($im, $x, $y, $x + $w, $y + $h, $this->c($im, $accent ? self::INDIGO : self::SLATE_BORDER));
-        $ink = $accent ? self::WHITE : self::INK;
-        [$size, $lines] = $this->fit($font, $label, $w - 36, $h - 20, [26, 24, 22, 20, 18], 1.45);
-        $lineH = (int) round($size * 1.45);
-        $startY = $y + intdiv($h - count($lines) * $lineH, 2) + (int) round($size * 1.05);
-        foreach ($lines as $i => $line) {
-            $box = imagettfbbox($size, 0, $font, $line);
-            $tx = $x + intdiv($w - ($box[2] - $box[0]), 2);
-            imagettftext($im, $size, 0, $tx, $startY + $i * $lineH, $this->c($im, $ink), $font, $line);
-        }
-    }
-
-    private function arrow($im, int $x1, int $y1, int $x2, int $y2): void
-    {
-        $col = $this->c($im, self::MUTED);
-        imagesetthickness($im, 4);
-        imageline($im, $x1, $y1, $x2, $y2, $col);
-        imagesetthickness($im, 1);
-        $a = atan2($y2 - $y1, $x2 - $x1);
-        $head = [
-            $x2, $y2,
-            (int) ($x2 - 16 * cos($a - 0.45)), (int) ($y2 - 16 * sin($a - 0.45)),
-            (int) ($x2 - 16 * cos($a + 0.45)), (int) ($y2 - 16 * sin($a + 0.45)),
-        ];
-        imagefilledpolygon($im, $head, $col);
-    }
-
-    private function text($im, string $font, int $size, array $rgb, int $x, int $y, string $text, int $maxWidth, bool $bold): void
-    {
-        foreach ($this->wrap($font, $size, $text, $maxWidth) as $i => $line) {
-            imagettftext($im, $size, 0, $x, $y + $i * (int) ($size * 1.35), $this->c($im, $rgb), $font, $line);
-        }
-    }
-
     /**
      * The largest of `$sizes` at which `$text` wraps into `$maxHeight`; the smallest if none does.
      * A label always stays inside its box: it gets smaller before it spills.
@@ -359,13 +487,26 @@ class DiagramRenderer
     {
         foreach ($sizes as $size) {
             $lines = $this->wrap($font, $size, $text, $maxWidth);
-            if (count($lines) * $size * $lineHeight <= $maxHeight) {
+            // Both ways: few enough lines, and no line (a long unbreakable word) wider than the box.
+            if (count($lines) * $size * $lineHeight <= $maxHeight && $this->widest($font, $size, $lines) <= $maxWidth) {
                 return [$size, $lines];
             }
         }
         $size = end($sizes);
 
         return [$size, $this->wrap($font, $size, $text, $maxWidth)];
+    }
+
+    /** @param array<int,string> $lines */
+    private function widest(string $font, int $size, array $lines): int
+    {
+        $widest = 0;
+        foreach ($lines as $line) {
+            $b = imagettfbbox($size, 0, $font, $line);
+            $widest = max($widest, $b[2] - $b[0]);
+        }
+
+        return $widest;
     }
 
     /** @return array<int,string> */
@@ -390,16 +531,27 @@ class DiagramRenderer
         return $lines;
     }
 
-    private function c($im, array $rgb): int
+    /** @param int $alpha 0 (opaque) to 127 (invisible) */
+    private function c($im, array $rgb, int $alpha = 0): int
     {
-        return imagecolorallocate($im, $rgb[0], $rgb[1], $rgb[2]);
+        return $alpha > 0 ? imagecolorallocatealpha($im, $rgb[0], $rgb[1], $rgb[2], $alpha) : imagecolorallocate($im, $rgb[0], $rgb[1], $rgb[2]);
     }
 
     public function font(): string
     {
-        $path = base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans.ttf');
+        return $this->fontFile('DejaVuSans.ttf');
+    }
+
+    public function boldFont(): string
+    {
+        return $this->fontFile('DejaVuSans-Bold.ttf');
+    }
+
+    private function fontFile(string $name): string
+    {
+        $path = base_path('vendor/dompdf/dompdf/lib/fonts/' . $name);
         if (!is_file($path)) {
-            throw new \RuntimeException('Diagram font not found: ' . $path);
+            throw new RuntimeException('Diagram font not found: ' . $path);
         }
 
         return $path;

@@ -35,6 +35,14 @@ class GenerateStudyDeckCommand extends Command
         {--min-slides=30}
         {--max-slides=35}
         {--per-concept=4 : most bank questions offered per concept}
+        {--max-practice= : most bank questions placed in the whole deck (default: SlidePlanner::MAX_PRACTICE; raising it asks for practice spread through the lesson)}
+        {--per-slide= : most bank questions on one slide (default: SlidePlanner::MAX_QUESTIONS_PER_SLIDE)}
+        {--max-visuals= : most pictures or diagrams the deck may ask for (default: SlidePlanner::MAX_VISUALS)}
+        {--max-scenarios= : most branching scenarios the deck may carry (default: InteractionPlanner::MAX_SCENARIOS)}
+        {--replay : do not call the model: rebuild and re-validate the deck from the plan, slide text, pictures and interactions already in the bundle (after a validator or renderer fix)}
+        {--recheck-images : with --replay: read the chosen photographs back and replace any that fail the picture rules (out of focus) by the diagram planned for the slide; no search, no model call}
+        {--redraw-diagrams : with --replay: draw the diagrams of the deck again with the current DiagramRenderer (same words, same places; only the look changes)}
+        {--images-from= : with --replay: a JSON file of chosen pictures to swap in (photographs by source, or figures drawn for the lesson); each faces the picture rules and its hotspots are moved to match (see AppServicesStudyDeckImageOverrides)}
         {--export-player= : copy deck.json (picture references only, no picture files) to this directory so the local student player can load the review bundle}
         {--store : on a passing validation, store THIS bundle (see lms:store-study-deck: writes to the DB and shared storage)}';
 
@@ -51,17 +59,50 @@ class GenerateStudyDeckCommand extends Command
         $this->line('Executor: <options=bold>' . $executor . '</>' . ($executor === 'cli' ? ' (dev-only, tools disabled)' : ''));
 
         try {
-            $completer = $this->completer($executor, $content);
+            $replay = (bool) $this->option('replay');
+            if (!$replay && $this->option('images-from')) {
+                throw new RuntimeException('--images-from works with --replay (it changes the pictures of a deck that is already planned).');
+            }
+            $completer = $replay ? $this->noModel() : $this->completer($executor, $content);
             // Pictures go straight into the database (study_deck_images) and the bundle carries only their
             // references: a run writes no picture file anywhere. Publishing is lms:store-study-deck's job.
             $images = StudyImageStores::database($tenant, $chapterId);
             $service = StudyDeckService::make($completer, $images);
 
-            $result = $service->generate($chapterId, $tenant, [
+            $options = [
                 'min_slides' => (int) $this->option('min-slides'),
                 'max_slides' => (int) $this->option('max-slides'),
                 'per_concept' => (int) $this->option('per-concept'),
-            ], fn ($stage, $msg) => $this->line(sprintf('  <fg=cyan>%-8s</> %s', $stage, $msg)));
+                'limits' => array_filter([
+                    'max_practice' => $this->option('max-practice') ?: null,
+                    'questions_per_slide' => $this->option('per-slide') ?: null,
+                    'max_visuals' => $this->option('max-visuals') ?: null,
+                    'max_scenarios' => $this->option('max-scenarios') ?: null,
+                ], fn ($v) => $v !== null),
+            ];
+            $say = fn ($stage, $msg) => $this->line(sprintf('  <fg=cyan>%-8s</> %s', $stage, $msg));
+
+            if ($replay) {
+                $saved = $this->savedBundle($dir);
+                // The run's own limits unless this call names others: the deck is judged by the numbers it was planned under.
+                $options['limits'] = $options['limits'] ?: $saved['limits'];
+                $options['recheck_images'] = (bool) $this->option('recheck-images');
+                $options['redraw_diagrams'] = (bool) $this->option('redraw-diagrams');
+                if ($from = (string) $this->option('images-from')) {
+                    if (!is_file($from)) {
+                        throw new RuntimeException("--images-from: $from is not a file.");
+                    }
+                    $spec = json_decode((string) file_get_contents($from), true);
+                    if (!is_array($spec)) {
+                        throw new RuntimeException("--images-from: $from is not valid JSON.");
+                    }
+                    $options['image_overrides'] = ['spec' => $spec, 'base' => dirname($from)];
+                }
+                unset($saved['limits']);
+                $result = $service->replayChapter($chapterId, $tenant, $saved, $options, $say);
+            } else {
+                $result = $service->generate($chapterId, $tenant, $options, $say);
+            }
         } catch (\Throwable $e) {
             $this->error($e->getMessage());
 
@@ -99,6 +140,43 @@ class GenerateStudyDeckCommand extends Command
 
         return $this->call('lms:store-study-deck', ['chapter' => $chapterId, '--bundle' => $dir, '--tenant' => $tenant]);
     }
+    /** A replay calls no model; if anything asks for one, that is a bug to stop on, not to paper over. */
+    private function noModel(): Completer
+    {
+        return new class implements Completer {
+            public function complete(string $system, string $prompt, int $maxTokens = 16000): string
+            {
+                throw new \LogicException('A replay must not call the model.');
+            }
+        };
+    }
+
+    /**
+     * What an earlier run saved of the model's work, for --replay.
+     *
+     * @return array{plan:array<string,mixed>,content:array<int,array<string,mixed>>,images:array<int,array<string,mixed>>,interactions:array<int,array<string,mixed>>,limits:array<string,int>}
+     */
+    private function savedBundle(string $dir): array
+    {
+        $read = function (string $file) use ($dir): array {
+            $path = $dir . '/' . $file;
+            $data = is_file($path) ? json_decode((string) file_get_contents($path), true) : null;
+            if (!is_array($data)) {
+                throw new \RuntimeException("The bundle has no readable $file ($path); a replay needs a bundle from lms:generate-study-deck.");
+            }
+
+            return $data;
+        };
+
+        return [
+            'plan' => $read('plan.json'),
+            'content' => $read('slides.json'),
+            'images' => $read('images.json'),
+            'interactions' => $read('interactions.json'),
+            'limits' => (array) ($read('learning-map.json')['limits'] ?? []),
+        ];
+    }
+
     private function completer(string $executor, ContentGenerationService $content): Completer
     {
         if ($executor === 'cli') {

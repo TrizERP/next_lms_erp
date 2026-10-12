@@ -61,7 +61,7 @@ class StudyDeckService
 
     /**
      * @param callable(string $stage, string $message):void|null $progress
-     * @param array<string,mixed> $options min_slides, max_slides, per_concept, allowed_forms
+     * @param array<string,mixed> $options min_slides, max_slides, per_concept, allowed_forms, limits (max_practice, questions_per_slide, max_visuals: see SlidePlanner::limits)
      * @return array<string,mixed>
      */
     public function generate(int $chapterId, int $tenantId, array $options = [], ?callable $progress = null): array
@@ -78,6 +78,23 @@ class StudyDeckService
     }
 
     /**
+     * replay() for a chapter: read its rows (read-only), then rebuild the deck from a bundle's saved model output.
+     *
+     * @param array<string,mixed> $saved see replay()
+     * @param array<string,mixed> $options as generate()
+     * @return array<string,mixed> as fromRaw()
+     */
+    public function replayChapter(int $chapterId, int $tenantId, array $saved, array $options = [], ?callable $progress = null): array
+    {
+        $say = $progress ?? fn () => null;
+
+        $say('load', 'Loading chapter data (read-only)');
+        $raw = $this->contextBuilder->load($chapterId, $tenantId);
+
+        return $this->replay($raw, $saved, $options, $say);
+    }
+
+    /**
      * The same pipeline from already-loaded rows - used by tests and replays.
      *
      * @param array<string,mixed> $raw
@@ -87,19 +104,7 @@ class StudyDeckService
     {
         $say = $progress ?? fn () => null;
 
-        $context = $this->contextBuilder->assemble($raw);
-        $say('context', sprintf('%d topics, %d concepts, %d without intelligence', count($context['topics']), count($context['concepts']), count($context['unmatched_concepts'])));
-
-        $selection = $this->questionSelector->select(
-            (array) $raw['questions'],
-            (int) ($options['per_concept'] ?? 4),
-            $options['allowed_forms'] ?? ['mcq', 'true_false', 'very_short_answer', 'short_answer']
-        );
-        $eligible = $selection['eligible'];
-        $say('questions', sprintf('%d questions considered, %d excluded as not self-contained or unusable', count((array) $raw['questions']), count($selection['excluded'])));
-
-        $map = $this->learningPlan->build($context, $eligible, (int) ($options['min_slides'] ?? 30), (int) ($options['max_slides'] ?? 35));
-        $say('map', 'Learning map built' . ($map['warnings'] ? ' (' . count($map['warnings']) . ' warning(s))' : ''));
+        [$context, $selection, $eligible, $map] = $this->prepare($raw, $options, $say);
 
         $say('plan', 'Stage 1: planning slides with Claude');
         try {
@@ -124,6 +129,83 @@ class StudyDeckService
         $say('interact', 'Stage 3: deciding which slides earn an interaction');
         $interactions = $this->interactionPlanner?->plan($context, $map, $plan, $content, $images, fn ($found, $total) => $say('interact', "$found interaction(s) so far")) ?? [];
 
+        return $this->finish($context, $selection, $eligible, $map, $plan, $content, $images, $interactions, $say);
+    }
+
+    /**
+     * Render and validate AGAIN what an earlier run wrote, with no model call and no image search.
+     *
+     * For when the code after the model changed (a validator rule, the renderer) and the saved plan, slide text,
+     * pictures and interactions of a review bundle are still good: the deck is rebuilt from those files and judged by
+     * the current rules, so a fix does not cost another hour of generation. The chapter rows are read again, so the
+     * deck is held to what the school data says now.
+     *
+     * @param array<string,mixed> $raw ConceptContextBuilder::load()
+     * @param array{plan:array<string,mixed>,content:array<int,array<string,mixed>>,images:array<int,array<string,mixed>>,interactions:array<int,array<string,mixed>>} $saved the bundle plan.json, slides.json, images.json and interactions.json
+     * @param array<string,mixed> $options as generate(), plus recheck_images: hold the photographs to the picture rules again; image_overrides: {spec, base} the chosen pictures to swap in (see ImageOverrides)
+     * @return array<string,mixed> as fromRaw()
+     */
+    public function replay(array $raw, array $saved, array $options = [], ?callable $progress = null): array
+    {
+        $say = $progress ?? fn () => null;
+
+        [$context, $selection, $eligible, $map] = $this->prepare($raw, $options, $say);
+
+        $images = $saved['images'];
+        if (!empty($options['recheck_images'])) {
+            $say('images', 'Holding the chosen photographs to the picture rules again');
+            $images = $this->imagePlanner->recheck($saved['plan']['slides'], $images, fn ($n, $r) => $say('images', "slide $n: photograph replaced (" . ($r['photo_missing'] ?? $r['missing'] ?? '') . ')'));
+        }
+
+        if (!empty($options['redraw_diagrams'])) {
+            $say('images', 'Drawing the diagrams again in the current look');
+            $images = $this->imagePlanner->redraw($saved['plan']['slides'], $images);
+        }
+
+        // Pictures a person chose (see ImageOverrides): swapped in after the saved ones, with the hotspots moved to match.
+        $plan = $saved['plan'];
+        $interactions = $saved['interactions'];
+        if (!empty($options['image_overrides']['spec'])) {
+            $say('images', 'Swapping in the chosen pictures');
+            [$plan, $images, $interactions] = (new ImageOverrides($this->imagePlanner))->apply(
+                (array) $options['image_overrides']['spec'], $plan, $images, $interactions, $say, (string) ($options['image_overrides']['base'] ?? '')
+            );
+        }
+
+        return $this->finish($context, $selection, $eligible, $map, $plan, $saved['content'], $images, $interactions, $say);
+    }
+
+    /**
+     * The part of a run that needs no model: context, the questions the deck may use, the learning map.
+     *
+     * @return array{0:array<string,mixed>,1:array<string,mixed>,2:array<int,array<int,array<string,mixed>>>,3:array<string,mixed>}
+     */
+    private function prepare(array $raw, array $options, callable $say): array
+    {
+        $context = $this->contextBuilder->assemble($raw);
+        $say('context', sprintf('%d topics, %d concepts, %d without intelligence', count($context['topics']), count($context['concepts']), count($context['unmatched_concepts'])));
+
+        $selection = $this->questionSelector->select(
+            (array) $raw['questions'],
+            (int) ($options['per_concept'] ?? 4),
+            $options['allowed_forms'] ?? ['mcq', 'true_false', 'very_short_answer', 'short_answer']
+        );
+        $eligible = $selection['eligible'];
+        $say('questions', sprintf('%d questions considered, %d excluded as not self-contained or unusable', count((array) $raw['questions']), count($selection['excluded'])));
+
+        $map = $this->learningPlan->build($context, $eligible, (int) ($options['min_slides'] ?? 30), (int) ($options['max_slides'] ?? 35), (array) ($options['limits'] ?? []));
+        $say('map', 'Learning map built' . ($map['warnings'] ? ' (' . count($map['warnings']) . ' warning(s))' : ''));
+
+        return [$context, $selection, $eligible, $map];
+    }
+
+    /**
+     * The part of a run after the model: place the practice, render the design-system markup, validate.
+     *
+     * @return array<string,mixed> as fromRaw()
+     */
+    private function finish(array $context, array $selection, array $eligible, array $map, array $plan, array $content, array $images, array $interactions, callable $say): array
+    {
         $activities = $this->activities($context, $map, $plan, $content, $eligible);
         $plan = $this->dropUnjustifiedPatterns($plan, $activities, $map, $eligible);
         $say('activities', array_sum(array_map('count', $activities)) . ' practice question(s) placed, '

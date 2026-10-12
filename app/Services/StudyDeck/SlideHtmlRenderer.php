@@ -153,7 +153,9 @@ class SlideHtmlRenderer
                     'subject_id' => (int) $context['chapter']['subject_id'],
                     'standard_name' => $context['chapter']['standard_name'],
                     'subject_name' => $context['chapter']['subject_name'],
-                ],
+                ]
+                // The chapter's place in the subject ("Chapter 2"), as the school's own list numbers it: its sort order.
+                + (isset($context['chapter']['sort_order']) && (int) $context['chapter']['sort_order'] > 0 ? ['number' => (int) $context['chapter']['sort_order']] : []),
                 'chapter_id' => (int) $context['chapter']['id'],
                 'slide_count' => count($deckSlides),
                 'teaching_strategy' => $plan['teaching_strategy'] ?? null,
