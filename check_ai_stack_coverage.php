@@ -67,14 +67,10 @@ $menu = DB::table('fees_menu_categories')
  * @var array<string, string>
  */
 $deliberatelyUnbound = [
-    'leave' => 'no leave table in this estate',
-    'payroll' => 'no payroll table in this estate',
-    'donation-management' => 'no donation table in this estate',
-    'skill-assessment' => 'no skill table in this estate',
-    'skill-management' => 'no skill table in this estate',
-    'talent-management' => 'no talent table in this estate',
+    'skill-assessment' => 'tables exist (s_skill_matrix, master_skills) - not yet bound, see 2026-10-13 audit',
+    'skill-management' => 'tables exist (s_skill_matrix, s_jobrole_skills) - not yet bound',
+    'talent-management' => 'tables exist (talent_job_postings, talent_job_applications, talent_offers) - not yet bound',
     'stock-verification' => 'no stock verification table in this estate',
-    'user-attendance' => 'no staff attendance table in this estate',
     'organization-management' => 'structure only; served by the Institute module',
     'hrit-management' => 'no HR IT table in this estate',
     'hrms-report' => 'the hr module has tools but no ai_modules row',
@@ -82,9 +78,9 @@ $deliberatelyUnbound = [
     'platform-services' => 'platform configuration, not school records',
     'books' => 'served by the Library module',
     'capability-intelligence' => 'analytics over other modules, no records of its own',
-    'career-awareness' => 'no career table in this estate',
+    'career-awareness' => 'tables exist (hpbrain_career_clusters, student_career_originality) - not yet bound',
     'career-counseling' => 'served by the career-counselling module',
-    'career-explorer' => 'no career table in this estate',
+    'career-explorer' => 'tables exist (onet_career_cluster, hpbrain_career_clusters) - not yet bound',
     'test' => 'not a real module',
 ];
 

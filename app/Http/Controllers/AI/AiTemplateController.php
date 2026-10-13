@@ -717,6 +717,58 @@ class AiTemplateController extends AiController
                 'filters' => 'State: any',
                 'module' => 'Complaint',
             ],
+            'leave' => [
+                'records' => "- A. Pandey, Science (Casual Leave, 2026-09-02 to 2026-09-03, approved)\n"
+                    . "- S. Menon, English (Earned Leave, 2026-09-10 to 2026-09-14, pending)\n"
+                    . '- R. Iyer, Mathematics (Sick Leave, 2026-09-15 to 2026-09-15, rejected)',
+                'metrics' => 'Requests listed: 3; Pending: 1; Approved: 1; Rejected: 1; Leave balances: NOT computed',
+                'record_count' => '85',
+                'page_title' => 'Leave requests',
+                'filters' => 'Status: any',
+                'module' => 'Leave',
+            ],
+            'user_attendance' => [
+                'records' => "- A. Pandey — 2026-09-02, in 09:02, out 16:48\n"
+                    . "- S. Menon — 2026-09-02, in 09:15, out: no punch-out recorded\n"
+                    . '- R. Iyer — 2026-09-02, in 08:55, out 17:05',
+                'metrics' => 'Punches listed: 3; Staff punched in: 3; With no punch-out recorded: 1',
+                'record_count' => '1,837',
+                'page_title' => 'Staff attendance',
+                'filters' => 'Window: last 30 days',
+                'module' => 'User Attendance',
+            ],
+            'payroll' => [
+                'records' => "- 2026 Sep — 11 payslips, total payment 485975, total deduction 47602\n"
+                    . "- 2026 Aug — 11 payslips, total payment 480100, total deduction 47100\n"
+                    . '- 2026 Jul — 10 payslips, total payment 441200, total deduction 43800',
+                'metrics' => 'Months listed: 3; Totals only — no individual salary is included',
+                'record_count' => '8',
+                'page_title' => 'Payroll',
+                'filters' => 'Year: all',
+                'module' => 'Payroll',
+            ],
+            'donation' => [
+                'records' => "- 2026-04-08 — Sample Trust (Education, 100000, UPI, receipt 20)\n"
+                    . "- 2026-04-12 — Sample Foundation (Food, 25000, Cheque, receipt 21)\n"
+                    . '- 2026-05-03 — Sample Donor (Others, 5000, Online, receipt 22)',
+                'metrics' => 'Donations listed: 3; Total amount: 130000; Tax-exemption status: NOT recorded',
+                'record_count' => '20',
+                'page_title' => 'Donations',
+                'filters' => 'Head: all',
+                'module' => 'Donation',
+            ],
+            'alumni' => [
+                'records' => "- A. Sample — batch 2023-24, passed 2024, employed (Sample Co, Engineer, Pune)
+"
+                    . "- B. Sample — batch 2022-23, passed 2023, job seeking
+"
+                    . '- C. Sample — batch 2021-22, passed 2022, entrepreneur',
+                'metrics' => 'Alumni listed: 3; With an employer recorded: 1; Contact details: NOT provided',
+                'record_count' => '30',
+                'page_title' => 'Alumni',
+                'filters' => 'Status: any',
+                'module' => 'Alumni Management',
+            ],
             'migration-modules' => [
                 'records' => "- Book Lists (custom module, table Z_Book_Lists, type MASTER, 0 columns defined)\n"
                     . "- testCustomModule1 (custom module, table testCustomModule1, type MASTER, 4 columns defined)\n"
