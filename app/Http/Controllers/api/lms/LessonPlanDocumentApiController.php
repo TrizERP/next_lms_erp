@@ -199,8 +199,14 @@ class LessonPlanDocumentApiController extends Controller
         $result = [];
         foreach ($decoded as $typeId => $valueId) {
             $result[] = [
-                'type'  => $types->get((int) $typeId),
-                'value' => $values->get((int) $valueId),
+                'type'     => $types->get((int) $typeId),
+                'value'    => $values->get((int) $valueId),
+                // Additive: the names above are all the read-only document view ever
+                // needed, but the editor's mapping dropdowns need the ids back to
+                // pre-select them - this does not change the existing shape, it only
+                // adds fields an older consumer would simply ignore.
+                'type_id'  => (int) $typeId,
+                'value_id' => (int) $valueId,
             ];
         }
 

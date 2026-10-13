@@ -652,6 +652,19 @@ Route::match(['GET', 'POST'], 'intelligence/lesson-plan-lookup/periods', [\App\H
 // engine above - a separate feature that happens to share the words "lesson plan".
 Route::match(['GET', 'POST'], 'lesson-plan-doc', [\App\Http\Controllers\api\lms\LessonPlanDocumentApiController::class, 'show']);
 
+// Lesson Plan document - write side (save) and its lookups (topics, mapping options,
+// content/question-paper search for the activity pickers). Sibling to the read route
+// above; split into separate controllers so that one's "deliberately read-only"
+// docblock stays accurate. `save` carries the same write gate Prayogshala's writes use
+// below (api.session + lms.auth + perm:lms.content,create); the lookups stay open to
+// any authenticated caller, matching the read route's own posture.
+Route::middleware(['api.session', 'lms.auth', 'perm:lms.content,create'])
+    ->post('lesson-plan-doc/save', [\App\Http\Controllers\api\lms\LessonPlanDocumentWriteApiController::class, 'save']);
+Route::match(['GET', 'POST'], 'lesson-plan-doc/topics', [\App\Http\Controllers\api\lms\LessonPlanDocumentLookupApiController::class, 'topics']);
+Route::match(['GET', 'POST'], 'lesson-plan-doc/mapping-options', [\App\Http\Controllers\api\lms\LessonPlanDocumentLookupApiController::class, 'mappingOptions']);
+Route::match(['GET', 'POST'], 'lesson-plan-doc/content-search', [\App\Http\Controllers\api\lms\LessonPlanDocumentLookupApiController::class, 'contentSearch']);
+Route::match(['GET', 'POST'], 'lesson-plan-doc/question-paper-search', [\App\Http\Controllers\api\lms\LessonPlanDocumentLookupApiController::class, 'questionPaperSearch']);
+
 /*
 | Lesson Intelligence - the four-phase lesson-plan generator.
 |   Phase 0  capacity     how much teaching time the term actually has
