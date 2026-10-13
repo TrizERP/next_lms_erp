@@ -59,6 +59,20 @@ return [
             'model' => $geminiModel,
             'timeout' => (int) env('GEMINI_REQUEST_TIMEOUT', 45),
             'max_output_tokens' => (int) env('GEMINI_MAX_OUTPUT_TOKENS', 1466),
+            // The embedding model (added 2026-10-10 for the Content Authoring RAG
+            // row — ContentEmbeddingService). A SEPARATE endpoint from the chat
+            // model above (:embedContent, not :generateContent) and a separate
+            // model family. hpbrain_backend's own Embeddings.php/GeminiProvider
+            // default to `text-embedding-004`, but that model is RETIRED on this
+            // estate's live key — verified 2026-10-10, `:embedContent` against it
+            // returns 404 "not found ... or not supported for embedContent".
+            // `GET /v1beta/models` against the same key lists exactly three
+            // models whose supportedGenerationMethods include `embedContent`:
+            // gemini-embedding-001, gemini-embedding-2-preview, gemini-embedding-2.
+            // `gemini-embedding-001` is the stable (non-preview) one and is what
+            // this defaults to — the same "retired model -> its live replacement"
+            // mapping `$geminiModel` above already does for chat.
+            'embedding_model' => env('GEMINI_EMBEDDING_MODEL', 'gemini-embedding-001'),
             // The api_type used to look the key up in the ai_api_keys pool, which
             // takes precedence over the env value above. Lowercase `gemini` is not a
             // typo — it is what the rows in that table are actually tagged with, and
@@ -1201,6 +1215,123 @@ return [
             ],
 
             /*
+            | Leave (staff).
+            |
+            | Two reads over `hrms_emp_leaves`. STAFF leave only: students' leave applications
+            | are `leave_applications`, a Front Desk table, and are not bound here. Balances
+            | are deliberately not offered — entitlement lives in LeaveAnalyticsService's
+            | allocation rules and a figure computed here would disagree with the Leave
+            | Summary report.
+            */
+            'leave' => [
+                'label' => 'Leave',
+                'description' => 'Staff leave requests, who they are for and whether they are approved.',
+                // Config-only registration: resolves this module's own pages with no ai_modules row.
+                'route_patterns' => ['/modules/leave', '/modules/leave/**', '/leave-type', '/leave-authorisation', '/leave-apply', '/my-leave', '/import-leave', '/hrms/designation_leave'],
+                'detail_tools' => ['request_id' => 'leave.requests'],
+                'mcp_tools' => [
+                    'leave.requests',
+                    'leave.summary',
+                    'ai.templates.list',
+                    'ai.templates.render',
+                    'ai.templates.generate',
+                ],
+                'depth_reason' => 'Leave requests, their dates and their status are readable. Leave '
+                    . 'balances and days taken are not computed here because entitlement depends on '
+                    . 'allocation rules held in the Leave module, and `day_type` holds thirteen different '
+                    . 'spellings. Students\' leave is a separate module.',
+            ],
+
+            /*
+            | User Attendance (staff punches) over `hrms_attendances`.
+            |
+            | STAFF only; student attendance is the `attendance` module. The table has no
+            | shift, expected start or leave link, so "late" and "absent" are not derivable.
+            */
+            'user_attendance' => [
+                'label' => 'User Attendance',
+                'description' => 'Staff punch-in and punch-out records and the days they cover.',
+                // Config-only registration: resolves this module's own pages with no ai_modules row.
+                'route_patterns' => ['/modules/user-attendance', '/modules/user-attendance/**', '/hrms-attendance', '/hrms-inout-time', '/hrms/user_shift_master', '/hrms/user_bulk_shift_update'],
+                'mcp_tools' => [
+                    'staff_attendance.records',
+                    'staff_attendance.summary',
+                    'ai.templates.list',
+                    'ai.templates.render',
+                    'ai.templates.generate',
+                ],
+                'depth_reason' => 'Punches and missing sign-outs are readable. The table records no '
+                    . 'shift, expected start time or leave link, so nothing here can say a person was '
+                    . 'late, absent or on leave.',
+            ],
+
+            /*
+            | Payroll, in TOTALS. Admin-only tools; never one named person's pay.
+            */
+            'payroll' => [
+                'label' => 'Payroll',
+                'description' => 'The pay heads defined for staff and the payslips generated each month, in totals.',
+                // Config-only registration: resolves this module's own pages with no ai_modules row.
+                'route_patterns' => ['/modules/payroll', '/modules/payroll/**', '/payroll-type', '/employee-salary-structure', '/payroll-deduction', '/form16', '/hrms-salary-certificate', '/hrms-general-setting'],
+                'mcp_tools' => [
+                    'payroll.heads',
+                    'payroll.monthly',
+                    'ai.templates.list',
+                    'ai.templates.render',
+                    'ai.templates.generate',
+                ],
+                'depth_reason' => 'Pay heads and monthly payslip totals are readable. Individual '
+                    . 'salaries are deliberately not provided, and the amounts carry no tax or net-pay '
+                    . 'interpretation.',
+            ],
+
+            /*
+            | Donation (`donation_collection`). Alumni giving is a different module.
+            | Donor PAN, address, phone and bank details are never returned.
+            */
+            'donation' => [
+                'label' => 'Donation',
+                'description' => 'Donations received by the school, by head and payment mode.',
+                // Config-only registration: resolves this module's own pages with no ai_modules row.
+                'route_patterns' => ['/modules/donation-management', '/modules/donation-management/**', '/donation_collection', '/donation_report'],
+                'mcp_tools' => [
+                    'donations.list',
+                    'donations.summary',
+                    'ai.templates.list',
+                    'ai.templates.render',
+                    'ai.templates.generate',
+                ],
+                'depth_reason' => 'Donations, their heads, modes and totals are readable. Donor '
+                    . 'identity beyond the name, and any tax-exemption status, are not provided.',
+            ],
+
+            /*
+            | Alumni Management (`alumni*` tables).
+            |
+            | Read-only and admin-only. Contact details, date of birth and photographs are
+            | never returned, and donations are totals only because a donor may have given
+            | anonymously. Attendance at events is not recorded.
+            */
+            'alumni' => [
+                'label' => 'Alumni Management',
+                'description' => 'Alumni, their events, mentorship, opportunities, surveys and giving.',
+                // Config-only registration: resolves this module's own pages with no ai_modules row.
+                'route_patterns' => ['/modules/alumni-management', '/modules/alumni-management/**', '/alumni', '/alumni/**'],
+                'mcp_tools' => [
+                    'alumni.directory',
+                    'alumni.events',
+                    'alumni.overview',
+                    'ai.templates.list',
+                    'ai.templates.render',
+                    'ai.templates.generate',
+                ],
+                'depth_reason' => 'Alumni, their professional status, events, mentorship, opportunities, '
+                    . 'surveys and donation totals are readable. Contact details are withheld because '
+                    . 'alumni consent per channel, event attendance is not recorded, and donations are '
+                    . 'never attributed to a named alumnus.',
+            ],
+
+            /*
             | Utility — which in this ERP is bulk data operations, NOT utilities.
             |
             | Keyed `migration-modules` because that row has claimed `/Utility/**` since the
@@ -1751,6 +1882,33 @@ return [
                 'complained' => 3.5, 'raised a complaint' => 4.5,
                 // "issue" and "problem" are far too general to claim a module.
                 'issue' => 1.0, 'problem' => 1.0,
+            ],
+            'leave' => [
+                'leave request' => 4.5, 'leave requests' => 4.5, 'on leave' => 4.5,
+                'casual leave' => 4.5, 'sick leave' => 4.5, 'earned leave' => 4.5,
+                'leave type' => 4.0, 'leave approval' => 4.5, 'leave balance' => 4.0,
+                'staff leave' => 4.5, 'pending leave' => 4.5, 'approved leave' => 4.5,
+                // Students' leave is the Front Desk module's, so the bare word stays weak.
+                'leave' => 2.0,
+            ],
+            'user_attendance' => [
+                'staff attendance' => 4.5, 'punch in' => 4.5, 'punched in' => 4.5, 'punch out' => 4.5,
+                'punch-out' => 4.5, 'punch-in' => 4.5, 'punches' => 4.0, 'sign out' => 2.5,
+                'biometric' => 3.5, 'check in' => 2.0, 'check-in' => 2.0,
+            ],
+            'payroll' => [
+                'payroll' => 4.5, 'payslip' => 4.5, 'payslips' => 4.5, 'salary' => 3.5,
+                'salaries' => 3.5, 'pay head' => 4.5, 'pay heads' => 4.5, 'allowance' => 3.0,
+                'payroll deduction' => 4.5, 'form 16' => 4.5, 'form16' => 4.5,
+            ],
+            'donation' => [
+                'donation' => 4.5, 'donations' => 4.5, 'donor' => 4.5, 'donors' => 4.5,
+                'donated' => 4.0, 'donation head' => 4.5,
+            ],
+            'alumni' => [
+                'alumni' => 4.5, 'alumnus' => 4.5, 'alumna' => 4.5, 'old student' => 3.0,
+                'former student' => 3.0, 'passed out' => 3.0, 'reunion' => 4.0,
+                'mentorship' => 3.5, 'mentor' => 3.0, 'batch of' => 3.0, 'graduate' => 2.0,
             ],
             'migration-modules' => [
                 'rollover' => 4.5, 'roll over' => 4.0, 'roll-over' => 4.0,

@@ -28,6 +28,7 @@ class CareerQuestService
     public function __construct(
         private readonly LearnerActivitySource $activity,
         private readonly PersonalBestService $personalBests,
+        private readonly CareerQuestNarrator $narrator,
     ) {
     }
 
@@ -193,12 +194,22 @@ class CareerQuestService
             return ['error' => 'There is not enough career evidence yet to write an honest report.'];
         }
 
+        $subInstituteId = (int) ($this->activity->learner($learnerId)['sub_institute_id'] ?? 0);
+
         $snapshot = [
             'generated_at' => now()->toIso8601String(),
             'riasec' => $quest['riasec'],
             'pathways' => $quest['pathways'],
             'skill_progress' => $quest['skill_progress'],
             'career_exposure' => $quest['career_exposure'],
+            // Grounded-only, following the CoherenceMapController::explain() pattern:
+            // CareerQuestNarrator retrieves real CAI-CORE graph facts (subject/stream
+            // alignment against a declared aspiration) and narrates them alongside
+            // this snapshot's own real RIASEC/pathway data — never inventing either.
+            // `status` is always one of ok / insufficient_evidence / graph_unavailable
+            // / model_unavailable, so a caller can render a failure honestly rather
+            // than guessing from a null.
+            'narrative' => $this->narrator->narrate($learnerId, $subInstituteId, $quest),
         ];
 
         CareerQuestState::updateOrCreate(

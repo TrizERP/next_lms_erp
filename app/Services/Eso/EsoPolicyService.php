@@ -25,7 +25,9 @@ use App\Services\PAL\Questions\McqPool;
 use App\Services\PAL\Questions\PalQuestionForms;
 use App\Services\PAL\Questions\ServableQuestions;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 /**
  * The Learning ESO resolver — Adaptive Learning Engine Developer Brief v1.
@@ -1846,28 +1848,38 @@ class EsoPolicyService implements EsoFlowPort
      */
     protected function unmetPrerequisiteConceptIdsViaGraph(int $conceptId, int $studentId, int $subInstituteId): ?Collection
     {
-        if (! $this->coherenceMap->hasProjectedScope($conceptId)) {
+        // Every call below reaches Neo4j. A bolt outage must read the same as
+        // "no projected map for this scope" (null, fall back to SQL) rather
+        // than an uncaught exception reaching prerequisiteGate() — this is
+        // the one gap explain()'s GraphRagRetriever call doesn't have.
+        try {
+            if (! $this->coherenceMap->hasProjectedScope($conceptId)) {
+                return null;
+            }
+
+            // hasProjectedScope() only proves the concept is A node with SOME
+            // edges — not that every edge rootBlockers() would walk (this
+            // concept's own, or an ancestor's) actually made it into the graph.
+            // Measured live: a concept can look "present" while missing a real
+            // prerequisite edge SQL has, which would silently under-gate a
+            // student rather than error. See transitivePrerequisiteEdgesComplete()'s
+            // docblock for the exact case this caught.
+            if (! $this->coherenceMap->transitivePrerequisiteEdgesComplete($conceptId)) {
+                return null;
+            }
+
+            return $this->memo(
+                "prereq:graph:{$conceptId}:{$studentId}:{$subInstituteId}",
+                fn () => collect($this->coherenceMap->rootBlockers($conceptId, $studentId))
+                    ->pluck('id')
+                    ->map(fn ($id) => (int) $id)
+                    ->values()
+            );
+        } catch (Throwable $e) {
+            Log::warning('Graph prerequisite check failed, falling back to SQL: ' . $e->getMessage());
+
             return null;
         }
-
-        // hasProjectedScope() only proves the concept is A node with SOME
-        // edges — not that every edge rootBlockers() would walk (this
-        // concept's own, or an ancestor's) actually made it into the graph.
-        // Measured live: a concept can look "present" while missing a real
-        // prerequisite edge SQL has, which would silently under-gate a
-        // student rather than error. See transitivePrerequisiteEdgesComplete()'s
-        // docblock for the exact case this caught.
-        if (! $this->coherenceMap->transitivePrerequisiteEdgesComplete($conceptId)) {
-            return null;
-        }
-
-        return $this->memo(
-            "prereq:graph:{$conceptId}:{$studentId}:{$subInstituteId}",
-            fn () => collect($this->coherenceMap->rootBlockers($conceptId, $studentId))
-                ->pluck('id')
-                ->map(fn ($id) => (int) $id)
-                ->values()
-        );
     }
 
     /** Plain read: does this concept have any unmet prerequisite right now? No logging, no action payload. */
@@ -4040,7 +4052,9 @@ class EsoPolicyService implements EsoFlowPort
         }
 
         $chapterId = (int) $conceptRow->chapter_id;
-        $chapter = DB::table('chapter_master')->where('id', $chapterId)->first(['id', 'chapter_name', 'chapter_desc']);
+        $chapter = DB::table('chapter_master')
+            ->where('id', $chapterId)
+            ->first(['id', 'chapter_name', 'chapter_desc', 'standard_id', 'subject_id', 'sort_order']);
         if ($chapter === null) {
             return null;
         }
@@ -4052,30 +4066,108 @@ class EsoPolicyService implements EsoFlowPort
             return null;
         }
 
-        $misconceptionCounts = MisconceptionLibrary::whereIn('concept_ref_id', $conceptIds)
-            ->selectRaw('concept_ref_id, count(*) as n')
-            ->groupBy('concept_ref_id')
-            ->pluck('n', 'concept_ref_id');
+        // The chapter immediately before and after this one in teaching
+        // order - decorative header context only ("between X and Y"). It
+        // does NOT limit which concepts can be pulled in below: a real
+        // prerequisite/postrequisite can sit in any other chapter, or an
+        // entirely different standard, and the student needs to see it
+        // wherever it actually is - that is the whole point of this screen
+        // ("I don't get A because I'm missing B, where IS B").
+        $adjacent = $this->adjacentChapters($chapter, $subInstituteId);
 
-        $classifications = [];
-        foreach ($conceptIds as $id) {
-            $classifications[$id] = $this->conceptStatusFor($studentId, $id, $subInstituteId);
-        }
+        // Two stores, not one: `concept_prerequisite` is the curriculum team's
+        // authored map and the only one of the two that regularly crosses a
+        // chapter or standard boundary (pal_concept_relations - the machine's
+        // suggestions - has none at all on this estate). Either end of a row
+        // may be one of this chapter's own concepts; the OTHER end is
+        // deliberately unrestricted, which is what lets a prerequisite in a
+        // previous standard surface here at all. Authored rows are fetched
+        // first so that where both stores describe the same pair, the
+        // human's row wins and the machine's duplicate is dropped by
+        // $seenEdgeKeys below rather than drawn twice.
+        $expertRelations = DB::table('concept_prerequisite')
+            ->whereIn('sub_institute_id', array_unique([$subInstituteId, 0]))
+            ->where(function ($q) use ($conceptIds) {
+                $q->whereIn('concept_id', $conceptIds)->orWhereIn('prerequisite_id', $conceptIds);
+            })
+            ->get(['concept_id', 'prerequisite_id', 'link_type'])
+            ->map(fn ($r) => (object) [
+                'from_concept_id' => (int) $r->concept_id,
+                'to_concept_id' => (int) $r->prerequisite_id,
+                // Of concept_prerequisite's link types, only cross_subject is
+                // not a step in a learning progression - requires, builds_on
+                // and spiral all mean "earlier than" (same mapping
+                // CurriculumGraphBuilder uses for this table).
+                'relation_type' => $r->link_type === 'cross_subject' ? 'cross_curricular' : 'requires',
+            ]);
 
-        $relations = ConceptRelation::whereIn('from_concept_id', $conceptIds)
-            ->whereIn('to_concept_id', $conceptIds)
+        $suggestedRelations = ConceptRelation::where(function ($q) use ($conceptIds) {
+            $q->whereIn('from_concept_id', $conceptIds)->orWhereIn('to_concept_id', $conceptIds);
+        })
             ->whereIn('relation_type', ['requires', 'cross_curricular'])
             ->forTenant($subInstituteId)
             ->get(['from_concept_id', 'to_concept_id', 'relation_type']);
+
+        $relations = $expertRelations->concat($suggestedRelations);
+
+        // The far end of a relation may be a concept outside this chapter
+        // entirely (by design, see above) - but it is only worth showing if
+        // the student can actually act on it, so it is held back until we
+        // know it is ESO-ready. First pass just collects candidates; nothing
+        // is drawn here yet.
+        $candidateExternalIds = [];
+        foreach ($relations as $r) {
+            $dependent = (int) $r->from_concept_id;
+            $prerequisite = (int) $r->to_concept_id;
+
+            if ($dependent === $prerequisite) {
+                continue;
+            }
+
+            foreach ([$dependent, $prerequisite] as $endpoint) {
+                if (! in_array($endpoint, $conceptIds, true)) {
+                    $candidateExternalIds[$endpoint] = true;
+                }
+            }
+        }
+        $candidateExternalIds = array_keys($candidateExternalIds);
+
+        // ESO-ready the same way esoReadyConceptsForChapters() checks it - a
+        // concept with no K/A/S nodes authored has nothing to actually learn,
+        // so sending a student to it would be a dead end.
+        $readyExternalIds = $candidateExternalIds === []
+            ? []
+            : ConceptNode::whereIn('concept_id', $candidateExternalIds)
+                ->forTenant($subInstituteId)
+                ->distinct()
+                ->pluck('concept_id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+        $isDisplayable = fn (int $id): bool => in_array($id, $conceptIds, true) || in_array($id, $readyExternalIds, true);
 
         // `from_concept_id` requires `to_concept_id`: from = the dependent
         // concept, to = its prerequisite. Drawn prerequisite -> dependent.
         $prerequisitesOf = [];
         $edges = [];
         $seenEdgeKeys = [];
+        $externalIds = [];
         foreach ($relations as $r) {
             $dependent = (int) $r->from_concept_id;
             $prerequisite = (int) $r->to_concept_id;
+
+            if ($dependent === $prerequisite) {
+                continue;
+            }
+            if (! $isDisplayable($dependent) || ! $isDisplayable($prerequisite)) {
+                continue;
+            }
+
+            foreach ([$dependent, $prerequisite] as $endpoint) {
+                if (! in_array($endpoint, $conceptIds, true)) {
+                    $externalIds[$endpoint] = true;
+                }
+            }
 
             if ($r->relation_type === 'requires') {
                 $prerequisitesOf[$dependent][] = $prerequisite;
@@ -4092,6 +4184,18 @@ class EsoPolicyService implements EsoFlowPort
                     $edges[] = ['from_concept_id' => $dependent, 'to_concept_id' => $prerequisite, 'type' => 'related'];
                 }
             }
+        }
+        $externalIds = array_keys($externalIds);
+        $allConceptIds = array_values(array_unique(array_merge($conceptIds, $externalIds)));
+
+        $misconceptionCounts = MisconceptionLibrary::whereIn('concept_ref_id', $allConceptIds)
+            ->selectRaw('concept_ref_id, count(*) as n')
+            ->groupBy('concept_ref_id')
+            ->pluck('n', 'concept_ref_id');
+
+        $classifications = [];
+        foreach ($allConceptIds as $id) {
+            $classifications[$id] = $this->conceptStatusFor($studentId, $id, $subInstituteId);
         }
 
         // Longest prerequisite chain beneath each concept — the vertical
@@ -4119,7 +4223,9 @@ class EsoPolicyService implements EsoFlowPort
         // "Right now X stays closed, because it needs Y" — real, from the
         // same prerequisite check nextAction()/prerequisitesMet() already
         // use. Computed per concept (for its own card's reason) AND
-        // aggregated (for the page-level summary sentence).
+        // aggregated (for the page-level summary sentence). Scoped to this
+        // chapter's own concepts only - an adjacent chapter's locked
+        // concepts are not this chapter's story to tell.
         $lockedNames = [];
         $blockingNames = [];
         $blockingNamesByConceptId = [];
@@ -4133,9 +4239,43 @@ class EsoPolicyService implements EsoFlowPort
             $blockingNames = array_merge($blockingNames, $names);
         }
 
+        $chapterRelationFor = function (int $conceptChapterId) use ($chapterId, $adjacent): string {
+            if ($conceptChapterId === $chapterId) {
+                return 'current';
+            }
+            if ($adjacent['previous'] && $conceptChapterId === (int) $adjacent['previous']->id) {
+                return 'previous';
+            }
+            if ($adjacent['next'] && $conceptChapterId === (int) $adjacent['next']->id) {
+                return 'next';
+            }
+
+            return 'other';
+        };
+
+        // Where every concept on the map actually lives - chapter, topic,
+        // standard - so an external card can say "Standard 7, Journey Inside
+        // the Atom" instead of a name with no context. One query for
+        // everything shown, not a lookup per card.
+        $context = DB::table('lms_concept as c')
+            ->leftJoin('chapter_master as ch', 'ch.id', '=', 'c.chapter_id')
+            ->leftJoin('standard as st', 'st.id', '=', 'c.standard_id')
+            ->leftJoin('topic_master as t', 't.id', '=', 'c.topic_id')
+            ->whereIn('c.id', $allConceptIds)
+            ->select(
+                'c.id', 'c.name', 'c.chapter_id', 'c.topic_id', 'c.standard_id',
+                'ch.chapter_name', DB::raw('st.name as standard_name'), DB::raw('t.name as topic_name')
+            )
+            ->get()
+            ->keyBy('id');
+
         $concepts = [];
-        foreach ($readyConcepts as $concept) {
-            $id = (int) $concept->id;
+        foreach ($allConceptIds as $id) {
+            $row = $context[$id] ?? null;
+            if ($row === null) {
+                continue;
+            }
+
             $classification = $classifications[$id];
             $status = $classification['status'];
 
@@ -4149,17 +4289,28 @@ class EsoPolicyService implements EsoFlowPort
                 $status = 'retained';
             }
 
-            $lockedNames[] = $status === 'locked' ? $concept->name : null;
+            if (in_array($id, $conceptIds, true)) {
+                $lockedNames[] = $status === 'locked' ? $row->name : null;
+            }
+
+            $conceptChapterId = (int) $row->chapter_id;
 
             $concepts[] = [
                 'concept_id' => $id,
-                'name' => $concept->name,
+                'name' => $row->name,
                 'status' => $status,
                 'responses' => $classification['responses'],
                 'misconception_count' => (int) ($misconceptionCounts[$id] ?? 0),
                 'depth' => $computeDepth($id),
                 'is_current' => $id === $conceptId,
                 'blocking_prerequisite_names' => $blockingNamesByConceptId[$id] ?? [],
+                'topic_id' => $row->topic_id !== null ? (int) $row->topic_id : null,
+                'topic_name' => $row->topic_name,
+                'chapter_id' => $conceptChapterId,
+                'chapter_name' => $row->chapter_name,
+                'standard_id' => $row->standard_id !== null ? (int) $row->standard_id : null,
+                'standard_name' => $row->standard_name,
+                'chapter_relation' => $chapterRelationFor($conceptChapterId),
             ];
         }
         $lockedNames = array_values(array_unique(array_filter($lockedNames)));
@@ -4168,6 +4319,8 @@ class EsoPolicyService implements EsoFlowPort
             'chapter_id' => $chapterId,
             'chapter_name' => $chapter->chapter_name,
             'chapter_description' => $chapter->chapter_desc !== null && trim((string) $chapter->chapter_desc) !== '' ? $chapter->chapter_desc : null,
+            'previous_chapter' => $adjacent['previous'] ? ['id' => (int) $adjacent['previous']->id, 'name' => $adjacent['previous']->chapter_name] : null,
+            'next_chapter' => $adjacent['next'] ? ['id' => (int) $adjacent['next']->id, 'name' => $adjacent['next']->chapter_name] : null,
             'current_concept_id' => $conceptId,
             'concepts' => $concepts,
             'edges' => $edges,
@@ -4179,6 +4332,43 @@ class EsoPolicyService implements EsoFlowPort
                 'related' => count(array_filter($edges, fn (array $e) => $e['type'] === 'related')),
                 'misconceptions' => array_sum(array_column($concepts, 'misconception_count')),
             ],
+        ];
+    }
+
+    /**
+     * The chapter immediately before and after this one, in teaching order.
+     *
+     * Ordered by chapter_master.sort_order (ties broken by id) within the
+     * same (sub_institute_id, standard_id, subject_id) - the same scoping
+     * and show_hide guard CurriculumGraphBuilder::chapters() uses, so a
+     * hidden chapter is never offered as a neighbour. Returns null on
+     * either side at the start/end of the subject's chapter list.
+     *
+     * @return array{previous: ?object, next: ?object}
+     */
+    protected function adjacentChapters(object $chapter, int $subInstituteId): array
+    {
+        $siblings = DB::table('chapter_master')
+            ->where('sub_institute_id', $subInstituteId)
+            ->where('standard_id', $chapter->standard_id)
+            ->where('subject_id', $chapter->subject_id)
+            ->where(function ($q) {
+                $q->whereNull('show_hide')->orWhere('show_hide', '!=', 'hide');
+            })
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get(['id', 'chapter_name'])
+            ->values();
+
+        $index = $siblings->search(fn ($row) => (int) $row->id === (int) $chapter->id);
+
+        if ($index === false) {
+            return ['previous' => null, 'next' => null];
+        }
+
+        return [
+            'previous' => $index > 0 ? $siblings[$index - 1] : null,
+            'next' => $index < $siblings->count() - 1 ? $siblings[$index + 1] : null,
         ];
     }
 

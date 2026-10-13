@@ -6,10 +6,14 @@ use App\Domain\AI\Configuration\AiModelClientFactory;
 use App\Domain\AI\Configuration\ResolvedAiConfiguration;
 use App\Domain\AI\Support\AiAuditLogger;
 use App\Domain\AI\Support\ModelClient;
+use App\Domain\AI\Support\SupportsImageGeneration;
 use App\Domain\Templates\TemplateRegistry;
 use App\Services\Mcp\McpRequestContext;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -60,6 +64,15 @@ class GenerationService
      * code does not make.
      */
     private const MODULE = 'generative_ai';
+
+    /**
+     * The module an image-output template resolves its provider/model/key under.
+     *
+     * Declared in `AiModuleRegistry` for exactly this — a school points it at an
+     * image-capable Gemini model independently of whatever `generative_ai` is
+     * configured to use for text.
+     */
+    private const IMAGE_MODULE = 'image_generation';
 
     public function generate(GenerationRequest $request, McpRequestContext $scope): GenerationResult
     {
@@ -125,6 +138,15 @@ class GenerationService
             $requestId = $this->recordRequest($request, $template, null, $scope, 'failed', $exception->getMessage());
 
             return GenerationResult::failure($exception->getMessage(), $requestId);
+        }
+
+        // An image-output template is a different shape end to end — a different
+        // module's configuration, a different client capability, bytes written to
+        // storage instead of a validated text body — so it branches here rather than
+        // threading a second return type through every step below. Nothing past this
+        // point runs for it.
+        if ($template->outputFormat === 'image') {
+            return $this->generateImageOutput($request, $template, $rendered, $scope);
         }
 
         // Resolved once and passed down, so the row recorded against this request names
@@ -259,6 +281,220 @@ class GenerationService
         return $updated > 0;
     }
 
+    /**
+     * The image-output path: cache lookup, generation, storage, recording.
+     *
+     * Kept fully separate from the text path above rather than sharing it with a
+     * branch on every step — the two produce a request row the same shape, but nothing
+     * else (module, client capability, what "content" and "structured" mean, which
+     * safety/validation checks even apply) is shared work worth threading through one
+     * method.
+     */
+    private function generateImageOutput(
+        GenerationRequest $request,
+        $template,
+        array $rendered,
+        McpRequestContext $scope
+    ): GenerationResult {
+        // A concept's generated image doesn't change between students or between one
+        // viewing and the next. Regenerating it on every page view would mean paying an
+        // image-generation provider once per student per concept, forever, for a result
+        // that is already sitting in ai_generation_outputs. Reused whenever the caller
+        // named a stable subject (subject_entity_key + subject_id) that already has a
+        // completed image output on file.
+        $cached = $this->cachedImageOutput(
+            $template->key,
+            $request->subjectEntityKey,
+            $request->subjectId,
+            $scope
+        );
+
+        if ($cached !== null) {
+            return GenerationResult::success(
+                content: $cached['content'],
+                structured: $cached['structured'],
+                requestId: $cached['request_id'],
+                outputId: $cached['output_id'],
+                provider: $cached['provider'],
+                model: $cached['model'],
+                schemaValid: true,
+                schemaErrors: [],
+                safetyPassed: true,
+                safetyReport: [],
+                requiresReview: $template->requiresReview,
+                latencyMs: 0,
+            );
+        }
+
+        $configuration = $this->clients->configurationFor(
+            self::IMAGE_MODULE,
+            $scope->selectedInstituteId,
+            $template->moduleKey,
+        );
+
+        $requestId = $this->recordRequest($request, $template, $rendered, $scope, 'running', null, $configuration);
+
+        $this->audit->record(AiAuditLogger::GENERATION_REQUESTED, $scope, [
+            'actor_type' => 'system',
+            'related_type' => 'ai_generation_requests',
+            'related_id' => $requestId,
+            'subject_entity_key' => $request->subjectEntityKey,
+            'subject_id' => $request->subjectId,
+            'message' => sprintf('Generating an image for "%s" from template %s v%d.', $request->purpose, $template->key, $template->version),
+        ]);
+
+        // A template that pins a model still wins (see the text path's own note on
+        // this). `$configuration->model` is trusted only when an administrator
+        // actually chose it FOR THIS CAPABILITY (`source` is `module`/`module_platform`
+        // — see ResolvedAiConfiguration) — with nothing configured, step 3-6 of
+        // AiConfigurationResolver::resolve() still fills `model` in, but with the
+        // *text* default for whichever provider `ai.provider.driver` names (verified
+        // live: `gemini-2.5-flash`, not an image-capable model), and calling Gemini's
+        // image endpoint with a text-only model is a 400, not a graceful "unconfigured".
+        // The ultimate fallback is therefore an image-capable model name, never
+        // `$configuration->model` on its own and never the injected default
+        // `$this->client`'s `defaultModel()` (that client may not even be Gemini).
+        $model = $request->modelOverride
+            ?? $template->model
+            ?? (in_array($configuration->source, ['module', 'module_platform'], true) ? $configuration->model : null)
+            // gemini-2.5-flash-image is Google's deprecated image model (shutdown
+            // 2026-10-02); gemini-3.1-flash-image is its current replacement — see
+            // GeminiClient::defaultImageModel()'s own note. Kept in sync with that
+            // constant rather than centralised in config/ai.php because this fallback
+            // only matters when nothing at all was configured, same as that method's.
+            ?? (string) config('ai.provider.gemini.image_model', 'gemini-3.1-flash-image');
+
+        $startedAt = microtime(true);
+
+        try {
+            $client = $this->clients->fromConfiguration($configuration, $scope->selectedInstituteId);
+
+            if (! $client instanceof SupportsImageGeneration) {
+                throw new RuntimeException(sprintf(
+                    '%s is configured for image generation but has no image-capable client.',
+                    $configuration->provider
+                ));
+            }
+
+            $prompt = trim(($rendered['system'] ?? '') . "\n\n" . $rendered['user']);
+            $image = $client->generateImage($prompt, $model);
+
+            $path = sprintf(
+                'ai-generated/%s/%s.%s',
+                $scope->selectedInstituteId,
+                (string) Str::uuid(),
+                $image->extension()
+            );
+
+            Storage::disk('public')->put($path, $image->toBinary());
+            $imageUrl = Storage::disk('public')->url($path);
+        } catch (Throwable $exception) {
+            $this->updateRequest($requestId, 'failed', $exception->getMessage());
+
+            return GenerationResult::failure($exception->getMessage(), $requestId);
+        }
+
+        $latencyMs = (int) round((microtime(true) - $startedAt) * 1000);
+
+        // The image itself is never text-safety-scanned (SafetyChecker and
+        // OutputValidator are both built for text/JSON); the caption is real generated
+        // text, though, and gets the same scan any other generated text would.
+        $caption = $image->caption ?? sprintf('An illustration for %s.', $request->purpose);
+        $outputSafety = $this->safety->inspectOutput($caption, $template->safetyRules);
+        $structured = ['image_url' => $imageUrl, 'mime_type' => $image->mimeType];
+
+        $outputId = $this->recordOutput(
+            $requestId,
+            $caption,
+            ['valid' => true, 'errors' => [], 'data' => null],
+            $outputSafety,
+            $template->provider ?? $configuration->provider,
+            $model,
+            $latencyMs,
+            $scope,
+            $structured
+        );
+
+        $this->updateRequest($requestId, $outputSafety['passed'] ? 'completed' : 'blocked_by_safety');
+
+        if (! $outputSafety['passed']) {
+            $this->audit->recordRejection('Generated image caption failed output safety checks.', $scope, [
+                'related_type' => 'ai_generation_outputs',
+                'related_id' => $outputId,
+                'payload' => ['findings' => $outputSafety['findings']],
+            ]);
+        }
+
+        return GenerationResult::success(
+            content: $caption,
+            structured: $structured,
+            requestId: $requestId,
+            outputId: $outputId,
+            provider: $template->provider ?? $configuration->provider,
+            model: $model,
+            schemaValid: true,
+            schemaErrors: [],
+            safetyPassed: $outputSafety['passed'],
+            safetyReport: $outputSafety['findings'],
+            requiresReview: $template->requiresReview,
+            latencyMs: $latencyMs
+        );
+    }
+
+    /**
+     * A prior completed image generation for this exact template + subject, if one
+     * exists. Null when there is nothing to reuse — including when the caller named no
+     * subject at all, which is deliberately not cached, since there is nothing stable
+     * to key it on.
+     *
+     * @return array{request_id:int, output_id:int, content:string, structured:array, provider:string, model:string}|null
+     */
+    private function cachedImageOutput(
+        string $templateKey,
+        ?string $subjectEntityKey,
+        int|string|null $subjectId,
+        McpRequestContext $scope
+    ): ?array {
+        if (! Schema::hasTable('ai_generation_requests') || ! Schema::hasTable('ai_generation_outputs')) {
+            return null;
+        }
+
+        if ($subjectEntityKey === null || $subjectId === null || $subjectId === '') {
+            return null;
+        }
+
+        $row = DB::table('ai_generation_requests as r')
+            ->join('ai_generation_outputs as o', 'o.request_id', '=', 'r.id')
+            ->where('r.template_key', $templateKey)
+            ->where('r.subject_entity_key', $subjectEntityKey)
+            ->where('r.subject_id', $subjectId)
+            ->where('r.sub_institute_id', $scope->selectedInstituteId)
+            ->where('r.status', 'completed')
+            ->whereNotNull('o.structured_output')
+            ->orderByDesc('r.id')
+            ->select(['r.id as request_id', 'o.id as output_id', 'o.content', 'o.structured_output', 'o.provider', 'o.model'])
+            ->first();
+
+        if ($row === null) {
+            return null;
+        }
+
+        $structured = json_decode((string) $row->structured_output, true);
+
+        if (! is_array($structured) || empty($structured['image_url'])) {
+            return null;
+        }
+
+        return [
+            'request_id' => (int) $row->request_id,
+            'output_id' => (int) $row->output_id,
+            'content' => (string) $row->content,
+            'structured' => $structured,
+            'provider' => (string) $row->provider,
+            'model' => (string) $row->model,
+        ];
+    }
+
     // ---------------------------------------------------------------- internals
 
     /**
@@ -376,16 +612,22 @@ class GenerationService
         string $provider,
         string $model,
         int $latencyMs,
-        McpRequestContext $scope
+        McpRequestContext $scope,
+        ?array $extraStructured = null
     ): ?int {
         if ($requestId === null || ! Schema::hasTable('ai_generation_outputs')) {
             return null;
         }
 
+        // `$extraStructured` is how the image path stores its image_url/mime_type —
+        // there is no JSON-schema-validated `structured` for an image template, so it
+        // is never in `$validation['data']`, which stays null for that path.
+        $structured = $extraStructured ?? $validation['data'];
+
         return (int) DB::table('ai_generation_outputs')->insertGetId([
             'request_id' => $requestId,
             'content' => $content,
-            'structured_output' => $validation['data'] === null ? null : json_encode($validation['data']),
+            'structured_output' => $structured === null ? null : json_encode($structured),
             // Never anything but true.
             'is_generated' => true,
             'schema_valid' => $validation['valid'],

@@ -275,6 +275,44 @@ return [
             ],
         ],
 
+        /*
+        | 2026-10-10: Branching Scenario.
+        |
+        | Version and field names were read from the upstream repositories
+        | (h5p/h5p-branching-scenario library.json and semantics.json,
+        | h5p/h5p-branching-question semantics.json), not recalled -- see
+        | docs/h5p-branching-scenario.md. The upstream library declares
+        | FontAwesome as its only preloaded dependency because the libraries a
+        | scenario nests are chosen by the content; the closure below is
+        | therefore FontAwesome plus the three this product's nodes use: AdvancedText for a
+        | screen of content, Image for a picture, BranchingQuestion for a
+        | decision. A package that nests anything else (Course Presentation,
+        | Interactive Video, Video, Image Hotspots) is imported with that node
+        | replaced by a placeholder and the replacement reported.
+        */
+        'branching_scenario' => [
+            'machine_name' => 'H5P.BranchingScenario',
+            'title' => 'Branching Scenario',
+            'major_version' => 1,
+            'minor_version' => 11,
+            'patch_version' => 1,
+            'runnable' => 1,
+            'embed_types' => ['iframe'],
+            'license' => 'MIT',
+
+            'dependencies' => [
+                ['machineName' => 'H5P.BranchingQuestion', 'majorVersion' => 1, 'minorVersion' => 0],
+                ['machineName' => 'H5P.AdvancedText', 'majorVersion' => 1, 'minorVersion' => 1],
+                ['machineName' => 'H5P.Image', 'majorVersion' => 1, 'minorVersion' => 1],
+                ['machineName' => 'FontAwesome', 'majorVersion' => 4, 'minorVersion' => 5],
+            ],
+
+            'editor_dependencies' => [
+                ['machineName' => 'H5PEditor.ShowWhen', 'majorVersion' => 1, 'minorVersion' => 0],
+                ['machineName' => 'H5PEditor.BranchingScenario', 'majorVersion' => 1, 'minorVersion' => 5],
+            ],
+        ],
+
         'arithmetic_quiz' => [
             'machine_name' => 'H5P.ArithmeticQuiz',
             'title' => 'Arithmetic Quiz',

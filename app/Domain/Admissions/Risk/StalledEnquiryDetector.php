@@ -85,8 +85,15 @@ final class StalledEnquiryDetector
      */
     private const MAX_ITEMISED = 25;
 
-    /** Statuses the service itself treats as no longer open. Mirrored, not re-decided. */
-    private const CLOSED_STATUSES = ['approved', 'converted', 'closed', 'cancel'];
+    /**
+     * Statuses the service itself treats as no longer open. Mirrored, not re-decided.
+     *
+     * `approve` is what the Admission screens actually write (the enquiry form's status is
+     * `approve` or `cancel`); `approved` is kept for the spelling this list started with.
+     * Without `approve` an enquiry the school had already approved was reported as a
+     * 469-day critical follow-up risk.
+     */
+    private const CLOSED_STATUSES = ['approve', 'approved', 'converted', 'closed', 'cancel'];
 
     /** One enquiry read per (scope, filters) within a request. See sweep(). */
     private array $memo = [];

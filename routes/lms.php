@@ -72,6 +72,7 @@ use App\Http\Controllers\lms\h5p\H5PCoursePresentationController;
 use App\Http\Controllers\lms\h5p\H5PArithmeticQuizController;
 use App\Http\Controllers\lms\h5p\H5PSingleChoiceSetController;
 use App\Http\Controllers\lms\h5p\H5PTrueFalseController;
+use App\Http\Controllers\lms\h5p\H5PBranchingScenarioController;
 use App\Http\Controllers\lms\nextAPI\chapterMasterController;
 use App\Http\Controllers\lms\nextAPI\lmsCurriculumController as newCurricuumController;
 
@@ -211,11 +212,25 @@ Route::group(['prefix' => 'lms', 'middleware' => ['session', 'menu', 'logRoute',
     // engine - see palController::learnContent().
     Route::get('pal/learn/concept/{conceptId}', [palController::class, 'learnContent'])->whereNumber('conceptId')->name('pal.learn.concept');
 
+    // "Learn this concept visually" — a live, openly-licensed image pick for
+    // this concept (see palController::learnConceptImage() / ConceptImageSearchService).
+    // GET and side-effect-free for the same reason learnContent() is: opening
+    // the Learn page never mutates anything, only acknowledging it does.
+    Route::get('pal/learn/concept/{conceptId}/image', [palController::class, 'learnConceptImage'])->whereNumber('conceptId')->name('pal.learn.concept.image');
+
     // POST, because it is the one thing on the Learn screen that changes state:
     // it tells the engine the lesson was read, so the next resolve stops serving
     // `teach` and the learner is not shown a second lesson screen they have
     // already worked through.
     Route::post('pal/learn/concept/{conceptId}/read', [palController::class, 'learnAcknowledge'])->whereNumber('conceptId')->name('pal.learn.acknowledge');
+
+    // The image-based "Your Journey" map -- one live, openly-licensed picture
+    // per journey stage, searched from this learner's own subject/chapter/
+    // concept (see JourneyImageService). GET and side-effect-free for the same
+    // reason learnContent() is; the whole map is cached server-side. Both ids
+    // are optional and either one alone is enough, because a concept screen
+    // knows its concept and a chapter screen knows its chapter.
+    Route::get('pal/journey/images', [palController::class, 'journeyImages'])->name('pal.journey.images');
 
     // palController
     Route::resource('pal', palController::class)->whereNumber('pal');
@@ -418,6 +433,9 @@ Route::middleware(['session'])->group(function () {
     // Knowledge-Based Career Recommendation Engine — additive, dynamic
     // knowledge-vs-occupation matching. GET only, same reasoning.
     Route::get('careerRecommendation', [\App\Http\Controllers\lms\counselling\CareerRecommendationController::class, 'recommend']);
+    // Career Counselling — AI counsellor narrative (CaiCoreService
+    // evaluation + real concept-mastery state). GET only, same reasoning.
+    Route::get('careerCounsellingNarrative', [\App\Http\Controllers\lms\counselling\CareerCounsellingNarrativeController::class, 'narrate']);
 });
 Route::post('/ai/processData',[contentController::class,'processAIData'])->name('ai.processData');
 Route::post('/ai/generateLessonPlan', [contentController::class, 'generateLessonPlan'])->name('ai.generateLessonPlan');
@@ -495,6 +513,22 @@ Route::prefix('h5p')->middleware(['session', 'menu', 'logRoute', 'check_permissi
         Route::resource($prefix, $controller);
     }
 
+    // Branching Scenario: generation and its source list.
+    //
+    // Literal segments, so they are declared BEFORE the loop below for the
+    // same reason `import` and `media` are: the resource's `show`
+    // (GET h5p_branching_scenario/{id}) would otherwise claim `sources` as an
+    // id. Neither writes anything -- `generate` returns a draft for review and
+    // saving it is the ordinary store().
+    Route::get('h5p_branching_scenario/sources', [H5PBranchingScenarioController::class, 'sources'])
+        ->name('h5p_branching_scenario.sources');
+    // Billable (several model calls), so it shares the content-generation spend
+    // control: at most 4 a user every 10 minutes. A teacher reviewing and
+    // regenerating a scenario stays inside that; a runaway loop does not.
+    Route::post('h5p_branching_scenario/generate', [H5PBranchingScenarioController::class, 'generate'])
+        ->middleware('throttle.contentgen:4,10')
+        ->name('h5p_branching_scenario.generate');
+
     /*
     | 2026-09-21 vertical: Image Hotspots, Memory Game, Course Presentation,
     | Arithmetic Quiz.
@@ -529,6 +563,9 @@ Route::prefix('h5p')->middleware(['session', 'menu', 'logRoute', 'check_permissi
         */
         'h5p_single_choice_set' => [H5PSingleChoiceSetController::class, 'media' => false],
         'h5p_true_false' => [H5PTrueFalseController::class, 'media' => true],
+
+        // 2026-10-10. Pictures on a start screen, a step and a choice's feedback.
+        'h5p_branching_scenario' => [H5PBranchingScenarioController::class, 'media' => true],
     ] as $prefix => $spec) {
         $controller = $spec[0];
 

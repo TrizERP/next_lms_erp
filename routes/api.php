@@ -43,8 +43,9 @@ use App\Http\Controllers\api\TeacherFeeDuesApiController;
 use App\Http\Controllers\api\TeacherIcardApiController;
 use App\Http\Controllers\api\UserDashboardPreferenceApiController;
 
+
 // Student Assessment API - Get student assessment data with scores and levels
-Route::get('/student-assessment', [StudentGraphController::class, 'getStudentAssessment']);
+Route::middleware('api.session')->get('/student-assessment', [StudentGraphController::class, 'getStudentAssessment']);
 Route::middleware('api.session')->group(function () { Route::post('teacher/assignments/standards', [TeacherAssignmentMobileApiController::class, 'standards']); Route::post('teacher/assignments/divisions', [TeacherAssignmentMobileApiController::class, 'divisions']); });
 
 /*
@@ -58,7 +59,7 @@ Route::middleware('api.session')->group(function () { Route::post('teacher/assig
 |
 */
 
-Route::get('/student-results/{stuId}/graph', [StudentResultGraphController::class, 'show']);
+Route::middleware('api.session')->get('/student-results/{stuId}/graph', [StudentResultGraphController::class, 'show']);
 
 Route::post('whats-send-app',function (Request $request) {
     \Illuminate\Support\Facades\Log::info(json_encode($request->all()));
@@ -95,6 +96,8 @@ Route::post('api-login', [ApiLoginController::class, 'login'])->middleware('thro
 Route::get('academic-terms', [ApiLoginController::class, 'academicTerms'])->name('api.academic-terms');
 // Isolated mobile Own Profile API; legacy profile controllers are unchanged.
 Route::middleware('api.session')->get('own-profile', [\App\Http\Controllers\api\OwnProfileApiController::class, 'show']);
+// Native mobile shell bootstrap: identity + role menu, all derived from the JWT.
+Route::middleware('api.session')->get('mobile/bootstrap', [\App\Http\Controllers\api\MobileBootstrapApiController::class, 'show']);
 
 // Exchanges the app's JWT for a single-use ticket that opens an ERP web page
 // already logged in, for menu rows whose render_type is 'webview'.
@@ -225,6 +228,16 @@ Route::match(['get', 'post'], 'lms-courses/search', [ApiLmsCourseController::cla
 Route::post('lms-chapter-concepts', [ApiLmsCourseController::class, 'getChapterConcepts']);
 Route::post('lms-chapters', [ApiLmsCourseController::class, 'chapters']);
 Route::post('lms-chapter-content', [ApiLmsCourseController::class, 'chapterContent']);
+// The interactive deck behind a chapter's study-deck presentation (read-only; see StudyDeckApiController).
+Route::post('lms-study-deck', [\App\Http\Controllers\api\lms\StudyDeckApiController::class, 'show']);
+// The same deck's classroom PDF, scoped to the chapter, school and content item named in the request.
+Route::post('lms-study-deck/pdf', [\App\Http\Controllers\api\lms\StudyDeckApiController::class, 'pdf']);
+// Study-deck pictures live in the database (study_deck_images). A browser <img> cannot send a token, so the picture is
+// opened by a signed address that StudyDeckImageUrls issues to a caller that already passed the deck's school check;
+// `image-urls` issues the same addresses for a deck the player holds locally (it needs the caller's token).
+Route::post('lms-study-deck/image-urls', [\App\Http\Controllers\api\lms\StudyDeckApiController::class, 'imageUrls']);
+Route::get('study-deck/images/{id}', [\App\Http\Controllers\api\lms\StudyDeckImageController::class, 'show'])
+    ->whereNumber('id')->middleware('signed:relative')->name('study-deck.image');
 Route::post('lms-questions', [ApiLmsCourseController::class, 'getLmsQuestions']);
 Route::post('lms-question-bank', [ApiLmsCourseController::class, 'getQuestionBank']);
 Route::post('lms-question-bank/create', [ApiLmsCourseController::class, 'createQuestionBank']);
@@ -394,6 +407,15 @@ Route::middleware('api.session')->prefix('lms')->group(function () {
     Route::get('leaderboard/{userId}', [\App\Http\Controllers\api\lms\LmsLeaderboardApiController::class, 'show'])
         ->where('userId', '[0-9]+');
 
+    // Student Activity - real per-event engagement history (content viewed,
+    // concepts practised, homework submitted), read from `lms_student_engagement`
+    // via EngagementReportService. Read-only here too: the writers are the
+    // controller actions themselves (incrementContentVisit / submitPractice /
+    // HomeworkSubmissionApiController::submit), not this API.
+    Route::get('student-engagement', [\App\Http\Controllers\api\lms\StudentEngagementApiController::class, 'index']);
+    Route::get('student-engagement/{userId}', [\App\Http\Controllers\api\lms\StudentEngagementApiController::class, 'show'])
+        ->where('userId', '[0-9]+');
+
     // Leader Board Master - the admin points configuration (lb_master).
     // Staff-only: students and parents must not reach the configuration screen.
     Route::middleware('staff.only')->group(function () {
@@ -494,6 +516,21 @@ Route::match(['put', 'patch'], 'inventory/{module}/{id}', [InventoryApiControlle
 Route::delete('inventory/{module}/{id}', [InventoryApiController::class, 'destroy'])->where('module', '^(?!reports$).+');
 Route::post('question-paper/search', [ApiQuestionPaperController::class, 'search']);
 
+// LMS Quiz -- teacher-authored, non-adaptive quizzes (NOT the PAL Adaptive
+// Quiz under routes/pal_api.php, which this does not touch). A quiz is a
+// `question_paper` row with exam_type='quiz'; QuizAttemptApiController owns
+// publishing it and the student attempt lifecycle on top of it. Static
+// segments ('attempts', '{id}/attempts') are declared before the trailing
+// `quiz/{id}` GET so they are matched on their own terms rather than being
+// read as a `show` with an odd id.
+Route::get('quiz/attempts', [\App\Http\Controllers\api\QuizAttemptApiController::class, 'history']);
+Route::get('quiz/attempts/{attemptId}', [\App\Http\Controllers\api\QuizAttemptApiController::class, 'attemptShow']);
+Route::post('quiz/attempts/{attemptId}/submit', [\App\Http\Controllers\api\QuizAttemptApiController::class, 'submitAttempt']);
+Route::post('quiz/{id}/attempts', [\App\Http\Controllers\api\QuizAttemptApiController::class, 'startAttempt']);
+Route::get('quiz', [\App\Http\Controllers\api\QuizAttemptApiController::class, 'index']);
+Route::post('quiz', [\App\Http\Controllers\api\QuizAttemptApiController::class, 'store']);
+Route::get('quiz/{id}', [\App\Http\Controllers\api\QuizAttemptApiController::class, 'show']);
+
 // Question paper templates -- the reusable layouts behind LMS > Exam >
 // "Question paper templates". Blueprints are stored per school in
 // `template_master`; `.../paper/{id}` is the render feed (paper + questions +
@@ -583,6 +620,13 @@ Route::match(['GET', 'POST'], 'intelligence/curriculum-planning', [\App\Http\Con
 // for chapters nobody opens. Scoped by sub_institute_id inside the controller.
 Route::match(['GET', 'POST'], 'intelligence/curriculum-planning/chapter', [\App\Http\Controllers\api\lms\CurriculumPlanningApiController::class, 'chapter']);
 
+// Curriculum Outcomes & Delivery Analytics - EXPECTED -> PLANNED -> DELIVERED ->
+// ASSESSED -> ACHIEVED -> GAP chain for one curriculum. Sibling of
+// intelligence/curriculum-planning above; scoped by sub_institute_id inside the
+// controller, same as that pair of routes (no session middleware).
+Route::match(['GET', 'POST'], 'intelligence/curriculum-outcomes', [\App\Http\Controllers\api\lms\CurriculumOutcomesApiController::class, 'index']);
+Route::match(['GET', 'POST'], 'intelligence/curriculum-outcomes/outcome', [\App\Http\Controllers\api\lms\CurriculumOutcomesApiController::class, 'outcomeDetail']);
+
 // Monthly Plan - calendar view of scheduled periods for a given month
 Route::match(['GET', 'POST'], 'intelligence/monthly-plan', [\App\Http\Controllers\api\lms\MonthlyPlanApiController::class, 'index']);
 
@@ -602,6 +646,11 @@ Route::post('intelligence/lesson-plan-periods/{id}/delete', [\App\Http\Controlle
 // Lesson Plan lookups - chapter and period-slot options for the "Add lesson" form
 Route::match(['GET', 'POST'], 'intelligence/lesson-plan-lookup/chapters', [\App\Http\Controllers\api\lms\LessonPlanLookupApiController::class, 'chapters']);
 Route::match(['GET', 'POST'], 'intelligence/lesson-plan-lookup/periods', [\App\Http\Controllers\api\lms\LessonPlanLookupApiController::class, 'periods']);
+
+// Lesson Plan document - read-only view of the static, manually-authored lesson plan
+// (lms_lesson_plan / lms_lessonplan_dayswise). NOT part of the AI Lesson Intelligence
+// engine above - a separate feature that happens to share the words "lesson plan".
+Route::match(['GET', 'POST'], 'lesson-plan-doc', [\App\Http\Controllers\api\lms\LessonPlanDocumentApiController::class, 'show']);
 
 /*
 | Lesson Intelligence - the four-phase lesson-plan generator.
@@ -649,6 +698,34 @@ Route::prefix('lesson-intelligence')->group(function () {
 //                 group's throttle:1000,1 which was no limit at all here.
 Route::middleware(['api.session', 'staff.only', 'throttle.qgen'])->group(function () {
     Route::post('intelligence/questions/generate', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'generate']);
+});
+
+// Prayogshala - chapter-scoped practical / experiment / activity resources.
+// Every route is behind `api.session`: the institute and user come from the verified
+// JWT, never from the body (see PrayogshalaApiController). Reads are open to any
+// authenticated role so learners can see published activities; writes additionally run
+// the same `lms.content` create gate the content upload routes use, plus a role check in
+// the controller.
+Route::middleware(['api.session'])->prefix('lms/prayogshala')->group(function () {
+    $c = \App\Http\Controllers\api\lms\PrayogshalaApiController::class;
+    Route::match(['get', 'post'], '/', [$c, 'index']);
+    Route::match(['get', 'post'], 'coverage', [$c, 'coverage']);
+    Route::get('{id}', [$c, 'show'])->whereNumber('id');
+    Route::middleware(['lms.auth', 'perm:lms.content,create'])->group(function () use ($c) {
+        // Spends an AI call: a per-user allowance, like question generation.
+        Route::post('generate', [$c, 'generate'])->middleware('throttle:20,1');
+        Route::post('store', [$c, 'store']);
+        Route::post('{id}/update', [$c, 'update'])->whereNumber('id');
+        Route::post('{id}/delete', [$c, 'destroy'])->whereNumber('id');
+    });
+});
+
+// The question formats a teacher can generate: present in question_type_catalog AND
+// implemented in QuestionFormatRegistry. It spends nothing, so it sits behind the
+// same session and staff gates as generate but NOT behind throttle.qgen -- listing
+// formats must not eat the per-user generation allowance.
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::get('intelligence/questions/formats', [\App\Http\Controllers\api\lms\IntelligenceQuestionGenerationApiController::class, 'formats']);
 });
 
 // Intelligence Content Generation - chapter content via Claude -> content_master
@@ -998,8 +1075,55 @@ Route::prefix('attendance')->group(function () {
     Route::get('/kpi', [\App\Http\Controllers\api\Attendance\AttendanceDashboardApiController::class, 'kpi']);
 });
 
+/*
+|--------------------------------------------------------------------------
+| Intelligent Document Management System (IDMS) API v1
+|--------------------------------------------------------------------------
+*/
+Route::prefix('v1')->group(function () {
+    Route::get('documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'index']);
+    Route::post('documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'store']);
+    Route::get('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'show']);
+    Route::patch('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'update']);
+    Route::delete('documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'destroy']);
+    Route::get('trash/documents', [\App\Http\Controllers\api\v1\DocumentController::class, 'trash']);
+    Route::post('trash/documents/{id}/restore', [\App\Http\Controllers\api\v1\DocumentController::class, 'restore']);
+    Route::delete('trash/documents/{id}', [\App\Http\Controllers\api\v1\DocumentController::class, 'purge']);
+    Route::post('documents/{id}/confirm', [\App\Http\Controllers\api\v1\DocumentController::class, 'confirm']);
+    Route::post('documents/{id}/tags', [\App\Http\Controllers\api\v1\DocumentController::class, 'updateTags']);
+    Route::get('documents/{id}/preview', [\App\Http\Controllers\api\v1\DocumentController::class, 'preview']);
+    Route::get('documents/{id}/download', [\App\Http\Controllers\api\v1\DocumentController::class, 'download']);
+    Route::get('documents/{id}/versions', [\App\Http\Controllers\api\v1\DocumentController::class, 'getVersions']);
+    Route::post('documents/{id}/versions', [\App\Http\Controllers\api\v1\DocumentController::class, 'addVersion']);
+    Route::post('documents/{id}/versions/{versionNumber}/restore', [\App\Http\Controllers\api\v1\DocumentController::class, 'restoreVersion']);
+    Route::get('documents/{id}/related', [\App\Http\Controllers\api\v1\DocumentController::class, 'related']);
 
+    Route::post('search/parse', [\App\Http\Controllers\api\v1\DocumentController::class, 'parseSearch']);
+    Route::get('browse/tree', [\App\Http\Controllers\api\v1\DocumentController::class, 'tree']);
+    Route::get('tags', [\App\Http\Controllers\api\v1\DocumentController::class, 'tags']);
+    Route::get('audit', [\App\Http\Controllers\api\v1\DocumentController::class, 'audit']);
+});
 
+// ------------------------------------------------------------------
+// Capture Class Attendance via photo (Next.js). Stateless counterpart of
+// front_desk\classFaceAttendanceController; the Blade routes are unchanged.
+// Staff only - students/parents get 403.
+// ------------------------------------------------------------------
+Route::middleware(['api.session', 'staff.only'])->prefix('face-attendance')->group(function () {
+    Route::match(['GET', 'POST'], 'class-options', [\App\Http\Controllers\api\FaceAttendanceApiController::class, 'classOptions']);
+    Route::post('capture', [\App\Http\Controllers\api\FaceAttendanceApiController::class, 'capture']);
+    Route::post('save', [\App\Http\Controllers\api\FaceAttendanceApiController::class, 'save']);
+});
 
-
-
+// ------------------------------------------------------------------
+// Capture Photo (student reference photos for face attendance, Next.js).
+// Stateless counterpart of front_desk\studentFaceAttendanceController; the Blade
+// routes are unchanged. Students may list/add their own; search and delete are
+// admin-only, enforced in the controller.
+// ------------------------------------------------------------------
+Route::middleware('api.session')->prefix('capture-photo')->group(function () {
+    Route::match(['GET', 'POST'], 'list', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'index']);
+    Route::match(['GET', 'POST'], 'students', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'searchStudents']);
+    Route::post('store', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'store']);
+    Route::post('delete', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'destroy']);
+});

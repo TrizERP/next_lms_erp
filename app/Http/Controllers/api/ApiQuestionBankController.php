@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\api;
 
 use App\Http\Controllers\Controller;
+use App\Services\QuestionGeneration\QuestionEnvelope;
+use App\Services\QuestionGeneration\QuestionFormResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -300,15 +302,11 @@ class ApiQuestionBankController extends Controller
             ->tap(fn ($w) => $this->scoped($w, $request))
             ->select(
                 DB::raw(
-                    // Four tiers, most authoritative first. The sidecar code was
-                    // read off the source document. question_format_code is a
-                    // teacher's own manual pick. q.g_qtype_code is derived from
-                    // the stem for the ~3k questions that were generated and so
-                    // have no sidecar -- without it every one of them counted as
-                    // "narrative" and the form dropdown could not see them at all.
-                    "COALESCE(x.question_type_code, q.question_format_code, q.g_qtype_code, "
-                    . "CASE WHEN q.question_type_id = 1 "
-                    . "THEN 'mcq' ELSE 'narrative' END) as code"
+                    // The shared ladder (QuestionFormResolver): sidecar code,
+                    // then question_format_code (a teacher's pick or the
+                    // generator's), then the envelope's item_form, then the
+                    // tagger's g_qtype_code, then the coarse grading type.
+                    QuestionFormResolver::sqlExpression('q', 'x.question_type_code') . ' as code'
                 ),
                 DB::raw('COUNT(*) as total'),
                 // Lets a catalogue-less code (below) still carry a real
@@ -428,6 +426,7 @@ class ApiQuestionBankController extends Controller
                 'q.points as marks', 'q.category', 'q.status', 'q.answer as answer_envelope',
                 'q.g_bloom as bloom', 'q.g_dok as dok', 'q.g_difficulty as difficulty',
                 'q.g_qtype_code as derived_type_code',
+                'q.question_format_code',
                 'q.question_type_id',
                 'qt.question_type as lms_question_type',
                 'ch.chapter_name', 'c.name as concept_name',
@@ -557,10 +556,7 @@ class ApiQuestionBankController extends Controller
             // chapter would offer "Very Short Answer (990)" and then return
             // nothing when you picked it.
             $query->whereIn(
-                DB::raw(
-                    "COALESCE(x.question_type_code, q.g_qtype_code, "
-                    . "CASE WHEN q.question_type_id = 1 THEN 'mcq' ELSE 'narrative' END)"
-                ),
+                DB::raw(QuestionFormResolver::sqlExpression('q', 'x.question_type_code')),
                 $codes
             );
         }
@@ -655,10 +651,15 @@ class ApiQuestionBankController extends Controller
             // Sidecar (read off the source) -> envelope -> derived from the stem
             // -> the grading type. Without the derived tier the ~3k generated
             // questions all reported 'narrative' and showed catalog label "(none)".
-            $code = $row->question_type_code
-                ?? ($envelope['item_form'] ?? null)
-                ?? ($row->derived_type_code ?? null)
-                ?? ($isMcq ? 'mcq' : 'narrative');
+            // The ladder lives in QuestionFormResolver so this, the facet counts,
+            // the filter and PAL cannot disagree about a question's form.
+            $code = QuestionFormResolver::resolve(
+                $row->question_type_code ?? null,
+                $row->question_format_code ?? null,
+                $envelope,
+                $row->derived_type_code ?? null,
+                $isMcq ? 'mcq' : 'narrative'
+            );
 
             $data[] = [
                 'id' => $id,
@@ -691,6 +692,9 @@ class ApiQuestionBankController extends Controller
                 'assertion' => $envelope['assertion'] ?? null,
                 'reason' => $envelope['reason'] ?? null,
                 'sub_part_labels' => $envelope['sub_part_labels'] ?? [],
+                // Structured fields a format stores beyond the text answer (pairs,
+                // distractors); each null on every row that has none.
+                ...QuestionEnvelope::clientFields($envelope),
 
                 'figures' => $figures[$id] ?? [],
                 'figure_required' => (bool) ($row->figure_required ?? false),

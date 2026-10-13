@@ -2,6 +2,7 @@
 
 namespace App\Services\Content;
 
+use App\Services\StudyDeck\StudyDeckImages;
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
@@ -35,9 +36,34 @@ trait RendersGeneratedContent
     ];
 
     /**
+     * Pedagogical metadata a content block carries.
+     *
+     * These are what make the Content Design System checkable rather than
+     * decorative: `lms:validate-content` reads them to prove every concept in a
+     * chapter was actually covered, that each slide asks the student something,
+     * and that the Bloom range is not flat. Declared as an explicit list rather
+     * than a `data-*` wildcard so the allowlist stays closed - an unknown
+     * `data-` attribute is still dropped.
+     *
+     * Inert by construction: no handler, no URL, no styling. See
+     * docs/content-design-system/README.md section 4.2.
+     */
+    protected array $generatedContentDataAttributes = [
+        'data-block', 'data-concept', 'data-bloom', 'data-dok', 'data-minutes',
+    ];
+
+    /**
      * Attributes kept per tag. Everything else - every `on*` handler, every
      * inline `style`, every `srcset`/`formaction` - is dropped.
      */
+    /**
+     * Reads a stored study-deck picture for a document that is being rendered: fn(string $ref): ?array{bytes,mime}.
+     * Null outside a study-deck render, which is what keeps `study-deck-image:` references out of every other document.
+     *
+     * @var \Closure|null
+     */
+    protected ?\Closure $deckImageResolver = null;
+
     protected array $generatedContentAttributes = [
         '*' => ['class'],
         'img' => ['class', 'src', 'alt'],
@@ -47,6 +73,12 @@ trait RendersGeneratedContent
 
     protected function renderGeneratedContentPdf($content, $chapterName, $contentType)
     {
+        return $this->renderHtmlToPdf($this->generatedContentHtml($content, $chapterName, $contentType));
+    }
+
+    /** A finished HTML document to A4 portrait PDF bytes. */
+    protected function renderHtmlToPdf(string $html, ?callable $afterRender = null): string
+    {
         $options = new Options();
         $options->set('isHtml5ParserEnabled', true);
         $options->set('isFontSubsettingEnabled', true);
@@ -54,10 +86,13 @@ trait RendersGeneratedContent
         $options->set('isRemoteEnabled', true);
 
         $dompdf = new Dompdf($options);
-        $html = $this->generatedContentHtml($content, $chapterName, $contentType);
         $dompdf->loadHtml($html);
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
+        // Lets the caller draw on the rendered pages (a running header, footer and page numbers) before the bytes are made.
+        if ($afterRender) {
+            $afterRender($dompdf);
+        }
 
         return $dompdf->output();
     }
@@ -92,6 +127,13 @@ trait RendersGeneratedContent
 
     protected function isAllowedImageSrc(string $src): bool
     {
+        // A stored study-deck picture (`study-deck-image:<id>`) is not a URL and is never fetched: it is read from the
+        // database, by a resolver the caller installs and that only returns pictures the school may see. Without a
+        // resolver the reference means nothing here, so it is refused like any other source.
+        if ($this->deckImageResolver !== null && StudyDeckImages::idFromRef(trim($src)) !== null) {
+            return true;
+        }
+
         $parts = parse_url(trim($src));
         if (!$parts || ($parts['scheme'] ?? '') !== 'https' || empty($parts['host'])) {
             return false;
@@ -170,7 +212,8 @@ trait RendersGeneratedContent
             $tag = strtolower($node->nodeName);
             $allowed = array_merge(
                 $this->generatedContentAttributes['*'],
-                $this->generatedContentAttributes[$tag] ?? []
+                $this->generatedContentAttributes[$tag] ?? [],
+                $this->generatedContentDataAttributes
             );
 
             foreach (iterator_to_array($node->attributes ?? []) as $attr) {

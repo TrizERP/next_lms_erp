@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\PAL;
 
 use App\Domain\AI\Support\ModelClient;
+use App\Exceptions\GraphUnavailableException;
 use App\Http\Controllers\Controller;
 use App\Services\PAL\Coherence\CoherenceMapRepository;
 use App\Services\PAL\Coherence\CoherenceRecommender;
@@ -59,17 +60,19 @@ class CoherenceMapController extends Controller
 
         $learnerId = $request->filled('learner_id') ? (int) $request->get('learner_id') : null;
 
-        $data = $this->map->map($scope['standard_id'], $scope['subject_id'], $learnerId);
+        return $this->graphGuarded(function () use ($scope, $learnerId) {
+            $data = $this->map->map($scope['standard_id'], $scope['subject_id'], $learnerId, $scope['sub_institute_id']);
 
-        if (! $data['available']) {
-            return $this->fail(
-                'No coherence map exists for this standard and subject. Concepts must be extracted into '
-                . 'semantic_intelligence and projected with pal:coherence-sync before the map can be read.',
-                404
-            );
-        }
+            if (! $data['available']) {
+                return $this->fail(
+                    'No coherence map exists for this standard and subject. Concepts must be extracted into '
+                    . 'semantic_intelligence and projected with pal:coherence-sync before the map can be read.',
+                    404
+                );
+            }
 
-        return $this->ok($data + ['scope' => $scope]);
+            return $this->ok($data + ['scope' => $scope]);
+        });
     }
 
     /**
@@ -86,7 +89,9 @@ class CoherenceMapController extends Controller
      */
     public function scopes(Request $request): JsonResponse
     {
-        return $this->ok(['scopes' => $this->map->scopes($this->tenantFor($request))]);
+        return $this->graphGuarded(function () use ($request) {
+            return $this->ok(['scopes' => $this->map->scopes($this->tenantFor($request))]);
+        });
     }
 
     /**
@@ -106,35 +111,42 @@ class CoherenceMapController extends Controller
             return $this->fail($scope, 422);
         }
 
-        $readiness = $this->map->readiness($scope['standard_id'], $scope['subject_id'], $learnerId);
+        return $this->graphGuarded(function () use ($scope, $learnerId) {
+            $readiness = $this->map->readiness($scope['standard_id'], $scope['subject_id'], $learnerId);
 
-        if ($readiness === []) {
-            return $this->fail('No coherence map exists for this learner\'s class and subject.', 404);
-        }
+            if ($readiness === []) {
+                return $this->fail('No coherence map exists for this learner\'s class and subject.', 404);
+            }
 
-        $graph = $this->map->map($scope['standard_id'], $scope['subject_id'], $learnerId);
+            // Tenant passed explicitly here too (not just in map()/health()) -
+            // scope()'s standard/subject-only fallback can still resolve to
+            // another tenant if they happen to share this (standard, subject)
+            // pair, even though $scope itself was already correctly derived
+            // from the learner's own enrollment above.
+            $graph = $this->map->map($scope['standard_id'], $scope['subject_id'], $learnerId, $scope['sub_institute_id']);
 
-        // The readiness state is merged onto the drawn node so the client can
-        // colour the graph without joining two payloads and getting it wrong.
-        $states = [];
-        foreach ($readiness as $id => $row) {
-            $states[$id] = ['state' => $row['state'], 'unmet' => $row['unmet'], 'unlocks' => $row['unlocks']];
-        }
+            // The readiness state is merged onto the drawn node so the client can
+            // colour the graph without joining two payloads and getting it wrong.
+            $states = [];
+            foreach ($readiness as $id => $row) {
+                $states[$id] = ['state' => $row['state'], 'unmet' => $row['unmet'], 'unlocks' => $row['unlocks']];
+            }
 
-        $nodes = array_map(function ($node) use ($states) {
-            $id = (int) ($node['id'] ?? 0);
+            $nodes = array_map(function ($node) use ($states) {
+                $id = (int) ($node['id'] ?? 0);
 
-            return $node + ($states[$id] ?? ['state' => 'blocked', 'unmet' => [], 'unlocks' => 0]);
-        }, $graph['nodes']);
+                return $node + ($states[$id] ?? ['state' => 'blocked', 'unmet' => [], 'unlocks' => 0]);
+            }, $graph['nodes']);
 
-        return $this->ok([
-            'scope'    => $scope,
-            'learner'  => ['id' => $learnerId],
-            'nodes'    => $nodes,
-            'edges'    => $graph['edges'],
-            'stats'    => $graph['stats'],
-            'progress' => $this->progressOf($readiness),
-        ]);
+            return $this->ok([
+                'scope'    => $scope,
+                'learner'  => ['id' => $learnerId],
+                'nodes'    => $nodes,
+                'edges'    => $graph['edges'],
+                'stats'    => $graph['stats'],
+                'progress' => $this->progressOf($readiness),
+            ]);
+        });
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -156,13 +168,15 @@ class CoherenceMapController extends Controller
             return $this->fail($scope, 422);
         }
 
-        $action = $this->recommender->nextBestAction(
-            $learnerId,
-            $scope['standard_id'],
-            $scope['subject_id']
-        );
+        return $this->graphGuarded(function () use ($scope, $learnerId) {
+            $action = $this->recommender->nextBestAction(
+                $learnerId,
+                $scope['standard_id'],
+                $scope['subject_id']
+            );
 
-        return $this->ok($action + ['scope' => $scope]);
+            return $this->ok($action + ['scope' => $scope]);
+        });
     }
 
     /**
@@ -174,31 +188,33 @@ class CoherenceMapController extends Controller
      */
     public function remediation(Request $request, int $learnerId, int $conceptId): JsonResponse
     {
-        $roots = $this->map->rootBlockers($conceptId, $learnerId);
+        return $this->graphGuarded(function () use ($learnerId, $conceptId) {
+            $roots = $this->map->rootBlockers($conceptId, $learnerId);
 
-        if ($roots === []) {
+            if ($roots === []) {
+                return $this->ok([
+                    'blocked'   => false,
+                    'roots'     => [],
+                    'message'   => 'Nothing beneath this concept is unmastered - it is reachable now.',
+                    'content'   => [],
+                ]);
+            }
+
+            $root = $roots[0];
+
             return $this->ok([
-                'blocked'   => false,
-                'roots'     => [],
-                'message'   => 'Nothing beneath this concept is unmastered - it is reachable now.',
-                'content'   => [],
+                'blocked' => true,
+                'roots'   => $roots,
+                'start_at' => [
+                    'concept_id' => (int) $root['id'],
+                    'name'       => $root['name'] ?? null,
+                    'mastery'    => round((float) ($root['mastery'] ?? 0), 4),
+                    'gate'       => round((float) ($root['gate'] ?? 0.7), 4),
+                    'depth'      => (int) ($root['depth'] ?? 1),
+                ],
+                'content' => $this->map->contentFor((int) $root['id'], [], 5),
             ]);
-        }
-
-        $root = $roots[0];
-
-        return $this->ok([
-            'blocked' => true,
-            'roots'   => $roots,
-            'start_at' => [
-                'concept_id' => (int) $root['id'],
-                'name'       => $root['name'] ?? null,
-                'mastery'    => round((float) ($root['mastery'] ?? 0), 4),
-                'gate'       => round((float) ($root['gate'] ?? 0.7), 4),
-                'depth'      => (int) ($root['depth'] ?? 1),
-            ],
-            'content' => $this->map->contentFor((int) $root['id'], [], 5),
-        ]);
+        });
     }
 
     /**
@@ -362,36 +378,38 @@ class CoherenceMapController extends Controller
             return $this->fail('That concept does not belong to this institute.', 403);
         }
 
-        $state = $this->mastery->record($learnerId, $conceptId, $scope['sub_institute_id'], [
-            'question_id'       => $validated['question_id'] ?? null,
-            'content_id'        => $validated['content_id'] ?? null,
-            'session_id'        => $validated['session_id'] ?? null,
-            'correct'           => (bool) $validated['correct'],
-            'misconception_tag' => $validated['misconception_tag'] ?? null,
-            'duration_seconds'  => $validated['duration_seconds'] ?? null,
-        ]);
+        return $this->graphGuarded(function () use ($validated, $learnerId, $conceptId, $scope) {
+            $state = $this->mastery->record($learnerId, $conceptId, $scope['sub_institute_id'], [
+                'question_id'       => $validated['question_id'] ?? null,
+                'content_id'        => $validated['content_id'] ?? null,
+                'session_id'        => $validated['session_id'] ?? null,
+                'correct'           => (bool) $validated['correct'],
+                'misconception_tag' => $validated['misconception_tag'] ?? null,
+                'duration_seconds'  => $validated['duration_seconds'] ?? null,
+            ]);
 
-        return $this->ok([
-            'mastery' => [
-                'concept_id' => $conceptId,
-                'p'          => $state['mastery'],
-                'delta'      => $state['delta'],
-                'band'       => $state['band'],
-                'gate'       => $state['gate'],
-                'mastered'   => $state['mastered'],
-                'attempts'   => $state['attempts'],
-                'correct'    => $state['correct'],
-                'streak'     => $state['streak'],
-                // The BKT trajectory: what the posterior did on every answer so
-                // far. A teacher asking "why is this 0.62" gets the whole curve.
-                'trajectory' => $state['trajectory'],
-            ],
-            'next' => $this->recommender->nextBestAction(
-                $learnerId,
-                $scope['standard_id'],
-                $scope['subject_id']
-            ),
-        ]);
+            return $this->ok([
+                'mastery' => [
+                    'concept_id' => $conceptId,
+                    'p'          => $state['mastery'],
+                    'delta'      => $state['delta'],
+                    'band'       => $state['band'],
+                    'gate'       => $state['gate'],
+                    'mastered'   => $state['mastered'],
+                    'attempts'   => $state['attempts'],
+                    'correct'    => $state['correct'],
+                    'streak'     => $state['streak'],
+                    // The BKT trajectory: what the posterior did on every answer so
+                    // far. A teacher asking "why is this 0.62" gets the whole curve.
+                    'trajectory' => $state['trajectory'],
+                ],
+                'next' => $this->recommender->nextBestAction(
+                    $learnerId,
+                    $scope['standard_id'],
+                    $scope['subject_id']
+                ),
+            ]);
+        });
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -412,12 +430,14 @@ class CoherenceMapController extends Controller
             return $this->fail($scope, 422);
         }
 
-        $health = $this->map->health($scope['standard_id'], $scope['subject_id']);
+        return $this->graphGuarded(function () use ($scope) {
+            $health = $this->map->health($scope['standard_id'], $scope['subject_id'], $scope['sub_institute_id']);
 
-        return $this->ok($health + [
-            'scope'      => $scope,
-            'fit_to_use' => $health['concepts'] > 0 && $health['acyclic'] && $health['roots'] > 0,
-        ]);
+            return $this->ok($health + [
+                'scope'      => $scope,
+                'fit_to_use' => $health['concepts'] > 0 && $health['acyclic'] && $health['roots'] > 0,
+            ]);
+        });
     }
 
     // ══════════════════════════════════════════════════════════════════
@@ -557,5 +577,20 @@ class CoherenceMapController extends Controller
     private function fail(string $message, int $status): JsonResponse
     {
         return response()->json(['success' => false, 'message' => $message], $status);
+    }
+
+    /**
+     * Runs a graph-backed action and turns a Neo4j outage into a 503 instead
+     * of an unhandled 500. `explain()` already does this inline because it
+     * also distinguishes a graph failure from an LLM failure; every other
+     * action here is graph-only, so one wrapper covers all of them.
+     */
+    private function graphGuarded(callable $body): JsonResponse
+    {
+        try {
+            return $body();
+        } catch (GraphUnavailableException $e) {
+            return $this->fail('The knowledge graph is temporarily unavailable. Please try again shortly.', 503);
+        }
     }
 }

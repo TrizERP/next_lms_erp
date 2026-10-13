@@ -225,9 +225,13 @@ class PalWorkspaceController extends Controller
                 'standard_name' => $standardName ?? '',
                 'grade_name'    => '',
             ],
-            'subjects'            => $subjects,
-            'per_chapter_quiz'    => (object) [],
-            'attempts_by_chapter' => (object) [],
+            'subjects'             => $subjects,
+            'per_chapter_quiz'     => (object) [],
+            'attempts_by_chapter'  => (object) [],
+            // No specific learner in a class preview, so "already
+            // attempted" has no meaning here - always empty, never absent,
+            // so the frontend doesn't need a second shape to handle.
+            'diagnostic_by_chapter' => (object) [],
         ]);
     }
 
@@ -415,6 +419,23 @@ class PalWorkspaceController extends Controller
             ];
         }
 
+        // ---- PAL chapter diagnostic ("Already Attempted" badge) ----
+        // A separate feature and a separate table (pal_diagnostic_attempt)
+        // from the legacy PAL-quiz attempts above - the question_paper/
+        // lms_online_exam rows this method otherwise reads have nothing to
+        // do with it. Keyed by string chapter id, same convention as
+        // per_chapter_quiz/attempts_by_chapter above.
+        $diagnosticByChapter = \App\Models\PAL\DiagnosticAttempt::latestSubmittedByChapter($learnerId)
+            ->mapWithKeys(fn ($attempt, $chapterId) => [
+                (string) $chapterId => [
+                    'has_diagnostic' => true,
+                    'level' => $attempt->level,
+                    'percentage' => (float) $attempt->percentage,
+                    'attempt_number' => $attempt->attempt_number,
+                    'last_attempted_at' => $attempt->submitted_at,
+                ],
+            ]);
+
         return $this->ok([
             'student' => [
                 'student_id'    => (string) $learnerId,
@@ -426,9 +447,10 @@ class PalWorkspaceController extends Controller
                 'standard_name' => $student->standard_name ?? '',
                 'grade_name'    => $student->grade_name ?? '',
             ],
-            'subjects'            => $subjects,
-            'per_chapter_quiz'    => $perChapterQuiz,
-            'attempts_by_chapter' => $attemptsByChapter,
+            'subjects'             => $subjects,
+            'per_chapter_quiz'     => $perChapterQuiz,
+            'attempts_by_chapter'  => $attemptsByChapter,
+            'diagnostic_by_chapter' => $diagnosticByChapter,
         ]);
     }
 }

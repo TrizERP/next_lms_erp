@@ -337,6 +337,35 @@ class HomeworkSubmissionApiController extends Controller
             'ai_failure_reason' => null,
         ]);
 
+        // Real engagement-event producer (added 2026-10-10). The student just
+        // submitted real homework — logged alongside the `homework` row
+        // update above, not instead of it. `activity_id` is the homework row
+        // itself: `homework` carries a `subject_id` but no concept/content FK
+        // (confirmed against its own migration), so this event has nothing a
+        // graph edge can point at and EngagementGraphProjection deliberately
+        // leaves it edge-less — it still reads back through the engagement
+        // history API, which is what matters here.
+        try {
+            DB::table('lms_student_engagement')->insert([
+                'student_id' => (int) $student_id,
+                'sub_institute_id' => $homework->sub_institute_id,
+                'activity_type' => 'homework_submit',
+                'activity_id' => $homework_id,
+                'started_at' => now(),
+                'completed_at' => now(),
+                'metadata' => json_encode([
+                    'source' => 'homework_submission',
+                    'subject_id' => $homework->subject_id,
+                    'standard_id' => $homework->standard_id,
+                    'file_count' => count($submissionFiles),
+                ]),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('Error logging homework_submit engagement: ' . $e->getMessage());
+        }
+
         // AI evaluation is best-effort and must never break the upload
         // response: dispatch() re-throws job exceptions synchronously when
         // QUEUE_CONNECTION=sync, so this call itself needs a guard even

@@ -37,14 +37,28 @@ class DiagnosticService
      * given were stranded on the abandoned row, and the table filled with
      * orphaned in_progress attempts.
      *
-     * @return array{attempt_id: ?int, questions: array, selection_report: array, reason: ?string, resumed?: bool, answered?: int}
+     * $forceNew skips the "already attempted" gate below and draws a fresh
+     * paper even though a submitted attempt exists - this is how an
+     * explicit Retake request is honoured. It never bypasses resume(): an
+     * in_progress attempt always wins regardless, so a retake can never
+     * strand an unfinished paper.
+     *
+     * @return array{attempt_id: ?int, questions: array, selection_report: array, reason: ?string, status?: string, resumed?: bool, answered?: int, previous_attempt?: array}
      */
-    public function start($studentId, int $chapterId, $subInstituteId, $syear = null, $subjectId = null, $standardId = null): array
+    public function start($studentId, int $chapterId, $subInstituteId, $syear = null, $subjectId = null, $standardId = null, bool $forceNew = false): array
     {
         $resumed = $this->resume($studentId, $chapterId, $subInstituteId, $syear);
 
         if ($resumed !== null) {
             return $resumed;
+        }
+
+        if (!$forceNew) {
+            $previous = $this->previousAttempt($studentId, $chapterId, $subInstituteId, $syear);
+
+            if ($previous !== null) {
+                return $previous;
+            }
         }
 
         $chapter = DB::table('chapter_master')->where('id', $chapterId)->first(['id', 'subject_id', 'standard_id']);
@@ -141,6 +155,7 @@ class DiagnosticService
             'questions' => $hydrated,
             'selection_report' => $report,
             'reason' => null,
+            'status' => 'new',
             'resumed' => false,
             'answered' => 0,
         ];
@@ -232,8 +247,57 @@ class DiagnosticService
             'questions' => $hydrated,
             'selection_report' => is_array($report) ? $report : [],
             'reason' => null,
+            'status' => 'resumed',
             'resumed' => true,
             'answered' => $answered,
+        ];
+    }
+
+    /**
+     * Hand back a description of the most recent SUBMITTED attempt instead
+     * of silently drafting a new paper over it.
+     *
+     * Returns null when there is nothing to report, which is the signal for
+     * start() to draw a fresh paper - the normal first-attempt path. Every
+     * field here is already-persisted, submit()-time data; this is a pure
+     * read, same contract as result(), and deliberately does not call
+     * DiagnosticScorer or touch pal_diagnostic_response.
+     *
+     * @return array{attempt_id: null, questions: array, selection_report: array, reason: null, status: string, previous_attempt: array}|null
+     */
+    protected function previousAttempt($studentId, int $chapterId, $subInstituteId, $syear = null): ?array
+    {
+        $query = DiagnosticAttempt::query()
+            ->where('student_id', (int) $studentId)
+            ->where('chapter_id', $chapterId)
+            ->where('sub_institute_id', (int) $subInstituteId)
+            ->submitted();
+
+        if ($syear !== null) {
+            $query->where('syear', (int) $syear);
+        }
+
+        $attempt = $query->orderByDesc('id')->first();
+
+        if ($attempt === null) {
+            return null;
+        }
+
+        return [
+            'attempt_id' => null,
+            'questions' => [],
+            'selection_report' => [],
+            'reason' => null,
+            'status' => 'already_attempted',
+            'previous_attempt' => [
+                'attempt_id' => (int) $attempt->id,
+                'attempt_number' => $attempt->attempt_number,
+                'correct' => (int) $attempt->correct,
+                'total_questions' => (int) $attempt->total_questions,
+                'percentage' => (float) $attempt->percentage,
+                'level' => $attempt->level,
+                'submitted_at' => $attempt->submitted_at,
+            ],
         ];
     }
 
@@ -299,8 +363,18 @@ class DiagnosticService
             $totals = $this->scorer->totals($scored);
             $level = $this->scorer->level($totals['percentage']);
 
+            // Counts only already-submitted attempts, per the product
+            // decision that an abandoned/in_progress paper never held a
+            // number and never will - "1st attempt" means the first one a
+            // learner actually finished.
+            $attemptNumber = DiagnosticAttempt::forStudent($attempt->student_id)
+                ->forChapter($attempt->chapter_id)
+                ->submitted()
+                ->count() + 1;
+
             $attempt->fill([
                 'status' => DiagnosticAttempt::STATUS_SUBMITTED,
+                'attempt_number' => $attemptNumber,
                 'correct' => $totals['correct'],
                 'incorrect' => $totals['incorrect'],
                 'unanswered' => $totals['unanswered'],
@@ -407,6 +481,7 @@ class DiagnosticService
             'chapter_id' => $attempt->chapter_id,
             'subject_id' => $attempt->subject_id,
             'status' => $attempt->status,
+            'attempt_number' => $attempt->attempt_number,
             'total_questions' => (int) $attempt->total_questions,
             'correct' => (int) $attempt->correct,
             'incorrect' => (int) $attempt->incorrect,

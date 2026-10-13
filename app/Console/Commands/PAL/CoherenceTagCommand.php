@@ -77,7 +77,7 @@ class CoherenceTagCommand extends Command
     }
 
     /**
-     * @param  array{scanned: int, tagged: int, ambiguous: int, no_concepts: int, samples: array}  $result
+     * @param  array{scanned: int, tagged: int, ambiguous: int, no_concepts: int, already_reviewed: int, samples: array}  $result
      */
     private function summarise(array $result): void
     {
@@ -88,6 +88,7 @@ class CoherenceTagCommand extends Command
                 ['tagged', $result['tagged'], 'concept link proposed (draft)'],
                 ['ambiguous', $result['ambiguous'], 'chapter has concepts, none matched the text'],
                 ['no_concepts', $result['no_concepts'], 'the row chapter has NO concepts at all'],
+                ['already_reviewed', $result['already_reviewed'] ?? 0, 'a human already reviewed this row - left untouched (C5)'],
             ]
         );
 

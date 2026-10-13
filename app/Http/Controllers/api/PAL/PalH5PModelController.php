@@ -3,6 +3,13 @@
 namespace App\Http\Controllers\api\PAL;
 
 use App\Http\Controllers\Controller;
+use App\Models\lms\h5p\H5pCoursePresentation;
+use App\Models\lms\h5p\h5pFlashcard;
+use App\Models\lms\h5p\H5pPresentationSlide;
+use App\Models\lms\h5p\H5pSlideElement;
+use App\Models\lms\h5p\H5pTrueFalse;
+use App\Models\lms\h5p\H5pTrueFalseQuestion;
+use App\Models\PAL\H5PNodeMetadata;
 use App\Services\PAL\H5P\H5PContentRepository;
 use App\Services\PAL\H5P\H5PEngagementService;
 use App\Services\PAL\H5P\H5PInsightService;
@@ -12,6 +19,7 @@ use App\Services\PAL\H5P\H5PTaggingService;
 use App\Services\PAL\H5P\H5PXapiPipeline;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * PAL V4 — H5P Model API.
@@ -213,6 +221,701 @@ class PalH5PModelController extends Controller
             'engagement' => $engagement[$node['node_key']] ?? null,
             'pedagogies' => $this->registry->pedagogiesForH5pType($node['h5p_type'], $context['sub_institute_id']),
         ]);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // Generation from existing PAL content
+    // ══════════════════════════════════════════════════════════════════════
+
+    /**
+     * POST /api/pal/h5p/concepts/{conceptId}/generate/flashcard
+     *
+     * The first "Generate Interactive Version" pilot. PAL already decided
+     * this concept is worth teaching - `lms_concept.name` + `.definition` -
+     * so this makes an H5P version of THAT content rather than asking a
+     * teacher to re-author it from scratch in the flashcard editor. One
+     * `h5p_flashcard` row, tagged straight to this concept through the same
+     * `H5PTaggingService::store()` the H5P Model workspace uses, so
+     * `ConceptLearningResourceService::h5pForConcept()` picks it up on the
+     * very next Learn read - no other code path involved, no new table.
+     *
+     * Written straight to `quality_status: approved`: a teacher explicitly
+     * triggered this one card from curriculum data that was already reviewed
+     * (the concept itself), which is a different trust level than an
+     * autonomous AI sweep - CONTENT LAW C5 is about the latter never
+     * self-promoting, not about a human's own click needing a second click to
+     * confirm itself.
+     *
+     * Idempotent: re-running this for a concept that already has a generated
+     * flashcard (e.g. after the concept's definition changes) updates that
+     * same card instead of creating a second one.
+     */
+    public function generateFlashcardFromConcept(Request $request, int $conceptId): JsonResponse
+    {
+        if ($denied = $this->denyStudents($request, 'Generating H5P content is not available to students.')) {
+            return $denied;
+        }
+
+        $tenant = $this->writeTenantFor($request);
+        if ($tenant === null) {
+            return $this->fail('Cannot resolve a single institute for this write.', 422);
+        }
+
+        $concept = DB::table('lms_concept')->where('id', $conceptId)->first();
+        if ($concept === null) {
+            return $this->fail("Unknown concept {$conceptId}.", 404);
+        }
+
+        $term = trim((string) $concept->name);
+        $definition = trim((string) ($concept->definition ?: $concept->description ?: ''));
+
+        if ($term === '' || $definition === '') {
+            return $this->fail('This concept has no name/definition to build a flashcard from yet.', 422);
+        }
+
+        $auth = $request->attributes->get('pal_auth');
+        $userId = (int) ($auth['user_id'] ?? 0);
+
+        $existingTag = H5PNodeMetadata::where('h5p_type', 'flash_cards')
+            ->where('concept_ref_id', $conceptId)
+            ->forTenant($tenant)
+            ->first();
+
+        $cardAttributes = [
+            'sub_institute_id' => $tenant,
+            'standard_id' => $concept->standard_id,
+            'subject_id' => $concept->subject_id,
+            'chapter_id' => $concept->chapter_id,
+            // The definition is the stimulus a learner reads first; the term
+            // is what they have to recall and type back. Asking for the whole
+            // definition verbatim would make the typed-answer check in
+            // FlashcardPlayerContent::handleCheck() fail on any paraphrase.
+            'content' => $definition,
+            'question' => 'Which term does this describe?',
+            'correct_answer' => mb_strtolower($term),
+            'hint' => $term,
+            'updated_by' => $userId,
+            'updated_at' => now(),
+        ];
+
+        $card = $existingTag ? h5pFlashcard::find($existingTag->node_id) : null;
+
+        if ($card === null) {
+            $card = h5pFlashcard::create($cardAttributes + ['created_by' => $userId, 'created_at' => now()]);
+        } else {
+            $card->update($cardAttributes);
+        }
+
+        $context = [
+            'chapter_id' => (int) $concept->chapter_id,
+            'subject_id' => (int) $concept->subject_id,
+            'standard_id' => (int) $concept->standard_id,
+            'sub_institute_id' => $tenant,
+        ];
+
+        $node = $this->repository->node('flash_cards', (int) $card->id, $context);
+        if ($node === null) {
+            return $this->fail('The flashcard was saved but could not be re-read as an H5P node.', 500);
+        }
+
+        $saved = $this->tagging->store($node, $context, [
+            'concept_ref_id' => $conceptId,
+            'pedagogy_tag' => 'flashcard',
+            'quality_status' => 'approved',
+        ], [
+            'user_id' => $userId,
+            'is_ai' => false,
+        ]);
+
+        return $this->ok([
+            'node' => $node,
+            'model' => $saved,
+            'concept_id' => $conceptId,
+        ]);
+    }
+
+    /**
+     * POST /api/pal/h5p/chapters/{chapterId}/generate/course-presentation
+     *
+     * The second "Generate Interactive Version" pilot: teach → question →
+     * teach → question, one pair per topic, built from content PAL already
+     * has - no separately-authored H5P deck, no invented questions.
+     *
+     * "Topic" is `lms_concept` (the same breakdown the flashcard pilot reads,
+     * and what a chapter's Classroom Resource is scoped to - content_master
+     * has no finer-grained link than the chapter). "Teach" is the concept's
+     * own definition/description, exactly as the flashcard pilot uses it.
+     * "Question" is ONE existing `lms_question_master` row already tagged to
+     * that concept_id, materialised into the slide's own `multiple_choice`
+     * element - its text and options copied verbatim from `answer_master`,
+     * never generated. Only auto-gradable types are eligible (1 = multiple
+     * choice, 8 = assertion & reason); narrative/case-based types (2, 4, 7)
+     * cannot be checked inline and are left out, not converted into
+     * something they are not.
+     *
+     * UNLIKE THE FLASHCARD PILOT, this node is chapter-scoped, not
+     * concept-scoped: one deck covers every topic in the chapter, matching
+     * how a Classroom Resource is already chapter-wide in this estate (see
+     * ConceptLearningResourceService's own docblock on content_master).
+     * `concept_ref_id` is written as null on purpose -
+     * ConceptLearningResourceService::h5pForConcept() has the matching read
+     * side, surfacing it under every concept in the chapter with a "whole
+     * chapter" scope tag, the same honesty rule content_master rows already
+     * follow.
+     *
+     * Idempotent: re-running this for a chapter that already has a generated
+     * deck (h5p_type=course_presentation, concept_ref_id null, this chapter)
+     * rebuilds that same deck's slides rather than creating a second one.
+     */
+    public function generateCoursePresentationFromChapter(Request $request, int $chapterId): JsonResponse
+    {
+        if ($denied = $this->denyStudents($request, 'Generating H5P content is not available to students.')) {
+            return $denied;
+        }
+
+        $tenant = $this->writeTenantFor($request);
+        if ($tenant === null) {
+            return $this->fail('Cannot resolve a single institute for this write.', 422);
+        }
+
+        $concepts = DB::table('lms_concept')->where('chapter_id', $chapterId)->orderBy('id')->get();
+        if ($concepts->isEmpty()) {
+            return $this->fail("Chapter {$chapterId} has no concepts to build a lesson from.", 422);
+        }
+
+        $auth = $request->attributes->get('pal_auth');
+        $userId = (int) ($auth['user_id'] ?? 0);
+        $first = $concepts->first();
+
+        $existingTag = H5PNodeMetadata::where('h5p_type', 'course_presentation')
+            ->whereNull('concept_ref_id')
+            ->where('chapter_id', $chapterId)
+            ->forTenant($tenant)
+            ->first();
+
+        $deckAttributes = [
+            'sub_institute_id' => $tenant,
+            'standard_id' => $first->standard_id,
+            'subject_id' => $first->subject_id,
+            'chapter_id' => $chapterId,
+            'title' => 'Interactive lesson',
+            'description' => 'Generated from this chapter\'s concepts and question bank.',
+            'status' => 'published',
+            'published_at' => now(),
+            'pass_percentage' => 60,
+            // The player shows this "N/total slides VISITED" counter above the
+            // slide, and "current slide X of total" below it - both against the
+            // same denominator, easily read as two disagreeing numbers (visited
+            // 3, currently on slide 1). One position readout is enough for a
+            // linear teach/question walk-through; the visited count is more
+            // useful on a deck a learner jumps around in non-linearly.
+            'show_progress_bar' => false,
+            'library' => 'H5P.CoursePresentation 1.25',
+            'updated_by' => $userId,
+            'updated_at' => now(),
+        ];
+
+        $deck = $existingTag ? H5pCoursePresentation::find($existingTag->node_id) : null;
+
+        if ($deck === null) {
+            $deck = H5pCoursePresentation::create($deckAttributes + ['created_by' => $userId, 'created_at' => now()]);
+        } else {
+            $deck->update($deckAttributes);
+            // Rebuilt from scratch each time, not merged: a deterministic
+            // generator re-running against the same concepts/questions
+            // should leave one clean deck, not an accumulation of stale
+            // slides alongside the current ones.
+            H5pSlideElement::where('presentation_id', $deck->id)->forceDelete();
+            H5pPresentationSlide::where('presentation_id', $deck->id)->forceDelete();
+        }
+
+        $slideIndex = 0;
+        $previousSlide = null;
+
+        // A slide title's prefix is the grouping key the frontend sidebar
+        // reads (see the course-presentation player's topic grouping): a
+        // bare concept name starts a new topic group, 'Try it:'/'Check:'
+        // continue the group started by the most recent bare title. Chosen
+        // over a new `group_label` column so this stays a convention any
+        // deck can opt into, not a schema change to a table every native
+        // type's presentations share.
+        $addSlide = function (string $title, array $elementAttributes) use (
+            &$slideIndex, &$previousSlide, $deck, $tenant, $userId
+        ) {
+            $slide = H5pPresentationSlide::create([
+                'presentation_id' => $deck->id,
+                'slide_index' => $slideIndex++,
+                'title' => $title,
+                'sub_institute_id' => $tenant,
+                'created_by' => $userId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            $previousSlide?->update(['next_slide_id' => $slide->id]);
+            $previousSlide = $slide;
+
+            H5pSlideElement::create($elementAttributes + [
+                'presentation_id' => $deck->id,
+                'slide_id' => $slide->id,
+                'position_x' => 10,
+                'position_y' => 15,
+                'width' => 80,
+                'height' => 70,
+                'sort_order' => 0,
+                'sub_institute_id' => $tenant,
+                'created_by' => $userId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        };
+
+        foreach ($concepts as $concept) {
+            $definition = trim((string) ($concept->definition ?: $concept->description ?: ''));
+            if ($definition === '') {
+                continue;
+            }
+
+            $question = $this->pickQuestionForConcept((int) $concept->id, $tenant);
+
+            // Teach — the concept's own definition, plus (when the concept's
+            // own question bank happens to carry one) the worked example
+            // already authored in that question's `explanation` field. Real,
+            // reviewed text pulled from data that already exists; nothing
+            // below is generated for this slide.
+            $teach = $definition;
+            if ($question !== null && $question['explanation'] !== '') {
+                $teach .= "\n\nFor example: " . $question['explanation'];
+            }
+
+            $addSlide($concept->name, [
+                'element_type' => 'text',
+                'content_text' => $teach,
+            ]);
+
+            // Interact — a cloze built from the SAME definition sentence, not
+            // a second piece of content: the blanked word is one already
+            // sitting in `$definition`, chosen deterministically (see
+            // buildClozeFromDefinition), so completing it is a first,
+            // low-stakes check that the explanation just given landed.
+            $cloze = $this->buildClozeFromDefinition($definition);
+            if ($cloze !== null) {
+                $addSlide('Try it: ' . $concept->name, [
+                    'element_type' => 'blanks',
+                    'content_text' => null,
+                    'options' => [
+                        'task_description' => 'Complete the idea in your own words.',
+                        'passage' => $cloze,
+                    ],
+                    'points' => 1,
+                ]);
+            }
+
+            // Practice — an existing, already-approved question bank item for
+            // this exact concept, materialised verbatim (see
+            // pickQuestionForConcept's own docblock on why only types 1 and 8
+            // are eligible).
+            if ($question !== null) {
+                $addSlide('Check: ' . $concept->name, [
+                    'element_type' => 'multiple_choice',
+                    'content_text' => $question['title'],
+                    'options' => ['answers' => $question['answers']],
+                    // Provenance, not a live reference: which question bank
+                    // row this slide's text/options were copied from.
+                    'ref_content_id' => $question['id'],
+                    'points' => 1,
+                ]);
+            }
+        }
+
+        if ($slideIndex === 0) {
+            return $this->fail('No concept in this chapter has anything to teach from yet.', 422);
+        }
+
+        $context = [
+            'chapter_id' => $chapterId,
+            'subject_id' => (int) $first->subject_id,
+            'standard_id' => (int) $first->standard_id,
+            'sub_institute_id' => $tenant,
+        ];
+
+        $node = $this->repository->node('course_presentation', (int) $deck->id, $context);
+        if ($node === null) {
+            return $this->fail('The lesson was saved but could not be re-read as an H5P node.', 500);
+        }
+
+        $saved = $this->tagging->store($node, $context, [
+            'concept_ref_id' => null,
+            'pedagogy_tag' => 'inquiry_based',
+            'quality_status' => 'approved',
+        ], [
+            'user_id' => $userId,
+            'is_ai' => false,
+        ]);
+
+        return $this->ok([
+            'node' => $node,
+            'model' => $saved,
+            'chapter_id' => $chapterId,
+            'slide_count' => $slideIndex,
+        ]);
+    }
+
+    /**
+     * POST /api/pal/h5p/chapters/{chapterId}/generate/true-false
+     *
+     * The third "Generate Interactive Version" pilot, and the first to give a
+     * chapter's topics genuinely DIFFERENT interaction shapes instead of
+     * folding every one of them into the same course-presentation deck (see
+     * generateCoursePresentationFromChapter() just above). Where a concept's
+     * approved question already reads, option by option, as a set of
+     * free-standing claims - an MCQ whose answers are full sentences, not bare
+     * values - those exact option texts become one H5P.TrueFalse pool for
+     * THAT concept: a quick tap-true-or-false check, tagged
+     * `concept_ref_id = concept.id` so it surfaces on the Learn page as its
+     * own card next to (not instead of) the chapter's deck.
+     *
+     * NOTHING IS INVENTED. A statement is always an `answer_master.answer`
+     * value, used verbatim, carrying that SAME answer's own `correct_answer`
+     * flag and `feedback` - the identical source `pickQuestionForConcept()`
+     * already trusts for the course-presentation "Check" slide, just read one
+     * option at a time instead of collapsed into one four-way choice. The
+     * only judgement call this makes is *whether an option reads like a
+     * statement* (readsAsStatement() below) - never what it says. A concept
+     * whose only eligible question has short/numeric options (most
+     * arithmetic, most "which value" questions) yields nothing: no card, no
+     * rewritten text. That is an ordinary, expected outcome, not an error -
+     * exactly the honesty rule `h5pForConcept()` already applies to every
+     * other resource kind.
+     *
+     * Idempotent per concept, like the other two pilots: re-running this for
+     * a chapter replaces each concept's existing pool (matched by
+     * `concept_ref_id`) rather than creating a second one.
+     */
+    public function generateTrueFalseFromChapter(Request $request, int $chapterId): JsonResponse
+    {
+        if ($denied = $this->denyStudents($request, 'Generating H5P content is not available to students.')) {
+            return $denied;
+        }
+
+        $tenant = $this->writeTenantFor($request);
+        if ($tenant === null) {
+            return $this->fail('Cannot resolve a single institute for this write.', 422);
+        }
+
+        $concepts = DB::table('lms_concept')->where('chapter_id', $chapterId)->orderBy('id')->get();
+        if ($concepts->isEmpty()) {
+            return $this->fail("Chapter {$chapterId} has no concepts to build a check from.", 422);
+        }
+
+        $auth = $request->attributes->get('pal_auth');
+        $userId = (int) ($auth['user_id'] ?? 0);
+
+        $generated = [];
+        $skipped = [];
+
+        foreach ($concepts as $concept) {
+            $statements = $this->buildTrueFalseStatements((int) $concept->id, $tenant);
+
+            if (count($statements) < 2) {
+                $skipped[] = [
+                    'concept_id' => (int) $concept->id,
+                    'name' => $concept->name,
+                    'reason' => 'no_eligible_statements',
+                ];
+                continue;
+            }
+
+            $existingTag = H5PNodeMetadata::where('h5p_type', 'true_false')
+                ->where('concept_ref_id', $concept->id)
+                ->forTenant($tenant)
+                ->first();
+
+            $poolAttributes = [
+                'sub_institute_id' => $tenant,
+                'standard_id' => $concept->standard_id,
+                'subject_id' => $concept->subject_id,
+                'chapter_id' => $chapterId,
+                'title' => 'Quick check: ' . $concept->name,
+                'description' => 'Generated from this concept\'s own question bank.',
+                'task_description' => 'True or false?',
+                'status' => 'published',
+                'published_at' => now(),
+                'randomize_questions' => true,
+                // 0 -> the whole pool every attempt. These pools run 2-4
+                // statements (one source question's answer options), which is
+                // already a short bell-ringer - there is nothing to sample
+                // down from.
+                'questions_to_ask' => 0,
+                'pass_percentage' => 60,
+                'library' => 'H5P.TrueFalse 1.8',
+                'updated_by' => $userId,
+                'updated_at' => now(),
+            ];
+
+            $pool = $existingTag ? H5pTrueFalse::find($existingTag->node_id) : null;
+
+            if ($pool === null) {
+                $pool = H5pTrueFalse::create($poolAttributes + ['created_by' => $userId, 'created_at' => now()]);
+            } else {
+                $pool->update($poolAttributes);
+                // Rebuilt from scratch, same reasoning as the
+                // course-presentation slides just above: a deterministic
+                // generator re-run should leave one clean pool, not stale
+                // statements sitting alongside the current ones.
+                H5pTrueFalseQuestion::where('true_false_id', $pool->id)->forceDelete();
+            }
+
+            foreach ($statements as $index => $statement) {
+                H5pTrueFalseQuestion::create([
+                    'true_false_id' => $pool->id,
+                    'question_text' => $statement['text'],
+                    'correct_answer' => $statement['correct'],
+                    'feedback_correct' => $statement['correct'] ? $statement['feedback'] : null,
+                    'feedback_incorrect' => $statement['correct'] ? null : $statement['feedback'],
+                    'sort_order' => $index,
+                    'sub_institute_id' => $tenant,
+                    'created_by' => $userId,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
+            $context = [
+                'chapter_id' => $chapterId,
+                'subject_id' => (int) $concept->subject_id,
+                'standard_id' => (int) $concept->standard_id,
+                'sub_institute_id' => $tenant,
+            ];
+
+            $node = $this->repository->node('true_false', (int) $pool->id, $context);
+            if ($node === null) {
+                $skipped[] = [
+                    'concept_id' => (int) $concept->id,
+                    'name' => $concept->name,
+                    'reason' => 'could_not_reread',
+                ];
+                continue;
+            }
+
+            $saved = $this->tagging->store($node, $context, [
+                'concept_ref_id' => (int) $concept->id,
+                'pedagogy_tag' => 'game_based',
+                'quality_status' => 'approved',
+            ], [
+                'user_id' => $userId,
+                'is_ai' => false,
+            ]);
+
+            $generated[] = [
+                'concept_id' => (int) $concept->id,
+                'name' => $concept->name,
+                'node_id' => (int) $pool->id,
+                'statement_count' => count($statements),
+                'model' => $saved,
+            ];
+        }
+
+        if ($generated === []) {
+            return $this->fail(
+                'No concept in this chapter has question options that read as standalone statements yet.',
+                422
+            );
+        }
+
+        return $this->ok([
+            'chapter_id' => $chapterId,
+            'generated' => $generated,
+            'skipped' => $skipped,
+        ]);
+    }
+
+    /**
+     * The statement pool for one concept's True/False check, or an empty
+     * array when nothing qualifies.
+     *
+     * Source: the SAME already-approved MCQ / assertion-and-reason question
+     * `pickQuestionForConcept()` uses for the course-presentation "Check"
+     * slide - but every answer option, not just the correct one, each
+     * becoming an independent true-or-false claim rather than one four-way
+     * choice. That is a genuinely different interaction, not a re-skin: a
+     * learner evaluates each statement on its own instead of picking the
+     * best of four.
+     */
+    /**
+     * The widest pool this generator will ever write for one concept - see
+     * generateTrueFalseFromChapter()'s own note on why a pool authored once
+     * can afford to be wider than one attempt asks.
+     */
+    protected const TRUE_FALSE_POOL_LIMIT = 8;
+
+    protected function buildTrueFalseStatements(int $conceptId, int $tenant): array
+    {
+        $questions = DB::table('lms_question_master')
+            ->where('concept_id', $conceptId)
+            ->whereIn('question_type_id', [1, 8])
+            ->where('status', 1)
+            ->whereIn('sub_institute_id', [$tenant, 0])
+            ->orderBy('id')
+            ->get(['id']);
+
+        if ($questions->isEmpty()) {
+            return [];
+        }
+
+        // Every eligible question's options are candidates, not just the
+        // first question by id - a concept's questions vary in how
+        // sentence-like their options read (see the pilot notes: one
+        // question's options are all bare values, the next question's are
+        // full rule statements), and taking only the first would leave a
+        // concept with real eligible content skipped over a coincidence of
+        // ordering. Pooled across questions, deduplicated by text, capped at
+        // TRUE_FALSE_POOL_LIMIT so a concept with many eligible questions
+        // still gets a short bell-ringer, not an exam.
+        $statements = [];
+        $seen = [];
+
+        foreach ($questions as $question) {
+            if (count($statements) >= self::TRUE_FALSE_POOL_LIMIT) {
+                break;
+            }
+
+            $answers = DB::table('answer_master')
+                ->where('question_id', $question->id)
+                ->orderBy('id')
+                ->get(['answer', 'correct_answer', 'feedback']);
+
+            foreach ($answers as $answer) {
+                $text = trim((string) $answer->answer);
+                $key = mb_strtolower($text);
+
+                if (! $this->readsAsStatement($text) || isset($seen[$key])) {
+                    continue;
+                }
+
+                $seen[$key] = true;
+                $statements[] = [
+                    'text' => $text,
+                    'correct' => (bool) $answer->correct_answer,
+                    'feedback' => trim((string) ($answer->feedback ?? '')) ?: null,
+                ];
+
+                if (count($statements) >= self::TRUE_FALSE_POOL_LIMIT) {
+                    break;
+                }
+            }
+        }
+
+        return $statements;
+    }
+
+    /**
+     * Heuristic only, never a rewrite: true when `$text` already reads as a
+     * self-contained claim rather than a bare value - at least two real
+     * words (three-plus letters each) and enough length to plausibly stand
+     * alone as a sentence. "$-54$", "12", "Option B" fail this on purpose:
+     * most arithmetic / "which value" answers do, which is exactly why they
+     * stay on the MCQ / course-presentation path instead of being forced
+     * into a shape they were never authored in.
+     */
+    protected function readsAsStatement(string $text): bool
+    {
+        if (mb_strlen($text) < 20) {
+            return false;
+        }
+
+        return (bool) preg_match('/[A-Za-z]{3,}.*[A-Za-z]{3,}/', $text);
+    }
+
+    /**
+     * One existing, already-approved question bank item for this concept,
+     * with its options copied from `answer_master` - or null when the
+     * concept has nothing auto-gradable to offer.
+     *
+     * question_type_id 1 (multiple choice) and 8 (assertion & reason) are
+     * both rendered as a single-answer choice; 2/4/7 (narrative, hot
+     * questions, CBE) have no fixed answer set an inline player could check,
+     * so they are left for a human to review rather than forced into a
+     * shape they were never authored in.
+     *
+     * @return array{id:int,title:string,explanation:string,answers:array<int,array{text:string,correct:bool,feedback:string}>}|null
+     */
+    protected function pickQuestionForConcept(int $conceptId, int $tenant): ?array
+    {
+        $question = DB::table('lms_question_master')
+            ->where('concept_id', $conceptId)
+            ->whereIn('question_type_id', [1, 8])
+            ->where('status', 1)
+            ->whereIn('sub_institute_id', [$tenant, 0])
+            ->orderBy('id')
+            ->first(['id', 'question_title', 'answer']);
+
+        if ($question === null) {
+            return null;
+        }
+
+        $answers = DB::table('answer_master')
+            ->where('question_id', $question->id)
+            ->orderBy('id')
+            ->get(['answer', 'correct_answer', 'feedback']);
+
+        if ($answers->isEmpty()) {
+            return null;
+        }
+
+        // The worked example already authored alongside this question, e.g.
+        // "...for example 6 x (-9) = -54". Best-effort: a question authored
+        // before this field existed, or with malformed JSON, simply has no
+        // explanation to add - the teach slide still has the concept's own
+        // definition either way.
+        $explanation = '';
+        $decoded = json_decode((string) $question->answer, true);
+        if (is_array($decoded) && is_string($decoded['explanation'] ?? null)) {
+            $explanation = trim($decoded['explanation']);
+        }
+
+        return [
+            'id' => (int) $question->id,
+            'title' => (string) $question->question_title,
+            'explanation' => $explanation,
+            'answers' => $answers->map(fn ($row) => [
+                'text' => (string) $row->answer,
+                'correct' => (bool) $row->correct_answer,
+                'feedback' => (string) ($row->feedback ?? ''),
+            ])->all(),
+        ];
+    }
+
+    /**
+     * A one-blank cloze built from a concept's own definition, or null when
+     * the sentence has nothing worth blanking.
+     *
+     * Deterministic on purpose, not a second piece of authored content: the
+     * blanked word is whichever content word ends the sentence (concept
+     * definitions in this estate consistently land on the key term there -
+     * "...is always *negative*.", "...is called the *product*." - the same
+     * pattern the existing hand-authored narrative questions use, e.g.
+     * "The product...is always ______"). A short or stopword-only tail
+     * yields no blank rather than a misleading one.
+     */
+    protected function buildClozeFromDefinition(string $definition): ?string
+    {
+        $stopwords = ['always', 'never', 'called', 'known', 'their', 'there', 'these', 'those', 'about'];
+
+        if (! preg_match('/([A-Za-z]{4,})\W*$/', rtrim($definition, " \t\n\r\0\x0B."), $match)) {
+            return null;
+        }
+
+        $word = $match[1];
+        if (in_array(mb_strtolower($word), $stopwords, true)) {
+            return null;
+        }
+
+        $start = mb_strrpos($definition, $word);
+        if ($start === false) {
+            return null;
+        }
+
+        return mb_substr($definition, 0, $start) . '*' . $word . '*' . mb_substr($definition, $start + mb_strlen($word));
     }
 
     /**

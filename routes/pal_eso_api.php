@@ -44,6 +44,14 @@ Route::prefix('api/pal/eso')->middleware('pal.auth')->group(function () {
     Route::get('/reports/attainment', [AttainmentReportController::class, 'attainment'])
         ->name('pal.eso.reports.attainment');
 
+    // Same cohort data as above, plus one short LLM-generated narrative
+    // paragraph for a teacher — grounded only in attainment()'s own numbers,
+    // same shape as CoherenceMapController::explain() (retrieval and
+    // generation are separate steps; a missing/unconfigured model is a clean
+    // failure, not a fabricated narrative).
+    Route::get('/reports/attainment/narrative', [AttainmentReportController::class, 'attainmentNarrative'])
+        ->name('pal.eso.reports.attainment_narrative');
+
     // Can the tagged pool fill a board's paper pattern? Counts only — it
     // returns no questions, because the exam-reservation rule (#6) is still
     // undecided.

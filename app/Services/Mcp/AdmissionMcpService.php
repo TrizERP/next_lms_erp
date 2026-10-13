@@ -73,7 +73,7 @@ class AdmissionMcpService
             })
             ->filter(function ($row) use ($filters) {
                 if (!empty($filters['only_pending'])) {
-                    return !in_array(strtolower((string) $row['status']), ['approved', 'converted', 'closed', 'cancel'], true);
+                    return !in_array(strtolower((string) $row['status']), ['approve', 'approved', 'converted', 'closed', 'cancel'], true);
                 }
                 return true;
             })

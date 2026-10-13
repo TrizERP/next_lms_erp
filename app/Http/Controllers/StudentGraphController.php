@@ -207,7 +207,41 @@ class StudentGraphController extends Controller
     /**
      * Get student assessment data with scores and levels
      * Gets all assessments and returns the last exam for each chapter
-     * 
+     *
+     * REBUILT 2026-10-10. The previous query hard-required
+     * `(stu)-[:MASTERS]->(ch:Chapter)` AND `(ass)-[:ASSESSES_CHAPTER]->
+     * (ch:Chapter)` on the SAME chapter. Both edges are real but
+     * write-gated and almost never populated (confirmed live on
+     * dev.triz.co.in:7688 on 2026-10-10: MASTERS has 4 edges and
+     * ASSESSES_CHAPTER has 4 edges in the ENTIRE graph) - requiring both to
+     * land on the same (student, chapter) pair meant this endpoint returned
+     * a row for only a handful of students total, which is the "broken in
+     * practice" finding this rebuild exists to fix.
+     *
+     * ASSESSES_CHAPTER's dependency is fixed by using the edge every other
+     * PAL feature already relies on instead: the per-question
+     * `(:Question)-[:ASSESSES]->(:Concept)` / `(:Question)-[:BELONGS_TO]->
+     * (:Chapter)` edges are real and well-populated (36,394 / 38,052 edges
+     * live, same day), written whenever a question is tagged with a
+     * concept/chapter rather than through the legacy per-assessment
+     * write path. An assessment's chapter is therefore derived by walking
+     * `(ass)-[:HAS_QUESTION]->(q:Question)-[:BELONGS_TO]->(ch:Chapter)`
+     * (26,072 HAS_QUESTION edges live) - the same aggregation
+     * `App\Services\Graph\CoherenceGraphProjection` and every other
+     * chapter-level PAL read already perform over this exact edge pair,
+     * not a new assumption invented for this controller.
+     *
+     * MASTERS is NOT similarly fixable: there is no other live edge that
+     * records a student's mastery of a chapter at scale (same gap the
+     * project's own PAL Intelligence lineage note already flags -
+     * `pal_competencies` is derived, not captured, and nothing writes
+     * MASTERS/MASTERS_CHAPTER beyond the 4 legacy rows). Forcing it to a
+     * hard MATCH would keep this endpoint broken for everyone except those
+     * 4 rows; inventing mastery data would be fabrication. It is therefore
+     * now an OPTIONAL MATCH - mastery score is returned WHEN it exists
+     * (`mastery_score`, null otherwise) rather than gating the whole
+     * response on data that, for almost every student, does not exist.
+     *
      * @param Request $request
      * @return JsonResponse
      */
@@ -250,33 +284,32 @@ class StudentGraphController extends Controller
             $query = 'MATCH (sd:StuDetail {student_id: $studentId, sub_institute_id: $subInstituteId})
       -[:HAS_STUDENT]->(stu:Student)
 MATCH (stu)-[:ENROLLED_IN]->(st:Standard)
-MATCH (st)-[:HAS_SUBJECT]->(sub:Subject)
-MATCH (stu)-[m:MASTERS]->(ch:Chapter)
+OPTIONAL MATCH (st)-[:HAS_SUBJECT]->(sub:Subject)
 MATCH (stu)-[:HAS_RESULT]->(r:Result)-[:FOR_ASSESSMENT]->(ass:Assessment)
-MATCH (ass)-[:ASSESSES_CHAPTER]->(ch:Chapter)
-MATCH (ass)-[:HAS_QUESTION]->(q:Question)
-WITH sd, stu, st, sub, ch, ass,
+MATCH (ass)-[:HAS_QUESTION]->(q:Question)-[:BELONGS_TO]->(ch:Chapter)
+OPTIONAL MATCH (stu)-[m:MASTERS]->(ch)
+WITH sd, stu, st, sub, ch, ass, m.proficiency_score AS mastery_score,
      COLLECT(DISTINCT q.qId) AS question_ids,
      MAX(r.obtain_marks) AS obtained_marks,
      COALESCE(ass.total_marks, 0) AS total_marks
 /* Percentage */
-WITH sd, stu, st, sub, ch, ass,
+WITH sd, stu, st, sub, ch, ass, mastery_score,
      question_ids,
      obtained_marks,
      total_marks,
-     CASE 
-        WHEN total_marks > 0 
+     CASE
+        WHEN total_marks > 0
         THEN (obtained_marks * 1.0 / total_marks) * 100
         ELSE 0
      END AS percentage
 
 /* Level */
-WITH sd, stu, st, sub, ch, ass,
+WITH sd, stu, st, sub, ch, ass, mastery_score,
      question_ids,
      total_marks,
      obtained_marks,
      percentage,
-     CASE 
+     CASE
         WHEN percentage < 40 THEN "easy"
         WHEN percentage < 70 THEN "medium"
         ELSE "hard"
@@ -296,7 +329,8 @@ RETURN  stu.student_id                     AS student_id,
   total_marks                        AS assessment_total,
   obtained_marks                     AS obtained_marks,
   ROUND(percentage,2)                AS student_average_score,
-  student_level                      AS student_level
+  student_level                      AS student_level,
+  mastery_score                      AS mastery_score
 
 LIMIT 1
 ';
@@ -321,7 +355,12 @@ LIMIT 1
                     'assessment_total' => $record->get('assessment_total'),
                     'obtained_marks' => $record->get('obtained_marks'),
                     'student_average_score' => $record->get('student_average_score'),
-                    'student_level' => $record->get('student_level')
+                    'student_level' => $record->get('student_level'),
+                    // Real, when MASTERS happens to have been recorded for this
+                    // chapter (4 edges in the whole graph as of 2026-10-10) -
+                    // null otherwise. See this method's docblock for why this is
+                    // optional rather than required.
+                    'mastery_score' => $record->get('mastery_score')
                 ];
             }
 

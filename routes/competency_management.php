@@ -286,6 +286,22 @@ Route::middleware(['api.session', 'staff.only'])->group(function () {
     Route::put('competency/library/kasa/{type}/{id}', [CapabilityLibraryController::class, 'updateKasa'])->whereNumber('id');
     Route::delete('competency/library/kasa/{type}/{id}', [CapabilityLibraryController::class, 'destroyKasa'])->whereNumber('id');
 
+    // ---------------------------------------------------------------
+    // Cross-product: G2G's (hp_erp) real Competency/KASBA/Framework graph,
+    // read live over HTTP via App\Services\Integrations\G2GCompetencyGraphClient.
+    //
+    // Deliberately SEPARATE from the routes above, not a replacement for them.
+    // The routes above read this application's OWN tables (ported from G2G's
+    // schema, but populated independently per tenant) - swapping their
+    // behaviour for an upstream call that has no working credential today
+    // would turn an already-working screen into a permanently-broken one.
+    // These `cross-product/*` routes are additive: they surface what G2G
+    // itself has, honestly reporting "unavailable" until a real hp_erp token
+    // is provisioned (see G2GCompetencyGraphClient's class doc).
+    // ---------------------------------------------------------------
+    Route::get('competency/library/cross-product/status', [CapabilityLibraryController::class, 'crossProductStatus']);
+    Route::get('competency/library/cross-product/kasba/{type}', [CapabilityLibraryController::class, 'crossProductKasba']);
+
     Route::post('competency/library/invisible/{id}/clone', [CapabilityLibraryController::class, 'cloneInvisible'])->whereNumber('id');
     Route::get('competency/library/invisible', [CapabilityLibraryController::class, 'invisible']);
     Route::post('competency/library/invisible', [CapabilityLibraryController::class, 'storeInvisible']);

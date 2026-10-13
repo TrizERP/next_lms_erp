@@ -12,6 +12,8 @@ use App\Models\lms\topicModel;
 use App\Models\student\tblstudentEnrollmentModel;
 use App\Services\lms\Content\ContentOwnershipDecorator;
 use App\Services\lms\Content\H5PContentAdapter;
+use App\Services\QuestionGeneration\QuestionEnvelope;
+use App\Services\QuestionGeneration\QuestionFormResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
@@ -608,7 +610,7 @@ class ApiLmsCourseController extends Controller
         return $name;
     }
 
-    private function getChapterContentCategories($chapter_id, $subject_id, $standard_id, $sub_institute_id, ?string $source = null): array
+    private function getChapterContentCategories($chapter_id, $subject_id, $standard_id, $sub_institute_id, ?string $source = null, ?array $callerIdentity = null): array
     {
         $getIsLms = DB::table('school_setup')
             ->where('Id', $sub_institute_id)
@@ -647,6 +649,24 @@ class ApiLmsCourseController extends Controller
         foreach ($content_data as $content) {
             $contentArray = (array)$content;
             $contentArray['url'] = $this->resolveContentUrl($contentArray);
+            // A study deck is an ordinary presentation row that opens in the interactive player. Adds a field only.
+            if ($deepLink = \App\Services\ContentGenerationService::studyDeckDeepLink($contentArray)) {
+                $contentArray['deep_link'] = $deepLink;
+            }
+            // Its classroom PDF (a second file of the same item), offered only when it is really stored.
+            if ($pdfUrl = \App\Services\ContentGenerationService::studyDeckPdfUrl($contentArray)) {
+                $contentArray['pdf_url'] = $pdfUrl;
+            }
+            // A study document (revision notes, remedial class, classroom activities): its PDF is its primary file, and
+            // the app reads it in place, with an online practice beside it. Says which kind it is, only when the file
+            // name and the library category agree. Adds fields only.
+            if (($docKind = \App\Services\ContentGenerationService::studyDocumentKind($contentArray['filename'] ?? null))
+                && \App\Services\StudyDeck\Documents\DocumentKind::fromCategory($contentArray['content_category'] ?? null) === $docKind) {
+                $contentArray['study_doc_kind'] = $docKind->value;
+                if ($pdfUrl = \App\Services\ContentGenerationService::studyDocumentPdfUrl($contentArray)) {
+                    $contentArray['pdf_url'] = $pdfUrl;
+                }
+            }
             // concept_id is unstamped on virtually every row, so the lms_concept
             // join alone leaves the concept blank. Generated content still records
             // it in the description, which is the only place it survives.
@@ -698,6 +718,25 @@ class ApiLmsCourseController extends Controller
                 ->apply($h5pAssets, $sub_institute_id, 'h5p');
         }
 
+        // Prayogshala: practical / experiment activities, merged in exactly like H5P above
+        // so they appear under "All content" and under their own tab from the same
+        // response - nothing is copied into content_master and the frontend aggregates
+        // nothing. The institute comes from the VERIFIED token, never from the request
+        // body this route also accepts; with no valid token there are no rows. A learner
+        // token sees published activities only. Uploaded/Generated source views are about
+        // files, so authored activities are left out of them.
+        if ($callerIdentity !== null && ! in_array(trim((string) $source), array_merge(self::GENERATED_CONTENT_SOURCES, ['Uploaded']), true)) {
+            $prayogshala = app(\App\Services\lms\Prayogshala\PrayogshalaService::class);
+            $chapterRow = $prayogshala->visibleChapter((int) $chapter_id, $callerIdentity['tenant']);
+            if ($chapterRow) {
+                $content_by_category[\App\Services\lms\Prayogshala\PrayogshalaService::CATEGORY] = $prayogshala->assetsForChapter(
+                    $chapterRow,
+                    $callerIdentity['tenant'],
+                    $callerIdentity['is_student']
+                );
+            }
+        }
+
         return $content_by_category;
     }
 
@@ -746,7 +785,8 @@ class ApiLmsCourseController extends Controller
             $chapter->subject_id,
             $chapter->standard_id,
             $sub_institute_id,
-            $request->input('source')
+            $request->input('source'),
+            app(\App\Services\lms\Prayogshala\PrayogshalaService::class)->identityFromToken($request)
         );
 
         return response()->json([
@@ -1795,10 +1835,16 @@ $restrict_date = $request->input('restrict_date');
             // nothing and displayed as the coarse "narrative", so the form
             // dropdown could not see them.
             ->leftJoin('question_type_catalog', function ($join) {
+                // The shared ladder, minus its grading-type tier: a legacy row has
+                // no catalogue form, and matching it to 'mcq' would relabel it.
                 $join->on('question_type_catalog.code', '=', DB::raw(
-                    'COALESCE(lms_question_extraction.question_type_code, '
-                    . 'lms_question_master.question_format_code, '
-                    . 'lms_question_master.g_qtype_code)'
+                    QuestionFormResolver::sqlExpression(
+                        'lms_question_master',
+                        'lms_question_extraction.question_type_code',
+                        true,
+                        true,
+                        false
+                    )
                 ))
                     // The catalog carries one row per (code, publisher) --
                     // 'case_study' has a KVS RO Agra row and a NODIA Press
@@ -1814,16 +1860,32 @@ $restrict_date = $request->input('restrict_date');
                     ));
             })
             ->leftJoin('question_publisher', 'question_publisher.id', '=', 'lms_question_extraction.publisher_id')
+            // lms_question_master.concept is a legacy free-text column. The
+            // extraction pipeline sets concept_id - the real foreign key - and
+            // leaves that text NULL, so reading the text alone reported every
+            // one of the 1,147 extracted Class 10 Science questions as having
+            // no concept while each in fact pointed at a concept of its own
+            // chapter. Joining the concept row is what makes the mapping show.
+            ->leftJoin('lms_concept', 'lms_concept.id', '=', 'lms_question_master.concept_id')
             ->select(
                 'lms_question_master.id',
                 'lms_question_master.chapter_id',
                 'lms_question_master.topic_id',
                 'lms_question_master.concept_id',
-                'lms_question_master.concept',
+                'lms_question_master.concept as concept_text',
+                'lms_concept.name as concept_name',
                 'lms_question_master.standard_id',
                 'lms_question_master.subject_id',
                 'lms_question_master.question_title',
-                DB::raw('COALESCE(question_type_catalog.label, question_type_master.question_type) as question_type'),
+                DB::raw(
+                    'COALESCE(('
+                    . ' SELECT c.label FROM question_type_catalog c'
+                    . '  WHERE c.code = COALESCE(lms_question_extraction.question_type_code,'
+                    . '                          lms_question_master.g_qtype_code)'
+                    . '  ORDER BY (c.publisher_id <=> lms_question_extraction.publisher_id) DESC, c.id'
+                    . '  LIMIT 1'
+                    . '), question_type_master.question_type) as question_type'
+                ),
                 // The grading engine's own spelling, kept separately: the
                 // COALESCE above is a DISPLAY label, and classifying MCQ from
                 // it silently turns a "True / False" item into a Narrative one
@@ -1831,6 +1893,7 @@ $restrict_date = $request->input('restrict_date');
                 'question_type_master.question_type as lms_question_type',
                 'lms_question_extraction.question_type_code as question_type_code',
                 'lms_question_master.g_qtype_code as derived_type_code',
+                'lms_question_master.question_format_code as format_code',
                 'lms_question_extraction.exam_section',
                 'lms_question_extraction.item_number',
                 'lms_question_extraction.attribution',
@@ -1974,8 +2037,16 @@ $restrict_date = $request->input('restrict_date');
             // Sidecar code first -- that one was read off the source document --
             // then the tag derived from the stem. Null only when neither exists,
             // which is now just the untagged legacy estate.
-            $resolvedTypeCode = $question['question_type_code'] ?? $question['derived_type_code'] ?? null;
-            $resolvedTypeCode = $resolvedTypeCode !== null ? (string) $resolvedTypeCode : null;
+            // The shared ladder (QuestionFormResolver) so this endpoint, the
+            // facet counts and PAL agree. Null still means "no catalogue form is
+            // recorded", which keeps the MCQ|Narrative label fallback below.
+            $resolvedTypeCode = QuestionFormResolver::resolve(
+                $question['question_type_code'] ?? null,
+                $question['format_code'] ?? null,
+                $question['model_answer'] ?? null,
+                $question['derived_type_code'] ?? null,
+                null
+            );
 
             $data[] = [
                 'id' => (int) $question['id'],
@@ -1983,7 +2054,11 @@ $restrict_date = $request->input('restrict_date');
                 'chapter_name' => $question['chapter_name'] !== null ? (string) $question['chapter_name'] : null,
                 'topic_id' => $question['topic_id'] !== null ? (int) $question['topic_id'] : null,
                 'concept_id' => $question['concept_id'] !== null ? (int) $question['concept_id'] : null,
-                'concept' => $question['concept'] !== null ? (string) $question['concept'] : null,
+                // The mapped concept's name wins; the legacy free-text column is
+                // the fallback for rows that predate concept_id.
+                'concept' => $question['concept_name'] ?? ($question['concept_text'] !== null
+                    ? (string) $question['concept_text']
+                    : null),
                 'standard_id' => $question['standard_id'] !== null ? (int) $question['standard_id'] : null,
                 'subject_id' => $question['subject_id'] !== null ? (int) $question['subject_id'] : null,
                 'category' => $question['category'] !== null ? (string) $question['category'] : null,
@@ -2033,6 +2108,13 @@ $restrict_date = $request->input('restrict_date');
                 'assertion' => $this->envelopeValue($question['model_answer'] ?? null, 'assertion'),
                 'reason' => $this->envelopeValue($question['model_answer'] ?? null, 'reason'),
                 'sub_part_labels' => $this->envelopeValue($question['model_answer'] ?? null, 'sub_part_labels') ?? [],
+                // Structured fields a format stores beyond the text answer (pairs,
+                // distractors); each null on every row that has none.
+                ...QuestionEnvelope::clientFields(
+                    is_string($question['model_answer'] ?? null)
+                        ? $this->decodeAnswerEnvelope($question['model_answer'])
+                        : null
+                ),
                 'correct_option' => $this->envelopeValue($question['model_answer'] ?? null, 'correct_option'),
             ];
         }

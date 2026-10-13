@@ -1539,6 +1539,29 @@ public function generateGammaPDF(Request $request)
     }
 
     /**
+     * The lms_concept ids for the concept names a teacher ticked in the drawer.
+     *
+     * Empty means every concept (nothing was narrowed). Null means names were sent and none of them is a concept of this
+     * chapter, which is a mistake to report, never a reason to write the whole chapter.
+     *
+     * @param array<int,mixed> $names
+     * @return array<int,int>|null
+     */
+    private function resolveStudyDocumentConceptIds($chapterId, array $names): ?array
+    {
+        $wanted = array_values(array_filter(array_map(fn ($n) => mb_strtolower(trim((string) $n)), $names), fn ($n) => $n !== ''));
+        if ($wanted === []) {
+            return [];
+        }
+
+        $ids = DB::table('lms_concept')->where('chapter_id', $chapterId)->get(['id', 'name'])
+            ->filter(fn ($c) => in_array(mb_strtolower(trim((string) $c->name)), $wanted, true))
+            ->pluck('id')->map(fn ($v) => (int) $v)->values()->all();
+
+        return $ids === [] ? null : $ids;
+    }
+
+    /**
      * The lms_concept row a generated item belongs to.
      *
      * Prefers the id the caller sent, but only after checking it really belongs to
@@ -1586,12 +1609,21 @@ public function generateGammaPDF(Request $request)
         $request->validate([
             'prompt' => 'required|string|max:400000',
             'chapter_name' => 'required|string',
+            // Optional, and preferred over chapter_name when sent. chapter_name is
+            // not unique - 'Number Play' exists in both Standard 6 and Standard 7
+            // Mathematics, and 'Fractions' three times over - so a name-only lookup
+            // files a chapter's content onto whichever row happens to come back
+            // first. Callers that know the id should send it.
+            'chapter_id' => 'nullable|integer',
             'content_type' => 'required|string',
             'format' => 'nullable|in:presentation,document,social',
             'export_format' => 'nullable|in:pdf,pptx',
             'slide_count' => 'nullable|integer|min:1|max:50',
             'concept_id' => 'nullable|integer',
             'concept_name' => 'nullable|string|max:250',
+            // The concepts a teacher ticked in the drawer, when they narrowed the list (a study document covers just those).
+            'concept_names' => 'nullable|array|max:300',
+            'concept_names.*' => 'nullable|string|max:250',
         ]);
 
         $chapterName = $request->chapter_name;
@@ -1619,23 +1651,39 @@ public function generateGammaPDF(Request $request)
         $format = $isPresentation ? 'presentation' : 'document';
         $exportAs = $isPresentation ? 'pptx' : 'pdf';
         $numCards = (int) $request->input('slide_count', 30);
-        $themeId = env('GAMMA_THEME_ID');
+        // The whitelist this used to inline held seven invented names - simple,
+        // minimal, corporate, creative, bold, elegant, modern - and NOT ONE is a
+        // real Gamma theme id, so it discarded every configured value and every
+        // deck rendered in Gamma's default theme. The ids now live in
+        // config/gamma.php, checked against the live GET /v1.0/themes list.
+        $themeId = env('GAMMA_THEME_ID', config('gamma.default_theme'));
 
-        $validThemes = ['simple', 'minimal', 'corporate', 'creative', 'bold', 'elegant', 'modern'];
-        if (empty($themeId) || !in_array($themeId, $validThemes)) {
+        $validThemes = (array) config('gamma.themes', []);
+        if (empty($themeId) || !in_array($themeId, $validThemes, true)) {
             $themeId = null;
         }
 
-        $chapterData = chapterModel::select('chapter_master.*')
-            ->where([
-                'chapter_master.chapter_name' => $chapterName,
-            ])
-            ->first();
+        // An explicit id is unambiguous, so it wins. The name lookup stays as the
+        // fallback for callers that only have the name, and behaves exactly as it
+        // did before.
+        $requestChapterId = $request->input('chapter_id');
+
+        $chapterData = $requestChapterId
+            ? chapterModel::select('chapter_master.*')
+                ->where('chapter_master.id', (int) $requestChapterId)
+                ->first()
+            : chapterModel::select('chapter_master.*')
+                ->where([
+                    'chapter_master.chapter_name' => $chapterName,
+                ])
+                ->first();
 
         if (!$chapterData) {
             return response()->json([
                 'success' => false,
-                'message' => 'Chapter not found: ' . $chapterName
+                'message' => $requestChapterId
+                    ? 'Chapter not found for id: ' . $requestChapterId
+                    : 'Chapter not found: ' . $chapterName
             ], 404);
         }
 
@@ -1700,6 +1748,29 @@ public function generateGammaPDF(Request $request)
         // service only chooses the model and stores the result. Any other
         // chapter falls through to the two provider branches below unchanged.
         if ($this->contentGeneration->handles($chapterData->id)) {
+            // Revision notes, a remedial class and classroom activities are STUDY DOCUMENTS: written from the chapter's own
+            // concept data, prerequisites and question bank, checked, and stored with a PDF the app reads in place. The
+            // prompt the drawer assembled is not used for them (the pipeline builds its own from the same data).
+            if ($kind = $this->contentGeneration->studyDocumentKindFor($contentType, $chapterData->id)) {
+                $conceptIds = $this->resolveStudyDocumentConceptIds($chapterData->id, (array) $request->input('concept_names', []));
+                if ($conceptIds === null) {
+                    return response()->json(['success' => false, 'status_code' => 0, 'message' => 'None of the selected concepts could be matched to this chapter.'], 422);
+                }
+                $result = $this->contentGeneration->generateStudyDocument($kind, [
+                    'chapter' => $chapterData,
+                    'chapter_name' => (string) ($chapterData->chapter_name ?: $chapterName),
+                    'grade_id' => $gradeId,
+                    'concept_id' => null,
+                    'concept_ids' => $conceptIds,
+                    'sub_institute_id' => $sub_institute_id,
+                    'syear' => $syear,
+                    'created_by' => $user_id,
+                    'user_profile_name' => $request->user_profile_name,
+                ]);
+
+                return response()->json($result['body'], $result['http']);
+            }
+
             $result = $this->contentGeneration->generate([
                 'prompt' => $prompt,
                 'content_type' => $contentType,
@@ -1903,7 +1974,7 @@ public function generateGammaPDF(Request $request)
                 ],
                 'imageOptions' => [
                     'source' => 'aiGenerated',
-                    'model' => 'imagen-4-pro',
+                    'model' => config('gamma.image_model'),
                     'style' => 'photorealistic'
                 ],
                 'cardOptions' => [
@@ -1993,6 +2064,19 @@ public function generateGammaPDF(Request $request)
 
             $url = null;
             $pdfUrl = null;
+
+            // What Gamma actually returns today, confirmed against a live
+            // generation: { generationId, status, gammaId, gammaUrl, exportUrl,
+            // credits }. The share link arrives as `gammaUrl` - a key none of
+            // the shapes below look for, so $url stayed null and $gammaUrl fell
+            // through to the export link. That is precisely the 403-on-open
+            // failure the comment further down records having already had to
+            // repair 36 rows for; it came back because the extraction list was
+            // never taught Gamma's actual field name. Checked first, and
+            // `gammaId` is kept as a second way home if only the id is present.
+            if (!empty($result['gammaUrl'])) $url = $result['gammaUrl'];
+            if (empty($url) && !empty($result['gammaId'])) $url = 'https://gamma.app/docs/' . $result['gammaId'];
+            if (!empty($result['exportUrl'])) $pdfUrl = $result['exportUrl'];
 
             if (isset($result['presentation'])) {
                 $presentation = $result['presentation'];

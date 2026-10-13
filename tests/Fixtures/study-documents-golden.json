@@ -1,0 +1,1495 @@
+{
+    "revision_notes": {
+        "version": 1,
+        "kind": "revision_notes",
+        "category": "Revision Notes",
+        "chapter": {
+            "id": 1,
+            "name": "Ideas in exploration",
+            "standard_id": 9,
+            "subject_id": 2,
+            "standard_name": "9",
+            "subject_name": "Science"
+        },
+        "chapter_id": 1,
+        "title": "Ideas in exploration",
+        "lede": "Revise models, laws and theories before your examination.",
+        "scope": {
+            "all": true,
+            "concept_ids": [
+                1,
+                2,
+                3,
+                4
+            ]
+        },
+        "section_count": 5,
+        "outline": [
+            {
+                "topic_id": 10,
+                "name": "Models",
+                "concept_ids": [
+                    1,
+                    2
+                ]
+            },
+            {
+                "topic_id": 11,
+                "name": "Laws and theories",
+                "concept_ids": [
+                    3,
+                    4
+                ]
+            }
+        ],
+        "concepts": {
+            "1": {
+                "id": 1,
+                "name": "Models",
+                "topic_id": 10,
+                "requires": [],
+                "related": [
+                    {
+                        "concept_id": 2,
+                        "type": "related_to"
+                    }
+                ],
+                "definition": "A model is a simplified representation."
+            },
+            "2": {
+                "id": 2,
+                "name": "Ignoring details",
+                "topic_id": 10,
+                "requires": [
+                    1
+                ],
+                "related": [],
+                "definition": null
+            },
+            "3": {
+                "id": 3,
+                "name": "Laws",
+                "topic_id": 11,
+                "requires": [],
+                "related": [],
+                "definition": null
+            },
+            "4": {
+                "id": 4,
+                "name": "Theories",
+                "topic_id": 11,
+                "requires": [
+                    3
+                ],
+                "related": [],
+                "definition": null
+            }
+        },
+        "sections": [
+            {
+                "n": 0,
+                "type": "overview",
+                "block": "intro",
+                "title": "Ideas in exploration",
+                "topic_id": null,
+                "concept_ids": [],
+                "taught_concept_ids": [],
+                "content": {
+                    "summary": "A scientific model is a simplified representation of a real system that ignores some details on purpose. A law describes a repeated pattern, and a theory explains why patterns occur. Together they show how scientists describe and explain what they find.",
+                    "topics": [
+                        {
+                            "topic_id": 10,
+                            "name": "Models",
+                            "gist": "What a model is and why it ignores some details."
+                        },
+                        {
+                            "topic_id": 11,
+                            "name": "Laws and theories",
+                            "gist": "What a law and a theory are, and how they differ."
+                        }
+                    ]
+                },
+                "interaction": null,
+                "question_ids": [],
+                "activities": [],
+                "image": null
+            },
+            {
+                "n": 1,
+                "type": "note",
+                "block": "explain",
+                "title": "Models",
+                "topic_id": 10,
+                "concept_ids": [
+                    1
+                ],
+                "taught_concept_ids": [
+                    1
+                ],
+                "content": {
+                    "summary": "A scientific model is a simplified representation of a real system.",
+                    "key_points": [
+                        "A model is a simplified representation.",
+                        "A model ignores some details on purpose."
+                    ],
+                    "definition": {
+                        "term": "Model",
+                        "text": "A scientific model is a simplified representation of a real system."
+                    },
+                    "rules": [],
+                    "example": null,
+                    "misconception": {
+                        "wrong_idea": "A model is an exact copy",
+                        "correction": "A model keeps only needed features."
+                    },
+                    "remember": "A model keeps what matters.",
+                    "checklist": [
+                        "I can say what a scientific model is."
+                    ],
+                    "bloom": "remember",
+                    "dok": 2,
+                    "minutes": 3
+                },
+                "interaction": null,
+                "question_ids": [
+                    101
+                ],
+                "activities": [
+                    {
+                        "source": "bank",
+                        "question_id": 101,
+                        "concept_id": 1,
+                        "as": "single_choice_set",
+                        "default_as": "single_choice_set",
+                        "pattern": null,
+                        "decision": false,
+                        "connects_concept": null,
+                        "label": "Apply",
+                        "bloom": "apply",
+                        "difficulty": "medium",
+                        "dok": 2,
+                        "why": "the question's own form"
+                    }
+                ],
+                "image": null
+            },
+            {
+                "n": 2,
+                "type": "note",
+                "block": "explain",
+                "title": "Ignoring details",
+                "topic_id": 10,
+                "concept_ids": [
+                    2
+                ],
+                "taught_concept_ids": [
+                    2
+                ],
+                "content": {
+                    "summary": "A model ignores some details on purpose, so that it stays simple.",
+                    "key_points": [
+                        "Some details are ignored on purpose.",
+                        "A map shows roads but ignores trees."
+                    ],
+                    "definition": null,
+                    "rules": [],
+                    "example": "Think of a map used to find your way: it shows roads but ignores trees.",
+                    "misconception": null,
+                    "remember": null,
+                    "checklist": [
+                        "I can explain why a model ignores details."
+                    ],
+                    "bloom": "analyze",
+                    "dok": 2,
+                    "minutes": 3
+                },
+                "interaction": {
+                    "kind": "hotspots",
+                    "intro": "Select each part of the diagram to read about it.",
+                    "spots": [
+                        {
+                            "id": "h1",
+                            "label": "Ignore details",
+                            "x": 50,
+                            "y": 28.9,
+                            "w": 25,
+                            "h": 18.1,
+                            "text": "A map shows roads but ignores trees, because trees do not help you find your way."
+                        },
+                        {
+                            "id": "h2",
+                            "label": "Keep the question",
+                            "x": 50,
+                            "y": 87.8,
+                            "w": 25,
+                            "h": 18.1,
+                            "text": "A model keeps only what the question needs, so the same system can have different models."
+                        }
+                    ],
+                    "wrapup": "You have read about every part.",
+                    "reason": "the diagram has named parts and each is worth a sentence"
+                },
+                "question_ids": [
+                    103
+                ],
+                "activities": [
+                    {
+                        "source": "bank",
+                        "question_id": 103,
+                        "concept_id": 2,
+                        "as": "single_choice_set",
+                        "default_as": "single_choice_set",
+                        "pattern": null,
+                        "decision": false,
+                        "connects_concept": null,
+                        "label": "Check",
+                        "bloom": "understand",
+                        "difficulty": "medium",
+                        "dok": 2,
+                        "why": "the question's own form"
+                    }
+                ],
+                "image": {
+                    "type": "diagram",
+                    "url": "study-deck-image:1",
+                    "width": 1280,
+                    "height": 720,
+                    "sha1": "3af39a126a506c9bc8a4d489904524e8765b433e",
+                    "sha256": "8c7e46b29c762bfc9cccf34202a418741820b888499059b0a03270739f5202a1",
+                    "layout": "hub",
+                    "texts": [
+                        "What a model keeps and ignores",
+                        "A model",
+                        "Ignore details",
+                        "Keep the question"
+                    ],
+                    "alt": "Diagram: What a model keeps and ignores. 'A model' connected to Ignore details, Keep the question.",
+                    "caption": "What a model keeps and ignores",
+                    "licence": null,
+                    "source_url": null,
+                    "creator": null,
+                    "attribution_required": false,
+                    "attribution": "",
+                    "review": {
+                        "relevant": true,
+                        "reason": "drawn from the plan's own diagram spec"
+                    }
+                }
+            },
+            {
+                "n": 3,
+                "type": "note",
+                "block": "explain",
+                "title": "Laws",
+                "topic_id": 11,
+                "concept_ids": [
+                    3
+                ],
+                "taught_concept_ids": [
+                    3
+                ],
+                "content": {
+                    "summary": "A law describes a repeated pattern that scientists keep finding.",
+                    "key_points": [
+                        "A law describes a repeated pattern.",
+                        "Newton gave three laws of motion."
+                    ],
+                    "definition": {
+                        "term": "Law",
+                        "text": "A law describes a repeated pattern."
+                    },
+                    "rules": [
+                        {
+                            "label": "Laws of motion",
+                            "statement": "Newton gave three laws of motion."
+                        }
+                    ],
+                    "example": null,
+                    "misconception": null,
+                    "remember": null,
+                    "checklist": [
+                        "I can say what a law describes."
+                    ],
+                    "bloom": "apply",
+                    "dok": 2,
+                    "minutes": 3
+                },
+                "interaction": null,
+                "question_ids": [
+                    104
+                ],
+                "activities": [
+                    {
+                        "source": "bank",
+                        "question_id": 104,
+                        "concept_id": 3,
+                        "as": "flashcards",
+                        "default_as": "essay",
+                        "pattern": "flashcards",
+                        "decision": false,
+                        "connects_concept": null,
+                        "label": "Explain",
+                        "bloom": "remember",
+                        "difficulty": "easy",
+                        "dok": 1,
+                        "why": "a recall question on a term or definition suits a flip card"
+                    }
+                ],
+                "image": null
+            },
+            {
+                "n": 4,
+                "type": "note",
+                "block": "explain",
+                "title": "Theories",
+                "topic_id": 11,
+                "concept_ids": [
+                    4
+                ],
+                "taught_concept_ids": [
+                    4
+                ],
+                "content": {
+                    "summary": "A theory explains why patterns occur, not only that they do.",
+                    "key_points": [
+                        "A theory explains why patterns occur.",
+                        "A law describes the pattern."
+                    ],
+                    "definition": {
+                        "term": "Theory",
+                        "text": "A theory explains why patterns occur."
+                    },
+                    "rules": [],
+                    "example": null,
+                    "misconception": null,
+                    "remember": null,
+                    "checklist": [
+                        "I can tell a law from a theory."
+                    ],
+                    "bloom": "evaluate",
+                    "dok": 2,
+                    "minutes": 3
+                },
+                "interaction": null,
+                "question_ids": [],
+                "activities": [],
+                "image": null
+            }
+        ],
+        "taught_by": {
+            "1": [
+                1
+            ],
+            "2": [
+                2
+            ],
+            "3": [
+                3
+            ],
+            "4": [
+                4
+            ]
+        },
+        "concept_questions": {
+            "1": [
+                101
+            ],
+            "2": [
+                103
+            ],
+            "3": [
+                104
+            ]
+        },
+        "stats": {
+            "sections": 5,
+            "concepts": 4,
+            "questions": 3,
+            "diagrams": 1,
+            "interactions": 1
+        }
+    },
+    "remedial": {
+        "version": 1,
+        "kind": "remedial",
+        "category": "Remedial Class",
+        "chapter": {
+            "id": 1,
+            "name": "Ideas in exploration",
+            "standard_id": 9,
+            "subject_id": 2,
+            "standard_name": "9",
+            "subject_name": "Science"
+        },
+        "chapter_id": 1,
+        "title": "Ideas in exploration",
+        "lede": "Learn Ideas in exploration one small step at a time, at your own pace.",
+        "scope": {
+            "all": true,
+            "concept_ids": [
+                1,
+                2,
+                3,
+                4
+            ]
+        },
+        "section_count": 5,
+        "outline": [
+            {
+                "topic_id": 10,
+                "name": "Models",
+                "concept_ids": [
+                    1,
+                    2
+                ]
+            },
+            {
+                "topic_id": 11,
+                "name": "Laws and theories",
+                "concept_ids": [
+                    3,
+                    4
+                ]
+            }
+        ],
+        "concepts": {
+            "1": {
+                "id": 1,
+                "name": "Models",
+                "topic_id": 10,
+                "requires": [],
+                "related": [
+                    {
+                        "concept_id": 2,
+                        "type": "related_to"
+                    }
+                ],
+                "definition": "A model is a simplified representation."
+            },
+            "2": {
+                "id": 2,
+                "name": "Ignoring details",
+                "topic_id": 10,
+                "requires": [
+                    1
+                ],
+                "related": [],
+                "definition": null
+            },
+            "3": {
+                "id": 3,
+                "name": "Laws",
+                "topic_id": 11,
+                "requires": [],
+                "related": [],
+                "definition": null
+            },
+            "4": {
+                "id": 4,
+                "name": "Theories",
+                "topic_id": 11,
+                "requires": [
+                    3
+                ],
+                "related": [],
+                "definition": null
+            }
+        },
+        "sections": [
+            {
+                "n": 0,
+                "type": "overview",
+                "block": "intro",
+                "title": "Ideas in exploration",
+                "topic_id": null,
+                "concept_ids": [],
+                "taught_concept_ids": [],
+                "content": {
+                    "method": [
+                        {
+                            "label": "Start from what you know",
+                            "text": "Each unit begins with the ideas it builds on, so you can see what to look at again first."
+                        },
+                        {
+                            "label": "Say it in plain words",
+                            "text": "The idea is explained in short sentences and everyday words before any technical wording."
+                        },
+                        {
+                            "label": "Take it step by step",
+                            "text": "The idea is broken into small steps. Take them one at a time, in order."
+                        },
+                        {
+                            "label": "See it worked",
+                            "text": "Where the chapter has an example, it is worked through slowly, with the reason for each step."
+                        },
+                        {
+                            "label": "Watch for the mistakes",
+                            "text": "The mistakes learners often make are named, with why they do not hold and what is true instead."
+                        },
+                        {
+                            "label": "Practise, then check yourself",
+                            "text": "Practice starts with a hint and gets harder. Then you go back to the steps if you need to."
+                        }
+                    ],
+                    "focus": [
+                        {
+                            "concept_id": 1,
+                            "name": "Models",
+                            "difficulty": "Easy"
+                        },
+                        {
+                            "concept_id": 2,
+                            "name": "Ignoring details",
+                            "difficulty": null
+                        },
+                        {
+                            "concept_id": 3,
+                            "name": "Laws",
+                            "difficulty": null
+                        },
+                        {
+                            "concept_id": 4,
+                            "name": "Theories",
+                            "difficulty": null
+                        }
+                    ]
+                },
+                "interaction": null,
+                "question_ids": [],
+                "activities": [],
+                "image": null
+            },
+            {
+                "n": 1,
+                "type": "unit",
+                "block": "explain",
+                "title": "Models",
+                "topic_id": 10,
+                "concept_ids": [
+                    1
+                ],
+                "taught_concept_ids": [
+                    1
+                ],
+                "content": {
+                    "prerequisites": [],
+                    "simple_explanation": "A scientific model is a simple picture of something real. It keeps what matters and leaves some details out.",
+                    "steps": [
+                        {
+                            "id": "i1",
+                            "label": "Start with the idea",
+                            "text": "A real system has many different parts."
+                        },
+                        {
+                            "id": "i2",
+                            "label": "Add the detail",
+                            "text": "A model keeps only some of those parts."
+                        },
+                        {
+                            "id": "i3",
+                            "label": "Put it together",
+                            "text": "The result is a simplified representation."
+                        }
+                    ],
+                    "real_life": "Think of it like a map that shows roads but ignores trees.",
+                    "worked_example": null,
+                    "mistakes": [
+                        {
+                            "wrong_idea": "A model is an exact copy",
+                            "why_wrong": "A model keeps only the features that are needed.",
+                            "correct_idea": "A model is a simplified representation of a real system."
+                        }
+                    ],
+                    "guided": [
+                        {
+                            "level": 1,
+                            "label": "With a hint",
+                            "question_id": 101,
+                            "hint": "Think about what a model keeps and what it leaves out.",
+                            "not_options": {
+                                "A": "This choice does not describe a simplified representation."
+                            }
+                        }
+                    ],
+                    "follow_up": [
+                        {
+                            "concept_id": 1,
+                            "name": "Models",
+                            "section": 1,
+                            "why": "Go back over the steps in this unit."
+                        }
+                    ],
+                    "win": "You can now say what a scientific model is.",
+                    "bloom": "remember",
+                    "dok": 2,
+                    "minutes": 8
+                },
+                "interaction": null,
+                "question_ids": [
+                    101
+                ],
+                "activities": [
+                    {
+                        "source": "bank",
+                        "question_id": 101,
+                        "concept_id": 1,
+                        "as": "single_choice_set",
+                        "default_as": "single_choice_set",
+                        "pattern": null,
+                        "decision": false,
+                        "connects_concept": null,
+                        "label": "Apply",
+                        "bloom": "apply",
+                        "difficulty": "medium",
+                        "dok": 2,
+                        "why": "the question's own form"
+                    }
+                ],
+                "image": null
+            },
+            {
+                "n": 2,
+                "type": "unit",
+                "block": "explain",
+                "title": "Ignoring details",
+                "topic_id": 10,
+                "concept_ids": [
+                    2,
+                    1
+                ],
+                "taught_concept_ids": [
+                    2
+                ],
+                "content": {
+                    "prerequisites": [
+                        {
+                            "concept_id": 1,
+                            "name": "Models",
+                            "refresher": "A model is a simplified representation of a real system."
+                        }
+                    ],
+                    "simple_explanation": "A model leaves some details out on purpose. That is what keeps it simple and useful for the question.",
+                    "steps": [
+                        {
+                            "id": "i1",
+                            "label": "Start with the idea",
+                            "text": "Look at a real system first."
+                        },
+                        {
+                            "id": "i2",
+                            "label": "Add the detail",
+                            "text": "Decide what the question really needs."
+                        },
+                        {
+                            "id": "i3",
+                            "label": "Put it together",
+                            "text": "Leave out the rest on purpose."
+                        }
+                    ],
+                    "real_life": null,
+                    "worked_example": {
+                        "problem": "A map shows roads but ignores trees. Why?",
+                        "steps": [
+                            {
+                                "text": "Ask what the map is for.",
+                                "why": "The purpose decides the details."
+                            },
+                            {
+                                "text": "Keep the roads.",
+                                "why": "Roads help you find your way."
+                            }
+                        ],
+                        "answer": "Trees do not help you find your way."
+                    },
+                    "mistakes": [],
+                    "guided": [
+                        {
+                            "level": 1,
+                            "label": "With a hint",
+                            "question_id": 103,
+                            "hint": "Ask what the map is for.",
+                            "not_options": {
+                                "A": "This choice does not explain why trees are left out."
+                            }
+                        }
+                    ],
+                    "follow_up": [
+                        {
+                            "concept_id": 2,
+                            "name": "Ignoring details",
+                            "section": 2,
+                            "why": "Go back over the steps in this unit."
+                        },
+                        {
+                            "concept_id": 1,
+                            "name": "Models",
+                            "section": 1,
+                            "why": "This unit builds on it."
+                        }
+                    ],
+                    "win": "You can now explain why a model ignores details.",
+                    "bloom": "apply",
+                    "dok": 2,
+                    "minutes": 8
+                },
+                "interaction": {
+                    "kind": "hotspots",
+                    "intro": "Select each part of the diagram to read about it.",
+                    "spots": [
+                        {
+                            "id": "h1",
+                            "label": "Real system",
+                            "x": 18.4,
+                            "y": 52.1,
+                            "w": 27.3,
+                            "h": 26.4,
+                            "text": "The real system has many details, and not all of them matter."
+                        },
+                        {
+                            "id": "h2",
+                            "label": "Decide what matters",
+                            "x": 49.9,
+                            "y": 52.1,
+                            "w": 27.3,
+                            "h": 26.4,
+                            "text": "Choose only the details that the question needs."
+                        },
+                        {
+                            "id": "h3",
+                            "label": "Leave out the rest",
+                            "x": 81.5,
+                            "y": 52.1,
+                            "w": 27.3,
+                            "h": 26.4,
+                            "text": "Ignore the other details on purpose so the model stays simple."
+                        }
+                    ],
+                    "wrapup": "You have read about every part.",
+                    "reason": "the diagram has named parts and each is worth a sentence"
+                },
+                "question_ids": [
+                    103
+                ],
+                "activities": [
+                    {
+                        "source": "bank",
+                        "question_id": 103,
+                        "concept_id": 2,
+                        "as": "single_choice_set",
+                        "default_as": "single_choice_set",
+                        "pattern": null,
+                        "decision": false,
+                        "connects_concept": null,
+                        "label": "Check",
+                        "bloom": "understand",
+                        "difficulty": "medium",
+                        "dok": 2,
+                        "why": "the question's own form"
+                    }
+                ],
+                "image": {
+                    "type": "diagram",
+                    "url": "study-deck-image:1",
+                    "width": 1280,
+                    "height": 720,
+                    "sha1": "4ba9233023fcac9313600839814377184c9b8077",
+                    "sha256": "a90525a97439bda632139cf8f641cdfa1f686701f33e4ab615fc70796effe9b9",
+                    "layout": "flow",
+                    "texts": [
+                        "How a model is made",
+                        "Real system",
+                        "Decide what matters",
+                        "Leave out the rest"
+                    ],
+                    "alt": "Diagram: How a model is made. Steps in order: Real system, then Decide what matters, then Leave out the rest.",
+                    "caption": "How a model is made",
+                    "licence": null,
+                    "source_url": null,
+                    "creator": null,
+                    "attribution_required": false,
+                    "attribution": "",
+                    "review": {
+                        "relevant": true,
+                        "reason": "drawn from the plan's own diagram spec"
+                    }
+                }
+            },
+            {
+                "n": 3,
+                "type": "unit",
+                "block": "explain",
+                "title": "Laws",
+                "topic_id": 11,
+                "concept_ids": [
+                    3
+                ],
+                "taught_concept_ids": [
+                    3
+                ],
+                "content": {
+                    "prerequisites": [],
+                    "simple_explanation": "A law is a short statement of a pattern that keeps happening. It says what happens, not why it happens.",
+                    "steps": [
+                        {
+                            "id": "i1",
+                            "label": "Start with the idea",
+                            "text": "Notice a pattern that keeps happening."
+                        },
+                        {
+                            "id": "i2",
+                            "label": "Add the detail",
+                            "text": "See that the pattern repeats again."
+                        },
+                        {
+                            "id": "i3",
+                            "label": "Put it together",
+                            "text": "State the pattern as a law."
+                        }
+                    ],
+                    "real_life": null,
+                    "worked_example": null,
+                    "mistakes": [],
+                    "guided": [
+                        {
+                            "level": 1,
+                            "label": "With a hint",
+                            "question_id": 104,
+                            "hint": "Think about what keeps happening again and again.",
+                            "not_options": []
+                        }
+                    ],
+                    "follow_up": [
+                        {
+                            "concept_id": 3,
+                            "name": "Laws",
+                            "section": 3,
+                            "why": "Go back over the steps in this unit."
+                        }
+                    ],
+                    "win": "You can now say what a law describes.",
+                    "bloom": "understand",
+                    "dok": 2,
+                    "minutes": 8
+                },
+                "interaction": null,
+                "question_ids": [
+                    104
+                ],
+                "activities": [
+                    {
+                        "source": "bank",
+                        "question_id": 104,
+                        "concept_id": 3,
+                        "as": "essay",
+                        "default_as": "essay",
+                        "pattern": null,
+                        "decision": false,
+                        "connects_concept": null,
+                        "label": "Explain",
+                        "bloom": "remember",
+                        "difficulty": "easy",
+                        "dok": 1,
+                        "why": "the question's own form"
+                    }
+                ],
+                "image": null
+            },
+            {
+                "n": 4,
+                "type": "unit",
+                "block": "explain",
+                "title": "Theories",
+                "topic_id": 11,
+                "concept_ids": [
+                    4,
+                    3
+                ],
+                "taught_concept_ids": [
+                    4
+                ],
+                "content": {
+                    "prerequisites": [
+                        {
+                            "concept_id": 3,
+                            "name": "Laws",
+                            "refresher": "A law describes a repeated pattern."
+                        }
+                    ],
+                    "simple_explanation": "A theory explains why a pattern happens. A law says what happens and a theory says why it happens.",
+                    "steps": [
+                        {
+                            "id": "i1",
+                            "label": "Start with the idea",
+                            "text": "Start with a law you know."
+                        },
+                        {
+                            "id": "i2",
+                            "label": "Add the detail",
+                            "text": "Ask why that pattern occurs."
+                        },
+                        {
+                            "id": "i3",
+                            "label": "Put it together",
+                            "text": "A theory gives the reason."
+                        }
+                    ],
+                    "real_life": null,
+                    "worked_example": null,
+                    "mistakes": [],
+                    "guided": [],
+                    "follow_up": [
+                        {
+                            "concept_id": 4,
+                            "name": "Theories",
+                            "section": 4,
+                            "why": "Go back over the steps in this unit."
+                        },
+                        {
+                            "concept_id": 3,
+                            "name": "Laws",
+                            "section": 3,
+                            "why": "This unit builds on it."
+                        }
+                    ],
+                    "win": "You can now tell a law from a theory.",
+                    "bloom": "analyze",
+                    "dok": 2,
+                    "minutes": 8
+                },
+                "interaction": null,
+                "question_ids": [],
+                "activities": [],
+                "image": null
+            }
+        ],
+        "taught_by": {
+            "1": [
+                1
+            ],
+            "2": [
+                2
+            ],
+            "3": [
+                3
+            ],
+            "4": [
+                4
+            ]
+        },
+        "concept_questions": {
+            "1": [
+                101
+            ],
+            "2": [
+                103
+            ],
+            "3": [
+                104
+            ]
+        },
+        "stats": {
+            "sections": 5,
+            "concepts": 4,
+            "questions": 3,
+            "diagrams": 1,
+            "interactions": 1
+        }
+    },
+    "activities": {
+        "version": 1,
+        "kind": "activities",
+        "category": "Classroom Activity",
+        "chapter": {
+            "id": 1,
+            "name": "Ideas in exploration",
+            "standard_id": 9,
+            "subject_id": 2,
+            "standard_name": "9",
+            "subject_name": "Science"
+        },
+        "chapter_id": 1,
+        "title": "Ideas in exploration",
+        "lede": "3 activities for Ideas in exploration, about 35 minutes in all.",
+        "scope": {
+            "all": true,
+            "concept_ids": [
+                1,
+                2,
+                3,
+                4
+            ]
+        },
+        "section_count": 4,
+        "outline": [
+            {
+                "topic_id": 10,
+                "name": "Models",
+                "concept_ids": [
+                    1,
+                    2
+                ]
+            },
+            {
+                "topic_id": 11,
+                "name": "Laws and theories",
+                "concept_ids": [
+                    3,
+                    4
+                ]
+            }
+        ],
+        "concepts": {
+            "1": {
+                "id": 1,
+                "name": "Models",
+                "topic_id": 10,
+                "requires": [],
+                "related": [
+                    {
+                        "concept_id": 2,
+                        "type": "related_to"
+                    }
+                ],
+                "definition": "A model is a simplified representation."
+            },
+            "2": {
+                "id": 2,
+                "name": "Ignoring details",
+                "topic_id": 10,
+                "requires": [
+                    1
+                ],
+                "related": [],
+                "definition": null
+            },
+            "3": {
+                "id": 3,
+                "name": "Laws",
+                "topic_id": 11,
+                "requires": [],
+                "related": [],
+                "definition": null
+            },
+            "4": {
+                "id": 4,
+                "name": "Theories",
+                "topic_id": 11,
+                "requires": [
+                    3
+                ],
+                "related": [],
+                "definition": null
+            }
+        },
+        "sections": [
+            {
+                "n": 0,
+                "type": "overview",
+                "block": "intro",
+                "title": "Ideas in exploration",
+                "topic_id": null,
+                "concept_ids": [],
+                "taught_concept_ids": [],
+                "content": {
+                    "run_sheet": [
+                        {
+                            "n": 1,
+                            "title": "Build a model",
+                            "format": "inquiry",
+                            "grouping": "pair",
+                            "minutes": 15,
+                            "concept_ids": [
+                                1,
+                                2
+                            ]
+                        },
+                        {
+                            "n": 2,
+                            "title": "Match the terms",
+                            "format": "matching",
+                            "grouping": "individual",
+                            "minutes": 10,
+                            "concept_ids": [
+                                3,
+                                4
+                            ]
+                        },
+                        {
+                            "n": 3,
+                            "title": "Law or theory",
+                            "format": "discussion",
+                            "grouping": "group",
+                            "minutes": 10,
+                            "concept_ids": [
+                                3,
+                                4
+                            ]
+                        }
+                    ],
+                    "total_minutes": 35
+                },
+                "interaction": null,
+                "question_ids": [],
+                "activities": [],
+                "image": null
+            },
+            {
+                "n": 1,
+                "type": "activity",
+                "block": "activity",
+                "title": "Build a model",
+                "topic_id": 10,
+                "concept_ids": [
+                    1,
+                    2
+                ],
+                "taught_concept_ids": [
+                    1,
+                    2
+                ],
+                "content": {
+                    "format": "inquiry",
+                    "grouping": "pair",
+                    "minutes": 15,
+                    "focus": "Pairs build a simple model of a real thing and say what they left out.",
+                    "objectives": [
+                        {
+                            "concept_id": 1,
+                            "text": "Students will say what a scientific model is."
+                        },
+                        {
+                            "concept_id": 2,
+                            "text": "Students will explain why a model ignores details."
+                        }
+                    ],
+                    "materials": [
+                        "No materials needed"
+                    ],
+                    "setup": null,
+                    "teacher_steps": [
+                        {
+                            "minutes": 5,
+                            "text": "Explain what the activity is for."
+                        },
+                        {
+                            "minutes": 10,
+                            "text": "Walk round and ask each pair what they left out."
+                        }
+                    ],
+                    "student_steps": [
+                        "You choose a real thing.",
+                        "You build a simple model of it."
+                    ],
+                    "expected_outcomes": [
+                        "Students say that a model keeps only what matters."
+                    ],
+                    "discussion": [
+                        {
+                            "prompt": "Why does a model ignore some details?",
+                            "answer": "A model ignores some details on purpose."
+                        }
+                    ],
+                    "misconception": {
+                        "wrong_idea": "A model is an exact copy",
+                        "correction": "A model keeps only needed features."
+                    },
+                    "assessment": [
+                        {
+                            "criterion": "Explains the choice",
+                            "evidence": "Says why a detail was left out."
+                        },
+                        {
+                            "criterion": "Keeps what matters",
+                            "evidence": "The model keeps what the question needs."
+                        }
+                    ],
+                    "differentiation": {
+                        "support": "Give a map as a starting point.",
+                        "extension": "Ask for a second model of the same thing."
+                    },
+                    "reflection": [
+                        "What did your model leave out?"
+                    ],
+                    "bloom": "apply",
+                    "dok": 2
+                },
+                "interaction": null,
+                "question_ids": [
+                    101,
+                    103
+                ],
+                "activities": [
+                    {
+                        "source": "bank",
+                        "question_id": 101,
+                        "concept_id": 1,
+                        "as": "single_choice_set",
+                        "default_as": "single_choice_set",
+                        "pattern": null,
+                        "decision": false,
+                        "connects_concept": null,
+                        "label": "Apply",
+                        "bloom": "apply",
+                        "difficulty": "medium",
+                        "dok": 2,
+                        "why": "the question's own form"
+                    },
+                    {
+                        "source": "bank",
+                        "question_id": 103,
+                        "concept_id": 2,
+                        "as": "single_choice_set",
+                        "default_as": "single_choice_set",
+                        "pattern": null,
+                        "decision": false,
+                        "connects_concept": null,
+                        "label": "Try it",
+                        "bloom": "understand",
+                        "difficulty": "medium",
+                        "dok": 2,
+                        "why": "the question's own form"
+                    }
+                ],
+                "image": null
+            },
+            {
+                "n": 2,
+                "type": "activity",
+                "block": "activity",
+                "title": "Match the terms",
+                "topic_id": 11,
+                "concept_ids": [
+                    3,
+                    4
+                ],
+                "taught_concept_ids": [
+                    3,
+                    4
+                ],
+                "content": {
+                    "format": "matching",
+                    "grouping": "individual",
+                    "minutes": 10,
+                    "focus": "Students pair each term with its meaning.",
+                    "objectives": [
+                        {
+                            "concept_id": 3,
+                            "text": "Students will say what a law describes."
+                        },
+                        {
+                            "concept_id": 4,
+                            "text": "Students will say what a theory explains."
+                        }
+                    ],
+                    "materials": [
+                        "No materials needed"
+                    ],
+                    "setup": null,
+                    "teacher_steps": [
+                        {
+                            "minutes": 4,
+                            "text": "Hand out the cards."
+                        },
+                        {
+                            "minutes": 6,
+                            "text": "Check the pairs with the class."
+                        }
+                    ],
+                    "student_steps": [
+                        "You read each term.",
+                        "You pair it with its meaning."
+                    ],
+                    "expected_outcomes": [
+                        "Students say that a model keeps only what matters."
+                    ],
+                    "discussion": [
+                        {
+                            "prompt": "Why does a model ignore some details?",
+                            "answer": "A model ignores some details on purpose."
+                        }
+                    ],
+                    "misconception": null,
+                    "assessment": [
+                        {
+                            "criterion": "Explains the choice",
+                            "evidence": "Says why a detail was left out."
+                        },
+                        {
+                            "criterion": "Keeps what matters",
+                            "evidence": "The model keeps what the question needs."
+                        }
+                    ],
+                    "differentiation": {
+                        "support": "Give a map as a starting point.",
+                        "extension": "Ask for a second model of the same thing."
+                    },
+                    "reflection": [
+                        "What did your model leave out?"
+                    ],
+                    "bloom": "remember",
+                    "dok": 2
+                },
+                "interaction": {
+                    "kind": "match",
+                    "intro": "Pair each term with what it means.",
+                    "pairs": [
+                        {
+                            "id": "p1",
+                            "term": "Model",
+                            "meaning": "A simplified representation of a real system."
+                        },
+                        {
+                            "id": "p2",
+                            "term": "Law",
+                            "meaning": "Describes a repeated pattern."
+                        },
+                        {
+                            "id": "p3",
+                            "term": "Theory",
+                            "meaning": "Explains why patterns occur."
+                        }
+                    ],
+                    "wrapup": "",
+                    "reason": "a hands-on way to practise this idea"
+                },
+                "question_ids": [
+                    104
+                ],
+                "activities": [
+                    {
+                        "source": "bank",
+                        "question_id": 104,
+                        "concept_id": 3,
+                        "as": "essay",
+                        "default_as": "essay",
+                        "pattern": null,
+                        "decision": false,
+                        "connects_concept": null,
+                        "label": "Explain",
+                        "bloom": "remember",
+                        "difficulty": "easy",
+                        "dok": 1,
+                        "why": "the question's own form"
+                    }
+                ],
+                "image": null
+            },
+            {
+                "n": 3,
+                "type": "activity",
+                "block": "activity",
+                "title": "Law or theory",
+                "topic_id": 11,
+                "concept_ids": [
+                    3,
+                    4
+                ],
+                "taught_concept_ids": [
+                    3,
+                    4
+                ],
+                "content": {
+                    "format": "discussion",
+                    "grouping": "group",
+                    "minutes": 10,
+                    "focus": "Groups decide whether a statement is a law or a theory.",
+                    "objectives": [
+                        {
+                            "concept_id": 3,
+                            "text": "Students will say that a law describes a pattern."
+                        },
+                        {
+                            "concept_id": 4,
+                            "text": "Students will say that a theory explains it."
+                        }
+                    ],
+                    "materials": [
+                        "No materials needed"
+                    ],
+                    "setup": null,
+                    "teacher_steps": [
+                        {
+                            "minutes": 4,
+                            "text": "Read out each statement."
+                        },
+                        {
+                            "minutes": 6,
+                            "text": "Ask each group to decide."
+                        }
+                    ],
+                    "student_steps": [
+                        "You listen to the statement.",
+                        "You decide as a group."
+                    ],
+                    "expected_outcomes": [
+                        "Students say that a model keeps only what matters."
+                    ],
+                    "discussion": [
+                        {
+                            "prompt": "Why does a model ignore some details?",
+                            "answer": "A model ignores some details on purpose."
+                        }
+                    ],
+                    "misconception": null,
+                    "assessment": [
+                        {
+                            "criterion": "Explains the choice",
+                            "evidence": "Says why a detail was left out."
+                        },
+                        {
+                            "criterion": "Keeps what matters",
+                            "evidence": "The model keeps what the question needs."
+                        }
+                    ],
+                    "differentiation": {
+                        "support": "Give a map as a starting point.",
+                        "extension": "Ask for a second model of the same thing."
+                    },
+                    "reflection": [
+                        "What did your model leave out?"
+                    ],
+                    "bloom": "evaluate",
+                    "dok": 2
+                },
+                "interaction": null,
+                "question_ids": [],
+                "activities": [],
+                "image": null
+            }
+        ],
+        "taught_by": {
+            "1": [
+                1
+            ],
+            "2": [
+                1
+            ],
+            "3": [
+                2,
+                3
+            ],
+            "4": [
+                2,
+                3
+            ]
+        },
+        "concept_questions": {
+            "1": [
+                101
+            ],
+            "2": [
+                103
+            ],
+            "3": [
+                104
+            ]
+        },
+        "stats": {
+            "sections": 4,
+            "concepts": 4,
+            "questions": 3,
+            "diagrams": 0,
+            "interactions": 1
+        }
+    }
+}

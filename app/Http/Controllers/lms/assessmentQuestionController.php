@@ -2591,6 +2591,35 @@ private function getStudentMastery($student_id, $standard_id, $subject_id, $chap
             foreach ($conceptUpdates as $conceptId => $data) {
                 $performance = $data['total'] > 0 ? ($data['correct'] / $data['total']) * 100 : 0;
                 $this->updateForgettingCurve($student_id, $conceptId, $performance);
+
+                // Real engagement-event producer (added 2026-10-10). The
+                // student just practised real questions tagged to this real
+                // concept (lms_question_master.concept_id, the same column
+                // ASSESSES already hangs off in config/neo4j.php) — one
+                // engagement row per concept touched in this submission,
+                // alongside the forgetting-curve update above, not instead of
+                // it.
+                try {
+                    DB::table('lms_student_engagement')->insert([
+                        'student_id' => $student_id,
+                        'sub_institute_id' => $sub_institute_id,
+                        'activity_type' => 'practice',
+                        'activity_id' => $conceptId,
+                        'interaction_count' => $data['total'],
+                        'started_at' => now(),
+                        'completed_at' => now(),
+                        'metadata' => json_encode([
+                            'source' => 'adaptive_practice',
+                            'correct' => $data['correct'],
+                            'total' => $data['total'],
+                            'performance_percent' => round($performance, 1),
+                        ]),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                } catch (\Exception $e) {
+                    \Log::error('Error logging practice engagement: ' . $e->getMessage());
+                }
             }
 
             // Get updated mastery

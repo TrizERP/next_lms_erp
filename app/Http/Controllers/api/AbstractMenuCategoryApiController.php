@@ -126,13 +126,21 @@ abstract class AbstractMenuCategoryApiController extends Controller
             $categoryRows->pluck('category_key')->map(fn ($key) => (string) $key)->all()
         );
 
+        $ownAiStackRoute = $this->ownAiStackRoute($moduleName, (int) $request->input('level2_menu_id', $module['level2_menu_id'] ?? 0));
+
         $categories = $categoryRows->map(fn ($category) => [
             'key' => (string) $category->category_key,
             'label' => (string) $category->label,
             'description' => (string) ($category->description ?? ''),
             // The category's own page. The level-3 bar links here; the page
-            // itself renders the items below as its horizontal tab bar.
-            'route' => (string) ($category->route ?? ''),
+            // itself renders the items below as its horizontal tab bar. The AI Stack
+            // tab of a menu several modules claim comes from the module the menu is
+            // named after — see ownAiStackRoute().
+            'route' => (string) (
+                $category->category_key === 'ai-stack' && $ownAiStackRoute !== null
+                    ? $ownAiStackRoute
+                    : ($category->route ?? '')
+            ),
             // Set on the Onboarding category only: the onboarding journey this
             // module shows, from onboarding_module.module_key. Empty means the
             // category renders its menus like any other — or, for Onboarding,
@@ -171,6 +179,68 @@ abstract class AbstractMenuCategoryApiController extends Controller
      *
      * @return list<array{module_name:string,level2_menu_id:int,label:string,link:string}>
      */
+    /**
+     * The AI Stack route of the module a menu is actually named after, when more than one
+     * module claims the menu.
+     *
+     * Level-2 menu 105 ("Users") is claimed by `user` and by `user-i-card`. A menu's tab
+     * bar is built from the module its id resolves to first, which is `user-i-card`, so the
+     * bar's AI Stack tab opened the User I-Card module's AI Stack on the Users menu.
+     * Where several modules claim one menu, the module whose name IS the menu's name
+     * (`user` for "Users") supplies the AI Stack route. Nothing else about the bar moves,
+     * and a menu with a single claimant is never touched.
+     *
+     * The menu is the one the caller asked for, not the one a module's first row happens
+     * to carry: `user-i-card` also has rows on its own hidden menu.
+     */
+    private function ownAiStackRoute(string $moduleName, int $level2): ?string
+    {
+        if ($level2 <= 0) {
+            return null;
+        }
+
+        $label = strtolower(trim((string) DB::table('tblmenumaster')->where('id', $level2)->value('name')));
+
+        if ($label === '') {
+            return null;
+        }
+
+        $claimants = DB::table('fees_menu_categories')
+            ->where('level2_menu_id', $level2)
+            ->where('status', 1)
+            ->distinct()
+            ->pluck('module_name')
+            ->map(fn ($name) => (string) $name)
+            ->all();
+
+        if (count($claimants) < 2) {
+            return null;
+        }
+
+        $slug = str_replace(' ', '-', $label);
+        $owner = null;
+
+        foreach ($claimants as $candidate) {
+            if ($candidate === $slug || $candidate.'s' === $slug || $candidate === rtrim($slug, 's')) {
+                $owner = $candidate;
+                break;
+            }
+        }
+
+        if ($owner === null || $owner === $moduleName) {
+            return null;
+        }
+
+        $route = DB::table('fees_menu_categories')
+            ->where('module_name', $owner)
+            ->where('level2_menu_id', $level2)
+            ->where('category_key', 'ai-stack')
+            ->where('status', 1)
+            ->value('route');
+
+        return is_string($route) && $route !== '' ? $route : null;
+    }
+
     protected function moduleDirectory(): array
     {
         if (! Schema::hasColumn('fees_menu_categories', 'level2_menu_id')) {

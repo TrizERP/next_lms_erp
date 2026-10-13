@@ -213,6 +213,11 @@ class ApiGuardTest extends TestCase
             'GET api/g2g-lms/certifications-records/certificates/verify/{code}',
             'POST api/online_admission_confirm',
             'POST api/api-login',
+            // Alumni portal sign-in: these have no token yet by definition. Each is rate-limited per email and per address and answers
+            // the same whether or not an account exists (see section 8 of docs/ALUMNI_MODULE_IMPLEMENTATION_PLAN.md, and AlumniAuthTest).
+            'POST api/alumni-portal/register', 'POST api/alumni-portal/login', 'POST api/alumni-portal/refresh', 'POST api/alumni-portal/verify-email',
+            'POST api/alumni-portal/resend-verification', 'POST api/alumni-portal/forgot-password', 'POST api/alumni-portal/reset-password',
+            'POST api/alumni-portal/invite/check', 'POST api/alumni-portal/invite/accept',
             'GET api/testkey', // only registered in local/testing, see routes/api.php
         ];
 

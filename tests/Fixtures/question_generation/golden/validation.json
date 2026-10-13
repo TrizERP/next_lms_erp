@@ -1,0 +1,112 @@
+{
+    "mcq": {
+        "valid": [
+            {
+                "question_title": "A diver descends 3 m every minute. What is the change in depth after 4 minutes?",
+                "description": "Tests multiplication at Apply.",
+                "subconcept": "The product of a positive and a negative integer is negative.",
+                "points": 1,
+                "multiple_answer": 0,
+                "hint_text": null,
+                "learning_outcome": [
+                    "Multiplies integers with unlike signs"
+                ],
+                "answer": {
+                    "v": "ans-2.0",
+                    "question_type": "mcq",
+                    "sub_type": "MCQ",
+                    "bloom_level": "Apply",
+                    "dok_level": 2,
+                    "difficulty": "Medium",
+                    "options": [
+                        {
+                            "label": "A",
+                            "text": "+12 m",
+                            "is_correct": false
+                        },
+                        {
+                            "label": "B",
+                            "text": "-12 m",
+                            "is_correct": true
+                        },
+                        {
+                            "label": "C",
+                            "text": "-7 m",
+                            "is_correct": false
+                        },
+                        {
+                            "label": "D",
+                            "text": "+7 m",
+                            "is_correct": false
+                        }
+                    ],
+                    "correct_option": "B",
+                    "knowledge_refs": [
+                        "The product of a positive and a negative integer is negative."
+                    ]
+                }
+            }
+        ],
+        "skipped": [
+            "row 1: not an object",
+            "row 2: missing column keys hint_text",
+            "row 3: invalid bloom_level",
+            "row 4: points must be int >= 1",
+            "row 5: multiple_answer must be 0",
+            "row 6: mcq sub_type must be MCQ, Assertion-Reason or Case-Based MCQ",
+            "row 7: mcq must have exactly 4 options",
+            "row 8: invalid correct_option"
+        ]
+    },
+    "narrative": {
+        "valid": [
+            {
+                "question_title": "State the sign of the product of a positive and a negative integer.",
+                "description": "Tests recall.",
+                "subconcept": "Sign rule",
+                "points": 2,
+                "multiple_answer": 0,
+                "hint_text": null,
+                "learning_outcome": [
+                    "Multiplies integers with unlike signs"
+                ],
+                "answer": {
+                    "v": "ans-2.0",
+                    "question_type": "narrative",
+                    "sub_type": "Short Answer",
+                    "bloom_level": "Understand",
+                    "dok_level": 1,
+                    "difficulty": "Easy",
+                    "model_answer": "The product is negative.",
+                    "marking_points": [
+                        {
+                            "mark": 1,
+                            "criterion": "negative"
+                        },
+                        {
+                            "mark": 1,
+                            "criterion": "unlike signs"
+                        }
+                    ],
+                    "keywords": [
+                        {
+                            "term": "a"
+                        },
+                        {
+                            "term": "b"
+                        },
+                        {
+                            "term": "c"
+                        },
+                        {
+                            "term": "d"
+                        }
+                    ]
+                }
+            }
+        ],
+        "skipped": [
+            "row 1: marking_points count must equal points"
+        ]
+    }
+}
