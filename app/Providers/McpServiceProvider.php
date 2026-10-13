@@ -26,6 +26,17 @@ use App\Mcp\Tools\CommunicationChannelsTool;
 use App\Mcp\Tools\CommunicationMessagesTool;
 use App\Mcp\Tools\ComplaintsListTool;
 use App\Mcp\Tools\ComplaintsSummaryTool;
+use App\Mcp\Tools\AlumniDirectoryTool;
+use App\Mcp\Tools\AlumniEventsTool;
+use App\Mcp\Tools\AlumniOverviewTool;
+use App\Mcp\Tools\DonationsListTool;
+use App\Mcp\Tools\DonationsSummaryTool;
+use App\Mcp\Tools\PayrollHeadsTool;
+use App\Mcp\Tools\PayrollMonthlyTool;
+use App\Mcp\Tools\StaffAttendanceRecordsTool;
+use App\Mcp\Tools\StaffAttendanceSummaryTool;
+use App\Mcp\Tools\LeaveRequestsTool;
+use App\Mcp\Tools\LeaveSummaryTool;
 use App\Mcp\Tools\ConsentRecordsTool;
 use App\Mcp\Tools\ConsentSummaryTool;
 use App\Mcp\Tools\CurriculumPlanningOutcomesTool;
@@ -246,6 +257,21 @@ class McpServiceProvider extends ServiceProvider
         TasksProjectsTool::class,
         ComplaintsListTool::class,
         ComplaintsSummaryTool::class,
+        // Staff leave. Read-only; staff only, never the students' leave applications.
+        LeaveRequestsTool::class,
+        LeaveSummaryTool::class,
+        // Staff punches, payroll in totals and donations. Payroll and donations are
+        // admin-only; payroll never returns one named person's pay.
+        StaffAttendanceRecordsTool::class,
+        StaffAttendanceSummaryTool::class,
+        PayrollHeadsTool::class,
+        PayrollMonthlyTool::class,
+        DonationsListTool::class,
+        DonationsSummaryTool::class,
+        // Alumni Management. Read-only and admin-only; never contact details.
+        AlumniDirectoryTool::class,
+        AlumniEventsTool::class,
+        AlumniOverviewTool::class,
         UtilityCustomModulesTool::class,
         UtilityRolloverScopeTool::class,
         DocumentTemplatesListTool::class,

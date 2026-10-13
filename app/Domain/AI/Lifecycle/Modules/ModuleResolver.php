@@ -295,18 +295,33 @@ class ModuleResolver
      */
     private function fromRoute(string $route, array $modules): ?ModuleCapability
     {
-        if (! Schema::hasTable('ai_modules')) {
-            return null;
-        }
-
         $normalised = $this->routes->normalize($route);
         $best = null;
         $bestSpecificity = -1;
 
-        $rows = DB::table('ai_modules')
-            ->select('module_key', 'route_patterns', 'match_priority')
-            ->orderBy('match_priority')
-            ->get();
+        $rows = Schema::hasTable('ai_modules')
+            ? DB::table('ai_modules')
+                ->select('module_key', 'route_patterns', 'match_priority')
+                ->orderBy('match_priority')
+                ->get()
+            : collect();
+
+        // Modules bound in config with their own route patterns and no `ai_modules` row.
+        // They take part in the same specificity contest; a real row for the same key
+        // is never shadowed by its config twin.
+        $known = $rows->pluck('module_key')->all();
+
+        foreach ((array) config('ai.lifecycle.modules', []) as $key => $binding) {
+            $patterns = is_array($binding) ? (array) ($binding['route_patterns'] ?? []) : [];
+
+            if ($patterns !== [] && ! in_array($key, $known, true)) {
+                $rows->push((object) [
+                    'module_key' => (string) $key,
+                    'route_patterns' => json_encode(array_values($patterns)),
+                    'match_priority' => 80,
+                ]);
+            }
+        }
 
         foreach ($rows as $row) {
             $patterns = json_decode((string) $row->route_patterns, true);

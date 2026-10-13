@@ -99,6 +99,12 @@ class ModuleAiStackIsolationTest extends TestCase
         'parent_communication' => 'parent_communication.',
         'sqaa' => 'sqaa.',
         'library' => 'library.',
+        // Added 2026-10-13: the HR and donation modules.
+        'leave' => 'leave.',
+        'user_attendance' => 'staff_attendance.',
+        'payroll' => 'payroll.',
+        'donation' => 'donations.',
+        'alumni' => 'alumni.',
     ];
 
     /**
@@ -177,10 +183,17 @@ class ModuleAiStackIsolationTest extends TestCase
         'parent_communication',
         'sqaa',
         'library',
+        // Added 2026-10-13. Staff leave, punches, pay and donations describe staff and
+        // donors, not the school's roll; none needs the student or teacher directories.
+        'leave',
+        'user_attendance',
+        'payroll',
+        'donation',
+        'alumni',
     ];
 
     /**
-     * Every module's route patterns, as the registration migrations write them.
+     * Every module's route patterns, as the registration migrations (or, for the config-only modules, config/ai.php) write them.
      *
      * Declared once because three tests read them, and because a pattern list that drifts
      * from the migration would assert something no estate actually has.
@@ -296,6 +309,13 @@ class ModuleAiStackIsolationTest extends TestCase
                 '/library', '/library/**', '/modules/library', '/modules/library/**',
                 '/modules/library-report', '/modules/library-report/**',
             ],
+            // Registered in config only, with no ai_modules row: the real config is read, so this
+            // asserts what ships rather than a copy of it.
+            'leave' => (array) config('ai.lifecycle.modules.leave.route_patterns'),
+            'user_attendance' => (array) config('ai.lifecycle.modules.user_attendance.route_patterns'),
+            'payroll' => (array) config('ai.lifecycle.modules.payroll.route_patterns'),
+            'alumni' => (array) config('ai.lifecycle.modules.alumni.route_patterns'),
+            'donation' => (array) config('ai.lifecycle.modules.donation.route_patterns'),
             // The modules that already had an AI Stack, so a new pattern cannot have
             // quietly taken one of their routes.
             'students' => ['/students', '/students/**', '/student', '/student/**', '/modules/student', '/modules/student/**'],
@@ -713,6 +733,11 @@ class ModuleAiStackIsolationTest extends TestCase
             'parent_communication' => '/modules/parent-communication/ai-stack',
             'sqaa' => '/modules/sqaa/ai-stack',
             'library' => '/modules/library/ai-stack',
+            'leave' => '/modules/leave/ai-stack',
+            'user_attendance' => '/modules/user-attendance/ai-stack',
+            'payroll' => '/modules/payroll/ai-stack',
+            'donation' => '/modules/donation-management/ai-stack',
+            'alumni' => '/modules/alumni-management/ai-stack',
             'students' => '/modules/student/ai-stack',
             'admissions' => '/modules/admission/ai-stack',
             'attendance' => '/modules/attendance/ai-stack',
