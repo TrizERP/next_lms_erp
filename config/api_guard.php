@@ -30,6 +30,7 @@ return [
         'POST online_admission_confirm',          // public online admission form submission
         'g2g-lms/certifications-records/certificates/verify/*', // public certificate verification
         'mobile/web-handoff/claims',              // redeemed with a single-use ticket instead of a JWT
+        'public-pay/*',                           // parents pay school fees from a shared link (routes/public_pay.php); proved by registered mobile + rate-limited
         // WhatsApp gateway webhooks - called by the provider, not a user.
         // TODO(V1.1): verify a shared secret on these (see docs/V1_LAUNCH.md).
         'incoming-message',

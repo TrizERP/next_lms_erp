@@ -218,6 +218,9 @@ class ApiGuardTest extends TestCase
             'POST api/alumni-portal/register', 'POST api/alumni-portal/login', 'POST api/alumni-portal/refresh', 'POST api/alumni-portal/verify-email',
             'POST api/alumni-portal/resend-verification', 'POST api/alumni-portal/forgot-password', 'POST api/alumni-portal/reset-password',
             'POST api/alumni-portal/invite/check', 'POST api/alumni-portal/invite/accept',
+            // Parent fee payment from a shared school link. No token by design; see routes/public_pay.php and PublicFeePayTest.
+            'GET api/public-pay/{code}', 'POST api/public-pay/{code}/lookup', 'POST api/public-pay/{code}/fees', 'POST api/public-pay/{code}/pay',
+            'POST api/public-pay/{code}/checkout', 'POST api/public-pay/{code}/razorpay/confirm',
             'GET api/testkey', // only registered in local/testing, see routes/api.php
         ];
 

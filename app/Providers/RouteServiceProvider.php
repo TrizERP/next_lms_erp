@@ -115,6 +115,7 @@ class RouteServiceProvider extends ServiceProvider
 
         $this->mapAlumniRoutes();
         $this->mapAlumniPortalRoutes();
+        $this->mapPublicFeePayRoutes();
 
         $this->mapOrganizationManagementRoutes();
 
@@ -215,6 +216,27 @@ class RouteServiceProvider extends ServiceProvider
             ->middleware('api')
             ->namespace($this->namespace)
             ->group(base_path('routes/alumni_portal.php'));
+    }
+
+    /**
+     * Login-free fee payment for parents (/api/public-pay/{code}). See routes/public_pay.php.
+     *
+     * The Next.js relay hides the visitor's address from Laravel, so a per-address limit would throttle every parent together.
+     * Limits are keyed on school + mobile number (what an abuser would have to vary to scrape or guess) with a generous
+     * ceiling per address as a flood backstop.
+     */
+    protected function mapPublicFeePayRoutes()
+    {
+        $who = fn (Request $r) => sha1(mb_strtolower((string) $r->route('code')) . '|' . preg_replace('/\D+/', '', (string) $r->input('mobile')));
+        RateLimiter::for('public-pay-school', fn (Request $r) => Limit::perMinute(120)->by('pp-school|' . $r->ip()));
+        RateLimiter::for('public-pay-lookup', fn (Request $r) => [Limit::perMinute(5)->by('pp-lookup|' . $who($r)), Limit::perMinute(60)->by('pp-lookup-ip|' . $r->ip())]);
+        RateLimiter::for('public-pay-fees', fn (Request $r) => [Limit::perMinute(20)->by('pp-fees|' . $who($r)), Limit::perMinute(300)->by('pp-fees-ip|' . $r->ip())]);
+        RateLimiter::for('public-pay-start', fn (Request $r) => [Limit::perMinute(6)->by('pp-start|' . $who($r)), Limit::perMinute(120)->by('pp-start-ip|' . $r->ip())]);
+
+        Route::prefix('api')
+            ->middleware('api')
+            ->namespace($this->namespace)
+            ->group(base_path('routes/public_pay.php'));
     }
 
     /**
