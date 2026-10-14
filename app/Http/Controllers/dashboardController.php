@@ -23,6 +23,49 @@ use Carbon\Carbon;
 
 class dashboardController extends Controller
 {
+
+    /**
+     * Total bytes of uploaded files for a school, summed from the per-module file_size columns.
+     * Cached for 10 minutes because the dashboard only shows an approximate usage figure.
+     * Behaviour is unchanged from the old inline block, including front_desk being counted
+     * twice (the old $task_data query read front_desk, not a tasks table).
+     */
+    private function usedStorageBytes($sub_institute_id)
+    {
+        return \Illuminate\Support\Facades\Cache::remember('dash_used_storage:'.$sub_institute_id, 600, function () use ($sub_institute_id) {
+            $sources = [
+                ['photo_video_gallary', 'file_size'],
+                ['leave_applications', 'file_size'],
+                ['exam_schedule', 'file_size'],
+                ['inward', 'attachment_size'],
+                ['outward', 'attachment_size'],
+                ['petty_cash', 'file_size'],
+                ['homework', 'submission_image_size'],
+                ['visitor_master', 'file_size'],
+                ['front_desk', 'FILE_SIZE'],
+                ['front_desk', 'FILE_SIZE'],
+                ['complaint', 'FILE_SIZE'],
+                ['tblstudent', 'FILE_SIZE'],
+                ['student_health', 'file_size'],
+            ];
+
+            $parts = [];
+            $bindings = [];
+            foreach ($sources as [$table, $column]) {
+                $parts[] = "(SELECT IFNULL(SUM(IFNULL({$column},0)),0) FROM {$table} WHERE sub_institute_id = ?)";
+                $bindings[] = $sub_institute_id;
+            }
+            $total = (float) DB::selectOne('SELECT '.implode(' + ', $parts).' AS total', $bindings)->total;
+
+            // Homework attachments are de-duplicated by image; the old code only ever used the first group.
+            $homework = DB::table('homework')->selectRaw('IFNULL(SUM(distinct image_size),0) as file_size,image_size')
+                ->where('sub_institute_id', '=', $sub_institute_id)
+                ->groupBy('image')->having('image_size', '>', 0)->get()->toArray();
+
+            return $total + (count($homework) != 0 ? $homework[0]->file_size : 0);
+        });
+    }
+
     public function getCommunicationDetails(Request $request)
     {
         $sub_institute_id = session()->get('sub_institute_id');
@@ -1070,111 +1113,8 @@ class dashboardController extends Controller
                 $school_setup_data = json_decode(json_encode($school_setup_data[0]), true);
                 $res['school_setup_data'] = $school_setup_data;
 
-                //START Code for calculate used space using folder-wise table
-                $photo_video_data = DB::table('photo_video_gallary')->selectRaw('SUM(IFNULL(file_size,0)) as file_size')
-                    ->where('sub_institute_id', '=', $sub_institute_id)->get()->toArray();
-                $photo_video_data_size = 0;
-                if (count($photo_video_data) != 0) {
-                    $photo_video_data_size = $photo_video_data[0]->file_size;
-                }
-
-                $leave_applications_data = DB::table('leave_applications')->selectRaw('SUM(IFNULL(file_size,0)) as file_size')
-                    ->where('sub_institute_id', '=', $sub_institute_id)->get()->toArray();
-                $leave_applications_data_size = 0;
-                if (count($leave_applications_data) != 0) {
-                    $leave_applications_data_size = $leave_applications_data[0]->file_size;
-                }
-
-                $exam_schedule_data = DB::table('exam_schedule')->selectRaw('SUM(IFNULL(file_size,0)) as file_size')
-                    ->where('sub_institute_id', '=', $sub_institute_id)->get()->toArray();
-                $exam_schedule_data_size = 0;
-                if (count($exam_schedule_data) != 0) {
-                    $exam_schedule_data_size = $exam_schedule_data[0]->file_size;
-                }
-
-                $inward_data = DB::table('inward')->selectRaw('SUM(IFNULL(attachment_size,0)) as file_size')
-                    ->where('sub_institute_id', '=', $sub_institute_id)->get()->toArray();
-                $inward_data_size = 0;
-                if (count($inward_data) != 0) {
-                    $inward_data_size = $inward_data[0]->file_size;
-                }
-
-                $outward_data = DB::table('outward')->selectRaw('SUM(IFNULL(attachment_size,0)) as file_size')
-                    ->where('sub_institute_id', '=', $sub_institute_id)->get()->toArray();
-                $outward_data_size = 0;
-                if (count($outward_data) != 0) {
-                    $outward_data_size = $outward_data[0]->file_size;
-                }
-
-                $petty_cash_data = DB::table('petty_cash')->selectRaw('SUM(IFNULL(file_size,0)) as file_size')
-                    ->where('sub_institute_id', '=', $sub_institute_id)->get()->toArray();
-                $petty_cash_size = 0;
-                if (count($petty_cash_data) != 0) {
-                    $petty_cash_size = $petty_cash_data[0]->file_size;
-                }
-
-
-                $homework_data = DB::table('homework')->selectRaw('IFNULL(SUM(distinct image_size),0) as file_size,image_size')
-                    ->where('sub_institute_id', '=', $sub_institute_id)
-                    ->groupBy('image')->having('image_size', '>', 0)->get()->toArray();
-                $homework_size = 0;
-                if (count($homework_data) != 0) {
-                    $homework_size = $homework_data[0]->file_size;
-                }
-
-                $homework_submission_data = DB::table('homework')->selectRaw('SUM(IFNULL(submission_image_size,0)) as file_size')
-                    ->where('sub_institute_id', '=', $sub_institute_id)->get()->toArray();
-                $homework_submission_size = 0;
-                if (count($homework_submission_data) != 0) {
-                    $homework_submission_size = $homework_submission_data[0]->file_size;
-                }
-
-
-                $visitor_data = DB::table('visitor_master')->selectRaw('SUM(IFNULL(file_size,0)) as file_size')
-                    ->where('sub_institute_id', '=', $sub_institute_id)->get()->toArray();
-                $visitor_size = 0;
-                if (count($visitor_data) != 0) {
-                    $visitor_size = $visitor_data[0]->file_size;
-                }
-
-                $frontdesk_data = DB::table('front_desk')->selectRaw('SUM(IFNULL(FILE_SIZE,0)) as file_size')
-                    ->where('sub_institute_id', '=', $sub_institute_id)->get()->toArray();
-                $frontdesk_size = 0;
-                if (count($frontdesk_data) != 0) {
-                    $frontdesk_size = $frontdesk_data[0]->file_size;
-                }
-
-                $task_data = DB::table('front_desk')->selectRaw('SUM(IFNULL(FILE_SIZE,0)) as file_size')
-                    ->where('sub_institute_id', '=', $sub_institute_id)->get()->toArray();
-                $task_size = 0;
-                if (count($task_data) != 0) {
-                    $task_size = $task_data[0]->file_size;
-                }
-
-                $complaint_data = DB::table('complaint')->selectRaw('SUM(IFNULL(FILE_SIZE,0)) as file_size')
-                    ->where('sub_institute_id', '=', $sub_institute_id)->get()->toArray();
-                $complaint_size = 0;
-                if (count($complaint_data) != 0) {
-                    $complaint_size = $complaint_data[0]->file_size;
-                }
-
-                $student_data = DB::table('tblstudent')->selectRaw('SUM(IFNULL(FILE_SIZE,0)) as file_size')
-                    ->where('sub_institute_id', '=', $sub_institute_id)->get()->toArray();
-                $student_size = 0;
-                if (count($student_data) != 0) {
-                    $student_size = $student_data[0]->file_size;
-                }
-
-                $student_health_data = DB::table('student_health')->selectRaw('SUM(IFNULL(file_size,0)) as file_size')
-                    ->where('sub_institute_id', '=', $sub_institute_id)->get()->toArray();
-                $student_health_size = 0;
-                if (count($student_health_data) != 0) {
-                    $student_health_size = $student_health_data[0]->file_size;
-                }
-
-                $total_used_size = $photo_video_data_size + $leave_applications_data_size + $exam_schedule_data_size + $inward_data_size
-                    + $outward_data_size + $petty_cash_size + $homework_size + $homework_submission_size + $visitor_size
-                    + $frontdesk_size + $task_size + $complaint_size + $student_size + $student_health_size;
+                // Used-space totals: one cached round trip instead of 14 full SUM scans per load.
+                $total_used_size = $this->usedStorageBytes($sub_institute_id);
                 
                 // Convert the total used space to MB
                 $used_space_in_MB = $total_used_size / (1024 * 1024);
