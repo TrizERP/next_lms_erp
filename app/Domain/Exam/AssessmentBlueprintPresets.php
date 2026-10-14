@@ -65,16 +65,16 @@ class AssessmentBlueprintPresets
         return [
             'preset_key' => 'delhi-doe-3to5-mathematics-2025-26',
             'name' => 'Mathematics — Classes III-V',
-            'description' => 'Delhi Directorate of Education paper design for 2025-26, transcribed from the published PDF. 10 questions, 50 marks.',
-            'board' => 'Delhi DoE',
+            'description' => 'Our Authors of Education paper design for 2025-26, transcribed from the published PDF. 10 questions, 50 marks.',
+            'board' => '',
             'class_band' => 'III-V',
             'subject_label' => 'Mathematics',
             'assessment_type' => 'Term',
             'academic_year' => '2025-26',
             'total_marks' => 50,
             'duration_minutes' => null,
-            'source' => 'Delhi DoE 2025-26',
-            'source_url' => 'https://edustud.nic.in/edu/BLUEPRINT_2025/3to5/Mathematics.pdf',
+            'source' => '2025-26',
+            'source_url' => '',
             'definition' => [
                 'version' => AssessmentBlueprint::VERSION,
                 'sections' => [
@@ -134,16 +134,16 @@ class AssessmentBlueprintPresets
         return [
             'preset_key' => 'delhi-doe-6to8-science-2025-26',
             'name' => 'Science — Classes VI-VIII',
-            'description' => 'Delhi Directorate of Education paper design for 2025-26, transcribed from the published PDF. 15 questions, 60 marks.',
-            'board' => 'Delhi DoE',
+            'description' => 'Our Authors of Education paper design for 2025-26, transcribed from the published PDF. 15 questions, 60 marks.',
+            'board' => '',
             'class_band' => 'VI-VIII',
             'subject_label' => 'Science',
             'assessment_type' => 'Term',
             'academic_year' => '2025-26',
             'total_marks' => 60,
             'duration_minutes' => null,
-            'source' => 'Delhi DoE 2025-26',
-            'source_url' => 'https://edustud.nic.in/edu/BLUEPRINT_2025/6to8/Science.pdf',
+            'source' => '2025-26',
+            'source_url' => '',
             'definition' => [
                 'version' => AssessmentBlueprint::VERSION,
                 'sections' => [
