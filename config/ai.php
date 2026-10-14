@@ -64,6 +64,14 @@ return [
     | belong. See config/deepseek.php.
     |
     */
+    /*
+    | Reading and answering in Hindi and Gujarati. When the configured Gemini model is out of
+    | quota or overloaded, these models of the same provider are tried in order.
+    */
+    'language' => [
+        'fallback_models' => array_values(array_filter(array_map('trim', explode(',', (string) env('AI_LANGUAGE_FALLBACK_MODELS', 'gemini-3.1-flash-lite,gemini-3.5-flash-lite'))))),
+    ],
+
     'provider' => [
         'driver' => env('AI_PROVIDER', 'gemini'),
 
@@ -441,6 +449,9 @@ return [
                     'fees.getPending',
                     'fees.arrears',
                     'fees.collection_report',
+                    // Not read-only, so it is never a report source or a fallback read: it is reached
+                    // only through the reminder flow, which previews and waits for approval.
+                    'fees.send_reminders',
                     'ai.templates.list',
                     'ai.templates.render',
                     'ai.templates.generate',

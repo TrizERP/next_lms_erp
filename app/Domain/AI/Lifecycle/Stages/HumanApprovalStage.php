@@ -59,6 +59,16 @@ class HumanApprovalStage implements LifecycleStage
             return $this->admissionsGate($admissions);
         }
 
+        // Fee reminders have a human gate of their own: the list is shown, and only a person's
+        // "yes" to that exact list sends anything. Reporting "no agent is registered for fees"
+        // while somebody was in fact asked to approve emailing families would describe a
+        // different turn than the one that happened.
+        $feeReminders = $context->get('fees_reminders_flow');
+
+        if (is_array($feeReminders)) {
+            return $this->feeRemindersGate($feeReminders);
+        }
+
         $decision = $this->decisionFrom($context);
 
         if ($decision !== null) {
@@ -87,6 +97,40 @@ class HumanApprovalStage implements LifecycleStage
         }
 
         return $this->record($context, (int) $recommendationId, $decision);
+    }
+
+    /**
+     * @param  array<string, mixed>  $flow
+     */
+    private function feeRemindersGate(array $flow): StageOutcome
+    {
+        $base = [
+            'gate' => 'App\\Mcp\\Tools\\FeesSendRemindersTool',
+            'why_it_gates' => 'Sending emails real families, so the tool previews first and sends only when a person '
+                .'approves that exact list; it refuses if the ledger no longer gives the same list.',
+        ];
+
+        return match ((string) ($flow['state'] ?? '')) {
+            'ready' => StageOutcome::pending(
+                'Fee reminders are waiting on a person to approve the list.',
+                $base + ['blocking' => true]
+            )->withComponent($base['gate']),
+
+            'sent' => StageOutcome::ran(
+                'A person approved the list on this turn, and it was sent.',
+                $base + ['approved' => true]
+            )->withComponent($base['gate']),
+
+            'need_deadline' => StageOutcome::notReached(
+                'The reminders have no payment deadline yet, so there is no list to approve.'
+            ),
+
+            'cancelled' => StageOutcome::skipped('The user stopped before approving; nothing was sent.'),
+
+            'status' => StageOutcome::skipped('This turn only read the record of reminders already sent.'),
+
+            default => StageOutcome::notReached('The reminder flow stopped before anything could be approved.'),
+        };
     }
 
     /**

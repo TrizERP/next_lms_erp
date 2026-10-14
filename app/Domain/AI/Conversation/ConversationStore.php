@@ -231,7 +231,7 @@ class ConversationStore
 
         $pointsBack = $question !== ''
             && (isset($memory['last_result_set']) || isset($memory['selected_record']))
-            && $this->references->resolve($question, $memory) !== null;
+            && ($this->references->resolve($question, $memory) !== null || self::namesTheListedRows($question));
 
         // Memory first, the column second.
         //
@@ -251,6 +251,21 @@ class ConversationStore
         }
 
         return ['module' => $row->module_key, 'points_at_previous_answer' => $pointsBack];
+    }
+
+    /**
+     * "The details of these students": the rows the last answer printed, named as a group.
+     *
+     * An ordinal or a printed name picks ONE row; "these", "those" and "the above" mean ALL of
+     * them. Both belong to the module that printed the rows. Without this, the noun alone decided,
+     * and "students" moved a fee follow-up to the Student module's directory.
+     */
+    public static function namesTheListedRows(string $question): bool
+    {
+        return (bool) preg_match(
+            '/\b(these|those|the above|the listed|above|same)\b.{0,20}\b(students?|records?|rows?|ones|enquir\w+|candidates?|accounts?|items?|people)\b/iu',
+            $question
+        );
     }
 
     /**
@@ -393,6 +408,19 @@ class ConversationStore
         // an unambiguous instruction. See selectionIntent() for what it refuses to
         // hijack — an intent with a route of its own and a referent it can resolve is
         // always left alone.
+        // A sentence that sends or texts someone, in a thread that is already about fee records,
+        // is the fee reminder even when it names no fee noun ("send an SMS to all 10 by 31 October").
+        if ($question !== null && $this->isFeeReminderFollowUp($intent, $memory, $question)) {
+            return [new Intent(
+                'fees_send_reminders',
+                'Send fee payment reminders',
+                1.0,
+                [],
+                ['fee_thread_follow_up'],
+                []
+            ), []];
+        }
+
         if ($question !== null) {
             $selection = $this->selectionIntent($intent, $memory, $question);
 
@@ -692,7 +720,33 @@ class ConversationStore
         'approve_recommendation',
         'reject_recommendation',
         'admission_confirm',
+        // Asking to remind someone is a request to act, not to look a record up: "send an SMS
+        // fee reminder to this student" must not become "show this student".
+        'fees_send_reminders',
+        'fees_reminder_status',
     ];
+
+    /**
+     * "Send an SMS to all 10 by 31 October" after fee answers: a sending verb with a channel or
+     * a reminder word, and the thread's remembered rows or selected student are fee records.
+     * Only replaces an intent that is unknown or a plain list/lookup, never a decision.
+     *
+     * @param  array<string, mixed>  $memory
+     */
+    private function isFeeReminderFollowUp(Intent $intent, array $memory, string $question): bool
+    {
+        if (in_array($intent->key, ['fees_send_reminders', 'fees_reminder_status'], true)
+            || in_array($intent->key, self::NEVER_REINTERPRETED, true)) {
+            return false;
+        }
+
+        $fees = ($memory['selected_record']['module'] ?? null) === 'fees'
+            || ($memory['last_result_set']['module'] ?? null) === 'fees'
+            || str_starts_with((string) ($memory['last_result_set']['tool'] ?? ''), 'fees.');
+
+        return $fees
+            && preg_match('/\b(send|text|sms|remind|notify)\b.{0,40}\b(sms|text message|texts?|reminders?|email|e-mail)\b|\b(sms|text|remind|notify)\b.{0,30}\b(them|him|her|all|everyone|these|this student)\b/i', $question) === 1;
+    }
 
     /** Whether a filter may replace what the classifier decided. See selectionIntent(). */
     private function mayFilter(Intent $intent): bool

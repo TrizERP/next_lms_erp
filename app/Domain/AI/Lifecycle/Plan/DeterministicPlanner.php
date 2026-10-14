@@ -3,6 +3,8 @@
 namespace App\Domain\AI\Lifecycle\Plan;
 
 use App\Domain\AI\Lifecycle\Flows\AdmissionsFlow;
+use App\Domain\AI\Lifecycle\Flows\FeesRemindersFlow;
+use App\Domain\AI\Lifecycle\Flows\FeesStudentDetailFlow;
 use App\Domain\AI\Lifecycle\StageContext;
 use App\Domain\AI\Lifecycle\Support\RecordDetail;
 use App\Domain\AI\Conversation\Intent;
@@ -44,6 +46,18 @@ class DeterministicPlanner implements Planner
         'admissions.confirm',
     ];
 
+    /**
+     * What the fee reminder flow may call: the preview-and-send tool, the Fees ranking it shows
+     * the person, and the student search it names a student with. All three are Fees-bound.
+     */
+    private const FEES_REMINDER_TOOLS = ['fees.send_reminders', 'fees.outstanding_accounts', 'students.search'];
+
+    /** What showing one student's fees needs: find them, read the ledger, read the unpaid months. */
+    private const FEES_STUDENT_TOOLS = ['students.search', 'fees.outstanding_accounts', 'fees.getPending'];
+
+    /** The two intents that belong to Fees alone, because only Fees has the tool they run. */
+    private const FEES_REMINDER_INTENTS = ['fees_send_reminders', 'fees_reminder_status'];
+
     private const NEEDS_STUDENT = [
         'student_risk_explain',
         'evidence_inspect',
@@ -69,13 +83,36 @@ class DeterministicPlanner implements Planner
 
         $intent = $context->intent;
 
-        if ($intent === null || $intent->isUnknown()) {
+        if ($intent === null) {
             return null;
+        }
+
+        // A fee question the classifier had no word for ("the list of students who have pending dues")
+        // still names students; on the Fees module that is enough to take the student route.
+        if ($intent->isUnknown()) {
+            return $this->feesStudentPlan($context, $intent);
+        }
+
+        // One student's fees. `fees_query` has no route of its own on purpose, so a sentence that
+        // names a student used to reach the model planner and, without it, the whole-school summary.
+        // Only a sentence that names ONE student (or a row picked off the previous list) is taken
+        // here; every other fee question still takes the route it always did.
+        $studentPlan = $this->feesStudentPlan($context, $intent);
+
+        if ($studentPlan !== null) {
+            return $studentPlan;
         }
 
         $steps = $this->stepsFor($intent->key);
 
         if ($steps === null) {
+            return null;
+        }
+
+        // The classifier is estate-wide and these two are Fees' alone. Said on any other
+        // module's page, the sentence goes to the model planner exactly as it did before they
+        // existed, rather than to a route whose tools that module does not have.
+        if (in_array($intent->key, self::FEES_REMINDER_INTENTS, true) && $context->module->key !== 'fees') {
             return null;
         }
 
@@ -97,6 +134,10 @@ class DeterministicPlanner implements Planner
 
         $wanted = match ($intent->key) {
             'admission_confirm' => self::ADMISSION_TOOLS,
+            'fees_send_reminders' => self::FEES_REMINDER_TOOLS,
+            // The status answer is read straight from the ledger, so it needs no tool of its
+            // own; the send tool is the nominal candidate that lets the turn reach the flow.
+            'fees_reminder_status' => ['fees.send_reminders'],
             'admission_enquiry_list' => ['admissions.listEnquiries'],
             // Selecting a row is answerable from the rows already in memory, so the
             // lookup is an enrichment rather than a requirement: where the module binds a
@@ -118,6 +159,7 @@ class DeterministicPlanner implements Planner
         $strategy = match (true) {
             $candidates === [] => 'domain_services_only',
             $intent->key === 'admission_confirm' => 'admissions_confirmation_flow',
+            in_array($intent->key, self::FEES_REMINDER_INTENTS, true) => 'fees_reminders_flow',
             $intent->key === 'admission_enquiry_list' => 'mcp_read',
             $intent->key === 'record_detail' => 'selected_record_lookup',
             default => 'mcp_student_resolution',
@@ -156,6 +198,10 @@ class DeterministicPlanner implements Planner
     private function continuationPlan(StageContext $context): ?Plan
     {
         $pending = $context->thread['memory']['pending_action'] ?? null;
+
+        if (is_array($pending) && ($pending['kind'] ?? null) === FeesRemindersFlow::KIND) {
+            return $this->feesReminderContinuation($context, $pending);
+        }
 
         if (! is_array($pending) || ($pending['kind'] ?? null) !== AdmissionsFlow::KIND) {
             return null;
@@ -196,6 +242,87 @@ class DeterministicPlanner implements Planner
         );
     }
 
+    /**
+     * A plan to show one student's fees, or null when the sentence is not about exactly one.
+     *
+     * Applies on the Fees module to `fees_query`, and to a `record_detail` whose row is a student
+     * (picked off a list the previous answer showed), and only when the module is bound to the
+     * tools the answer needs.
+     */
+    private function feesStudentPlan(StageContext $context, Intent $intent): ?Plan
+    {
+        if ($context->module->key !== 'fees' || (! in_array($intent->key, ['fees_query', 'record_detail'], true) && ! $intent->isUnknown())) {
+            return null;
+        }
+
+        $tools = array_values(array_intersect(self::FEES_STUDENT_TOOLS, $context->module->mcpTools));
+
+        if (count($tools) < count(self::FEES_STUDENT_TOOLS)) {
+            return null;
+        }
+
+        $memory = is_array($context->thread['memory'] ?? null) ? $context->thread['memory'] : [];
+
+        if (FeesStudentDetailFlow::target($context->question, $intent) === null
+            && FeesStudentDetailFlow::listTarget($context->question, $memory) === null) {
+            return null;
+        }
+
+        return new Plan(
+            goal: 'Find the one student the question is about and show what they owe, and for which months.',
+            steps: [
+                new PlanStep('find', 'Find the student named, through the Fees module\'s own student search.', 'students.search'),
+                new PlanStep('ledger', 'Read their balance from the fee ledger.', 'fees.outstanding_accounts'),
+                new PlanStep('periods', 'Read which fee months they have not paid.', 'fees.getPending'),
+                new PlanStep('report', 'Return that student\'s records, or say the student could not be found.'),
+            ],
+            source: Plan::SOURCE_DETERMINISTIC,
+            route: 'fees_student_flow',
+            intentKey: $intent->key,
+            candidateTools: $tools,
+            toolSelectionStrategy: 'fees_student_flow',
+            context: [
+                'module' => $context->module->key,
+                'confidence' => round($intent->confidence, 3),
+                'matched_by' => 'a fee question that names one student',
+            ],
+        );
+    }
+
+    /**
+     * Carrying on with a fee reminder the thread is part-way through: the deadline reply, the
+     * "yes", or a change to the list. Only on the Fees module, which is where it was started.
+     *
+     * @param  array<string, mixed>  $pending
+     */
+    private function feesReminderContinuation(StageContext $context, array $pending): ?Plan
+    {
+        $tools = array_values(array_intersect(self::FEES_REMINDER_TOOLS, $context->module->mcpTools));
+
+        if ($context->module->key !== 'fees' || $tools === []) {
+            return null;
+        }
+
+        return new Plan(
+            goal: 'Continue the fee reminder this conversation is part-way through.',
+            steps: [
+                new PlanStep('read_reply', 'Read the deadline, count or approval the user just gave.'),
+                new PlanStep('preview', 'Show exactly who would be emailed, what each owes and the message.', 'fees.send_reminders'),
+                new PlanStep('approve', 'Send only if the person approves the list shown.'),
+            ],
+            source: Plan::SOURCE_DETERMINISTIC,
+            route: 'fees_reminders_flow',
+            intentKey: 'fees_send_reminders',
+            candidateTools: $tools,
+            toolSelectionStrategy: 'fees_reminders_flow',
+            context: [
+                'module' => $context->module->key,
+                'matched_by' => 'a pending fee reminder on this thread, which outranks the sentence',
+                'pending' => $pending,
+            ],
+        );
+    }
+
     private function routeFor(string $intentKey): string
     {
         return match ($intentKey) {
@@ -217,6 +344,7 @@ class DeterministicPlanner implements Planner
             'learning_effectiveness' => 'effectiveness_read',
             'admission_enquiry_list' => 'mcp_tools',
             'admission_confirm' => 'admissions_flow',
+            'fees_send_reminders', 'fees_reminder_status' => 'fees_reminders_flow',
             // Both selection routes answer from the previous turn's rows. `record_detail`
             // upgrades to a tool call when the module binds one that reads this record;
             // `record_filter` never does, because narrowing a list the user is looking at
@@ -268,6 +396,9 @@ class DeterministicPlanner implements Planner
             'learning_effectiveness' => 'Aggregate historical outcomes into effectiveness by action type.',
             'admission_enquiry_list' => 'List the admission enquiries on record and their state.',
             'admission_confirm' => 'Collect whatever the admission still needs, then put the confirmation to a person.',
+            'fees_send_reminders' => 'Work out who is to be reminded and by when, show exactly what would be sent, '
+                . 'and send only what a person approves.',
+            'fees_reminder_status' => 'Show which fee reminders were sent, failed or skipped, from the record of past sends.',
             'record_detail' => 'Open the row the previous answer listed and show everything held about it.',
             'record_filter' => 'Narrow the previous answer to the rows that match, without re-querying.',
             'fees_risk_scan' => 'Find who is carrying unpaid fees, evidence it from the ledger, and put a '
@@ -398,6 +529,16 @@ class DeterministicPlanner implements Planner
             'record_filter' => [
                 ['resolve_filter', 'Read the field and value from the rows already shown.'],
                 ['report', 'Return the rows that match, out of the ones the last answer returned.'],
+            ],
+            'fees_send_reminders' => [
+                ['resolve', 'Read who is to be reminded and by when from the sentence.'],
+                ['preview', 'Show who would be emailed, what each owes and the message.', 'fees.send_reminders'],
+                ['approve', 'Put the list to a person — this emails real families.'],
+                ['send', 'Send only what was approved, and record every outcome.'],
+            ],
+            'fees_reminder_status' => [
+                ['read', 'Read the record of fee reminders already sent.'],
+                ['report', 'Return each reminder with its status.'],
             ],
             'admission_confirm' => [
                 ['resolve_enquiry', 'Identify which admission enquiry is being confirmed.'],

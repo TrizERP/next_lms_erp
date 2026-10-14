@@ -77,6 +77,20 @@ class ReasoningStage implements LifecycleStage
             return $this->admissions($context, $admissions);
         }
 
+        $feeReminders = $context->get('fees_reminders_flow');
+
+        if (is_array($feeReminders)) {
+            return $this->feeReminders($context, $feeReminders);
+        }
+
+        // One student's fees. Checked before the generic "selected record" handling below, which
+        // would otherwise print a picked student as a bare table of fields.
+        $feeStudent = $context->get('fees_student_flow');
+
+        if (is_array($feeStudent)) {
+            return $this->feeStudentDetail($context, $feeStudent);
+        }
+
         // A turn that pointed at the previous answer is about that row and nothing else.
         // Checked before the case resolver, which would otherwise try to find an
         // academic-risk case for an admission enquiry and report that it could not tell
@@ -528,6 +542,650 @@ class ReasoningStage implements LifecycleStage
     }
 
     // ---------------------------------------------------------------- branches
+
+    /**
+     * Fee payment reminders: who, by when, by which channel, exactly what would be sent — then
+     * what happened.
+     *
+     * Every figure and every name on this screen was read from the fee ledger by the tool, and
+     * every sentence about sending says what is true: nothing leaves until the person approves
+     * the list shown, and "accepted" means the mail server or SMS gateway took the message, not
+     * that anyone read it.
+     *
+     * The students on screen are remembered as the thread's current list, so "this student",
+     * "all 10" and "the second one" mean the people the person is looking at.
+     *
+     * @param  array<string, mixed>  $flow
+     */
+    private function feeReminders(StageContext $context, array $flow): StageOutcome
+    {
+        $state = (string) ($flow['state'] ?? 'blocked');
+        $data = is_array($flow['data'] ?? null) ? $flow['data'] : [];
+        $message = (string) ($flow['message'] ?? '');
+
+        // What the flow decided should be remembered — or forgotten — is carried out by the
+        // orchestrator after the pipeline finishes.
+        $context->set('pending_action_next', $flow['pending'] ?? null);
+
+        $money = static fn ($value): string => \App\Services\Mcp\FeesReminderService::formatRupees((float) $value);
+
+        return match ($state) {
+            'need_deadline' => $this->feeRemindersNeedDeadline($context, $data, $message),
+            'need_student' => $this->feeRemindersNeedStudent($context, $data, $message),
+            'ready' => $this->feeRemindersReady($context, $data, $message, $money),
+            'sent' => $this->feeRemindersSent($context, $data, $message, $money),
+            'failed' => $this->feeRemindersFailed($context, $data, $message),
+            'status' => $this->feeRemindersStatus($context, $data, $message, $money),
+            'cancelled' => $this->feeRemindersSettled($context, 'Stopped. Nothing was sent.', 'No message left and nothing was recorded as sent.'),
+            'nothing_to_send' => $this->feeRemindersNothing($context, $data, $message, $money),
+            'ambiguous' => $this->feeRemindersAmbiguous($context, $data, $message),
+            default => $this->feeRemindersSettled($context, $message !== '' ? $message : 'The reminders could not be prepared.', 'Nothing was sent.'),
+        };
+    }
+
+    /**
+     * Remember the students on screen as the list the next sentence can point at.
+     *
+     * @param  array<int, array<string, mixed>>  $rows  student_id, student_name, standard_name, outstanding
+     */
+    private function rememberFeeStudents(StageContext $context, array $rows): void
+    {
+        $set = ResultSet::fromRows(
+            module: $context->module->key,
+            tool: 'fees.outstanding_accounts',
+            key: 'students',
+            rows: array_map(static fn (array $row) => array_filter([
+                'student_id' => $row['student_id'] ?? null,
+                'student_name' => $row['student_name'] ?? $row['name'] ?? null,
+                'standard_name' => $row['standard_name'] ?? $row['class'] ?? null,
+                'outstanding' => $row['outstanding'] ?? null,
+            ], static fn ($value) => $value !== null), $rows),
+            question: $context->question,
+        );
+
+        if ($set !== null) {
+            $context->set('result_set', $set->toArray());
+            $context->link(['last_result_set' => $set->toArray()]);
+        }
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $accounts
+     * @return array<int, array<string, mixed>>
+     */
+    private function feeAccountRecords(array $accounts): array
+    {
+        return array_map(static fn (array $account) => [
+            'title' => (string) ($account['student_name'] ?? ''),
+            'lines' => array_values(array_filter([
+                isset($account['standard_name']) ? 'Class '.$account['standard_name'] : null,
+                'Owes '.($account['outstanding_label'] ?? ''),
+            ])),
+            'meta' => [],
+        ], $accounts);
+    }
+
+    /** @param  array<string, mixed>  $data */
+    private function feeRemindersNeedDeadline(StageContext $context, array $data, string $message): StageOutcome
+    {
+        $accounts = is_array($data['accounts'] ?? null) ? $data['accounts'] : [];
+        $channel = (string) ($data['channel'] ?? 'email') === 'sms' ? 'SMS' : 'email';
+
+        $this->rememberFeeStudents($context, $accounts);
+
+        $context->setHeadline($message !== '' && $message !== 'By what date should they pay?'
+            ? $message
+            : sprintf('I would remind %d student%s by %s. By what date should they pay?', count($accounts), count($accounts) === 1 ? '' : 's', $channel));
+
+        $context->addSection($this->compose->records(
+            (string) ($data['selection'] ?? 'Who would be reminded'),
+            $this->feeAccountRecords($accounts)
+        ));
+
+        $context->addSection($this->compose->text(
+            'What I need from you',
+            'Reply with the payment deadline — for example "by 31 October". Then I will show you each student, '
+            .'what they owe and the exact message, and nothing is sent until you approve it. '
+            .'You can also narrow it first ("only the top 3", "the second student") or choose the channel ("by SMS"). Say "cancel" to stop.'
+        ));
+
+        $context->suggestFollowUp('By 31 October.', 'Send it by SMS.', 'Cancel.');
+
+        return StageOutcome::pending(
+            'Fee reminders are waiting on a payment deadline from the user.',
+            ['students' => count($accounts), 'sent' => false],
+            ['table' => 'tblstudent', 'ids' => array_values(array_filter(array_column($accounts, 'student_id')))]
+        );
+    }
+
+    /** @param  array<string, mixed>  $data */
+    private function feeRemindersNeedStudent(StageContext $context, array $data, string $message): StageOutcome
+    {
+        $accounts = is_array($data['accounts'] ?? null) ? $data['accounts'] : [];
+
+        $this->rememberFeeStudents($context, $accounts);
+
+        $context->setHeadline($message !== '' ? $message : 'Which student should I remind?');
+
+        $context->addSection($this->compose->records('Students who owe the most', $this->feeAccountRecords($accounts)));
+
+        $context->addSection($this->compose->text(
+            'How to answer',
+            'Name the student, give a student number ("student 42"), or point at one of these ("the first", "the third"). '
+            .'Say "cancel" to stop. Nothing is sent until you have reviewed the message and approved it.'
+        ));
+
+        return StageOutcome::pending(
+            'Fee reminders are waiting on which student the user means.',
+            ['students_shown' => count($accounts), 'sent' => false],
+            ['table' => 'tblstudent', 'ids' => array_values(array_filter(array_column($accounts, 'student_id')))]
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  callable(mixed): string  $money
+     */
+    private function feeRemindersReady(StageContext $context, array $data, string $message, callable $money): StageOutcome
+    {
+        $recipients = is_array($data['recipients'] ?? null) ? $data['recipients'] : [];
+        $unreachable = is_array($data['unreachable'] ?? null) ? $data['unreachable'] : [];
+        $count = (int) ($data['recipient_count'] ?? count($recipients));
+        $sms = (string) ($data['channel'] ?? 'email') === 'sms';
+        $channelWord = $sms ? 'SMS' : 'email';
+        $contactNoun = $sms ? 'Mobile' : 'Email';
+
+        $this->rememberFeeStudents($context, array_merge($recipients, $unreachable));
+
+        $context->setHeadline(sprintf('Review these %d %s reminder%s before anything is sent.', $count, $channelWord, $count === 1 ? '' : 's'));
+
+        if ($message !== '') {
+            $context->addSection($this->compose->text('Please note', $message));
+        }
+
+        $facts = is_array($data['sms'] ?? null) ? $data['sms'] : [];
+
+        $context->addSection($this->compose->keyValues('Summary', array_filter([
+            'Selection' => (string) ($data['selection'] ?? ''),
+            'Sent by' => $sms
+                ? 'SMS, to the mobile number on each student\'s record'.(isset($facts['gateway_host']) && $facts['gateway_host'] ? ' (via '.$facts['gateway_host'].')' : '')
+                : 'Email, to the address on each student\'s record',
+            'Payment deadline' => (string) ($data['deadline_label'] ?? ''),
+            'Students who will be contacted' => (string) $count,
+            'Total they owe' => $money($data['total_outstanding'] ?? 0),
+            'Will not be contacted' => $unreachable === [] ? null : sprintf('%d (no usable %s)', count($unreachable), $sms ? 'mobile number' : 'email address'),
+            'Message length' => $sms && isset($facts['characters'])
+                ? sprintf('%d characters, %d SMS part%s', $facts['characters'], $facts['segments'] ?? 1, ($facts['segments'] ?? 1) === 1 ? '' : 's')
+                : null,
+        ], static fn ($value) => $value !== null && $value !== '')));
+
+        $context->addSection($this->compose->records(
+            'Who will be contacted',
+            array_map(static fn (array $row) => [
+                'title' => (string) ($row['name'] ?? ''),
+                'lines' => array_values(array_filter([
+                    isset($row['class']) ? 'Class '.$row['class'] : null,
+                    'Owes '.($row['outstanding_label'] ?? $money($row['outstanding'] ?? 0)),
+                    $contactNoun.': '.($row['contact_masked'] ?? ''),
+                ])),
+                'meta' => [],
+            ], $recipients)
+        ));
+
+        if ($unreachable !== []) {
+            $context->addSection($this->compose->records(
+                'Will NOT be contacted',
+                array_map(static fn (array $row) => [
+                    'title' => (string) ($row['name'] ?? ''),
+                    'lines' => array_values(array_filter([
+                        isset($row['class']) ? 'Class '.$row['class'] : null,
+                        'Owes '.$money($row['outstanding'] ?? 0),
+                        (string) ($row['reason'] ?? 'No usable contact.'),
+                    ])),
+                    'meta' => [],
+                ], $unreachable)
+            ));
+        }
+
+        $context->addSection($this->compose->text(
+            'The message each student will receive',
+            ($sms ? '' : 'Subject: '.($data['sample_subject'] ?? 'Fee payment reminder')."\n\n").($data['sample_message'] ?? '')
+            ."\n\n(The name and the amount are each student's own."
+            .(! empty($data['message_is_custom']) ? ' This is your wording.' : '').')'
+        ));
+
+        $warnings = is_array($data['warnings'] ?? null) ? $data['warnings'] : [];
+
+        if ($warnings !== []) {
+            $context->addSection($this->compose->text('Before you approve', '• '.implode("\n• ", $warnings)));
+        }
+
+        $context->addSection($this->compose->text(
+            'You can still change any of this',
+            'Say "make it 5 November", "only the top 3", "send it by '.($sms ? 'email' : 'SMS').' instead", or '
+            .'change the message to "Dear {name}, your fee of {amount} is due by {deadline}." '
+            .'{name}, {amount} and {deadline} are replaced with each student\'s own details. Nothing changes until you approve.'
+        ));
+
+        $context->addSection($this->compose->text(
+            'Nothing has been sent',
+            'This is a preview. The '.($sms ? 'SMS messages' : 'emails').' go out only when you approve this exact list, and each result — '
+            .'accepted, failed or skipped — is recorded so you can check it afterwards.'
+        ));
+
+        $context->addAction($this->compose->action(
+            'send_fee_reminders',
+            sprintf('Send %d %s reminder%s', $count, $channelWord, $count === 1 ? '' : 's'),
+            'fees_send_reminders',
+            ['utterance' => 'Yes, send the reminders.'],
+            'primary'
+        ));
+
+        $context->suggestFollowUp(
+            $sms ? 'Send it by email instead.' : 'Send it by SMS instead.',
+            'Edit the reminder message.',
+            'Cancel.'
+        );
+
+        return StageOutcome::pending(
+            sprintf('%d fee reminder%s are waiting for a person to approve the list.', $count, $count === 1 ? '' : 's'),
+            ['recipients' => $count, 'unreachable' => count($unreachable), 'deadline' => $data['deadline'] ?? null, 'channel' => $data['channel'] ?? 'email', 'sent' => false],
+            ['table' => 'tblstudent', 'ids' => array_values(array_filter(array_column($recipients, 'student_id')))]
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  callable(mixed): string  $money
+     */
+    private function feeRemindersSent(StageContext $context, array $data, string $message, callable $money): StageOutcome
+    {
+        $results = is_array($data['results'] ?? null) ? $data['results'] : [];
+        $sms = (string) ($data['channel'] ?? 'email') === 'sms';
+        $acceptedBy = $sms ? 'the SMS gateway' : 'the mail server';
+
+        $context->setHeadline($message);
+
+        $context->addSection($this->compose->keyValues('Summary', array_filter([
+            'Reference' => (string) ($data['reference'] ?? ''),
+            'Sent by' => $sms ? 'SMS' : 'Email',
+            'Payment deadline' => (string) ($data['deadline'] ?? ''),
+            'Accepted by '.$acceptedBy => (string) ($data['sent'] ?? 0),
+            'Failed' => (string) ($data['failed'] ?? 0),
+            'Skipped (no usable contact)' => (string) ($data['skipped'] ?? 0),
+        ], static fn ($value) => $value !== null && $value !== '')));
+
+        $context->addSection($this->compose->records(
+            'What happened to each',
+            array_map(fn (array $row) => [
+                'title' => (string) ($row['name'] ?? ''),
+                'lines' => [
+                    $this->feeReminderStatusLabel((string) ($row['status'] ?? ''), $sms),
+                    'Owes '.$money($row['outstanding'] ?? 0),
+                    (string) ($row['detail'] ?? ''),
+                ],
+                'meta' => [],
+            ], $results)
+        ));
+
+        $context->addSection($this->compose->text(
+            'What "accepted" means',
+            ucfirst($acceptedBy).' took the message. That is not proof it reached '.($sms ? 'a phone' : 'an inbox')
+            .', and nothing here records whether it was '.($sms ? 'read' : 'opened')
+            .($sms ? ' — this gateway sends no delivery receipt back' : '').'. '
+            .'Every result is saved — ask "Were the reminders sent?" to see them again.'
+        ));
+
+        $context->suggestFollowUp('Show reminder status.');
+
+        return StageOutcome::ran(
+            sprintf('%d reminder(s) accepted, %d failed, %d skipped.', (int) ($data['sent'] ?? 0), (int) ($data['failed'] ?? 0), (int) ($data['skipped'] ?? 0)),
+            ['reference' => $data['reference'] ?? null, 'channel' => $data['channel'] ?? 'email', 'sent' => (int) ($data['sent'] ?? 0), 'failed' => (int) ($data['failed'] ?? 0)],
+            ['table' => 'ai_audit_logs', 'ids' => []]
+        );
+    }
+
+    /** @param  array<string, mixed>  $data */
+    private function feeRemindersFailed(StageContext $context, array $data, string $message): StageOutcome
+    {
+        $results = is_array($data['results'] ?? null) ? $data['results'] : [];
+
+        $context->setHeadline($message);
+
+        if ($results !== []) {
+            $sms = (string) ($data['channel'] ?? 'email') === 'sms';
+            $context->addSection($this->compose->records(
+                'What happened to each',
+                array_map(fn (array $row) => [
+                    'title' => (string) ($row['name'] ?? ''),
+                    'lines' => array_values(array_filter([
+                        $this->feeReminderStatusLabel((string) ($row['status'] ?? ''), $sms),
+                        (string) ($row['detail'] ?? ''),
+                    ])),
+                    'meta' => [],
+                ], $results)
+            ));
+        }
+
+        $context->addSection($this->compose->text(
+            'What this means',
+            'No reminder was accepted, so nobody was told anything. You can try again once the cause is fixed.'
+        ));
+
+        return StageOutcome::blocked('No fee reminder could be sent.', ['detail' => $data]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  callable(mixed): string  $money
+     */
+    private function feeRemindersStatus(StageContext $context, array $data, string $message, callable $money): StageOutcome
+    {
+        $reminders = is_array($data['reminders'] ?? null) ? $data['reminders'] : [];
+
+        $context->setHeadline($message);
+
+        if ($reminders !== []) {
+            $context->addSection($this->compose->keyValues('Totals', [
+                'Accepted by the mail server or SMS gateway' => (string) ($data['accepted'] ?? $data['accepted_by_mail_server'] ?? 0),
+                'Failed' => (string) ($data['failed'] ?? 0),
+                'Skipped (no usable contact)' => (string) ($data['skipped'] ?? 0),
+            ]));
+
+            $context->addSection($this->compose->records(
+                'Reminders, newest first',
+                array_map(fn (array $row) => [
+                    'title' => (string) ($row['student_name'] ?? ('Student #'.($row['student_id'] ?? ''))),
+                    'lines' => array_values(array_filter([
+                        $this->feeReminderStatusLabel((string) ($row['status'] ?? ''), ($row['channel'] ?? 'email') === 'sms').' · '.(($row['channel'] ?? 'email') === 'sms' ? 'SMS' : 'Email'),
+                        isset($row['student_id']) ? 'Student ID '.$row['student_id'].(! empty($row['class']) ? ' · Class '.$row['class'] : '') : null,
+                        isset($row['outstanding']) ? 'Owed '.$money($row['outstanding']) : null,
+                        isset($row['deadline']) ? 'Pay by '.$row['deadline'] : null,
+                        ! empty($row['message']) ? 'Message: '.$row['message'] : null,
+                        ! empty($row['sent_to']) ? 'To '.$row['sent_to'] : null,
+                        (string) ($row['detail'] ?? ''),
+                        isset($row['recorded_at']) ? 'Recorded '.$row['recorded_at'] : null,
+                    ])),
+                    'meta' => [],
+                ], array_slice($reminders, 0, 50))
+            ));
+        }
+
+        $context->addSection($this->compose->text(
+            'How to read this',
+            (string) ($data['rule'] ?? '"Sent" means the mail server or SMS gateway accepted the message; it is not proof of delivery.')
+        ));
+
+        return StageOutcome::ran(
+            sprintf('Read %d fee reminder record(s) from the ledger.', count($reminders)),
+            ['records' => count($reminders)],
+            ['table' => 'ai_audit_logs', 'ids' => array_values(array_filter(array_column($reminders, 'reminder_id')))]
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @param  callable(mixed): string  $money
+     */
+    private function feeRemindersNothing(StageContext $context, array $data, string $message, callable $money): StageOutcome
+    {
+        $unreachable = is_array($data['unreachable'] ?? null) ? $data['unreachable'] : [];
+        $sms = (string) ($data['channel'] ?? 'email') === 'sms';
+
+        $context->setHeadline($message);
+
+        if ($unreachable !== []) {
+            $context->addSection($this->compose->records(
+                $sms ? 'Students with no usable mobile number' : 'Students with no usable email address',
+                array_map(static fn (array $row) => [
+                    'title' => (string) ($row['name'] ?? ''),
+                    'lines' => array_values(array_filter([
+                        isset($row['class']) ? 'Class '.$row['class'] : null,
+                        'Owes '.$money($row['outstanding'] ?? 0),
+                        (string) ($row['reason'] ?? ''),
+                    ])),
+                    'meta' => [],
+                ], $unreachable)
+            ));
+        }
+
+        $context->addSection($this->compose->text(
+            'What would be needed',
+            'Nobody on this list can be reached by '.($sms ? 'SMS' : 'email').'. Try the other channel ("send it by '.($sms ? 'email' : 'SMS')
+            .' instead"), or add the missing '.($sms ? 'mobile number' : 'email address').' to the student record. '
+            .'WhatsApp and app notifications are not available from this assistant.'
+        ));
+
+        return StageOutcome::skipped('Nobody could be reminded by '.($sms ? 'SMS' : 'email').', so nothing was prepared to send.', ['sent' => false]);
+    }
+
+    /** @param  array<string, mixed>  $data */
+    private function feeRemindersAmbiguous(StageContext $context, array $data, string $message): StageOutcome
+    {
+        $students = is_array($data['students'] ?? null) ? $data['students'] : [];
+
+        $context->setHeadline($message);
+        $context->addSection($this->compose->records(
+            'Possible matches',
+            array_map(static fn (array $row) => [
+                'title' => (string) ($row['name'] ?? ''),
+                'lines' => array_values(array_filter(['Enrolment no. '.($row['enrollment_no'] ?? '')])),
+                'meta' => [],
+            ], $students)
+        ));
+
+        return StageOutcome::skipped('More than one student matched the name, so nothing was prepared.', ['sent' => false]);
+    }
+
+    private function feeRemindersSettled(StageContext $context, string $headline, string $detail): StageOutcome
+    {
+        $context->setHeadline($headline);
+        $context->addSection($this->compose->text('Where things stand', $detail));
+
+        return StageOutcome::skipped($headline, ['sent' => false]);
+    }
+
+    /**
+     * One student's fees: what they owe, for which months, and how they can be reached.
+     *
+     * Every number came from the fee ledger for this institute and year. The student is
+     * remembered as the thread's selected record, so "send a reminder to this student" and
+     * "show their reminder status" mean this person.
+     *
+     * @param  array<string, mixed>  $flow
+     */
+    private function feeStudentDetail(StageContext $context, array $flow): StageOutcome
+    {
+        $state = (string) ($flow['state'] ?? 'blocked');
+        $data = is_array($flow['data'] ?? null) ? $flow['data'] : [];
+        $message = (string) ($flow['message'] ?? '');
+        $money = static fn ($value): string => \App\Services\Mcp\FeesReminderService::formatRupees((float) $value);
+
+        if ($state === 'list') {
+            $accounts = is_array($data['accounts'] ?? null) ? $data['accounts'] : [];
+
+            if ($accounts === []) {
+                $context->setHeadline($message !== '' ? $message : 'No student owes fees under that selection.');
+
+                return StageOutcome::skipped('No individual students were found who owe fees.', ['students' => 0]);
+            }
+
+            $this->rememberFeeStudents($context, $accounts);
+
+            $context->setHeadline(! empty($data['of_listed'])
+                ? sprintf('Fee details for the %d student%s just listed, largest balance first.', count($accounts), count($accounts) === 1 ? '' : 's')
+                : sprintf(
+                    '%s%d student%s who owe%s the most, largest balance first.',
+                    ($data['standard_id'] ?? null) !== null ? 'In this class: ' : '',
+                    count($accounts),
+                    count($accounts) === 1 ? '' : 's',
+                    count($accounts) === 1 ? 's' : ''
+                ));
+
+            $context->addSection($this->compose->records(
+                'Students with the highest outstanding fees',
+                array_map(static fn (array $a) => [
+                    'title' => (string) ($a['student_name'] ?? ''),
+                    'lines' => array_values(array_filter([
+                        'Student ID '.($a['student_id'] ?? ''),
+                        isset($a['standard_name']) ? 'Class '.$a['standard_name'] : null,
+                        'Owes '.($a['outstanding_label'] ?? ''),
+                        isset($a['months_pending']) && (int) $a['months_pending'] > 0
+                            ? sprintf('Unpaid for %d month%s, oldest %s', (int) $a['months_pending'], (int) $a['months_pending'] === 1 ? '' : 's', (string) ($a['oldest_due_month'] ?? 'not recorded'))
+                            : null,
+                        isset($a['contact']['mobile_masked']) ? 'SMS to '.$a['contact']['mobile_masked'] : 'No usable mobile number',
+                        isset($a['contact']['email_masked']) ? 'Email '.$a['contact']['email_masked'] : null,
+                    ])),
+                    'meta' => [],
+                ], $accounts)
+            ));
+
+            $context->suggestFollowUp(
+                'Show the fee details for the first student.',
+                'Send an SMS fee reminder to the first student.',
+                sprintf('Send SMS reminders to all %d.', count($accounts))
+            );
+
+            return StageOutcome::ran(
+                sprintf('Read %d individual students from the fee ledger, largest balance first.', count($accounts)),
+                ['students' => count($accounts)],
+                ['table' => 'tblstudent', 'ids' => array_values(array_filter(array_column($accounts, 'student_id')))]
+            );
+        }
+
+        if ($state === 'ambiguous') {
+            $students = is_array($data['students'] ?? null) ? $data['students'] : [];
+
+            $context->setHeadline($message);
+            $context->addSection($this->compose->records(
+                'Possible matches',
+                array_map(static fn (array $row) => [
+                    'title' => (string) ($row['name'] ?? ''),
+                    'lines' => array_values(array_filter(['Enrolment no. '.($row['enrollment_no'] ?? '')])),
+                    'meta' => [],
+                ], $students)
+            ));
+
+            return StageOutcome::skipped('More than one student matched the name, so none was chosen.', ['students' => count($students)]);
+        }
+
+        if ($state !== 'ok') {
+            $context->setHeadline($message !== '' ? $message : 'I could not find that student.');
+            $context->addSection($this->compose->text(
+                'What you can do',
+                'Check the spelling, or give the student number ("student 42") or the enrolment number. '
+                .'You can also ask "Which students owe the most?" and pick one from the list.'
+            ));
+
+            return StageOutcome::skipped('The student could not be found, so no fee details were read.', ['found' => false]);
+        }
+
+        $name = (string) ($data['student_name'] ?? '');
+        $studentId = (int) ($data['student_id'] ?? 0);
+        $periods = is_array($data['periods'] ?? null) ? $data['periods'] : [];
+        $owes = (bool) ($data['owes'] ?? false);
+        $ledger = (float) ($data['ledger_outstanding'] ?? 0);
+        $contact = is_array($data['contact'] ?? null) ? $data['contact'] : [];
+        $channels = is_array($contact['channels'] ?? null) ? $contact['channels'] : [];
+
+        $context->setHeadline($owes
+            ? sprintf('%s owes %s%s.', $name, $money($ledger), $periods === [] ? '' : sprintf(', unpaid for %d month%s', count($periods), count($periods) === 1 ? '' : 's'))
+            : sprintf('%s has no outstanding fees on the ledger.', $name));
+
+        $context->addSection($this->compose->keyValues('Student', array_filter([
+            'Name' => $name,
+            'Class' => isset($data['standard_name']) ? (string) $data['standard_name'] : null,
+            'Enrolment no.' => isset($data['enrollment_no']) ? (string) $data['enrollment_no'] : null,
+            'Outstanding (fee ledger)' => $money($ledger),
+            'Unpaid months' => $periods === [] ? null : (string) count($periods),
+            'Oldest unpaid month' => $periods === [] ? null : (string) $periods[0]['month'],
+            'Latest unpaid month' => $periods === [] ? null : (string) $periods[count($periods) - 1]['month'],
+            'Failed payment attempts' => isset($data['failed_payments']) && (int) $data['failed_payments'] > 0 ? (string) $data['failed_payments'] : null,
+        ], static fn ($value) => $value !== null && $value !== '')));
+
+        if ($periods !== []) {
+            $context->addSection($this->compose->records(
+                'Unpaid fee months',
+                array_map(static fn (array $period) => [
+                    'title' => (string) $period['month'],
+                    'lines' => array_values(array_filter([
+                        'Owes '.$money($period['remaining']),
+                        $period['discount'] > 0 ? 'Discount '.$money($period['discount']) : null,
+                    ])),
+                    'meta' => [],
+                ], array_slice($periods, 0, 24))
+            ));
+
+            if (abs((float) ($data['periods_total'] ?? 0) - $ledger) > 1) {
+                $context->addSection($this->compose->text(
+                    'About the totals',
+                    sprintf(
+                        'The unpaid months add up to %s, while the fee ledger shows %s. The ledger is the figure used everywhere else; '
+                        .'a difference can come from fines or concessions applied outside the monthly schedule.',
+                        $money($data['periods_total'] ?? 0),
+                        $money($ledger)
+                    )
+                ));
+            }
+        } elseif ($owes) {
+            $context->addSection($this->compose->text(
+                'About the months',
+                'The ledger shows a balance, but no unpaid month was listed for this student, so I cannot say which months it covers.'
+            ));
+        }
+
+        $context->addSection($this->compose->keyValues('How to reach them', array_filter([
+            'Email' => $contact['email_masked'] ?? ($contact['email_problem'] ?? 'none on record'),
+            'Mobile (SMS goes here: the main mobile on the student record)' => $contact['mobile_masked'] ?? ($contact['mobile_problem'] ?? 'none on record'),
+            'Other numbers on record (not used)' => ! empty($contact['other_mobiles']) ? implode(', ', array_map(static fn ($who, $n) => $who.' '.$n, array_keys($contact['other_mobiles']), $contact['other_mobiles'])) : null,
+            'Reminder channels available' => $channels === [] ? 'none — neither a usable email nor a usable mobile number' : implode(' and ', array_map(static fn (string $c) => $c === 'sms' ? 'SMS' : 'Email', $channels)),
+        ], static fn ($value) => $value !== null && $value !== '')));
+
+        // The student on screen is the one the next sentence means by "this student".
+        $item = [
+            'position' => 1,
+            'id' => $studentId,
+            'title' => $name,
+            'row' => array_filter([
+                'student_id' => $studentId,
+                'student_name' => $name,
+                'standard_name' => $data['standard_name'] ?? null,
+                'outstanding' => $ledger,
+            ], static fn ($value) => $value !== null),
+        ];
+        $context->set('selected_record', ['item' => $item, 'singular' => 'student', 'module' => $context->module->key, 'set' => null]);
+        $context->link([
+            'selected_record' => ['item' => $item, 'singular' => 'student', 'module' => $context->module->key],
+            'student_id' => $studentId,
+            'student_name' => $name,
+        ]);
+
+        if ($owes) {
+            $context->suggestFollowUp(
+                ...array_values(array_filter([
+                    'Send a fee reminder to this student.',
+                    in_array('sms', $channels, true) ? 'Send an SMS fee reminder to this student.' : null,
+                    'Show reminder status.',
+                ]))
+            );
+        }
+
+        return StageOutcome::ran(
+            sprintf('Read %s\'s fee ledger position and %d unpaid month(s).', $name, count($periods)),
+            ['student_id' => $studentId, 'unpaid_months' => count($periods), 'ledger_outstanding' => $ledger],
+            ['table' => 'tblstudent', 'ids' => [$studentId]]
+        );
+    }
+
+    private function feeReminderStatusLabel(string $status, bool $sms = false): string
+    {
+        return match ($status) {
+            'sent' => $sms ? 'Accepted by the SMS gateway' : 'Accepted by the mail server',
+            'failed' => 'Failed',
+            'skipped' => 'Not contacted',
+            default => $status,
+        };
+    }
 
     /**
      * Say where the admission has got to, and ask for exactly what is still needed.

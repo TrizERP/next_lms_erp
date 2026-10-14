@@ -88,7 +88,16 @@ class AiConfigIntegrityTest extends TestCase
                 // A write tool bound to a module is reachable from a report layout and the
                 // conversational fallback without anybody naming it. Admissions owns the
                 // only write tools in this platform and binds them deliberately.
-                if (! $byName[$tool] && $moduleKey !== 'admissions') {
+                //
+                // The one other deliberate binding is Fees' reminder tool. It is named here
+                // exactly, not by module, so Fees cannot quietly gain a second write tool: the
+                // tool previews first, sends only on confirmation, is administrator-only, and
+                // is not read-only so it is never offered as a report source or fallback read.
+                $deliberate = ['fees' => ['fees.send_reminders']];
+
+                if (! $byName[$tool]
+                    && $moduleKey !== 'admissions'
+                    && ! in_array($tool, $deliberate[$moduleKey] ?? [], true)) {
                     $problems[] = "{$moduleKey} binds {$tool}, which writes";
                 }
             }

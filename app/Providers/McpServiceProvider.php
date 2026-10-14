@@ -48,6 +48,8 @@ use App\Mcp\Tools\EngagementStudentsNeedingAttentionTool;
 use App\Mcp\Tools\ExamsListTool;
 use App\Mcp\Tools\ExamsResultsTool;
 use App\Mcp\Tools\FeesArrearsTool;
+use App\Mcp\Tools\FeesReminderHistoryTool;
+use App\Mcp\Tools\FeesSendRemindersTool;
 use App\Mcp\Tools\FeesCollectionReportTool;
 use App\Mcp\Tools\FeesGetPendingTool;
 use App\Mcp\Tools\FeesOutstandingAccountsTool;
@@ -181,6 +183,10 @@ class McpServiceProvider extends ServiceProvider
         FeesGetPendingTool::class,
         FeesPositionTool::class,
         FeesOutstandingAccountsTool::class,
+        // The one money tool that writes to families: previews, sends only on confirmation, administrators
+        // only. Its history twin is read-only.
+        FeesSendRemindersTool::class,
+        FeesReminderHistoryTool::class,
 
         // Boarding, meetings, requests and notices.
         //
