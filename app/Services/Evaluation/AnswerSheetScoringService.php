@@ -37,9 +37,13 @@ class AnswerSheetScoringService
     /**
      * @param  array<int,array<string,mixed>>  $keyQuestions  From AnswerKeyService::forPaper()['questions'].
      * @param  array<int,array<string,mixed>>  $responses     From AnswerSheetReaderService::read()['responses'].
+     * @param  bool  $rethrowTransient  A queued caller that can retry later passes true, so a busy provider
+     *                                  or rate limit during the written-answer pass is raised to it instead
+     *                                  of leaving every written answer ungraded. Callers with nothing to
+     *                                  wait on (homework) keep the default and get the graceful fallback.
      * @return array{answers: array<int,array<string,mixed>>, ai_total: float, max_marks: float, needs_review: bool}
      */
-    public function score(array $keyQuestions, array $responses): array
+    public function score(array $keyQuestions, array $responses, bool $rethrowTransient = false): array
     {
         $byQuestion = [];
 
@@ -56,6 +60,8 @@ class AnswerSheetScoringService
 
             $answer = [
                 'question_no' => $questionNo,
+                // What the sheet itself calls this question; null when the reader could not say.
+                'question_label' => $response['question_label'] ?? null,
                 'question_id' => (int) $question['question_id'],
                 'question_type' => (string) $question['question_type'],
                 'is_objective' => $question['kind'] === AnswerKeyService::KIND_OBJECTIVE,
@@ -93,7 +99,7 @@ class AnswerSheetScoringService
         }
 
         if ($subjective !== []) {
-            $answers = $this->scoreSubjective($answers, $subjective);
+            $answers = $this->scoreSubjective($answers, $subjective, $rethrowTransient);
         }
 
         ksort($answers);
@@ -181,23 +187,47 @@ class AnswerSheetScoringService
      * @param  array<int,array<string,mixed>>  $subjective
      * @return array<int,array<string,mixed>>
      */
-    private function scoreSubjective(array $answers, array $subjective): array
+    private function scoreSubjective(array $answers, array $subjective, bool $rethrowTransient = false): array
     {
         $items = [];
 
         foreach ($subjective as $questionNo => $question) {
+            // No key, no mark. A question with no model answer and no rubric has
+            // nothing to be graded against, and asking a model to "judge on
+            // subject correctness alone" is inventing a marking scheme. It goes
+            // to the teacher unmarked, flagged, instead.
+            if (trim((string) $question['model_answer']) === '') {
+                $answers[$questionNo] = $this->leftForTeacher(
+                    $answers[$questionNo],
+                    'No model answer is saved for this question -- please mark it by hand.'
+                );
+
+                continue;
+            }
+
             $items[] = [
                 'question_no' => $questionNo,
                 'question' => $question['question_title'],
                 'model_answer' => $question['model_answer'],
+                'rubric' => $question['rubric'] ?? null,
                 'max_marks' => (float) $question['max_marks'],
                 'student_answer' => (string) $answers[$questionNo]['detected_answer'],
             ];
         }
 
+        if ($items === []) {
+            return $answers;
+        }
+
         try {
             $graded = $this->callGrader($items);
         } catch (EvaluationException $exception) {
+            // When the caller can retry later, hand it the transient failure
+            // rather than a sheet of ungraded written answers.
+            if ($rethrowTransient && TransientAiFailure::is($exception)) {
+                throw $exception->getPrevious() ?? $exception;
+            }
+
             // A failed grading pass must not take the objective half of the
             // sheet down with it. Those marks are already computed and sound.
             // The written questions simply arrive at the teacher ungraded,
@@ -206,21 +236,31 @@ class AnswerSheetScoringService
                 'message' => $exception->getMessage(),
             ]);
 
-            foreach ($subjective as $questionNo => $question) {
-                $answers[$questionNo]['status'] = 'wrong';
-                $answers[$questionNo]['ai_marks'] = 0.0;
-                $answers[$questionNo]['ai_confidence'] = 0.0;
-                $answers[$questionNo]['ai_remark'] = 'Could not be graded automatically -- please mark this one by hand.';
+            foreach ($items as $item) {
+                $answers[$item['question_no']] = $this->leftForTeacher(
+                    $answers[$item['question_no']],
+                    'Could not be graded automatically -- please mark this one by hand.'
+                );
             }
 
             return $answers;
         }
 
-        foreach ($graded as $questionNo => $row) {
-            if (! isset($answers[$questionNo])) {
+        foreach ($items as $item) {
+            $questionNo = $item['question_no'];
+
+            // The grader answered, but not for this one. Left as it was it would
+            // read "nothing written, 100% sure" -- a silent zero. Flag it.
+            if (! isset($graded[$questionNo])) {
+                $answers[$questionNo] = $this->leftForTeacher(
+                    $answers[$questionNo],
+                    'The AI did not return a mark for this answer -- please mark it by hand.'
+                );
+
                 continue;
             }
 
+            $row = $graded[$questionNo];
             $max = (float) $answers[$questionNo]['max_marks'];
             $marks = max(0.0, min($max, (float) $row['marks']));
 
@@ -234,6 +274,25 @@ class AnswerSheetScoringService
     }
 
     /**
+     * An answer the AI did not mark: zero, zero confidence, and a remark saying
+     * why. Zero confidence is what puts it at the top of the review queue
+     * (`needs_attention`), and status `wrong` rather than `unattempted` keeps it
+     * from being mistaken for a question the student skipped.
+     *
+     * @param  array<string,mixed>  $answer
+     * @return array<string,mixed>
+     */
+    private function leftForTeacher(array $answer, string $remark): array
+    {
+        $answer['status'] = 'wrong';
+        $answer['ai_marks'] = 0.0;
+        $answer['ai_confidence'] = 0.0;
+        $answer['ai_remark'] = $remark;
+
+        return $answer;
+    }
+
+    /**
      * @param  array<int,array<string,mixed>>  $items
      * @return array<int,array{marks:float, confidence:float, remark:string}>
      *
@@ -243,14 +302,14 @@ class AnswerSheetScoringService
     {
         $blocks = [];
 
+        // Items reaching here always have a model answer: scoreSubjective() sends
+        // a question with no key to the teacher instead of asking a model to
+        // judge it with nothing to judge it against.
         foreach ($items as $item) {
-            $modelAnswer = $item['model_answer'] !== ''
-                ? $item['model_answer']
-                : '(no model answer was saved for this question -- judge the response on subject correctness alone)';
-
             $blocks[] = "### Question {$item['question_no']} (out of {$item['max_marks']} marks)\n"
                 . "QUESTION: {$item['question']}\n"
-                . "MODEL ANSWER: {$modelAnswer}\n"
+                . "MODEL ANSWER: {$item['model_answer']}\n"
+                . $this->rubricBlock($item['rubric'] ?? null)
                 . "STUDENT WROTE: {$item['student_answer']}";
         }
 
@@ -265,6 +324,13 @@ transcription slips are possible).
 Award marks the way a fair subject teacher would:
 - Give credit for correct subject content, correct reasoning and correct
   working, even when the wording differs from the model answer.
+- Where a question lists MARKING POINTS, award one mark per point the student
+  has actually made (their wording may differ; the ACCEPT list shows the kind of
+  alternative that counts and the REJECT list shows near-answers that do not).
+  Keywords are supporting evidence only -- a keyword on its own, with no
+  understanding around it, earns nothing.
+- Where a question lists COMMON ERRORS, an answer that makes that error must not
+  score above the stated ceiling.
 - Award partial marks for a partly correct answer. Do not round to all-or-
   nothing.
 - Do not take marks off for handwriting, spelling or grammar unless the
@@ -293,21 +359,41 @@ commentary -- in exactly this shape:
 }
 PROMPT;
 
-        try {
-            $result = $this->gemini->generateContent([
-                ['text' => $prompt],
-            ], [
-                'temperature' => 0.1,
-                'maxOutputTokens' => 8000,
-                'responseMimeType' => 'application/json',
-            ]);
-        } catch (\Throwable $exception) {
-            throw new EvaluationException($exception->getMessage(), 0, $exception);
+        $decoded = null;
+
+        // Two goes at getting parseable JSON: model output at low temperature is
+        // near-deterministic, so the retry nudges the temperature rather than
+        // repeating the identical request. A provider failure is not retried
+        // here -- the client already retries those, and the job retries after.
+        foreach ([0.1, 0.3] as $temperature) {
+            try {
+                $result = $this->gemini->generateContent([
+                    ['text' => $prompt],
+                ], [
+                    'temperature' => $temperature,
+                    'maxOutputTokens' => 8000,
+                    'responseMimeType' => 'application/json',
+                ]);
+            } catch (\Throwable $exception) {
+                throw new EvaluationException($exception->getMessage(), 0, $exception);
+            }
+
+            $decoded = json_decode($this->stripMarkdownFences($result['text']), true);
+
+            if (is_array($decoded) && is_array($decoded['results'] ?? null)) {
+                break;
+            }
+
+            $decoded = null;
+
+            // Cut off at the token limit: asking again for the same length hits
+            // the same limit, so say so now rather than spend a second call.
+            if (($result['finish_reason'] ?? '') === 'MAX_TOKENS') {
+                throw new EvaluationException('The written answers were too long to grade in one pass; the AI response was cut short.');
+            }
         }
 
-        $decoded = json_decode($this->stripMarkdownFences($result['text']), true);
-
-        if (! is_array($decoded) || ! is_array($decoded['results'] ?? null)) {
+        if ($decoded === null) {
             throw new EvaluationException('The grader returned a payload that could not be parsed as JSON.');
         }
 
@@ -336,6 +422,54 @@ PROMPT;
         }
 
         return $graded;
+    }
+
+    /**
+     * The per-mark criteria, accepted alternatives, rejected near-answers,
+     * keywords and capped errors for one question, or nothing when the key is
+     * plain text. Only what the question itself carries -- never anything made up.
+     *
+     * @param  array<string,mixed>|null  $rubric  From QuestionRubric::parse(), when structured.
+     */
+    private function rubricBlock(?array $rubric): string
+    {
+        if ($rubric === null) {
+            return '';
+        }
+
+        $lines = [];
+
+        foreach ((array) ($rubric['marking_points'] ?? []) as $index => $point) {
+            $line = 'MARKING POINT ' . ($index + 1) . ' (1 mark): ' . $point['criterion'];
+
+            if ($point['accept'] !== []) {
+                $line .= ' | ACCEPT: ' . implode('; ', $point['accept']);
+            }
+
+            if ($point['reject'] !== []) {
+                $line .= ' | REJECT: ' . implode('; ', $point['reject']);
+            }
+
+            $lines[] = $line;
+        }
+
+        $keywords = [];
+
+        foreach ((array) ($rubric['keywords'] ?? []) as $keyword) {
+            $keywords[] = $keyword['synonyms'] === []
+                ? $keyword['term']
+                : $keyword['term'] . ' (' . implode(', ', $keyword['synonyms']) . ')';
+        }
+
+        if ($keywords !== []) {
+            $lines[] = 'KEYWORDS: ' . implode('; ', $keywords);
+        }
+
+        foreach ((array) ($rubric['common_errors'] ?? []) as $error) {
+            $lines[] = 'COMMON ERROR (at most ' . $error['mark_ceiling'] . ' marks): ' . $error['erroneous_answer'];
+        }
+
+        return $lines === [] ? '' : implode("\n", $lines) . "\n";
     }
 
     private function statusForMarks(float $marks, float $max): string
