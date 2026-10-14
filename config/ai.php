@@ -4,17 +4,33 @@
 // the user as a failed generation rather than as a config error. Any retired id
 // still pinned in a deployed .env is mapped forward to its replacement here, so a
 // stale environment keeps working without an .env edit on every server.
-$geminiModel = (static function (): string {
+$retiredGeminiModels = [
+    'gemini-2.5-flash' => 'gemini-3.6-flash',
+    'gemini-1.5-flash' => 'gemini-3.6-flash',
+    'gemini-1.5-pro'   => 'gemini-3.6-pro',
+];
+
+$geminiModel = (static function () use ($retiredGeminiModels): string {
     $model = trim((string) env('GEMINI_MODEL', ''));
 
-    $retired = [
-        'gemini-2.5-flash' => 'gemini-3.6-flash',
-        'gemini-1.5-flash' => 'gemini-3.6-flash',
-        'gemini-1.5-pro'   => 'gemini-3.6-pro',
-    ];
-
-    return $retired[$model] ?? ($model !== '' ? $model : 'gemini-3.6-flash');
+    return $retiredGeminiModels[$model] ?? ($model !== '' ? $model : 'gemini-3.6-flash');
 })();
+
+// The model the document (homework / exam answer-sheet) client tries when the main
+// one is busy or out of quota. Empty means "no fallback". A retired id is remapped
+// the same way as above, so a stale GEMINI_FALLBACK_MODEL=gemini-2.5-flash resolves
+// to the main model and the client treats it as no fallback rather than retrying it.
+$geminiFallbackModel = (static function () use ($retiredGeminiModels): string {
+    $model = trim((string) env('GEMINI_FALLBACK_MODEL', ''));
+
+    return $retiredGeminiModels[$model] ?? $model;
+})();
+
+// Seconds a whole-document Gemini call may take (see 'document_timeout' below). Anything
+// that is not a positive number falls back to 90 rather than being used: a 0 or a typo
+// would otherwise time every scanned sheet out at once.
+$geminiDocumentTimeout = (int) env('GEMINI_DOCUMENT_TIMEOUT', env('GEMINI_REQUEST_TIMEOUT', 90));
+$geminiDocumentTimeout = $geminiDocumentTimeout > 0 ? $geminiDocumentTimeout : 90;
 
 return [
     /*
@@ -48,6 +64,14 @@ return [
     | belong. See config/deepseek.php.
     |
     */
+    /*
+    | Reading and answering in Hindi and Gujarati. When the configured Gemini model is out of
+    | quota or overloaded, these models of the same provider are tried in order.
+    */
+    'language' => [
+        'fallback_models' => array_values(array_filter(array_map('trim', explode(',', (string) env('AI_LANGUAGE_FALLBACK_MODELS', 'gemini-3.1-flash-lite,gemini-3.5-flash-lite'))))),
+    ],
+
     'provider' => [
         'driver' => env('AI_PROVIDER', 'gemini'),
 
@@ -58,6 +82,17 @@ return [
             'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
             'model' => $geminiModel,
             'timeout' => (int) env('GEMINI_REQUEST_TIMEOUT', 45),
+            // Whole-document calls (scanned homework, exam answer sheets) need longer than
+            // the brain's text calls. Read by App\Services\Homework\GeminiClient.
+            //
+            // Precedence: GEMINI_DOCUMENT_TIMEOUT, then GEMINI_REQUEST_TIMEOUT, then 90.
+            // The second step keeps what this client has always done -- it read
+            // GEMINI_REQUEST_TIMEOUT directly -- now from config, so a cached config honours
+            // it too. The catch is that the same variable is the brain's 45s: setting
+            // GEMINI_REQUEST_TIMEOUT=45 also gives scanned documents 45s unless
+            // GEMINI_DOCUMENT_TIMEOUT=90 is set beside it. See docs/EXAM_EVALUATION_DEPLOYMENT_RUNBOOK.md.
+            'document_timeout' => $geminiDocumentTimeout,
+            'fallback_model' => $geminiFallbackModel,
             'max_output_tokens' => (int) env('GEMINI_MAX_OUTPUT_TOKENS', 1466),
             // The embedding model (added 2026-10-10 for the Content Authoring RAG
             // row — ContentEmbeddingService). A SEPARATE endpoint from the chat
@@ -414,6 +449,9 @@ return [
                     'fees.getPending',
                     'fees.arrears',
                     'fees.collection_report',
+                    // Not read-only, so it is never a report source or a fallback read: it is reached
+                    // only through the reminder flow, which previews and waits for approval.
+                    'fees.send_reminders',
                     'ai.templates.list',
                     'ai.templates.render',
                     'ai.templates.generate',

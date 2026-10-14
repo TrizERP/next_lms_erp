@@ -39,7 +39,10 @@ class FeesIntentTest extends TestCase
             ['Show me the fee collection report', 'fees_query'],
             ['What is the total fee collection?', 'fees_query'],
             ['Show fee summary for this institute', 'fees_query'],
-            ['Send a fee reminder to student 42', 'fees_query'],
+            // Was a plain read of fee data, which read as though a reminder had been sent when
+            // nothing was. Asking for one to be sent is now the reminder action, which previews
+            // and waits for approval; see FeesReminderPlanningTest.
+            ['Send a fee reminder to student 42', 'fees_send_reminders'],
             ['Who has outstanding dues?', 'fees_query'],
             ['How much is the fee?', 'fees_query'],
             ['Any unpaid invoices?', 'fees_query'],

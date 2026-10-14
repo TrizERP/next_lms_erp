@@ -3,6 +3,7 @@
 namespace App\Mcp\Tools;
 
 use App\Mcp\AbstractMcpTool;
+use App\Mcp\Concerns\RequiresAdministrator;
 use App\Services\Mcp\DonationService;
 use App\Services\Mcp\McpRequestContext;
 
@@ -13,6 +14,8 @@ use App\Services\Mcp\McpRequestContext;
  */
 class DonationsListTool extends AbstractMcpTool
 {
+    use RequiresAdministrator;
+
     public function __construct(private readonly DonationService $service)
     {
     }
@@ -45,14 +48,6 @@ class DonationsListTool extends AbstractMcpTool
     protected function toolAnnotations(): array
     {
         return ['risk' => 'read', 'required_permission' => 'donations.read'];
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    protected function allowedRoles(): array
-    {
-        return ['admin'];
     }
 
     public function execute(array $arguments, McpRequestContext $context): array

@@ -59,6 +59,13 @@ class RequireApiJwt
             return $this->deny('Not available to this account', 403);
         }
 
+        // The verified caller, for controllers that must record WHO did something
+        // (approvals, audit rows) and so cannot trust a `user_id` the client typed.
+        // Additive: nothing else reads it, and a route outside the guard never has it.
+        if ($caller['user_id'] > 0) {
+            $request->attributes->set('verified_user_id', $caller['user_id']);
+        }
+
         return $next($request);
     }
 
@@ -132,7 +139,7 @@ class RequireApiJwt
         return in_array(strtolower((string) $name), ['student', 'parent'], true);
     }
 
-    /** @return array{school:int,is_admin:int,client_id:mixed,is_student:bool,profile_id:mixed,profile_name:?string}|JsonResponse|null null = no bearer token sent */
+    /** @return array{school:int,user_id:int,is_admin:int,client_id:mixed,is_student:bool,profile_id:mixed,profile_name:?string}|JsonResponse|null null = no bearer token sent */
     private function callerFromToken(Request $request)
     {
         if (! $request->bearerToken() && ! $request->headers->has('Authorization')) {
@@ -155,6 +162,7 @@ class RequireApiJwt
 
         return [
             'school' => $school,
+            'user_id' => (int) $payload['id'],
             'is_admin' => (int) ($payload['is_admin'] ?? 0),
             'client_id' => $payload['client_id'] ?? null,
             'is_student' => (bool) ($payload['is_student'] ?? false),
@@ -176,6 +184,7 @@ class RequireApiJwt
 
         return [
             'school' => $school,
+            'user_id' => (int) $session->get('user_id', 0),
             'is_admin' => (int) $session->get('is_admin', 0),
             'client_id' => $session->get('client_id'),
             'is_student' => (bool) $session->get('is_student', false),

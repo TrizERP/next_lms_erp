@@ -32,6 +32,9 @@ class AskPipeline
         private readonly LifecycleAskService $lifecycle,
         private readonly AskService $legacy,
         private readonly AskAuditor $audit,
+        // Optional so a pipeline built by hand keeps answering exactly as it did. The container
+        // always supplies it.
+        private readonly ?ResponseLanguage $language = null,
     ) {
     }
 
@@ -73,6 +76,35 @@ class AskPipeline
         // a correct turn delivered in one event rather than a broken one.
         $startedAt = microtime(true);
 
+        // The language layer: read what was said, answer in the language it was said in. English
+        // with nothing else to go on passes straight through, byte for byte as before.
+        $language = $this->language?->resolve($question, $options);
+        $asked = $question;
+        $translatedInput = false;
+        $inputFailed = false;
+
+        if ($language !== null) {
+            $question = $language['question'];
+
+            if ($language['translate']) {
+                $english = $this->language->toEnglish(
+                    $question,
+                    $language['script'] !== 'en' ? $language['script'] : $language['code'],
+                    $scope,
+                    $options['module'] ?? null
+                );
+
+                $translatedInput = $english !== null;
+                $inputFailed = $english === null && $language['script'] !== 'en';
+                $question = $english ?? $question;
+            }
+
+            // Tokens are English words; a Hindi answer is written whole, after the fact.
+            if ($language['code'] !== 'en') {
+                $onToken = null;
+            }
+        }
+
         try {
             $result = $this->usesLifecycle()
                 ? $this->lifecycle->ask($question, $scope, $conversationId, $options, $onStage, $onToken)
@@ -80,14 +112,65 @@ class AskPipeline
         } catch (Throwable $exception) {
             // A turn that failed is the one most worth having in the audit trail, and
             // the one a `finally`-less happy path would silently drop.
-            $this->audit->turn($question, $scope, $options, null, $exception, $this->elapsed($startedAt));
+            $this->audit->turn($asked, $scope, $options, null, $exception, $this->elapsed($startedAt));
 
             throw $exception;
         }
 
         $result['pipeline'] = $this->name();
 
-        $this->audit->turn($question, $scope, $options, $result, null, $this->elapsed($startedAt));
+        if ($language !== null) {
+            $result = $this->inLanguage($result, $language, $asked, $question, $translatedInput, $inputFailed, $scope, $options);
+        }
+
+        $this->audit->turn($asked, $scope, $options, $result, null, $this->elapsed($startedAt));
+
+        return $result;
+    }
+
+    /**
+     * Put the answer into the language the person is using, and say which language that is.
+     *
+     * `language.delivered` is what the answer is actually written in. It differs from
+     * `language.code` only when the words could not be translated, so a client never speaks
+     * English text with a Hindi voice or the reverse.
+     *
+     * @param  array<string, mixed>  $result
+     * @param  array{code: string, explicit: bool, question: string, translate: bool, script: string}  $language
+     * @param  array<string, mixed>  $options
+     * @return array<string, mixed>
+     */
+    private function inLanguage(array $result, array $language, string $asked, string $english, bool $translatedInput, bool $inputFailed, McpRequestContext $scope, array $options): array
+    {
+        $delivered = 'en';
+        $translated = 0;
+        $product = $options['module'] ?? null;
+
+        // A sentence that could not be read at all gets one honest line, in its own language,
+        // instead of an English "nothing to report" the person may not be able to read.
+        if ($inputFailed && ($result['answer_source'] ?? null) === 'fallback' && isset($result['answer']['headline'])) {
+            $result['answer']['headline'] = ResponseLanguage::unreadableNotice($language['script']);
+            $result['answer']['sections'] = [];
+            $result['answer']['follow_ups'] = [];
+            $delivered = $language['script'];
+        } elseif ($language['code'] !== 'en' && is_array($result['answer'] ?? null)) {
+            $local = $this->language->localize($result['answer'], $language['code'], $scope, is_string($product) ? $product : null);
+
+            $result['answer'] = $local['answer'];
+            $delivered = $local['delivered'];
+            $translated = $local['translated'];
+        }
+
+        $result['language'] = [
+            'code' => $language['code'],
+            'delivered' => $delivered,
+            'tts' => ResponseLanguage::ttsTag($delivered),
+            'explicit' => $language['explicit'],
+            'translated_input' => $translatedInput,
+            'translated_strings' => $translated,
+            'question_original' => $asked,
+            'question_english' => $translatedInput ? $english : null,
+        ];
 
         return $result;
     }

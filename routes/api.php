@@ -553,12 +553,14 @@ Route::get('exam-evaluation/answer-key/{paperId}', [ExamEvaluationApiController:
 Route::get('exam-evaluation/sheets/{id}', [ExamEvaluationApiController::class, 'sheet']);
 Route::get('exam-evaluation/sheets/{id}/file', [ExamEvaluationApiController::class, 'file']);
 Route::post('exam-evaluation/sheets/{id}/review', [ExamEvaluationApiController::class, 'review']);
+Route::post('exam-evaluation/sheets/{id}/preview', [ExamEvaluationApiController::class, 'preview']);
 Route::post('exam-evaluation/sheets/{id}/reprocess', [ExamEvaluationApiController::class, 'reprocess']);
 Route::delete('exam-evaluation/sheets/{id}', [ExamEvaluationApiController::class, 'destroySheet']);
 Route::get('exam-evaluation/batches', [ExamEvaluationApiController::class, 'index']);
 Route::post('exam-evaluation/batches', [ExamEvaluationApiController::class, 'store']);
 Route::get('exam-evaluation/batches/{id}', [ExamEvaluationApiController::class, 'show']);
 Route::post('exam-evaluation/batches/{id}/sheets', [ExamEvaluationApiController::class, 'uploadSheets']);
+Route::post('exam-evaluation/batches/{id}/confirm-identities', [ExamEvaluationApiController::class, 'confirmIdentities']);
 Route::post('exam-evaluation/batches/{id}/publish', [ExamEvaluationApiController::class, 'publish']);
 Route::delete('exam-evaluation/batches/{id}', [ExamEvaluationApiController::class, 'destroy']);
 
