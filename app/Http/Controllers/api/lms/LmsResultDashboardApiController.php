@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
  * Two tables carry everything:
  *   question_paper    one row per exam a teacher published
  *   lms_online_exam   one row per student attempt at such a paper
+ *   lms_offline_exam  one row per published, scanned (Exam evaluation) result for it
  *
  * A percentage is always obtain_marks / question_paper.total_marks, guarded
  * with NULLIF because papers exist with total_marks = 0 and MySQL would
@@ -55,6 +56,17 @@ class LmsResultDashboardApiController extends Controller
     private const EXCLUDED_EXAM_TYPE = 'PAL';
 
     /** Percentage expression, reused so rounding is identical everywhere. */
+    /**
+     * Every recorded attempt, whichever way it got here: taken online (`lms_online_exam`), or a
+     * scanned answer sheet a teacher approved and published from Exam evaluation
+     * (`lms_offline_exam`). The dashboard read only the first, so a published evaluation left the
+     * exam showing 0 attempts. Same columns on both; an offline id is offset so the two id spaces
+     * can never collide in the 'students to watch' list.
+     */
+    private const ATTEMPTS_SQL = '(SELECT id, question_paper_id, student_id, obtain_marks, created_at FROM lms_online_exam
+        UNION ALL
+        SELECT id + 1000000000, question_paper_id, student_id, obtain_marks, created_at FROM lms_offline_exam) AS oe';
+
     private const PERCENT_SQL = '(oe.obtain_marks / NULLIF(qp.total_marks, 0) * 100)';
 
     public function summary(Request $request): JsonResponse
@@ -189,8 +201,8 @@ class LmsResultDashboardApiController extends Controller
         $inner = $forceInner || $studentIds !== null;
 
         $query = $inner
-            ? $query->join('lms_online_exam as oe', 'oe.question_paper_id', '=', 'qp.id')
-            : $query->leftJoin('lms_online_exam as oe', 'oe.question_paper_id', '=', 'qp.id');
+            ? $query->join(DB::raw(self::ATTEMPTS_SQL), 'oe.question_paper_id', '=', 'qp.id')
+            : $query->leftJoin(DB::raw(self::ATTEMPTS_SQL), 'oe.question_paper_id', '=', 'qp.id');
 
         if ($studentIds !== null) {
             // An empty list is a filter that matched nobody - whereIn([]) is
