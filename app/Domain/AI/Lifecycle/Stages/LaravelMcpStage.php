@@ -3,6 +3,8 @@
 namespace App\Domain\AI\Lifecycle\Stages;
 
 use App\Domain\AI\Lifecycle\Flows\AdmissionsFlow;
+use App\Domain\AI\Lifecycle\Flows\FeesRemindersFlow;
+use App\Domain\AI\Lifecycle\Flows\FeesStudentDetailFlow;
 use App\Domain\AI\Lifecycle\LifecycleStage;
 use App\Domain\AI\Lifecycle\Plan\Plan;
 use App\Domain\AI\Lifecycle\StageContext;
@@ -30,6 +32,8 @@ class LaravelMcpStage implements LifecycleStage
     public function __construct(
         private readonly McpToolCaller $caller,
         private readonly AdmissionsFlow $admissions,
+        private readonly FeesRemindersFlow $feesReminders,
+        private readonly FeesStudentDetailFlow $feesStudent,
     ) {
     }
 
@@ -61,6 +65,8 @@ class LaravelMcpStage implements LifecycleStage
         // silently took the student-resolution path and never made them.
         match ($plan->route) {
             'admissions_flow' => $this->runAdmissionsFlow($context),
+            'fees_reminders_flow' => $this->runFeesRemindersFlow($context),
+            'fees_student_flow' => $context->set('fees_student_flow', $this->feesStudent->run($context)),
             // The selection route names its own call and its own argument — the id came
             // from a row the previous answer printed, so there is no subject left to
             // resolve and running the student resolver here would search for a name
@@ -103,6 +109,38 @@ class LaravelMcpStage implements LifecycleStage
             : $this->admissions->start($context, (int) ($context->intent?->slot('enquiry_id') ?? 0));
 
         $context->set('admissions_flow', $result);
+    }
+
+    /**
+     * The fee reminder flow: ask for what is missing, show the list, send only on approval.
+     * As with the admission flow, the stage hands the turn over and leaves the result on the
+     * context for the reasoning stage to say out loud.
+     */
+    private function runFeesRemindersFlow(StageContext $context): void
+    {
+        $pending = $this->feesReminders->pending($context->thread['memory'] ?? []);
+
+        if ($pending === null && $context->intent?->key === 'fees_reminder_status') {
+            $context->set('fees_reminders_flow', $this->feesReminders->status($context));
+
+            return;
+        }
+
+        if ($pending !== null && $this->feesReminders->looksLikeCancel($context->question)) {
+            $context->set('fees_reminders_flow', [
+                'state' => 'cancelled',
+                'message' => 'Stopped. Nothing was sent.',
+                'data' => [],
+                'pending' => null,
+            ]);
+
+            return;
+        }
+
+        $context->set(
+            'fees_reminders_flow',
+            $pending !== null ? $this->feesReminders->advance($context, $pending) : $this->feesReminders->start($context)
+        );
     }
 
     // ---------------------------------------------------------------- routes

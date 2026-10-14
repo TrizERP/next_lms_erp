@@ -520,7 +520,11 @@ class AiServiceProvider extends ServiceProvider
             fn ($app) => new \App\Domain\AI\Conversation\AskPipeline(
                 $app->make(\App\Domain\AI\Lifecycle\LifecycleAskService::class),
                 $app->make(\App\Domain\AI\Conversation\AskService::class),
-                $app->make(\App\Domain\AI\Conversation\AskAuditor::class)
+                $app->make(\App\Domain\AI\Conversation\AskAuditor::class),
+                // Hindi and Gujarati in, the same language out. This constructor is called by hand,
+                // so the container's autowiring never fills the optional argument: leaving this out
+                // silently turns the whole language layer off.
+                $app->make(\App\Domain\AI\Conversation\ResponseLanguage::class)
             )
         );
     }

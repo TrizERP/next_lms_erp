@@ -243,6 +243,10 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             // it was for tests, the interpret route and any existing caller.
             Route::post('/ask/stream', [AskController::class, 'stream']);
             Route::post('/ask/interpret', [AskController::class, 'interpret']);
+            // A sentence in Hindi or Gujarati, in English, for the screen's own page navigation.
+            Route::post('/ask/translate', [AskController::class, 'translate']);
+            // Fixed wording the screen builds itself, in the answer's language.
+            Route::post('/ask/localize', [AskController::class, 'localize']);
             Route::get('/ask/intents', [AskController::class, 'intents']);
             // Which modules the lifecycle serves and how deep each one reaches — the
             // honest inventory behind "what can this thing actually answer?".

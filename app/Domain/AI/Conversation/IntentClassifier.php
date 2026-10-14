@@ -259,6 +259,78 @@ class IntentClassifier
             ],
             'slots' => [],
         ],
+        /*
+        | Fee payment reminders: an ACTION, not a question about fees.
+        |
+        | `fees_query` also lists "reminder" and "send a fee reminder" among its phrases, so
+        | before this key existed "send reminders to the defaulters" was answered by reading
+        | out the list of defaulters — which looked like a reminder having been sent and was
+        | not. Every sentence that asks for something to be SENT, with a fee noun beside it,
+        | belongs here, where the answer is a preview that waits for a person's approval.
+        |
+        | Note what is NOT matched: "send a notification to parents about the holiday" names
+        | no fee noun and is the Communication module's, and a bare "remind me" is not about
+        | fees at all.
+        */
+        'fees_send_reminders' => [
+            'label' => 'Send fee payment reminders',
+            'description' => 'Previews, then on approval emails a payment reminder with a deadline to students who owe fees.',
+            'anchors' => ['fee', 'fees', 'outstanding', 'defaulter', 'defaulters', 'owe', 'owing', 'dues', 'reminder', 'reminders'],
+            // Signals name the thing, never just the verb: "notify" and "remind" on their
+            // own score nothing here, because "notify parents about the holiday" and "remind
+            // me to review attendance" are not about fees. The patterns below do the work,
+            // and each of them requires a fee noun.
+            'signals' => [
+                'send a fee reminder' => 5.0, 'send fee reminders' => 5.0, 'fee reminder' => 3.0, 'fee reminders' => 3.0,
+                'payment reminder' => 3.0, 'payment reminders' => 3.0, 'pay by' => 2.0, 'pending fees' => 1.0,
+            ],
+            'patterns' => [
+                // A sending verb, then a fee noun a few words on.
+                '/\b(send|email|mail|notify|remind|alert|message|text)\b.{0,60}\b(fees?|outstanding|owe|owes|owing|dues?|defaulters?|arrears|unpaid)\b/i',
+                // The same, with the order reversed: "defaulters ... send them a reminder".
+                '/\b(fees?|outstanding|dues?|defaulters?|arrears|unpaid)\b.{0,60}\b(send|email|mail|notify|remind|alert)\b/i',
+                '/\b(send|give)\b.{0,15}\b(a\s+)?(fee|payment)\s+reminders?\b/i',
+                '/\bremind\b.{0,50}\b(to\s+pay|pay|fees?|dues?)\b/i',
+                // A notifying verb and a fee noun anywhere in the sentence, in either order:
+                // "notify students whose fees are outstanding", "email the defaulters about ...".
+                '/^(?=.*\b(fees?|outstanding|dues?|defaulters?|arrears|unpaid|owe|owes|owing)\b).*\b(notify|remind|email|mail|alert)\b/i',
+                '/^(?=.*\b(fees?|outstanding|dues?|defaulters?|arrears|unpaid|owe|owes|owing)\b).*\bsend\b.*\b(reminders?|notifications?|notices?|messages?|emails?|sms|texts?)\b/i',
+                // "pending fees" is also what the read intent weighs most, so a request to notify about
+                // them needs its own say to be heard as the action it is. Both still require the verb.
+                '/^(?=.*\b(pending|outstanding|unpaid|overdue|due)\b)(?=.*\b(fees?|dues?|payments?)\b).*\b(notify|remind|email|mail|alert)\b/i',
+                '/\b(notify|remind|email|mail|alert)\b.{0,40}\b(students?|parents?|guardians?|families|defaulters?)\b.{0,60}\b(fees?|dues?|outstanding|unpaid|owe|owes|owing|pay)\b/i',
+            ],
+            'slots' => [],
+        ],
+
+        /*
+        | Whether those reminders went. A question about a record of past actions, answered
+        | from the ledger the sending writes to — never from the list of defaulters.
+        |
+        | It needs the word "reminder" (or a "fee" notification), so "did the notifications go
+        | out?" on the Communication screen stays Communication's question.
+        */
+        'fees_reminder_status' => [
+            'label' => 'Fee reminder status',
+            'description' => 'Shows which fee reminders were sent or failed, from the record of past sends.',
+            'anchors' => ['reminder', 'reminders'],
+            'signals' => [
+                'reminder status' => 7.0, 'reminders status' => 7.0, 'reminder history' => 7.0,
+                'history of fee reminders' => 7.0, 'fee reminder status' => 7.5, 'fee notification status' => 6.0,
+                'reminders sent' => 5.0, 'reminders failed' => 5.5, 'were the reminders' => 5.5,
+                'did the reminders' => 5.5, 'were the fee reminders' => 6.0, 'did the fee reminders' => 6.0,
+            ],
+            'patterns' => [
+                '/\b(status|history|log|record)\b.{0,40}\b(fee\s+)?reminders?\b/i',
+                '/\b(fee\s+)?reminders?\b.{0,30}\b(status|history|log)\b/i',
+                '/\b(did|were|have|has|was)\b.{0,40}\breminders?\b.{0,40}\b(sent|send|go|went|deliver\w*|reach\w*|fail\w*)\b/i',
+                '/\b(which|what|how many)\b.{0,30}\breminders?\b.{0,30}\b(sent|failed|bounced)\b/i',
+                '/\b(report|summary|list)\b.{0,30}\b(fee\s+)?reminders?\b/i',
+                '/\bstudents?\W{0,2}s?\s+(sms|fee|text)\s+(notifications?|messages?|reminders?)\b.{0,25}\b(failed|sent|bounced|went)\b/i',
+                '/\b(which|what|how many)\b.{0,40}\b(sms|text)\s+(notifications?|messages?)\b.{0,25}\b(failed|sent|bounced)\b/i',
+            ],
+            'slots' => [],
+        ],
         'fees_query' => [
             'label' => 'Answer a fee query',
             'description' => 'Recognises fees, pending payments, defaulters, fee collection, reminders, and fee summary questions.',
