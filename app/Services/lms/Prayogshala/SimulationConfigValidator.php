@@ -21,7 +21,16 @@ class SimulationConfigValidator
     public const ENGINES = ['calculator', 'relevance', 'osmosis', 'variable_model', 'sequence', 'classify'];
 
     /** Visual primitives variable_model may draw. Each is a trusted frontend component. */
-    public const VISUALS = ['heating', 'particles', 'ray', 'circuit', 'bars', 'rectangle', 'motion', 'wave', 'lever', 'atom', 'scenery', 'mixture', 'pendulum'];
+    public const VISUALS = ['heating', 'particles', 'ray', 'circuit', 'bars', 'rectangle', 'motion', 'wave', 'lever', 'atom', 'scenery', 'mixture', 'pendulum', 'numberline', 'array', 'multiples', 'grouping', 'divisibility', 'cubes'];
+
+    /**
+     * The only callable names in an expression (mirrors FUNCTIONS in lms_k12/lib/prayogshala/expr.ts,
+     * which is where they are implemented). Pure number functions; none can loop without bound.
+     */
+    public const FUNCTIONS = [
+        'abs', 'sign', 'floor', 'ceil', 'round', 'min', 'max', 'mod', 'gcd', 'lcm', 'pow',
+        'isqrt', 'icbrt', 'sqrt', 'cbrt', 'digitsum', 'altsum',
+    ];
 
     private const STEP_KEYS = ['mission', 'predict', 'do', 'observe', 'explain', 'concept', 'apply', 'reflect'];
 
@@ -170,6 +179,12 @@ class SimulationConfigValidator
                 'scenery'   => ['sun', 'clouds', 'rain', 'water', 'plants'],
                 'mixture'   => ['separated', 'energy'],
                 'pendulum'  => ['length', 'swing'],
+                'numberline' => ['start', 'move', 'lo', 'hi'],
+                'array'     => ['groups', 'size', 'sign'],
+                'multiples' => ['m', 'n', 'limit', 'common'],
+                'grouping'  => ['a', 'b', 'g', 'best'],
+                'divisibility' => ['n', 'd'],
+                'cubes'     => ['side', 'layers'],
                 'bars'      => [],
             ][$visual['kind']];
             foreach ($needs as $key) {
@@ -410,14 +425,26 @@ class SimulationConfigValidator
 
             return;
         }
-        if (! preg_match('/^[A-Za-z0-9_.\s+\-*\/()<>=!&|]+$/', $expr)) {
+        if (! preg_match('/^[A-Za-z0-9_.\s+\-*\/()<>=!&|,]+$/', $expr)) {
             $this->errors[] = "$path contains characters outside the expression language.";
 
             return;
         }
-        if (preg_match_all('/[A-Za-z_][A-Za-z0-9_]*/', $expr, $m)) {
-            foreach (array_unique($m[0]) as $name) {
-                if (! in_array($name, $facts, true)) {
+        if (preg_match_all('/([A-Za-z_][A-Za-z0-9_]*)(\s*\()?/', $expr, $m, PREG_SET_ORDER)) {
+            $seen = [];
+            foreach ($m as $hit) {
+                $name = $hit[1];
+                $isCall = isset($hit[2]) && $hit[2] !== '';
+                if (isset($seen[$name . ($isCall ? '(' : '')])) {
+                    continue;
+                }
+                $seen[$name . ($isCall ? '(' : '')] = true;
+                if ($isCall) {
+                    // A name followed by "(" must be one of the whitelisted functions; it is never a fact.
+                    if (! in_array($name, self::FUNCTIONS, true)) {
+                        $this->errors[] = "$path calls '$name(', which is not an allowed function.";
+                    }
+                } elseif (! in_array($name, $facts, true)) {
                     $this->errors[] = "$path uses '$name', which is not a value this simulation provides.";
                 }
             }

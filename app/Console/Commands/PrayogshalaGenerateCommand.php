@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Jobs\GeneratePrayogshalaActivityJob;
+use App\Services\lms\Prayogshala\AiFailure;
 use App\Services\lms\Prayogshala\PrayogshalaGenerator;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -131,6 +132,14 @@ class PrayogshalaGenerateCommand extends Command
             $r = $generator->generate((int) $t->id, $tenant, null, $regenerate);
             $counts[$r['outcome']] = ($counts[$r['outcome']] ?? 0) + 1;
             $this->line(sprintf('  #%d %s -> %s%s', $t->id, $t->name, $r['outcome'], in_array($r['outcome'], ['failed', 'needs_content'], true) ? ': ' . $r['message'] : ''));
+
+            // A quota, billing or key failure repeats for every remaining topic. Stop the run
+            // cleanly instead of spending a request (and a failed row) on each one.
+            if ($r['outcome'] === 'failed' && AiFailure::make((string) ($r['error_code'] ?? ''))->isBlocking()) {
+                $this->warn(sprintf('Stopping: %s (%s). Remaining topics were not attempted; re-run after fixing it.', $r['error_code'], 'provider blocked'));
+                $counts['not_attempted'] = max(0, $pending->take($limit)->count() - array_sum($counts));
+                break;
+            }
         }
 
         $this->info('Result: ' . json_encode($counts));

@@ -40,7 +40,19 @@ class PrayogshalaGenerator
         private PrayogshalaService $service,
         private SimulationConfigValidator $validator,
         private ClaudeQuestionClient $client,
+        private ?\Closure $sleeper = null,
     ) {
+    }
+
+    /** Pause between provider attempts. Injectable so tests never really wait. */
+    private function pause(int $seconds): void
+    {
+        if ($this->sleeper !== null) {
+            ($this->sleeper)($seconds);
+
+            return;
+        }
+        sleep($seconds);
     }
 
     // ---------------------------------------------------------------- source data
@@ -62,17 +74,23 @@ class PrayogshalaGenerator
             return null;
         }
 
+        // The same concept can be recorded twice under a topic (an import run twice). It is one
+        // concept to the activity: keep the first row per name so it is neither listed twice to the
+        // model nor counted twice in concept_ids.
         $concepts = DB::table('lms_concept')
             ->where('topic_id', $topic->id)
             ->where('chapter_id', $chapter->id)
             ->orderBy('id')
-            ->limit(12)
             ->get(['id', 'name', 'definition', 'description'])
             ->map(fn ($c) => [
                 'id'         => (int) $c->id,
                 'name'       => trim((string) $c->name),
                 'definition' => trim((string) ($c->definition ?: $c->description ?: '')),
             ])
+            ->filter(fn ($c) => $c['name'] !== '')
+            ->unique(fn ($c) => mb_strtolower($c['name']))
+            ->take(12)
+            ->values()
             ->all();
 
         $extraction = DB::table('document_extractions')
@@ -210,14 +228,15 @@ class PrayogshalaGenerator
                 return $this->finishNeedsContent($row, $outcome['reason'], $hadContent);
             }
             if ($outcome['kind'] === 'failed') {
-                return $this->finishFailed($row, $outcome['error'], $hadContent);
+                return $this->finishFailed($row, $outcome['failure'], $hadContent);
             }
 
             return $this->finishReady($row, $ctx, $outcome, $regenerate && $hadContent);
         } catch (\Throwable $e) {
+            // The log keeps the detail; the row and the UI get a fixed, safe message.
             Log::error('Prayogshala generation crashed', ['topic_id' => $topicId, 'error' => $e->getMessage()]);
 
-            return $this->finishFailed($row, 'Generation stopped unexpectedly: ' . $e->getMessage(), $hadContent);
+            return $this->finishFailed($row, AiFailure::make(AiFailure::UNKNOWN), $hadContent);
         }
     }
 
@@ -346,9 +365,9 @@ class PrayogshalaGenerator
             $prompt = $attempt === 1 ? $user : $user . "\n\nYour previous answer was rejected by the validator:\n- "
                 . implode("\n- ", array_slice($problems, 0, 8)) . "\nReturn the corrected full JSON object only.";
 
-            $response = $this->complete($system, $prompt, $tenant);
+            $response = $this->callWithRetry($system, $prompt, $tenant);
             if (! ($response['ok'] ?? false)) {
-                return ['kind' => 'failed', 'error' => (string) ($response['error'] ?? 'The AI provider did not answer.')];
+                return ['kind' => 'failed', 'failure' => $response['failure'] ?? AiFailure::make(AiFailure::UNKNOWN)];
             }
 
             $data = $this->decodeJson((string) $response['content']);
@@ -367,7 +386,55 @@ class PrayogshalaGenerator
             }
         }
 
-        return ['kind' => 'failed', 'error' => 'The generated activity did not pass validation: ' . implode(' ', array_slice($problems, 0, 4))];
+        Log::warning('Prayogshala: generated activity failed validation', ['topic_id' => $ctx['topic']->id, 'problems' => array_slice($problems, 0, 6)]);
+
+        return ['kind' => 'failed', 'failure' => AiFailure::make(AiFailure::INVALID_OUTPUT)];
+    }
+
+    /**
+     * One model call with a bounded retry for failures that can clear by themselves.
+     *
+     * Retried, at most `prayogshala.max_provider_attempts` times in total:
+     *   rate_limited, provider_unavailable, timeout.
+     * The pause is exponential (base * 2^n) with up to 25% jitter, and never shorter than the
+     * provider's own Retry-After. If the provider asks for longer than `max_retry_wait_seconds`
+     * the call is not held open for it: the failure is returned with the delay recorded.
+     *
+     * Never retried: quota_exhausted, invalid_key, no_provider, model_not_found, bad_request,
+     * unknown. Retrying those cannot succeed and only spends time and requests.
+     *
+     * @return array{ok:bool,content?:string,model?:string,failure?:AiFailure,attempts:int}
+     */
+    private function callWithRetry(string $system, string $user, int $tenant): array
+    {
+        $max = max(1, (int) config('prayogshala.max_provider_attempts', 3));
+        $base = max(1, (int) config('prayogshala.retry_base_seconds', 2));
+        $cap = max(1, (int) config('prayogshala.max_retry_wait_seconds', 60));
+
+        $attempt = 0;
+        while (true) {
+            $attempt++;
+            $response = $this->complete($system, $user, $tenant);
+            $response['attempts'] = $attempt;
+            if ($response['ok'] ?? false) {
+                return $response;
+            }
+
+            /** @var AiFailure $failure */
+            $failure = $response['failure'] ?? AiFailure::make(AiFailure::UNKNOWN);
+            if (! $failure->isRetryable() || $attempt >= $max) {
+                return $response;
+            }
+
+            $wait = (int) ceil($base * (2 ** ($attempt - 1)) * (1 + random_int(0, 25) / 100));
+            if ($failure->retryAfter !== null) {
+                $wait = max($wait, $failure->retryAfter);
+            }
+            if ($wait > $cap) {
+                return $response; // too long to hold a request open; the delay is on the failure
+            }
+            $this->pause($wait);
+        }
     }
 
     /**
@@ -377,19 +444,25 @@ class PrayogshalaGenerator
      * so generation works on any installation that has any AI key. A configured-but-failing
      * Claude key is reported as it is and is NOT silently swapped for another provider.
      *
-     * @return array{ok:bool,content?:string,model?:string,error?:string}
+     * Failures come back classified (AiFailure); no provider text is passed on.
+     *
+     * @return array{ok:bool,content?:string,model?:string,failure?:AiFailure}
      */
-    private function complete(string $system, string $user, int $tenant): array
+    protected function complete(string $system, string $user, int $tenant): array
     {
         $claude = $this->client->complete($system, $user, $tenant);
-        if (($claude['ok'] ?? false) || ! str_contains((string) ($claude['error'] ?? ''), 'key is not configured')) {
+        if ($claude['ok'] ?? false) {
             return $claude;
+        }
+        $claudeFailure = AiFailure::fromText((string) ($claude['error'] ?? ''));
+        if ($claudeFailure->code !== AiFailure::NO_PROVIDER) {
+            return ['ok' => false, 'failure' => $claudeFailure];
         }
 
         try {
             $client = app(\App\Domain\AI\Configuration\AiModelClientFactory::class)->for('content_generation', $tenant);
             if (! $client->isConfigured()) {
-                return $claude;
+                return ['ok' => false, 'failure' => AiFailure::make(AiFailure::NO_PROVIDER)];
             }
             $text = $client->chat(
                 [['role' => 'system', 'content' => $system], ['role' => 'user', 'content' => $user]],
@@ -400,10 +473,10 @@ class PrayogshalaGenerator
                 (int) config('prayogshala.timeout_seconds', 240)
             );
         } catch (\Throwable $e) {
-            return ['ok' => false, 'error' => 'The configured AI provider failed: ' . mb_substr($e->getMessage(), 0, 300)];
+            return ['ok' => false, 'failure' => AiFailure::fromThrowable($e)];
         }
         if ($text === null || trim($text) === '') {
-            return ['ok' => false, 'error' => 'The configured AI provider returned no text.'];
+            return ['ok' => false, 'failure' => AiFailure::make(AiFailure::PROVIDER_UNAVAILABLE)];
         }
 
         return ['ok' => true, 'content' => $text, 'model' => $client->defaultModel()];
@@ -457,6 +530,8 @@ class PrayogshalaGenerator
             'generation_status'    => 'ready',
             'generation_version'   => (int) $row->generation_version + 1,
             'generation_error'     => null,
+            'generation_error_code' => null,
+            'generation_retry_after' => null,
             'generation_model'     => mb_substr($outcome['model'] ?: 'unknown', 0, 80),
             'generated_at'         => now(),
             'source_hash'          => $ctx['source_hash'],
@@ -472,28 +547,34 @@ class PrayogshalaGenerator
     private function finishNeedsContent(object $row, string $reason, bool $hadContent): array
     {
         DB::table('lms_prayogshala_activity')->where('id', $row->id)->update($hadContent
-            ? ['generation_status' => 'ready', 'generation_error' => $reason, 'updated_at' => now()]
-            : ['generation_status' => 'needs_content', 'generation_error' => $reason, 'updated_at' => now()]);
+            ? ['generation_status' => 'ready', 'generation_error' => $reason, 'generation_error_code' => 'needs_content', 'updated_at' => now()]
+            : ['generation_status' => 'needs_content', 'generation_error' => $reason, 'generation_error_code' => 'needs_content', 'updated_at' => now()]);
 
-        return $this->result('needs_content', (int) $row->id, $reason);
+        return $this->result('needs_content', (int) $row->id, $reason, 'needs_content');
     }
 
-    private function finishFailed(object $row, string $error, bool $hadContent): array
+    /**
+     * Record a failed attempt. If the topic already had a valid activity, that activity is left
+     * exactly as it was (status, lab, text) and only the error is noted: a failed regeneration
+     * never overwrites good content.
+     */
+    private function finishFailed(object $row, AiFailure $failure, bool $hadContent): array
     {
-        $error = mb_substr($error, 0, 1000);
         DB::table('lms_prayogshala_activity')->where('id', $row->id)->update([
-            'generation_status' => $hadContent ? 'ready' : 'failed',
-            'generation_error'  => $error,
-            'updated_at'        => now(),
+            'generation_status'      => $hadContent ? 'ready' : 'failed',
+            'generation_error'       => $failure->message(),
+            'generation_error_code'  => $failure->code,
+            'generation_retry_after' => $failure->retryAfter,
+            'updated_at'             => now(),
         ]);
 
-        return $this->result('failed', (int) $row->id, $error);
+        return $this->result('failed', (int) $row->id, $failure->message(), $failure->code, $failure->retryAfter);
     }
 
-    /** @return array{outcome:string,activity_id:?int,message:string} */
-    private function result(string $outcome, ?int $id, string $message): array
+    /** @return array{outcome:string,activity_id:?int,message:string,error_code:?string,retry_after:?int} */
+    private function result(string $outcome, ?int $id, string $message, ?string $errorCode = null, ?int $retryAfter = null): array
     {
-        return ['outcome' => $outcome, 'activity_id' => $id, 'message' => $message];
+        return ['outcome' => $outcome, 'activity_id' => $id, 'message' => $message, 'error_code' => $errorCode, 'retry_after' => $retryAfter];
     }
 
     // ------------------------------------------------------------------ prompts
@@ -529,6 +610,7 @@ GROUNDING RULES
 
 MAKE IT FEEL PRACTICAL AND ALIVE
 The student must DO something and SEE the result move: drag a slider and watch the picture change, flip a switch, reorder stages, sort examples. Prefer a "variable_model" with an animated visual whenever the topic involves a process, a force, motion, heat, light, electricity, waves, particles, measurement, shapes or quantities - and choose the visual that matches the topic (not always the same one). Never a text-only quiz dressed as an experiment.
+MATHEMATICS: make the picture the mathematics. Pick the visual that IS the idea (numberline for integers and signed addition/subtraction, array for multiplication, division, factors, multiples and remainders, rectangle for area and squares, bars for comparing sizes) and let every control change it. The Observe text and the Explain cases must state the computed result (use {derivedId} placeholders), never a result the picture does not show. Keep sentences short and numbers large; one small real-world challenge in Apply.
 Make this activity clearly different from the other activities of the same chapter (listed below): a different concept focus, a different engine or visual, a different scenario.
 
 CHOOSE THE FORMAT FROM THE SUBJECT AND THE LEARNING GOAL (not every topic is a lab experiment)
@@ -560,7 +642,7 @@ JSON SHAPE
  }
 }
 
-EXPRESSIONS (formulas and "when" conditions) use only numbers, identifiers, + - * /, parentheses, < > <= >= == != && || !. No functions. Identifiers must be facts the engine provides (below). At least one Predict option must be true for the predict scenario.
+EXPRESSIONS (formulas and "when" conditions) use only numbers, identifiers, + - * /, parentheses, < > <= >= == != && || ! and these functions: abs(x) sign(x) floor(x) ceil(x) round(x) min(a,b) max(a,b) mod(a,b) gcd(a,b) lcm(a,b) pow(x,n) isqrt(x) icbrt(x) sqrt(x) cbrt(x) digitsum(n) altsum(n). Use gcd/lcm/mod/isqrt/icbrt/digitsum for number-theory facts instead of guessing; they are exact. A comparison is 1 or 0 and can be multiplied. Nothing else is callable. Identifiers must be facts the engine provides (below). At least one Predict option must be true for the predict scenario.
 
 ENGINES AND THEIR params (ids: letters, digits, underscore, start with a letter)
 1. variable_model: {"controls":[{"id","label","unit","kind":"slider"|"toggle","min","max","step","default"}] (1-6; toggle = min 0, max 1, step 1),
@@ -573,6 +655,12 @@ ENGINES AND THEIR params (ids: letters, digits, underscore, start with a letter)
    lever {"left_load","left_distance","right_load","right_distance"} (balance beam); atom {"protons","neutrons","electrons"} (counts, 0..20);
    scenery {"sun","clouds","rain","water","plants"} (each 0..1: sky, weather, water level, plant growth); mixture {"separated" (0..1),"energy" (0..1)};
    pendulum {"length" (0..1),"swing" (0..1)};
+   numberline {"start","move","lo","hi"} (a marker hops from start by move along a line from lo to hi - integers, addition, subtraction, signed numbers);
+   array {"groups","size","sign","extra"} (groups of dots, groups <= 12 and size <= 12, sign -1 or 1 colours them, extra = leftover dots - multiplication as repeated addition, factors, multiples, division, remainders);
+   multiples {"m","n","limit","common"} (two rows of multiples with the first common one highlighted - LCM; pass common = lcm(m,n) and limit = 2*lcm(m,n));
+   grouping {"a","b","g","best"} (two totals split into equal groups of g, leftovers shown - HCF and common factors; best = gcd(a,b));
+   divisibility {"n","d"} (the digits of n worked through the divisibility rule for d in 2..11);
+   cubes {"side","layers","extra"} (side x side blocks in layers: layers = 1 is a flat square, layers = side is a cube; extra = loose leftover blocks - squares, cubes and their roots);
    ray {"incidence" (degrees),"reflection" (degrees)}; circuit {"closed" (0|1),"brightness" (0..1)};
    rectangle {"width","height"}; bars {"bars":[{"label","value","max"}]}.
    Facts: every control id and derived id.
