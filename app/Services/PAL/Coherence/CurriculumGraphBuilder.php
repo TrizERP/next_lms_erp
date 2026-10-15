@@ -86,8 +86,14 @@ class CurriculumGraphBuilder
         $includeCrossGrade = $options['include_cross_grade'] ?? true;
 
         $curriculum = $this->curriculum($subInstituteId, $subjectId, $standardId, $syear);
-        $syear = $syear ?? ($curriculum->syear ?? null);
 
+        // Chapters are filtered by the syear the caller actually asked for - never by
+        // lms_curriculum's own syear. The two drift on this estate (chapter_master can
+        // hold 2026 while the lms_curriculum header row is still 2022), so inheriting
+        // the header's year silently narrowed an unscoped request into one for a year
+        // that has no chapters. The Coherence Map is a direct view of whatever
+        // curriculum exists for this subject+grade, not scoped to lms_curriculum's own
+        // year; an explicit `syear` (the "Show <year>" button) still filters exactly.
         $chapters = $this->chapters($subInstituteId, $subjectId, $standardId, $syear);
 
         // An empty chapter list is a real answer, not an error: a subject can exist
