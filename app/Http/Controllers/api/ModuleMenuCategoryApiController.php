@@ -149,6 +149,17 @@ class ModuleMenuCategoryApiController extends AbstractMenuCategoryApiController
             }
         }
 
+        // Counting menus runs the rights query for every module, which is far
+        // slower than the registry itself, and the registry gates the category
+        // bar. So the counts are opt-in: the sidebar asks for them in a second,
+        // non-blocking request and the bar never waits on them.
+        $menuCounts = ! filter_var($request->input('include_menu_counts', false), FILTER_VALIDATE_BOOLEAN) ? [] : $this->menuCountsByModule(
+            array_keys($modules),
+            (string) $request->input('sub_institute_id', ''),
+            (string) $request->input('user_id', ''),
+            (string) $request->input('user_profile_name', '')
+        );
+
         $payload = [];
 
         foreach ($modules as $module) {
@@ -165,6 +176,7 @@ class ModuleMenuCategoryApiController extends AbstractMenuCategoryApiController
                 'label' => $module['label'],
                 'link' => $module['link'],
                 'category_count' => $module['category_count'],
+                'menu_count' => $menuCounts[$module['module_name']] ?? null,
                 'base_route' => (string) (array_key_first($bases) ?? ''),
                 'routes' => array_values(array_unique($module['routes'])),
             ];
@@ -176,6 +188,50 @@ class ModuleMenuCategoryApiController extends AbstractMenuCategoryApiController
             'status' => 1,
             'data' => ['modules' => $payload],
         ]);
+    }
+
+    /**
+     * How many menus each module's bar holds for this user, across every
+     * category — the number the sidebar shows beside the module.
+     *
+     * Counted with the same rights and tenant rules as index(), so the figure
+     * is exactly the sum of the tabs the user will find under the bar's
+     * categories rather than a count of the categories themselves. Empty when the
+     * caller names no user, which leaves the sidebar on the category count it
+     * always used.
+     *
+     * @param  list<string>  $moduleNames
+     * @return array<string,int>
+     */
+    private function menuCountsByModule(array $moduleNames, string $subInstituteId, string $userId, string $userProfileName): array
+    {
+        if ($subInstituteId === '' || $userId === ''
+            || ! Schema::hasTable('fees_menu_category_items')) {
+            return [];
+        }
+
+        $counts = [];
+
+        foreach ($moduleNames as $moduleName) {
+            $categoryKeys = DB::table('fees_menu_categories')
+                ->where('module_name', $moduleName)
+                ->where('status', 1)
+                ->pluck('category_key')
+                ->map(fn ($key) => (string) $key)
+                ->all();
+
+            $byCategory = $this->visibleItemsByCategory(
+                $moduleName,
+                $subInstituteId,
+                $userId,
+                $userProfileName,
+                $categoryKeys
+            );
+
+            $counts[$moduleName] = array_sum(array_map('count', $byCategory));
+        }
+
+        return $counts;
     }
 
     /** Path only, lower-cased, no query string and no trailing slash. */
