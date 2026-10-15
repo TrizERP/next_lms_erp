@@ -28,9 +28,24 @@ class ToolAnswerComposer
     /** Items shown per list before it is truncated with a note. */
     private const MAX_ITEMS = 10;
 
+    /** The cap when the question asks for every row. */
+    private const MAX_ITEMS_ALL = 200;
+
+    /**
+     * Whether the question asks for the whole list: "show all Grade 8 courses", "list every subject",
+     * "show the rest". Public so the planner and the tests apply the same reading.
+     */
+    public static function asksForEverything(string $question): bool
+    {
+        return (bool) preg_match(
+            '/\b(?:show|list|display|see|give|get|view)\b[^.?!]*\b(?:all|every|entire|complete|full|rest|remaining)\b/i',
+            $question
+        );
+    }
+
     /** Keys that make a good heading for a record, most identifying first. */
     private const TITLE_KEYS = [
-        'student_name', 'teacher_name', 'full_name', 'name', 'title', 'label',
+        'student_name', 'teacher_name', 'full_name', 'name', 'title', 'label', 'chapter_name',
         'department', 'subject_name', 'standard_name', 'exam_title', 'display_name',
     ];
 
@@ -100,6 +115,19 @@ class ToolAnswerComposer
             return;
         }
 
+        // The dates this answer was for, kept even when it found nothing: an empty result leaves no rows
+        // to remember, and "who paid?" after "nothing was collected yesterday" must still be about yesterday.
+        $period = $answer['payload']['period'] ?? null;
+
+        if (is_array($period) && isset($period['from'], $period['to'])) {
+            $context->link(['last_period' => [
+                'from' => (string) $period['from'],
+                'to' => (string) $period['to'],
+                'label' => (string) ($period['label'] ?? ''),
+                'tool' => $answer['tool'],
+            ]]);
+        }
+
         if ($answer['items'] === []) {
             $this->composeEmpty($context, $answer, $lists);
 
@@ -108,7 +136,9 @@ class ToolAnswerComposer
 
         $context->setHeadline($this->headline($answer));
 
-        $shown = array_slice($answer['items'], 0, self::MAX_ITEMS);
+        // "Show all Grade 8 courses" asks for every row, so the cap that keeps an ordinary answer short
+        // is lifted for it. The tool's own limit still applies, and the note below says so if it bites.
+        $shown = array_slice($answer['items'], 0, $this->asksForEverything($context->question) ? self::MAX_ITEMS_ALL : self::MAX_ITEMS);
 
         // Remember the list so the next turn can point at a row of it.
         //
@@ -124,14 +154,31 @@ class ToolAnswerComposer
             array_map(fn (array $item) => $this->record($item, $this->moneyFields($answer)), $shown)
         ));
 
-        if (count($answer['items']) > count($shown)) {
+        // The tool's own total, not the length of what came back: a tool with a limit can hold more
+        // than it returned, and the headline already states that total.
+        $total = max((int) ($answer['payload']['count'] ?? 0), count($answer['items']));
+
+        if ($total > count($shown)) {
+            // A one-tap way to the rest. The words are ones asksForEverything() reads, and the planner
+            // repeats this read uncapped from the list the thread remembers.
+            if (count($answer['items']) > count($shown)) {
+                $context->suggestFollowUp(sprintf('Show all %d %s.', $total, str_replace('_', ' ', $answer['key'])));
+            }
+
             $context->addSection($this->compose->text(
                 'Not all shown',
-                sprintf(
-                    '%d of %d shown. Narrow the question — by class, subject or date — to see the rest.',
-                    count($shown),
-                    count($answer['items'])
-                )
+                count($answer['items']) > count($shown)
+                    ? sprintf(
+                        'Showing %d of %d. Say "show all" to list all %d, or narrow the question by class, subject or date.',
+                        count($shown),
+                        $total,
+                        $total
+                    )
+                    : sprintf(
+                        'Showing %d of %d. Narrow the question by class, subject or date to see the rest.',
+                        count($shown),
+                        $total
+                    )
             ));
         }
 
@@ -159,7 +206,13 @@ class ToolAnswerComposer
     {
         $noun = str_replace('_', ' ', $answer['key']);
 
-        $context->setHeadline(sprintf('No %s matched.', $noun));
+        // A tool that can state its own empty result — and knows which dates it looked at — says it
+        // better than a noun from a list key ("No by payment mode matched.").
+        $stated = $answer['payload']['headline'] ?? null;
+
+        $context->setHeadline(
+            is_string($stated) && trim($stated) !== '' ? trim($stated) : sprintf('No %s matched.', $noun)
+        );
 
         $scope = $this->facts([$answer]);
 
@@ -275,6 +328,7 @@ class ToolAnswerComposer
             rows: $shown,
             question: $context->question,
             total: (int) ($answer['payload']['count'] ?? count($shown)),
+            arguments: $this->argumentsOf($context, $answer['tool']),
         );
 
         if ($set === null) {
@@ -304,6 +358,32 @@ class ToolAnswerComposer
     }
 
     // ---------------------------------------------------------------- internals
+
+    /**
+     * What the last completed call to this tool was given, scalars and short lists only.
+     *
+     * Kept with the list so the next turn can tell the planner which date or class these rows are
+     * for. A single `student_id` is dropped: it names one of the rows, which are remembered already.
+     * Class and division ids stay — they are the context a follow-up must not lose.
+     *
+     * @return array<string, mixed>
+     */
+    private function argumentsOf(StageContext $context, string $tool): array
+    {
+        $arguments = [];
+
+        foreach ($context->toolCalls() as $call) {
+            if (($call['tool'] ?? null) === $tool && ($call['status'] ?? null) === 'completed' && is_array($call['arguments'] ?? null)) {
+                $arguments = $call['arguments'];
+            }
+        }
+
+        return array_filter(
+            $arguments,
+            static fn ($value, $key) => is_scalar($value) && $key !== 'student_id',
+            ARRAY_FILTER_USE_BOTH
+        );
+    }
 
     /**
      * Every list a tool returned, with the tool and payload it came from.

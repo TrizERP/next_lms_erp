@@ -153,6 +153,22 @@ class AiContextService
             }
         }
 
+        // Config widens a real row's route patterns for screens the row predates (see
+        // ModuleResolver::fromRoute). A copy is modified so the cached row stays untouched.
+        foreach ($byKey as $key => $row) {
+            $extra = (array) (config('ai.lifecycle.modules.' . $key . '.route_patterns') ?? []);
+
+            if ($extra === []) {
+                continue;
+            }
+
+            $merged = clone $row;
+            $merged->route_patterns = json_encode(array_values(array_unique(
+                array_merge($this->decode($row->route_patterns), $extra)
+            )));
+            $byKey[$key] = $merged;
+        }
+
         // A module bound in `config/ai.php` WITH route patterns, and with no `ai_modules`
         // row, still has pages. Without this its screens resolved to no module at all, so
         // the assistant on those pages answered from nowhere. A real row always wins.

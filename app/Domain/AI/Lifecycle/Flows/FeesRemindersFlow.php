@@ -55,7 +55,7 @@ class FeesRemindersFlow
         'them', 'those', 'these', 'the', 'top', 'high', 'highest', 'anyone', 'families', 'guardians', 'who',
         'whose', 'with', 'having', 'owing', 'that', 'class', 'standard', 'a', 'an', 'fee', 'fees', 'pending',
         'outstanding', 'overdue', 'unpaid', 'payment', 'payments', 'about', 'regarding', 'to', 'of', 'in',
-        'this', 'sms', 'email', 'text', 'message', 'him', 'her', 'it', 'by', 'via', 'on',
+        'this', 'sms', 'email', 'whatsapp', 'text', 'message', 'him', 'her', 'it', 'by', 'via', 'on',
     ];
 
     private const ORDINALS = [
@@ -91,6 +91,12 @@ class FeesRemindersFlow
     /** Wording that abandons the task. Generous on purpose: a user who cannot get out stops using it. */
     public function looksLikeCancel(string $question): bool
     {
+        // "Do not send anything yet, show me the preview" is a request to hold, not to abandon the task.
+        if (preg_match('/\b(do not|don\'?t)\s+send\b.{0,30}\b(yet|for now|until)\b/i', $question) === 1
+            && preg_match('/\b(cancel|never ?mind|forget it|abort|discard)\b/i', $question) !== 1) {
+            return false;
+        }
+
         return (bool) preg_match('/\b(cancel|never ?mind|forget it|stop|abort|leave it|not now|discard|don\'?t send|do not send)\b/i', $question)
             || (bool) preg_match('/^\s*(no|nope|nah)[\s.!]*$/i', $question);
     }
@@ -148,6 +154,31 @@ class FeesRemindersFlow
             $args['standard_id'] = $classId;
         }
 
+        // A date that is not a real one, or has passed, is explained rather than read as "no date given".
+        $problem = self::deadlineProblem($context->question);
+
+        if ($problem !== null) {
+            return $this->needDeadline($context, $args, $problem);
+        }
+
+        // "Send it by WhatsApp instead" after a reminder went out: the same reminder, on the other channel. The students, the
+        // amount rule and the deadline come from what was just sent, so nothing is asked again.
+        $last = $context->thread['memory']['last_reminder']['args'] ?? null;
+
+        if (is_array($last) && $request['channel'] !== null && $request['top'] === null && $request['min_outstanding'] === null
+            && $request['student_ids'] === [] && $request['names'] === []
+            && preg_match('/\b(instead|also|too|as well|again|same|send\s+(?:it|that|this))\b/i', $context->question) === 1) {
+            $args = array_merge(array_diff_key($last, ['channel' => 1, 'message' => 1]), $args);
+
+            if ($request['deadline'] !== null) {
+                $args['deadline'] = $request['deadline'];
+            }
+
+            return isset($args['deadline'])
+                ? $this->previewState($context, $args, 'The same reminder as the one just sent, by '.($request['channel'] === 'whatsapp' ? 'WhatsApp' : ($request['channel'] === 'sms' ? 'SMS' : 'email')).'. Review it before anything is sent.')
+                : $this->needDeadline($context, $args);
+        }
+
         return $this->proceed($context, $args, $request, true);
     }
 
@@ -175,6 +206,16 @@ class FeesRemindersFlow
         // and look again. Who the students are is read again only while that is still unknown.
         $request = $this->parseRequest($context->question, $state === 'need_student');
         $changed = false;
+
+        // A date that is not a real one ("31 September", "29 February 2027") or has already passed gets its
+        // reason, not the generic "I need a deadline". An existing valid deadline is kept and said so.
+        $problem = self::deadlineProblem($context->question);
+
+        if ($problem !== null && $state !== 'need_student') {
+            return isset($args['deadline'])
+                ? $this->previewState($context, $args, $problem.' The deadline stays '.$args['deadline'].' until you give another.')
+                : $this->needDeadline($context, $args, $problem);
+        }
 
         foreach (['top', 'min_outstanding', 'channel', 'message'] as $key) {
             if ($request[$key] !== null) {
@@ -230,7 +271,9 @@ class FeesRemindersFlow
             $filter['status'] = 'failed';
         }
 
-        if (preg_match('/\bsms\b|\btext message/i', $context->question)) {
+        if (preg_match('/\bwhats\s?app\b/i', $context->question)) {
+            $filter['channel'] = 'whatsapp';
+        } elseif (preg_match('/\bsms\b|\btext message/i', $context->question)) {
             $filter['channel'] = 'sms';
         } elseif (preg_match('/\be-?mail/i', $context->question)) {
             $filter['channel'] = 'email';
@@ -246,18 +289,76 @@ class FeesRemindersFlow
             $filter['student_id'] = $one[0];
         }
 
-        $history = $this->reminders->history($context->scope, $filter);
+        // One send, when the sentence names its reference.
+        if (preg_match('/\bFR-\d{8}-[a-z0-9]{5}\b/i', $context->question, $reference) === 1) {
+            $filter['batch'] = strtoupper($reference[0]);
+        }
+
+        // Read through the history tool, not around it: the call lands on the turn's trace and in the audit
+        // table, so the answer's sources name what was really read (the saved reminder records) and a reader
+        // can tell this turn from one that read nothing.
+        $history = $this->mcp->call(
+            $context,
+            'fees.reminder_history',
+            $filter,
+            'Read the saved record of fee reminders: who, how much, by when, which channel, and what the gateway answered.'
+        );
+
+        if ($history === null) {
+            return $this->blocked('The reminder records could not be read, so nothing can be reported about what was sent.', null);
+        }
 
         if (! ($history['success'] ?? false)) {
             return $this->blocked((string) ($history['message'] ?? 'The reminder history could not be read.'), null);
         }
 
+        $data = is_array($history['data'] ?? null) ? $history['data'] : [];
+
+        // "Was the SMS delivered?" asks something the records cannot answer in full; the answer says exactly
+        // which part they can and cannot.
+        $data['asked_about_delivery'] = (bool) preg_match('/\b(deliver(?:ed|y)?|receiv(?:ed|e)|reach(?:ed)?|arriv(?:ed)?|got it|read|seen|opened)\b/i', $context->question);
+
         return [
             'state' => 'status',
             'message' => (string) $history['message'],
-            'data' => $history['data'],
+            'data' => $data,
             'pending' => null,
         ];
+    }
+
+    /**
+     * Whether SMS and WhatsApp can really reach parents, asked of the providers themselves.
+     *
+     * Read through the health tool so the turn's sources and the audit trail name what was checked. Nothing is sent.
+     *
+     * @return array<string, mixed>
+     */
+    public function health(StageContext $context): array
+    {
+        if (! in_array($context->scope->role, ['admin', 'staff'], true)) {
+            return $this->blocked('The messaging check is for staff and administrators.', null);
+        }
+
+        $filter = [];
+
+        if (preg_match('/\bwhats\s?app\b/i', $context->question) && ! preg_match('/\bsms\b/i', $context->question)) {
+            $filter['channel'] = 'whatsapp';
+        } elseif (preg_match('/\bsms\b/i', $context->question) && ! preg_match('/\bwhats\s?app\b/i', $context->question)) {
+            $filter['channel'] = 'sms';
+        }
+
+        $health = $this->mcp->call(
+            $context,
+            'communication.channel_health',
+            $filter,
+            'Ask the SMS gateway and Meta whether messages can reach parents, and read what they report about the recent messages.'
+        );
+
+        if ($health === null || ! ($health['success'] ?? false)) {
+            return $this->blocked('The channels could not be checked, so nothing can be said about whether messages reach parents.', null);
+        }
+
+        return ['state' => 'health', 'message' => (string) ($health['message'] ?? ''), 'data' => (array) ($health['data'] ?? []), 'pending' => null];
     }
 
     // ------------------------------------------------------------- internals
@@ -687,11 +788,19 @@ class FeesRemindersFlow
             ];
         }
 
+        $sent = is_array($result['data'] ?? null) ? $result['data'] : [];
+
         return [
             'state' => 'sent',
             'message' => (string) $result['message'],
-            'data' => is_array($result['data'] ?? null) ? $result['data'] : [],
+            'data' => $sent,
             'pending' => null,
+            // What "it" will mean in the next turn: the same students, amount rule and deadline, by whichever channel is asked for.
+            'remember' => [
+                'args' => array_diff_key($args, ['approved_fingerprint' => 1]),
+                'reference' => $sent['reference'] ?? null,
+                'channel' => $sent['channel'] ?? ($args['channel'] ?? null),
+            ],
         ];
     }
 
@@ -787,7 +896,14 @@ class FeesRemindersFlow
 
         // "text" on its own is not a channel ("change the message text"); "SMS", "text message",
         // "text them" and "by text" are.
-        if (preg_match('/\bsms\b|\btext messages?\b|\btext (?:them|him|her)\b|\b(?:by|via|over) text\b/i', $question)
+        // WhatsApp first: "send it by SMS instead of WhatsApp" names both, and the one the person is moving TO is
+        // the one before "instead" — so a sentence ending "instead" after a channel is read for that channel.
+        $moveToSms = (bool) preg_match('/\bsms\b.{0,15}\binstead\b|\binstead of whats\s?app\b/i', $question);
+
+        if (preg_match('/\bwhats\s?app\b/i', $question) && ! $moveToSms
+            && ! preg_match('/\be-?mail(?:ed)?\s+(?:it\s+)?instead\b/i', $question)) {
+            $channel = 'whatsapp';
+        } elseif (preg_match('/\bsms\b|\btext messages?\b|\btext (?:them|him|her)\b|\b(?:by|via|over) text\b/i', $question)
             && ! preg_match('/\be-?mail(?:ed)?\s+(?:it\s+)?instead\b/i', $question)) {
             $channel = 'sms';
         } elseif (preg_match('/\be-?mail(?:ed|s)?\b/i', $question)) {
@@ -833,6 +949,111 @@ class FeesRemindersFlow
      * tool can refuse it. A date that has already passed is returned as written — the tool is
      * what refuses it, with a reason the person can read.
      */
+    /**
+     * Why a date in the sentence cannot be the deadline, in words a person can act on — or null when there is
+     * no calendar date in it, or it is fine.
+     *
+     * `parseDeadline()` answers null for both "no date given" and "31 September", and the flow used to say
+     * "I need a payment deadline" for either. This separates them: an impossible day ("31 September",
+     * "30 February", "29 February 2027" in a non-leap year), a date that has passed, and one more than a
+     * year away each get their own explanation.
+     */
+    public static function deadlineProblem(string $text, ?Carbon $today = null): ?string
+    {
+        $today = ($today ?? Carbon::today())->copy()->startOfDay();
+        $lower = mb_strtolower($text);
+        $months = self::monthNames();
+        $pattern = implode('|', array_keys($months));
+
+        $day = $month = $year = null;
+
+        if (preg_match('/\b(\d{4})-(\d{1,2})-(\d{1,2})\b/', $lower, $m)) {
+            [$year, $month, $day] = [(int) $m[1], (int) $m[2], (int) $m[3]];
+        } elseif (preg_match('/\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2}|\d{4})\b/', $lower, $m)) {
+            [$day, $month, $year] = [(int) $m[1], (int) $m[2], (int) $m[3] < 100 ? 2000 + (int) $m[3] : (int) $m[3]];
+        } elseif (preg_match('/\b(?:by|before|on|until|till)\s+(\d{1,2})\/(\d{1,2})\b/', $lower, $m)) {
+            [$day, $month] = [(int) $m[1], (int) $m[2]];
+        } elseif (preg_match('/\b(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?('.$pattern.')\b\.?,?(?:\s+(\d{4}))?/', $lower, $m)) {
+            [$day, $month, $year] = [(int) $m[1], $months[$m[2]], isset($m[3]) && $m[3] !== '' ? (int) $m[3] : null];
+        } elseif (preg_match('/\b('.$pattern.')\.?\s+(\d{1,2})(?:st|nd|rd|th)?\b,?(?:\s+(\d{4}))?/', $lower, $m)) {
+            [$month, $day, $year] = [$months[$m[1]], (int) $m[2], isset($m[3]) && $m[3] !== '' ? (int) $m[3] : null];
+        } else {
+            return null;
+        }
+
+        // A reasonable example to offer: the last day of this month, which is always today or later.
+        $example = sprintf('"by %s" or "by %s"', $today->copy()->endOfMonth()->format('j F'), $today->copy()->endOfMonth()->toDateString());
+
+        if ($month < 1 || $month > 12) {
+            // Dates here are day first, so "12/13/2026" is month 13; say that, and offer the likely intent.
+            $swapped = $day >= 1 && $day <= 12 && $month >= 13 && $month <= 31
+                ? sprintf(' Dates are read day first (31/10/2026) — did you mean %d/%d/%s?', $month, $day, $year ?? $today->year)
+                : '';
+
+            return sprintf('There is no month number %d, so "%s" is not a date.%s Please give a valid date, for example %s.', $month, trim($m[0]), $swapped, $example);
+        }
+
+        $name = ucfirst(array_search($month, ['january' => 1, 'february' => 2, 'march' => 3, 'april' => 4, 'may' => 5, 'june' => 6, 'july' => 7, 'august' => 8, 'september' => 9, 'october' => 10, 'november' => 11, 'december' => 12], true));
+        $checkYear = $year ?? (int) $today->year;
+        $length = Carbon::create($checkYear, $month, 1)->daysInMonth;
+
+        if ($day < 1 || $day > $length) {
+            if ($month === 2 && $day > 29) {
+                return sprintf('February never has more than 29 days (28 in most years), so %d February is not a real date. Please give a valid date, for example %s.', $day, $example);
+            }
+
+            if ($month === 2) {
+                $leap = $checkYear;
+                while (! Carbon::create($leap, 1, 1)->isLeapYear()) {
+                    $leap++;
+                }
+
+                return sprintf(
+                    'February %d has only 28 days (%d is not a leap year), so 29 February %d is not a real date. The next 29 February is in %d. Please give a valid date, for example %s.',
+                    $checkYear, $checkYear, $checkYear, $leap, $example
+                );
+            }
+
+            $message = sprintf('%s has only %d days, so %d %s is not a real date.', $name, $length, $day, $name);
+
+            // The last real day of that month may itself be behind us — "31 September" said in October.
+            if ($year === null && Carbon::create($checkYear, $month, $length)->lt($today)) {
+                $message .= sprintf(' (%d %s %d has also passed — today is %s.)', $length, $name, $checkYear, $today->format('j F Y'));
+            }
+
+            return $message.' Please give a deadline from today onwards, for example '.$example.'.';
+        }
+
+        $parsed = self::parseDeadline($text, $today);
+
+        if ($parsed === null) {
+            return null;
+        }
+
+        $date = Carbon::parse($parsed)->startOfDay();
+
+        if ($date->lt($today)) {
+            return sprintf('%s has already passed (today is %s). Please give a deadline from today onwards.', $date->format('j F Y'), $today->format('j F Y'));
+        }
+
+        if ($date->gt($today->copy()->addDays(366))) {
+            return sprintf('%s is more than a year away. Please give a deadline within a year (by %s at the latest).', $date->format('j F Y'), $today->copy()->addDays(366)->format('j F Y'));
+        }
+
+        return null;
+    }
+
+    /** @return array<string, int> */
+    private static function monthNames(): array
+    {
+        return [
+            'jan' => 1, 'january' => 1, 'feb' => 2, 'february' => 2, 'mar' => 3, 'march' => 3, 'apr' => 4, 'april' => 4,
+            'may' => 5, 'jun' => 6, 'june' => 6, 'jul' => 7, 'july' => 7, 'aug' => 8, 'august' => 8,
+            'sep' => 9, 'sept' => 9, 'september' => 9, 'oct' => 10, 'october' => 10, 'nov' => 11, 'november' => 11,
+            'dec' => 12, 'december' => 12,
+        ];
+    }
+
     public static function parseDeadline(string $text, ?Carbon $today = null): ?string
     {
         $today = ($today ?? Carbon::today())->copy()->startOfDay();

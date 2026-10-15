@@ -5,6 +5,7 @@ namespace App\Domain\AI\Lifecycle\Plan;
 use App\Domain\AI\Lifecycle\Flows\AdmissionsFlow;
 use App\Domain\AI\Lifecycle\Flows\FeesRemindersFlow;
 use App\Domain\AI\Lifecycle\Flows\FeesStudentDetailFlow;
+use App\Domain\AI\Lifecycle\Flows\ParentMessageFlow;
 use App\Domain\AI\Lifecycle\StageContext;
 use App\Domain\AI\Lifecycle\Support\RecordDetail;
 use App\Domain\AI\Conversation\Intent;
@@ -58,6 +59,20 @@ class DeterministicPlanner implements Planner
     /** The two intents that belong to Fees alone, because only Fees has the tool they run. */
     private const FEES_REMINDER_INTENTS = ['fees_send_reminders', 'fees_reminder_status'];
 
+    /** Routes whose answer is something an agent stored, so a module with no agent has none to give. */
+    private const AGENT_GOVERNED_ROUTES = [
+        'stored_case_read',
+        'stored_evidence_read',
+        'stored_recommendation_read',
+        'decision_gate',
+        'workflow_read',
+        'outcome_read',
+        'effectiveness_read',
+    ];
+
+    /** The one tool the parent-message flow previews and sends through. */
+    private const PARENT_MESSAGE_TOOLS = ['communication.send_parent_message'];
+
     private const NEEDS_STUDENT = [
         'student_risk_explain',
         'evidence_inspect',
@@ -85,6 +100,23 @@ class DeterministicPlanner implements Planner
 
         if ($intent === null) {
             return null;
+        }
+
+        // "Was the WhatsApp delivered?" names no reminder, so it reads as a question about parent messages. On the Fees
+        // page — which keeps its own record of the reminders it sent, and binds that record's tool but not the parent
+        // message one — it is a question about those reminders, and is answered from them rather than from nothing.
+        if ($intent->key === 'parent_message_status'
+            && in_array('fees.reminder_history', $context->module->mcpTools, true)
+            && ! in_array('communication.parent_message_history', $context->module->mcpTools, true)) {
+            $intent = $context->intent = new Intent(
+                key: 'fees_reminder_status',
+                label: 'Fee reminder status',
+                confidence: $intent->confidence,
+                slots: $intent->slots,
+                matched: $intent->matched,
+                resolvedFrom: $intent->resolvedFrom,
+                suggestions: $intent->suggestions,
+            );
         }
 
         // A fee question the classifier had no word for ("the list of students who have pending dues")
@@ -128,6 +160,19 @@ class DeterministicPlanner implements Planner
             return null;
         }
 
+        // The same holds for every route that reads what an agent stored — cases, evidence, a drafted
+        // recommendation, a workflow run, outcomes, effectiveness. The classifier is estate-wide and
+        // matches ordinary words ("plan", "setup", "effective"), so on a screen whose module has no
+        // agent there is nothing stored for these routes to read: "summarise the lesson plan" was
+        // answered with academic-intervention analytics. Declining hands the sentence to the model
+        // planner and then to the module's own read. The general module keeps them: it is the
+        // estate-wide view, where these are legitimately asked.
+        if ($context->module->key !== 'general'
+            && in_array($this->routeFor($intent->key), self::AGENT_GOVERNED_ROUTES, true)
+            && ! $context->module->hasAgent()) {
+            return null;
+        }
+
         $needsStudent = in_array($intent->key, self::NEEDS_STUDENT, true)
             || $intent->slot('student_id') !== null
             || $intent->slot('student_name') !== null;
@@ -137,7 +182,13 @@ class DeterministicPlanner implements Planner
             'fees_send_reminders' => self::FEES_REMINDER_TOOLS,
             // The status answer is read straight from the ledger, so it needs no tool of its
             // own; the send tool is the nominal candidate that lets the turn reach the flow.
-            'fees_reminder_status' => ['fees.send_reminders'],
+            // The status answer is read from the saved reminder records through the history tool, so the turn's
+            // sources name what was actually read.
+            'fees_reminder_status' => ['fees.reminder_history'],
+            'parent_message_send' => self::PARENT_MESSAGE_TOOLS,
+            // Read from the saved record of those sends, through the history tool, so the sources name it.
+            'parent_message_status' => ['communication.parent_message_history'],
+            'channel_health' => ['communication.channel_health'],
             'admission_enquiry_list' => ['admissions.listEnquiries'],
             // Selecting a row is answerable from the rows already in memory, so the
             // lookup is an enrichment rather than a requirement: where the module binds a
@@ -156,8 +207,15 @@ class DeterministicPlanner implements Planner
         // to select, and stage 5 would have to refuse a plan its own planner wrote.
         $candidates = array_values(array_intersect($wanted, $context->module->mcpTools));
 
+        // The classifier is estate-wide and this intent belongs to the modules that bind the sending
+        // tool. Anywhere else the sentence goes to the planners that follow, exactly as before.
+        if (in_array($intent->key, ['parent_message_send', 'parent_message_status', 'channel_health'], true) && $candidates === []) {
+            return null;
+        }
+
         $strategy = match (true) {
             $candidates === [] => 'domain_services_only',
+            in_array($intent->key, ['parent_message_send', 'parent_message_status', 'channel_health'], true) => 'parent_message_flow',
             $intent->key === 'admission_confirm' => 'admissions_confirmation_flow',
             in_array($intent->key, self::FEES_REMINDER_INTENTS, true) => 'fees_reminders_flow',
             $intent->key === 'admission_enquiry_list' => 'mcp_read',
@@ -176,7 +234,9 @@ class DeterministicPlanner implements Planner
             goal: $this->goalFor($intent->key, $intent->label),
             steps: $steps,
             source: Plan::SOURCE_DETERMINISTIC,
-            route: $this->routeFor($intent->key),
+            route: $intent->key === 'channel_health' && in_array('fees.reminder_history', $context->module->mcpTools, true)
+                ? 'fees_reminders_flow'
+                : $this->routeFor($intent->key),
             intentKey: $intent->key,
             candidateTools: $candidates,
             toolSelectionStrategy: $strategy,
@@ -201,6 +261,10 @@ class DeterministicPlanner implements Planner
 
         if (is_array($pending) && ($pending['kind'] ?? null) === FeesRemindersFlow::KIND) {
             return $this->feesReminderContinuation($context, $pending);
+        }
+
+        if (is_array($pending) && ($pending['kind'] ?? null) === ParentMessageFlow::KIND) {
+            return $this->parentMessageContinuation($context, $pending);
         }
 
         if (! is_array($pending) || ($pending['kind'] ?? null) !== AdmissionsFlow::KIND) {
@@ -263,6 +327,30 @@ class DeterministicPlanner implements Planner
 
         $memory = is_array($context->thread['memory'] ?? null) ? $context->thread['memory'] : [];
 
+        // What one student PAID on a date reads receipts, not the ledger.
+        $paymentTools = array_values(array_intersect(['students.search', 'fees.collection_report'], $context->module->mcpTools));
+
+        if (count($paymentTools) === 2 && FeesStudentDetailFlow::paymentTarget($context->question, $memory, $intent) !== null) {
+            return new Plan(
+                goal: 'Find the one student the question is about and show what they actually paid in the period asked about.',
+                steps: [
+                    new PlanStep('find', 'Find the student named, through the Fees module\'s own student search.', 'students.search'),
+                    new PlanStep('receipts', 'Read the receipts for that student inside the period.', 'fees.collection_report'),
+                    new PlanStep('report', 'Report only the payments received from that student in that period, or say none was found.'),
+                ],
+                source: Plan::SOURCE_DETERMINISTIC,
+                route: 'fees_student_flow',
+                intentKey: $intent->key,
+                candidateTools: $paymentTools,
+                toolSelectionStrategy: 'fees_student_payments_flow',
+                context: [
+                    'module' => $context->module->key,
+                    'confidence' => round($intent->confidence, 3),
+                    'matched_by' => 'a question about what one student paid on a date',
+                ],
+            );
+        }
+
         if (FeesStudentDetailFlow::target($context->question, $intent) === null
             && FeesStudentDetailFlow::listTarget($context->question, $memory) === null) {
             return null;
@@ -323,6 +411,40 @@ class DeterministicPlanner implements Planner
         );
     }
 
+    /**
+     * Carrying on with a parent message the thread is part-way through: the missing detail, a change
+     * to the request, or the "yes". Only where the sending tool is bound, which is where it started.
+     *
+     * @param  array<string, mixed>  $pending
+     */
+    private function parentMessageContinuation(StageContext $context, array $pending): ?Plan
+    {
+        $tools = array_values(array_intersect(self::PARENT_MESSAGE_TOOLS, $context->module->mcpTools));
+
+        if ($tools === []) {
+            return null;
+        }
+
+        return new Plan(
+            goal: 'Continue the parent message this conversation is part-way through.',
+            steps: [
+                new PlanStep('read_reply', 'Read the detail, change or approval the user just gave.'),
+                new PlanStep('preview', 'Show exactly who would be messaged and what it says.', 'communication.send_parent_message'),
+                new PlanStep('approve', 'Send only if the person approves the list shown.'),
+            ],
+            source: Plan::SOURCE_DETERMINISTIC,
+            route: 'parent_message_flow',
+            intentKey: 'parent_message_send',
+            candidateTools: $tools,
+            toolSelectionStrategy: 'parent_message_flow',
+            context: [
+                'module' => $context->module->key,
+                'matched_by' => 'a pending parent message on this thread, which outranks the sentence',
+                'pending' => $pending,
+            ],
+        );
+    }
+
     private function routeFor(string $intentKey): string
     {
         return match ($intentKey) {
@@ -345,6 +467,9 @@ class DeterministicPlanner implements Planner
             'admission_enquiry_list' => 'mcp_tools',
             'admission_confirm' => 'admissions_flow',
             'fees_send_reminders', 'fees_reminder_status' => 'fees_reminders_flow',
+            'parent_message_send', 'parent_message_status' => 'parent_message_flow',
+            // Answered by the Fees flow on the Fees page and by the parent-message flow on Communication; see plan().
+            'channel_health' => 'parent_message_flow',
             // Both selection routes answer from the previous turn's rows. `record_detail`
             // upgrades to a tool call when the module binds one that reads this record;
             // `record_filter` never does, because narrowing a list the user is looking at
@@ -375,7 +500,9 @@ class DeterministicPlanner implements Planner
                 'read_record',
                 'Load that record in full through the module\'s own lookup.',
                 $tool,
-                is_numeric($recordId) ? [$idField => (int) $recordId] : [],
+                is_numeric($recordId)
+                    ? [$idField => (int) $recordId] + $this->detail->accepted($tool, (array) $intent->slot('record_context', []))
+                    : [],
                 ['resolve_record']
             ),
             new PlanStep('report', 'Return the record, and say what it is still missing.', null, [], ['read_record']),
@@ -399,6 +526,8 @@ class DeterministicPlanner implements Planner
             'fees_send_reminders' => 'Work out who is to be reminded and by when, show exactly what would be sent, '
                 . 'and send only what a person approves.',
             'fees_reminder_status' => 'Show which fee reminders were sent, failed or skipped, from the record of past sends.',
+            'parent_message_status' => 'Show which SMS or WhatsApp messages to parents were sent, failed or delivered, from the saved record.',
+            'channel_health' => 'Check whether SMS and WhatsApp can reach parents, asking the providers themselves.',
             'record_detail' => 'Open the row the previous answer listed and show everything held about it.',
             'record_filter' => 'Narrow the previous answer to the rows that match, without re-querying.',
             'fees_risk_scan' => 'Find who is carrying unpaid fees, evidence it from the ledger, and put a '
@@ -537,8 +666,22 @@ class DeterministicPlanner implements Planner
                 ['send', 'Send only what was approved, and record every outcome.'],
             ],
             'fees_reminder_status' => [
-                ['read', 'Read the record of fee reminders already sent.'],
+                ['read', 'Read the record of fee reminders already sent.', 'fees.reminder_history'],
                 ['report', 'Return each reminder with its status.'],
+            ],
+            'channel_health' => [
+                ['check', 'Ask the SMS gateway and Meta whether messages can reach parents.', 'communication.channel_health'],
+                ['report', 'Name each problem found, and what the providers say about the recent messages.'],
+            ],
+            'parent_message_status' => [
+                ['read', 'Read the saved record of parent messages already sent.', 'communication.parent_message_history'],
+                ['report', 'Return each message with the provider\'s reply and what is known about delivery.'],
+            ],
+            'parent_message_send' => [
+                ['resolve', 'Read the channel, the class or student and the wording from the sentence.'],
+                ['preview', 'Show who would be messaged and exactly what it says.', 'communication.send_parent_message'],
+                ['approve', 'Put the list to a person — this messages real families.'],
+                ['send', 'Send only what was approved, and record what the provider answered.'],
             ],
             'admission_confirm' => [
                 ['resolve_enquiry', 'Identify which admission enquiry is being confirmed.'],

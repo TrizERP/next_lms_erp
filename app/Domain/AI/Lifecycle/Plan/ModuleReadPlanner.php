@@ -2,8 +2,11 @@
 
 namespace App\Domain\AI\Lifecycle\Plan;
 
+use App\Domain\AI\Lifecycle\Modules\ModuleCapability;
 use App\Domain\AI\Lifecycle\StageContext;
+use App\Domain\AI\Lifecycle\Support\ToolAnswerComposer;
 use App\Domain\AI\Modules\ModuleReadTools;
+use App\Services\Mcp\DateRangeResolver;
 
 /**
  * The last resort that still answers: read the module the user is looking at.
@@ -89,6 +92,14 @@ class ModuleReadPlanner implements Planner
         // forced through a case-resolution read that had nothing to resolve: the blind
         // tool call "completed" with a real but irrelevant answer, so nothing downstream
         // could recognise the turn as one a general answer should take instead.
+        // "Show all" after a truncated list asks for the same read again without the cap. It names no
+        // module word, so it is decided before the check below, and only from the list the thread holds.
+        $again = $this->rereadForShowAll($context, $module);
+
+        if ($again !== null) {
+            return $again;
+        }
+
         if ($context->get('modules_considered', []) === []) {
             return null;
         }
@@ -99,11 +110,64 @@ class ModuleReadPlanner implements Planner
             return null;
         }
 
+        // The words may point at a tool further down the module's list ("chapters", "lesson plan").
+        // It is looked for among every readable bound tool, not just the first MAX_TOOLS.
+        $hinted = $this->tools()->hintedTool(
+            $module->key,
+            $this->tools()->select($module->mcpTools, 50),
+            $context->question
+        );
+
+        if ($hinted !== null) {
+            $candidates = array_values(array_unique(array_merge([$hinted], $candidates)));
+        }
+
+        // A question that names a day or a range ("fees collected yesterday") is about that period, and
+        // reading the module's first tool with no dates answers a different question with all-time
+        // figures. When a bound tool declares a `period` argument it can be asked exactly that, so it is
+        // read instead, handed the question's own words; the tool resolves them against today's date.
+        $dated = DateRangeResolver::mentionsDate($context->question)
+            ? $this->tools()->acceptingPeriod($module->mcpTools)
+            : null;
+
+        if ($dated !== null) {
+            return new Plan(
+                goal: sprintf('Answer from the %s data for the period the question names.', $module->label),
+                steps: [
+                    new PlanStep(
+                        id: 'read_period',
+                        purpose: 'Read what was recorded for the day or range the question names.',
+                        tool: $dated,
+                        arguments: ['period' => $context->question],
+                    ),
+                    new PlanStep(id: 'report', purpose: 'Report what the records show for exactly that period.'),
+                ],
+                source: Plan::SOURCE_MODULE_READ,
+                route: 'mcp_tools',
+                intentKey: $context->intent?->key,
+                candidateTools: [$dated],
+                toolSelectionStrategy: 'module_read_dated',
+                context: [
+                    'module' => $module->key,
+                    // A dated read is aimed at the question, unlike the blind overview: the answer should not
+                    // be prefixed as if nothing had been matched.
+                    'dated' => true,
+                    'matched_by' => 'a date in the question and a tool that takes a period',
+                    'reason' => 'No intent route and no model plan; the question names a period and this module binds a tool that answers by period.',
+                ],
+            );
+        }
+
+        // The read was aimed by the question's own words ("Grade 8"), so it answers the question rather
+        // than being a guess at what the screen shows.
+        $aimed = $this->tools()->argumentsFromQuestion($candidates[0], $context->question);
+
         $steps = [
             new PlanStep(
                 id: 'read_module',
                 purpose: sprintf('Read the %s records this page is about.', $module->label),
                 tool: $candidates[0],
+                arguments: $aimed,
             ),
             new PlanStep(
                 id: 'report',
@@ -127,11 +191,67 @@ class ModuleReadPlanner implements Planner
             toolSelectionStrategy: 'module_read_fallback',
             context: [
                 'module' => $module->key,
+                'targeted' => $aimed !== [],
                 // Stated plainly so the trace never implies an intent matched when none
                 // did. This is the honest description of what happened: no route was
                 // found, so the module's own data was read.
                 'matched_by' => 'module read fallback',
                 'reason' => 'No intent route and no model plan; answered from the module\'s bound read tools.',
+            ],
+        );
+    }
+
+    /**
+     * The previous list read again, uncapped, when the question is "show all" / "show the rest".
+     *
+     * Only the tool the thread's last list came from, only when this module binds it as a readable
+     * tool, and with the arguments that list was read with — so "show all" keeps Grade 8 and never
+     * reaches a tool the module does not own.
+     */
+    private function rereadForShowAll(StageContext $context, ModuleCapability $module): ?Plan
+    {
+        if (! ToolAnswerComposer::asksForEverything($context->question)) {
+            return null;
+        }
+
+        $set = $context->thread['memory']['last_result_set'] ?? null;
+
+        if (! is_array($set) || ! is_string($set['tool'] ?? null) || (int) ($set['total'] ?? 0) <= count((array) ($set['items'] ?? []))) {
+            return null;
+        }
+
+        $tool = $set['tool'];
+
+        if (! in_array($tool, $this->readableTools($module->mcpTools), true)) {
+            return null;
+        }
+
+        $arguments = array_merge(
+            (array) ($set['arguments'] ?? []),
+            $this->tools()->argumentsFromQuestion($tool, $context->question)
+        );
+
+        return new Plan(
+            goal: sprintf('List every record of the previous %s answer.', $module->label),
+            steps: [
+                new PlanStep(
+                    id: 'read_all',
+                    purpose: 'Read the same records again, without the display cap.',
+                    tool: $tool,
+                    arguments: $arguments,
+                ),
+                new PlanStep(id: 'report', purpose: 'Report every record the read returned.'),
+            ],
+            source: Plan::SOURCE_MODULE_READ,
+            route: 'mcp_tools',
+            intentKey: $context->intent?->key,
+            candidateTools: [$tool],
+            toolSelectionStrategy: 'module_read_show_all',
+            context: [
+                'module' => $module->key,
+                'targeted' => true,
+                'matched_by' => 'a request to show all of the previous list',
+                'reason' => 'The thread holds a truncated list from this module; the same read is repeated in full.',
             ],
         );
     }

@@ -52,6 +52,107 @@ class ModuleReadTools
     }
 
     /**
+     * Arguments a tool can take straight from the question's own words.
+     *
+     * Only what the tool's schema declares and the sentence states outright: "courses for Grade 8"
+     * gives a tool with a `standard_name` argument the standard "8". Nothing is guessed — a question
+     * naming no class yields no arguments, which means "no filter".
+     *
+     * @return array<string, mixed>
+     */
+    public function argumentsFromQuestion(string $tool, string $question): array
+    {
+        $schema = $this->registry()?->tool($tool)?->definition()['input_schema'] ?? [];
+        $properties = (array) ($schema['properties'] ?? []);
+        $arguments = [];
+
+        if (array_key_exists('standard_name', $properties)
+            && preg_match('/\b(?:grade|class|standard|std)\s*[-:]?\s*(\d{1,2})\b/i', $question, $m) === 1) {
+            $arguments['standard_name'] = $m[1];
+        }
+
+        // A tool that reads the user's own words (to find a subject named in them) is handed them.
+        if (array_key_exists('question', $properties) && trim($question) !== '') {
+            $arguments['question'] = $question;
+        }
+
+        return $arguments;
+    }
+
+    /**
+     * The bound tool the question's own words point at, when the module declares hints for it.
+     *
+     * `ai.lifecycle.modules.<module>.read_hints` maps a tool to the words that call for it: a question
+     * about "chapters" or a "lesson plan" is answered by the course-summary tool, not by whichever tool
+     * the module happens to list first. Only a readable bound tool is ever returned.
+     *
+     * @param  array<int, string>  $readable
+     */
+    public function hintedTool(string $moduleKey, array $readable, string $question): ?string
+    {
+        $hints = (array) config(sprintf('ai.lifecycle.modules.%s.read_hints', $moduleKey), []);
+
+        foreach ($hints as $tool => $words) {
+            if (! in_array($tool, $readable, true)) {
+                continue;
+            }
+
+            foreach ((array) $words as $word) {
+                if (is_string($word) && $word !== '' && stripos($question, $word) !== false) {
+                    return (string) $tool;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The first readable bound tool that declares a `period` argument, or null.
+     *
+     * Used when a question names a day or a range and nothing smarter could route it: the tool says,
+     * in its own schema, that it can be asked about a period, so it is the right one to read.
+     *
+     * @param  array<int, string>  $bound
+     */
+    public function acceptingPeriod(array $bound): ?string
+    {
+        $registry = $this->registry();
+
+        if ($registry === null) {
+            return null;
+        }
+
+        foreach ($this->select($bound, 50) as $name) {
+            $schema = $registry->tool($name)?->definition()['input_schema'] ?? [];
+            $properties = (array) ($schema['properties'] ?? []);
+
+            if (array_key_exists('period', $properties)) {
+                return $name;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Whether a tool's own annotations declare that it only reads.
+     *
+     * `read_only` alone is not enough. `ai.templates.generate` is bound to nearly every module so the
+     * page's report action can reach it, and it says `read_only: true` while declaring `risk: write` —
+     * the module-isolation test requires every bound tool to be `read_only`, so that flag cannot be the
+     * thing that tells a write apart. The declared `risk` can. Every path that runs without the user
+     * naming a tool — the model planner's catalogue, the page-level fallback, a record lookup — asks
+     * this, so "show me today's attendance" can never be planned as "generate a report".
+     *
+     * @param  array<string, mixed>  $annotations
+     */
+    public static function declaresRead(array $annotations): bool
+    {
+        return ($annotations['risk'] ?? 'read') === 'read';
+    }
+
+    /**
      * The bound tools that may be read, in the order the module declares them.
      *
      * @param  array<int, string>  $bound
@@ -76,7 +177,7 @@ class ModuleReadTools
 
             $definition = $tool->definition();
 
-            if (($definition['annotations']['read_only'] ?? false) !== true) {
+            if (($definition['annotations']['read_only'] ?? false) !== true || ! self::declaresRead((array) $definition['annotations'])) {
                 continue;
             }
 

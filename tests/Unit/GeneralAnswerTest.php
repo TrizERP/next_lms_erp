@@ -156,7 +156,7 @@ class GeneralAnswerTest extends TestCase
 
     // ------------------------------------------------- the guard, which matters more
 
-    public function test_a_module_that_binds_tools_never_gets_a_general_answer(): void
+    public function test_a_question_that_names_a_module_never_gets_a_general_answer(): void
     {
         // The important one. A fees question routes to the fees module, which binds
         // tools; however badly that turn goes, the answer must not come from a model.
@@ -166,6 +166,40 @@ class GeneralAnswerTest extends TestCase
             label: 'Fees',
             mcpTools: ['fees.arrears'],
         ));
+        // The words matched the module's vocabulary: this is a fees question.
+        $context->set('modules_considered', ['fees' => 4.0]);
+
+        $this->assertNull($this->invokeGuard($context, $trace));
+    }
+
+    public function test_a_domain_free_question_asked_on_a_page_with_tools_is_answered_as_general_knowledge(): void
+    {
+        // "What is the capital of India?" asked on the Attendance page. No module's vocabulary matched
+        // a word of it, so it is not about the page's data — and refusing it was the bug.
+        $trace = new LifecycleTrace();
+        $context = $this->context(new ModuleCapability(
+            key: 'attendance',
+            label: 'Attendance',
+            mcpTools: ['attendance.overview'],
+        ));
+        $context->set('modules_considered', []);
+
+        $result = $this->invokeGuard($context, $trace);
+
+        $this->assertNotNull($result);
+        $this->assertSame('a general answer', $result['answer']);
+    }
+
+    public function test_a_domain_free_question_still_keeps_a_real_refusal(): void
+    {
+        $trace = new LifecycleTrace();
+        $trace->record(StageKey::Action, StageOutcome::blocked('Governance refused this.'));
+        $context = $this->context(new ModuleCapability(
+            key: 'attendance',
+            label: 'Attendance',
+            mcpTools: ['attendance.overview'],
+        ));
+        $context->set('modules_considered', []);
 
         $this->assertNull($this->invokeGuard($context, $trace));
     }

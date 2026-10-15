@@ -51,6 +51,20 @@ class RecordDetail
         return $this->derived($module, $idField);
     }
 
+    /**
+     * The subset of `$candidates` the tool declares as arguments.
+     *
+     * @param  array<string, mixed>  $candidates
+     * @return array<string, mixed>
+     */
+    public function accepted(string $tool, array $candidates): array
+    {
+        $schema = (array) ($this->tools->tool($tool)?->definition()['input_schema'] ?? []);
+        $properties = (array) ($schema['properties'] ?? []);
+
+        return array_intersect_key($candidates, $properties);
+    }
+
     // ---------------------------------------------------------------- internals
 
     private function configured(ModuleCapability $module, string $idField): ?string
@@ -89,7 +103,9 @@ class RecordDetail
 
             // A write or confirmable tool is never a way to read a record. Selecting a
             // row must not be able to change it.
-            if (($annotations['requires_confirmation'] ?? false) || ($annotations['read_only'] ?? true) === false) {
+            if (($annotations['requires_confirmation'] ?? false)
+                || ($annotations['read_only'] ?? true) === false
+                || ! \App\Domain\AI\Modules\ModuleReadTools::declaresRead($annotations)) {
                 continue;
             }
 

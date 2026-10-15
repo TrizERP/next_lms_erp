@@ -35,11 +35,11 @@ class FeesSendRemindersTool extends AbstractMcpTool implements ConfirmableMcpToo
 
     public function description(): string
     {
-        return 'Send a fee payment reminder, with a payment deadline, to students who owe fees, by email or by SMS. '
+        return 'Send a fee payment reminder, with a payment deadline, to students who owe fees, by email, by SMS or by WhatsApp. '
             .'Previews first (recipients, amounts, deadline, channel and the exact message) and sends only after '
             .'explicit confirmation of that list. Students with no usable email or mobile number are listed and not '
-            .'contacted. SMS goes through the institute\'s own gateway and "sent" means the gateway accepted it, '
-            .'never that it was delivered. Records the outcome of every reminder.';
+            .'contacted. SMS goes through the institute\'s own gateway and WhatsApp through its WhatsApp Business account; "sent" means '
+            .'the provider accepted it, never that it was delivered (WhatsApp reports delivered and read later). Records the outcome of every reminder.';
     }
 
     protected function inputSchema(): array

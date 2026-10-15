@@ -120,7 +120,6 @@ class send_sms_parents_controller extends Controller
             $isError = 0;
             $errorMessage = true;
 
-            $text = urlencode($text);
             //$data['last_var'] = urlencode($data['last_var']);
             /*
             if($template_id !=''){
@@ -128,7 +127,9 @@ class send_sms_parents_controller extends Controller
             }
             */
 
-            $url = $data['url'].$data['pram'].$template_id.$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
+            // One place assembles the gateway address (see gatewayUrl()), so this screen and the assistant
+            // send the same request.
+            $url = $this->gatewayUrl($data, $mobile, $text, $template_id);
             //echo $url;
             //die();
             $ch = curl_init();
@@ -161,6 +162,27 @@ class send_sms_parents_controller extends Controller
     }
 
     /**
+     * The address the institute's SMS gateway is called on, from its saved row (`sms_api_details`):
+     * `url . pram . [template_id] . mobile_var . <mobile> . text_var . <message> . last_var`.
+     *
+     * The message is URL-encoded; the saved parts are used as saved, except that a raw space in them is written
+     * as %20. A signature such as ".(Generated at CMA)" is kept in `last_var` and libcurl refuses a URL that
+     * contains a space ("Malformed input to a URL function", curl error 3), so without this the request never
+     * left the server — which was the case for 24 of the 34 institutes with a gateway saved. The gateway decodes
+     * %20 to a space, so what it receives is what the school saved.
+     *
+     * Used by sendSMS() and sendSMSDetailed() alike: it is the same request, whoever sends it.
+     *
+     * @param  array<string, mixed>  $gateway  A `sms_api_details` row.
+     */
+    public function gatewayUrl(array $gateway, $mobile, $text, $template_id = ''): string
+    {
+        $url = $gateway['url'].$gateway['pram'].$template_id.$gateway['mobile_var'].$mobile.$gateway['text_var'].urlencode($text).$gateway['last_var'];
+
+        return str_replace(' ', '%20', $url);
+    }
+
+    /**
      * The same send as sendSMS() — same gateway row, same URL assembly — that also reports what the
      * provider answered.
      *
@@ -187,8 +209,7 @@ class send_sms_parents_controller extends Controller
         }
 
         $data = $data->toArray();
-        $url = $data['url'].$data['pram'].$template_id.$data['mobile_var'].$mobile.$data['text_var'].urlencode($text).$data['last_var'];
-        $url = str_replace(' ', '%20', $url);
+        $url = $this->gatewayUrl($data, $mobile, $text, $template_id);
 
         $ch = curl_init();
         curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);

@@ -69,6 +69,28 @@ class HumanApprovalStage implements LifecycleStage
             return $this->feeRemindersGate($feeReminders);
         }
 
+        // A message to parents has the same human gate: the list is shown, and only a person's "yes" to that
+        // exact list sends anything.
+        $parentMessage = $context->get('parent_message_flow');
+
+        if (is_array($parentMessage)) {
+            $gate = 'App\\Mcp\\Tools\\CommunicationSendParentMessageTool';
+            $base = [
+                'gate' => $gate,
+                'why_it_gates' => 'Sending messages real families, so the tool previews first and sends only when a person '
+                    .'approves that exact list; it refuses if the students, numbers, channel or wording have changed.',
+            ];
+
+            return match ((string) ($parentMessage['state'] ?? '')) {
+                'ready' => StageOutcome::pending('A parent message is waiting on a person to approve the list.', $base + ['blocking' => true])->withComponent($gate),
+                'sent' => StageOutcome::ran('A person approved the list on this turn, and it was sent.', $base + ['approved' => true])->withComponent($gate),
+                'need_channel', 'need_recipients', 'need_message' => StageOutcome::notReached('The message is still missing a detail, so there is no list to approve.'),
+                'cancelled' => StageOutcome::skipped('The user stopped before approving; nothing was sent.'),
+                'status' => StageOutcome::skipped('This turn only read the record of parent messages already sent.'),
+                default => StageOutcome::notReached('The message flow stopped before anything could be approved.'),
+            };
+        }
+
         $decision = $this->decisionFrom($context);
 
         if ($decision !== null) {

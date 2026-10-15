@@ -78,6 +78,23 @@ class TimetableService
             $query->where('t.week_day', $weekday);
         }
 
+        // A class or a teacher named in words. Without these a question about "class 6" could only be
+        // asked by id, so the first page of an unfiltered read was searched for it and a class that was
+        // simply further down was reported as having no timetable.
+        $standard = AttendanceInsightService::standardName($filters['standard'] ?? null);
+
+        if ($standard !== null) {
+            $query->whereRaw('LOWER(TRIM(std.name)) = ?', [$standard]);
+        }
+
+        $teacher = is_string($filters['teacher'] ?? null) ? trim($filters['teacher']) : '';
+
+        if ($teacher !== '') {
+            foreach (preg_split('/\s+/', $teacher) ?: [] as $word) {
+                $query->whereRaw("CONCAT_WS(' ', u.first_name, u.middle_name, u.last_name) LIKE ?", ['%'.str_replace(['%', '_'], ['\\%', '\\_'], $word).'%']);
+            }
+        }
+
         // Counted before the limit. A class week is forty-odd rows and the school is a
         // hundred thousand, so a page read as a total would be wrong by three orders.
         $total = (clone $query)->count();
