@@ -41,6 +41,116 @@ class StudyDocumentPdfRenderer extends StudyDeckPdfRenderer
 
     protected DocumentKind $kind = DocumentKind::RevisionNotes;
 
+    /** @var array<string,array{name:string,credit:string}> pictures printed so far (by address), for the credits at the end */
+    private array $printedPictures = [];
+
+    /** @var array<string,?string> thumbnails already made, by address */
+    private array $thumbnails = [];
+
+    /**
+     * A concept's picture, small, to sit beside its words. Empty when the concept has none or the picture cannot be read.
+     * The picture is reduced to what a thumbnail needs, so thirty of them do not make the file heavy.
+     *
+     * @param array<string,mixed> $d the document
+     */
+    protected function conceptThumb(array $d, int|string $conceptId, int $width = 76): string
+    {
+        $img = $d['concept_images'][(string) $conceptId] ?? null;
+        if (!is_array($img)) {
+            return '';
+        }
+        $url = (string) ($img['url'] ?? '');
+        $src = $this->thumbnailSource($url, $width);
+        if ($src === null) {
+            return '';
+        }
+        $w = max(1, (int) ($img['width'] ?? 4));
+        $h = max(1, (int) ($img['height'] ?? 3));
+        $box = (int) round($width * 0.75);
+        $px = (int) max(24, min($width, $box * $w / $h));
+        $name = (string) ($d['concepts'][(string) $conceptId]['name'] ?? '');
+        $this->printedPictures[$url] ??= ['name' => $name, 'credit' => $this->creditLine($img)];
+
+        return '<img src="' . $this->e($src) . '" width="' . $px . '" alt="' . $this->e((string) ($img['alt'] ?? '')) . '" style="border:1px solid #cbd5e1;">';
+    }
+
+    /**
+     * The pictures of up to `$max` of these concepts as a captioned row (the name under each picture). Empty when none has one.
+     *
+     * @param array<string,mixed> $d
+     * @param array<int,int|string> $conceptIds
+     */
+    protected function conceptStrip(array $d, array $conceptIds, int $max = 3, int $width = 110): string
+    {
+        $cells = [];
+        foreach (array_values(array_unique(array_map('strval', $conceptIds))) as $id) {
+            $thumb = $this->conceptThumb($d, $id, $width);
+            if ($thumb === '') {
+                continue;
+            }
+            $cells[] = '<td style="vertical-align:top;padding:2px 8px 2px 0;font-size:7.5px;color:#475569;">' . $thumb . '<br>' . $this->e((string) ($d['concepts'][$id]['name'] ?? '')) . '</td>';
+            if (count($cells) >= $max) {
+                break;
+            }
+        }
+
+        return $cells === [] ? '' : '<div class="keep"><table style="border-collapse:collapse;margin:2px 0 4px;"><tr>' . implode('', $cells) . '</tr></table></div>';
+    }
+
+    /** The credit of every photograph printed, in one small block at the end: a picture is never shown without where it came from. @param array<string,mixed> $d */
+    protected function conceptCredits(array $d): string
+    {
+        $lines = [];
+        foreach ($this->printedPictures as $p) {
+            if ($p['credit'] !== '') {
+                $lines[] = '<strong>' . $this->e($p['name']) . '.</strong> ' . $this->e($p['credit']);
+            }
+        }
+        $this->printedPictures = [];
+
+        return $lines === [] ? '' : '<div class="keep" style="margin-top:6px;font-size:6.5px;color:#64748b;line-height:1.35;"><strong>PICTURE CREDITS</strong> ' . implode(' &nbsp;·&nbsp; ', $lines) . '</div>';
+    }
+
+    /** @param array<string,mixed> $img */
+    private function creditLine(array $img): string
+    {
+        if (($img['type'] ?? 'photo') === 'diagram') {
+            return '';
+        }
+        $credit = trim((string) (($img['attribution'] ?? '') ?: trim(($img['title'] ?? '') . ' by ' . ($img['creator'] ?? '') . ' (' . ($img['licence'] ?? '') . ')')));
+
+        return $credit . (!empty($img['source_url']) ? ' Source: ' . $img['source_url'] : '');
+    }
+
+    /** A data address for the stored picture reduced to about `$width` pixels (twice that for a sharp print), or null. */
+    private function thumbnailSource(string $url, int $width): ?string
+    {
+        $key = $url . '@' . $width;
+        if (array_key_exists($key, $this->thumbnails)) {
+            return $this->thumbnails[$key];
+        }
+        $picture = $this->picture($url);
+        if ($picture === null) {
+            return $this->thumbnails[$key] = null;
+        }
+        $bytes = $picture['bytes'];
+        $mime = $picture['mime'];
+        if (function_exists('imagecreatefromstring') && ($im = @imagecreatefromstring($bytes)) !== false) {
+            $target = $width * 2;
+            if (imagesx($im) > $target) {
+                $small = imagescale($im, $target);
+                if ($small !== false) {
+                    ob_start();
+                    imagejpeg($small, null, 82);
+                    $bytes = (string) ob_get_clean();
+                    $mime = 'image/jpeg';
+                }
+            }
+        }
+
+        return $this->thumbnails[$key] = 'data:' . $mime . ';base64,' . base64_encode($bytes);
+    }
+
     protected function unitName(): string
     {
         return $this->kind->unitName();
@@ -587,11 +697,55 @@ class StudyDocumentPdfRenderer extends StudyDeckPdfRenderer
     }
 
     /**
+     * A picture the chapter already had (reused from its presentation) is part of the online version only. The pages of a
+     * study document are budgeted for its text, its drawn diagrams and its bank questions, and a printed photograph would
+     * cost self-test questions; the PDF keeps its own drawn diagrams exactly as before.
+     */
+    protected function figure(array $slide): string
+    {
+        if (!empty($slide['image']['reused'])) {
+            return '';
+        }
+
+        return parent::figure($slide);
+    }
+
+    protected function scenario(array $i, bool $revision): array
+    {
+        // On paper a decision is its question and its choices, the sound one marked in the answers-shown copy. What happens
+        // and why is the feedback of the online version (a printed scenario that also spelled out every branch would take a
+        // page of a document that has five to fifteen); the conclusion still closes the printed scenario.
+        $chunks = [];
+        foreach (array_values($i['nodes'] ?? []) as $index => $node) {
+            $rows = '';
+            foreach ($node['choices'] ?? [] as $ch) {
+                $rows .= '<tr><td class="tm">' . $this->e((string) ($ch['text'] ?? '')) . ($revision && !empty($ch['sound']) ? '<div class="sound">&#10003; Sound choice</div>' : '') . '</td></tr>';
+            }
+            $chunks[] = '<div class="keep"><div class="dec"><strong>Decision ' . ($index + 1) . '.</strong> ' . $this->e((string) ($node['prompt'] ?? '')) . '</div>'
+                . '<table class="lgd"><tr><th>Choice</th></tr>' . $rows . '</table></div>';
+        }
+
+        return $chunks;
+    }
+
+    /**
      * An interactive part written out in full. The wrap-up line the assembler gives every diagram ("You have read about
      * every part.") is the closing message of the online version; on paper it is a sentence about nothing, so it is left out.
+     *
+     * A remedial class is the exception: its interactions rebuild what the unit above has just taught in full (the steps, the
+     * worked example), so on paper they are one line pointing to the online version, which keeps the class inside its pages.
+     * A diagram's hotspots are still written out, because the numbered parts are the diagram's legend.
      */
     protected function interaction(array $slide): string
     {
+        $kind = (string) ($slide['interaction']['kind'] ?? '');
+        if ($this->kind === DocumentKind::Remedial && $kind !== '' && $kind !== 'hotspots') {
+            $what = ['match' => 'Match each term with its meaning', 'order' => 'Put the steps in order', 'compare' => 'Compare the ideas side by side',
+                'scenario' => 'Decide what happens next', 'reveal' => 'Open each card', 'timeline' => 'Place the events on the timeline', 'steps' => 'Work through the steps'][$kind] ?? 'Explore';
+            $intro = trim((string) ($slide['interaction']['intro'] ?? $slide['interaction']['situation'] ?? ''));
+
+            return $this->activityNote($slide, $what . ($intro !== '' ? ': ' . $intro : '.'));
+        }
         if (($slide['interaction']['wrapup'] ?? null) === DocumentAssembler::STOCK_WRAPUP) {
             $slide['interaction']['wrapup'] = '';
         }

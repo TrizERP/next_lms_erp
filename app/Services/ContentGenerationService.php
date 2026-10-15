@@ -14,6 +14,7 @@ use App\Services\StudyDeck\ClaudeCliCompleter;
 use App\Services\StudyDeck\Contracts\Completer;
 use App\Services\StudyDeck\Documents\CompactRevisionPdfRenderer;
 use App\Services\StudyDeck\Documents\DocumentKind;
+use App\Services\StudyDeck\Documents\DocumentPictures;
 use App\Services\StudyDeck\Documents\PurposePdfRenderer;
 use App\Services\StudyDeck\Documents\StudyDocumentPdfRenderer;
 use App\Services\StudyDeck\Documents\StudyDocumentService;
@@ -1060,6 +1061,137 @@ class ContentGenerationService
         $tenant = (int) ($input['sub_institute_id'] ?? 1);
 
         return $this->withStudyDeckImages($tenant, fn () => $this->publishStudyDocumentNow($kind, $input, $document, $html, $dryRun, $authoredBy));
+    }
+
+    /**
+     * The pictures the chapter's visible classroom presentation already stores, as candidates for a study document
+     * (DocumentPictures). Read-only: it reads the stored deck's structured source and nothing else.
+     *
+     * @param list<int> $exclude picture ids to leave out
+     * @return list<array{concepts:list<int>,image:array<string,mixed>}>
+     */
+    public function studyDeckPictureCandidates(int $chapterId, int $tenant, array $exclude = []): array
+    {
+        $rows = DB::table('content_master')->where('chapter_id', $chapterId)->where('sub_institute_id', $tenant)
+            ->where('content_category', 'Classroom Presentation')->where(fn ($q) => $q->whereNull('show_hide')->orWhere('show_hide', '<>', 0))
+            ->orderByDesc('id')->get(['filename']);
+        foreach ($rows as $row) {
+            if (!self::isStudyDeckFilename($row->filename)) {
+                continue;
+            }
+            $deck = json_decode((string) Storage::disk('digitalocean')->get(self::studyDeckSidecarPath($row->filename)), true);
+            if (is_array($deck)) {
+                return DocumentPictures::candidatesFromDeck($deck, $exclude);
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Replace what a stored study document holds, in the SAME content_master row.
+     *
+     * Storing a changed document normally makes a new row (the file name carries a hash of the content) and hides the old one.
+     * This is for improving a document that is already live without changing its address: the row keeps its id, its file name,
+     * its title and its visibility; its structured source, both PDF copies and its markup (`description`) are replaced.
+     * Both PDF copies are drawn first and the old files are kept in memory, so any failure puts the old files back.
+     *
+     * @param array<string,mixed> $input chapter, chapter_name, sub_institute_id
+     * @param array<string,mixed> $document the assembled study document
+     * @return array{http:int, body:array<string,mixed>}
+     */
+    public function updateStudyDocument(DocumentKind $kind, array $input, array $document, string $html, int $contentId, bool $dryRun = false): array
+    {
+        $tenant = (int) ($input['sub_institute_id'] ?? 1);
+
+        return $this->withStudyDeckImages($tenant, fn () => $this->updateStudyDocumentNow($kind, $input, $document, $html, $contentId, $dryRun));
+    }
+
+    private function updateStudyDocumentNow(DocumentKind $kind, array $input, array $document, string $html, int $contentId, bool $dryRun): array
+    {
+        $tenant = (int) ($input['sub_institute_id'] ?? 1);
+        $chapter = $input['chapter'];
+        $name = strtolower($kind->label());
+
+        $row = DB::table('content_master')->where('id', $contentId)->first();
+        if (!$row || (int) $row->chapter_id !== (int) $chapter->id || (int) $row->sub_institute_id !== $tenant
+            || $row->content_category !== $kind->category() || DocumentKind::fromFilename($row->filename) !== $kind) {
+            return $this->fail('Content ' . $contentId . ' is not a ' . $name . ' of this chapter and school, so it was not updated.', 422);
+        }
+
+        $publisher = $this->studyDeckPublisher($tenant);
+        try {
+            $prepared = $publisher->prepare($document, $html, null, !$dryRun);
+        } catch (Throwable $e) {
+            $publisher->cleanup();
+
+            return $this->fail('The ' . $name . ' was not updated: ' . $e->getMessage(), 422);
+        }
+        if ($prepared['missing'] !== []) {
+            $publisher->cleanup();
+
+            return $this->fail('The ' . $name . ' refers to pictures that are not stored for this school: ' . implode(', ', $prepared['missing']), 422);
+        }
+
+        $doc = $prepared['deck'];
+        $sidecar = self::studyDocumentSidecarPath($row->filename);
+        $pdfPath = self::studyDocumentPdfPath($row->filename);
+        $practicePath = self::studyDocumentPracticePdfPath($row->filename);
+        $summary = ['kind' => $kind->value, 'filename' => $row->filename, 'content_id' => $contentId, 'section_count' => count($doc['sections'] ?? [])];
+
+        try {
+            $pdf = $this->renderStudyDocumentPdf($doc, ['tenant' => $tenant]);
+            $practice = $this->renderStudyDocumentPdf($doc, ['tenant' => $tenant, 'variant' => StudyDocumentPdfRenderer::STUDENT]);
+        } catch (Throwable $e) {
+            $publisher->cleanup();
+
+            return $this->fail('The ' . $name . ' was not updated: its PDF could not be made: ' . $e->getMessage(), 500);
+        }
+        foreach ([$pdf, $practice] as $bytes) {
+            if (!str_starts_with($bytes, '%PDF-')) {
+                $publisher->cleanup();
+
+                return $this->fail('The ' . $name . ' was not updated: a PDF came out empty.', 500);
+            }
+        }
+        if ($dryRun) {
+            return ['http' => 200, 'body' => ['success' => true, 'status_code' => 1, 'status' => 'would_update', 'dry_run' => true] + $summary];
+        }
+
+        $disk = Storage::disk('digitalocean');
+        $new = [$sidecar => $this->studyDeckJson($doc), $pdfPath => $pdf, $practicePath => $practice];
+        $old = [];
+        try {
+            foreach (array_keys($new) as $path) {
+                $old[$path] = $disk->exists($path) ? $disk->get($path) : null;
+            }
+            foreach ($new as $path => $bytes) {
+                $disk->put($path, $bytes, 'public');
+                if (!$disk->exists($path) || (int) $disk->size($path) !== strlen($bytes)) {
+                    throw new \RuntimeException('a file was not stored correctly: ' . $path);
+                }
+            }
+            DB::transaction(function () use ($contentId, $prepared, $doc, $chapter) {
+                DB::table('content_master')->where('id', $contentId)->update([
+                    'description' => $this->formatGeneratedPdfBody($prepared['html']),
+                ]);
+                $this->linkStudyDeckImages($contentId, $doc, (int) $chapter->id);
+            });
+        } catch (Throwable $e) {
+            // Put every file back the way it was: a half-updated document is worse than the old one.
+            foreach ($old as $path => $bytes) {
+                try {
+                    $bytes === null ? $disk->delete($path) : $disk->put($path, $bytes, 'public');
+                } catch (Throwable) {
+                    // Nothing more can be done for this file; the error below says what happened.
+                }
+            }
+            Log::error('Study document update failed', ['content_id' => $contentId, 'error' => $e->getMessage()]);
+
+            return $this->fail('The ' . $name . ' was not updated (the old files were put back): ' . $e->getMessage(), 500);
+        }
+
+        return ['http' => 200, 'body' => ['success' => true, 'status_code' => 1, 'status' => 'updated'] + $summary];
     }
 
     private function publishStudyDocumentNow(DocumentKind $kind, array $input, array $document, string $html, bool $dryRun, string $authoredBy): array

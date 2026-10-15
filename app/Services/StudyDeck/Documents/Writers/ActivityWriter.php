@@ -448,7 +448,7 @@ PROMPT;
         if ($kind !== null && $checker !== null) {
             [, $bad] = $checker->check(
                 [0 => ['interaction' => $activity['interaction'], 'reason' => 'a hands-on way to practise this idea']],
-                [0 => ['_anchors' => [], 'scenario_allowed' => false, 'slide_type' => 'activity']]
+                [0 => ['_anchors' => [], 'scenario_allowed' => true, 'slide_type' => 'activity']]
             );
             foreach ($bad[0] ?? [] as $issue) {
                 $out[] = 'Interaction: ' . $issue;
@@ -497,8 +497,10 @@ PROMPT;
             && (self::words($a['misconception']['wrong_idea']) > self::COMPACT_MISCONCEPTION_WORDS[0] || self::words($a['misconception']['correction']) > self::COMPACT_MISCONCEPTION_WORDS[1])) {
             $out[] = 'The misconception is at most ' . self::COMPACT_MISCONCEPTION_WORDS[0] . ' words and its correction at most ' . self::COMPACT_MISCONCEPTION_WORDS[1] . '.';
         }
-        if ($a['discussion'] !== [] || ($a['interaction'] ?? null) !== null) {
-            $out[] = 'A compact activity has no discussion questions and no interaction.';
+        // An interaction is allowed: the compact pages do not print it (the practical is on paper; the interaction is the online
+        // preparation and capture for it), so it costs the pack no page space.
+        if ($a['discussion'] !== []) {
+            $out[] = 'A compact activity has no discussion questions.';
         }
 
         foreach ([false => 'student', true => 'teacher'] as $teacher => $name) {

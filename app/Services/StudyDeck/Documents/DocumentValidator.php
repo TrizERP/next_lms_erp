@@ -59,6 +59,7 @@ class DocumentValidator
         $this->questionRules($kind, $document, $eligible, $flagged, $errors, $warnings);
         $this->interactionRules($document, $errors);
         $this->imageRules($document, $errors);
+        $this->conceptImageRules($document, $errors);
 
         match (true) {
             $kind === DocumentKind::RevisionNotes && self::isPurpose($document) => $this->revisionPurpose($context, $map, $scope, $eligible, $document, $errors, $warnings),
@@ -255,7 +256,7 @@ class DocumentValidator
             }
             $n = $s['n'];
             $kind = $i['kind'] ?? '';
-            if (!in_array($kind, array_merge(self::HOTSPOT_KINDS, self::ITEM_KINDS, ['match', 'order']), true)) {
+            if (!in_array($kind, array_merge(self::HOTSPOT_KINDS, self::ITEM_KINDS, ['match', 'order', 'scenario']), true)) {
                 $errors[] = "Part $n: interaction kind \"$kind\" is not one a document carries.";
                 continue;
             }
@@ -292,11 +293,59 @@ class DocumentValidator
                 if ($kind === 'compare' && trim((string) ($i['wrapup'] ?? '')) === '') {
                     $errors[] = "Part $n: a compare has no line saying how the items compare.";
                 }
+            } elseif ($kind === 'scenario') {
+                // The planner's own rules already shaped it (a forward-only graph, a sound choice per decision); this is the
+                // floor a document needs to draw it at all.
+                if (trim((string) ($i['situation'] ?? '')) === '' || trim((string) ($i['conclusion'] ?? '')) === '' || ($i['nodes'] ?? []) === []) {
+                    $errors[] = "Part $n: a scenario needs a situation, at least one decision and a conclusion.";
+                }
+                foreach ((array) ($i['nodes'] ?? []) as $node) {
+                    if (count($node['choices'] ?? []) < 2 || !array_filter((array) $node['choices'], fn ($c) => !empty($c['sound']))) {
+                        $errors[] = "Part $n: every decision of a scenario needs two or more choices, one of them sound.";
+                    }
+                }
             } elseif ($kind === 'match' && count($i['pairs'] ?? []) < 3) {
                 $errors[] = "Part $n: a match needs at least three pairs.";
             } elseif ($kind === 'order' && count($i['items'] ?? []) < 3) {
                 $errors[] = "Part $n: an order needs at least three items.";
             }
+        }
+    }
+
+    /**
+     * The picture of a concept: it must belong to a concept of the document and carry what a picture needs to be shown
+     * lawfully and to be understood without seeing it (alt text, a stored address, a size, and for a photograph its licence
+     * and credit). A document carries at most ConceptPictures::MAX of them.
+     *
+     * @param array<string,mixed> $d
+     */
+    private function conceptImageRules(array $d, array &$errors): void
+    {
+        $images = (array) ($d['concept_images'] ?? []);
+        if ($images === []) {
+            return;
+        }
+        if (count($images) > ConceptPictures::MAX) {
+            $errors[] = 'The document has ' . count($images) . ' concept pictures; the limit is ' . ConceptPictures::MAX . '.';
+        }
+        $seen = [];
+        foreach ($images as $id => $img) {
+            if (!isset($d['concepts'][(string) $id])) {
+                $errors[] = "A picture is given for concept $id, which this document does not teach.";
+                continue;
+            }
+            $name = (string) ($d['concepts'][(string) $id]['name'] ?? $id);
+            if (!is_array($img) || trim((string) ($img['alt'] ?? '')) === '' || empty($img['url']) || (int) ($img['width'] ?? 0) < 1 || (int) ($img['height'] ?? 0) < 1) {
+                $errors[] = "The picture of \"$name\" has no alt text, address or size.";
+                continue;
+            }
+            if (($img['type'] ?? '') === 'photo' && (trim((string) ($img['licence'] ?? '')) === '' || (!empty($img['attribution_required']) && trim((string) ($img['attribution'] ?? '')) === '') || trim((string) ($img['attribution'] ?? '')) === '' && empty($img['reused']))) {
+                $errors[] = "The photograph of \"$name\" has no licence or credit.";
+            }
+            if (isset($seen[$img['url']])) {
+                $errors[] = "The same picture is used for \"$name\" and \"{$seen[$img['url']]}\".";
+            }
+            $seen[$img['url']] = $name;
         }
     }
 
@@ -309,6 +358,17 @@ class DocumentValidator
                 continue;
             }
             $n = $s['n'];
+            // A picture the chapter's presentation already stored (DocumentPictures) is not one the document drew: it keeps the
+            // licence and credit it was stored with, and is not counted against the document's own diagrams.
+            if (!empty($img['reused'])) {
+                if (trim((string) ($img['alt'] ?? '')) === '' || empty($img['url']) || (int) ($img['width'] ?? 0) < 1 || (int) ($img['height'] ?? 0) < 1) {
+                    $errors[] = "Part $n: a reused picture has no alt text, address or size.";
+                }
+                if (($img['type'] ?? '') === 'photo' && (trim((string) ($img['licence'] ?? '')) === '' || trim((string) ($img['attribution'] ?? '')) === '')) {
+                    $errors[] = "Part $n: a reused photograph has no licence or credit.";
+                }
+                continue;
+            }
             $count++;
             if (($img['type'] ?? '') !== 'diagram') {
                 $errors[] = "Part $n: a document carries drawn diagrams only.";

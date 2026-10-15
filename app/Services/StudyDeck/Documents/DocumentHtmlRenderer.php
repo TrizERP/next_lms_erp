@@ -488,12 +488,19 @@ class DocumentHtmlRenderer
         if (!is_array($i)) {
             return '';
         }
-        $label = ['hotspots' => 'Parts of the diagram', 'reveal' => 'Discover', 'steps' => 'Step by step', 'timeline' => 'Timeline', 'compare' => 'Compare', 'match' => 'Matching exercise', 'order' => 'Put in order'][$i['kind']] ?? 'Explore';
+        $label = ['hotspots' => 'Parts of the diagram', 'reveal' => 'Discover', 'steps' => 'Step by step', 'timeline' => 'Timeline', 'compare' => 'Compare', 'match' => 'Matching exercise', 'order' => 'Put in order', 'scenario' => 'What would you do?'][$i['kind']] ?? 'Explore';
         $pair = fn ($l, $t) => '<li><strong>' . $this->e($l) . '.</strong> ' . $this->e($t) . '</li>';
         $body = match ($i['kind']) {
             'hotspots' => '<ul>' . implode('', array_map(fn ($x) => $pair($x['label'], $x['text']), $i['spots'])) . '</ul>',
             'match' => '<ul>' . implode('', array_map(fn ($x) => $pair($x['term'], $x['meaning']), $i['pairs'])) . '</ul>',
             'order' => '<ol>' . implode('', array_map(fn ($x) => '<li>' . $this->e($x['text']) . '</li>', $i['items'])) . '</ol>',
+            'scenario' => '<p>' . $this->e((string) $i['situation']) . '</p>' . implode('', array_map(
+                fn ($node) => '<p><strong>' . $this->e((string) $node['prompt']) . '</strong></p><ul>' . implode('', array_map(
+                    fn ($c) => '<li>' . $this->e((string) $c['text']) . ' ' . $this->e((string) $c['outcome']) . '</li>',
+                    (array) $node['choices']
+                )) . '</ul>',
+                (array) $i['nodes']
+            )) . '<p>' . $this->e((string) $i['conclusion']) . '</p>',
             default => '<ul>' . implode('', array_map(fn ($x) => $pair($x['label'], $x['text']), $i['items'] ?? [])) . '</ul>',
         };
         if (!empty($i['wrapup'])) {

@@ -95,6 +95,28 @@ class StudyDeckPublisher
             }
         }
 
+        // A study document may also carry a picture per CONCEPT (`concept_images`, keyed by concept id): the same checks, the same
+        // storage, the same rewrite to a stored reference as a part's picture.
+        foreach ((array) ($deck['concept_images'] ?? []) as $conceptId => $image) {
+            if (!is_array($image) || empty($image['url'])) {
+                continue;
+            }
+            $url = (string) $image['url'];
+            [$asset, $how] = $this->resolve($url, $image, $deck, $imageDir, $write);
+            if (($asset['missing'] ?? false) === true) {
+                $missing[$url] = $url;
+                continue;
+            }
+            $key = $asset['sha256'];
+            if (!isset($assets[$key])) {
+                $assets[$key] = $asset;
+                $how === 'stored' ? $stored[] = $asset['ref'] : $reused[] = $asset['ref'];
+            }
+            $deck['concept_images'][$conceptId]['url'] = $asset['ref'];
+            $deck['concept_images'][$conceptId]['asset_id'] = $key;
+            $rewrites[$url] = $asset['ref'];
+        }
+
         // The keys are checksums of the pictures, so the map is stable and sorted.
         ksort($assets);
         $deck['assets'] = $assets;
@@ -214,6 +236,13 @@ class StudyDeckPublisher
                 if ($url !== '' && StudyDeckImages::idFromRef($url) === null && !($allowPending && preg_match(self::PENDING, $url))) {
                     throw new \RuntimeException(($part === 'slides' ? 'Slide' : 'Section') . " {$slide['n']}'s picture \"$url\" is not a stored picture reference.");
                 }
+            }
+        }
+
+        foreach ((array) ($deck['concept_images'] ?? []) as $conceptId => $image) {
+            $url = (string) ($image['url'] ?? '');
+            if ($url !== '' && StudyDeckImages::idFromRef($url) === null && !($allowPending && preg_match(self::PENDING, $url))) {
+                throw new \RuntimeException("The picture of concept $conceptId (\"$url\") is not a stored picture reference.");
             }
         }
 

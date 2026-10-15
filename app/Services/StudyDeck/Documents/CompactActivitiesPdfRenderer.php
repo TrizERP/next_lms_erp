@@ -131,7 +131,7 @@ class CompactActivitiesPdfRenderer extends CompactRevisionPdfRenderer
     {
         $acts = array_values(array_filter($d['sections'], fn ($s) => $s['type'] === 'activity'));
 
-        return $this->cxRunSheet($d, $acts) . implode('', array_map(fn ($s) => $this->cxCard($d, $s), $acts));
+        return $this->cxRunSheet($d, $acts) . implode('', array_map(fn ($s) => $this->cxCard($d, $s), $acts)) . $this->conceptCredits($d);
     }
 
     /** One row for each activity: what it is, how it is done, and for how long. @param array<int,array<string,mixed>> $acts */
@@ -166,8 +166,17 @@ class CompactActivitiesPdfRenderer extends CompactRevisionPdfRenderer
         $meta = ActivityWriter::FORMATS[$c['format']] ?? (string) $c['format'];
         $meta .= ' · ' . (ActivityWriter::GROUPINGS[$c['grouping']] ?? (string) $c['grouping']) . ' · ' . (int) $c['minutes'] . ' min';
 
+        // The pictures of the concepts the activity covers, small, at the right of its heading.
+        $thumbs = '';
+        foreach (array_slice(array_values(array_unique(array_map('strval', $s['concept_ids']))), 0, 6) as $id) {
+            $thumbs .= $this->conceptThumb($d, $id, 44) . ' ';
+            if (substr_count($thumbs, '<img') >= 3) {
+                break;
+            }
+        }
+
         return '<div class="cx-card"><table class="cx-ac"><tr><td class="cx-ah"><span class="cx-no">' . (int) $s['n'] . '</span>' . $this->e((string) $s['title'])
-            . ' <span class="cx-ahm">' . $this->e($meta) . '</span></td></tr></table>'
+            . ' <span class="cx-ahm">' . $this->e($meta) . '</span></td>' . ($thumbs !== '' ? '<td class="cx-ah" width="22%" style="text-align:right;">' . $thumbs . '</td>' : '') . '</tr></table>'
             . '<table class="cx-ac"><tr><td class="cx-as" width="49%"><div class="cx-fx">' . $left . '</div></td><td class="cx-gap" width="2%"></td><td class="cx-at' . ($teacher ? '' : ' cx-nt') . '" width="49%"><div class="cx-fx">' . $right . '</div></td></tr></table></div>';
     }
 
