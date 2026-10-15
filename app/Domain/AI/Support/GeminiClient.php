@@ -127,8 +127,17 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
     {
         $status = $response->status();
         $detail = trim(mb_substr($response->body(), 0, 300));
+        [$retryAfter, $quotaMetric, $providerStatus] = AiProviderException::metadataFrom($response);
+
+        // A 429 is two different things. Google says which in the violated quota's id: a
+        // per-minute quota clears by itself, anything else (per-day, billing, a zero free-tier
+        // allowance) does not, and "wait a minute" would be false advice for it.
+        $quotaSpent = $status === 429 && $quotaMetric !== null && ! str_contains($quotaMetric, 'PerMinute');
 
         $explanation = match (true) {
+            $quotaSpent => 'The AI provider\'s quota or billing limit for this key is used up, so retrying '
+                . 'will not help. Raise the quota or billing on the account the key belongs to, or configure '
+                . 'another key in AI & Intelligence → AI Providers.',
             in_array($status, self::RETRY_STATUSES, true) => 'The AI model is busy at the provider and did not '
                 . 'answer after several attempts. Nothing is wrong with the request or the configuration — '
                 . 'try again in a moment.',
@@ -144,9 +153,13 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
             default => sprintf('The AI provider returned %d.', $status),
         };
 
-        return new RuntimeException($detail === ''
-            ? $explanation
-            : sprintf('%s (provider said: %s)', $explanation, $detail));
+        return new AiProviderException(
+            $detail === '' ? $explanation : sprintf('%s (provider said: %s)', $explanation, $detail),
+            $status,
+            $retryAfter,
+            $quotaMetric,
+            $providerStatus,
+        );
     }
 
     public function isConfigured(): bool
