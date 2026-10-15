@@ -3,6 +3,7 @@
 namespace App\Services\StudyDeck\Documents;
 
 use App\Services\StudyDeck\DiagramRenderer;
+use App\Services\StudyDeck\Documents\Writers\InteractionWriter;
 use App\Services\StudyDeck\ImagePlanner;
 use App\Services\StudyDeck\InteractionPlanner;
 
@@ -870,7 +871,7 @@ class DocumentAssembler
         $questions = $o['questions'] ?? [];
         $specs = $o['specs'] ?? [];
 
-        return [
+        $section = [
             'n' => $n,
             'type' => $type,
             'block' => $block,
@@ -884,6 +885,80 @@ class DocumentAssembler
             'activities' => $specs,
             'image' => $o['image'] ?? null,
         ];
+
+        // An interaction the interaction pass proposed fills a part that has none (a drawn diagram's hotspots always win).
+        if ($section['interaction'] === null && $this->interactionSet !== []) {
+            $section['interaction'] = $this->interactionSet[InteractionWriter::key($section)] ?? null;
+        }
+
+        // A picture the chapter already has fills a part that has none (DocumentPictures).
+        if ($section['image'] === null && $this->imageSet !== []) {
+            $section['image'] = $this->imageSet[InteractionWriter::key($section)] ?? null;
+        }
+
+        return $section;
+    }
+
+    /**
+     * The existing picture finder, for ConceptPictures: the same sources, licence and match checks, relevance review and store
+     * as the pictures of a presentation.
+     *
+     * @param array<int,string> $excludeUrls sources already used
+     * @return array<string,mixed> a picture record, or ['missing' => why]
+     */
+    public function findPicture(string $query, array $excludeUrls = [], string $purpose = '', string $teaches = ''): array
+    {
+        return $this->images->find($query, $excludeUrls, $purpose, $teaches);
+    }
+
+    /** @var array<string,array<string,mixed>> ConceptPictures: concept id => picture */
+    private array $conceptImageSet = [];
+
+    /**
+     * A picture for individual concepts, keyed by concept id. Every document built after this call carries them (for the
+     * concepts it is about), so a page fit that rebuilds the document measures them too. An empty set switches the feature off.
+     *
+     * @param array<string,array<string,mixed>> $set
+     */
+    public function useConceptImages(array $set): void
+    {
+        $this->conceptImageSet = $set;
+    }
+
+    /**
+     * @param array<string,mixed> $concepts the document's concepts, by id
+     * @return array<string,array<string,mixed>>
+     */
+    private function conceptImagesFor(array $concepts): array
+    {
+        return array_intersect_key($this->conceptImageSet, $concepts);
+    }
+
+    /** @var array<string,array<string,mixed>> DocumentPictures::choose() */
+    private array $imageSet = [];
+
+    /**
+     * Pictures for parts that have none, keyed by InteractionWriter::key(). An empty set switches the feature off.
+     *
+     * @param array<string,array<string,mixed>> $set
+     */
+    public function useImages(array $set): void
+    {
+        $this->imageSet = $set;
+    }
+
+    /** @var array<string,array<string,mixed>> InteractionWriter::propose() */
+    private array $interactionSet = [];
+
+    /**
+     * Interactions for parts that have none, keyed by InteractionWriter::key(). Every document built after this call carries
+     * them, so a page fit that rebuilds the document measures them too. An empty set switches the feature off.
+     *
+     * @param array<string,array<string,mixed>> $set
+     */
+    public function useInteractions(array $set): void
+    {
+        $this->interactionSet = $set;
     }
 
     /**
@@ -952,6 +1027,8 @@ class DocumentAssembler
             'section_count' => count($sections),
             'outline' => $outline,
             'concepts' => $concepts,
+            // A picture per concept (ConceptPictures), for the concepts this document is about. Absent when there are none.
+            ...($this->conceptImagesFor($concepts) !== [] ? ['concept_images' => $this->conceptImagesFor($concepts)] : []),
             'sections' => $sections,
             'taught_by' => $taughtBy,
             'concept_questions' => $conceptQuestions,

@@ -41,6 +41,14 @@ class GenerateStudyDocumentCommand extends Command
         {--pages=5 : with --compact, the exact number of pages both copies of the PDF must come to}
         {--draft= : the draft.json of an earlier compact or purpose-based run: its wording is reused and only the page fit is made again (no model call)}
         {--lessons= : a remedial class: how many concepts get a lesson (default about a fifth of the chapter, 4 to 8)}
+        {--interactions : give each part that has none an interaction (match, order, compare, scenario ...): needs --draft; the model reads each part and adds nothing to the wording}
+        {--pictures : give parts that have no picture one the classroom presentation of the chapter already stores (credited photographs, drawn diagrams); needs --draft}
+        {--exclude-pictures= : comma-separated study_deck_images ids never to reuse}
+        {--concept-pictures : give each concept a picture shown beside it: the one the presentation already stores for it, otherwise one found by its name (openly licensed, checked); needs --draft}
+        {--concept-picture-set= : the concept-pictures.json of an earlier run, reused as it is}
+        {--concept-picture-max=36 : most concept pictures a document carries}
+        {--picture-set= : the pictures.json of an earlier run, reused as it is}
+        {--interaction-set= : the interactions.json of an earlier run, reused as it is (no model call)}
         {--store : on a passing validation, store THIS bundle (see lms:store-study-document: writes to the DB and shared storage)}';
 
     protected $description = 'Write revision notes, a remedial class or classroom activities for a chapter from its LMS data';
@@ -76,7 +84,44 @@ class GenerateStudyDocumentCommand extends Command
             }
         }
         // A run never writes into the bundle of another design: the earlier bundles are kept as they were.
-        $dir = rtrim((string) ($this->option('out') ?: storage_path('app/study-deck/chapter-' . $chapterId . '/' . $kind->value . ($compact ? '_compact' : ($purpose ? '_purpose' : '')))), '/\\');
+        // An interactive version is a bundle of its own too (`..._interactive`), beside the one it was made from.
+        $interactive = (bool) ($this->option('interactions') || $this->option('interaction-set') || $this->option('pictures') || $this->option('picture-set') || $this->option('concept-pictures') || $this->option('concept-picture-set'));
+        $conceptSet = [];
+        if ($this->option('concept-picture-set')) {
+            $conceptFile = (string) $this->option('concept-picture-set');
+            $conceptSet = is_file($conceptFile) ? json_decode((string) file_get_contents($conceptFile), true) : null;
+            if (!is_array($conceptSet)) {
+                $this->error('That concept-pictures.json is not a readable file of pictures.');
+
+                return self::FAILURE;
+            }
+        }
+        $pictureSet = [];
+        if ($this->option('picture-set')) {
+            $pictureFile = (string) $this->option('picture-set');
+            $pictureSet = is_file($pictureFile) ? json_decode((string) file_get_contents($pictureFile), true) : null;
+            if (!is_array($pictureSet)) {
+                $this->error('That pictures.json is not a readable file of pictures.');
+
+                return self::FAILURE;
+            }
+        }
+        $interactionSet = [];
+        if ($this->option('interaction-set')) {
+            $setFile = (string) $this->option('interaction-set');
+            $interactionSet = is_file($setFile) ? json_decode((string) file_get_contents($setFile), true) : null;
+            if (!is_array($interactionSet)) {
+                $this->error('That interactions.json is not a readable file of interactions.');
+
+                return self::FAILURE;
+            }
+        }
+        if (($this->option('interactions') || $this->option('pictures') || $this->option('concept-pictures')) && $draft === null && $interactionSet === [] && $pictureSet === [] && $conceptSet === []) {
+            $this->error('--interactions, --pictures and --concept-pictures work on a document that is already written: give --draft (the draft.json of an earlier run).');
+
+            return self::FAILURE;
+        }
+        $dir = rtrim((string) ($this->option('out') ?: storage_path('app/study-deck/chapter-' . $chapterId . '/' . $kind->value . ($compact ? '_compact' : ($purpose ? '_purpose' : '')) . ($interactive ? '_interactive' : ''))), '/\\');
         $store = (bool) $this->option('store');
         $concepts = array_values(array_unique(array_filter(array_map('intval', array_map('trim', explode(',', (string) $this->option('concepts')))))));
 
@@ -92,6 +137,19 @@ class GenerateStudyDocumentCommand extends Command
                 'compact' => $compact,
                 'pages' => $pages,
                 'draft' => $draft,
+                'interactions' => (bool) $this->option('interactions'),
+                'interaction_set' => $interactionSet,
+                'interaction_file' => $dir . '/interactions.json',
+                'pictures' => (bool) $this->option('pictures'),
+                'picture_set' => $pictureSet,
+                'picture_file' => $dir . '/pictures.json',
+                'concept_pictures' => (bool) $this->option('concept-pictures'),
+                'concept_picture_set' => $conceptSet,
+                'concept_picture_file' => $dir . '/concept-pictures.json',
+                'concept_picture_max' => max(0, (int) $this->option('concept-picture-max')),
+                'picture_candidates' => ($this->option('pictures') || $this->option('concept-pictures'))
+                    ? $content->studyDeckPictureCandidates($chapterId, $tenant, array_values(array_filter(array_map('intval', explode(',', (string) $this->option('exclude-pictures'))))))
+                    : [],
                 'lessons' => $this->option('lessons') !== null ? (int) $this->option('lessons') : null,
                 // How the fit is measured: both copies of the PDF, drawn from the document exactly as they will be stored.
                 'measure' => fn (array $document) => [
@@ -222,6 +280,18 @@ class GenerateStudyDocumentCommand extends Command
         file_put_contents($dir . '/learning-map.json', $json($r['map']));
         file_put_contents($dir . '/draft.json', $json($r['draft']));
         file_put_contents($dir . '/document.json', $json($r['document']));
+        if (!empty($r['interaction_set'])) {
+            file_put_contents($dir . '/interactions.json', $json($r['interaction_set']));
+        }
+        if (!empty($r['picture_set'])) {
+            file_put_contents($dir . '/pictures.json', $json($r['picture_set']));
+        }
+        if (!empty($r['concept_picture_set'])) {
+            file_put_contents($dir . '/concept-pictures.json', $json($r['concept_picture_set']));
+        }
+        if (!empty($r['concept_picture_missing'])) {
+            file_put_contents($dir . '/concept-pictures-missing.json', $json($r['concept_picture_missing']));
+        }
         file_put_contents($dir . '/questions-excluded.json', $json($r['selection']['excluded']));
         file_put_contents($dir . '/report.json', $json($r['report']));
         file_put_contents($dir . '/out/' . $kind->value . '.html', $r['html']);
