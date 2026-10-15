@@ -49,7 +49,7 @@ class FeesReminderPlanningTest extends TestCase
         return $context;
     }
 
-    private const FEES_TOOLS = ['fees.position', 'fees.outstanding_accounts', 'fees.send_reminders', 'students.search'];
+    private const FEES_TOOLS = ['fees.position', 'fees.outstanding_accounts', 'fees.send_reminders', 'fees.reminder_history', 'students.search'];
 
     // ------------------------------------------------------------ recognising
 
@@ -209,14 +209,51 @@ class FeesReminderPlanningTest extends TestCase
         $this->assertNull(app(DeterministicPlanner::class)->plan($other));
     }
 
-    public function test_the_status_question_reaches_the_flow_without_needing_a_tool_of_its_own(): void
+    /** @return array<string, array{0:string}> */
+    public static function deliveryQuestionsOnFees(): array
+    {
+        return [
+            'whatsapp' => ['Was the WhatsApp delivered?'],
+            'sms' => ['Was the SMS delivered?'],
+            'reach them' => ['Did the message reach the parent?'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('deliveryQuestionsOnFees')]
+    public function test_a_delivery_question_on_the_fees_page_is_answered_from_the_fee_reminder_record(string $question): void
+    {
+        // The classifier reads these as parent-message questions (they name no reminder); on Fees they are about the
+        // reminders Fees sent, and reading nothing would answer them from unrelated fee figures.
+        $context = $this->context($question, $this->module('fees', self::FEES_TOOLS), 'parent_message_status');
+
+        $plan = app(DeterministicPlanner::class)->plan($context);
+
+        $this->assertNotNull($plan);
+        $this->assertSame('fees_reminders_flow', $plan->route);
+        $this->assertSame('fees_reminder_status', $context->intent->key);
+        $this->assertSame(['fees.reminder_history'], $plan->candidateTools);
+    }
+
+    public function test_the_same_question_on_the_communication_page_reads_the_parent_message_record(): void
+    {
+        $context = $this->context('Was the WhatsApp delivered?', $this->module('easy_com', ['communication.parent_message_history', 'communication.messages']), 'parent_message_status');
+
+        $plan = app(DeterministicPlanner::class)->plan($context);
+
+        $this->assertSame('parent_message_flow', $plan->route);
+        $this->assertSame(['communication.parent_message_history'], $plan->candidateTools);
+        $this->assertSame('parent_message_status', $context->intent->key);
+    }
+
+    public function test_the_status_question_reaches_the_flow_and_names_the_history_tool_it_reads_through(): void
     {
         $context = $this->context('Were the fee reminders sent?', $this->module('fees', self::FEES_TOOLS), 'fees_reminder_status');
 
         $plan = app(DeterministicPlanner::class)->plan($context);
 
         $this->assertSame('fees_reminders_flow', $plan->route);
-        $this->assertNotSame([], $plan->candidateTools);
+        // The status is read from the saved records THROUGH this tool, so the answer's sources and audit say so.
+        $this->assertSame(['fees.reminder_history'], $plan->candidateTools);
     }
 
     // -------------------------------------------------------------- the answer
@@ -307,7 +344,8 @@ class FeesReminderPlanningTest extends TestCase
         ]));
 
         $this->assertStringContainsString('Nobody on this list can be reached by email', $text);
-        $this->assertStringContainsString('WhatsApp and app notifications are not available', $text);
+        $this->assertStringContainsString('App notifications are not available', $text);
+        $this->assertStringNotContainsString('WhatsApp and app notifications are not available', $text);
         $this->assertStringContainsString('BINA SHAH', $text);
     }
 

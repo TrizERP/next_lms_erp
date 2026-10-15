@@ -35,6 +35,8 @@ class TimetableScheduleTool extends AbstractMcpTool
         return [
             'type' => 'object',
             'properties' => [
+                'standard' => ['type' => 'string', 'description' => 'A class named in words, for example "Class 6" or "6".'],
+                'teacher' => ['type' => 'string', 'description' => 'Part of a teacher\'s name; every word must match.'],
                 'standard_id' => ['type' => 'integer', 'minimum' => 1],
                 'division_id' => ['type' => 'integer', 'minimum' => 1],
                 'teacher_id' => ['type' => 'integer', 'minimum' => 1],

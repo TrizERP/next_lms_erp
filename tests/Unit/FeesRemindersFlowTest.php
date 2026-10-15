@@ -37,6 +37,9 @@ class FeesRemindersFlowTest extends TestCase
     /** @var array<int, array<string, mixed>> */
     private array $students;
 
+    /** @var array<int, array<string, mixed>> */
+    public array $historyRows = [];
+
     /** @var object */
     private $caller;
 
@@ -130,12 +133,47 @@ class FeesRemindersFlowTest extends TestCase
             protected function logLegacySms(int $studentId, string $text, string $mobile, McpRequestContext $context): void
             {
             }
+
+            protected function whatsappConfiguration(McpRequestContext $context): ?array
+            {
+                return ['cloud_api_access_token' => 'SECRET-TOKEN', 'cloud_api_phone_number_id' => '111'];
+            }
+
+            protected function sendWhatsappRequest(string $to, string $text, string $accessToken, string $phoneNumberId): array
+            {
+                return ['messages' => [['id' => 'wamid.FLOW1']]];
+            }
+
+            protected function logWhatsapp(McpRequestContext $context, array $recipient, string $text, string $status, ?string $error, ?string $providerId): void
+            {
+            }
+
+            public function history(McpRequestContext $context, array $arguments): array
+            {
+                $rows = $this->test->historyRows;
+
+                if (! empty($arguments['batch'])) {
+                    $rows = array_values(array_filter($rows, fn ($r) => strcasecmp($r['batch'], $arguments['batch']) === 0));
+                }
+
+                $sent = count(array_filter($rows, fn ($r) => $r['status'] === 'sent'));
+                $failed = count(array_filter($rows, fn ($r) => $r['status'] === 'failed'));
+
+                return ToolResult::success('fees.reminder_history', count($rows).' reminder records.', [
+                    'count' => count($rows), 'accepted' => $sent, 'failed' => $failed, 'skipped' => 0,
+                    'delivery' => ['confirmed_delivered' => 0, 'unknown' => $sent, 'not_delivered' => $failed, 'not_sent' => 0],
+                    'reminders' => $rows,
+                ]);
+            }
         };
 
         $this->caller = new class($service, $test, $admin) extends McpToolCaller
         {
             /** @var array<int, array<string, mixed>> */
             public array $log = [];
+
+            /** When true, the history tool is not available to this turn (not bound, or refused). */
+            public bool $unavailable = false;
 
             public function __construct(
                 private readonly FeesReminderService $service,
@@ -159,7 +197,12 @@ class FeesRemindersFlowTest extends TestCase
             {
                 $this->log[] = ['call', $tool, $arguments, $confirmationToken];
 
+                if ($this->unavailable && $tool === 'fees.reminder_history') {
+                    return null;
+                }
+
                 return match ($tool) {
+                    'fees.reminder_history' => $this->service->history($context->scope, $arguments),
                     'fees.outstanding_accounts' => ToolResult::success('fees.outstanding_accounts', 'ok', ['accounts' => array_slice(array_values(array_filter(
                         $this->test->ledgerRows(),
                         fn ($r) => empty($arguments['student_ids']) || in_array($r['student_id'], $arguments['student_ids'], true)
@@ -208,7 +251,7 @@ class FeesRemindersFlowTest extends TestCase
                 key: 'fees',
                 label: 'Fees',
                 capabilities: ['conversational' => true],
-                mcpTools: ['fees.send_reminders', 'fees.outstanding_accounts', 'students.search'],
+                mcpTools: ['fees.send_reminders', 'fees.reminder_history', 'fees.outstanding_accounts', 'students.search'],
             ),
         );
 
@@ -296,7 +339,8 @@ class FeesRemindersFlowTest extends TestCase
         $result = $flow->start($this->context('Remind the top 3 defaulters to pay by 1 October'));
 
         $this->assertSame('need_deadline', $result['state']);
-        $this->assertStringContainsString('That date cannot be used', $result['message']);
+        // The reason is now specific: which date, and that it has passed, rather than "cannot be used".
+        $this->assertStringContainsString('1 October 2026 has already passed', $result['message']);
         Mail::assertNothingSent();
     }
 
@@ -705,5 +749,279 @@ class FeesRemindersFlowTest extends TestCase
         foreach (['yes but make it 5', 'yes 31 October', 'change the deadline to 5 Nov', 'maybe'] as $text) {
             $this->assertFalse($flow->looksLikeApproval($text), $text);
         }
+    }
+
+    // ---------------------------------------------------- dates and status (2026-10-13)
+
+    public function test_an_impossible_date_is_explained_not_treated_as_no_date(): void
+    {
+        $result = $this->flow()->start($this->context('Send fee reminders to the top 3 students by 31 sept'));
+
+        $this->assertSame('need_deadline', $result['state']);
+        $this->assertStringContainsString('September has only 30 days', $result['message']);
+        $this->assertStringContainsString('has also passed', $result['message']);
+        $this->assertStringNotContainsString('I need a payment deadline', $result['message']);
+        Mail::assertNothingSent();
+    }
+
+    /** @return array<string, array{0:string, 1:string}> */
+    public static function badDates(): array
+    {
+        return [
+            'february in a non-leap year' => ['by 29 February 2027', 'not a leap year'],
+            'february 30th' => ['by 30 Feb', 'never has more than 29 days'],
+            'a month that does not exist' => ['by 12/13/2026', 'no month number 13'],
+            'a date that has passed' => ['by 1 October', 'already passed'],
+            'more than a year away' => ['by 5 November 2027', 'more than a year away'],
+            'a day that does not exist' => ['by 40 October', 'October has only 31 days'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('badDates')]
+    public function test_each_kind_of_bad_date_gets_its_own_reason(string $text, string $reason): void
+    {
+        $result = $this->flow()->start($this->context('Send fee reminders to the top 3 students '.$text));
+
+        $this->assertStringContainsString($reason, $result['message']);
+    }
+
+    public function test_leap_day_in_a_leap_year_and_ordinary_dates_are_accepted(): void
+    {
+        $this->assertNull(FeesRemindersFlow::deadlineProblem('by 29 February 2028', Carbon::parse('2027-10-13')));
+        $this->assertNull(FeesRemindersFlow::deadlineProblem('by 31 October', Carbon::parse('2026-10-13')));
+        $this->assertNull(FeesRemindersFlow::deadlineProblem('by 2026-12-31', Carbon::parse('2026-10-13')));
+        $this->assertNull(FeesRemindersFlow::deadlineProblem('tomorrow', Carbon::parse('2026-10-13')));
+        $this->assertNull(FeesRemindersFlow::deadlineProblem('the top 5 students', Carbon::parse('2026-10-13')));
+    }
+
+    public function test_a_bad_date_during_review_keeps_the_valid_deadline_and_sends_nothing(): void
+    {
+        $flow = $this->flow();
+        $ready = $flow->start($this->context('Remind the top 3 defaulters to pay by 31 October'));
+        $this->assertSame('ready', $ready['state']);
+
+        $again = $flow->advance($this->context('make it 31 sept', $ready['pending']), $ready['pending']);
+
+        $this->assertSame('ready', $again['state']);
+        $this->assertStringContainsString('September has only 30 days', $again['message']);
+        $this->assertStringContainsString('stays 2026-10-31', $again['message']);
+        $this->assertSame('2026-10-31', $again['pending']['args']['deadline']);
+        Mail::assertNothingSent();
+    }
+
+    /** @return array<int, array<string, mixed>> */
+    private function history(): array
+    {
+        return [
+            ['reminder_id' => 9, 'batch' => 'FR-20261013-newer', 'student_id' => 1, 'student_name' => 'ASHA RAO', 'channel' => 'sms', 'class' => 'XI',
+                'message' => 'Dear ASHA RAO, pay Rs.335,480 by 31 October 2026.', 'outstanding' => 335480, 'deadline' => '2026-10-31', 'status' => 'sent',
+                'detail' => 'Accepted by the SMS gateway (HTTP 200): {"status":"OK"}', 'sent_to' => '******3210', 'provider_id' => '3648178016739718',
+                'delivery_status' => 'unknown', 'delivery_note' => 'The SMS gateway accepted it but sends no delivery receipt, so whether it reached the phone is unknown.',
+                'recorded_at' => '2026-10-13 09:00:00'],
+            ['reminder_id' => 7, 'batch' => 'FR-20261012-older', 'student_id' => 1, 'student_name' => 'ASHA RAO', 'channel' => 'sms', 'class' => 'XI',
+                'message' => 'x', 'outstanding' => 335480, 'deadline' => '2026-10-31', 'status' => 'failed',
+                'detail' => 'The SMS gateway replied with an error: Invalid API Key', 'sent_to' => '******3210', 'provider_id' => null,
+                'delivery_status' => 'not_delivered', 'delivery_note' => 'The provider did not accept it, so it was not delivered.', 'recorded_at' => '2026-10-12 09:00:00'],
+        ];
+    }
+
+    public function test_the_status_is_read_through_the_history_tool_so_the_source_is_recorded(): void
+    {
+        $this->historyRows = $this->history();
+        $flow = $this->flow();
+
+        $result = $flow->status($this->context('Show reminder status.'));
+
+        $this->assertSame('status', $result['state']);
+        $calls = array_values(array_filter($this->caller->log, fn ($entry) => $entry[0] === 'call'));
+        $this->assertSame('fees.reminder_history', $calls[0][1]);
+        $this->assertSame(2, $result['data']['count']);
+        $this->assertSame(1, $result['data']['delivery']['unknown']);
+        $this->assertSame(0, $result['data']['delivery']['confirmed_delivered']);
+        $this->assertFalse($result['data']['asked_about_delivery']);
+    }
+
+    /** @return array<string, array{0:string}> */
+    public static function deliveryQuestions(): array
+    {
+        return [
+            'delivered' => ['Was the SMS delivered?'],
+            'reach them' => ['Did the message reach them?'],
+            'received' => ['Has the reminder been received?'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('deliveryQuestions')]
+    public function test_a_delivery_question_is_flagged_so_the_answer_says_what_the_records_can_and_cannot_show(string $question): void
+    {
+        $this->historyRows = $this->history();
+
+        $result = $this->flow()->status($this->context($question));
+
+        $this->assertTrue($result['data']['asked_about_delivery']);
+        $this->assertSame('unknown', $result['data']['reminders'][0]['delivery_status']);
+    }
+
+    public function test_a_send_reference_in_the_question_reads_only_that_send(): void
+    {
+        $this->historyRows = $this->history();
+
+        $result = $this->flow()->status($this->context('Show the status of FR-20261012-older'));
+
+        $this->assertSame(1, $result['data']['count']);
+        $this->assertSame('FR-20261012-older', $result['data']['reminders'][0]['batch']);
+        $calls = array_values(array_filter($this->caller->log, fn ($entry) => $entry[0] === 'call'));
+        $this->assertSame('FR-20261012-OLDER', $calls[0][2]['batch']);
+    }
+
+    // ------------------------------------------------------------------ WhatsApp in the conversation
+
+    /** @return array<string, array{0:string, 1:?string}> */
+    public static function channelSentences(): array
+    {
+        return [
+            'prepare a whatsapp reminder' => ["Prepare a WhatsApp fee reminder for this student's parent.", 'whatsapp'],
+            'by whatsapp' => ['Send it by WhatsApp.', 'whatsapp'],
+            'whatsapp instead' => ['Send it on WhatsApp instead', 'whatsapp'],
+            'sms instead of whatsapp' => ['Send it by SMS instead of WhatsApp.', 'sms'],
+            'sms instead' => ['Send it by SMS instead', 'sms'],
+            'plain sms' => ['Send it by SMS.', 'sms'],
+            'email' => ['Send it by email.', 'email'],
+            'none named' => ['By 31 October.', null],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('channelSentences')]
+    public function test_the_channel_is_read_from_the_sentence_including_whatsapp(string $sentence, ?string $expected): void
+    {
+        $this->assertSame($expected, $this->flow()->parseRequest($sentence)['channel']);
+    }
+
+    public function test_the_whatsapp_request_keeps_the_student_and_the_deadline_already_given(): void
+    {
+        $flow = $this->flow();
+        $sms = $flow->start($this->context('Remind student 1 by SMS to pay by 31 October'));
+        $this->assertSame('ready', $sms['state']);
+        $this->assertSame('sms', $sms['data']['channel']);
+
+        // Nothing is asked again: the student, the amount and the deadline carry over to the WhatsApp preview.
+        $wa = $flow->advance($this->context("Prepare a WhatsApp fee reminder for this student's parent.", $sms['pending']), $sms['pending']);
+
+        $this->assertSame('ready', $wa['state']);
+        $this->assertSame('whatsapp', $wa['data']['channel']);
+        $this->assertSame('2026-10-31', $wa['data']['deadline']);
+        $this->assertSame([1], $wa['pending']['args']['student_ids']);
+        $this->assertSame('parents_', $wa['data']['template']['name']);
+        $this->assertSame('******3210', $wa['data']['recipients'][0]['contact_masked']);
+        $this->assertNotSame($sms['pending']['fingerprint'], $wa['pending']['fingerprint']);
+        Mail::assertNothingSent();
+    }
+
+    public function test_yes_sends_the_whatsapp_reminder_and_reports_what_whatsapp_answered(): void
+    {
+        $flow = $this->flow();
+        $ready = $flow->start($this->context('Remind student 1 by WhatsApp to pay by 31 October'));
+
+        $sent = $flow->advance($this->context('Yes, send the reminders.', $ready['pending']), $ready['pending']);
+
+        $this->assertSame('sent', $sent['state']);
+        $this->assertSame('whatsapp', $sent['data']['channel']);
+        $this->assertSame(1, $sent['data']['sent']);
+        $this->assertStringContainsString('accepted by WhatsApp', $sent['message']);
+    }
+
+    public function test_a_sent_reminder_is_remembered_so_it_can_be_sent_again_on_another_channel(): void
+    {
+        $flow = $this->flow();
+        $ready = $flow->start($this->context('Remind student 1 by SMS to pay by 31 October'));
+
+        $sent = $flow->advance($this->context('Yes, send the reminders.', $ready['pending']), $ready['pending']);
+
+        $this->assertSame('sent', $sent['state']);
+        $this->assertNull($sent['pending']);
+        $this->assertSame([1], $sent['remember']['args']['student_ids']);
+        $this->assertSame('2026-10-31', $sent['remember']['args']['deadline']);
+        $this->assertSame('sms', $sent['remember']['channel']);
+        $this->assertNotEmpty($sent['remember']['reference']);
+        $this->assertArrayNotHasKey('approved_fingerprint', $sent['remember']['args']);
+    }
+
+    /** @return array<string, array{0:string, 1:string}> */
+    public static function resendSentences(): array
+    {
+        return [
+            'whatsapp instead' => ['Send it by WhatsApp instead.', 'whatsapp'],
+            'also on whatsapp' => ['Also send it on WhatsApp', 'whatsapp'],
+            'sms as well' => ['Send it by SMS as well', 'sms'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('resendSentences')]
+    public function test_send_it_by_another_channel_after_a_send_repeats_that_reminder_without_asking_again(string $sentence, string $channel): void
+    {
+        $flow = $this->flow();
+        $memory = ['last_reminder' => ['args' => ['student_ids' => [1], 'deadline' => '2026-10-31', 'channel' => 'email'], 'reference' => 'FR-1', 'channel' => 'email']];
+
+        $result = $flow->start($this->context($sentence, null, 'admin', $memory));
+
+        $this->assertSame('ready', $result['state'], 'it must show the review, not ask for the student or the date again');
+        $this->assertSame($channel, $result['data']['channel']);
+        $this->assertSame('2026-10-31', $result['data']['deadline']);
+        $this->assertSame([1], $result['pending']['args']['student_ids']);
+        $this->assertSame(1, $result['data']['recipient_count']);
+        $this->assertStringContainsString('same reminder as the one just sent', $result['message']);
+        Mail::assertNothingSent();
+    }
+
+    public function test_a_channel_request_with_nothing_sent_before_is_not_treated_as_a_repeat(): void
+    {
+        $result = $this->flow()->start($this->context('Send it by WhatsApp instead.'));
+
+        // Nothing was sent, so "it" names nothing: the flow asks, it does not invent a reminder.
+        $this->assertNotSame('ready', $result['state']);
+    }
+
+    public function test_a_status_question_while_a_reminder_waits_is_answered_and_the_reminder_is_kept(): void
+    {
+        $this->historyRows = $this->history();
+        $flow = $this->flow();
+        $ready = $flow->start($this->context('Remind student 1 by SMS to pay by 31 October'));
+        $this->assertSame('ready', $ready['state']);
+
+        $context = $this->context('Show reminder status.', $ready['pending']);
+        $context->intent = new \App\Domain\AI\Conversation\Intent('fees_reminder_status', 'Fee reminder status', 1.0);
+        $context->plan = new \App\Domain\AI\Lifecycle\Plan\Plan(
+            goal: 'x', steps: [], source: \App\Domain\AI\Lifecycle\Plan\Plan::SOURCE_DETERMINISTIC, route: 'fees_reminders_flow',
+            intentKey: 'fees_reminder_status', candidateTools: ['fees.reminder_history'], toolSelectionStrategy: 'x', context: []
+        );
+        $context->selectedTools = ['fees.reminder_history'];
+
+        $stage = new \App\Domain\AI\Lifecycle\Stages\LaravelMcpStage(
+            $this->caller,
+            $this->createMock(\App\Domain\AI\Lifecycle\Flows\AdmissionsFlow::class),
+            $flow,
+            $this->createMock(\App\Domain\AI\Lifecycle\Flows\FeesStudentDetailFlow::class),
+            $this->createMock(\App\Domain\AI\Lifecycle\Flows\ParentMessageFlow::class),
+        );
+        $stage->run($context);
+
+        $answered = $context->get('fees_reminders_flow');
+
+        $this->assertSame('status', $answered['state']);
+        $this->assertSame(2, $answered['data']['count']);
+        // The waiting reminder is exactly as it was, so "yes" still approves the list that was on screen.
+        $this->assertSame($ready['pending'], $answered['pending']);
+        Mail::assertNothingSent();
+    }
+
+    public function test_when_the_history_cannot_be_read_nothing_is_claimed_about_what_was_sent(): void
+    {
+        $flow = $this->flow();
+        $this->caller->unavailable = true;
+
+        $result = $flow->status($this->context('Show reminder status.'));
+
+        $this->assertSame('blocked', $result['state']);
+        $this->assertStringContainsString('could not be read', $result['message']);
     }
 }

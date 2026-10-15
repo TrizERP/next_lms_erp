@@ -67,6 +67,14 @@ return [
             'model' => $geminiModel,
             'timeout' => (int) env('GEMINI_REQUEST_TIMEOUT', 45),
             'max_output_tokens' => (int) env('GEMINI_MAX_OUTPUT_TOKENS', 1466),
+            // Tried in this order when the model above answers a free-tier DAILY-quota 429 (the
+            // allowance is per model, so a sibling on the same key still answers). Only that one 429
+            // triggers it. Verified live 2026-10-15: `gemini-flash-lite-latest` and
+            // `gemini-3.1-flash-lite` answered while `gemini-flash-latest` was out of quota.
+            'fallback_models' => array_values(array_filter(array_map(
+                'trim',
+                explode(',', (string) env('GEMINI_FALLBACK_MODELS', 'gemini-flash-lite-latest,gemini-3.1-flash-lite'))
+            ))),
             // The embedding model (added 2026-10-10 for the Content Authoring RAG
             // row — ContentEmbeddingService). A SEPARATE endpoint from the chat
             // model above (:embedContent, not :generateContent) and a separate
@@ -425,6 +433,12 @@ return [
                     // Not read-only, so it is never a report source or a fallback read: it is reached
                     // only through the reminder flow, which previews and waits for approval.
                     'fees.send_reminders',
+                    // The saved record of reminders already sent. Read-only; it is what "Show reminder
+                    // status" and "Was the SMS delivered?" are answered from, and it is called as a tool so
+                    // the answer's sources and audit trail name it.
+                    'fees.reminder_history',
+                    // Read-only: asks the SMS gateway and Meta whether messages can really reach parents, and names what is wrong.
+                    'communication.channel_health',
                     'ai.templates.list',
                     'ai.templates.render',
                     'ai.templates.generate',
@@ -491,6 +505,9 @@ return [
                 'detail_tools' => ['student_id' => 'attendance.student'],
                 'mcp_tools' => [
                     'attendance.overview',
+                    // The day's own register: who was absent on a date, and the counts for it.
+                    // `overview` is a rate over a window and cannot answer "who is absent today?".
+                    'attendance.daily',
                     'attendance.student',
                     'ai.templates.list',
                     'ai.templates.render',
@@ -552,9 +569,13 @@ return [
             | `exam` above does.
             */
             'teach_learn' => [
-                'detail_tools' => ['standard_id' => 'lms.courses'],
+                'read_hints' => ['lms.course_summary' => ['chapter', 'lesson plan', 'syllabus', 'summarise', 'summarize']],
+                // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
+                'route_patterns' => ['/lms/global-mapping', '/lms/global-mapping/**'],
+                'detail_tools' => ['standard_id' => 'lms.course_summary', 'subject_id' => 'lms.course_summary'],
                 'mcp_tools' => [
                     'lms.courses',
+                    'lms.course_summary',
                     'lms.activities',
                     'academics.structure',
                     'academics.subjects',
@@ -567,6 +588,8 @@ return [
             ],
 
             'curriculum_planning' => [
+                // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
+                'route_patterns' => ['/lms/curriculum-planning', '/lms/curriculum-planning/**', '/lms/monthly-plan', '/lms/monthly-plan/**', '/lms/lesson-plan', '/lms/lesson-plan/**', '/lms/reports', '/lms/reports/**', '/lms/teacher-diary', '/lms/teacher-diary/**', '/lms/book-list', '/lms/book-list/**', '/lms/syllabus-plan', '/lms/syllabus-plan/**'],
                 'detail_tools' => ['standard_id' => 'curriculum_planning.status'],
                 'mcp_tools' => [
                     'curriculum_planning.status',
@@ -582,6 +605,8 @@ return [
             ],
 
             'engagement' => [
+                // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
+                'route_patterns' => ['/lmsLeaderboard', '/lmsLeaderboard/**', '/lmsSocialCollabrotive', '/lmsSocialCollabrotive/**', '/lmsPortfolio', '/lmsPortfolio/**', '/lmsVirtualClassroom', '/lmsVirtualClassroom/**', '/lmsActivityStream', '/lmsActivityStream/**'],
                 'detail_tools' => ['student_id' => 'engagement.student_summary'],
                 'mcp_tools' => [
                     'engagement.student_summary',
@@ -599,6 +624,8 @@ return [
             ],
 
             'interactions' => [
+                // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
+                'route_patterns' => ['/lmsCommunication', '/lmsCommunication/**', '/lb_master', '/lb_master/**', '/lms/student-analysis', '/lms/student-analysis/**', '/lms/dashboard', '/lms/dashboard/**'],
                 'detail_tools' => ['related_id' => 'interactions.list'],
                 'mcp_tools' => [
                     'interactions.list',
@@ -621,6 +648,8 @@ return [
             | tables — never the older pal module's.
             */
             'new_pal' => [
+                // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
+                'route_patterns' => ['/new_pal', '/new_pal/**', '/coherence/**'],
                 'agent_key' => 'k12_new_pal',
                 'workflow_key' => 'pal_intervention_followup',
                 'case_type' => 'pal_intervention_review',
@@ -652,6 +681,8 @@ return [
             | `teach_learn`/`student`/`students` too.
             */
             'exam_assessment' => [
+                // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
+                'route_patterns' => ['/lms/homework', '/lms/homework/**', '/lms/lmsAssignment', '/lms/lmsAssignment/**', '/lmsAssignment_submission', '/lmsAnnotate_assignment', '/lms/worksheet', '/lms/worksheet/**', '/lms/project', '/lms/project/**', '/lms/question-wise-report', '/exam/online', '/exam/online/**', '/exam/progress-report', '/question_paper', '/question_paper/**'],
                 'agent_key' => 'k12_exam_assessment',
                 'workflow_key' => 'exam_assessment_followup',
                 'case_type' => 'exam_assessment_follow_up',
@@ -803,6 +834,11 @@ return [
                 'mcp_tools' => [
                     'communication.messages',
                     'communication.channels',
+                    // Approval-gated: previews who would be messaged and sends only after confirmation.
+                    'communication.send_parent_message',
+                    // Read-only: the saved record of those sends, with the provider's reply and delivery state.
+                    'communication.parent_message_history',
+                    'communication.channel_health',
                     'academics.structure',
                     'ai.templates.list',
                     'ai.templates.render',
@@ -1501,7 +1537,9 @@ return [
             ],
 
             'course' => [
-                'mcp_tools' => ['academics.subjects', 'lms.courses', 'ai.templates.list', 'ai.templates.render'],
+                'detail_tools' => ['subject_id' => 'lms.course_summary'],
+                'read_hints' => ['lms.course_summary' => ['chapter', 'lesson plan', 'syllabus', 'summarise', 'summarize']],
+                'mcp_tools' => ['lms.courses', 'lms.course_summary', 'academics.subjects', 'ai.templates.list', 'ai.templates.render'],
                 'depth_reason' => 'The course module can generate from templates but has no agent, so '
                     . 'nothing here opens a case or requires an approval.',
             ],
@@ -1544,7 +1582,9 @@ return [
             ],
 
             'course-master' => [
-                'mcp_tools' => ['academics.subjects', 'academics.structure', 'lms.courses'],
+                'detail_tools' => ['subject_id' => 'lms.course_summary'],
+                'read_hints' => ['lms.course_summary' => ['chapter', 'lesson plan', 'syllabus', 'summarise', 'summarize']],
+                'mcp_tools' => ['lms.courses', 'lms.course_summary', 'academics.subjects', 'academics.structure'],
             ],
 
             'classteacher' => [
@@ -1611,6 +1651,19 @@ return [
         ],
 
         /*
+        | Pages that answer only their own module's questions.
+        |
+        | On one of these, a question whose words clearly name a DIFFERENT module is not
+        | answered from that module's data. It is told, in a sentence, which page it belongs to,
+        | and nothing is read. Any other page keeps the older behaviour of running the question
+        | in the module its words name (the dashboard, which summarises everything, relies on it).
+        |
+        | Questions that name no module at all — general knowledge, small talk, "show me their
+        | names" — are never affected: there is nothing to redirect.
+        */
+        'page_scoped_modules' => ['attendance', 'fees', 'timetable', 'hostel'],
+
+        /*
         | The words that route a question to a module, when neither the caller nor the
         | page said which one. Weighted, and a winner must beat the runner-up by a clear
         | margin before the words alone decide — an ambiguous question goes to the
@@ -1634,6 +1687,12 @@ return [
                 'fee' => 3.0, 'fees' => 3.0, 'payment' => 2.5, 'paid' => 2.0, 'unpaid' => 3.0,
                 'defaulter' => 3.5, 'defaulters' => 3.5, 'collection' => 2.5, 'outstanding' => 2.5,
                 'invoice' => 2.5, 'receipt' => 2.0, 'pending fees' => 4.0, 'due' => 1.5,
+                // "How much was collected in the last 7 days?" names no other fees word, and without
+                // these it matched no module at all and was treated as not being about fees.
+                'collected' => 3.0, 'amount collected' => 3.5, 'money collected' => 3.5,
+                // "How much did student 163416 pay on 13 October?" — without a fees word of its own, the word
+                // "student" alone moved it to the Student page.
+                'pay' => 2.5,
             ],
             'attendance' => [
                 'attendance' => 3.5, 'absent' => 3.0, 'absence' => 3.0, 'present' => 2.0,

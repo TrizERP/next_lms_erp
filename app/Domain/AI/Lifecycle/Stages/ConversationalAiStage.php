@@ -111,7 +111,47 @@ class ConversationalAiStage implements LifecycleStage
             $note = $note === null ? $routing : $routing . ' ' . $note;
         }
 
+        $outside = $context->get('out_of_page');
+
+        if (is_array($outside)) {
+            return $this->redirect($context, $outcome->withNote($note), $outside);
+        }
+
         return $note === null ? $outcome : $outcome->withNote($note);
+    }
+
+    /**
+     * Answer a question that belongs to another page by saying so, and read nothing.
+     *
+     * Halting here is the point: no tool of the other module runs, so no figure from it can end
+     * up on this page, and every later stage is recorded as not reached for this reason.
+     *
+     * @param  array{page: array{key:string,label:string}, asked: array{key:string,label:string}}  $outside
+     */
+    private function redirect(StageContext $context, StageOutcome $outcome, array $outside): StageOutcome
+    {
+        $page = $outside['page']['label'];
+        $asked = $outside['asked']['label'];
+
+        $article = preg_match('/^[aeiou]/i', $asked) ? 'an' : 'a';
+
+        $context->setHeadline(sprintf('That is %s %s question, and this is the %s page.', $article, $asked, $page));
+        $context->addSection([
+            'type' => 'text',
+            'title' => 'Where to ask it',
+            'body' => sprintf(
+                'Open the %s page and ask it there, where it is answered from the %s records. '
+                .'Each page here answers from its own data only, so the figures you see on this page are always %s ones.',
+                $asked,
+                $asked,
+                $page
+            ),
+        ]);
+        $context->link(['out_of_page' => $outside]);
+
+        return $outcome
+            ->withNote(sprintf('The question names the %s domain, but it was asked on the %s page, which answers %s questions only.', $asked, $page, $page))
+            ->halting(sprintf('The question belongs to the %s page, so nothing was read for it here.', $asked));
     }
 
     /**

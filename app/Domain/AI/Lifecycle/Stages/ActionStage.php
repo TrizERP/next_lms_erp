@@ -64,6 +64,40 @@ class ActionStage implements LifecycleStage
             return $this->feeRemindersAction($feeReminders);
         }
 
+        // Messaging parents goes through its own confirmable tool too, and this stage reports what it did.
+        $parentMessage = $context->get('parent_message_flow');
+
+        if (is_array($parentMessage)) {
+            $data = is_array($parentMessage['data'] ?? null) ? $parentMessage['data'] : [];
+
+            if ((string) ($parentMessage['state'] ?? '') === 'sent') {
+                return StageOutcome::ran(
+                    sprintf(
+                        'Parent messages were submitted by %s: %d accepted by the provider, %d failed, %d skipped. Acceptance is not delivery.',
+                        (string) ($data['channel_label'] ?? 'SMS'),
+                        (int) ($data['sent'] ?? 0),
+                        (int) ($data['failed'] ?? 0),
+                        (int) ($data['skipped'] ?? 0)
+                    ),
+                    [
+                        'reference' => $data['reference'] ?? null,
+                        'performed_by' => 'App\\Mcp\\Tools\\CommunicationSendParentMessageTool::executeConfirmed',
+                        'recorded_in' => 'ai_audit_logs (module.communication.parent_message)',
+                    ],
+                    ['table' => 'ai_audit_logs', 'ids' => []]
+                )->withComponent('App\\Mcp\\Tools\\CommunicationSendParentMessageTool');
+            }
+
+            return StageOutcome::notReached(match ((string) ($parentMessage['state'] ?? '')) {
+                'ready' => 'Waiting on the person to approve. This is the gate, not a gap — nothing is sent until they say yes.',
+                'need_channel', 'need_recipients', 'need_message' => 'The message is still missing a detail, so nothing has been prepared or sent.',
+                'cancelled' => 'The user stopped the flow, so nothing was sent.',
+                'status' => 'This turn read the record of parent messages already sent and changed nothing.',
+                'failed' => 'The provider accepted none of the messages, so nothing was sent. The reason for each is recorded against it.',
+                default => 'The message flow stopped before anything could be sent.',
+            });
+        }
+
         $module = $context->module;
 
         if ($context->intent?->key === 'learning_effectiveness') {
