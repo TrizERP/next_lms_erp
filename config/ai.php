@@ -45,6 +45,17 @@ return [
     'route_prefix' => env('AI_ROUTE_PREFIX', 'api/ai'),
 
     /*
+    | Student exam-question help ("Ask AI" on an exam question).
+    |
+    | By default the answer key is given whatever the paper's `result_show_ans` says. Set
+    | AI_EXAM_HELP_RESPECT_TEACHER_SETTING=true to withhold the answer (hint only) on papers where the
+    | teacher turned that off.
+    */
+    'exam_help' => [
+        'respect_teacher_setting' => (bool) env('AI_EXAM_HELP_RESPECT_TEACHER_SETTING', false),
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | Model provider — the single source of truth
     |--------------------------------------------------------------------------
@@ -716,6 +727,7 @@ return [
                 'detail_tools' => ['student_id' => 'exam_assessment.online_exam_summary'],
                 'mcp_tools' => [
                     'exam_assessment.online_exam_summary',
+                    'exam_assessment.question_help',
                     'exam_assessment.assignment_status',
                     'homework.list',
                     'academics.structure',
