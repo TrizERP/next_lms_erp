@@ -1742,7 +1742,7 @@ SCHEMA;
         for ($attempt = 1; $attempt <= $attempts; $attempt++) {
             $user = $reasons === [] ? $base : $base . H5pPrompts::retryNotice($reasons, $expected);
 
-            $call = $this->callClaude($system, $user, $opts);
+            $call = $this->callDeepSeek($system, $user, $opts);
             if (!$call['ok']) {
                 // Provider / credential failures are not something a second prompt fixes.
                 return ['ok' => false, 'error' => $call['error']];
