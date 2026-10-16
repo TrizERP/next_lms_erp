@@ -12,6 +12,7 @@ use App\Domain\AI\Lifecycle\StageKey;
 use App\Domain\AI\Lifecycle\StageOutcome;
 use App\Domain\AI\Lifecycle\Support\CaseResolver;
 use App\Domain\AI\Lifecycle\Support\ChannelHealthAnswer;
+use App\Domain\AI\Lifecycle\Support\ExamQuestionHelpAnswer;
 use App\Domain\AI\Lifecycle\Support\ParentMessageAnswer;
 use App\Domain\AI\Lifecycle\Support\RiskScanLimit;
 use App\Domain\AI\Lifecycle\Support\SelectionAnswerComposer;
@@ -64,6 +65,8 @@ class ReasoningStage implements LifecycleStage
         private readonly SelectionAnswerComposer $selections,
         private readonly ParentMessageAnswer $parentMessages,
         private readonly ChannelHealthAnswer $channelHealth,
+        // Optional so a stage built by hand keeps working; the container always supplies it.
+        private readonly ?ExamQuestionHelpAnswer $examHelp = null,
     ) {
     }
 
@@ -85,6 +88,11 @@ class ReasoningStage implements LifecycleStage
 
         if (is_array($feeReminders)) {
             return $this->feeReminders($context, $feeReminders);
+        }
+
+        // A student stuck on a question of the exam they are sitting.
+        if ($context->plan?->route === 'exam_question_help_flow') {
+            return ($this->examHelp ?? app(ExamQuestionHelpAnswer::class))->compose($context);
         }
 
         // A message to parents (SMS or WhatsApp), in flight or just settled.
