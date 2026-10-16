@@ -1,0 +1,56 @@
+[
+    {
+        "topic": "2.1 Introduction",
+        "description": "Learners revisit algebraic expressions from earlier grades and meet the special expressions called linear polynomials through everyday contexts such as counting pens and pencils in sealed boxes.",
+        "estimated_minutes": 20,
+        "concepts": [
+            "Algebraic Expressions",
+            "Univariate Polynomials",
+            "Degree of a Polynomial"
+        ]
+    },
+    {
+        "topic": "2.2 Linear polynomials",
+        "description": "Learners identify a linear polynomial as an expression in which the variable appears to the first power, using examples such as the perimeter 4x of a square and a club fee of 200 + 50x rupees.",
+        "estimated_minutes": 30,
+        "concepts": [
+            "Linear Polynomial"
+        ]
+    },
+    {
+        "topic": "2.3 Exploring linear patterns",
+        "description": "Learners study a growing pattern of square tiles, tabulate the number of tiles at each stage, and write a linear rule that predicts the count at any stage of the pattern.",
+        "estimated_minutes": 30,
+        "concepts": [
+            "Linear Pattern"
+        ]
+    },
+    {
+        "topic": "2.4 Linear growth and linear decay",
+        "description": "Learners use linear expressions to model situations that grow or decline at a constant rate, such as a journey cost C(d) = 100 + 60d, and read the growth or decay from a table of values.",
+        "estimated_minutes": 30,
+        "concepts": [
+            "Linear Growth",
+            "Linear Decay"
+        ]
+    },
+    {
+        "topic": "2.5 Linear relationships",
+        "description": "Learners express the relationship between two variables in the form y = ax + b, and determine the values of a and b from given pairs of values such as data usage and a monthly bill.",
+        "estimated_minutes": 45,
+        "concepts": [
+            "Linear Relationship"
+        ]
+    },
+    {
+        "topic": "2.6 Visualising linear relationships",
+        "description": "Learners plot a linear equation y = ax + b as a straight line by identifying two points on it, and read the equation of a line back from the coordinates of points lying on it.",
+        "estimated_minutes": 45,
+        "concepts": [
+            "Slope of a Line",
+            "Y-Intercept",
+            "Graphing Linear Equations",
+            "Parallel Lines"
+        ]
+    }
+]

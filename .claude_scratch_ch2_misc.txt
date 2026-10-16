@@ -1,0 +1,30 @@
+Traceback (most recent call last):
+  File "<string>", line 10, in <module>
+  File "C:\Users\sonik\AppData\Local\Programs\Python\Python311\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u20b9' in position 105: character maps to <undefined>
+=== Algebraic Expressions ===
+ MIS: Variables as letters
+ MIS: Confusing coefficients and constants
+ RWA: {'application_type': 'Daily Life', 'example': 'Calculating total items when buying multiple packs with different quantities, such as pens and pencils from boxes, using expression 4x + 5y + 3.', 'relevance': 'High', 'concept_name': 'Algebraic Expressions'}
+ PED: Activity Based Teaching
+=== Univariate Polynomials ===
+ MIS: An expression with more than one variable can still be a univariate polynomial.
+ MIS: The degree of a polynomial is the number of terms it has.
+ RWA: {'application_type': 'Daily Life', 'example': 'Calculating total cost of a taxi ride with a fixed flag-down fee plus a per-kilometer charge, modeled as a linear polynomial.', 'relevance': 'High', 'concept_name': 'Univariate Polynomials'}
+ PED: Inquiry Based Teaching
+=== Degree of a Polynomial ===
+ MIS: Confusing degree with number of terms
+ MIS: Assuming constant polynomials have no degree
+ RWA: {'application_type': 'Daily Life', 'example': 'Distinguishing between linear growth (constant speed) and quadratic growth (acceleration) in daily travel; knowing the degree helps predict the type of change.', 'relevance': 'High', 'concept_name': 'Degree of a Polynomial'}
+ PED: Activity Based Teaching
+=== Linear Polynomial ===
+ MIS: All expressions with a variable are linear polynomials.
+ MIS: A linear polynomial always has both an x-term and a constant term.
+ RWA: {'application_type': 'Daily Life', 'example': 'Mobile phone plans with a fixed monthly rental and per-minute charges can be modeled as linear polynomials.', 'relevance': 'High', 'concept_name': 'Linear Polynomial'}
+ PED: Inquiry Based Teaching
+=== Linear Pattern ===
+ MIS: Confusing Linear with Any Additive Pattern
+ MIS: Misinterpreting the Coefficient in the nth Term
+ RWA: 
