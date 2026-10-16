@@ -1,0 +1,41 @@
+{
+    "chapter_id": 25850,
+    "chapter_name": "Rational Numbers",
+    "standard_id": 41,
+    "standard_name": "8",
+    "subject_id": 3976,
+    "subject_name": "Mathematics",
+    "sub_institute_id": 1,
+    "concept_count": 22,
+    "ground_truth_chars": 22270,
+    "board": "cbse",
+    "board_label": "CBSE",
+    "board_profile_complete": true,
+    "framework": "NCERT Learning Outcomes at the Elementary Stage",
+    "question_types": {
+        "mcq": "Multiple choice",
+        "assertion_reason": "Assertion-Reason",
+        "very_short_answer": "Very short answer",
+        "short_answer": "Short answer",
+        "long_answer": "Long answer",
+        "case_based": "Case based / source based",
+        "hots": "Higher order thinking skills",
+        "competency": "Competency based"
+    },
+    "cognitive_bands": [
+        "remember",
+        "understand",
+        "apply",
+        "analyze",
+        "evaluate",
+        "create"
+    ],
+    "difficulty_labels": [
+        "easy",
+        "medium",
+        "hard"
+    ],
+    "learning_objective": "Check by substitution that 11 satisfies x + 2 = 13 and note that 11 is a natural number.\nExplain why zero had to be joined to the natural numbers to give the whole numbers.\nSolve x + 18 = 5 and explain why its answer forced the integers into being.\nSolve 2x = 3 and 5x + 7 = 0 and name the number system their solutions require.\nDescribe the change of question that separates the opening of the chapter from the rest of it.\nDefine a rational number as p/q with p and q integers and q not zero.\nCompare the closure properties of whole numbers and integers operation by operation.\nDemonstrate on chosen pairs that the sum of two rational numbers is itself rational.\nShow that both the difference and the product of two rational numbers are rational.\nExplain why the rationals fail closure under division despite closure under the other three operations.\nVerify on rational pairs that addition gives the same sum in either order.\nConstruct a counterexample showing that subtraction of rationals is not commutative.\nDeduce that subtraction cannot be commutative for rationals from its failure for integers.\nOrganise the commutativity results for four operations across three number systems into one table.\nEvaluate both groupings of a sum of three rational numbers and compare them.\nDemonstrate with a worked triple that subtraction of rationals is not associative.\nVerify that a product of three rational numbers is unchanged by regrouping.\nSummarise which operations on rationals satisfy closure, commutativity and associativity.\nState that zero is the additive identity for whole numbers, integers and rational numbers.\nExamine whether one is the multiplicative identity for rationals, integers and whole numbers.\nCompute both sides of the distributive identity on -3/4, 2/3 and -5/6 and show they agree.\nSimplify a given rational expression by applying distributivity rather than direct calculation.",
+    "already_generated": [],
+    "exported_at": "2026-10-16T17:22:02+05:30"
+}

@@ -1,0 +1,41 @@
+{
+    "chapter_id": 8594,
+    "chapter_name": "Orienting Yourself: The Use of Coordinates",
+    "standard_id": 42,
+    "standard_name": "9",
+    "subject_id": 3976,
+    "subject_name": "Mathematics",
+    "sub_institute_id": 1,
+    "concept_count": 9,
+    "ground_truth_chars": 21111,
+    "board": "cbse",
+    "board_label": "CBSE",
+    "board_profile_complete": true,
+    "framework": "NCF-SE 2023",
+    "question_types": {
+        "mcq": "Multiple choice",
+        "assertion_reason": "Assertion-Reason",
+        "very_short_answer": "Very short answer",
+        "short_answer": "Short answer",
+        "long_answer": "Long answer",
+        "case_based": "Case based / source based",
+        "hots": "Higher order thinking skills",
+        "competency": "Competency based"
+    },
+    "cognitive_bands": [
+        "remember",
+        "understand",
+        "apply",
+        "analyze",
+        "evaluate",
+        "create"
+    ],
+    "difficulty_labels": [
+        "easy",
+        "medium",
+        "hard"
+    ],
+    "learning_objective": "Recall the definitions of the x-axis, y-axis, and origin in the Cartesian coordinate system.\nExplain the sign conventions for measuring distances from the origin along the coordinate axes.\nApply sign conventions to determine the coordinates of a point given its direction and distance from the origin.\nExplain the definition and coordinates of the origin.\nInterpret the role of the origin as a reference point for coordinate measurements.\nApply the concept of origin to locate points in the coordinate plane.\nExplain the condition for a point to lie on the x-axis or y-axis.\nApply the rule y=0 or x=0 to classify points on axes.\nAnalyze the relationship between the sign of coordinates and the direction from the origin.\nRecall the four quadrants and their sign conventions.\nExplain the sign conventions of coordinates in each quadrant.\nClassify points into quadrants based on the signs of their coordinates.\nInterpret the location of a point in the Cartesian plane based on its coordinate signs.\nAnalyze the coordinates of a point given its quadrant.\nDescribe the sign conventions for coordinates in all four quadrants.\nApply the sign rules to determine the quadrant of a point from its coordinates.\nClassify a set of points into quadrants based on the signs of their coordinates.\nExplain the meaning of the coordinates (x, y) as perpendicular distances from the axes.\nInterpret the ordered pair (x, y) to determine the perpendicular distances of a point from the axes.\nExplain the derivation of the distance formula using the Baudhayana-Pythagoras theorem.\nCalculate the distance between two points using the distance formula.\nSolve real-world problems involving distance in coordinate geometry.\nAnalyze geometric properties of shapes using distance calculations.\nExplain the rule for reflection of a point across the y-axis.\nApply the reflection rule to determine the coordinates of reflected points.\nAnalyze whether reflection across the y-axis preserves distances between points.\nVerify the properties of reflection by calculating side lengths using the distance formula.\nState the midpoint formula and explain its derivation as the average of the x- and y-coordinates.\nApply the midpoint formula to compute the midpoint of a line segment given its endpoints or to find a missing endpoint given the midpoint and one endpoint.\nAnalyze given coordinate points to determine whether one is the midpoint of the segment formed by the other two and justify the conclusion.",
+    "already_generated": [],
+    "exported_at": "2026-10-16T10:56:31+05:30"
+}
