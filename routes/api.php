@@ -1147,13 +1147,3 @@ Route::middleware('api.session')->prefix('capture-photo')->group(function () {
     Route::post('store', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'store']);
     Route::post('delete', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'destroy']);
 });
-
-// Teaching method -> resource formats (read only). See CedsResourceController.
-Route::middleware(['api.session', 'staff.only'])->group(function () {
-    Route::get('lms/ceds/resources', [\App\Http\Controllers\api\lms\CedsResourceController::class, 'show']);
-});
-
-// Teaching method -> lesson flow for one topic (read only). See CedsLessonFlowController.
-Route::middleware(['api.session', 'staff.only'])->group(function () {
-    Route::get('lms/ceds/lesson-flow', [\App\Http\Controllers\api\lms\CedsLessonFlowController::class, 'show']);
-});
