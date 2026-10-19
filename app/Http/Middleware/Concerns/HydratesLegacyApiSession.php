@@ -87,10 +87,13 @@ trait HydratesLegacyApiSession
         $termId = $request->input('term_id');
 
         if (empty($syear) || empty($termId)) {
-            $currentTerm = DB::table('academic_year')
-                ->where('sub_institute_id', $subInstituteId)
-                ->whereRaw('"' . date('Y-m-d') . '" between start_date and end_date')
-                ->first();
+            $today = date('Y-m-d');
+            $currentTerm = $this->rememberLookup('term:'.$subInstituteId.':'.$today, function () use ($subInstituteId, $today) {
+                return DB::table('academic_year')
+                    ->where('sub_institute_id', $subInstituteId)
+                    ->whereRaw('"' . $today . '" between start_date and end_date')
+                    ->first();
+            }, false);
 
             if (empty($currentTerm)) {
                 return response()->json([
@@ -105,24 +108,32 @@ trait HydratesLegacyApiSession
             $termId = $termId ?: $currentTerm->term_id;
         }
 
-        $profile = DB::table('tbluserprofilemaster')->where('id', $userProfileId)->first();
+        $profile = $this->rememberLookup('profile:'.$userProfileId, function () use ($userProfileId) {
+            return DB::table('tbluserprofilemaster')->where('id', $userProfileId)->first();
+        });
 
         $userProfileName = ((int) $isAdmin === 1 || (int) $isAdmin === 2)
             ? 'Super Admin'
             : ($profile->name ?? '');
 
-        $academicTerms = DB::table('academic_year')
-            ->where('sub_institute_id', $subInstituteId)
-            ->where('syear', $syear)
-            ->orderBy('sort_order')
-            ->get()->toArray();
+        $academicTerms = $this->rememberLookup('terms:'.$subInstituteId.':'.$syear, function () use ($subInstituteId, $syear) {
+            return DB::table('academic_year')
+                ->where('sub_institute_id', $subInstituteId)
+                ->where('syear', $syear)
+                ->orderBy('sort_order')
+                ->get()->toArray();
+        });
 
-        $academicYears = DB::table('academic_year')
-            ->where('sub_institute_id', $subInstituteId)
-            ->groupBy('syear')
-            ->get()->toArray();
+        $academicYears = $this->rememberLookup('years:'.$subInstituteId, function () use ($subInstituteId) {
+            return DB::table('academic_year')
+                ->where('sub_institute_id', $subInstituteId)
+                ->groupBy('syear')
+                ->get()->toArray();
+        });
 
-        $school = DB::table('school_setup')->where('Id', $subInstituteId)->first();
+        $school = $this->rememberLookup('school:'.$subInstituteId, function () use ($subInstituteId) {
+            return DB::table('school_setup')->where('Id', $subInstituteId)->first();
+        });
 
         // Attach the (unstarted) session store to the request and hydrate the
         // exact keys web login sets, so all legacy session() reads keep working.
@@ -146,7 +157,9 @@ trait HydratesLegacyApiSession
         $store->put('school_name', $school->SchoolName ?? '');
 
         if (! $isStudent) {
-            $user = DB::table('tbluser')->where('id', $userId)->first();
+            $user = $this->rememberLookup('user:'.$userId, function () use ($userId) {
+                return DB::table('tbluser')->where('id', $userId)->first();
+            });
             $store->put('user_name', $user->user_name ?? '');
             $store->put('name', trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')));
             $store->put('email', $user->email ?? '');
@@ -154,11 +167,13 @@ trait HydratesLegacyApiSession
 
         // Class-teacher scoping - same as loginController.
         if ($userProfileName === 'Teacher') {
-            $classTeacher = DB::table('class_teacher')
-                ->where('teacher_id', $userId)
-                ->where('sub_institute_id', $subInstituteId)
-                ->where('syear', $syear)
-                ->get()->toArray();
+            $classTeacher = $this->rememberLookup('class_teacher:'.$userId.':'.$subInstituteId.':'.$syear, function () use ($userId, $subInstituteId, $syear) {
+                return DB::table('class_teacher')
+                    ->where('teacher_id', $userId)
+                    ->where('sub_institute_id', $subInstituteId)
+                    ->where('syear', $syear)
+                    ->get()->toArray();
+            });
 
             $classTeacherGrdArr = $classTeacherStdArr = $classTeacherDivArr = [];
             foreach ($classTeacher as $v) {
@@ -177,6 +192,28 @@ trait HydratesLegacyApiSession
         }
 
         return null;
+    }
+
+    /**
+     * These lookups ran on EVERY token-authenticated request (about 7 queries against a remote
+     * DB) although the data changes rarely, and the web login path already holds the same values
+     * for the whole session. A short TTL keeps edits visible quickly. False stands in for "no
+     * row" so misses are cached too (Cache::remember re-queries on null).
+     */
+    protected function rememberLookup(string $key, \Closure $query, bool $cacheMiss = true)
+    {
+        $cacheKey = 'api_hydrate:'.$key;
+        $value = \Illuminate\Support\Facades\Cache::get($cacheKey);
+        if ($value === null) {
+            $value = $query();
+            if ($value !== null || $cacheMiss) {
+                \Illuminate\Support\Facades\Cache::put($cacheKey, $value ?? false, 300);
+            }
+
+            return $value;
+        }
+
+        return ($value === false) ? null : $value;
     }
 
     protected function unauthorizedApiSession(string $message): JsonResponse

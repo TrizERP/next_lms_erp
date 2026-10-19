@@ -2522,7 +2522,13 @@ foreach ($previous_standard as $item) {
         // end 2024-08-06
         // echo "<pre>";print_r($merge_bk_month_wise);exit;
         // lions bus amount (transport fees) 2024-07-20
-        $getTransportId = DB::table('fees_title')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'fees_title'=>'1'])->first();
+        // Same for every student of a school/year, and getBk runs once per student in the fee reports.
+        static $transportTitleMemo = [];
+        $transportKey = $sub_institute_id.'|'.$syear;
+        if (! isset($transportTitleMemo[$transportKey]) || (time() - $transportTitleMemo[$transportKey][0]) >= 30) {
+            $transportTitleMemo[$transportKey] = [time(), DB::table('fees_title')->where(['sub_institute_id'=>$sub_institute_id,'syear'=>$syear,'fees_title'=>'1'])->first()];
+        }
+        $getTransportId = $transportTitleMemo[$transportKey][1];
         // end 2024-07-20
 
         $left_bk_table = $this_month = $last_month = $left_bk_table2 = [];

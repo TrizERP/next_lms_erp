@@ -7,6 +7,8 @@ use Closure;
 use Illuminate\Contracts\Auth\Factory as Auth;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Route;
 
 class MenuMiddleware
@@ -27,6 +29,51 @@ class MenuMiddleware
      * @return mixed
      */
     public function handle(Request $request, Closure $next)
+    {
+        $type = $request->input('type');
+        if ($type == "API" || $request->get('type') == "JSON") {
+            return $next($request);
+        }
+
+        // The sidebar costs 5-10 queries on every page (FIND_IN_SET joins that can't use an
+        // index, plus one query per submenu with a quick menu), and it only changes when an
+        // admin edits menus or rights. Cache the four shared view variables per identity+route.
+        // Rights are saved from many controllers, so a short TTL stands in for invalidation.
+        $key = 'menu_share:'.md5(json_encode([
+            Route::currentRouteName(),
+            $request->session()->get('sub_institute_id'),
+            session()->get('client_id'),
+            session()->get('is_admin'),
+            $request->session()->get('user_id'),
+            $request->session()->get('user_profile_id'),
+            $request->session()->get('user_profile_name'),
+            $request->session()->get('multiSchool'),
+            session()->has('new_sub_institute_id'),
+        ]));
+
+        $shared = Cache::get($key);
+        if (! is_array($shared)) {
+            $this->buildMenus($request, static function () {
+                return null;
+            });
+            $shared = Arr::only(
+                view()->getShared(),
+                ['menuMaster', 'submenuMaster', 'quickmenuMaster', 'subChildmenuMaster']
+            );
+            Cache::put($key, $shared, 120);
+        } else {
+            foreach ($shared as $name => $value) {
+                view()->share($name, $value);
+            }
+        }
+
+        return $next($request);
+    }
+
+    /**
+     * Builds the sidebar menu data and shares it with the views. Uncached; handle() caches it.
+     */
+    private function buildMenus(Request $request, Closure $next)
     {
 
         $type = $request->input('type');
