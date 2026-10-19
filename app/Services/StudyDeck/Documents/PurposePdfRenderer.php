@@ -54,6 +54,7 @@ class PurposePdfRenderer extends StudyDocumentPdfRenderer
         $this->kind = DocumentKind::from((string) ($deck['kind'] ?? DocumentKind::RevisionNotes->value));
 
         $body = $this->band($deck) . ($this->kind === DocumentKind::Remedial ? $this->remedialBody($deck) : $this->revisionBody($deck));
+        $body .= $this->conceptCredits($deck);
 
         return '<!doctype html><html><head><meta charset="utf-8"><style>' . $baseCss . $this->css() . $this->purposeCss()
             . '</style></head><body class="' . ($this->kind === DocumentKind::Remedial ? 'k-rem' : 'k-rev') . ' k-pp">' . $body . '</body></html>';
@@ -105,7 +106,8 @@ class PurposePdfRenderer extends StudyDocumentPdfRenderer
         $rows = [];
         foreach ($c['rows'] as $r) {
             $terms = $r['terms'] ? ' ' . implode(' ', array_map(fn ($t) => '<span class="kw">' . $this->e((string) $t) . '</span>', $r['terms'])) : '';
-            $rows[] = '<tr><td class="rv-n">' . $this->e((string) $r['name']) . '</td><td class="rv-t">' . $this->e((string) $r['essential']) . $terms . '</td></tr>';
+            $thumb = $this->conceptThumb($d, $r['concept_id'], 64);
+            $rows[] = '<tr><td class="rv-n">' . ($thumb !== '' ? $thumb . '<br>' : '') . $this->e((string) $r['name']) . '</td><td class="rv-t">' . $this->e((string) $r['essential']) . $terms . '</td></tr>';
         }
         $chunks = $this->tableOf('', $rows, 'rv');
         $first = array_shift($chunks);
@@ -306,6 +308,8 @@ class PurposePdfRenderer extends StudyDocumentPdfRenderer
         } else {
             $out .= '<div class="card c-exp">' . $words . '</div></div>';
         }
+
+        $out .= $this->conceptStrip($d, (array) ($s['taught_concept_ids'] ?: $s['concept_ids']), 3, 120);
 
         if ($c['steps']) {
             $rows = [];

@@ -1,0 +1,66 @@
+[
+    {
+        "topic": "Introduction: Why Rational Numbers",
+        "description": "Each new kind of number arrives because an equation cannot be solved without it. x + 2 = 13 needs only naturals; x + 5 = 5 forces zero and so the whole numbers; x + 18 = 5 forces negatives and so the integers; 2x = 3 and 5x + 7 = 0 force fractions, and that is the collection of rational numbers.",
+        "estimated_minutes": 45,
+        "concepts": [
+            "Natural numbers are not enough",
+            "Zero and the whole numbers",
+            "Negatives and the integers",
+            "Fractions and the rationals",
+            "From solving to exploring"
+        ]
+    },
+    {
+        "topic": "Closure",
+        "description": "Whether an operation on two numbers of a set always gives a number still in that set. Rational numbers are closed under addition, subtraction and multiplication - the table built up across whole numbers, integers and rationals shows where closure holds and where it fails.",
+        "estimated_minutes": 55,
+        "concepts": [
+            "What a rational number is",
+            "Whole numbers and integers compared",
+            "Rational numbers are closed under addition",
+            "Closed under subtraction and multiplication too",
+            "Division is the exception"
+        ]
+    },
+    {
+        "topic": "Commutativity",
+        "description": "Whether the order of the two numbers can be swapped without changing the result. Addition and multiplication are commutative for rational numbers; subtraction and division are not, exactly as for whole numbers.",
+        "estimated_minutes": 50,
+        "concepts": [
+            "Addition is commutative",
+            "Subtraction is not commutative",
+            "Why the failure carries over",
+            "Testing each operation in turn"
+        ]
+    },
+    {
+        "topic": "Associativity",
+        "description": "Whether the grouping of three numbers can be changed without changing the result. Addition and multiplication are associative for rational numbers; subtraction and division are not, which is checked by working both sides of a division example and finding them unequal.",
+        "estimated_minutes": 55,
+        "concepts": [
+            "Addition is associative",
+            "Subtraction is not associative",
+            "Multiplication is associative",
+            "Division is not"
+        ]
+    },
+    {
+        "topic": "The Role of Zero and One",
+        "description": "Adding zero leaves any whole number, integer or rational number unchanged, so zero is the additive identity. Multiplying by one leaves it unchanged, so one is the multiplicative identity. Alongside these sit the negative of a number and the reciprocal.",
+        "estimated_minutes": 55,
+        "concepts": [
+            "Zero is the additive identity",
+            "One is the multiplicative identity"
+        ]
+    },
+    {
+        "topic": "Distributivity",
+        "description": "Multiplication distributes over addition and subtraction: for all rational numbers a, b and c, a(b + c) = ab + ac and a(b - c) = ab - ac. Worked out on -3\/4, 2\/3 and -5\/6 by computing both sides, and then used to make an awkward calculation easy.",
+        "estimated_minutes": 55,
+        "concepts": [
+            "The rule",
+            "Using it to simplify"
+        ]
+    }
+]

@@ -98,6 +98,14 @@ class ConversationStore
         'last_result_set',
         'selected_record',
         /*
+         * The dates the previous answer was for: {from, to, label, tool}.
+         *
+         * A result set remembers rows, and an empty answer has none — so "who paid?" after "fees
+         * collected yesterday" (nothing yesterday) forgot yesterday and was answered for today.
+         * Shape: what a tool reports as `period`.
+         */
+        'last_period',
+        /*
          * A task the thread is part-way through.
          *
          * Everything else here is a referent — a noun an later turn can point at. This
@@ -110,6 +118,13 @@ class ConversationStore
          * Shape: {kind, ...task state}. Cleared with forgetOn(), never by writing null.
          */
         'pending_action',
+        /*
+         * The fee reminder that was just SENT: {args, reference, channel}.
+         *
+         * `pending_action` is cleared the moment a reminder goes out, so "send it by WhatsApp instead" a turn later had nothing to
+         * refer to and was answered as a request for the student's details — and the WhatsApp was never sent. This is what "it" means.
+         */
+        'last_reminder',
     ];
 
     /**
@@ -232,6 +247,13 @@ class ConversationStore
         $pointsBack = $question !== ''
             && (isset($memory['last_result_set']) || isset($memory['selected_record']))
             && ($this->references->resolve($question, $memory) !== null || self::namesTheListedRows($question));
+
+        // A parent message that is part-way through owns the turn, like a selection does: the reply to
+        // "which student?" ("student 4512") or the wording of the message itself is about that message, and
+        // its domain nouns ("student", "class", "fees due") must not move the turn to another module and drop it.
+        if (in_array($memory['pending_action']['kind'] ?? null, ['parent_message', 'fees_reminders'], true)) {
+            $pointsBack = true;
+        }
 
         // Memory first, the column second.
         //
@@ -635,6 +657,22 @@ class ConversationStore
                 $slots[$set->idField] = (int) $item['id'];
             }
 
+            // The selected row's other identifiers, so a lookup keyed on one of them stays inside the row
+            // it was chosen from: a course is a subject IN a class, and "subject_id" alone would read
+            // that subject for every class. Offered to the lookup tool only where its schema takes them.
+            $context = [];
+
+            foreach ((array) ($item['row'] ?? []) as $field => $value) {
+                if (is_string($field) && $field !== ($set?->idField ?? '') && str_ends_with($field, '_id')
+                    && is_numeric($value) && (int) $value > 0) {
+                    $context[$field] = (int) $value;
+                }
+            }
+
+            if ($context !== []) {
+                $slots['record_context'] = $context;
+            }
+
             if (isset($item['row']['student_name']) && is_string($item['row']['student_name'])) {
                 $slots['student_name'] = $item['row']['student_name'];
             }
@@ -724,6 +762,8 @@ class ConversationStore
         // fee reminder to this student" must not become "show this student".
         'fees_send_reminders',
         'fees_reminder_status',
+        // The same: "send an SMS to the parents of class 10" is an instruction, not a lookup.
+        'parent_message_send',
     ];
 
     /**
@@ -740,12 +780,18 @@ class ConversationStore
             return false;
         }
 
+        // "Send it by WhatsApp instead" right after a reminder went out: "it" is that reminder.
+        if (isset($memory['last_reminder']['args'])
+            && preg_match('/\bsend\s+(?:it|that|this|the\s+reminder)\b.{0,20}\b(?:by|via|on|through|over)\s+(?:sms|whats\s?app|e-?mail|text)\b/i', $question) === 1) {
+            return true;
+        }
+
         $fees = ($memory['selected_record']['module'] ?? null) === 'fees'
             || ($memory['last_result_set']['module'] ?? null) === 'fees'
             || str_starts_with((string) ($memory['last_result_set']['tool'] ?? ''), 'fees.');
 
         return $fees
-            && preg_match('/\b(send|text|sms|remind|notify)\b.{0,40}\b(sms|text message|texts?|reminders?|email|e-mail)\b|\b(sms|text|remind|notify)\b.{0,30}\b(them|him|her|all|everyone|these|this student)\b/i', $question) === 1;
+            && preg_match('/\b(send|text|sms|whats\s?app|remind|notify)\b.{0,40}\b(sms|whats\s?app|text message|texts?|reminders?|email|e-mail)\b|\b(sms|whats\s?app|text|remind|notify)\b.{0,30}\b(them|him|her|all|everyone|these|this student)\b/i', $question) === 1;
     }
 
     /** Whether a filter may replace what the classifier decided. See selectionIntent(). */

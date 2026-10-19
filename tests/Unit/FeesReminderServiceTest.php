@@ -136,6 +136,43 @@ class FeesReminderServiceTest extends TestCase
             {
                 $this->legacyLog[] = compact('studentId', 'text', 'mobile');
             }
+
+            // ---- WhatsApp: the institute's credentials, the Cloud API call, its log and its delivery receipts, all replaced.
+
+            /** @var array<string, string>|null null = WhatsApp is not set up for the institute. */
+            public ?array $whatsapp = ['cloud_api_access_token' => 'SECRET-TOKEN', 'cloud_api_phone_number_id' => '111'];
+
+            public ?\Closure $whatsappReply = null;
+
+            /** @var array<int, array<string, string>> */
+            public array $whatsappCalls = [];
+
+            /** @var array<int, array<string, mixed>> */
+            public array $whatsappLog = [];
+
+            public ?string $whatsappReported = null;
+
+            protected function whatsappConfiguration(McpRequestContext $context): ?array
+            {
+                return $this->whatsapp;
+            }
+
+            protected function sendWhatsappRequest(string $to, string $text, string $accessToken, string $phoneNumberId): array
+            {
+                $this->whatsappCalls[] = compact('to', 'text');
+
+                return $this->whatsappReply === null ? ['messages' => [['id' => 'wamid.HBgM123']]] : ($this->whatsappReply)();
+            }
+
+            protected function logWhatsapp(McpRequestContext $context, array $recipient, string $text, string $status, ?string $error, ?string $providerId): void
+            {
+                $this->whatsappLog[] = compact('status', 'error', 'providerId');
+            }
+
+            protected function reportedWhatsappStatus(string $providerId): ?string
+            {
+                return $this->whatsappReported;
+            }
         };
 
         return [$service, $audit, $service];
@@ -768,6 +805,253 @@ class FeesReminderServiceTest extends TestCase
         $this->assertSame('2026-10-31', $one['deadline']);
         $this->assertSame('FR-1', $one['batch']);
         $this->assertSame(12, $one['student_id']);
+    }
+
+    public function test_every_saved_reminder_carries_an_honest_delivery_state_and_the_gateways_message_id(): void
+    {
+        [$service] = $this->service([], []);
+
+        $read = fn (object $row) => (fn () => $this->reminderFromRow($row))->call($service);
+        $row = fn (string $status, string $outcome, array $result = []) => (object) [
+            'id' => 7, 'subject_id' => 12, 'outcome' => $outcome, 'created_at' => '2026-10-13 10:00:00', 'actor_id' => 3,
+            'payload' => json_encode(['status' => $status, 'reference' => 'FR-1', 'subject_label' => 'ASHA RAO',
+                'result' => $result + ['channel' => 'sms', 'outstanding' => 100, 'deadline' => '2026-10-31', 'detail' => 'x']]),
+        ];
+
+        // Accepted: delivery is UNKNOWN. Nothing the gateway or a mail server returns says more.
+        $accepted = $read($row('completed', 'success', ['provider_id' => '3648178016739718']));
+        $this->assertSame('unknown', $accepted['delivery_status']);
+        $this->assertStringContainsString('delivery report is not available', $accepted['delivery_note']);
+        $this->assertSame('3648178016739718', $accepted['provider_id']);
+
+        $this->assertStringContainsString('inbox', $read($row('completed', 'success', ['channel' => 'email']))['delivery_note']);
+        $this->assertSame('not_delivered', $read($row('failed', 'failure'))['delivery_status']);
+        $this->assertSame('not_sent', $read($row('skipped', 'rejected'))['delivery_status']);
+
+        // Never "delivered", for any stored status.
+        foreach ([['completed', 'success'], ['failed', 'failure'], ['skipped', 'rejected']] as [$status, $outcome]) {
+            $this->assertNotSame('delivered', $read($row($status, $outcome))['delivery_status']);
+        }
+    }
+
+    public function test_an_sms_preview_shows_the_institutes_saved_template_and_the_finished_text(): void
+    {
+        [$service] = $this->service($this->ledger(), [], $this->mobiles(), ['last_var' => '.(Generated at CMA)'] + self::GATEWAY);
+
+        $data = $service->preview($this->scope(), ['deadline' => '2026-10-31', 'top' => 1, 'channel' => 'sms'])['data'];
+
+        $this->assertSame('signature', $data['template']['kind']);
+        $this->assertSame('.(Generated at CMA)', $data['template']['text']);
+        // What the parent's phone shows: the wording, then the signature the Send SMS Parents sender adds.
+        $this->assertStringEndsWith('by 31 October 2026..(Generated at CMA)', $data['final_message']);
+        $this->assertSame($data['sample_message'].'.(Generated at CMA)', $data['final_message']);
+        // The length is counted on what is actually sent.
+        $this->assertSame(mb_strlen($data['final_message']), $data['sms']['characters']);
+    }
+
+    public function test_a_template_parameter_is_shown_and_not_added_to_the_text(): void
+    {
+        [$service] = $this->service($this->ledger(), [], $this->mobiles(), ['last_var' => '&templateid=1707166555566064422'] + self::GATEWAY);
+
+        $data = $service->preview($this->scope(), ['deadline' => '2026-10-31', 'top' => 1, 'channel' => 'sms'])['data'];
+
+        $this->assertSame('gateway_parameter', $data['template']['kind']);
+        $this->assertSame('&templateid=1707166555566064422', $data['template']['name']);
+        $this->assertSame($data['sample_message'], $data['final_message']);
+    }
+
+    public function test_changing_the_saved_template_after_approval_needs_a_new_approval(): void
+    {
+        [$before] = $this->service($this->ledger(), [], $this->mobiles(), ['last_var' => '.Old'] + self::GATEWAY);
+        $fingerprint = $before->preview($this->scope(), ['deadline' => '2026-10-31', 'top' => 1, 'channel' => 'sms'])['data']['fingerprint'];
+
+        [$after] = $this->service($this->ledger(), [], $this->mobiles(), ['last_var' => '.New'] + self::GATEWAY);
+        $result = $after->send($this->scope(), ['deadline' => '2026-10-31', 'top' => 1, 'channel' => 'sms'], $fingerprint);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('recipients_changed', $result['error']['code']);
+        $this->assertSame([], $after->handed);
+    }
+
+    // ------------------------------------------------------------------ WhatsApp
+
+    private const WA_ARGS = ['deadline' => '2026-10-31', 'top' => 4, 'channel' => 'whatsapp'];
+
+    public function test_a_whatsapp_preview_names_the_template_the_finished_text_and_masks_the_number(): void
+    {
+        [$service] = $this->service($this->ledger(), [], $this->mobiles());
+
+        $result = $service->preview($this->scope(), self::WA_ARGS);
+        $data = $result['data'];
+
+        $this->assertTrue($result['success']);
+        $this->assertSame('whatsapp', $data['channel']);
+        $this->assertSame('WhatsApp', $data['channel_label']);
+        $this->assertSame(['ASHA RAO', 'DIVYA IYER'], array_column($data['recipients'], 'name'));
+        $this->assertSame('******3210', $data['recipients'][0]['contact_masked']);
+        $this->assertSame('cloud_template', $data['template']['kind']);
+        $this->assertSame('parents_', $data['template']['name']);
+        $this->assertSame(
+            'Dear ASHA RAO, your outstanding fee amount is Rs.3,35,480. Please submit your pending fees by 31 October 2026.',
+            $data['final_message']
+        );
+        $this->assertSame('graph.facebook.com', $data['whatsapp']['host']);
+        $this->assertStringContainsString('WhatsApp', implode(' ', $data['warnings']));
+        // Neither the token nor the phone-number id leaves the server.
+        $this->assertStringNotContainsString('SECRET-TOKEN', json_encode($result));
+        $this->assertStringNotContainsString('"111"', json_encode($result));
+    }
+
+    public function test_whatsapp_is_refused_up_front_when_the_institute_has_no_credentials(): void
+    {
+        [$service] = $this->service($this->ledger(), [], $this->mobiles());
+        $service->whatsapp = null;
+
+        $result = $service->preview($this->scope(), self::WA_ARGS);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('whatsapp_not_configured', $result['error']['code']);
+        $this->assertStringContainsString('access token and phone number id', $result['message']);
+        $this->assertSame([], $service->whatsappCalls);
+    }
+
+    public function test_a_whatsapp_message_is_sent_as_one_line_to_the_91_number_and_recorded_with_its_message_id(): void
+    {
+        [$service, $audit] = $this->service($this->ledger(), [], $this->mobiles());
+        $fingerprint = $service->preview($this->scope(), self::WA_ARGS)['data']['fingerprint'];
+
+        $result = $service->send($this->scope(), self::WA_ARGS, $fingerprint);
+
+        $this->assertTrue($result['success']);
+        $this->assertSame(2, $result['data']['sent']);
+        $this->assertSame('WhatsApp', $result['data']['channel_label']);
+        $this->assertStringContainsString('accepted by WhatsApp', $result['message']);
+        $this->assertSame('919876543210', $service->whatsappCalls[0]['to']);
+        $this->assertStringNotContainsString("\n", $service->whatsappCalls[0]['text']);
+        $this->assertSame('accepted', $service->whatsappLog[0]['status']);
+        $this->assertNull($service->whatsappLog[0]['error']);
+        $this->assertSame('wamid.HBgM123', $service->whatsappLog[0]['providerId']);
+
+        $ledger = array_values(array_filter($audit->rows, fn ($row) => ($row['payload']['result']['channel'] ?? null) === 'whatsapp'));
+        $this->assertSame('wamid.HBgM123', $ledger[0]['payload']['result']['provider_id']);
+        $this->assertSame('completed', $ledger[0]['payload']['status']);
+        // The legacy SMS log is for SMS only.
+        $this->assertSame([], $service->legacyLog);
+    }
+
+    /** @return array<string, array{0:array<string, mixed>}> */
+    public static function whatsappRefusals(): array
+    {
+        return [
+            'api error' => [['error' => ['message' => 'Template not approved', 'code' => 132001]]],
+            'per-message error' => [['messages' => [['error' => ['message' => 'blocked']]]]],
+            'no id and no error' => [['messaging_product' => 'whatsapp']],
+            'empty reply' => [[]],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('whatsappRefusals')]
+    public function test_a_whatsapp_refusal_is_never_reported_as_sent(array $reply): void
+    {
+        [$service] = $this->service($this->ledger(), [], $this->mobiles());
+        $service->whatsappReply = fn () => $reply;
+        $fingerprint = $service->preview($this->scope(), self::WA_ARGS)['data']['fingerprint'];
+
+        $result = $service->send($this->scope(), self::WA_ARGS, $fingerprint);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('send_failed', $result['error']['code']);
+        $this->assertSame(0, $result['error']['details']['sent']);
+        $this->assertSame(2, $result['error']['details']['failed']);
+    }
+
+    public function test_changing_the_channel_after_approval_needs_a_new_approval(): void
+    {
+        [$service] = $this->service($this->ledger(), [], $this->mobiles());
+        $fingerprint = $service->preview($this->scope(), ['channel' => 'sms'] + self::WA_ARGS)['data']['fingerprint'];
+
+        $result = $service->send($this->scope(), self::WA_ARGS, $fingerprint);
+
+        $this->assertFalse($result['success']);
+        $this->assertSame('recipients_changed', $result['error']['code']);
+        $this->assertSame([], $service->whatsappCalls);
+    }
+
+    public function test_a_student_with_no_usable_mobile_is_skipped_on_whatsapp_too(): void
+    {
+        [$service] = $this->service($this->ledger(), [], $this->mobiles());
+
+        $data = $service->preview($this->scope(), self::WA_ARGS)['data'];
+
+        $this->assertSame('No mobile number on the student record.', $data['unreachable'][0]['reason']);
+        $this->assertSame('The mobile number on record is not a valid 10-digit Indian mobile.', $data['unreachable'][1]['reason']);
+    }
+
+    /** @return array<string, array{0:?string, 1:string}> */
+    public static function whatsappReceipts(): array
+    {
+        return [
+            'read' => ['read', 'read'],
+            'delivered' => ['delivered', 'delivered'],
+            'failed later' => ['failed (131026)', 'failed'],
+            'only sent' => ['sent', 'pending'],
+            'no receipt yet' => [null, 'pending'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('whatsappReceipts')]
+    public function test_the_status_shows_what_whatsapp_has_reported_since(?string $reported, string $expected): void
+    {
+        [$service] = $this->service([], []);
+        $service->whatsappReported = $reported;
+
+        $row = (object) [
+            'id' => 7, 'subject_id' => 12, 'outcome' => 'success', 'created_at' => '2026-10-15 10:00:00', 'actor_id' => 3,
+            'payload' => json_encode(['status' => 'completed', 'reference' => 'FR-1', 'subject_label' => 'ASHA RAO',
+                'result' => ['channel' => 'whatsapp', 'outstanding' => 100, 'deadline' => '2026-10-31', 'detail' => 'Accepted.', 'provider_id' => 'wamid.X']]),
+        ];
+
+        $this->assertSame($expected, (fn () => $this->reminderFromRow($row))->call($service)['delivery_status']);
+    }
+
+    public function test_delivery_is_counted_from_each_records_own_state_never_from_the_channel(): void
+    {
+        [$service] = $this->service([], []);
+
+        $counts = (fn (array $rows) => $this->deliveryCounts($rows))->bindTo($service, FeesReminderService::class);
+        $sentence = (fn (array $rows) => $this->deliverySentence($rows))->bindTo($service, FeesReminderService::class);
+
+        $rows = [
+            ['delivery_status' => 'read'], ['delivery_status' => 'delivered'], ['delivery_status' => 'pending'],
+            ['delivery_status' => 'unknown'], ['delivery_status' => 'unknown'], ['delivery_status' => 'not_delivered'], ['delivery_status' => 'not_sent'],
+        ];
+
+        $c = $counts($rows);
+        $this->assertSame(2, $c['confirmed_delivered']);
+        $this->assertSame(1, $c['pending']);
+        $this->assertSame(2, $c['unknown']);
+        $this->assertSame(1, $c['not_delivered']);
+        $this->assertSame(1, $c['not_sent']);
+
+        // SMS and email can only ever be "unknown"; the sentence says so and does not call them delivered.
+        $text = $sentence([['delivery_status' => 'unknown']]);
+        $this->assertStringContainsString('Delivery of 1 is unknown', $text);
+        $this->assertStringNotContainsString('confirmed', $text);
+        $this->assertSame(' 1 not delivered.', $sentence([['delivery_status' => 'not_delivered']]));
+        $this->assertStringContainsString('never reported delivered', $sentence([['delivery_status' => 'not_confirmed']]));
+        $this->assertSame('', $sentence([]));
+    }
+
+    public function test_the_gateways_message_id_is_read_from_its_reply_when_it_has_one(): void
+    {
+        [$service] = $this->service([], []);
+
+        $id = fn (string $body) => (fn () => $this->providerMessageId($body))->call($service);
+
+        $this->assertSame('3648178016739718', $id('{"status":"OK","data":[{"id":"178016739-1","mobile":"916353662940","status":"SUBMITTED"}],"msgid":"3648178016739718"}'));
+        $this->assertSame('178016739-1', $id('{"status":"OK","data":[{"id":"178016739-1"}]}'));
+        $this->assertNull($id('Message accepted'));
+        $this->assertNull($id('{"status":"OK"}'));
     }
 
     // ------------------------------------------------------------ formatting

@@ -79,4 +79,15 @@ return [
         'token' => env('G2G_API_TOKEN'),
         'timeout' => env('G2G_API_TIMEOUT', 8),
     ],
+
+    /*
+    | Meta WhatsApp Cloud API callbacks (delivery receipts). Both are required and neither has a default, so an
+    | unconfigured server accepts nothing: see WhatsappWebhookController.
+    |   WHATSAPP_WEBHOOK_VERIFY_TOKEN  any secret string; the same one is typed into Meta's webhook settings.
+    |   WHATSAPP_APP_SECRET            the Meta app's "App secret"; used to check each callback's signature.
+    */
+    'whatsapp' => [
+        'verify_token' => env('WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
+        'app_secret' => env('WHATSAPP_APP_SECRET'),
+    ],
 ];

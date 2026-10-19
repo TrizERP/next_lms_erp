@@ -27,7 +27,9 @@ class FeesReminderHistoryTool extends AbstractMcpTool
     {
         return 'Fee reminders already sent from here, newest first, with each one\'s student, amount, deadline and '
             .'status (sent = accepted by the mail server, failed, or skipped for no email on record). '
-            .'It does not record delivery to an inbox or whether a message was read. Changes nothing.';
+            .'Each record carries the gateway\'s reply, the recipient (masked), the send reference and a delivery state: '
+            .'accepted records are "unknown" because neither a mail server nor this SMS gateway reports delivery back. '
+            .'It does not record whether a message was read. Changes nothing.';
     }
 
     protected function inputSchema(): array
@@ -37,6 +39,9 @@ class FeesReminderHistoryTool extends AbstractMcpTool
             'properties' => [
                 'student_id' => ['type' => 'integer', 'minimum' => 1],
                 'status' => ['type' => 'string', 'enum' => ['sent', 'failed', 'skipped']],
+                'channel' => ['type' => 'string', 'enum' => ['email', 'sms']],
+                'date' => ['type' => 'string', 'description' => 'Only reminders recorded on this date, YYYY-MM-DD.'],
+                'batch' => ['type' => 'string', 'description' => 'Only this send, by its reference such as FR-20261015-abcde.'],
                 'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200, 'default' => 50],
             ],
             'additionalProperties' => false,

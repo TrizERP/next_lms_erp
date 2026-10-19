@@ -1,0 +1,53 @@
+[
+    {
+        "topic": "Introduction: Expressions and Equations",
+        "description": "An equation uses the equality sign and an expression does not - that one mark is the whole difference. In an equation the values on the left-hand side and the right-hand side are equal, but only for certain values of the variable, and those values are its solutions.",
+        "estimated_minutes": 40,
+        "concepts": [
+            "Expression or equation",
+            "Left-hand side and right-hand side",
+            "What a solution is"
+        ]
+    },
+    {
+        "topic": "What Makes an Equation Linear in One Variable",
+        "description": "Linear means the highest power of the variable appearing in the expression is 1, so 2x, 3y - 7 and 12 - 5z qualify. Restricting to a single variable as well gives linear equations in one variable - the type studied since the earlier classes.",
+        "estimated_minutes": 45,
+        "concepts": [
+            "One variable only",
+            "Highest power is one",
+            "Linear equations in one variable"
+        ]
+    },
+    {
+        "topic": "Solving by Balancing and Transposing",
+        "description": "The two sides are assumed balanced, so the same operation performed on both leaves the balance undisturbed, and those steps give the solution. A solution is checked by substituting: x = 5 satisfies 2x - 3 = 7 while x = 10 does not.",
+        "estimated_minutes": 50,
+        "concepts": [
+            "The balance principle",
+            "Checking a solution",
+            "Transposing"
+        ]
+    },
+    {
+        "topic": "Variables on Both Sides",
+        "description": "Until now the right-hand side has usually been just a number, but it need not be - 2x - 3 = x + 2 carries a variable on each side. Subtracting x from both sides works because variables are numbers too, and that is the same thing as transposing x to the left.",
+        "estimated_minutes": 55,
+        "concepts": [
+            "A variable on each side",
+            "Subtracting a term, not a number",
+            "Clearing a fraction first"
+        ]
+    },
+    {
+        "topic": "Reducing Equations to Simpler Form",
+        "description": "An equation with fractions is multiplied through by the LCM of the denominators to clear them, then brackets are opened and terms transposed. Some equations are not linear to begin with but can be brought to linear form by multiplying both sides by a suitable expression.",
+        "estimated_minutes": 55,
+        "concepts": [
+            "Multiply by the LCM of the denominators",
+            "Open the brackets",
+            "Check the answer against both sides",
+            "Where linear equations are used"
+        ]
+    }
+]

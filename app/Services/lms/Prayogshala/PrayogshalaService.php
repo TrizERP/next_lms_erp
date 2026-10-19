@@ -225,6 +225,8 @@ class PrayogshalaService
             'generated_at'         => $row->generated_at,
             // Provider diagnostics and source provenance are staff material.
             'generation_error'     => $forLearner ? null : $row->generation_error,
+            'generation_error_code' => $forLearner ? null : ($row->generation_error_code ?? null),
+            'generation_retry_after' => $forLearner ? null : (isset($row->generation_retry_after) ? (int) $row->generation_retry_after : null),
             'source_refs'          => $forLearner ? null : ($row->source_refs ? json_decode($row->source_refs, true) : null),
             'concept_ids'          => $concepts,
             'concept_names'        => array_values(array_filter(array_map(fn ($id) => $names['concepts'][$id] ?? null, $concepts))),

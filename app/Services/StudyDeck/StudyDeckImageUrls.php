@@ -70,6 +70,12 @@ final class StudyDeckImageUrls
                 }
             }
         }
+        // A study document may also hold a picture per concept.
+        foreach ((array) ($deck['concept_images'] ?? []) as $image) {
+            if (($id = StudyDeckImages::idFromRef($image['url'] ?? null)) !== null) {
+                $wanted[$id] = $id;
+            }
+        }
         if (!$wanted) {
             return $deck;
         }
@@ -86,6 +92,18 @@ final class StudyDeckImageUrls
                 } else {
                     Log::warning('Study deck picture is not available to this school', ['image_id' => $id, 'tenant' => $tenant]);
                 }
+            }
+        }
+
+        foreach ((array) ($deck['concept_images'] ?? []) as $conceptId => $image) {
+            $id = StudyDeckImages::idFromRef($image['url'] ?? null);
+            if ($id === null) {
+                continue;
+            }
+            if (isset($urls[$id])) {
+                $deck['concept_images'][$conceptId]['url'] = $urls[$id];
+            } else {
+                Log::warning('Study document concept picture is not available to this school', ['image_id' => $id, 'tenant' => $tenant]);
             }
         }
 

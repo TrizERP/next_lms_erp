@@ -127,8 +127,17 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
     {
         $status = $response->status();
         $detail = trim(mb_substr($response->body(), 0, 300));
+        [$retryAfter, $quotaMetric, $providerStatus] = AiProviderException::metadataFrom($response);
+
+        // A 429 is two different things. Google says which in the violated quota's id: a
+        // per-minute quota clears by itself, anything else (per-day, billing, a zero free-tier
+        // allowance) does not, and "wait a minute" would be false advice for it.
+        $quotaSpent = $status === 429 && $quotaMetric !== null && ! str_contains($quotaMetric, 'PerMinute');
 
         $explanation = match (true) {
+            $quotaSpent => 'The AI provider\'s quota or billing limit for this key is used up, so retrying '
+                . 'will not help. Raise the quota or billing on the account the key belongs to, or configure '
+                . 'another key in AI & Intelligence → AI Providers.',
             in_array($status, self::RETRY_STATUSES, true) => 'The AI model is busy at the provider and did not '
                 . 'answer after several attempts. Nothing is wrong with the request or the configuration — '
                 . 'try again in a moment.',
@@ -144,9 +153,13 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
             default => sprintf('The AI provider returned %d.', $status),
         };
 
-        return new RuntimeException($detail === ''
-            ? $explanation
-            : sprintf('%s (provider said: %s)', $explanation, $detail));
+        return new AiProviderException(
+            $detail === '' ? $explanation : sprintf('%s (provider said: %s)', $explanation, $detail),
+            $status,
+            $retryAfter,
+            $quotaMetric,
+            $providerStatus,
+        );
     }
 
     public function isConfigured(): bool
@@ -236,11 +249,69 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
             }, throw: false)
             ->post($this->endpoint($model ?? $this->defaultModel()), $body);
 
+        // A free-tier DAILY quota is per model: the one that ran out answers 429 while its siblings on
+        // the same key still answer. So that one case is retried on the next active models in
+        // `ai_models`, once each, instead of failing every button on the page until tomorrow. A
+        // per-minute 429 is NOT retried (see the note above) — it applies to the key, not the model,
+        // so a sibling would only add load.
+        if ($response->status() === 429 && $this->isDailyQuota($response)) {
+            $exhausted = $model ?? $this->defaultModel();
+
+            foreach ($this->alternateModels($exhausted) as $alternate) {
+                $retry = Http::withHeaders([
+                    'x-goog-api-key' => $key['api_key'],
+                    'Content-Type' => 'application/json',
+                ])
+                    ->timeout($timeout ?? (int) config('ai.provider.gemini.timeout', self::DEFAULT_TIMEOUT))
+                    ->post($this->endpoint($alternate), $body);
+
+                if ($retry->successful()) {
+                    \Illuminate\Support\Facades\Log::warning('Gemini daily quota exhausted; answered by another model.', [
+                        'exhausted' => $exhausted,
+                        'answered_by' => $alternate,
+                    ]);
+
+                    return $this->textFrom($retry->json());
+                }
+            }
+        }
+
         if (! $response->successful()) {
             throw $this->failure($response);
         }
 
         return $this->textFrom($response->json());
+    }
+
+    /** Whether a 429 is the per-model DAILY allowance (the only one a sibling model can help with). */
+    private function isDailyQuota(\Illuminate\Http\Client\Response $response): bool
+    {
+        return str_contains($response->body(), 'PerDay');
+    }
+
+    /**
+     * The other active Gemini models, in the order Model Management ranks them.
+     *
+     * @return array<int, string>
+     */
+    private function alternateModels(string $exhausted): array
+    {
+        try {
+            $models = app(\App\Domain\AI\Configuration\ModelCatalog::class)
+                ->forProvider('gemini', $this->subInstituteId);
+        } catch (\Throwable) {
+            return [];
+        }
+
+        // The catalogue first, then the configured last-resort models: a model can be live at the
+        // provider without ever having been added to `ai_models`, and a catalogue entry can be dead
+        // (retired or overloaded) while still ranked first.
+        $ids = array_values(array_unique(array_filter(
+            [...array_column($models, 'model_id'), ...(array) config('ai.provider.gemini.fallback_models', [])],
+            static fn ($id) => is_string($id) && $id !== '' && $id !== $exhausted
+        )));
+
+        return array_slice($ids, 0, 4);
     }
 
     /**

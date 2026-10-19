@@ -468,7 +468,16 @@ class ModuleAiStackIsolationTest extends TestCase
 
                 $this->assertNotNull($tool, "{$key} binds \"{$name}\", which is not registered.");
 
-                if (($tool->definition()['annotations']['read_only'] ?? false) !== true) {
+                $annotations = $tool->definition()['annotations'] ?? [];
+
+                // A tool that changes something is allowed only when a person must approve it first:
+                // it is declared `risk: approval` and `requires_confirmation`, so it previews and does
+                // nothing until confirmed (the Fees reminder tool is the precedent). The page-level
+                // read paths still never reach it — `ModuleReadTools` selects on `risk: read`.
+                $humanGated = ($annotations['risk'] ?? null) === 'approval'
+                    && ($annotations['requires_confirmation'] ?? false) === true;
+
+                if (($annotations['read_only'] ?? false) !== true && ! $humanGated) {
                     $writers[] = sprintf('%s binds "%s", which is not read-only', $key, $name);
                 }
             }

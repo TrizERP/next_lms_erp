@@ -254,7 +254,7 @@ class CompactRevisionPdfRenderer extends StudyDocumentPdfRenderer
         $cells = [];
         foreach ($d['sections'] as $s) {
             $img = $s['image'] ?? null;
-            if (!is_array($img) || count($cells) >= self::MAX_DIAGRAMS) {
+            if (!is_array($img) || !empty($img['reused']) || count($cells) >= self::MAX_DIAGRAMS) {
                 continue;
             }
             $picture = $this->picture((string) ($img['url'] ?? ''));

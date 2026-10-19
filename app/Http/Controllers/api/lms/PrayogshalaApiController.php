@@ -375,6 +375,9 @@ class PrayogshalaApiController extends Controller
             'message'     => $result['message'],
             'data'        => [
                 'outcome'  => $result['outcome'],
+                // A safe code (quota_exhausted, rate_limited, invalid_key, ...) the UI can key on.
+                'error_code'  => $result['error_code'] ?? null,
+                'retry_after' => $result['retry_after'] ?? null,
                 'activity' => $row ? $this->service->present($row, $tenant) : null,
             ],
         ], $result['outcome'] === 'failed' ? 502 : 200);

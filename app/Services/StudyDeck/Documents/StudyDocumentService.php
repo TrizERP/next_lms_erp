@@ -8,6 +8,7 @@ use App\Services\StudyDeck\ConceptContextBuilder;
 use App\Services\StudyDeck\Contracts\Completer;
 use App\Services\StudyDeck\Documents\Writers\ActivityWriter;
 use App\Services\StudyDeck\Documents\Writers\DocumentWriter;
+use App\Services\StudyDeck\Documents\Writers\InteractionWriter;
 use App\Services\StudyDeck\Documents\Writers\RemedialFrameWriter;
 use App\Services\StudyDeck\Documents\Writers\RemedialWriter;
 use App\Services\StudyDeck\Documents\Writers\RevisionNotesWriter;
@@ -47,6 +48,7 @@ class StudyDocumentService
         private readonly DocumentHtmlRenderer $html,
         private readonly DocumentValidator $validator,
         private readonly array $writers,
+        private readonly ?InteractionWriter $interactionWriter = null,
     ) {
     }
 
@@ -78,7 +80,8 @@ class StudyDocumentService
                 self::compactKey(DocumentKind::Remedial) => new RemedialWriter($completer, 6, $checker, true),
                 DocumentKind::Activities->value => new ActivityWriter($completer, 3, $checker),
                 self::compactKey(DocumentKind::Activities) => new ActivityWriter($completer, 4, $checker, true),
-            ]
+            ],
+            new InteractionWriter($completer, $checker)
         );
     }
 
@@ -184,6 +187,61 @@ class StudyDocumentService
     {
         $say = $progress ?? fn () => null;
 
+        // The interaction and picture passes. Asked for with `interactions` / `pictures`, the document is first built as it stands (from the
+        // draft of an earlier run, so no wording is written again). The model proposes one interaction for each part that has none, and
+        // the chapter's own stored pictures are matched to parts by concept; then the document is built again WITH them, so the page fit
+        // measures what will really be printed. A set from an earlier run is reused as it is.
+        $set = (array) ($options['interaction_set'] ?? []);
+        $pictures = (array) ($options['picture_set'] ?? []);
+        $wantSet = !empty($options['interactions']) && $set === [] && $this->interactionWriter !== null;
+        $wantPictures = !empty($options['pictures']) && $pictures === [];
+        // A picture for each concept (ConceptPictures): from the presentation's own pictures first, then found by the concept's name.
+        $conceptSet = (array) ($options['concept_picture_set'] ?? []);
+        $conceptMissing = [];
+        $wantConcepts = !empty($options['concept_pictures']) && $conceptSet === [];
+        if ($wantSet || $wantPictures || $wantConcepts) {
+            if (empty($options['draft'])) {
+                throw new \InvalidArgumentException('The interaction and picture passes work on a document that is already written: give the draft of an earlier run.');
+            }
+            $this->assembler->useInteractions([]);
+            $this->assembler->useImages([]);
+            $this->assembler->useConceptImages([]);
+            $base = $this->fromRaw($kind, $raw, ['interactions' => false, 'pictures' => false, 'concept_pictures' => false] + $options, fn () => null);
+            $keep = function (string $file, array $data): void {
+                @mkdir(dirname($file), 0775, true);
+                file_put_contents($file, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+            };
+            if ($wantSet) {
+                $say('interactions', 'Proposing interactions for ' . count($base['document']['sections']) . ' parts (the model reads each part; nothing is added to the wording)');
+                $set = $this->interactionWriter->propose($base['document'], [], $say);
+                // Kept at once: a later failure (the page fit, say) must not cost the model calls again.
+                if (!empty($options['interaction_file'])) {
+                    $keep($options['interaction_file'], $set);
+                }
+            }
+            if ($wantPictures) {
+                $pictures = DocumentPictures::choose($base['document'], (array) ($options['picture_candidates'] ?? []));
+                $say('pictures', count($pictures) . ' of the chapter\'s stored pictures matched to parts');
+                if (!empty($options['picture_file'])) {
+                    $keep($options['picture_file'], $pictures);
+                }
+            }
+            if ($wantConcepts) {
+                $have = ConceptPictures::fromCandidates($base['document'], (array) ($options['picture_candidates'] ?? []), (int) ($options['concept_picture_max'] ?? ConceptPictures::MAX));
+                $say('pictures', count($have) . ' concepts take the picture the presentation already stores for them; searching for the rest by name');
+                $found = ConceptPictures::search($base['document'], $have, fn (...$a) => $this->assembler->findPicture(...$a), (int) ($options['concept_picture_max'] ?? ConceptPictures::MAX), $say);
+                $conceptSet = $found['set'];
+                $conceptMissing = $found['missing'];
+                $say('pictures', count($conceptSet) . ' concept pictures chosen, ' . count($conceptMissing) . ' concepts without one');
+                if (!empty($options['concept_picture_file'])) {
+                    $keep($options['concept_picture_file'], $conceptSet);
+                }
+            }
+        }
+        $this->assembler->useInteractions($set);
+        $this->assembler->useImages($pictures);
+        $this->assembler->useConceptImages($conceptSet);
+
         $context = $this->contextBuilder->assemble($raw);
         $say('context', sprintf('%d topics, %d concepts, %d without intelligence', count($context['topics']), count($context['concepts']), count($context['unmatched_concepts'])));
 
@@ -243,6 +301,11 @@ class StudyDocumentService
         }
         $html = $this->html->render($document, $questions);
         $report = $this->validator->validate($kind, $context, $map, $scope, $eligible, $document, $html, $selection['flagged'] ?? []);
+        if ($set !== [] && $this->interactionWriter !== null) {
+            foreach ($this->interactionWriter->unsupportedWords($set, (string) $raw['ground_truth'], $document) as $key => $words) {
+                $report['warnings'][] = 'Interaction ' . $key . ' uses words that are not in the chapter text (review): ' . implode(', ', array_slice($words, 0, 12)) . '.';
+            }
+        }
         if ($compact) {
             // The page count is a requirement of the pack, so a pack that missed it does not pass.
             $target = (int) $document['compact']['target_pages'];
@@ -269,6 +332,10 @@ class StudyDocumentService
             'document' => $document,
             'html' => $html,
             'report' => $report,
+            'interaction_set' => $set,
+            'picture_set' => $pictures,
+            'concept_picture_set' => $conceptSet,
+            'concept_picture_missing' => $conceptMissing,
         ];
     }
 

@@ -122,7 +122,9 @@ class LlmPlanner implements Planner
             // through the deterministic path and its human gate.
             $annotations = (array) ($definition['annotations'] ?? []);
 
-            if (($annotations['requires_confirmation'] ?? false) || ($annotations['read_only'] ?? true) === false) {
+            if (($annotations['requires_confirmation'] ?? false)
+                || ($annotations['read_only'] ?? true) === false
+                || ! \App\Domain\AI\Modules\ModuleReadTools::declaresRead($annotations)) {
                 continue;
             }
 
@@ -173,6 +175,10 @@ class LlmPlanner implements Planner
           them, so the follow-up is read from the data again. Ids may only be copied from that
           list or the question itself, never invented. Ask for every field the follow-up needs
           (for example due dates when asking who has waited longest).
+        - When a tool takes a `period` or `date` argument and the question names a day or a range
+          ("yesterday", "last 7 days", "13 October"), pass the person's own words unchanged in it.
+          The tool resolves them against today's date; do not convert them to dates yourself and
+          never drop a date the question gave.
         - Between 1 and 6 steps. Never name a tool outside the list above.
         - `arguments` must match that tool's argument schema. Omit anything you cannot fill
           from the question itself — never invent an id, a name or a date.
@@ -190,8 +196,12 @@ class LlmPlanner implements Planner
     {
         $module = $context->module;
 
+        // The model cannot know what day it is, and "yesterday" or "this month" cannot be turned into
+        // a date without it. It is told, in the school's own time zone.
         $prompt = sprintf(
-            "Module: %s (%s)\nQuestion: %s",
+            "Today is %s (%s).\nModule: %s (%s)\nQuestion: %s",
+            now()->format('l, j F Y'),
+            now()->format('Y-m-d'),
             $module->label,
             $module->description !== '' ? $module->description : 'no description',
             $context->question
@@ -220,8 +230,24 @@ class LlmPlanner implements Planner
         $memory = $context->thread['memory'] ?? null;
         $set = is_array($memory) ? ResultSet::fromArray($memory['last_result_set'] ?? null) : null;
 
+        // The dates the previous answer was for, which survive an answer that found nothing.
+        $period = is_array($memory) && is_array($memory['last_period'] ?? null) ? $memory['last_period'] : null;
+
+        $periodLine = $period === null
+            ? null
+            : sprintf(
+                'The previous answer was for %s (%s to %s), read with %s. A follow-up that does not name a '
+                . 'different day or range ("who paid?", "how much in cash?") is about that same period, so '
+                . 'pass it again as `period` — "%s" — rather than leaving it out, which would mean today.',
+                (string) ($period['label'] ?? 'that period'),
+                (string) ($period['from'] ?? ''),
+                (string) ($period['to'] ?? ''),
+                (string) ($period['tool'] ?? 'a tool'),
+                (string) ($period['label'] ?? '')
+            );
+
         if ($set === null) {
-            return null;
+            return $periodLine;
         }
 
         $lines = [];
@@ -246,11 +272,25 @@ class LlmPlanner implements Planner
             );
         }
 
+        // What those rows were read with. A follow-up that only narrows or extends the question
+        // ("what about Class 6?", "and the girls?") is about the same date, class and window unless
+        // the user changes them, so the model is told what they were and asked to keep them.
+        $read = $set->arguments === []
+            ? ''
+            : sprintf(
+                "\nThose rows were read with %s using: %s. A follow-up that only narrows or extends the "
+                . 'question keeps every one of these arguments it does not change (the date, the class, the '
+                . 'window); only an argument the user names again is replaced.',
+                $set->tool,
+                json_encode($set->arguments, JSON_UNESCAPED_SLASHES)
+            );
+
         return sprintf(
-            "Earlier in this conversation the user asked: \"%s\"\nThe answer listed these %s (numbered as the user saw them):\n%s",
+            "Earlier in this conversation the user asked: \"%s\"\nThe answer listed these %s (numbered as the user saw them):\n%s%s",
             $set->question,
             $set->noun,
-            implode("\n", $lines)
+            implode("\n", $lines),
+            $read.($periodLine === null ? '' : "\n".$periodLine)
         );
     }
 

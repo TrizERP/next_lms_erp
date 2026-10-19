@@ -21,7 +21,10 @@ class AttendanceOverviewTool extends AbstractMcpTool
     {
         return 'Attendance rates across a cohort over a recent window, worst first. Answers '
             . '"who has low attendance?" and "how is 8B attending?". Students with too few coded '
-            . 'days to judge are counted separately rather than shown as zero.';
+            . 'days to judge are counted separately rather than shown as zero. This is a rate over a '
+            . 'PERIOD (default 30 days, which is what "attendance percentage" means), never one day: a '
+            . 'window under 5 days judges nobody. For who was present or absent on a single date use '
+            . 'attendance.daily. Accepts a class by name and a list of student ids.';
     }
 
     protected function inputSchema(): array
@@ -32,6 +35,12 @@ class AttendanceOverviewTool extends AbstractMcpTool
                 'standard_id' => ['type' => 'integer', 'minimum' => 1],
                 'division_id' => ['type' => 'integer', 'minimum' => 1],
                 'student_id' => ['type' => 'integer', 'minimum' => 1],
+                'standard' => ['type' => 'string', 'description' => 'A class named in words, for example "Class 6" or "6".'],
+                'student_ids' => [
+                    'type' => 'array',
+                    'items' => ['type' => 'integer', 'minimum' => 1],
+                    'description' => 'Only these students, for "their attendance percentage" after a list.',
+                ],
                 'days' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 365, 'default' => 30],
                 'limit' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 200, 'default' => 50],
             ],

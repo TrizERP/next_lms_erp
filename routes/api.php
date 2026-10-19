@@ -186,6 +186,11 @@ Route::delete('migration-modules/{module}/{id}', [\App\Http\Controllers\api\Migr
 Route::get('crm-whatsapp', [\App\Http\Controllers\WhatsappController::class, 'whatsappCRM'])->withoutMiddleware([Authenticate::class])->name('crm-whatsapp');
 Route::get('crm-whatsapp-update', [\App\Http\Controllers\WhatsappController::class, 'updateCRMWhatsappStatus'])->withoutMiddleware([Authenticate::class])->name('updateCRMWhatsappStatus');
 
+// Meta WhatsApp Cloud API delivery receipts. Called by Meta, not by a logged-in user, so it has no session auth; it is protected
+// by the verify token (GET) and the app-secret signature (POST) instead. Meta's callback URL: <app url>/api/whatsapp/webhook
+Route::get('whatsapp/webhook', [\App\Http\Controllers\WhatsappWebhookController::class, 'verify'])->withoutMiddleware([Authenticate::class])->name('whatsapp.webhook.verify');
+Route::post('whatsapp/webhook', [\App\Http\Controllers\WhatsappWebhookController::class, 'receive'])->withoutMiddleware([Authenticate::class])->name('whatsapp.webhook.receive');
+
 // 27-01-2025 only for API
 Route::get('/compliance/list',[instituteDetailController::class,'index']);
 Route::post('/compliance/create',[instituteDetailController::class,'store']);
@@ -1141,4 +1146,14 @@ Route::middleware('api.session')->prefix('capture-photo')->group(function () {
     Route::match(['GET', 'POST'], 'students', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'searchStudents']);
     Route::post('store', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'store']);
     Route::post('delete', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'destroy']);
+});
+
+// Teaching method -> resource formats (read only). See CedsResourceController.
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::get('lms/ceds/resources', [\App\Http\Controllers\api\lms\CedsResourceController::class, 'show']);
+});
+
+// Teaching method -> lesson flow for one topic (read only). See CedsLessonFlowController.
+Route::middleware(['api.session', 'staff.only'])->group(function () {
+    Route::get('lms/ceds/lesson-flow', [\App\Http\Controllers\api\lms\CedsLessonFlowController::class, 'show']);
 });

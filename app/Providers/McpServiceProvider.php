@@ -16,6 +16,7 @@ use App\Mcp\Tools\AiTemplatesGenerateTool;
 use App\Mcp\Tools\AiTemplatesListTool;
 use App\Mcp\Tools\AiTemplatesRenderTool;
 use App\Mcp\Tools\AssignmentStatusTool;
+use App\Mcp\Tools\AttendanceDailyTool;
 use App\Mcp\Tools\AttendanceOverviewTool;
 use App\Mcp\Tools\AttendanceStudentTool;
 use App\Mcp\Tools\CertificateIssuedTool;
@@ -24,6 +25,9 @@ use App\Mcp\Tools\CircularsListTool;
 use App\Mcp\Tools\CircularsTypesTool;
 use App\Mcp\Tools\CommunicationChannelsTool;
 use App\Mcp\Tools\CommunicationMessagesTool;
+use App\Mcp\Tools\CommunicationChannelHealthTool;
+use App\Mcp\Tools\CommunicationParentMessageHistoryTool;
+use App\Mcp\Tools\CommunicationSendParentMessageTool;
 use App\Mcp\Tools\ComplaintsListTool;
 use App\Mcp\Tools\ComplaintsSummaryTool;
 use App\Mcp\Tools\AlumniDirectoryTool;
@@ -71,11 +75,13 @@ use App\Mcp\Tools\LibraryCatalogueTool;
 use App\Mcp\Tools\LibraryCirculationTool;
 use App\Mcp\Tools\LmsActivitiesTool;
 use App\Mcp\Tools\LmsCoursesTool;
+use App\Mcp\Tools\LmsCourseSummaryTool;
 use App\Mcp\Tools\MobileAppsHomescreenTool;
 use App\Mcp\Tools\MobileAppsSectionsTool;
 use App\Mcp\Tools\NewPalCoherenceGapsTool;
 use App\Mcp\Tools\NewPalContentModelStatusTool;
 use App\Mcp\Tools\NewPalGamificationSummaryTool;
+use App\Mcp\Tools\ExamAssessmentQuestionHelpTool;
 use App\Mcp\Tools\OnlineExamSummaryTool;
 use App\Mcp\Tools\ParentCommunicationMessagesTool;
 use App\Mcp\Tools\ParentCommunicationSummaryTool;
@@ -102,6 +108,7 @@ use App\Mcp\Tools\TasksOverdueTool;
 use App\Mcp\Tools\TasksProjectsTool;
 use App\Mcp\Tools\TeachersDailyReportTool;
 use App\Mcp\Tools\TeachersDirectoryTool;
+use App\Mcp\Tools\TeachLearnCoursesTool;
 use App\Mcp\Tools\TimetableConflictsTool;
 use App\Mcp\Tools\TimetableScheduleTool;
 use App\Mcp\Tools\TransportAssignmentsTool;
@@ -152,10 +159,13 @@ class McpServiceProvider extends ServiceProvider
 
         // Academic records
         AttendanceOverviewTool::class,
+        AttendanceDailyTool::class,
         AttendanceStudentTool::class,
         HomeworkListTool::class,
         LmsActivitiesTool::class,
         LmsCoursesTool::class,
+        LmsCourseSummaryTool::class,
+        TeachLearnCoursesTool::class,
         ExamsListTool::class,
         ExamsResultsTool::class,
 
@@ -175,6 +185,8 @@ class McpServiceProvider extends ServiceProvider
         // projects. `HomeworkListTool` above already covers Homework/Homework
         // Submission; these two are new.
         OnlineExamSummaryTool::class,
+        // The one tool in this module a student may call: a single question of the exam they are attempting.
+        ExamAssessmentQuestionHelpTool::class,
         AssignmentStatusTool::class,
 
         // Money
@@ -218,6 +230,9 @@ class McpServiceProvider extends ServiceProvider
         CertificateIssuedTool::class,
         CertificateTemplatesTool::class,
         CommunicationMessagesTool::class,
+        CommunicationSendParentMessageTool::class,
+        CommunicationParentMessageHistoryTool::class,
+        CommunicationChannelHealthTool::class,
         CommunicationChannelsTool::class,
         TimetableScheduleTool::class,
         TimetableConflictsTool::class,

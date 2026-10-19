@@ -155,6 +155,35 @@ class RealDataStage implements LifecycleStage
             static fn (array $call) => ($call['status'] ?? null) === 'completed'
         ));
 
+        // A confirmable tool's preview is not a refusal. It read the school's own records to work out who would
+        // be affected, changed nothing, and is waiting for a person — reporting it as "refused" described a
+        // different turn than the one that happened.
+        $previews = array_values(array_filter(
+            $context->toolCalls(),
+            static fn (array $call) => ($call['status'] ?? null) === 'awaiting_confirmation'
+        ));
+
+        if ($completed === [] && $previews !== []) {
+            $affected = 0;
+
+            foreach ($previews as $call) {
+                $affected += (int) ($call['preview']['data']['recipient_count'] ?? 0);
+            }
+
+            return StageOutcome::ran(
+                sprintf(
+                    'Previewed an action from live records through %d tool call%s: %d record%s would be affected, and nothing has been changed.',
+                    count($previews),
+                    count($previews) === 1 ? '' : 's',
+                    $affected,
+                    $affected === 1 ? '' : 's'
+                ),
+                ['sources' => array_map(static fn (array $call) => ['tool' => $call['tool'] ?? null, 'why' => $call['note'] ?? null, 'status' => 'awaiting_confirmation'], $previews)],
+                [],
+                ['api' => 'POST /api/mcp/tools/call']
+            );
+        }
+
         if ($completed === []) {
             return StageOutcome::blocked(
                 'No source records were read — every tool call was refused or unavailable.',

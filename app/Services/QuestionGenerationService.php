@@ -1598,12 +1598,17 @@ SCHEMA;
     }
 
     /* ----------------------------------------------------------------
-     * H5P content-type driven generation (Claude)
+     * H5P content-type driven generation
      *
      * For a format that has an active H5P content type the selected type chooses the
-     * prompt, the JSON Claude returns and the validator. What it hands back is a list of
-     * ordinary rows, so everything after the model call -- validateRows(), prepareRow(),
+     * prompt, the JSON the model returns and the validator. What it hands back is a list
+     * of ordinary rows, so everything after the model call -- validateRows(), prepareRow(),
      * dedup, persist() -- is the existing pipeline, unchanged.
+     *
+     * generateH5pBatch() below calls callDeepSeek(), not Claude: no environment of this
+     * app has ever carried an Anthropic key, and DeepSeek is already the provider every
+     * other format uses, so the H5P prompts (plain text, no provider-specific features)
+     * are written against it rather than against an unprovisioned ClaudeQuestionClient.
      * ---------------------------------------------------------------- */
 
     /** The H5P content type this format is generated from, or null for the existing path. */
@@ -1614,7 +1619,11 @@ SCHEMA;
         return $code === null ? null : app(H5pContentTypeRegistry::class)->activeFor($code);
     }
 
-    /** One Claude call, in callDeepSeek()'s return shape. */
+    /**
+     * One Claude call, in callDeepSeek()'s return shape. Unused by generateH5pBatch()
+     * (see above) while no Anthropic key is provisioned; kept for a future caller that
+     * has one, so reintroducing Claude anywhere is a one-line swap back, not a rewrite.
+     */
     protected function callClaude(string $system, string $user, array $opts): array
     {
         return app(ClaudeQuestionClient::class)->complete($system, $user, $this->subInstituteId);
@@ -1742,7 +1751,7 @@ SCHEMA;
         for ($attempt = 1; $attempt <= $attempts; $attempt++) {
             $user = $reasons === [] ? $base : $base . H5pPrompts::retryNotice($reasons, $expected);
 
-            $call = $this->callClaude($system, $user, $opts);
+            $call = $this->callDeepSeek($system, $user, $opts);
             if (!$call['ok']) {
                 // Provider / credential failures are not something a second prompt fixes.
                 return ['ok' => false, 'error' => $call['error']];

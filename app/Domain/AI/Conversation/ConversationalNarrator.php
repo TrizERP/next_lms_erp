@@ -141,7 +141,9 @@ class ConversationalNarrator
         if ($context->actions() !== [] || $context->cases !== [] || $context->pendingRecommendation !== null
             || $context->get('admissions_flow') !== null
             || $context->get('fees_reminders_flow') !== null
-            || $context->get('fees_student_flow') !== null) {
+            || $context->get('parent_message_flow') !== null
+            || $context->get('fees_student_flow') !== null
+            || $context->plan?->route === 'exam_question_help_flow') {
             return null;
         }
 

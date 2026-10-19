@@ -1,0 +1,2894 @@
+[
+    {
+        "concept": {
+            "concept_type": "Definition",
+            "definition": "An equation carries the equality sign and an expression does not, so 5x and 2x - 3 are expressions while 5x = 25 and 2x - 3 = 9 are equations.",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.97,
+            "concept_name": "Expression or equation",
+            "concept_id": "C452-1"
+        },
+        "topic_id": 25376,
+        "topic_name": "Introduction: Expressions and Equations",
+        "knowledge_items": [
+            {
+                "knowledge": "The equality sign decides",
+                "statement": "The presence of an equality sign is the one mark that turns an expression such as 5x into an equation such as 5x = 25.",
+                "knowledge_type": "Definition",
+                "confidence": 0.97,
+                "concept_name": "Expression or equation",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Sort a written item into expression or equation",
+                "verb": "Classify",
+                "description": "Look for an equality sign and decide whether what is written is an expression or an equation.",
+                "knowledge_refs": [
+                    "The equality sign decides"
+                ],
+                "concept_name": "Expression or equation",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Reading algebraic notation accurately",
+                "ability_refs": [
+                    "Sort a written item into expression or equation"
+                ],
+                "concept_name": "Expression or equation",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Notation discrimination",
+                "statement": "Tells apart the two kinds of algebraic statement before deciding what may be done with them.",
+                "knowledge_refs": [
+                    "The equality sign decides"
+                ],
+                "ability_refs": [
+                    "Sort a written item into expression or equation"
+                ],
+                "skill_refs": [
+                    "Reading algebraic notation accurately"
+                ],
+                "concept_name": "Expression or equation",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Remember",
+                "coverage_score": 50,
+                "concept_name": "Expression or equation",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            },
+            {
+                "level": "Understand",
+                "coverage_score": 50,
+                "concept_name": "Expression or equation",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "dok": [
+            {
+                "level": "1",
+                "description": "Recall and Reproduction",
+                "concept_name": "Expression or equation",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Forming algebraic expressions in Class 7",
+                "prerequisite_type": "Knowledge",
+                "necessity": "Mandatory",
+                "_parent_concept": "Expression or equation",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "An expression can be solved",
+                "statement": "Learners try to find the value of x in 2x - 3 as though the expression were an equation waiting to be solved.",
+                "root_cause": "Both expressions and equations use letters, so the absence of the equality sign goes unnoticed.",
+                "correction": "Ask what the expression is supposed to equal, and show there is nothing to set it against.",
+                "concept_name": "Expression or equation",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Technology",
+                "example": "A spreadsheet treats a typed formula and a typed comparison test as two different kinds of entry.",
+                "relevance": "Medium",
+                "concept_name": "Expression or equation",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Flashcard Based / Spaced Repetition Teaching",
+                "why_effective": "Rapid sorting of cards marked expression or equation fixes the distinction before any solving begins.",
+                "concept_characteristics": [
+                    "classification",
+                    "notation"
+                ],
+                "concept_name": "Expression or equation",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Classify given algebraic items such as 5x and 5x = 25 as expressions or equations.",
+                "objective_type": "Knowledge",
+                "priority": "High",
+                "concept_name": "Expression or equation",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Separates a list of algebraic items into expressions and equations using the equality sign.",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Expression or equation",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which of 2x - 3 and 2x - 3 = 9 is an equation, and what single mark decides it?",
+                "concept_name": "Expression or equation",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Write one expression and one equation of your own, and explain what distinguishes the two.",
+                "concept_name": "Expression or equation",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Definition",
+            "definition": "The expression written to the left of the equality sign is the LHS and the one to its right is the RHS, and naming them is what makes the balancing method describable.",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.96,
+            "concept_name": "Left-hand side and right-hand side",
+            "concept_id": "C452-2"
+        },
+        "topic_id": 25376,
+        "topic_name": "Introduction: Expressions and Equations",
+        "knowledge_items": [
+            {
+                "knowledge": "LHS and RHS named",
+                "statement": "An equation has two sides, the expression left of the equality sign and the one right of it, called the LHS and the RHS.",
+                "knowledge_type": "Definition",
+                "confidence": 0.96,
+                "concept_name": "Left-hand side and right-hand side",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Name the two sides of a given equation",
+                "verb": "Label",
+                "description": "Point out which expression is the LHS and which is the RHS in an equation such as 2x - 3 = 9.",
+                "knowledge_refs": [
+                    "LHS and RHS named"
+                ],
+                "concept_name": "Left-hand side and right-hand side",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Describing an equation in words before working on it",
+                "ability_refs": [
+                    "Name the two sides of a given equation"
+                ],
+                "concept_name": "Left-hand side and right-hand side",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Structural reading of an equation",
+                "statement": "Describes the parts of an equation precisely enough to explain each solving step aloud.",
+                "knowledge_refs": [
+                    "LHS and RHS named"
+                ],
+                "ability_refs": [
+                    "Name the two sides of a given equation"
+                ],
+                "skill_refs": [
+                    "Describing an equation in words before working on it"
+                ],
+                "concept_name": "Left-hand side and right-hand side",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Remember",
+                "coverage_score": 60,
+                "concept_name": "Left-hand side and right-hand side",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            },
+            {
+                "level": "Understand",
+                "coverage_score": 40,
+                "concept_name": "Left-hand side and right-hand side",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "dok": [
+            {
+                "level": "1",
+                "description": "Recall and Reproduction",
+                "concept_name": "Left-hand side and right-hand side",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Expression or equation",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Left-hand side and right-hand side",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "The answer always sits on the right",
+                "statement": "Learners expect the RHS to hold the answer and the LHS to hold the working that led to it.",
+                "root_cause": "Arithmetic is written with the result after the equality sign, so that habit is carried into algebra.",
+                "correction": "Show equations such as 9 = 2x - 3 where the bare number stands on the left instead.",
+                "concept_name": "Left-hand side and right-hand side",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Career",
+                "example": "An accountant balancing a ledger names the two columns before explaining which entry was moved.",
+                "relevance": "Medium",
+                "concept_name": "Left-hand side and right-hand side",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "Setting equations on a two pan balance puts the naming of each side into the learner's own hands.",
+                "concept_characteristics": [
+                    "terminology",
+                    "balance model"
+                ],
+                "concept_name": "Left-hand side and right-hand side",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Label the LHS and the RHS of a given linear equation.",
+                "objective_type": "Knowledge",
+                "priority": "Medium",
+                "concept_name": "Left-hand side and right-hand side",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Identifies the left-hand side and the right-hand side of any equation presented to them.",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Left-hand side and right-hand side",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "In the equation 2x - 3 = 9, which expression is the LHS?",
+                "concept_name": "Left-hand side and right-hand side",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Explain why the two sides must be named before the balancing method can be described at all.",
+                "concept_name": "Left-hand side and right-hand side",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Concept",
+            "definition": "The two expressions in an equation take equal values only for certain values of the variable, and those particular values are the solutions of the equation.",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.96,
+            "concept_name": "What a solution is",
+            "concept_id": "C452-3"
+        },
+        "topic_id": 25376,
+        "topic_name": "Introduction: Expressions and Equations",
+        "knowledge_items": [
+            {
+                "knowledge": "Solution defined",
+                "statement": "A solution of an equation is a value of the variable that makes the LHS and the RHS take the same value.",
+                "knowledge_type": "Definition",
+                "confidence": 0.97,
+                "concept_name": "What a solution is",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Decide whether a value solves an equation",
+                "verb": "Determine",
+                "description": "Put a proposed value into both sides and see whether the two results agree.",
+                "knowledge_refs": [
+                    "Solution defined"
+                ],
+                "concept_name": "What a solution is",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Treating an equation as a question about values",
+                "ability_refs": [
+                    "Decide whether a value solves an equation"
+                ],
+                "concept_name": "What a solution is",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Solution awareness",
+                "statement": "Understands solving as finding the values that make an equation true, not as shuffling symbols.",
+                "knowledge_refs": [
+                    "Solution defined"
+                ],
+                "ability_refs": [
+                    "Decide whether a value solves an equation"
+                ],
+                "skill_refs": [
+                    "Treating an equation as a question about values"
+                ],
+                "concept_name": "What a solution is",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 60,
+                "concept_name": "What a solution is",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 40,
+                "concept_name": "What a solution is",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "What a solution is",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Left-hand side and right-hand side",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "What a solution is",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Any value at all can be put in",
+                "statement": "Learners think the variable in an equation stands for any number rather than for the values that make it true.",
+                "root_cause": "In an expression the variable really can take any value, and that freedom is carried into equations.",
+                "correction": "Substitute two different values into one equation and show that only one keeps the sides equal.",
+                "concept_name": "What a solution is",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Working out how many tickets a fixed budget will buy asks which number makes the cost match exactly.",
+                "relevance": "High",
+                "concept_name": "What a solution is",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Inquiry Based Teaching",
+                "why_effective": "Letting learners try values until the two sides agree makes the meaning of a solution self-evident.",
+                "concept_characteristics": [
+                    "meaning of solution",
+                    "substitution"
+                ],
+                "concept_name": "What a solution is",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Determine whether a proposed value is a solution by comparing the two sides.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "What a solution is",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Tests a given value in an equation and states whether it is a solution of it.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "What a solution is",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Explain in your own words what it means to say that a value is a solution of an equation.",
+                "concept_name": "What a solution is",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            },
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Is x = 4 a solution of 3x - 5 = 7? Give the value of each side.",
+                "concept_name": "What a solution is",
+                "topic_id": 25376,
+                "topic_name": "Introduction: Expressions and Equations"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Rule",
+            "definition": "Many expressions carry more than one variable, as 2xy + 5 carries two, but the equations of this chapter are formed only from expressions in a single variable.",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.95,
+            "concept_name": "One variable only",
+            "concept_id": "C452-4"
+        },
+        "topic_id": 25377,
+        "topic_name": "What Makes an Equation Linear in One Variable",
+        "knowledge_items": [
+            {
+                "knowledge": "Single variable restriction",
+                "statement": "The equations studied here are built only from expressions containing one variable, so 2xy + 5 with its two variables is excluded.",
+                "knowledge_type": "Rule",
+                "confidence": 0.95,
+                "concept_name": "One variable only",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Count the distinct variables in an expression",
+                "verb": "Count",
+                "description": "Look through an expression and report how many different letters appear in it.",
+                "knowledge_refs": [
+                    "Single variable restriction"
+                ],
+                "concept_name": "One variable only",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Screening an equation against a stated restriction",
+                "ability_refs": [
+                    "Count the distinct variables in an expression"
+                ],
+                "concept_name": "One variable only",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Scope checking",
+                "statement": "Checks whether a given equation falls within the kind the current method can handle.",
+                "knowledge_refs": [
+                    "Single variable restriction"
+                ],
+                "ability_refs": [
+                    "Count the distinct variables in an expression"
+                ],
+                "skill_refs": [
+                    "Screening an equation against a stated restriction"
+                ],
+                "concept_name": "One variable only",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Remember",
+                "coverage_score": 40,
+                "concept_name": "One variable only",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            },
+            {
+                "level": "Understand",
+                "coverage_score": 60,
+                "concept_name": "One variable only",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "dok": [
+            {
+                "level": "1",
+                "description": "Recall and Reproduction",
+                "concept_name": "One variable only",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "What a solution is",
+                "prerequisite_type": "Concept",
+                "necessity": "Recommended",
+                "_parent_concept": "One variable only",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Repeated letters count as several variables",
+                "statement": "Learners count the x in 2x and the x in 3x as two variables and so reject a perfectly valid equation.",
+                "root_cause": "Counting is done on how often a letter appears rather than on how many different letters there are.",
+                "correction": "Circle the distinct letters rather than the terms, so that 2x + 3x plainly shows one variable.",
+                "concept_name": "One variable only",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Research",
+                "example": "A trial that holds every factor but one fixed is working in a single variable for exactly this reason.",
+                "relevance": "Medium",
+                "concept_name": "One variable only",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Game Based Teaching",
+                "why_effective": "A quick sorting game keeping single variable expressions and discarding the rest rehearses the restriction.",
+                "concept_characteristics": [
+                    "restriction",
+                    "classification"
+                ],
+                "concept_name": "One variable only",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Count the distinct variables in a given expression and decide whether it qualifies.",
+                "objective_type": "Knowledge",
+                "priority": "Medium",
+                "concept_name": "One variable only",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Rejects expressions such as 2xy + 5 for holding two variables and accepts single variable ones.",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "One variable only",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "How many different variables does the expression 2xy + 5 contain?",
+                "concept_name": "One variable only",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Give one expression that meets the single variable restriction and one that fails it.",
+                "concept_name": "One variable only",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Rule",
+            "definition": "Expressions such as 2x, 2x + 1, 3y - 7 and 12 - 5z are linear because the highest power of the variable in them is one; a squared or higher term disqualifies an expression.",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.96,
+            "concept_name": "Highest power is one",
+            "concept_id": "C452-5"
+        },
+        "topic_id": 25377,
+        "topic_name": "What Makes an Equation Linear in One Variable",
+        "knowledge_items": [
+            {
+                "knowledge": "Degree one condition",
+                "statement": "An expression is linear when the greatest power to which its variable is raised is one, which rules out any squared or higher term.",
+                "knowledge_type": "Rule",
+                "confidence": 0.96,
+                "concept_name": "Highest power is one",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Read off the highest power of a variable",
+                "verb": "Inspect",
+                "description": "Examine each term of an expression and report the greatest power its variable carries.",
+                "knowledge_refs": [
+                    "Degree one condition"
+                ],
+                "concept_name": "Highest power is one",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Judging an expression by its degree",
+                "ability_refs": [
+                    "Read off the highest power of a variable"
+                ],
+                "concept_name": "Highest power is one",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Degree recognition",
+                "statement": "Determines the degree of a one variable expression and uses it to name the expression's type.",
+                "knowledge_refs": [
+                    "Degree one condition"
+                ],
+                "ability_refs": [
+                    "Read off the highest power of a variable"
+                ],
+                "skill_refs": [
+                    "Judging an expression by its degree"
+                ],
+                "concept_name": "Highest power is one",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Remember",
+                "coverage_score": 40,
+                "concept_name": "Highest power is one",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            },
+            {
+                "level": "Understand",
+                "coverage_score": 60,
+                "concept_name": "Highest power is one",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "dok": [
+            {
+                "level": "1",
+                "description": "Recall and Reproduction",
+                "concept_name": "Highest power is one",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "One variable only",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Highest power is one",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "A coefficient is read as a power",
+                "statement": "Learners read the 5 in 12 - 5z as a power of z and conclude that the expression is not linear.",
+                "root_cause": "The number sits right beside the letter, so position rather than notation is used to read its role.",
+                "correction": "Contrast 5z with z raised to the power five, showing where an index is actually written.",
+                "concept_name": "Highest power is one",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Technology",
+                "example": "A graphics routine keeps motion linear in time so that the movement on screen stays at a steady rate.",
+                "relevance": "Medium",
+                "concept_name": "Highest power is one",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Flashcard Based / Spaced Repetition Teaching",
+                "why_effective": "Quick linear or not judgements over many expressions build the eye for degree that later chapters need.",
+                "concept_characteristics": [
+                    "degree",
+                    "rapid recognition"
+                ],
+                "concept_name": "Highest power is one",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Inspect an expression and state whether the highest power of its variable is one.",
+                "objective_type": "Knowledge",
+                "priority": "High",
+                "concept_name": "Highest power is one",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Classifies expressions such as 3y - 7 as linear and names a squared term as disqualifying.",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Highest power is one",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Remember",
+                "dok_level": "1",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which of 12 - 5z and z squared plus 3 is linear in its variable?",
+                "concept_name": "Highest power is one",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Explain why 2x + 1 is linear while an expression carrying a squared term is not.",
+                "concept_name": "Highest power is one",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Definition",
+            "definition": "Combining the two restrictions names the type studied here, linear equations in one variable, which is the kind of simple equation already met in earlier classes.",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.96,
+            "concept_name": "Linear equations in one variable",
+            "concept_id": "C452-6"
+        },
+        "topic_id": 25377,
+        "topic_name": "What Makes an Equation Linear in One Variable",
+        "knowledge_items": [
+            {
+                "knowledge": "The two conditions combined",
+                "statement": "A linear equation in one variable is formed from expressions that carry a single variable whose highest power is one.",
+                "knowledge_type": "Definition",
+                "confidence": 0.96,
+                "concept_name": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            },
+            {
+                "knowledge": "Continuity with earlier classes",
+                "statement": "The simple equations solved in earlier classes were all of this kind, so the chapter extends familiar ground rather than opening new.",
+                "knowledge_type": "Relationship",
+                "confidence": 0.93,
+                "concept_name": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Recognise the chapter's equation type",
+                "verb": "Recognise",
+                "description": "Apply both restrictions together to decide whether a given equation belongs to this chapter.",
+                "knowledge_refs": [
+                    "The two conditions combined",
+                    "Continuity with earlier classes"
+                ],
+                "concept_name": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Applying two conditions at once",
+                "ability_refs": [
+                    "Recognise the chapter's equation type"
+                ],
+                "concept_name": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Type identification",
+                "statement": "Names the class an equation belongs to before choosing a method to attack it.",
+                "knowledge_refs": [
+                    "The two conditions combined",
+                    "Continuity with earlier classes"
+                ],
+                "ability_refs": [
+                    "Recognise the chapter's equation type"
+                ],
+                "skill_refs": [
+                    "Applying two conditions at once"
+                ],
+                "concept_name": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 70,
+                "concept_name": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            },
+            {
+                "level": "Analyze",
+                "coverage_score": 30,
+                "concept_name": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Highest power is one",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Linear means the equation looks short",
+                "statement": "Learners judge an equation to be linear from how few terms it has rather than from the power of its variable.",
+                "root_cause": "The first examples shown are short ones, so brevity gets mistaken for the defining feature.",
+                "correction": "Set a long equation of linear terms beside a short one carrying a squared term.",
+                "concept_name": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Industry",
+                "example": "A costing model with a fixed charge plus a rate for each unit made is a linear equation in one variable.",
+                "relevance": "High",
+                "concept_name": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Skill / Competency Based Teaching",
+                "why_effective": "Practising the two part test on mixed examples makes the classification automatic before solving starts.",
+                "concept_characteristics": [
+                    "definition",
+                    "two conditions"
+                ],
+                "concept_name": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Recognise a linear equation in one variable by applying both restrictions together.",
+                "objective_type": "Knowledge",
+                "priority": "High",
+                "concept_name": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Selects from a mixed list exactly those equations that are linear in one variable.",
+                "outcome_type": "Knowledge Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which two conditions must both hold for an equation to be linear in one variable?",
+                "concept_name": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "From a mixed list of equations, pick those linear in one variable and justify each rejection.",
+                "concept_name": "Linear equations in one variable",
+                "topic_id": 25377,
+                "topic_name": "What Makes an Equation Linear in One Variable"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Principle",
+            "definition": "The two sides of an equation are taken to be balanced, so carrying out the same mathematical operation on both leaves that balance undisturbed.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.97,
+            "concept_name": "The balance principle",
+            "concept_id": "C452-7"
+        },
+        "topic_id": 25378,
+        "topic_name": "Solving by Balancing and Transposing",
+        "knowledge_items": [
+            {
+                "knowledge": "Same operation on both sides",
+                "statement": "Performing an identical operation on the LHS and the RHS keeps the equation true, and a chain of such steps yields the solution.",
+                "knowledge_type": "Principle",
+                "confidence": 0.97,
+                "concept_name": "The balance principle",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Apply one operation to both sides",
+                "verb": "Operate",
+                "description": "Add, subtract, multiply or divide both sides by the same thing and write down the resulting equation.",
+                "knowledge_refs": [
+                    "Same operation on both sides"
+                ],
+                "concept_name": "The balance principle",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Solving by successive balanced steps",
+                "ability_refs": [
+                    "Apply one operation to both sides"
+                ],
+                "concept_name": "The balance principle",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Equation solving",
+                "statement": "Reaches the value of the variable through a chain of steps that keep the two sides equal.",
+                "knowledge_refs": [
+                    "Same operation on both sides"
+                ],
+                "ability_refs": [
+                    "Apply one operation to both sides"
+                ],
+                "skill_refs": [
+                    "Solving by successive balanced steps"
+                ],
+                "concept_name": "The balance principle",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 40,
+                "concept_name": "The balance principle",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 60,
+                "concept_name": "The balance principle",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "The balance principle",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Linear equations in one variable",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "The balance principle",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "One side may be changed on its own",
+                "statement": "Learners perform an operation on whichever side looks awkward and leave the other side exactly as it was.",
+                "root_cause": "Tidying one side is a more visible goal than preserving the equality between the two.",
+                "correction": "Use a two pan balance and lift a weight off only one pan, so the tilt is immediate and obvious.",
+                "concept_name": "The balance principle",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Sharing a bill equally means the same adjustment must be made to every person's share.",
+                "relevance": "Medium",
+                "concept_name": "The balance principle",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Experiential Based Teaching",
+                "why_effective": "Working a physical balance with weights turns each algebraic step into a visible physical move.",
+                "concept_characteristics": [
+                    "balance model",
+                    "procedural reasoning"
+                ],
+                "concept_name": "The balance principle",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Apply the same operation to both sides of an equation and write the new equation.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "The balance principle",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Solves a simple linear equation through a sequence of balanced operations on both sides.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "The balance principle",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Solve 2x - 3 = 7 by doing the same operation to both sides at every step.",
+                "concept_name": "The balance principle",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Why must an operation be applied to both sides of an equation rather than to one of them?",
+                "concept_name": "The balance principle",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Procedure",
+            "definition": "For 2x - 3 = 7, substituting x = 5 gives an LHS of 7 which equals the RHS, while x = 10 gives 17 which does not, so a claimed solution can always be tested.",
+            "importance": "Core",
+            "difficulty": "Easy",
+            "confidence": 0.96,
+            "concept_name": "Checking a solution",
+            "concept_id": "C452-8"
+        },
+        "topic_id": 25378,
+        "topic_name": "Solving by Balancing and Transposing",
+        "knowledge_items": [
+            {
+                "knowledge": "Substitution test",
+                "statement": "A claimed solution is confirmed by putting it into the LHS and comparing the resulting value with the RHS.",
+                "knowledge_type": "Process",
+                "confidence": 0.96,
+                "concept_name": "Checking a solution",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Test a claimed solution by substitution",
+                "verb": "Check",
+                "description": "Evaluate the LHS at the proposed value and set the result against the RHS.",
+                "knowledge_refs": [
+                    "Substitution test"
+                ],
+                "concept_name": "Checking a solution",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Verifying an answer rather than trusting it",
+                "ability_refs": [
+                    "Test a claimed solution by substitution"
+                ],
+                "concept_name": "Checking a solution",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Self verification",
+                "statement": "Confirms an answer independently before reporting it as final.",
+                "knowledge_refs": [
+                    "Substitution test"
+                ],
+                "ability_refs": [
+                    "Test a claimed solution by substitution"
+                ],
+                "skill_refs": [
+                    "Verifying an answer rather than trusting it"
+                ],
+                "concept_name": "Checking a solution",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Apply",
+                "coverage_score": 70,
+                "concept_name": "Checking a solution",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            },
+            {
+                "level": "Evaluate",
+                "coverage_score": 30,
+                "concept_name": "Checking a solution",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Checking a solution",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "The balance principle",
+                "prerequisite_type": "Skill",
+                "necessity": "Recommended",
+                "_parent_concept": "Checking a solution",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Checking means redoing the working",
+                "statement": "Learners repeat their own solving steps as a check and so repeat the very mistake they made.",
+                "root_cause": "Checking is understood as doing the sum again rather than as testing the answer by a different route.",
+                "correction": "Substitute the answer into the original equation, which follows a path the working never took.",
+                "concept_name": "Checking a solution",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Career",
+                "example": "An engineer substitutes a computed value back into the design condition before signing the drawing off.",
+                "relevance": "High",
+                "concept_name": "Checking a solution",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "Testing a correct and an incorrect value on the same equation makes the power of the check obvious.",
+                "concept_characteristics": [
+                    "verification",
+                    "substitution"
+                ],
+                "concept_name": "Checking a solution",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Check a proposed solution of 2x - 3 = 7 by evaluating both sides at that value.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Checking a solution",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Substitutes a value into an equation and reports whether the two sides come out equal.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Checking a solution",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Show that x = 5 satisfies 2x - 3 = 7 while x = 10 does not.",
+                "concept_name": "Checking a solution",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Evaluate",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Why is substituting into the original equation a better check than repeating your own working?",
+                "concept_name": "Checking a solution",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Procedure",
+            "definition": "Subtracting the same term from both sides amounts to moving that term to the other side, so transposition is a shorthand for the balancing operation and not a separate rule.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.95,
+            "concept_name": "Transposing",
+            "concept_id": "C452-9"
+        },
+        "topic_id": 25378,
+        "topic_name": "Solving by Balancing and Transposing",
+        "knowledge_items": [
+            {
+                "knowledge": "Transposition is shorthand",
+                "statement": "Moving a term across the equality sign with its sign changed simply records the effect of adding or subtracting it on both sides.",
+                "knowledge_type": "Principle",
+                "confidence": 0.95,
+                "concept_name": "Transposing",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Transpose a term correctly",
+                "verb": "Transpose",
+                "description": "Move a term to the other side of an equation and change its sign as the move requires.",
+                "knowledge_refs": [
+                    "Transposition is shorthand"
+                ],
+                "concept_name": "Transposing",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Shortening a routine without losing its justification",
+                "ability_refs": [
+                    "Transpose a term correctly"
+                ],
+                "concept_name": "Transposing",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Procedural fluency with justification",
+                "statement": "Uses a shortcut while remaining able to explain the balanced step that lies behind it.",
+                "knowledge_refs": [
+                    "Transposition is shorthand"
+                ],
+                "ability_refs": [
+                    "Transpose a term correctly"
+                ],
+                "skill_refs": [
+                    "Shortening a routine without losing its justification"
+                ],
+                "concept_name": "Transposing",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 40,
+                "concept_name": "Transposing",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 60,
+                "concept_name": "Transposing",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Transposing",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "The balance principle",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Transposing",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Transposing is a rule about crossing over",
+                "statement": "Learners recite that a term changes sign when it crosses the equality sign without knowing why it does.",
+                "root_cause": "The shortcut is taught as a rule to memorise before the balancing step it abbreviates has been shown.",
+                "correction": "Write the subtraction on both sides in full once, then show the shortcut produces the identical line.",
+                "concept_name": "Transposing",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Technology",
+                "example": "Equation solving software rearranges terms by exactly this rule when it isolates a variable.",
+                "relevance": "Medium",
+                "concept_name": "Transposing",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Flipped Classroom Teaching",
+                "why_effective": "Learners can rehearse the mechanical move beforehand and spend the lesson on why it is legitimate.",
+                "concept_characteristics": [
+                    "shortcut",
+                    "justification"
+                ],
+                "concept_name": "Transposing",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Transpose a term across the equality sign and name the balanced step it replaces.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Transposing",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Rewrites an equation by transposing a term and states the equivalent operation on both sides.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Transposing",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Solve 3x + 4 = 19 by transposing, writing the balanced step that each transposition stands for.",
+                "concept_name": "Transposing",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            },
+            {
+                "assessment_type": "Assertion Reason",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 1,
+                "recommended_question": "Assertion: transposing is a separate rule. Reason: a term changes sign when it crosses the equality sign.",
+                "concept_name": "Transposing",
+                "topic_id": 25378,
+                "topic_name": "Solving by Balancing and Transposing"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Concept",
+            "definition": "In 2x - 3 = x + 2 the expression on the left is 2x - 3 and on the right is x + 2, so both sides carry the variable, unlike the equations of earlier classes.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.95,
+            "concept_name": "A variable on each side",
+            "concept_id": "C452-10"
+        },
+        "topic_id": 25379,
+        "topic_name": "Variables on Both Sides",
+        "knowledge_items": [
+            {
+                "knowledge": "Variable present on both sides",
+                "statement": "An equation may carry the variable in its LHS and its RHS alike, as 2x - 3 = x + 2 does, which earlier classes never met.",
+                "knowledge_type": "Fact",
+                "confidence": 0.95,
+                "concept_name": "A variable on each side",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Gather the variable terms on one side",
+                "verb": "Rearrange",
+                "description": "Move the variable terms to one side and the constants to the other before solving.",
+                "knowledge_refs": [
+                    "Variable present on both sides"
+                ],
+                "concept_name": "A variable on each side",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Reorganising an equation before solving it",
+                "ability_refs": [
+                    "Gather the variable terms on one side"
+                ],
+                "concept_name": "A variable on each side",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Equation rearrangement",
+                "statement": "Brings like terms together so a two sided equation becomes one with a bare number on one side.",
+                "knowledge_refs": [
+                    "Variable present on both sides"
+                ],
+                "ability_refs": [
+                    "Gather the variable terms on one side"
+                ],
+                "skill_refs": [
+                    "Reorganising an equation before solving it"
+                ],
+                "concept_name": "A variable on each side",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Apply",
+                "coverage_score": 70,
+                "concept_name": "A variable on each side",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            },
+            {
+                "level": "Analyze",
+                "coverage_score": 30,
+                "concept_name": "A variable on each side",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "A variable on each side",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Transposing",
+                "prerequisite_type": "Skill",
+                "necessity": "Mandatory",
+                "_parent_concept": "A variable on each side",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Only numbers may be moved",
+                "statement": "Learners transpose the constants but leave a variable term stranded on the side where it started.",
+                "root_cause": "Every earlier example carried a bare number on one side, so only numbers were ever moved across.",
+                "correction": "Point out that x stands for a number too, so a term in x transposes exactly like a constant.",
+                "concept_name": "A variable on each side",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Comparing two mobile tariffs that each charge per minute puts the unknown on both sides of the equation.",
+                "relevance": "High",
+                "concept_name": "A variable on each side",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Scenario Based Teaching",
+                "why_effective": "Two competing price plans give a natural reason for the variable to appear on both sides at once.",
+                "concept_characteristics": [
+                    "two sided equation",
+                    "comparison problem"
+                ],
+                "concept_name": "A variable on each side",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Rearrange 2x - 3 = x + 2 so that the variable terms stand on one side only.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "A variable on each side",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Solves an equation carrying the variable on both sides and states the value found.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "A variable on each side",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "Solve 2x - 3 = x + 2 and check the answer in both sides of the original equation.",
+                "concept_name": "A variable on each side",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "What is new about 2x - 3 = x + 2 compared with the equations solved in earlier classes?",
+                "concept_name": "A variable on each side",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Principle",
+            "definition": "What is subtracted from both sides here is not a constant but a term involving the variable, and this is allowed because variables stand for numbers as well.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.94,
+            "concept_name": "Subtracting a term, not a number",
+            "concept_id": "C452-11"
+        },
+        "topic_id": 25379,
+        "topic_name": "Variables on Both Sides",
+        "knowledge_items": [
+            {
+                "knowledge": "Variables are numbers too",
+                "statement": "A term in the variable may be subtracted from both sides just as a constant may, because the variable itself stands for a number.",
+                "knowledge_type": "Principle",
+                "confidence": 0.94,
+                "concept_name": "Subtracting a term, not a number",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Justify subtracting a variable term",
+                "verb": "Justify",
+                "description": "Explain why removing a term in x from both sides preserves the balance of the equation.",
+                "knowledge_refs": [
+                    "Variables are numbers too"
+                ],
+                "concept_name": "Subtracting a term, not a number",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Extending a known step to a new kind of object",
+                "ability_refs": [
+                    "Justify subtracting a variable term"
+                ],
+                "concept_name": "Subtracting a term, not a number",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Reasoned generalisation",
+                "statement": "Applies an established rule to a wider class of objects once the reason behind it still holds.",
+                "knowledge_refs": [
+                    "Variables are numbers too"
+                ],
+                "ability_refs": [
+                    "Justify subtracting a variable term"
+                ],
+                "skill_refs": [
+                    "Extending a known step to a new kind of object"
+                ],
+                "concept_name": "Subtracting a term, not a number",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 50,
+                "concept_name": "Subtracting a term, not a number",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            },
+            {
+                "level": "Analyze",
+                "coverage_score": 50,
+                "concept_name": "Subtracting a term, not a number",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "dok": [
+            {
+                "level": "3",
+                "description": "Strategic Thinking",
+                "concept_name": "Subtracting a term, not a number",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "A variable on each side",
+                "prerequisite_type": "Concept",
+                "necessity": "Mandatory",
+                "_parent_concept": "Subtracting a term, not a number",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Letters cannot be taken from both sides",
+                "statement": "Learners accept subtracting 3 from both sides but hesitate over subtracting x, feeling it is not a real quantity.",
+                "root_cause": "The variable is read as an empty placeholder rather than as a number, so it seems not to obey arithmetic.",
+                "correction": "Point out that x names some number, so subtracting it is the same kind of move as subtracting 3.",
+                "concept_name": "Subtracting a term, not a number",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Research",
+                "example": "An investigator cancels an identical unknown baseline from both groups before comparing the two results.",
+                "relevance": "Medium",
+                "concept_name": "Subtracting a term, not a number",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Inquiry Based Teaching",
+                "why_effective": "Asking whether x may be lifted off both pans of a balance surfaces the reasoning instead of stating it.",
+                "concept_characteristics": [
+                    "justification",
+                    "variable as number"
+                ],
+                "concept_name": "Subtracting a term, not a number",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Justify subtracting a term in the variable from both sides of an equation.",
+                "objective_type": "Skill",
+                "priority": "High",
+                "concept_name": "Subtracting a term, not a number",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Explains why removing a term in x from both sides leaves the equation true.",
+                "outcome_type": "Skill Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Subtracting a term, not a number",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "Why is it legitimate to subtract x from both sides of 2x - 3 = x + 2?",
+                "concept_name": "Subtracting a term, not a number",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            },
+            {
+                "assessment_type": "HOTS",
+                "bloom_level": "Evaluate",
+                "dok_level": "3",
+                "difficulty": "Hard",
+                "marks": 3,
+                "recommended_question": "A learner says only numbers may be subtracted from both sides. Argue against this using 2x - 3 = x + 2.",
+                "concept_name": "Subtracting a term, not a number",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Procedure",
+            "definition": "For 5x + 7/2 = 3x/2 - 14 the opening move is to multiply both sides by 2, which clears the fractions before any transposing begins.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.94,
+            "concept_name": "Clearing a fraction first",
+            "concept_id": "C452-12"
+        },
+        "topic_id": 25379,
+        "topic_name": "Variables on Both Sides",
+        "knowledge_items": [
+            {
+                "knowledge": "Clear the fractions first",
+                "statement": "Multiplying both sides by a suitable number removes the denominators, after which the equation is solved by the usual routine.",
+                "knowledge_type": "Process",
+                "confidence": 0.94,
+                "concept_name": "Clearing a fraction first",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Choose a first move that simplifies",
+                "verb": "Select",
+                "description": "Decide what both sides should be multiplied by so that no fraction is left standing.",
+                "knowledge_refs": [
+                    "Clear the fractions first"
+                ],
+                "concept_name": "Clearing a fraction first",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Planning the order of steps in a solution",
+                "ability_refs": [
+                    "Choose a first move that simplifies"
+                ],
+                "concept_name": "Clearing a fraction first",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Strategic sequencing",
+                "statement": "Chooses the opening step that makes everything following it routine.",
+                "knowledge_refs": [
+                    "Clear the fractions first"
+                ],
+                "ability_refs": [
+                    "Choose a first move that simplifies"
+                ],
+                "skill_refs": [
+                    "Planning the order of steps in a solution"
+                ],
+                "concept_name": "Clearing a fraction first",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Apply",
+                "coverage_score": 60,
+                "concept_name": "Clearing a fraction first",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            },
+            {
+                "level": "Evaluate",
+                "coverage_score": 40,
+                "concept_name": "Clearing a fraction first",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "dok": [
+            {
+                "level": "3",
+                "description": "Strategic Thinking",
+                "concept_name": "Clearing a fraction first",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Subtracting a term, not a number",
+                "prerequisite_type": "Skill",
+                "necessity": "Recommended",
+                "_parent_concept": "Clearing a fraction first",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Multiply only the fractional terms",
+                "statement": "Learners multiply the terms carrying denominators by 2 and leave the whole number terms untouched.",
+                "root_cause": "Clearing fractions is read as fixing the fractions rather than as operating on an entire side.",
+                "correction": "Write the multiplication against every term on both sides, whole numbers included.",
+                "concept_name": "Clearing a fraction first",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Industry",
+                "example": "A technician converts every measurement to one common unit before combining them in a single calculation.",
+                "relevance": "Medium",
+                "concept_name": "Clearing a fraction first",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Skill / Competency Based Teaching",
+                "why_effective": "Drilling the choice of opening move apart from the rest of the solution builds a deliberate habit.",
+                "concept_characteristics": [
+                    "planning",
+                    "fraction clearing"
+                ],
+                "concept_name": "Clearing a fraction first",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Select the multiplier that clears the fractions in 5x + 7/2 = 3x/2 - 14.",
+                "objective_type": "Skill",
+                "priority": "High",
+                "concept_name": "Clearing a fraction first",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Produces a fraction free equation from a fractional one and then goes on to solve it.",
+                "outcome_type": "Skill Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Clearing a fraction first",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "Clear the fractions in 5x + 7/2 = 3x/2 - 14 and go on to find the value of x.",
+                "concept_name": "Clearing a fraction first",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            },
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Evaluate",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 1,
+                "recommended_question": "What should both sides of 5x + 7/2 = 3x/2 - 14 be multiplied by as the first step?",
+                "concept_name": "Clearing a fraction first",
+                "topic_id": 25379,
+                "topic_name": "Variables on Both Sides"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Rule",
+            "definition": "Multiplying through by 6 clears the fractions in an equation with denominators 3 and 6, because 6 is their smallest common multiple, so the multiplier is chosen and not guessed.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.95,
+            "concept_name": "Multiply by the LCM of the denominators",
+            "concept_id": "C452-13"
+        },
+        "topic_id": 25380,
+        "topic_name": "Reducing Equations to Simpler Form",
+        "knowledge_items": [
+            {
+                "knowledge": "Lowest common multiple as multiplier",
+                "statement": "The number that clears every denominator at once is their lowest common multiple, so denominators 3 and 6 call for 6.",
+                "knowledge_type": "Rule",
+                "confidence": 0.95,
+                "concept_name": "Multiply by the LCM of the denominators",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Find the lowest common multiple of the denominators",
+                "verb": "Calculate",
+                "description": "Work out the lowest common multiple of all denominators present and use it as the multiplier.",
+                "knowledge_refs": [
+                    "Lowest common multiple as multiplier"
+                ],
+                "concept_name": "Multiply by the LCM of the denominators",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Using number facts inside an algebraic routine",
+                "ability_refs": [
+                    "Find the lowest common multiple of the denominators"
+                ],
+                "concept_name": "Multiply by the LCM of the denominators",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Deliberate multiplier choice",
+                "statement": "Derives the correct multiplier from the denominators instead of trying numbers at random.",
+                "knowledge_refs": [
+                    "Lowest common multiple as multiplier"
+                ],
+                "ability_refs": [
+                    "Find the lowest common multiple of the denominators"
+                ],
+                "skill_refs": [
+                    "Using number facts inside an algebraic routine"
+                ],
+                "concept_name": "Multiply by the LCM of the denominators",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Understand",
+                "coverage_score": 30,
+                "concept_name": "Multiply by the LCM of the denominators",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            },
+            {
+                "level": "Apply",
+                "coverage_score": 70,
+                "concept_name": "Multiply by the LCM of the denominators",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Multiply by the LCM of the denominators",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Clearing a fraction first",
+                "prerequisite_type": "Skill",
+                "necessity": "Mandatory",
+                "_parent_concept": "Multiply by the LCM of the denominators",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Multiply by the product of the denominators",
+                "statement": "Learners multiply by 18 for denominators 3 and 6 rather than by their lowest common multiple 6.",
+                "root_cause": "Multiplying all the denominators together always works, so the smaller correct choice is never sought.",
+                "correction": "Solve one equation both ways and compare how much heavier the arithmetic becomes.",
+                "concept_name": "Multiply by the LCM of the denominators",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Daily Life",
+                "example": "Scheduling two chores that recur every three and every six days rests on the same lowest common multiple.",
+                "relevance": "Medium",
+                "concept_name": "Multiply by the LCM of the denominators",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Activity Based Teaching",
+                "why_effective": "Listing multiples of each denominator until one is shared makes the choice visible rather than told.",
+                "concept_characteristics": [
+                    "lowest common multiple",
+                    "deliberate choice"
+                ],
+                "concept_name": "Multiply by the LCM of the denominators",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Calculate the lowest common multiple of the denominators and use it to clear the fractions.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Multiply by the LCM of the denominators",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Identifies 6 as the multiplier for denominators 3 and 6 and produces a fraction free equation.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Multiply by the LCM of the denominators",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "An equation has denominators 3 and 6. State the multiplier that clears them and carry the step out.",
+                "concept_name": "Multiply by the LCM of the denominators",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            },
+            {
+                "assessment_type": "MCQ",
+                "bloom_level": "Understand",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 1,
+                "recommended_question": "Which single number clears both the denominators 3 and 6 in one multiplication?",
+                "concept_name": "Multiply by the LCM of the denominators",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Procedure",
+            "definition": "Where both sides carry bracketed expressions, opening them first turns an awkward equation into one of the familiar form, so simplification comes before solving.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.94,
+            "concept_name": "Open the brackets",
+            "concept_id": "C452-14"
+        },
+        "topic_id": 25380,
+        "topic_name": "Reducing Equations to Simpler Form",
+        "knowledge_items": [
+            {
+                "knowledge": "Simplify before solving",
+                "statement": "Brackets on either side are opened first so the equation takes the familiar form before any transposing is attempted.",
+                "knowledge_type": "Process",
+                "confidence": 0.94,
+                "concept_name": "Open the brackets",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Expand bracketed terms on both sides",
+                "verb": "Expand",
+                "description": "Multiply out every bracket on the LHS and the RHS, then collect the like terms.",
+                "knowledge_refs": [
+                    "Simplify before solving"
+                ],
+                "concept_name": "Open the brackets",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Reducing an equation to a familiar form",
+                "ability_refs": [
+                    "Expand bracketed terms on both sides"
+                ],
+                "concept_name": "Open the brackets",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Simplification discipline",
+                "statement": "Tidies an equation completely before beginning to solve any part of it.",
+                "knowledge_refs": [
+                    "Simplify before solving"
+                ],
+                "ability_refs": [
+                    "Expand bracketed terms on both sides"
+                ],
+                "skill_refs": [
+                    "Reducing an equation to a familiar form"
+                ],
+                "concept_name": "Open the brackets",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Apply",
+                "coverage_score": 70,
+                "concept_name": "Open the brackets",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            },
+            {
+                "level": "Analyze",
+                "coverage_score": 30,
+                "concept_name": "Open the brackets",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Open the brackets",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Multiply by the LCM of the denominators",
+                "prerequisite_type": "Skill",
+                "necessity": "Recommended",
+                "_parent_concept": "Open the brackets",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "Solve and expand at the same time",
+                "statement": "Learners begin transposing terms while brackets are still unopened and lose track of the signs.",
+                "root_cause": "Both moves look like progress, so they get interleaved instead of being done in order.",
+                "correction": "Require the fully expanded equation to be written on a line of its own before any transposing.",
+                "concept_name": "Open the brackets",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Career",
+                "example": "A quantity surveyor expands every bracketed allowance in a quotation before totalling the figures.",
+                "relevance": "Medium",
+                "concept_name": "Open the brackets",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Project Based Teaching",
+                "why_effective": "Presenting a worked solution step by step forces the expansion to be finished before solving starts.",
+                "concept_characteristics": [
+                    "order of steps",
+                    "expansion"
+                ],
+                "concept_name": "Open the brackets",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Expand the brackets on both sides of an equation before transposing any term.",
+                "objective_type": "Ability",
+                "priority": "High",
+                "concept_name": "Open the brackets",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Rewrites a bracketed equation in fully expanded form and then solves that equation.",
+                "outcome_type": "Ability Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Open the brackets",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Medium",
+                "marks": 3,
+                "recommended_question": "Solve 3 times the quantity x minus 2, set equal to 2 times the quantity x plus 1, expanding both brackets first.",
+                "concept_name": "Open the brackets",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Analyze",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "Why should brackets be opened before terms are transposed rather than during the transposing?",
+                "concept_name": "Open the brackets",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Procedure",
+            "definition": "Once a solution has been found, each side of the original equation is evaluated separately at that value and the two results compared, a check the chapter works in full.",
+            "importance": "Important",
+            "difficulty": "Easy",
+            "confidence": 0.95,
+            "concept_name": "Check the answer against both sides",
+            "concept_id": "C452-15"
+        },
+        "topic_id": 25380,
+        "topic_name": "Reducing Equations to Simpler Form",
+        "knowledge_items": [
+            {
+                "knowledge": "Evaluate each side separately",
+                "statement": "The final check works out the LHS and the RHS independently at the solution and confirms the two values match.",
+                "knowledge_type": "Process",
+                "confidence": 0.95,
+                "concept_name": "Check the answer against both sides",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Evaluate both sides at the solution",
+                "verb": "Evaluate",
+                "description": "Work out the LHS and the RHS one after the other at the value found and compare them.",
+                "knowledge_refs": [
+                    "Evaluate each side separately"
+                ],
+                "concept_name": "Check the answer against both sides",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Completing a solution with a written verification",
+                "ability_refs": [
+                    "Evaluate both sides at the solution"
+                ],
+                "concept_name": "Check the answer against both sides",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Complete working",
+                "statement": "Presents a solution together with the verification that supports it.",
+                "knowledge_refs": [
+                    "Evaluate each side separately"
+                ],
+                "ability_refs": [
+                    "Evaluate both sides at the solution"
+                ],
+                "skill_refs": [
+                    "Completing a solution with a written verification"
+                ],
+                "concept_name": "Check the answer against both sides",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Apply",
+                "coverage_score": 60,
+                "concept_name": "Check the answer against both sides",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            },
+            {
+                "level": "Evaluate",
+                "coverage_score": 40,
+                "concept_name": "Check the answer against both sides",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "dok": [
+            {
+                "level": "2",
+                "description": "Skills and Concepts",
+                "concept_name": "Check the answer against both sides",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Checking a solution",
+                "prerequisite_type": "Skill",
+                "necessity": "Mandatory",
+                "_parent_concept": "Check the answer against both sides",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "The check may be skipped when confident",
+                "statement": "Learners leave out the final verification whenever their working felt straightforward at the time.",
+                "root_cause": "The check produces no new answer, so it feels like effort spent for nothing once a value is in hand.",
+                "correction": "Mark a worked example where a sign slip is caught only by the final comparison of the two sides.",
+                "concept_name": "Check the answer against both sides",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Industry",
+                "example": "A quality inspector measures a finished part against the specification rather than trusting the machine setting.",
+                "relevance": "High",
+                "concept_name": "Check the answer against both sides",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Art Integrated Teaching",
+                "why_effective": "Drawing the two sides as two balance pans and filling in their values makes the comparison concrete.",
+                "concept_characteristics": [
+                    "verification",
+                    "visual comparison"
+                ],
+                "concept_name": "Check the answer against both sides",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Evaluate the LHS and the RHS separately at the solution and compare the two values.",
+                "objective_type": "Skill",
+                "priority": "High",
+                "concept_name": "Check the answer against both sides",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Presents a completed check showing both sides of the original equation taking one value.",
+                "outcome_type": "Skill Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Check the answer against both sides",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Numerical",
+                "bloom_level": "Apply",
+                "dok_level": "2",
+                "difficulty": "Easy",
+                "marks": 2,
+                "recommended_question": "Having solved 5x + 7/2 = 3x/2 - 14, evaluate each side at your answer and compare the results.",
+                "concept_name": "Check the answer against both sides",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            },
+            {
+                "assessment_type": "Short Answer",
+                "bloom_level": "Evaluate",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 2,
+                "recommended_question": "What would an unequal pair of side values tell you about the solution you had found?",
+                "concept_name": "Check the answer against both sides",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ]
+    },
+    {
+        "concept": {
+            "concept_type": "Concept",
+            "definition": "Problems about numbers, ages, perimeters and combinations of currency notes can all be settled with linear equations, and the method's value lies in how varied those applications are.",
+            "importance": "Core",
+            "difficulty": "Medium",
+            "confidence": 0.93,
+            "concept_name": "Where linear equations are used",
+            "concept_id": "C452-16"
+        },
+        "topic_id": 25380,
+        "topic_name": "Reducing Equations to Simpler Form",
+        "knowledge_items": [
+            {
+                "knowledge": "Range of applications",
+                "statement": "Number puzzles, age problems, perimeter questions and currency note combinations all reduce to a linear equation in one variable.",
+                "knowledge_type": "Classification",
+                "confidence": 0.93,
+                "concept_name": "Where linear equations are used",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "abilities": [
+            {
+                "ability": "Form an equation from a word problem",
+                "verb": "Formulate",
+                "description": "Choose the unknown, express the stated conditions in terms of it and write the resulting equation.",
+                "knowledge_refs": [
+                    "Range of applications"
+                ],
+                "concept_name": "Where linear equations are used",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "skills": [
+            {
+                "skill": "Translating a described situation into algebra",
+                "ability_refs": [
+                    "Form an equation from a word problem"
+                ],
+                "concept_name": "Where linear equations are used",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "competencies": [
+            {
+                "competency": "Mathematical modelling",
+                "statement": "Turns a described situation into an equation and reads the solution back in that situation's own terms.",
+                "knowledge_refs": [
+                    "Range of applications"
+                ],
+                "ability_refs": [
+                    "Form an equation from a word problem"
+                ],
+                "skill_refs": [
+                    "Translating a described situation into algebra"
+                ],
+                "concept_name": "Where linear equations are used",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "blooms": [
+            {
+                "level": "Apply",
+                "coverage_score": 50,
+                "concept_name": "Where linear equations are used",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            },
+            {
+                "level": "Create",
+                "coverage_score": 50,
+                "concept_name": "Where linear equations are used",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "dok": [
+            {
+                "level": "3",
+                "description": "Strategic Thinking",
+                "concept_name": "Where linear equations are used",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "prerequisites": [
+            {
+                "concept_name": "Check the answer against both sides",
+                "prerequisite_type": "Skill",
+                "necessity": "Recommended",
+                "_parent_concept": "Where linear equations are used",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "misconceptions": [
+            {
+                "misconception": "The unknown must be the thing asked for",
+                "statement": "Learners always let the variable stand for the quantity the question asks about, even when another choice is far simpler.",
+                "root_cause": "Word problem drills usually name the unknown for the learner, so choosing it is never actually practised.",
+                "correction": "Solve one age problem twice with different choices of unknown and compare how hard each becomes.",
+                "concept_name": "Where linear equations are used",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "real_world_applications": [
+            {
+                "application_type": "Society",
+                "example": "Settling a shared expense among contributors who each hand over a different number of notes is done this way.",
+                "relevance": "High",
+                "concept_name": "Where linear equations are used",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "pedagogy_recommendations": [
+            {
+                "strategy": "Project Based Teaching",
+                "why_effective": "Collecting real problems from home and turning each into an equation shows the breadth of the method.",
+                "concept_characteristics": [
+                    "modelling",
+                    "word problems",
+                    "transfer"
+                ],
+                "concept_name": "Where linear equations are used",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "learning_objectives": [
+            {
+                "objective": "Formulate a linear equation in one variable from a stated problem on ages or perimeters.",
+                "objective_type": "Competency",
+                "priority": "High",
+                "concept_name": "Where linear equations are used",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "learning_outcomes": [
+            {
+                "outcome": "Writes an equation from a word problem, solves it and interprets the answer in context.",
+                "outcome_type": "Competency Outcome",
+                "measurable": true,
+                "assessment_ready": true,
+                "concept_name": "Where linear equations are used",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ],
+        "assessment_blueprint": [
+            {
+                "assessment_type": "Case Study",
+                "bloom_level": "Apply",
+                "dok_level": "3",
+                "difficulty": "Medium",
+                "marks": 4,
+                "recommended_question": "A rectangle's perimeter and a relation between its sides are given. Form a linear equation and find the sides.",
+                "concept_name": "Where linear equations are used",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            },
+            {
+                "assessment_type": "Competency Based Question",
+                "bloom_level": "Create",
+                "dok_level": "4",
+                "difficulty": "Hard",
+                "marks": 5,
+                "recommended_question": "Write your own problem about currency notes whose solution needs a linear equation, then solve it.",
+                "concept_name": "Where linear equations are used",
+                "topic_id": 25380,
+                "topic_name": "Reducing Equations to Simpler Form"
+            }
+        ]
+    }
+]

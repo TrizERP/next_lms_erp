@@ -252,14 +252,16 @@ class DeckValidator
 
             if ($kind === 'hotspots') {
                 $labels = array_map('mb_strtolower', (array) ($s['image']['texts'] ?? []));
-                if (($s['image']['type'] ?? '') !== 'diagram') {
-                    $errors[] = "Slide $n: hotspots need a drawn diagram to sit on.";
+                // A drawn diagram, or a stored picture whose parts a person marked ('annotated'): its spots sit where they were put.
+                $marked = !empty($s['image']['annotated']);
+                if (($s['image']['type'] ?? '') !== 'diagram' && !$marked) {
+                    $errors[] = "Slide $n: hotspots need a drawn diagram or a marked picture to sit on.";
                 }
                 if (count($i['spots'] ?? []) < 2) {
                     $errors[] = "Slide $n: hotspots need at least two spots.";
                 }
                 foreach ((array) ($i['spots'] ?? []) as $sp) {
-                    if (!in_array(mb_strtolower((string) $sp['label']), $labels, true)) {
+                    if (!$marked && !in_array(mb_strtolower((string) $sp['label']), $labels, true)) {
                         $errors[] = "Slide $n: hotspot \"{$sp['label']}\" is not a label on the diagram.";
                     }
                     if ($sp['x'] < 0 || $sp['x'] > 100 || $sp['y'] < 0 || $sp['y'] > 100) {

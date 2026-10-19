@@ -5,6 +5,7 @@ namespace App\Domain\AI\Lifecycle\Stages;
 use App\Domain\AI\Lifecycle\Flows\AdmissionsFlow;
 use App\Domain\AI\Lifecycle\Flows\FeesRemindersFlow;
 use App\Domain\AI\Lifecycle\Flows\FeesStudentDetailFlow;
+use App\Domain\AI\Lifecycle\Flows\ParentMessageFlow;
 use App\Domain\AI\Lifecycle\LifecycleStage;
 use App\Domain\AI\Lifecycle\Plan\Plan;
 use App\Domain\AI\Lifecycle\StageContext;
@@ -34,6 +35,7 @@ class LaravelMcpStage implements LifecycleStage
         private readonly AdmissionsFlow $admissions,
         private readonly FeesRemindersFlow $feesReminders,
         private readonly FeesStudentDetailFlow $feesStudent,
+        private readonly ParentMessageFlow $parentMessages,
     ) {
     }
 
@@ -66,12 +68,13 @@ class LaravelMcpStage implements LifecycleStage
         match ($plan->route) {
             'admissions_flow' => $this->runAdmissionsFlow($context),
             'fees_reminders_flow' => $this->runFeesRemindersFlow($context),
+            'parent_message_flow' => $this->runParentMessageFlow($context),
             'fees_student_flow' => $context->set('fees_student_flow', $this->feesStudent->run($context)),
             // The selection route names its own call and its own argument — the id came
             // from a row the previous answer printed, so there is no subject left to
             // resolve and running the student resolver here would search for a name
             // nobody typed.
-            'mcp_tools', 'selected_record' => $this->runPlannedSteps($context),
+            'mcp_tools', 'selected_record', 'exam_question_help_flow' => $this->runPlannedSteps($context),
             default => $plan->source === Plan::SOURCE_LLM
                 ? $this->runPlannedSteps($context)
                 : $this->resolveSubject($context),
@@ -120,8 +123,31 @@ class LaravelMcpStage implements LifecycleStage
     {
         $pending = $this->feesReminders->pending($context->thread['memory'] ?? []);
 
-        if ($pending === null && $context->intent?->key === 'fees_reminder_status') {
-            $context->set('fees_reminders_flow', $this->feesReminders->status($context));
+        // "Check whether WhatsApp is configured" asks the providers; it neither sends nor disturbs a reminder waiting for approval.
+        if ($context->intent?->key === 'channel_health') {
+            $health = $this->feesReminders->health($context);
+
+            if ($pending !== null) {
+                $health['pending'] = $pending;
+            }
+
+            $context->set('fees_reminders_flow', $health);
+
+            return;
+        }
+
+        // "Show reminder status" asks about reminders already sent. Said while a new one waits for approval it is
+        // answered from the saved records and the waiting reminder is kept exactly as it was, so the person can read the
+        // status and still say "yes" to the list on screen. It used to be swallowed by the pending reminder and
+        // answered with the preview again.
+        if ($context->intent?->key === 'fees_reminder_status') {
+            $status = $this->feesReminders->status($context);
+
+            if ($pending !== null) {
+                $status['pending'] = $pending;
+            }
+
+            $context->set('fees_reminders_flow', $status);
 
             return;
         }
@@ -140,6 +166,45 @@ class LaravelMcpStage implements LifecycleStage
         $context->set(
             'fees_reminders_flow',
             $pending !== null ? $this->feesReminders->advance($context, $pending) : $this->feesReminders->start($context)
+        );
+    }
+
+    /**
+     * The parent message flow (SMS or WhatsApp): ask for what is missing, show the list, send only on
+     * approval. Same shape as the fee reminders: the stage hands the turn over and leaves the result on
+     * the context for the reasoning stage to say out loud.
+     */
+    private function runParentMessageFlow(StageContext $context): void
+    {
+        $pending = $this->parentMessages->pending($context->thread['memory'] ?? []);
+
+        if ($pending === null && $context->intent?->key === 'channel_health') {
+            $context->set('parent_message_flow', $this->parentMessages->health($context));
+
+            return;
+        }
+
+        // "Show the message status" asks about messages already sent, not for a new one.
+        if ($pending === null && $context->intent?->key === 'parent_message_status') {
+            $context->set('parent_message_flow', $this->parentMessages->status($context));
+
+            return;
+        }
+
+        if ($pending !== null && $this->parentMessages->looksLikeCancel($context->question)) {
+            $context->set('parent_message_flow', [
+                'state' => 'cancelled',
+                'message' => 'Stopped. Nothing was sent.',
+                'data' => [],
+                'pending' => null,
+            ]);
+
+            return;
+        }
+
+        $context->set(
+            'parent_message_flow',
+            $pending !== null ? $this->parentMessages->advance($context, $pending) : $this->parentMessages->start($context)
         );
     }
 
