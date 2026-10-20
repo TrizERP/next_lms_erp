@@ -37,7 +37,7 @@ return new class extends Migration
         }
 
         $parent = DB::table('tblmenumaster')
-            ->whereRaw('LOWER(name) = ?', ['new pal'])
+            ->where('link', 'new_pal.index')
             ->where('level', 2)
             ->orderBy('id')
             ->first();
