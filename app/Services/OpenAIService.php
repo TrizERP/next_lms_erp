@@ -14,7 +14,9 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use App\Http\Controllers\fees\fees_collect\fees_collect_controller;
-use function App\Helpers\getAIKey;
+use App\Domain\AI\Configuration\AiConfigurationException;
+use App\Domain\AI\Configuration\AiModelClientFactory;
+use App\Domain\AI\Support\AiProviderException;
 use OpenAI;
 
 set_time_limit(200);
@@ -22,13 +24,48 @@ set_time_limit(200);
 class OpenAIService
 {
     protected $client;
-    protected $apiKey;
 
-    public function __construct()
+    /** The school whose AI configuration applies; null = take it from the signed-in session. */
+    protected ?int $subInstituteId;
+
+    public function __construct(?int $subInstituteId = null)
     {
+        // Plain Guzzle client: still used by the Gamma, attendance and fees calls below.
+        // Every language-model call goes through the central AI configuration (aiChat).
         $this->client = new Client();
-        $this->apiKey = env('OPENAI_API_KEY');
-        $this->apiKey_deepseek = env('OPENROUTER_API_KEY');
+        $this->subInstituteId = $subInstituteId;
+    }
+
+    /** The school the signed-in user belongs to (or the one this service was built for). */
+    protected function aiTenant(): ?int
+    {
+        if ($this->subInstituteId !== null && $this->subInstituteId > 0) {
+            return $this->subInstituteId;
+        }
+
+        try {
+            $id = Session::get('sub_institute_id');
+        } catch (\Throwable $e) {
+            $id = null;
+        }
+
+        return is_numeric($id) && (int) $id > 0 ? (int) $id : null;
+    }
+
+    /**
+     * One model call through the central AI configuration for $module. Provider, model, key,
+     * base URL and fallback order are the administrator's; nothing is read from .env or the key table.
+     *
+     * Throws AiConfigurationException (message says what to configure) when the module has nothing
+     * usable, and AiProviderException / RuntimeException when every configured provider failed.
+     *
+     * @param array<int, array{role:string, content:string}> $messages
+     */
+    protected function aiChat(string $module, array $messages, ?int $maxTokens = null, ?float $temperature = null, ?int $timeout = null): string
+    {
+        $client = app(AiModelClientFactory::class)->for($module, $this->aiTenant());
+
+        return (string) $client->chat($messages, null, $maxTokens, $temperature, false, $timeout);
     }
 
     public function generateTitleAndDescription($topicName, $chapterName, $subjectName,$standard_name)
@@ -36,23 +73,7 @@ class OpenAIService
         $prompt = "Generate a title and description for a topic named '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}' in standard '{$standard_name}'. \n";
         
         try {
-            $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
-                'verify' => false,
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => [
-                    'model' => 'gpt-3.5-turbo',
-                    'messages' => [
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'max_tokens' => 150, 
-                ],
-            ]);
-
-            $data = json_decode($response->getBody(), true);
-            $generatedText = $data['choices'][0]['message']['content'];
+            $generatedText = $this->aiChat('content_generation', [['role' => 'user', 'content' => $prompt]], 150, null);
 
             // Split the generated text into title and description
             list($title, $description) = explode("\n", $generatedText, 2);
@@ -61,8 +82,13 @@ class OpenAIService
                 'title' => trim($title),
                 'description' => trim($description),
             ];
-        } catch (RequestException $e) {
-            Log::error('OpenAI API Error: ' . $e->getMessage());
+        } catch (AiConfigurationException $e) {
+            return [
+                'title' => 'Error generating title',
+                'description' => 'Error: ' . $e->getMessage(),
+            ];
+        } catch (RequestException|AiProviderException $e) {
+            Log::error('AI provider error: ' . $e->getMessage());
             return [
                 'title' => 'Error generating title',
                 'description' => 'Error: ' . $e->getMessage(),
@@ -148,25 +174,7 @@ class OpenAIService
         }
 
         try {
-            $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
-                'verify' => false,
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => [
-                    'model' => 'gpt-3.5-turbo',
-                    'messages' => [
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'max_tokens' => 4096,
-                    'temperature' => 1.8,
-                    'top_p' => 0.5,
-                ],
-            ]);
-
-            $data = json_decode($response->getBody(), true);
-            $generatedText = $data['choices'][0]['message']['content'];
+            $generatedText = $this->aiChat('lesson_planning', [['role' => 'user', 'content' => $prompt]], 4096, 1.8);
             $formattedText = nl2br($generatedText);
             
             $imageUrls=[];
@@ -202,8 +210,10 @@ class OpenAIService
                 'prompt' => $prompt,
                 'fileUrl' => $fileUrl,
             ];
-        } catch (RequestException $e) {
-            Log::error('OpenAI API Error: ' . $e->getMessage());
+        } catch (AiConfigurationException $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        } catch (RequestException|AiProviderException $e) {
+            Log::error('AI provider error: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to generate lesson plan.'], 500);
         } catch (\Exception $e) {
             Log::error('Error generating Data: ' . $e->getMessage());
@@ -221,25 +231,7 @@ class OpenAIService
         
         try {
             // Call GPT-3.5 API to generate text
-            $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
-                'verify' => false,
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => [
-                    'model' => 'gpt-3.5-turbo',
-                    'messages' => [
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'max_tokens' => 4096,
-                    'temperature' => 1.8,
-                    'top_p' => 0.5,
-                ],
-            ]);
-        
-            $data = json_decode($response->getBody(), true);
-            $generatedText = $data['choices'][0]['message']['content'];
+            $generatedText = $this->aiChat('lesson_planning', [['role' => 'user', 'content' => $prompt]], 4096, 1.8);
             $formattedText = nl2br($generatedText);
             
             $imageUrls=[];
@@ -275,8 +267,10 @@ class OpenAIService
                 'prompt' => $prompt,
                 'fileUrl' => $fileUrl,
             ];
-        } catch (RequestException $e) {
-            Log::error('OpenAI API Error: ' . $e->getMessage());
+        } catch (AiConfigurationException $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        } catch (RequestException|AiProviderException $e) {
+            Log::error('AI provider error: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to generate lesson plan.'], 500);
         } catch (\Exception $e) {
             Log::error('Error generating Data: ' . $e->getMessage());
@@ -320,25 +314,7 @@ class OpenAIService
             Log::info('Prompt: ' . $prompt);    
         }
         try {
-            $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
-                'verify' => false,
-                'headers' => [  
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => [
-                    'model' => 'gpt-3.5-turbo',
-                    'messages' => [
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'max_tokens' => 4096,
-                    'temperature' => 1.8,
-                    'top_p' => 0.5,
-                ],
-            ]);
-            
-            $data = json_decode($response->getBody(), true);
-            $generatedText = $data['choices'][0]['message']['content'];
+            $generatedText = $this->aiChat('content_generation', [['role' => 'user', 'content' => $prompt]], 4096, 1.8);
             $formattedText = nl2br($generatedText);
 
             if ($contentType === 'pdf') {
@@ -353,8 +329,10 @@ class OpenAIService
             $fileUrl = url('storage/pdfs/' . $fileName);
             return $fileUrl;
 
-        } catch (RequestException $e) {
-            Log::error('OpenAI API Error: ' . $e->getMessage());
+        } catch (AiConfigurationException $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        } catch (RequestException|AiProviderException $e) {
+            Log::error('AI provider error: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to generate lesson plan.'], 500);
         } catch (\Exception $e) {
             Log::error('Error generating Data: ' . $e->getMessage());
@@ -490,29 +468,13 @@ class OpenAIService
         $prompt="Generate more content on addition to a existing basic content that I already have in a detail manner for the topic '{$topicName}' in the chapter '{$chapterName}' of the subject '{$subjectName}'.\n" .
                 "Strictly avoid any personal replies or apologies. Only provide the main content.\n";
         try {
-            $response = $this->client->post('https://api.openai.com/v1/chat/completions', [
-                'verify' => false,
-                'headers' => [  
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Content-Type' => 'application/json',
-                ],
-                'json' => [
-                    'model' => 'gpt-3.5-turbo',
-                    'messages' => [
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'max_tokens' => 4096,
-                    'temperature' => 1.8,
-                    'top_p' => 0.5,
-                ],
-            ]);
-            
-            $data = json_decode($response->getBody(), true);
-            $generatedText = $data['choices'][0]['message']['content'];
+            $generatedText = $this->aiChat('content_generation', [['role' => 'user', 'content' => $prompt]], 4096, 1.8);
             $formattedText = nl2br($generatedText);
             return $formattedText;
-        } catch (RequestException $e) {
-            Log::error('OpenAI API Error: ' . $e->getMessage());
+        } catch (AiConfigurationException $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        } catch (RequestException|AiProviderException $e) {
+            Log::error('AI provider error: ' . $e->getMessage());
             return response()->json(['error' => 'Failed to generate lesson plan.'], 500);
         } catch (\Exception $e) {
             Log::error('Error generating Data: ' . $e->getMessage());
@@ -741,30 +703,12 @@ class OpenAIService
         try {
             $conversationHistory = Session::get('conversationHistory', []);
             $conversationHistory[] = ['role' => 'user', 'content' => $input];
-            $response = $this->client->post('https://openrouter.ai/api/v1/chat/completions', [
-                'verify' => false,
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey_deepseek,
-                    'Content-Type' => 'application/json',
-                    'HTTP-Referer' => 'https://nextlms.in',
-                    'X-Title' => 'Next LMS ERP',
-                ],
-                'json' => [
-                    'model' => 'deepseek/deepseek-chat',
-                    'messages' => $conversationHistory,
-                    'max_tokens' => 4096,
-                    'temperature' => 1.8,
-                    'top_p' => 0.5,
-                ],
-            ]);
-
-            $data = json_decode($response->getBody(), true);
-            $generatedText = $data['choices'][0]['message']['content'];
+            $generatedText = $this->aiChat('conversational_ai', $conversationHistory, 4096, 1.8);
             $conversationHistory[] = ['role' => 'assistant', 'content' => $generatedText];
             Session::put('conversationHistory', $conversationHistory);
             return $generatedText;
-        } catch (RequestException $e) {
-            Log::error('OpenRouter API Error: ' . $e->getResponse()->getBody()->getContents());
+        } catch (AiConfigurationException|AiProviderException $e) {
+            Log::error('AI provider error: ' . $e->getMessage());
             return [
                 'title' => 'Error generating title',
                 'description' => 'Error: ' . $e->getMessage(),
@@ -773,132 +717,28 @@ class OpenAIService
     }
 
     /**
-     * Generate content for question generation
-     * Used by assessmentQuestionController
+     * One-shot text generation from a prompt.
+     *
+     * Used by assessmentQuestionController (assessment_ai) and by palController's misconception
+     * content (pass 'pal_content_model' as $module). Provider, model, key and fallback order come
+     * from the central AI configuration; a provider that fails or runs out of quota is skipped
+     * automatically, so the old "disable the key row and retry" rotation is no longer needed here.
+     *
+     * @param int         $retry  Kept for signature compatibility; fallback is handled by the provider chain.
+     * @param string|null $module AiModuleRegistry key; defaults to assessment_ai.
+     * @throws AiConfigurationException when the module has nothing usable configured
      */
-    // public function generateContent($prompt)
-    // {
-    //     try {
-    //         $apiKey_deepseek = getAIKey('OPENROUTER_API_KEY',1);
-    //         // Use OpenRouter API with DeepSeek model (same as handleDynamicResponse)
-    //         $response = $this->client->post('https://openrouter.ai/api/v1/chat/completions', [
-    //             'verify' => false,
-    //             'headers' => [
-    //                 'Authorization' => 'Bearer ' . $apiKey_deepseek,
-    //                 'Content-Type' => 'application/json',
-    //                 'HTTP-Referer' => 'https://nextlms.in',
-    //                 'X-Title' => 'Next LMS ERP',
-    //             ],
-    //             'json' => [
-    //                 'model' => 'deepseek/deepseek-chat',
-    //                 'messages' => [
-    //                     ['role' => 'user', 'content' => $prompt],
-    //                 ],
-    //                 'max_tokens' => 4096,
-    //                 'temperature' => 1.8,
-    //                 'top_p' => 0.5,
-    //             ],
-    //         ]);
-
-    //         $data = json_decode($response->getBody(), true);
-    //         $generatedText = $data['choices'][0]['message']['content'];
-    //         if(eror){
-    //             $apiKey_deepseek = getAIKey('OPENROUTER_API_KEY',1);
-    //         }
-    //         return $generatedText;
-    //     } catch (RequestException $e) {
-    //         Log::error('OpenRouter API Error: ' . $e->getMessage());
-    //         throw new \Exception('Failed to generate content: ' . $e->getMessage());
-    //     }
-    // }
-
-    // dynamic key fecthing by saroj uma 
-  public function generateContent($prompt, $retry = 0)
-{
-    $apiKey = null;
-
-    try {
+    public function generateContent($prompt, $retry = 0, ?string $module = null)
+    {
         try {
-            $apiKey = getAIKey('OPENROUTER_API_KEY', 1);
-        } catch (\Throwable $keyLookupError) {
-            Log::warning('AI key table lookup failed, falling back to env key: ' . $keyLookupError->getMessage());
+            return $this->aiChat($module ?? 'assessment_ai', [['role' => 'user', 'content' => (string) $prompt]], 4096, 1.2);
+        } catch (AiConfigurationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            Log::error('General Error: ' . $e->getMessage());
+            throw $e;
         }
-
-        if (!$apiKey || $apiKey === '-' || empty($apiKey->api_key)) {
-            $envApiKey = env('OPENROUTER_API_KEY');
-            if (!empty($envApiKey)) {
-                $apiKey = (object) [
-                    'id' => null,
-                    'api_key' => trim($envApiKey, " \t\n\r\0\x0B'\""),
-                    'api_limit' => 1466,
-                ];
-            }
-        }
-        \Log::info('used key and limit: ' . $apiKey->api_key . ' limit-' . $apiKey->api_limit
-            . ' id-' . $apiKey->id);
-
-        if (!$apiKey || empty($apiKey->api_key)) {
-            throw new \Exception('No active API keys available');
-        }
-
-        $response = $this->client->post('https://openrouter.ai/api/v1/chat/completions', [
-            'verify' => false,
-            'headers' => [
-                'Authorization' => 'Bearer ' . $apiKey->api_key,
-                'Content-Type' => 'application/json',
-                'HTTP-Referer' => 'https://nextlms.in',
-                'X-Title' => 'Next LMS ERP',
-            ],
-            'json' => [
-                'model' => 'deepseek/deepseek-chat',
-                'messages' => [
-                    ['role' => 'user', 'content' => $prompt],
-                ],
-                'max_tokens' => $apiKey->api_limit ?? 1466, // ✅ FIXED (reduce tokens)
-                'temperature' => 1.2, // optional tuning
-                'top_p' => 0.8,
-            ],
-        ]);
-        \Log::info('used key and limit: ' . $apiKey->api_key . ' limit-' . $apiKey->api_limit);
-        $data = json_decode($response->getBody(), true);
-
-        return $data['choices'][0]['message']['content'] ?? '';
-
-    } catch (\GuzzleHttp\Exception\ClientException $e) {
-
-        $statusCode = $e->getResponse()->getStatusCode();
-        $responseBody = json_decode($e->getResponse()->getBody(), true);
-
-        Log::error('API Error', [
-            'status' => $statusCode,
-            'response' => $responseBody,
-            'api_key_id' => $apiKey->id ?? null,
-        ]);
-        \Log::error('status: ' . $statusCode);
-        // ✅ HANDLE ALL IMPORTANT CASES
-        if (in_array($statusCode, [401, 402, 429])) {
-
-            // 🔴 Disable current key
-            if (!empty($apiKey->id) && Schema::hasTable('ai_api_keys')) {
-                DB::table('ai_api_keys')
-                    ->where('api_key', $apiKey->api_key)
-                    ->update(['status' => 0,'updated_at'=>now()]);
-            }
-
-            // 🔁 Retry (max 3 times)
-            if ($retry < 1) {
-                return $this->generateContent($prompt, $retry + 1);
-            }
-        }
-
-        throw new \Exception('API Failed: ' . $e->getMessage());
-
-    } catch (\Exception $e) {
-        Log::error('General Error: ' . $e->getMessage());
-        throw $e;
     }
-}
-    
     protected function getAttendance($studentId)
     {
         try {
@@ -1083,35 +923,14 @@ class OpenAIService
         $prompt .= "Strictly avoid any personal replies or apologies. Only provide the main content.\n";
         
         try {
-            // Use OpenRouter API (same as handleDynamicResponse)
-            $response = $this->client->post('https://openrouter.ai/api/v1/chat/completions', [
-                'verify' => false,
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey_deepseek,
-                    'Content-Type' => 'application/json',
-                    'HTTP-Referer' => 'https://nextlms.in',
-                    'X-Title' => 'NEXT LMS ERP',
-                ],
-                'json' => [
-                    'model' => 'deepseek/deepseek-chat',
-                    'messages' => [
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'max_tokens' => 4096,
-                    'temperature' => 1.8,
-                    'top_p' => 0.5,
-                ],
-            ]);
-
-            $data = json_decode($response->getBody(), true);
-            $generatedOutline = $data['choices'][0]['message']['content'];
+            $generatedOutline = $this->aiChat('lesson_planning', [['role' => 'user', 'content' => $prompt]], 4096, 1.8);
             
             // Parse the outline into structured format
             $slidesData = $this->parseSlideOutline($generatedOutline, $slideCount);
             
             return $slidesData;
-        } catch (RequestException $e) {
-            Log::error('OpenRouter API Error: ' . $e->getMessage());
+        } catch (RequestException|AiProviderException $e) {
+            Log::error('AI provider error: ' . $e->getMessage());
             throw new \Exception('Failed to generate slide outline: ' . $e->getMessage());
         }
     }
@@ -1389,36 +1208,15 @@ class OpenAIService
         ]);
         
         try {
-            // Use OpenRouter API
-            $response = $this->client->post('https://openrouter.ai/api/v1/chat/completions', [
-                'verify' => false,
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey_deepseek,
-                    'Content-Type' => 'application/json',
-                    'HTTP-Referer' => 'https://nextlms.in',
-                    'X-Title' => 'NEXT LMS ERP',
-                ],
-                'json' => [
-                    'model' => 'deepseek/deepseek-chat',
-                    'messages' => [
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'max_tokens' => 8192,
-                    'temperature' => 0.7,
-                    'top_p' => 0.9,
-                ],
-            ]);
-
-            $data = json_decode($response->getBody(), true);
-            $generatedOutline = $data['choices'][0]['message']['content'];
+            $generatedOutline = $this->aiChat('lesson_planning', [['role' => 'user', 'content' => $prompt]], 8192, 0.7);
             
             // Parse the JSON response
             $slidesData = $this->parseKAABSlideOutline($generatedOutline, $slideCount, $params);
             
             return $slidesData;
             
-        } catch (RequestException $e) {
-            Log::error('OpenRouter API Error: ' . $e->getMessage());
+        } catch (RequestException|AiProviderException $e) {
+            Log::error('AI provider error: ' . $e->getMessage());
             throw new \Exception('Failed to generate KAAB slide outline: ' . $e->getMessage());
         }
     }
@@ -1716,35 +1514,15 @@ class OpenAIService
         ]);
         
         try {
-            $response = $this->client->post('https://openrouter.ai/api/v1/chat/completions', [
-                'verify' => false,
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $this->apiKey_deepseek,
-                    'Content-Type' => 'application/json',
-                    'HTTP-Referer' => 'https://nextlms.in',
-                    'X-Title' => 'NEXT LMS ERP',
-                ],
-                'json' => [
-                    'model' => 'deepseek/deepseek-chat',
-                    'messages' => [
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'max_tokens' => 8192,
-                    'temperature' => 0.7,
-                    'top_p' => 0.9,
-                ],
-            ]);
-
-            $data = json_decode($response->getBody(), true);
-            $generatedOutline = $data['choices'][0]['message']['content'];
+            $generatedOutline = $this->aiChat('lesson_planning', [['role' => 'user', 'content' => $prompt]], 8192, 0.7);
             
             // Parse the JSON response
             $slidesData = $this->parseIBLPresentationOutline($generatedOutline, $params);
             
             return $slidesData;
             
-        } catch (RequestException $e) {
-            Log::error('OpenRouter API Error: ' . $e->getMessage());
+        } catch (RequestException|AiProviderException $e) {
+            Log::error('AI provider error: ' . $e->getMessage());
             throw new \Exception('Failed to generate IBL presentation outline: ' . $e->getMessage());
         }
     }
@@ -1919,19 +1697,6 @@ Create a detailed 30-slide interactive presentation for the following parameters
             throw new \Exception('Generated content is required.');
         }
 
-        $apiKey = $this->apiKey_deepseek;
-        if (empty($apiKey)) {
-            $apiKey = getAIKey('OPENROUTER_API_KEY', 1);
-        }
-
-        if (is_object($apiKey)) {
-            $apiKey = $apiKey->api_key ?? '';
-        }
-
-        if (empty($apiKey)) {
-            throw new \Exception('OpenRouter API key not configured.');
-        }
-
         $title = $topicName ?: $chapterName ?: 'Generated Presentation';
         $prompt = "Create exactly {$slideCount} polished presentation slides from the content below.\n";
         $prompt .= "Use a Gamma-style structure: concise headlines, visual-first slide intent, short bullets, speaker notes, and clean educational flow.\n";
@@ -1945,28 +1710,7 @@ Create a detailed 30-slide interactive presentation for the following parameters
         $prompt .= "Generated content:\n{$generatedContent}";
 
         try {
-            $response = $this->client->post('https://openrouter.ai/api/v1/chat/completions', [
-                'verify' => false,
-                'headers' => [
-                    'Authorization' => 'Bearer ' . $apiKey,
-                    'Content-Type' => 'application/json',
-                    'HTTP-Referer' => 'https://nextlms.in',
-                    'X-Title' => 'NEXT LMS ERP',
-                ],
-                'json' => [
-                    'model' => 'deepseek/deepseek-chat',
-                    'messages' => [
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'max_tokens' => 6000,
-                    'temperature' => 0.7,
-                    'top_p' => 0.9,
-                ],
-                'timeout' => 90,
-            ]);
-
-            $data = json_decode($response->getBody()->getContents(), true);
-            $generatedJson = $data['choices'][0]['message']['content'] ?? '';
+            $generatedJson = $this->aiChat('lesson_planning', [['role' => 'user', 'content' => $prompt]], 6000, 0.7, 90);
             $presentation = $this->parseGammaStyleSlides($generatedJson, $generatedContent, $slideCount, $title);
             $pdfBinary = $this->renderGammaStyleSlidesPdf($presentation, [
                 'standardId' => $standardId,
@@ -1984,8 +1728,8 @@ Create a detailed 30-slide interactive presentation for the following parameters
                 'pdf_binary' => $pdfBinary,
                 'title' => $presentation['title'] ?? $title,
             ];
-        } catch (RequestException $e) {
-            Log::error('OpenRouter Gamma-style slide error: ' . $e->getMessage());
+        } catch (RequestException|AiProviderException $e) {
+            Log::error('AI Gamma-style slide error: ' . $e->getMessage());
             throw new \Exception('Failed to generate slide content: ' . $e->getMessage());
         }
     }

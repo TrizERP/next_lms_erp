@@ -68,8 +68,8 @@ class NewPalContentModelController extends Controller
             'ladder' => config('pal_content_model.ladder'),
             'node_prefixes' => config('pal_content_model.node_prefixes'),
             'ai' => [
-                'available' => $this->enrichment->available(),
-                'unavailable_reason' => $this->enrichment->unavailableReason(),
+                'available' => $this->enrichment->available($this->tenantFor($request)),
+                'unavailable_reason' => $this->enrichment->unavailableReason($this->tenantFor($request)),
             ],
         ]);
     }

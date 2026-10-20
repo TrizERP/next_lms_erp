@@ -65,6 +65,9 @@ class GenerationService
      */
     private const MODULE = 'generative_ai';
 
+    /** The module the analyse-this-screen templates (`k12.analyse.*`) are configured under. */
+    private const ANALYTICS_MODULE = 'analytics_ai';
+
     /**
      * The module an image-output template resolves its provider/model/key under.
      *
@@ -156,11 +159,20 @@ class GenerationService
         // The template names the PRODUCT module it belongs to, so a module that chose
         // its own generative model on its own AI Stack gets it. A shared template
         // carries no module and resolves through the central configuration as before.
+        // The analyse-this-screen templates are configured as Report & Analytics AI; every other
+        // template is Generative AI. Analytics inherits Generative AI's configuration until it is
+        // given its own, so nothing moves for a school that has configured only the one.
+        $module = $this->moduleFor($template->key);
+
         $configuration = $this->clients->configurationFor(
-            self::MODULE,
+            $module,
             $scope->selectedInstituteId,
             $template->moduleKey,
         );
+
+        // The module's providers in the order its administrator ranked them. If the first fails or
+        // its quota is spent the next answers; `lastUsed()` says which one did.
+        $client = $this->clients->for($module, $scope->selectedInstituteId, $template->moduleKey);
 
         $requestId = $this->recordRequest($request, $template, $rendered, $scope, 'running', null, $configuration);
 
@@ -181,7 +193,7 @@ class GenerationService
         $model = $request->modelOverride ?? $template->model ?? $configuration->model ?? $this->client->defaultModel();
 
         try {
-            $content = $this->callModel($rendered, $template, $model, $scope, $configuration);
+            $content = $this->callModel($rendered, $template, $model, $client);
         } catch (Throwable $exception) {
             $this->updateRequest($requestId, 'failed', $exception->getMessage());
 
@@ -189,6 +201,15 @@ class GenerationService
         }
 
         $latencyMs = (int) round((microtime(true) - $startedAt) * 1000);
+
+        // A fallback provider answered: record what really ran, not what was first in line.
+        $used = $client->lastUsed();
+
+        if ($used !== null && ($used->provider !== $configuration->provider || $used->model !== $configuration->model)) {
+            $configuration = $used;
+            $model = $used->model ?? $model;
+            $this->recordActualProvider($requestId, $used->provider, $model);
+        }
 
         if ($content === null || trim($content) === '') {
             $this->updateRequest($requestId, 'failed', 'The model returned no content.');
@@ -367,14 +388,8 @@ class GenerationService
         $startedAt = microtime(true);
 
         try {
-            $client = $this->clients->fromConfiguration($configuration, $scope->selectedInstituteId);
-
-            if (! $client instanceof SupportsImageGeneration) {
-                throw new RuntimeException(sprintf(
-                    '%s is configured for image generation but has no image-capable client.',
-                    $configuration->provider
-                ));
-            }
+            // The module's providers in order; only those that can generate images are tried.
+            $client = $this->clients->for(self::IMAGE_MODULE, $scope->selectedInstituteId, $template->moduleKey);
 
             $prompt = trim(($rendered['system'] ?? '') . "\n\n" . $rendered['user']);
             $image = $client->generateImage($prompt, $model);
@@ -509,8 +524,7 @@ class GenerationService
         array $rendered,
         $template,
         string $model,
-        McpRequestContext $scope,
-        ResolvedAiConfiguration $configuration
+        \App\Domain\AI\Support\FallbackChainModelClient $client
     ): ?string
     {
         $messages = [];
@@ -524,7 +538,7 @@ class GenerationService
         // The client this module is configured to use, already carrying the resolved
         // key and scoped to the signed-in school. With nothing configured this returns
         // the same driver, model and key the container binding always did.
-        return $this->clients->fromConfiguration($configuration, $scope->selectedInstituteId)->chat(
+        return $client->chat(
             $messages,
             $model,
             maxTokens: $template->maxTokens ?? null,
@@ -589,6 +603,28 @@ class GenerationService
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+    }
+
+    /** The provider and model that actually answered, when a fallback did. */
+    private function recordActualProvider(?int $requestId, string $provider, ?string $model): void
+    {
+        if ($requestId === null || ! Schema::hasTable('ai_generation_requests')) {
+            return;
+        }
+
+        DB::table('ai_generation_requests')->where('id', $requestId)->update(array_filter([
+            'provider' => $provider,
+            'model' => $model,
+            'updated_at' => now(),
+        ], fn ($value) => $value !== null));
+    }
+
+    /** Which AI module a template's calls are configured under. */
+    private function moduleFor(?string $templateKey): string
+    {
+        return is_string($templateKey) && str_starts_with($templateKey, 'k12.analyse.')
+            ? self::ANALYTICS_MODULE
+            : self::MODULE;
     }
 
     private function updateRequest(?int $requestId, string $status, ?string $error = null): void

@@ -57,7 +57,7 @@ class ProcessDocumentPipelineJob implements ShouldQueue
             file_put_contents($tempPath, $content);
 
             // 2. Extract Text
-            $extractionResult = $extractionManager->extractText($tempPath, $document->mime_type, $document->original_file_name);
+            $extractionResult = $extractionManager->extractText($tempPath, $document->mime_type, $document->original_file_name, $document->sub_institute_id);
             $document->extracted_text = $extractionResult['text'];
 
             // 3. AI / Rule-based Classification

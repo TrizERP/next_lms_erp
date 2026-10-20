@@ -19,8 +19,8 @@ return [
     'ai_enabled' => env('IDMS_AI_ENABLED', true),
     'ai_provider' => env('IDMS_AI_PROVIDER', 'gemini'), // gemini | openai
     'ai_model' => env('IDMS_AI_MODEL', env('GEMINI_MODEL', 'gemini-2.5-flash')),
-    'gemini_api_key' => env('GEMINI_API_KEY'),
-    'openai_api_key' => env('OPENAI_API_KEY'),
+    // No provider keys here: document AI resolves its provider, model and key from AI Providers
+    // (module `document_intelligence`).
 
     /*
     |--------------------------------------------------------------------------

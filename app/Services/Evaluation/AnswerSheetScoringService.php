@@ -30,8 +30,19 @@ class AnswerSheetScoringService
     /** Below this, the review queue puts the question in front of a teacher first. */
     public const CONFIDENCE_REVIEW_THRESHOLD = 75.0;
 
-    public function __construct(private readonly GeminiClient $gemini)
+    public function __construct(private GeminiClient $gemini)
     {
+    }
+
+    /**
+     * A copy of this service whose model calls resolve the `evaluation_ai` configuration for one school.
+     */
+    public function forInstitute(int|string|null $subInstituteId): static
+    {
+        $copy = clone $this;
+        $copy->gemini = $this->gemini->forInstitute($subInstituteId);
+
+        return $copy;
     }
 
     /**

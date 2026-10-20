@@ -450,7 +450,7 @@ class PrayogshalaGenerator
      */
     protected function complete(string $system, string $user, int $tenant): array
     {
-        $claude = $this->client->complete($system, $user, $tenant);
+        $claude = $this->client->complete($system, $user, $tenant, 'content_generation');
         if ($claude['ok'] ?? false) {
             return $claude;
         }

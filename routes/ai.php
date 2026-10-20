@@ -88,9 +88,20 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             | dropdown reads, so a model added here is immediately selectable there —
             | one list, not two.
             */
-            Route::get('/configuration/options', [AiConfigurationController::class, 'options']);
+            // A text completion for the web frontend's server routes, through AI Providers — so the
+            // frontend holds no provider key. See AiCompletionController.
+            Route::post('/complete', [\App\Http\Controllers\AI\AiCompletionController::class, 'complete']);
+
+            Route::get('/configuration/options',[AiConfigurationController::class, 'options']);
+            // Which providers and models can really serve one module, ranked — what the form
+            // shows the moment a module is picked. Registered before `/configuration/{id}`
+            // routes so the word is never read as an id.
+            Route::get('/configuration/compatibility', [AiConfigurationController::class, 'compatibility']);
+            Route::post('/configuration/reorder', [AiConfigurationController::class, 'reorder']);
             Route::get('/configuration', [AiConfigurationController::class, 'index']);
             Route::post('/configuration', [AiConfigurationController::class, 'store']);
+            Route::post('/configuration/{id}/verify', [AiConfigurationController::class, 'verify'])
+                ->where('id', '[0-9]+');
             Route::put('/configuration/{id}', [AiConfigurationController::class, 'update'])
                 ->where('id', '[0-9]+');
             Route::delete('/configuration/{id}', [AiConfigurationController::class, 'destroy'])

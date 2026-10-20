@@ -83,7 +83,19 @@ return [
         'fallback_models' => array_values(array_filter(array_map('trim', explode(',', (string) env('AI_LANGUAGE_FALLBACK_MODELS', 'gemini-3.1-flash-lite,gemini-3.5-flash-lite'))))),
     ],
 
+    /*
+    | Whether a provider key found in the environment (GEMINI_API_KEY, OPENROUTER_API_KEY, ...) may
+    | stand in when `ai_api_keys` holds none. OFF, and it should stay off: providers, models and keys
+    | are chosen in AI & Intelligence -> AI Providers, and an environment key quietly overriding that
+    | is how a module ends up on an account nobody can see. Turn it on only to bootstrap a fresh
+    | install before anyone has opened that screen.
+    */
+    'allow_env_credentials' => (bool) env('AI_ALLOW_ENV_CREDENTIALS', false),
+
     'provider' => [
+        // A tiebreak only: with no provider ranked in AI Providers, the pool provider named here is
+        // listed first among those that already have a stored key. It never supplies a key or
+        // names a provider that has none.
         'driver' => env('AI_PROVIDER', 'gemini'),
 
         'gemini' => [

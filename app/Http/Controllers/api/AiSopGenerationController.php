@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers\api;
 
+use App\Domain\AI\Configuration\AiConfigurationException;
+use App\Domain\AI\Configuration\AiModelClientFactory;
+use App\Domain\AI\Support\AiProviderException;
 use App\Http\Controllers\Controller;
 use App\Models\AiSop;
 use Dompdf\Dompdf;
@@ -9,7 +12,6 @@ use Dompdf\Options;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -113,6 +115,7 @@ class AiSopGenerationController extends Controller
             'include_sections.*' => 'required|string|max:80',
             'existing_content' => 'nullable|string|max:20000',
             'mode' => 'nullable|in:generate,improve,regenerate',
+            'sub_institute_id' => 'nullable|integer|min:1',
         ]);
 
         if ($validator->fails()) {
@@ -123,99 +126,51 @@ class AiSopGenerationController extends Controller
             ], 422);
         }
 
-        $apiKey = env('GEMINI_API_KEY');
-        if (!$apiKey) {
-            return response()->json([
-                'status_code' => 0,
-                'message' => 'Gemini API key is not configured. Please set GEMINI_API_KEY in the backend .env file.',
-            ], 500);
-        }
-
         $data = $validator->validated();
         $mode = $data['mode'] ?? 'generate';
-        $model = config('gemini.model');
         $prompt = $this->buildPrompt($data, $mode);
 
         try {
-            $content = '';
-            $contents = [
-                [
-                    'role' => 'user',
-                    'parts' => [
-                        ['text' => $prompt],
-                    ],
-                ],
-            ];
+            // Provider, model, key and fallback order come from the central AI configuration
+            // ('knowledge_sop'); nothing is read from .env. The tenant is the session's when there
+            // is one, else the optional sub_institute_id the sibling SOP endpoints also accept.
+            $client = app(AiModelClientFactory::class)->for(
+                'knowledge_sop',
+                session()->get('sub_institute_id') ?: ($data['sub_institute_id'] ?? null)
+            );
 
-            $maxContinuations = 3;
-
-            for ($attempt = 0; $attempt <= $maxContinuations; $attempt++) {
-                $response = Http::timeout(90)
-                    ->retry(1, 500)
-                    ->withHeaders([
-                        'Content-Type' => 'application/json',
-                        'x-goog-api-key' => $apiKey,
-                    ])
-                    ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
-                        'contents' => $contents,
-                        'generationConfig' => [
-                            'temperature' => 0.35,
-                            'topP' => 0.9,
-                            'maxOutputTokens' => $this->maxTokensForDetailLevel($data['detail_level']),
-                            'thinkingConfig' => [
-                                'thinkingBudget' => 0,
-                            ],
-                        ],
-                    ]);
-
-                if (!$response->successful()) {
-                    Log::warning('Gemini SOP generation failed', [
-                        'status' => $response->status(),
-                        'body' => $response->body(),
-                    ]);
-
-                    if ($content !== '') {
-                        break;
-                    }
-
-                    return response()->json([
-                        'status_code' => 0,
-                        'message' => $this->geminiErrorMessage($response->json(), $response->status()),
-                    ], 502);
-                }
-
-                $payload = $response->json();
-                $chunk = $this->extractGeneratedText($payload);
-                $content .= ($content !== '' && $chunk !== '' ? "\n" : '') . $chunk;
-                $finishReason = $payload['candidates'][0]['finishReason'] ?? null;
-
-                if ($finishReason !== 'MAX_TOKENS' || $chunk === '') {
-                    break;
-                }
-
-                // Truncated mid-document: ask the model to continue exactly where it left off.
-                $contents[] = [
-                    'role' => 'model',
-                    'parts' => [
-                        ['text' => $chunk],
-                    ],
-                ];
-                $contents[] = [
-                    'role' => 'user',
-                    'parts' => [
-                        ['text' => 'Continue the SOP exactly where you left off. Do not repeat any earlier content, do not restart the title or sections already written, and do not add any commentary.'],
-                    ],
-                ];
-            }
-
-            $content = trim($content);
-
-            if (!$content) {
-                Log::warning('Gemini SOP generation returned empty content');
+            try {
+                $content = (string) $client->chat(
+                    [['role' => 'user', 'content' => $prompt]],
+                    null,
+                    $this->maxTokensForDetailLevel($data['detail_level']),
+                    0.35,
+                    false,
+                    90
+                );
+            } catch (AiConfigurationException $exception) {
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => $exception->getMessage(),
+                ], 500);
+            } catch (AiProviderException $exception) {
+                Log::warning('SOP generation failed', ['status' => $exception->status]);
 
                 return response()->json([
                     'status_code' => 0,
-                    'message' => 'Gemini returned an empty SOP. Please refine the inputs and try again.',
+                    'message' => 'Unable to generate SOP from the AI provider: ' . $exception->getMessage(),
+                ], 502);
+            }
+
+            $model = $client->lastUsed()?->model;
+            $content = trim($content);
+
+            if (!$content) {
+                Log::warning('SOP generation returned empty content');
+
+                return response()->json([
+                    'status_code' => 0,
+                    'message' => 'The AI provider returned an empty SOP. Please refine the inputs and try again.',
                 ], 502);
             }
 
@@ -228,7 +183,7 @@ class AiSopGenerationController extends Controller
                 ],
             ], 200);
         } catch (\Throwable $exception) {
-            Log::error('Gemini SOP generation exception', [
+            Log::error('SOP generation exception', [
                 'message' => $exception->getMessage(),
             ]);
 
@@ -533,31 +488,6 @@ class AiSopGenerationController extends Controller
         }
 
         return 8000;
-    }
-
-    private function extractGeneratedText(?array $payload): string
-    {
-        $parts = $payload['candidates'][0]['content']['parts'] ?? [];
-        $text = '';
-
-        foreach ($parts as $part) {
-            if (isset($part['text']) && is_string($part['text'])) {
-                $text .= $part['text'];
-            }
-        }
-
-        return trim($text);
-    }
-
-    private function geminiErrorMessage(?array $payload, int $status): string
-    {
-        $message = $payload['error']['message'] ?? '';
-
-        if (is_string($message) && trim($message) !== '') {
-            return 'Gemini API error: ' . trim($message);
-        }
-
-        return "Unable to generate SOP from Gemini. HTTP status: {$status}.";
     }
 
     private function buildSopPdf(string $title, string $content): string

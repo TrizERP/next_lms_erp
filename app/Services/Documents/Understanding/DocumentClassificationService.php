@@ -44,7 +44,11 @@ class DocumentClassificationService
         $aiResult = null;
 
         if (!empty(trim($excerpt))) {
-            $aiResult = $this->aiClassifier->classify($excerpt, $deptNames, $allowedTypes);
+            // The document's school's Document Intelligence configuration applies.
+            $classifier = $this->aiClassifier instanceof GeminiClassifier
+                ? $this->aiClassifier->forInstitute($subInstituteId)
+                : $this->aiClassifier;
+            $aiResult = $classifier->classify($excerpt, $deptNames, $allowedTypes);
         }
 
         $minConfidence = config('idms.confidence_threshold', 0.65);

@@ -31,14 +31,14 @@ class ContentModelEnrichmentService
 {
     public function __construct(protected ContentModelLlmClient $llm) {}
 
-    public function available(): bool
+    public function available(?int $tenant = null): bool
     {
-        return $this->llm->enabled();
+        return $this->llm->forInstitute($tenant)->enabled();
     }
 
-    public function unavailableReason(): ?string
+    public function unavailableReason(?int $tenant = null): ?string
     {
-        return $this->llm->unavailableReason();
+        return $this->llm->forInstitute($tenant)->unavailableReason();
     }
 
     // ══════════════════════════════════════════════════════════════════════
@@ -496,9 +496,11 @@ class ContentModelEnrichmentService
         string $system,
         string $user
     ): array {
-        $fingerprint = $this->llm->fingerprint($input);
+        // The school's own AI configuration applies to this call.
+        $llm = $this->llm->forInstitute($tenant ?: null);
+        $fingerprint = $llm->fingerprint($input);
 
-        $cached = $this->llm->cached($nodeKey, $kind, $variant, $fingerprint, $tenant);
+        $cached = $llm->cached($nodeKey, $kind, $variant, $fingerprint, $tenant);
         if ($cached !== null) {
             return [
                 'ok' => true,
@@ -511,11 +513,11 @@ class ContentModelEnrichmentService
             ];
         }
 
-        if (! $this->llm->enabled()) {
-            return ['ok' => false, 'error' => $this->llm->unavailableReason() ?? 'AI enrichment is unavailable.'];
+        if (! $llm->enabled()) {
+            return ['ok' => false, 'error' => $llm->unavailableReason() ?? 'AI enrichment is unavailable.'];
         }
 
-        $response = $this->llm->json($system, $user);
+        $response = $llm->json($system, $user);
         if (! ($response['ok'] ?? false)) {
             return ['ok' => false, 'error' => $response['error'] ?? 'The AI request failed.'];
         }
@@ -530,7 +532,7 @@ class ContentModelEnrichmentService
 
         $confidence = $this->unit($clean['confidence'] ?? null);
 
-        $this->llm->remember(
+        $llm->remember(
             $nodeKey,
             $kind,
             $variant,

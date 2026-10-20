@@ -1322,7 +1322,7 @@ class ExamEvaluationApiController extends Controller
             // A problem with the AI key that its FORMAT already shows (empty, or a Vertex/OAuth
             // credential where an AI Studio key is needed), said before any sheet is uploaded
             // and sent to the provider for nothing. No request is made, and the key is never echoed.
-            'ai_warning' => app(GeminiClient::class)->credentialProblem(),
+            'ai_warning' => app(GeminiClient::class)->forInstitute($tenantId)->credentialProblem(),
             'total_marks' => $key['total_marks'],
             'objective_count' => $key['objective_count'],
             'subjective_count' => $key['subjective_count'],

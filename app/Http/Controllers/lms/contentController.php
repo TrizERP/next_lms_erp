@@ -1793,76 +1793,49 @@ public function generateGammaPDF(Request $request)
         }
 
         if (!$isPresentation) {
-            $apiKey = env('GEMINI_API_KEY');
-            if (!$apiKey) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Gemini API key is not configured. Please set GEMINI_API_KEY in the backend .env file.',
-                ], 500);
-            }
-
             try {
-                $model = config('gemini.model');
-                $baseUrl = rtrim(env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'), '/');
+                // Provider, model, key and fallback order come from the school's central AI configuration
+                // ('content_generation'); nothing is read from .env here.
+                $aiClient = app(\App\Domain\AI\Configuration\AiModelClientFactory::class)
+                    ->for('content_generation', $sub_institute_id);
 
-                Log::info('Gemini content generation request', [
+                Log::info('Content generation request', [
                     'chapter_name' => $chapterName,
                     'content_type' => $contentType,
                     'sub_institute_id' => $sub_institute_id,
                     'user_id' => $user_id,
                 ]);
 
-                $geminiResponse = Http::timeout((int) env('GEMINI_REQUEST_TIMEOUT', 120))
-                    ->retry(1, 500)
-                    ->withHeaders([
-                        'Content-Type' => 'application/json',
-                        'x-goog-api-key' => $apiKey,
-                    ])
-                    ->post("{$baseUrl}/models/{$model}:generateContent", [
-                        'contents' => [
-                            [
-                                'role' => 'user',
-                                'parts' => [
-                                    ['text' => $prompt],
-                                ],
-                            ],
-                        ],
-                        'generationConfig' => [
-                            'temperature' => 0.35,
-                            'topP' => 0.9,
-                            'maxOutputTokens' => 24000,
-                        ],
-                    ]);
+                try {
+                    $generatedContent = trim((string) $aiClient->chat(
+                        [['role' => 'user', 'content' => (string) $prompt]],
+                        null,
+                        24000,
+                        0.35,
+                        false,
+                        (int) config('gemini.request_timeout', 120)
+                    ));
+                } catch (\App\Domain\AI\Configuration\AiConfigurationException $e) {
+                    return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+                } catch (\App\Domain\AI\Support\AiProviderException $e) {
+                    Log::warning('Content generation failed', ['status' => $e->status, 'error' => $e->getMessage()]);
 
-                if (!$geminiResponse->successful()) {
-                    Log::warning('Gemini content generation failed', [
-                        'status' => $geminiResponse->status(),
-                        'body' => $geminiResponse->body(),
-                    ]);
-
-                    $geminiPayload = $geminiResponse->json();
-                    $retryAfterSeconds = $this->geminiRetryDelaySeconds($geminiPayload);
-                    $statusCode = $geminiResponse->status() === 429 ? 429 : 502;
-                    $responseBody = [
-                        'success' => false,
-                        'message' => $this->geminiContentErrorMessage($geminiPayload, $geminiResponse->status()),
-                    ];
-
-                    if ($retryAfterSeconds !== null) {
-                        $responseBody['retry_after_seconds'] = $retryAfterSeconds;
+                    $responseBody = ['success' => false, 'message' => $e->getMessage()];
+                    if ($e->retryAfter !== null) {
+                        $responseBody['retry_after_seconds'] = $e->retryAfter;
                     }
 
-                    return response()->json($responseBody, $statusCode);
+                    return response()->json($responseBody, $e->status === 429 ? 429 : 502);
                 }
 
-                $generatedContent = $this->extractGeminiText($geminiResponse->json());
                 if (!$generatedContent) {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Gemini returned empty content. Please try again.',
+                        'message' => 'The AI provider returned empty content. Please try again.',
                     ], 502);
                 }
 
+                $model = $aiClient->lastUsed()?->model;
                 $pdf = $this->renderGeneratedContentPdf($generatedContent, $chapterName, $contentType);
                 $safeChapter = preg_replace('/[^A-Za-z0-9_-]+/', '_', strtolower($chapterName));
                 $safeType = preg_replace('/[^A-Za-z0-9_-]+/', '_', strtolower($contentType));
@@ -1936,7 +1909,7 @@ public function generateGammaPDF(Request $request)
                 return response()->json([
                     'success' => true,
                     'status_code' => 1,
-                    'message' => $contentType . ' generated with Gemini and stored successfully',
+                    'message' => $contentType . ' generated and stored successfully',
                     'data' => [
                         'id' => $lastId,
                         'file_url' => $fileUrl,

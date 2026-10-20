@@ -1152,7 +1152,7 @@ class CourseBuilderController extends Controller
 
         if (! $ai->isConfigured()) {
             return $this->lmsError(
-                'AI question generation is not configured. Set DEEPSEEK_API_KEY.',
+                'AI question generation is not configured. An administrator needs to add a provider and API key for Assessment AI in AI & Intelligence → AI Providers.',
                 503
             );
         }
