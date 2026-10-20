@@ -3,6 +3,7 @@
 use App\Http\Controllers\api\PAL\AttainmentReportController;
 use App\Http\Controllers\api\PAL\EsoEngineController;
 use App\Http\Controllers\api\PAL\PilotMetricsController;
+use App\Http\Controllers\api\PAL\StudentActivityReportController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -57,6 +58,31 @@ Route::prefix('api/pal/eso')->middleware('pal.auth')->group(function () {
     // undecided.
     Route::get('/reports/blueprint-feasibility', [AttainmentReportController::class, 'blueprintFeasibility'])
         ->name('pal.eso.reports.blueprint_feasibility');
+
+    // PAL Student Activity & Performance Report — what a learner (or a whole
+    // class, aggregated) has actually DONE in PAL: mastery state, diagnostic/
+    // adaptive performance, misconceptions, gamification. The class routes
+    // carry no {learnerId} and are gated inside the controller the same way
+    // attainment's cohort report is (staff/admin only, institute from the
+    // session); the two {learnerId} routes get PalApiAuth's usual per-learner
+    // ownership check for free, like every other {learnerId} route above.
+    //
+    // The 'class' routes are registered before the {learnerId} ones so intent
+    // is clear read top-to-bottom, but order does not actually matter here:
+    // {learnerId} is constrained to digits, so literal "class" can never match it.
+    Route::get('/reports/activity/class', [StudentActivityReportController::class, 'classReport'])
+        ->name('pal.eso.reports.activity_class');
+
+    Route::get('/reports/activity/class/download', [StudentActivityReportController::class, 'classReportDownload'])
+        ->name('pal.eso.reports.activity_class_download');
+
+    Route::get('/reports/activity/{learnerId}', [StudentActivityReportController::class, 'studentReport'])
+        ->where('learnerId', '[0-9]+')
+        ->name('pal.eso.reports.activity');
+
+    Route::get('/reports/activity/{learnerId}/download', [StudentActivityReportController::class, 'studentReportDownload'])
+        ->where('learnerId', '[0-9]+')
+        ->name('pal.eso.reports.activity_download');
 
     // ── Start/advance a session — student-only (see eso.student /
     // EsoStudentOnlyAuth). Every route below either serves or mutates one
