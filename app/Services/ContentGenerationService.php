@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
-use Anthropic\Client as AnthropicClient;
-use Anthropic\Core\Exceptions\APIStatusException;
-use Anthropic\Lib\Streaming\MessageAccumulator;
+use App\Domain\AI\Configuration\AiConfigurationException;
+use App\Domain\AI\Configuration\AiModelClientFactory;
+use App\Domain\AI\Support\AiProviderException;
+use App\Domain\AI\Support\FallbackChainModelClient;
 use App\Models\lms\contentModel;
 use App\Services\Content\RendersContentPresentation;
 use App\Services\Content\RendersGeneratedContent;
@@ -123,37 +124,39 @@ class ContentGenerationService
         return in_array($chapterId, $allowed, true);
     }
 
-    /**
-     * Key precedence matches every other provider in this app (and the promise
-     * in the .env comment): the rotating ai_api_keys table first, .env second.
-     */
-    protected function resolveApiKey(): string
+    /** The school whose AI configuration (providers, keys, fallback order) the model calls use. */
+    protected ?int $aiTenant = null;
+
+    private ?FallbackChainModelClient $aiClient = null;
+
+    /** Point the model calls at one school's AI configuration; null means platform configuration only. */
+    protected function useAiTenant(int|string|null $subInstituteId): void
     {
-        $apiType = config('claude.api_type', 'ANTHROPIC_API_KEY');
+        $tenant = is_numeric($subInstituteId) && (int) $subInstituteId > 0 ? (int) $subInstituteId : null;
+        if ($tenant !== $this->aiTenant) {
+            $this->aiTenant = $tenant;
+            $this->aiClient = null;
+        }
+    }
 
-        // getAIKey() is declared inside the App\Helpers namespace, so an
-        // unqualified call from here does not resolve to it - the same reason
-        // QuestionGenerationService guards the call and queries the table
-        // directly when the guard fails. Both names are checked so this keeps
-        // working if the helper is ever moved to the global namespace.
-        $row = null;
-        if (function_exists('getAIKey')) {
-            $row = getAIKey($apiType, 1);
-        } elseif (function_exists('App\Helpers\getAIKey')) {
-            $row = \App\Helpers\getAIKey($apiType, 1);
-        } else {
-            $row = DB::table('ai_api_keys')
-                ->where('api_type', $apiType)
-                ->where('status', 1)
-                ->first();
+    /**
+     * Provider, model, key and fallback order all come from the central AI configuration
+     * for the 'content_generation' module - never from .env or the ai_api_keys table directly.
+     * Using the client with nothing configured throws AiConfigurationException.
+     */
+    protected function aiClient(): FallbackChainModelClient
+    {
+        return $this->aiClient ??= app(AiModelClientFactory::class)->for('content_generation', $this->aiTenant);
+    }
+
+    /** The model that really answered the last call (recorded in the stored row and the response). */
+    protected function modelUsed(): string
+    {
+        if (config('claude.executor', 'api') === 'cli') {
+            return 'claude-cli (dev)';
         }
 
-        // getAIKey() returns the string '-' rather than null when it misses.
-        if (is_object($row) && !empty($row->api_key) && $row->api_key !== '-') {
-            return trim((string) $row->api_key);
-        }
-
-        return trim((string) config('claude.api_key', ''));
+        return (string) ($this->aiClient?->lastUsed()?->model ?? '');
     }
 
     /**
@@ -174,14 +177,7 @@ class ContentGenerationService
         // deck at effort=high can outlast that.
         @set_time_limit((int) config('claude.timeout_seconds', 600) + 120);
 
-        $apiKey = $this->resolveApiKey();
-        if ($apiKey === '') {
-            return $this->fail(
-                'Claude API key is not configured. Set ANTHROPIC_API_KEY in the backend .env file, '
-                . 'or add an ai_api_keys row with api_type=' . config('claude.api_type', 'ANTHROPIC_API_KEY') . ' and status=1.',
-                500
-            );
-        }
+        $this->useAiTenant($input['sub_institute_id'] ?? null);
 
         $prompt = trim((string) ($input['prompt'] ?? ''));
         if ($prompt === '') {
@@ -189,11 +185,11 @@ class ContentGenerationService
         }
 
         $contentType = (string) $input['content_type'];
-        $model = (string) config('claude.model', 'claude-opus-5');
-
         try {
-            $generated = $this->callClaude($apiKey, $model, $prompt);
-        } catch (APIStatusException $e) {
+            $generated = $this->callClaude($prompt);
+        } catch (AiConfigurationException $e) {
+            return $this->fail($e->getMessage(), 500);
+        } catch (AiProviderException $e) {
             Log::error('Claude content generation failed', [
                 'chapter_id' => $input['chapter']->id ?? null,
                 'content_type' => $contentType,
@@ -218,7 +214,7 @@ class ContentGenerationService
             return $this->fail('Claude returned an empty document' . $suffix . '.', 502);
         }
 
-        return $this->persist($input, $generated, $model);
+        return $this->persist($input, $generated, $this->modelUsed());
     }
 
     /**
@@ -270,14 +266,8 @@ class ContentGenerationService
             if (config('claude.executor', 'api') === 'cli') {
                 $completer = new ClaudeCliCompleter();
             } else {
-                $apiKey = $this->resolveApiKey();
-                if ($apiKey === '') {
-                    return $this->fail('Claude API key is not configured. Set ANTHROPIC_API_KEY or an ai_api_keys row.', 500);
-                }
-                $model = (string) config('claude.model', 'claude-opus-5');
-                $completer = new ClaudeApiCompleter(
-                    fn (string $system, string $prompt, int $max): array => $this->callClaude($apiKey, $model, $prompt, $system, $max)
-                );
+                $this->useAiTenant($input['sub_institute_id'] ?? null);
+                $completer = $this->studyCompleter();
             }
         }
 
@@ -286,7 +276,9 @@ class ContentGenerationService
             $tenant = (int) ($input['sub_institute_id'] ?? 1);
             $result = StudyDeckService::make($completer, StudyImageStores::database($tenant, (int) $input['chapter']->id))
                 ->generate((int) $input['chapter']->id, $tenant);
-        } catch (APIStatusException $e) {
+        } catch (AiConfigurationException $e) {
+            return $this->fail($e->getMessage(), 500);
+        } catch (AiProviderException $e) {
             return $this->fail($this->readableApiError($e), 502);
         } catch (Throwable $e) {
             Log::error('Study deck generation failed', ['chapter_id' => $input['chapter']->id ?? null, 'error' => $e->getMessage()]);
@@ -308,7 +300,7 @@ class ContentGenerationService
         }
 
         // The pictures were stored while the deck was generated; publishing checks they are really there.
-        return $this->publishStudyDeck($input, $result['deck'], $result['html'], null, false, (string) config('claude.model', 'claude-opus-5'));
+        return $this->publishStudyDeck($input, $result['deck'], $result['html'], null, false, $this->modelUsed());
     }
 
     /** Is this content_master file name a study deck? (Its name is its identity: no extra column.) */
@@ -900,10 +892,8 @@ class ContentGenerationService
         // waiting, the document is still written and stored (it then shows up in the list), instead of the work being lost.
         ignore_user_abort(true);
 
+        $this->useAiTenant($input['sub_institute_id'] ?? null);
         $completer ??= $this->studyCompleter();
-        if ($completer === null) {
-            return $this->fail('Claude API key is not configured. Set ANTHROPIC_API_KEY or an ai_api_keys row.', 500);
-        }
 
         $tenant = (int) ($input['sub_institute_id'] ?? 1);
         $chapterId = (int) $input['chapter']->id;
@@ -912,7 +902,9 @@ class ContentGenerationService
         try {
             $result = $this->studyDocumentService($completer, $tenant, $chapterId)
                 ->generate($kind, $chapterId, $tenant, ['concept_ids' => (array) ($input['concept_ids'] ?? [])]);
-        } catch (APIStatusException $e) {
+        } catch (AiConfigurationException $e) {
+            return $this->fail($e->getMessage(), 500);
+        } catch (AiProviderException $e) {
             return $this->fail($this->readableApiError($e), 502);
         } catch (\InvalidArgumentException $e) {
             return $this->fail($e->getMessage(), 422);
@@ -935,7 +927,7 @@ class ContentGenerationService
             ];
         }
 
-        return $this->publishStudyDocument($kind, $input, $result['document'], $result['html'], false, (string) config('claude.model', 'claude-opus-5'));
+        return $this->publishStudyDocument($kind, $input, $result['document'], $result['html'], false, $this->modelUsed());
     }
 
     /**
@@ -963,14 +955,11 @@ class ContentGenerationService
         // Two model stages with several calls each; the web server's default would end it mid-way.
         @set_time_limit((int) config('claude.timeout_seconds', 600) * 3 + 120);
 
+        $this->useAiTenant($input['sub_institute_id'] ?? null);
         $completer ??= $this->studyCompleter();
-        if ($completer === null) {
-            return $this->fail('Claude API key is not configured. Set ANTHROPIC_API_KEY or an ai_api_keys row.', 500);
-        }
 
         $tenant = (int) ($input['sub_institute_id'] ?? 1);
         $chapterId = (int) $input['chapter']->id;
-        $model = (string) config('claude.model', 'claude-opus-5');
 
         try {
             $result = BranchingScenarioService::make($completer)->generate($chapterId, $tenant, [
@@ -980,9 +969,11 @@ class ContentGenerationService
                 'length' => $input['length'] ?? 'standard',
                 'use_questions' => $input['use_questions'] ?? true,
                 'existing' => (array) ($input['existing'] ?? []),
-                'model' => config('claude.executor', 'api') === 'cli' ? 'claude-cli (dev)' : $model,
+                'model' => config('claude.executor', 'api') === 'cli' ? 'claude-cli (dev)' : $this->aiClient()->defaultModel(),
             ]);
-        } catch (APIStatusException $e) {
+        } catch (AiConfigurationException $e) {
+            return $this->fail($e->getMessage(), 500);
+        } catch (AiProviderException $e) {
             return $this->fail($this->readableApiError($e), 502);
         } catch (\InvalidArgumentException $e) {
             return $this->fail($e->getMessage(), 422);
@@ -1025,21 +1016,15 @@ class ContentGenerationService
     }
 
     /**
-     * The model to ask: the dev-only CLI when `claude.executor=cli`, otherwise the Anthropic API with the key this
-     * class resolves. Null when there is no key (the CLI is never chosen implicitly).
+     * The model to ask: the dev-only CLI when `claude.executor=cli`, otherwise the school's configured
+     * 'content_generation' providers. Nothing configured surfaces as an AiConfigurationException on first use.
      */
     protected function studyCompleter(): ?Completer
     {
         if (config('claude.executor', 'api') === 'cli') {
             return new ClaudeCliCompleter();
         }
-        $apiKey = $this->resolveApiKey();
-        if ($apiKey === '') {
-            return null;
-        }
-        $model = (string) config('claude.model', 'claude-opus-5');
-
-        return new ClaudeApiCompleter(fn (string $system, string $prompt, int $max): array => $this->callClaude($apiKey, $model, $prompt, $system, $max));
+        return new ClaudeApiCompleter(fn (string $system, string $prompt, int $max): array => $this->callClaude($prompt, $system, $max));
     }
 
     /**
@@ -1455,64 +1440,37 @@ class ContentGenerationService
     }
 
     /**
-     * One streamed Messages API call.
+     * One model call through the central AI configuration ('content_generation').
      *
-     * Streamed rather than a plain create() because max_output_tokens is well
-     * above the range a non-streaming HTTP request comfortably survives, and a
-     * full chapter deck routinely uses it.
-     *
-     * Deliberately absent: temperature, top_p, top_k, budget_tokens and
-     * assistant prefill. Claude Opus 5 rejects every one of them with a 400.
-     * QuestionGenerationService sends temperature to DeepSeek - do not copy
-     * that pattern here.
+     * The provider, model, key and fallback order are the administrator's; this method states only
+     * what the content needs: the system prompt, the user prompt, the output budget and the timeout.
+     * Anthropic-specific request options this class used to send (adaptive thinking, effort,
+     * streaming, refusal stop-reason) are not expressible through the provider-neutral client.
      *
      * @return array{text:string, stop_reason:?string, input_tokens:int, output_tokens:int}
      */
-    protected function callClaude(string $apiKey, string $model, string $prompt, ?string $system = null, ?int $maxTokens = null): array
+    protected function callClaude(string $prompt, ?string $system = null, ?int $maxTokens = null): array
     {
-        $client = new AnthropicClient(apiKey: $apiKey);
-
-        $stream = $client->messages->createStream(
-            maxTokens: $maxTokens ?? (int) config('claude.max_output_tokens', 32000),
-            messages: [['role' => 'user', 'content' => $prompt]],
-            model: $model,
-            outputConfig: ['effort' => config('claude.effort', 'high')],
-            system: $system ?? self::OUTPUT_FORMAT_SYSTEM,
-            thinking: ['type' => 'adaptive'],
-            requestOptions: ['timeout' => (float) config('claude.timeout_seconds', 600)],
+        $text = $this->aiClient()->chat(
+            [
+                ['role' => 'system', 'content' => $system ?? self::OUTPUT_FORMAT_SYSTEM],
+                ['role' => 'user', 'content' => $prompt],
+            ],
+            null,
+            $maxTokens ?? (int) config('claude.max_output_tokens', 32000),
+            null,
+            false,
+            (int) config('claude.timeout_seconds', 600)
         );
 
-        $accumulator = MessageAccumulator::forMessages();
-        foreach ($stream as $event) {
-            $accumulator->accumulate($event);
-        }
-        $message = $accumulator->message();
-
-        // A policy decline arrives as HTTP 200 with stop_reason 'refusal', so it
-        // has to be checked before the content is read.
-        if ($message->stopReason === 'refusal') {
-            $reason = $message->stopDetails->explanation ?? 'no explanation given';
-
-            throw new \RuntimeException('Claude declined to generate this content (' . $reason . ').');
-        }
-
-        // With adaptive thinking on, content[0] is a ThinkingBlock, not text.
-        // Concatenate every text block instead of indexing.
-        $text = '';
-        foreach ($message->content as $block) {
-            if (($block->type ?? null) === 'text') {
-                $text .= $block->text;
-            }
-        }
-
+        // The provider-neutral client returns text only; token counts are not available.
         return [
-            'text' => $text,
-            'stop_reason' => $message->stopReason,
-            'input_tokens' => (int) ($message->usage->inputTokens ?? 0),
-            'output_tokens' => (int) ($message->usage->outputTokens ?? 0),
+            'text' => (string) $text,
+            'stop_reason' => null,
+            'input_tokens' => 0,
+            'output_tokens' => 0,
         ];
     }
-
     /**
      * Render, upload and insert.
      *
@@ -1702,17 +1660,17 @@ class ContentGenerationService
         return $isPresentation ? 'pptx' : 'pdf';
     }
 
-    protected function readableApiError(APIStatusException $e): string
+    protected function readableApiError(AiProviderException $e): string
     {
-        $status = (int) ($e->status ?? 0);
+        $status = (int) $e->status;
 
         return match (true) {
-            $status === 401 => 'The Claude API key was rejected. Check ANTHROPIC_API_KEY.',
-            $status === 403 => 'The Claude API key is not permitted to use ' . config('claude.model') . '.',
-            $status === 404 => 'Claude model "' . config('claude.model') . '" was not found. Check ANTHROPIC_MODEL.',
-            $status === 429 => 'Claude is rate limiting this account. Try again shortly.',
-            $status >= 500 => 'Claude is temporarily unavailable (HTTP ' . $status . '). Try again shortly.',
-            default => 'Claude rejected the request (HTTP ' . $status . '): ' . $e->getMessage(),
+            $status === 401 => 'The AI provider rejected its API key. Check the Content Generation settings.',
+            $status === 403 => 'The configured AI key is not permitted to use the configured model. Check the Content Generation settings.',
+            $status === 404 => 'The configured AI model was not found. Check the Content Generation settings.',
+            $status === 429 => 'The AI provider is rate limiting this account. Try again shortly.',
+            $status >= 500 => 'The AI provider is temporarily unavailable (HTTP ' . $status . '). Try again shortly.',
+            default => 'The AI provider rejected the request (HTTP ' . $status . '): ' . $e->getMessage(),
         };
     }
 

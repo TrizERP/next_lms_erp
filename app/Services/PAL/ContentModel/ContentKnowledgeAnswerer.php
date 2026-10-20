@@ -2,7 +2,8 @@
 
 namespace App\Services\PAL\ContentModel;
 
-use App\Domain\AI\Support\ModelClient;
+use App\Domain\AI\Configuration\AiConfigurationException;
+use App\Domain\AI\Configuration\AiModelClientFactory;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -41,7 +42,7 @@ class ContentKnowledgeAnswerer
 
     public function __construct(
         private readonly ContentEmbeddingService $retrieval,
-        private readonly ModelClient $model,
+        private readonly AiModelClientFactory $aiFactory,
     ) {
     }
 
@@ -56,7 +57,7 @@ class ContentKnowledgeAnswerer
             return $this->result('insufficient_evidence', null, 'A question is required.', []);
         }
 
-        if (! $this->retrieval->enabled()) {
+        if (! $this->retrieval->enabled($subInstituteId ?: null)) {
             return $this->result('model_unavailable', null, 'No AI model is configured for this institute.', []);
         }
 
@@ -88,7 +89,8 @@ class ContentKnowledgeAnswerer
             );
         }
 
-        $client = $this->model->forInstitute($subInstituteId);
+        // Provider, model, key and fallbacks come from the school's saved PAL Content Model configuration.
+        $client = $this->aiFactory->for('pal_content_model', $subInstituteId ?: null);
 
         if (! $client->isConfigured()) {
             return $this->result('model_unavailable', null, 'No AI model is configured for this institute.', []);
@@ -104,6 +106,8 @@ class ContentKnowledgeAnswerer
                 maxTokens: 1024,
                 temperature: 0.2,
             );
+        } catch (AiConfigurationException $exception) {
+            return $this->result('model_unavailable', null, $exception->getMessage(), []);
         } catch (Throwable $exception) {
             Log::warning('ContentKnowledgeAnswerer chat failed: ' . $exception->getMessage());
 

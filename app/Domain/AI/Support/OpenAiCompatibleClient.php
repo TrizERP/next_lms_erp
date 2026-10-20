@@ -104,6 +104,7 @@ class OpenAiCompatibleClient implements ModelClient
                 'max_tokens' => $maxTokens ?? $this->maxTokens(),
                 'temperature' => $temperature,
                 'response_format' => $expectJson ? ['type' => 'json_object'] : null,
+                'thinking' => $this->thinkingMode(),
             ], static fn ($value) => $value !== null));
 
         if (! $response->successful()) {
@@ -249,6 +250,27 @@ class OpenAiCompatibleClient implements ModelClient
         $base = rtrim((string) $this->providers->baseUrl($this->provider), '/');
 
         return $base . '/chat/completions';
+    }
+
+    /**
+     * DeepSeek's `thinking` switch, or null for every other provider (which would reject the field).
+     *
+     * DeepSeek's V4 models reason before they answer by default, and the reasoning is billed against
+     * `max_tokens`. With the budgets this client sends (1466 by default, 8000 for question generation) a
+     * reasoning model could spend the whole allowance thinking and return no text - "The AI provider
+     * returned an empty message" - or take 80+ seconds for ten questions. Thinking is therefore off
+     * unless DEEPSEEK_THINKING=true, which is what config/deepseek.php has always documented.
+     * Measured on deepseek-v4-pro: 10 MCQs in 10s with it off, 82s and 7,700 tokens with it on.
+     *
+     * @return array{type: string}|null
+     */
+    private function thinkingMode(): ?array
+    {
+        if ($this->provider !== 'deepseek') {
+            return null;
+        }
+
+        return ['type' => filter_var(config('deepseek.thinking'), FILTER_VALIDATE_BOOLEAN) ? 'enabled' : 'disabled'];
     }
 
     private function maxTokens(): int

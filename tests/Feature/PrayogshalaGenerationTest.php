@@ -748,7 +748,7 @@ class FakeProvider extends ClaudeQuestionClient
 
     public function __construct()
     {
-        parent::__construct(fn () => 'test-key');
+        // No parent constructor: the client has no credential of its own any more.
     }
 
     public function queue(array $reply): void
@@ -756,7 +756,7 @@ class FakeProvider extends ClaudeQuestionClient
         $this->replies[] = $reply;
     }
 
-    public function complete(string $system, string $user, int|string|null $subInstituteId = null): array
+    public function complete(string $system, string $user, int|string|null $subInstituteId = null, string $module = 'assessment_ai'): array
     {
         $this->calls++;
         $this->lastPrompt = $user;

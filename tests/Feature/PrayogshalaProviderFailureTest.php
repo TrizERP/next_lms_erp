@@ -509,7 +509,7 @@ class ScriptedClaude extends ClaudeQuestionClient
 
     public function __construct()
     {
-        parent::__construct(fn () => 'test-key');
+        // No parent constructor: the client has no credential of its own any more.
     }
 
     public function error(string $message): void
@@ -522,7 +522,7 @@ class ScriptedClaude extends ClaudeQuestionClient
         $this->queue[] = ['ok' => true, 'content' => json_encode($activity), 'model' => 'scripted', 'finish_reason' => 'end_turn', 'usage' => []];
     }
 
-    public function complete(string $system, string $user, int|string|null $subInstituteId = null): array
+    public function complete(string $system, string $user, int|string|null $subInstituteId = null, string $module = 'assessment_ai'): array
     {
         $this->calls++;
 

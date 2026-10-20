@@ -188,18 +188,13 @@ class GenerateStudyDeckCommand extends Command
         $bridge = new class extends ContentGenerationService {
             public function completer(): ?ClaudeApiCompleter
             {
-                $key = $this->resolveApiKey();
-                if ($key === '') {
-                    return null;
-                }
-                $model = (string) config('claude.model', 'claude-opus-5');
-
-                return new ClaudeApiCompleter(fn (string $s, string $p, int $m): array => $this->callClaude($key, $model, $p, $s, $m));
+                // Providers, model and keys come from the 'content_generation' AI configuration.
+                return new ClaudeApiCompleter(fn (string $s, string $p, int $m): array => $this->callClaude($p, $s, $m));
             }
         };
 
         return $bridge->completer()
-            ?? throw new \RuntimeException('No Anthropic API key (ai_api_keys / ANTHROPIC_API_KEY). Use --executor=cli for a dev run.');
+            ?? throw new \RuntimeException('No AI provider configured for Content Generation. Use --executor=cli for a dev run.');
     }
 
     /** @param array<string,mixed> $r */

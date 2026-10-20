@@ -3,6 +3,7 @@
 namespace Tests\Feature\ExamEvaluation;
 
 use App\Jobs\IdentifyAnswerSheetJob;
+use App\Domain\AI\Configuration\ResolvedAiConfiguration;
 use App\Services\Evaluation\AnswerSheetReaderService;
 use App\Services\Homework\Exceptions\DocumentExtractionException;
 use App\Services\Homework\Exceptions\ModelQuotaExhaustedException;
@@ -48,7 +49,9 @@ class GeminiCredentialDiagnosisTest extends ExamEvaluationTestCase
         $this->seedPaper();
         $this->setUpScan();
         $this->batchId = $this->makeBatch(['status' => 'Processing']);
-        config(['gemini.api_key' => self::STUDIO_KEY, 'gemini.model' => 'main-model', 'ai.provider.gemini.fallback_model' => '']);
+        config(['ai.provider.gemini.fallback_model' => '']);
+        // What Homework & Assignment Evaluation resolves to: the exam summary asks the container for its client.
+        $this->app->instance(GeminiClient::class, $this->clientWith(self::STUDIO_KEY));
     }
 
     protected function tearDown(): void
@@ -59,9 +62,7 @@ class GeminiCredentialDiagnosisTest extends ExamEvaluationTestCase
 
     private function clientWith(string $key): GeminiClient
     {
-        config(['gemini.api_key' => $key]);
-
-        return new GeminiClient();
+        return (new GeminiClient())->forConfiguration(new ResolvedAiConfiguration('gemini', 'main-model', $key, 'test'));
     }
 
     private function rejectWith(int $status, string $message = 'Request had invalid authentication credentials. Expected OAuth 2 access token, login cookie or other valid authentication credential.'): void
@@ -87,11 +88,8 @@ class GeminiCredentialDiagnosisTest extends ExamEvaluationTestCase
 
     public function test_an_empty_key_says_the_service_is_not_set_up(): void
     {
-        putenv('GEMINI_API_KEY');
-        unset($_ENV['GEMINI_API_KEY'], $_SERVER['GEMINI_API_KEY']);
-
         foreach (['', '   '] as $blank) {
-            $this->assertStringContainsString('GEMINI_API_KEY is empty', (string) $this->clientWith($blank)->credentialProblem());
+            $this->assertStringContainsString('no AI provider configured', (string) $this->clientWith($blank)->credentialProblem());
         }
     }
 
@@ -124,7 +122,7 @@ class GeminiCredentialDiagnosisTest extends ExamEvaluationTestCase
             $this->assertInstanceOf(ProviderConfigurationException::class, $exception);
             $message = $exception->getMessage();
 
-            $this->assertStringContainsString('GEMINI_API_KEY', $message);
+            $this->assertStringContainsString('saved Gemini key', $message);
             $this->assertStringContainsString('looks like a Vertex AI key', $message);
             $this->assertStringContainsString('Request had invalid authentication credentials', $message, 'the provider\'s own words are kept');
             $this->assertStringNotContainsString(self::VERTEX_KEY, $message);
@@ -143,22 +141,20 @@ class GeminiCredentialDiagnosisTest extends ExamEvaluationTestCase
             $this->clientWith(self::STUDIO_KEY)->generateContent([['text' => 'hi']]);
             $this->fail('should have raised');
         } catch (ProviderConfigurationException $exception) {
-            $this->assertStringContainsString('GEMINI_API_KEY is missing, disabled or no longer valid', $exception->getMessage());
+            $this->assertStringContainsString('saved Gemini key is missing, disabled or no longer valid', $exception->getMessage());
             $this->assertStringNotContainsString('Vertex', $exception->getMessage());
         }
     }
 
     public function test_a_missing_key_is_a_configuration_fault_raised_before_any_request(): void
     {
-        putenv('GEMINI_API_KEY');
-        unset($_ENV['GEMINI_API_KEY'], $_SERVER['GEMINI_API_KEY']);
         Http::fake();
 
         try {
             $this->clientWith('')->generateContent([['text' => 'hi']]);
             $this->fail('should have raised');
         } catch (ProviderConfigurationException $exception) {
-            $this->assertStringContainsString('GEMINI_API_KEY', $exception->getMessage());
+            $this->assertStringContainsString('AI Providers', $exception->getMessage());
         }
 
         Http::assertNothingSent();
@@ -250,11 +246,11 @@ class GeminiCredentialDiagnosisTest extends ExamEvaluationTestCase
     {
         $sheetId = $this->identifyingSheet($this->batchId);
 
-        $this->identify($sheetId, new FakeGeminiClient([new ProviderConfigurationException('The AI provider rejected the configured credential. GEMINI_API_KEY is missing, disabled or no longer valid - an administrator can fix it.')]));
+        $this->identify($sheetId, new FakeGeminiClient([new ProviderConfigurationException('The AI provider rejected the configured credential. The saved Gemini key is missing, disabled or no longer valid - an administrator can fix it in AI Providers.')]));
 
         $sheet = $this->sheetRow($sheetId);
         $this->assertSame('Failed', $sheet->status);
-        $this->assertStringContainsString('GEMINI_API_KEY', $sheet->failure_reason);
+        $this->assertStringContainsString('saved Gemini key', $sheet->failure_reason);
         $this->assertSame([], $this->identityBlock($sheetId), 'no "unreadable" verdict was recorded about the scan');
         $this->assertNull($sheet->student_id);
         $this->assertSame('Review', DB::table('exam_evaluation_batch')->find($this->batchId)->status, 'the batch is settled, not "Processing" forever');
@@ -319,7 +315,7 @@ class GeminiCredentialDiagnosisTest extends ExamEvaluationTestCase
 
     public function test_the_exam_summary_warns_about_a_vertex_key_before_any_upload(): void
     {
-        config(['gemini.api_key' => self::VERTEX_KEY]);
+        $this->app->instance(GeminiClient::class, $this->clientWith(self::VERTEX_KEY));
 
         $response = $this->getJson('/api/exam-evaluation/answer-key/1?sub_institute_id=' . self::TENANT)->assertOk();
 
@@ -335,19 +331,17 @@ class GeminiCredentialDiagnosisTest extends ExamEvaluationTestCase
 
     public function test_the_exam_summary_says_when_there_is_no_key_at_all(): void
     {
-        putenv('GEMINI_API_KEY');
-        unset($_ENV['GEMINI_API_KEY'], $_SERVER['GEMINI_API_KEY']);
-        config(['gemini.api_key' => '']);
+        $this->app->instance(GeminiClient::class, $this->clientWith(''));
 
         $this->getJson('/api/exam-evaluation/answer-key/1?sub_institute_id=' . self::TENANT)
             ->assertOk()
-            ->assertJsonPath('data.ai_warning', fn ($warning) => str_contains((string) $warning, 'GEMINI_API_KEY is empty'));
+            ->assertJsonPath('data.ai_warning', fn ($warning) => str_contains((string) $warning, 'no AI provider configured'));
     }
 
     public function test_the_check_makes_no_request_to_any_provider(): void
     {
         Http::fake();
-        config(['gemini.api_key' => self::VERTEX_KEY]);
+        $this->app->instance(GeminiClient::class, $this->clientWith(self::VERTEX_KEY));
 
         $this->getJson('/api/exam-evaluation/answer-key/1?sub_institute_id=' . self::TENANT)->assertOk();
 

@@ -123,6 +123,10 @@ class EvaluateAnswerSheetJob implements ShouldQueue
             return;
         }
 
+        // Provider, model and key come from the batch school's saved Homework & Assignment Evaluation configuration.
+        $reader = $reader->forInstitute((int) $batch->sub_institute_id);
+        $scorer = $scorer->forInstitute((int) $batch->sub_institute_id);
+
         $absolutePath = $storage->sheetPath((string) $sheet->file_name);
 
         if ($absolutePath === null) {

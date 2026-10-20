@@ -2,116 +2,117 @@
 
 namespace App\Services\G2gLms;
 
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
+use App\Domain\AI\Configuration\AiModelClientFactory;
+use App\Domain\AI\Support\FallbackChainModelClient;
 use Throwable;
 
 /**
- * Small DeepSeek chat-completions client for `AiAssessmentController::generate()`.
+ * JSON chat client for `AiAssessmentController::generate()` and
+ * `CourseBuilderController::generateQuestions()`.
  *
- * hp_erp's source (`App\Services\DeepSeekService`) exposes `isConfigured()`,
- * `model()` and `chatJson(array $messages): array` - this class implements
- * the same three-method surface against THIS codebase's own DeepSeek
- * config/key-resolution conventions (`config/deepseek.php` +
- * `App\Services\QuestionGenerationService::resolveApiKey()`'s
- * ai_api_keys-table-then-env pattern), rather than inventing a new one or
- * assuming hp_erp's `DeepSeekService` class exists here (it does not - only
- * `config/deepseek.php` and ad-hoc per-feature callers of it do).
+ * The class name is historical (it once posted straight to DeepSeek). It now runs on the
+ * platform's centralised AI configuration: module `assessment_ai`, resolved through
+ * `AiModelClientFactory`. Provider, model, key and fallback providers all come from what the
+ * administrator saved; nothing is read from config/deepseek.php or the environment.
+ *
+ * Public surface is unchanged: `isConfigured()`, `model()` and `chatJson(array $messages): array`.
  */
 class DeepSeekAssessmentService
 {
-    protected string $model;
+    public const MODULE = 'assessment_ai';
+
     protected int $timeout;
     protected int $maxTokens;
 
+    /** The school the call is made for. Null = derive from the signed-in session. */
+    protected int|string|null $subInstituteId = null;
+
+    private ?FallbackChainModelClient $client = null;
+
     public function __construct()
     {
-        $this->model     = (string) config('deepseek.model', 'deepseek-chat');
+        // Non-provider tuning only.
         $this->timeout   = (int) config('deepseek.timeout_seconds', 120);
         $this->maxTokens = (int) config('deepseek.max_output_tokens', 0);
     }
 
+    /** Scope the service to a school explicitly (otherwise the signed-in school is used). */
+    public function forInstitute(int|string|null $subInstituteId): static
+    {
+        $this->subInstituteId = $subInstituteId;
+        $this->client = null;
+
+        return $this;
+    }
+
+    /** The authenticated school: explicit scope first, then the session. Never request input. */
+    protected function tenant(): int|string|null
+    {
+        if ($this->subInstituteId !== null) {
+            return $this->subInstituteId;
+        }
+
+        try {
+            $sid = session()->get('sub_institute_id');
+        } catch (Throwable $e) {
+            return null;
+        }
+
+        return is_numeric($sid) && (int) $sid > 0 ? (int) $sid : null;
+    }
+
+    protected function client(): FallbackChainModelClient
+    {
+        return $this->client ??= app(AiModelClientFactory::class)->for(self::MODULE, $this->tenant());
+    }
+
+    /** The model the module is configured to use (the head of its provider chain). */
     public function model(): string
     {
-        return $this->model;
+        $used = $this->client()->lastUsed();
+        if ($used !== null && (string) $used->model !== '') {
+            return (string) $used->model;
+        }
+
+        return (string) $this->client()->defaultModel();
     }
 
     public function isConfigured(): bool
     {
-        return $this->resolveApiKey() !== null;
-    }
-
-    protected function resolveApiKey(): ?string
-    {
-        if (function_exists('getAIKey')) {
-            try {
-                $row = getAIKey(config('deepseek.api_type', 'DEEPSEEK_API_KEY'), 1);
-                if (!empty($row) && !empty($row->api_key) && $row->api_key !== '-') {
-                    return $row->api_key;
-                }
-            } catch (Throwable $e) {
-                // fall through to the table/env lookups below
-            }
-        }
-
-        if (Schema::hasTable('ai_api_keys')) {
-            $row = DB::table('ai_api_keys')
-                ->where('api_type', config('deepseek.api_type', 'DEEPSEEK_API_KEY'))
-                ->where('status', 1)
-                ->first();
-            if (!empty($row) && !empty($row->api_key) && $row->api_key !== '-') {
-                return $row->api_key;
-            }
-        }
-
-        $envKey = config('deepseek.api_key');
-
-        return !empty($envKey) ? $envKey : null;
+        return $this->client()->isConfigured();
     }
 
     /**
      * @param array<int, array{role:string, content:string}> $messages
      * @return array Decoded JSON object from the model's reply.
+     * @throws \App\Domain\AI\Configuration\AiConfigurationException when assessment_ai is not configured.
      * @throws Throwable when the call fails or the reply is not valid JSON.
      */
     public function chatJson(array $messages): array
     {
-        $apiKey = $this->resolveApiKey();
-        if (!$apiKey) {
-            throw new \RuntimeException('DeepSeek API key not configured (set DEEPSEEK_API_KEY or an ai_api_keys row).');
+        $client = $this->client();
+
+        $content = $client->chat(
+            $messages,
+            null,
+            $this->maxTokens > 0 ? $this->maxTokens : null,
+            null,
+            true,
+            $this->timeout
+        );
+
+        if ($content === null || trim($content) === '') {
+            throw new \RuntimeException('The AI provider returned an empty message.');
         }
 
-        $body = [
-            'model'    => $this->model,
-            'messages' => $messages,
-            'stream'   => false,
-            'response_format' => ['type' => 'json_object'],
-        ];
-        if ($this->maxTokens > 0) {
-            $body['max_tokens'] = $this->maxTokens;
+        $content = trim($content);
+        if (str_starts_with($content, '```')) {
+            $content = trim(preg_replace('/^```(?:json)?\s*|\s*```$/m', '', $content) ?? $content);
         }
 
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $apiKey,
-            'Content-Type'  => 'application/json',
-        ])->timeout($this->timeout)->connectTimeout(20)
-          ->post(rtrim((string) config('deepseek.base_url', 'https://api.deepseek.com'), '/') . '/chat/completions', $body);
-
-        if (!$response->successful()) {
-            Log::error('DeepSeek assessment generation failed: ' . $response->status() . ' ' . $response->body());
-            throw new \RuntimeException('DeepSeek request failed: ' . $response->status());
-        }
-
-        $content = $response->json('choices.0.message.content');
-        if ($content === null) {
-            throw new \RuntimeException('DeepSeek returned an empty message.');
-        }
-
-        $decoded = json_decode((string) $content, true);
+        $decoded = json_decode($content, true);
         if (!is_array($decoded)) {
-            throw new \RuntimeException('DeepSeek did not return valid JSON.');
+            throw new \RuntimeException('The AI provider did not return valid JSON.');
         }
 
         return $decoded;

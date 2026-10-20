@@ -5,7 +5,8 @@ namespace App\Http\Controllers\api\TalentManagement\Recruitment;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use App\Domain\AI\Configuration\AiConfigurationException;
+use App\Domain\AI\Configuration\AiModelClientFactory;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
@@ -21,9 +22,8 @@ use Illuminate\Support\Facades\Validator;
  *   - Source resolves its Gemini API key from a `gemini_api` DB table with
  *     multi-key fallback and Sanctum-token identity (`ResolvesApiIdentity`).
  *   - Neither `gemini_api` nor Sanctum auth exist here. This project already
- *     has an established Gemini-calling convention instead - `env('GEMINI_API_KEY')`
- *     / `config('gemini.model')`, exactly as `AiSopGenerationController::generate()`
- *     uses - so this controller follows that, and tenant/actor identity comes
+ *     uses the central AI configuration (module `recruitment_ai`) instead, and
+ *     tenant/actor identity comes
  *     from the JWT-hydrated session (`api.session` middleware), matching
  *     every other controller in this module (see `JobPostingController`).
  *   - Source also calls `https://hp.triz.co.in/getSkillCompetency` to map
@@ -57,16 +57,7 @@ class AnalyzeJDController extends Controller
             ], 422);
         }
 
-        $apiKey = env('GEMINI_API_KEY');
-        if (!$apiKey) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gemini API key is not configured. Please set GEMINI_API_KEY in the backend .env file.',
-            ], 500);
-        }
-
         $jd = $validator->validated()['jd'];
-        $model = config('gemini.model');
 
         $prompt = <<<PROMPT
 Analyze this job description and extract:
@@ -86,42 +77,25 @@ Respond strictly in valid JSON:
 PROMPT;
 
         try {
-            $response = Http::timeout(90)
-                ->retry(1, 500)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                    'x-goog-api-key' => $apiKey,
-                ])
-                ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
-                    'contents' => [
-                        [
-                            'role' => 'user',
-                            'parts' => [
-                                ['text' => $prompt],
-                            ],
-                        ],
-                    ],
-                    'generationConfig' => [
-                        'temperature' => 0.3,
-                        'topP' => 0.9,
-                        'maxOutputTokens' => 1024,
-                    ],
-                ]);
+            // Provider, model, key and fallback order come from the tenant's central AI
+            // configuration ('recruitment_ai'); tenant comes from the JWT-hydrated session.
+            $textResponse = app(AiModelClientFactory::class)
+                ->for('recruitment_ai', session()->get('sub_institute_id'))
+                ->chat(
+                    [['role' => 'user', 'content' => $prompt]],
+                    null,
+                    1024,
+                    0.3,
+                    true,
+                    90
+                );
 
-            if (!$response->successful()) {
-                Log::warning('Gemini JD analysis failed', [
-                    'status' => $response->status(),
-                    'body' => $response->body(),
-                ]);
-
+            if (!is_string($textResponse) || trim($textResponse) === '') {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to analyze job description with Gemini.',
+                    'message' => 'Failed to analyze job description with the AI provider.',
                 ], 502);
             }
-
-            $textResponse = $response->json('candidates.0.content.parts.0.text') ?? '{}';
-
             try {
                 $parsed = json_decode($textResponse, true, 512, JSON_THROW_ON_ERROR);
             } catch (\Throwable $e) {
@@ -135,8 +109,13 @@ PROMPT;
                 'behavioral_traits' => $parsed['behavioral_traits'] ?? [],
                 'competency_level' => $parsed['competency_level'] ?? [],
             ]);
+        } catch (AiConfigurationException $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 500);
         } catch (\Throwable $exception) {
-            Log::error('Gemini JD analysis exception', [
+            Log::error('JD analysis exception', [
                 'message' => $exception->getMessage(),
             ]);
 

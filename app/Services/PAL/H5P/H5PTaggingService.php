@@ -617,18 +617,18 @@ class H5PTaggingService
 
     // ── Tier 3: AI, only for what the first two tiers cannot supply ─────────
 
-    public function aiAvailable(): bool
+    public function aiAvailable(?int $tenant = null): bool
     {
-        return (bool) config('pal_h5p.ai.enabled', true) && $this->llm->enabled();
+        return (bool) config('pal_h5p.ai.enabled', true) && $this->llm->forInstitute($tenant)->enabled();
     }
 
-    public function aiUnavailableReason(): ?string
+    public function aiUnavailableReason(?int $tenant = null): ?string
     {
         if (! config('pal_h5p.ai.enabled', true)) {
             return 'AI tagging is switched off for this deployment (PAL_H5P_AI).';
         }
 
-        return $this->llm->unavailableReason();
+        return $this->llm->forInstitute($tenant)->unavailableReason();
     }
 
     /**
@@ -645,14 +645,18 @@ class H5PTaggingService
      */
     public function proposeTags(array $nodes, array $context, array $tagged = []): array
     {
-        if (! $this->aiAvailable()) {
-            return ['proposals' => [], 'available' => false, 'reason' => $this->aiUnavailableReason(), 'model' => null];
+        $tenant = (int) ($context['sub_institute_id'] ?? 0) ?: null;
+        // The school's own AI configuration applies to this call.
+        $llm = $this->llm->forInstitute($tenant);
+
+        if (! $this->aiAvailable($tenant)) {
+            return ['proposals' => [], 'available' => false, 'reason' => $this->aiUnavailableReason($tenant), 'model' => null];
         }
 
         $limit = (int) config('pal_h5p.ai.max_nodes_per_call', 8);
         $nodes = array_slice(array_values($nodes), 0, max(1, $limit));
         if ($nodes === []) {
-            return ['proposals' => [], 'available' => true, 'reason' => null, 'model' => $this->llm->model()];
+            return ['proposals' => [], 'available' => true, 'reason' => null, 'model' => $llm->model()];
         }
 
         $tenant = (int) ($context['sub_institute_id'] ?? 0);
@@ -674,35 +678,35 @@ class H5PTaggingService
         }
 
         $input = ['nodes' => $payload, 'vocabulary' => $vocabulary];
-        $fingerprint = $this->llm->fingerprint($input);
+        $fingerprint = $llm->fingerprint($input);
         $kind = (string) config('pal_h5p.ai.cache_kind', 'h5p_model_tagging');
         $cacheKey = 'H5P.' . (int) ($context['chapter_id'] ?? 0) . '.tagging';
 
         // The cache is keyed on a fingerprint of the exact input the model saw,
         // so an edited node invalidates its own answer and a page reload never
         // re-bills the provider.
-        $cached = $this->llm->cached($cacheKey, $kind, null, $fingerprint, $tenant);
+        $cached = $llm->cached($cacheKey, $kind, null, $fingerprint, $tenant);
         $data = $cached['payload'] ?? null;
         $model = $cached['model'] ?? null;
         $error = null;
 
         if ($data === null) {
-            $response = $this->llm->json($this->aiSystemPrompt(), json_encode($input, JSON_UNESCAPED_UNICODE));
+            $response = $llm->json($this->aiSystemPrompt(), json_encode($input, JSON_UNESCAPED_UNICODE));
 
             if (empty($response['ok'])) {
                 return [
                     'proposals' => [],
                     'available' => true,
                     'reason' => $response['error'] ?? 'The AI provider did not return a usable response.',
-                    'model' => $this->llm->model(),
+                    'model' => $llm->model(),
                     'cached' => false,
                 ];
             }
 
             $data = (array) ($response['data'] ?? []);
-            $model = $response['model'] ?? $this->llm->model();
+            $model = $response['model'] ?? $llm->model();
 
-            $this->llm->remember(
+            $llm->remember(
                 $cacheKey,
                 $kind,
                 null,
@@ -738,7 +742,7 @@ class H5PTaggingService
             'proposals' => $proposals,
             'available' => true,
             'reason' => null,
-            'model' => $this->llm->model(),
+            'model' => $llm->model(),
             'cached' => $cached !== null,
         ];
     }
