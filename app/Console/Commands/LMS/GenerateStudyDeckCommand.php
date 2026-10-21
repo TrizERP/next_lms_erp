@@ -8,6 +8,7 @@ use App\Services\StudyDeck\ClaudeCliCompleter;
 use App\Services\StudyDeck\Contracts\Completer;
 use App\Services\StudyDeck\StudyDeckService;
 use App\Services\StudyDeck\StudyImageStores;
+use App\Services\StudyDeck\TeachingMethodProfile;
 use Illuminate\Console\Command;
 
 /**
@@ -32,6 +33,12 @@ class GenerateStudyDeckCommand extends Command
         {--tenant=1 : sub_institute_id}
         {--executor= : api | cli (cli is dev-only; default from config claude.executor)}
         {--out= : bundle directory (default storage/app/study-deck/chapter-<id>)}
+        {--teaching-method= : shape the deck for a teaching method (explicit_instruction, inquiry_based, problem_based, project_based, experiential, collaborative, socratic, flipped_classroom, differentiated_mastery, gamified); none keeps the default deck}
+        {--template= : build the lesson with a reusable template instead of the slide planner (story_branching_scenario: a story with an act per topic, in the study-deck story player)}
+        {--pictures-from= : with --template: a finished story bundle (a directory with deck.json and story.json); its text is NOT rewritten, and the scenes without a picture are given the best relevant ones (the picture pass). The result goes to --out; the source bundle is not changed}
+        {--picture-plan-file= : with --pictures-from: a JSON file of picture plans written by a person who read the scenes ({"a1/s3": {"image_queries": [...], "show": "what the photograph must show", "picture_caption": "what to notice", "process_step": "evidence", "priority": 10}}). It is the whole plan: no model call is made to plan pictures}
+        {--replan : with --pictures-from: plan the pictures again instead of reusing the plan an earlier picture pass saved (the failed searches it saved are still reused)}
+        {--picture-seconds=300 : with --pictures-from: how long the picture pass may work, most important scenes first; scenes not reached stay pending and a later pass continues}
         {--min-slides=30}
         {--max-slides=35}
         {--per-concept=4 : most bank questions offered per concept}
@@ -56,20 +63,46 @@ class GenerateStudyDeckCommand extends Command
         $dir = rtrim((string) ($this->option('out') ?: storage_path('app/study-deck/chapter-' . $chapterId)), '/\\');
         $store = (bool) $this->option('store');
 
-        $this->line('Executor: <options=bold>' . $executor . '</>' . ($executor === 'cli' ? ' (dev-only, tools disabled)' : ''));
+        // A story lesson is always written by Gemini (the estate's own client and key pool): never the Anthropic key or the Claude CLI.
+        $story = $this->option('template') === \App\Services\StudyDeck\Story\StoryTemplate::KEY;
+        $this->line($story ? 'Model: <options=bold>gemini</> (story lessons always use Gemini)' : 'Executor: <options=bold>' . $executor . '</>' . ($executor === 'cli' ? ' (dev-only, tools disabled)' : ''));
 
         try {
             $replay = (bool) $this->option('replay');
             if (!$replay && $this->option('images-from')) {
                 throw new RuntimeException('--images-from works with --replay (it changes the pictures of a deck that is already planned).');
             }
-            $completer = $replay ? $this->noModel() : $this->completer($executor, $content);
+            $completer = $replay ? $this->noModel() : ($story ? $this->geminiCompleter($tenant) : $this->completer($executor, $content));
             // Pictures go straight into the database (study_deck_images) and the bundle carries only their
             // references: a run writes no picture file anywhere. Publishing is lms:store-study-deck's job.
             $images = StudyImageStores::database($tenant, $chapterId);
             $service = StudyDeckService::make($completer, $images);
 
+            $method = $this->option('teaching-method') ?: null;
+            if ($method !== null && !in_array($method, TeachingMethodProfile::keys(), true)) {
+                throw new RuntimeException('--teaching-method must be one of: ' . implode(', ', TeachingMethodProfile::keys()) . '.');
+            }
+            $template = $this->option('template') ?: null;
+            if ($template !== null && $template !== \App\Services\StudyDeck\Story\StoryTemplate::KEY) {
+                throw new RuntimeException('--template must be: ' . \App\Services\StudyDeck\Story\StoryTemplate::KEY . '.');
+            }
+            if ($template !== null && $replay) {
+                throw new RuntimeException('--template builds a new lesson; it does not combine with --replay.');
+            }
+            $pictureSource = (string) $this->option('pictures-from');
+            if ($pictureSource !== '' && ($template === null || $replay)) {
+                throw new RuntimeException('--pictures-from works with --template (a finished story bundle) and not with --replay.');
+            }
+            if ($pictureSource !== '' && realpath($pictureSource) === realpath($dir)) {
+                throw new RuntimeException('--out must be a different directory from --pictures-from: the finished bundle is kept as it is.');
+            }
             $options = [
+                'template' => $template, 'tenant' => $tenant,
+                ...($pictureSource !== '' ? $this->pictureOptions($pictureSource) + ['picture_seconds' => max(1, (int) $this->option('picture-seconds'))] : []),
+                // Finished acts are kept between runs of the same chapter, so a failure late in the story is resumed, not redone.
+                'story_checkpoint_dir' => $template !== null ? storage_path('app/study-deck/story-checkpoints/chapter-' . $chapterId . '-school-' . $tenant) : null,
+                'teaching_method' => $method,
+                'rejected_replies_dir' => $dir,
                 'min_slides' => (int) $this->option('min-slides'),
                 'max_slides' => (int) $this->option('max-slides'),
                 'per_concept' => (int) $this->option('per-concept'),
@@ -177,6 +210,18 @@ class GenerateStudyDeckCommand extends Command
         ];
     }
 
+    private function geminiCompleter(int $tenant): Completer
+    {
+        $client = app(\App\Domain\AI\Support\GeminiClient::class)->forInstitute($tenant);
+        if (!$client->isConfigured()) {
+            throw new RuntimeException('No Gemini API key (ai_api_keys api_type=gemini, or GEMINI_API_KEY). Story lessons are written by Gemini only.');
+        }
+        $completer = new \App\Services\StudyDeck\Story\GeminiStoryCompleter($client);
+        $this->line('  Gemini model: ' . $completer->model());
+
+        return $completer;
+    }
+
     private function completer(string $executor, ContentGenerationService $content): Completer
     {
         if ($executor === 'cli') {
@@ -202,6 +247,58 @@ class GenerateStudyDeckCommand extends Command
             ?? throw new \RuntimeException('No Anthropic API key (ai_api_keys / ANTHROPIC_API_KEY). Use --executor=cli for a dev run.');
     }
 
+    /**
+     * The finished story of a bundle, as the story generator takes it: the bible and notes, each act's skeleton, and each written act (the
+     * story slides of deck.json, in order). A earlier picture pass's plan and failed searches are picked up too, so a second pass continues.
+     *
+     * @return array<string,mixed>
+     */
+    private function pictureOptions(string $source): array
+    {
+        $read = function (string $name) use ($source): array {
+            $path = rtrim($source, '/\\') . '/' . $name;
+            $data = is_file($path) ? json_decode((string) file_get_contents($path), true) : null;
+
+            return is_array($data) ? $data : [];
+        };
+        $deck = $read('deck.json');
+        $story = $read('story.json');
+        if (($deck['slides'] ?? []) === [] || ($story['acts'] ?? []) === []) {
+            throw new RuntimeException("--pictures-from: $source has no deck.json and story.json of a story lesson.");
+        }
+        $interactions = array_values(array_map(fn ($s) => $s['interaction'], array_filter((array) $deck['slides'], fn ($s) => ($s['interaction']['template'] ?? null) === \App\Services\StudyDeck\Story\StoryTemplate::KEY)));
+        $keys = array_column($story['acts'], 'key');
+        if (count($interactions) !== count($keys)) {
+            throw new RuntimeException('--pictures-from: the bundle has ' . count($interactions) . ' story slides but ' . count($keys) . ' acts.');
+        }
+        $earlier = $read('pictures.json');
+
+        return [
+            'story_prebuilt' => [
+                'bible' => $story['bible'], 'notes' => array_values(array_filter((array) ($story['notes'] ?? []), fn ($n) => !str_starts_with((string) $n, 'Pictures: '))),
+                'skeletons' => array_combine($keys, array_column($story['acts'], 'skeleton')),
+                'interactions' => array_combine($keys, $interactions),
+            ],
+            'picture_plan' => $this->option('replan') ? [] : (array) ($earlier['plan'] ?? []), 'picture_misses' => (array) ($earlier['misses'] ?? []),
+            ...($this->pictureCurated() !== null ? ['picture_curated' => $this->pictureCurated(), 'picture_curated_only' => true, 'picture_misses' => []] : []),
+        ];
+    }
+
+    /** The picture plan a person wrote (--picture-plan-file), or null when none was given. @return array<string,mixed>|null */
+    private function pictureCurated(): ?array
+    {
+        $file = (string) $this->option('picture-plan-file');
+        if ($file === '') {
+            return null;
+        }
+        $plan = is_file($file) ? json_decode((string) file_get_contents($file), true) : null;
+        if (!is_array($plan) || $plan === []) {
+            throw new RuntimeException("--picture-plan-file: $file is not a JSON object of picture plans.");
+        }
+
+        return $plan;
+    }
+
     /** @param array<string,mixed> $r */
     private function writeBundle(string $dir, array $r): void
     {
@@ -223,6 +320,14 @@ class GenerateStudyDeckCommand extends Command
         file_put_contents($dir . '/activities.json', $json($r['activities'] ?? []));
         file_put_contents($dir . '/interactions.json', $json($r['interactions'] ?? []));
         file_put_contents($dir . '/report.json', $json($r['report']));
+        if (isset($r['pictures'])) {
+            // What the picture pass did (counts, why images were refused, licences), the plan it followed and the searches that found nothing.
+            file_put_contents($dir . '/pictures.json', $json($r['pictures']));
+        }
+        if (isset($r['story'])) {
+            // The story's bible, its checked skeletons and what was left out (a picture whose labels the chapter does not support).
+            file_put_contents($dir . '/story.json', $json($r['story']));
+        }
         file_put_contents($dir . '/out/presentation.html', $r['html']);
     }
 

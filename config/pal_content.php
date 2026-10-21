@@ -389,6 +389,20 @@ return [
     'image' => [
         'enabled' => env('PAL_IMAGE_ENABLED', true),
 
+        // Extra picture sources for the story lesson's picture pass (see NasaImageSearch and PexelsImageSearch). Both are official APIs.
+        // NASA Image and Video Library needs no key. Pexels does nothing until PEXELS_API_KEY is set (its key is sent in a header, never a URL).
+        // Unsplash is not used: its API terms require hotlinking the URLs it returns, and the picture library keeps its own copy of a picture.
+        'nasa' => [
+            'enabled' => env('PAL_NASA_IMAGES_ENABLED', true),
+            'endpoint' => env('NASA_IMAGES_ENDPOINT', 'https://images-api.nasa.gov/search'),
+            'timeout' => 8,
+        ],
+        'pexels' => [
+            'key' => env('PEXELS_API_KEY'),
+            'endpoint' => env('PEXELS_ENDPOINT', 'https://api.pexels.com/v1/search'),
+            'timeout' => 8,
+        ],
+
         'external' => [
             'enabled'  => env('PAL_IMAGE_EXTERNAL_ENABLED', true),
             'endpoint' => env('OPENVERSE_ENDPOINT', 'https://api.openverse.org/v1/images/'),

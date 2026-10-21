@@ -429,6 +429,8 @@ class InteractionPlanner
             $when = $this->text($c['when'] ?? '');
             if ($label === '' || self::words($label) > 8) {
                 $errors[] = 'An item label is 1 to 8 words.';
+            } elseif (CardTitle::isGeneric($label)) {
+                $errors[] = "The item label \"$label\" is a placeholder; name what the card says instead.";
             }
             $w = self::words($text);
             if ($w < 5 || $w > 35) {
@@ -575,6 +577,7 @@ class InteractionPlanner
         }, array_values($chunk));
         $input = json_encode($work, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         $scenarios = implode(', ', self::SCENARIO_SLIDES);
+        $methodRule = TeachingMethodProfile::interactionRule($plan['teaching_method'] ?? null);
 
         return <<<PROMPT
 This is a teacher-led classroom lesson that students also study on their own, shown as a full-screen presentation. The explanations, pictures and examples are already written. Your job: EVERY slide listed below should let the student DO something that teaches - explore, reveal, compare, connect, decide - not just read and press Continue. Write one interaction for each slide, choosing the kind that fits what the slide IS. It must feel like an interactive textbook, never like a quiz: nothing is scored and nothing has one right answer except where a real sequence or definition does.
@@ -607,7 +610,7 @@ Rules
 - Teach, do not test. No scores. Feedback is explanation.
 - Every explanation you write adds to the slide; it never just repeats it.
 - Numbers, names, dates and examples must appear in the chapter text. If concept data and chapter text disagree, the chapter text wins.
-- Sentence case, address the student as "you", no emoji, no exclamation marks.
+- Sentence case, address the student as "you", no emoji, no exclamation marks.{$methodRule}
 
 Reply with {"slides": [one entry for every slide listed, {"n": 1, "interaction": null or an object above, "reason": "..."}]}
 
