@@ -294,6 +294,9 @@ class SlidePlanner
             $errors[] = "The plan asks for $visuals visuals; ask for at most " . $lim['max_visuals'] . ', only where a picture or diagram truly teaches.';
         }
 
+        // A deck planned for a teaching method must contain what that method needs, in its order (off when none is named).
+        array_push($errors, ...TeachingMethodProfile::planErrors($map['teaching_method'] ?? null, $slides));
+
         $missing = array_diff($known, array_keys($taught));
         if ($missing) {
             $names = array_map(fn ($id) => $map['concepts'][$id]['name'] . " ($id)", $missing);
@@ -402,6 +405,7 @@ class SlidePlanner
         $framing = implode(', ', self::FRAMING);
         $practiceRule = $this->practiceRule($maxP, $maxQ);
         $pictureRule = $this->pictureRule($maxV);
+        $methodRule = TeachingMethodProfile::plannerRule($map['teaching_method'] ?? null);
 
         return <<<PROMPT
 Plan a classroom study presentation of between {$min} and {$max} slides for the chapter below. Nothing is written yet; you are only planning.
@@ -418,7 +422,7 @@ Rules
 - Visuals: at most {$maxV} in the whole deck, and only where seeing the thing teaches the concept. Give "role": one of {$roles}. A PHOTOGRAPH (role object, instrument or phenomenon) is for a concrete thing worth seeing in itself: an instrument, a natural phenomenon, a specimen. A photo of something merely MENTIONED as an example, or of anything for an abstract idea, a definition, a classification or a chain of reasoning, teaches nothing: leave "visual" null, or give role "diagram" and put a "diagram" spec on the SLIDE (a sibling of "visual", never inside it) which the system will draw. Prefer a drawn diagram (role "diagram") for any concept with several meaningful named parts, ways, steps or kinds: the student will be able to select each part of it and read an explanation, so such a diagram earns a slide of its own and a large size. A diagram spec is {"layout": "flow" | "compare" | "hub", "title": "...", ...}: flow has "nodes": 2 to 6 short labels in order; hub has "center" and "nodes": 2 to 6 labels; compare has "left" and "right", each {"heading", "items": 1 to 5}. Every label must use words and numbers from the chapter text. The query is a plain 2 to 5 word search phrase naming the thing itself (for example "magnetic compass"), never a generic classroom or student photo.
 {$pictureRule}- Choose an h5p_pattern only where it truly fits the concept and a question you placed on THAT slide (reason required); otherwise null. Patterns here are ways to ask a bank question: {$patterns}. flashcards needs a recall-level question; fill_blanks needs a short factual answer; true_false needs a true/false question; matching needs a match-the-following question; drag_drop needs a drag-and-drop question. If the slide has no question, or none of its questions fit, use null. Never use branching or image_hotspots here; hotspots and scenarios are written separately by the system.
 - Slide types allowed: {$types}
-- No slide may repeat another's title. Every slide has one clear idea and something to look at, think about or discuss.
+- No slide may repeat another's title. Every slide has one clear idea and something to look at, think about or discuss.{$methodRule}
 
 Reply with this JSON and nothing else:
 {

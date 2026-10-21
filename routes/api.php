@@ -1147,3 +1147,20 @@ Route::middleware('api.session')->prefix('capture-photo')->group(function () {
     Route::post('store', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'store']);
     Route::post('delete', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'destroy']);
 });
+
+// Course Presentation pilot: the two choices and a read-only source pre-flight. See CoursePresentationController.
+Route::middleware(['api.session', 'staff.only'])->prefix('lms/course-presentation')->group(function () {
+    Route::get('options', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'options']);
+    Route::get('fit', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'fit']);
+    Route::get('preflight', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'preflight']);
+    Route::get('status', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'status']);
+    Route::get('draft', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'draft']);
+    Route::get('preview', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'preview']);
+});
+// Generating spends a model call and approving stores a presentation, so they sit behind the same content-create gate
+// the other generators use (a teacher who may add content), plus an allowance for the spend.
+Route::middleware(['api.session', 'lms.auth', 'perm:lms.content,create'])->prefix('lms/course-presentation')->group(function () {
+    Route::post('generate', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'generate'])->middleware('throttle:10,1');
+    Route::post('approve', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'approve']);
+    Route::post('discard', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'discard']);
+});

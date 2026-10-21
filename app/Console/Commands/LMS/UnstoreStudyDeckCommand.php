@@ -28,7 +28,7 @@ class UnstoreStudyDeckCommand extends Command
     public function handle(StudyDeckImages $images): int
     {
         $row = DB::table('content_master')->where('id', (int) $this->argument('content_id'))->first(['id', 'filename', 'chapter_id', 'title']);
-        if (!$row || !str_starts_with((string) $row->filename, 'study_deck_')) {
+        if (!$row || !(str_starts_with((string) $row->filename, 'study_deck_') || str_starts_with((string) $row->filename, \App\Services\StudyDeck\Story\StoryTemplate::FILE_PREFIX))) {
             $this->error('That is not a stored study deck.');
 
             return self::FAILURE;

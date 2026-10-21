@@ -490,6 +490,9 @@ class StudyDeckPdfRenderer
      */
     protected function scenario(array $i, bool $revision): array
     {
+        if (($i['template'] ?? null) === \App\Services\StudyDeck\Story\StoryTemplate::KEY) {
+            return $this->story($i);
+        }
         $chunks = [];
         foreach (array_values($i['nodes'] ?? []) as $index => $node) {
             $prompt = '<div class="dec"><strong>Decision ' . ($index + 1) . '.</strong> ' . $this->e((string) ($node['prompt'] ?? '')) . '</div>';
@@ -510,6 +513,45 @@ class StudyDeckPdfRenderer
                 $chunks[] = $prompt . $table(array_slice($rows, 0, 1), true);
                 $chunks[] = $table(array_slice($rows, 1), false);
             }
+        }
+
+        return $chunks;
+    }
+
+    /**
+     * A story act written out for paper: the mission, then every scene in story order, every decision with each choice, the story
+     * event that follows it and why, and every ending. A page cannot branch, so the order is the order the nodes are stored in (the
+     * story only moves forward) and each choice says which scene it leads to.
+     *
+     * @param array<string,mixed> $i
+     * @return array<int,string>
+     */
+    protected function story(array $i): array
+    {
+        $nodes = array_values((array) ($i['nodes'] ?? []));
+        $title = [];
+        foreach ($nodes as $n) {
+            $title[(string) ($n['id'] ?? '')] = (string) ($n['title'] ?? '');
+        }
+        $chunks = [];
+        if (!empty($i['mission']['title'])) {
+            $chunks[] = '<div class="dec"><strong>Mission: ' . $this->e((string) $i['mission']['title']) . '.</strong> ' . $this->e((string) ($i['mission']['body'] ?? '')) . '</div>';
+        }
+        foreach ($nodes as $node) {
+            $kind = (string) ($node['kind'] ?? 'scene');
+            $head = '<div class="dec"><strong>' . ($kind === 'ending' ? 'Ending: ' : '') . $this->e((string) ($node['title'] ?? '')) . '</strong>'
+                . (!empty($node['body']) ? '<p>' . $this->e((string) $node['body']) . '</p>' : '')
+                . (!empty($node['image']['alt']) ? '<p><em>Picture: ' . $this->e((string) $node['image']['alt']) . '</em></p>' : '') . '</div>';
+            if ($kind !== 'decision') {
+                $next = (string) ($node['choices'][0]['next'] ?? '');
+                $chunks[] = $head . ($kind === 'scene' && $next !== '' ? '<p class="sound">Then: ' . $this->e($title[$next] ?? $next) . '</p>' : '');
+                continue;
+            }
+            $rows = '';
+            foreach ((array) ($node['choices'] ?? []) as $ch) {
+                $rows .= '<tr><td class="tm">' . $this->e((string) ($ch['text'] ?? '')) . (!empty($ch['sound']) ? '<div class="sound">&#10003; Sound choice</div>' : '') . '</td><td>' . $this->e((string) ($ch['outcome'] ?? '')) . '</td><td>' . $this->e((string) ($ch['why'] ?? '')) . '</td><td>' . $this->e($title[(string) ($ch['next'] ?? '')] ?? '') . '</td></tr>';
+            }
+            $chunks[] = $head . '<div class="dec"><strong>Decide.</strong> ' . $this->e((string) ($node['prompt'] ?? '')) . '</div><table class="lgd"><tr><th>Choice</th><th>What happens</th><th>Why</th><th>Leads to</th></tr>' . $rows . '</table>';
         }
 
         return $chunks;

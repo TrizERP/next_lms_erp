@@ -1,0 +1,162 @@
+[
+    {
+        "concept": "Estimate using rates and assumed values",
+        "card": {
+            "statement": "A rough estimate is constructed by choosing simple assumed rates and values rather than searching for exact measurements.",
+            "knowledge": "A rough estimate can be built from simple assumed rates and values.",
+            "type": "Process"
+        },
+        "title": "A rough estimate can be built from simple assumed rates",
+        "level": 2
+    },
+    {
+        "concept": "Estimate using rates and assumed values",
+        "card": {
+            "statement": "The estimation procedure multiplies an assumed rate by the relevant time interval or the number of persons involved.",
+            "knowledge": "An assumed rate is combined over a relevant time or number of persons to give an estimate.",
+            "type": "Process"
+        },
+        "title": "An assumed rate is combined over a relevant time",
+        "level": 2
+    },
+    {
+        "concept": "Estimate using rates and assumed values",
+        "card": {
+            "statement": "An average adult needs about 2000 2500 kilocalories per day, a value used in the rice-family estimation problem.",
+            "knowledge": "An average adult needs about 2000–2500 kilocalories per day.",
+            "type": "Fact"
+        },
+        "title": "An average adult needs about 2000–2500 kilocalories per day",
+        "level": 1
+    },
+    {
+        "concept": "Estimate using rates and assumed values",
+        "card": {
+            "statement": "To estimate rice for a family, one assumes that all their calorie needs come from rice alone.",
+            "knowledge": "In the rice model, all calorie needs are assumed to come from rice alone.",
+            "type": "Rule"
+        },
+        "title": "In the rice model, all calorie needs are assumed",
+        "level": 2
+    },
+    {
+        "concept": "Estimate using rates and assumed values",
+        "card": {
+            "statement": "A rough estimate can be formed by assuming simple rates, for example breaths per minute and volume per breath, then multiplying over the relevant time period.",
+            "knowledge": "Rates such as breaths per minute and volume per breath can be used to estimate totals.",
+            "type": "Process"
+        },
+        "title": "Rates such as breaths per minute and volume per breath",
+        "level": 2
+    },
+    {
+        "concept": "Scientific terms are precise",
+        "card": {
+            "statement": "Because scientific ideas must be communicated clearly and unambiguously, science selects words that have exact meanings instead of informal or variable meanings.",
+            "knowledge": "Scientific ideas must be communicated clearly and unambiguously, so science relies on precise terms.",
+            "type": "Fact"
+        },
+        "title": "Scientific ideas must be communicated clearly and unambiguously",
+        "level": 2
+    },
+    {
+        "concept": "Scientific terms are precise",
+        "card": {
+            "statement": "Scientists around the world need a shared set of specific terms so they can describe observations, compare their results, and build a common body of scientific knowledge.",
+            "knowledge": "Scientists worldwide need a shared language of specific terms to describe observations, compare results, and build ideas together.",
+            "type": "Fact"
+        },
+        "title": "Scientists worldwide need a shared language of specific terms",
+        "level": 2
+    },
+    {
+        "concept": "Symbols arise from history and agreement",
+        "card": {
+            "statement": "The symbols used in science are generally based on their historical origins and on agreements made by the scientific community, not simply on convenience or short abbreviations.",
+            "knowledge": "Scientific symbols often arise from historical roots and international agreements rather than from abbreviations of convenience.",
+            "type": "Fact"
+        },
+        "title": "Scientific symbols often arise from historical roots and international agreements",
+        "level": 2
+    },
+    {
+        "concept": "Symbols arise from history and agreement",
+        "card": {
+            "statement": "The speed of light is written as c because the Latin word celeritas, meaning speed, is the root of this symbol.",
+            "knowledge": "The symbol c for the speed of light comes from the Latin word celeritas, meaning speed.",
+            "type": "Fact"
+        },
+        "title": "The symbol c for the speed of light comes from the Latin word celeritas",
+        "level": 2
+    },
+    {
+        "concept": "Symbols arise from history and agreement",
+        "card": {
+            "statement": "One of the defining values in physics is the speed of light, which is set exactly at 299792458 metres per second.",
+            "knowledge": "The speed of light is a physical constant defined to be exactly 299792458 m/s.",
+            "type": "Fact"
+        },
+        "title": "The speed of light is a physical constant defined to be exactly 299792458 m/s",
+        "level": 2
+    },
+    {
+        "concept": "Cross-check estimates independently",
+        "card": {
+            "statement": "A useful way to test an estimate is to check it using a second, independent calculation or reasoning path.",
+            "knowledge": "An estimate can be checked by a second independent line of reasoning.",
+            "type": "Principle"
+        },
+        "title": "An estimate can be checked",
+        "level": 2
+    },
+    {
+        "concept": "Cross-check estimates independently",
+        "card": {
+            "statement": "If independent estimates agree closely, confidence in the original estimate increases.",
+            "knowledge": "When two independent estimates are close, the estimate is more trustworthy.",
+            "type": "Principle"
+        },
+        "title": "When two independent estimates are close",
+        "level": 2
+    },
+    {
+        "concept": "Cross-check estimates independently",
+        "card": {
+            "statement": "The balloon calculation produced about 8640 litres, which is close to the first estimate of 10,000 litres.",
+            "knowledge": "The balloon calculation gave about 8640 litres, close to the first estimate of 10,000 litres.",
+            "type": "Fact"
+        },
+        "title": "The balloon calculation gave about 8640 litres",
+        "level": 2
+    },
+    {
+        "concept": "Careful observation in exploration",
+        "card": {
+            "statement": "The magnifying glass symbolises careful observation — noticing patterns and paying attention to what might otherwise be missed.",
+            "knowledge": "Magnifying glass represents careful observation",
+            "type": "Fact"
+        },
+        "title": "Magnifying glass represents careful observation",
+        "level": 1
+    },
+    {
+        "concept": "Careful observation in exploration",
+        "card": {
+            "statement": "Careful observation involves looking closely at natural patterns and details in order to notice what is not immediately apparent.",
+            "knowledge": "Meaning of careful observation",
+            "type": "Definition"
+        },
+        "title": "Meaning of careful observation",
+        "level": 1
+    },
+    {
+        "concept": "Careful observation in exploration",
+        "card": {
+            "statement": "Scientific exploration depends on careful observation to identify patterns and details in nature.",
+            "knowledge": "Observation in exploration",
+            "type": "Principle"
+        },
+        "title": "Observation in exploration",
+        "level": 1
+    }
+]
