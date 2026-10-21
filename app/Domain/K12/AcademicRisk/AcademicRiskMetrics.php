@@ -17,4 +17,10 @@ final class AcademicRiskMetrics
     public const ATTENDANCE_RATE = 'k12.attendance_present_percent';
 
     public const ASSIGNMENT_COMPLETION = 'k12.assignment_completion_percent';
+
+    /** Average ESO/PAL `learner_node_state.mastery_estimate` over the student's
+     *  most recently active concept nodes. Null (not zero) when the student has
+     *  no PAL attempts — PAL coverage is not universal, and an absent score must
+     *  never be scored as a regression. */
+    public const PAL_MASTERY_TREND = 'k12.pal_mastery_trend_percent';
 }
