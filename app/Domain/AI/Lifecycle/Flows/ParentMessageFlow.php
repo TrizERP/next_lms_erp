@@ -87,7 +87,7 @@ class ParentMessageFlow
 
         return (bool) preg_match('/\b(yes|confirm|approve|go ahead|proceed|send them|send it)\b/i', $text)
             && ! preg_match('/\d/', $text)
-            && ! preg_match('/\b(sms|whats\s?app|text|instead|message|wording|class|standard|saying)\b/i', $text)
+            && ! preg_match('/\b(sms|whats\s?app|both|text|instead|message|wording|class|standard|saying)\b/i', $text)
             && ! $this->looksLikeCancel($text);
     }
 
@@ -127,7 +127,9 @@ class ParentMessageFlow
         $state = (string) ($pending['state'] ?? '');
 
         if ($state === 'ready' && $this->looksLikeApproval($context->question)) {
-            return $this->send($context, $args, (string) ($pending['fingerprint'] ?? ''));
+            return ($args['channel'] ?? null) === 'both'
+                ? $this->sendBoth($context, $args, (string) ($pending['fingerprint'] ?? ''), (array) ($pending['unavailable'] ?? []))
+                : $this->send($context, $args, (string) ($pending['fingerprint'] ?? ''));
         }
 
         // Anything else is an edit to the request, and an edit is never an approval.
@@ -235,7 +237,7 @@ class ParentMessageFlow
         // the wording ("SMS Day", "class 9 picnic", "WhatsApp") are not a channel, a class or a student; only a
         // reply that is nothing but a channel ("by WhatsApp") is read as a change of channel.
         if ($previousState === 'need_message' && trim($text) !== '' && ! $this->looksLikeCancel($text)) {
-            $channelOnly = preg_match('/^\s*(?:by|via|use|send(?:\s+it)?(?:\s+by|\s+via)?)?\s*(?:sms|whats\s?app(?:\s+message)?)\s*(?:instead)?[.!]?\s*$/i', $text) === 1;
+            $channelOnly = preg_match('/^\s*(?:by|via|use|send(?:\s+it)?(?:\s+by|\s+via)?)?\s*(?:both|(?:sms|whats\s?app(?:\s+message)?)(?:\s*(?:and|&|\+)\s*(?:sms|whats\s?app(?:\s+message)?))?)\s*(?:instead)?[.!]?\s*$/i', $text) === 1;
 
             $read = [
                 'channel' => $channelOnly ? $read['channel'] : null,
@@ -252,6 +254,12 @@ class ParentMessageFlow
             && preg_match('/^\s*(?:student\s+)?([A-Za-z][A-Za-z .\'-]{1,60}?)\s*[.!]?\s*$/', $text, $name) === 1
             && ! preg_match('/\d/', $text)) {
             $read['student_name'] = trim($name[1]);
+        }
+
+        // The answer to "SMS, WhatsApp, or both?" may be just "both" (or "by both").
+        if (in_array($previousState, ['need_channel', 'need_message', 'ready'], true)
+            && preg_match('/^\s*(?:by|via|use|send(?:\s+it)?(?:\s+by|\s+via)?)?\s*both(?:\s+of\s+them|\s+channels?|\s+ways)?\s*(?:instead)?[.!]?\s*$/i', $text) === 1) {
+            $read['channel'] = 'both';
         }
 
         if ($read['channel'] !== null) {
@@ -276,7 +284,7 @@ class ParentMessageFlow
         }
 
         if (empty($args['channel'])) {
-            return $this->ask('need_channel', 'Should I send it by SMS or by WhatsApp?', $args);
+            return $this->ask('need_channel', 'Should I send it by SMS, by WhatsApp, or by both?', $args);
         }
 
         if (empty($args['student_ids']) && empty($args['standard_id'])) {
@@ -286,22 +294,20 @@ class ParentMessageFlow
         if (empty($args['message'])) {
             // Once the student and the channel are known, show what the Parent module's screen shows at this
             // point: who was selected, the registered mobile number, and the saved template, before the wording.
-            $details = $this->messages->describe($context->scope, array_filter([
-                'channel' => $args['channel'],
+            $details = $this->perChannel($args['channel'], fn (string $channel) => $this->messages->describe($context->scope, array_filter([
+                'channel' => $channel,
                 'student_ids' => $args['student_ids'] ?: null,
                 'standard_id' => $args['standard_id'],
                 'division_id' => $args['division_id'],
-            ], static fn ($value) => $value !== null && $value !== []));
+            ], static fn ($value) => $value !== null && $value !== [])));
 
-            $extra = ($details['success'] ?? false) === true ? ['details' => $details['data']] : [];
-
-            if (($details['success'] ?? false) !== true) {
+            if ($details['parts'] === []) {
                 // The channel is not set up for this institute, or the selection is not usable: say so now,
                 // not after the person has typed a message.
-                return $this->settled('failed', (string) ($details['message'] ?? 'The message could not be prepared.'), $args);
+                return $this->settled('failed', implode(' ', $details['unavailable']) ?: 'The message could not be prepared.', $args);
             }
 
-            return $this->ask('need_message', 'What should the message say?', $args, $extra);
+            return $this->ask('need_message', 'What should the message say?', $args, ['details' => $this->mergeDescribe($details)]);
         }
 
         $tool = array_filter([
@@ -311,6 +317,10 @@ class ParentMessageFlow
             'standard_id' => $args['standard_id'],
             'division_id' => $args['division_id'],
         ], static fn ($value) => $value !== null && $value !== []);
+
+        if ($args['channel'] === 'both') {
+            return $this->resolveBoth($context, $args, $tool);
+        }
 
         $preview = $this->messages->preview($context->scope, $tool);
 
@@ -334,6 +344,203 @@ class ParentMessageFlow
                 'args' => $args,
                 'fingerprint' => $data['fingerprint'],
             ],
+        ];
+    }
+
+    // ------------------------------------------------------------ both channels
+
+    /** @return array<int, string> */
+    private function channelsOf(?string $channel): array
+    {
+        return $channel === 'both' ? ['sms', 'whatsapp'] : [(string) $channel];
+    }
+
+    /**
+     * Ask the service about each requested channel on its own. A channel that cannot be used (not configured, no
+     * usable numbers) is named with its reason and never stops the other one.
+     *
+     * @param  callable(string): array<string, mixed>  $call
+     * @return array{parts: array<string, array<string, mixed>>, unavailable: array<string, string>}
+     */
+    private function perChannel(?string $channel, callable $call): array
+    {
+        $parts = [];
+        $unavailable = [];
+
+        foreach ($this->channelsOf($channel) as $one) {
+            $result = $call($one);
+
+            if (($result['success'] ?? false) === true) {
+                $parts[$one] = (array) $result['data'];
+            } else {
+                $unavailable[$one] = (string) ($result['message'] ?? 'The message could not be prepared.');
+            }
+        }
+
+        return ['parts' => $parts, 'unavailable' => $unavailable];
+    }
+
+    /**
+     * What the wording step shows. One channel: exactly what the service described. Both: the first channel's
+     * student list plus each channel's own provider and template.
+     *
+     * @param  array{parts: array<string, array<string, mixed>>, unavailable: array<string, string>}  $details
+     * @return array<string, mixed>
+     */
+    private function mergeDescribe(array $details): array
+    {
+        $parts = $details['parts'];
+
+        if (count($parts) === 1 && $details['unavailable'] === []) {
+            return reset($parts);
+        }
+
+        $merged = reset($parts);
+        $merged['channel'] = 'both';
+        $merged['channel_label'] = implode(' and ', array_map(fn (string $c) => $c === 'sms' ? 'SMS' : 'WhatsApp', array_keys($parts)));
+        $merged['channels'] = $parts;
+        $merged['unavailable'] = $details['unavailable'];
+        $merged['limit'] = min(array_map(static fn (array $p) => (int) ($p['limit'] ?? PHP_INT_MAX), $parts));
+
+        return $merged;
+    }
+
+    /**
+     * Preview SMS and WhatsApp as two separate lists, each with its own fingerprint. The approval covers both.
+     *
+     * @param  array<string, mixed>  $args
+     * @param  array<string, mixed>  $tool
+     * @return array<string, mixed>
+     */
+    private function resolveBoth(StageContext $context, array $args, array $tool): array
+    {
+        $previews = $this->perChannel('both', fn (string $channel) => $this->messages->preview($context->scope, ['channel' => $channel] + $tool));
+
+        if ($previews['parts'] === []) {
+            return $this->settled('failed', implode(' ', $previews['unavailable']), $args);
+        }
+
+        $fingerprints = [];
+        $notes = [];
+
+        foreach ($previews['parts'] as $channel => $part) {
+            if (($part['fingerprint'] ?? null) === null) {
+                $previews['unavailable'][$channel] = 'Nobody can be messaged by '.($channel === 'sms' ? 'SMS' : 'WhatsApp').' (no usable mobile number).';
+                unset($previews['parts'][$channel]);
+
+                continue;
+            }
+
+            $fingerprints[$channel] = $part['fingerprint'];
+        }
+
+        if ($fingerprints === []) {
+            return $this->settled('nothing_to_send', implode(' ', $previews['unavailable']), $args);
+        }
+
+        foreach ($previews['unavailable'] as $channel => $reason) {
+            $notes[] = ($channel === 'sms' ? 'SMS' : 'WhatsApp').' will NOT be sent: '.$reason;
+        }
+
+        $parts = $previews['parts'];
+        $data = reset($parts);
+        $data['channel'] = 'both';
+        $data['channel_label'] = implode(' and ', array_map(fn (string $c) => $c === 'sms' ? 'SMS' : 'WhatsApp', array_keys($parts)));
+        $data['channels'] = $parts;
+        $data['unavailable'] = $previews['unavailable'];
+        $data['warnings'] = array_values(array_unique(array_merge(...array_values(array_map(static fn (array $p) => (array) ($p['warnings'] ?? []), $parts)))));
+        $data['fingerprint'] = json_encode($fingerprints);
+
+        return [
+            'state' => 'ready',
+            'message' => trim(implode(' ', array_merge(array_map(static fn (array $p) => (string) ($p['channel_label'] ?? '').': '.($p['recipient_count'] ?? 0).' ready.', $parts), $notes))),
+            'data' => $data + ['target_label' => $args['target_label'] ?? null],
+            'pending' => [
+                'kind' => self::KIND,
+                'state' => 'ready',
+                'args' => $args,
+                'fingerprint' => $data['fingerprint'],
+                'unavailable' => $previews['unavailable'],
+            ],
+        ];
+    }
+
+    /**
+     * Send each approved channel independently; one failing (or throwing) never stops the other.
+     *
+     * @param  array<string, mixed>  $args
+     * @param  array<string, string>  $unavailable
+     * @return array<string, mixed>
+     */
+    private function sendBoth(StageContext $context, array $args, string $fingerprint, array $unavailable): array
+    {
+        $fingerprints = json_decode($fingerprint, true);
+        $fingerprints = is_array($fingerprints) ? $fingerprints : [];
+        $tool = array_filter([
+            'message' => $args['message'] ?? null,
+            'student_ids' => ($args['student_ids'] ?? []) ?: null,
+            'standard_id' => $args['standard_id'] ?? null,
+            'division_id' => $args['division_id'] ?? null,
+        ], static fn ($value) => $value !== null && $value !== []);
+
+        $sent = $failed = $skipped = 0;
+        $results = [];
+        $channels = [];
+        $messages = [];
+        $references = [];
+
+        foreach (['sms', 'whatsapp'] as $channel) {
+            $label = $channel === 'sms' ? 'SMS' : 'WhatsApp';
+
+            if (empty($fingerprints[$channel])) {
+                $reason = $unavailable[$channel] ?? 'It was not part of the approved preview.';
+                $channels[$channel] = ['ok' => false, 'message' => $reason];
+                $messages[] = $label.' was not sent: '.$reason;
+
+                continue;
+            }
+
+            try {
+                $result = $this->messages->send($context->scope, ['channel' => $channel] + $tool, (string) $fingerprints[$channel]);
+            } catch (\Throwable $e) {
+                $result = ['success' => false, 'message' => 'The '.$label.' send failed: '.mb_substr($e->getMessage(), 0, 200)];
+            }
+
+            $ok = ($result['success'] ?? false) === true;
+            $data = $ok ? (array) ($result['data'] ?? []) : (array) ($result['error']['details'] ?? []);
+            $channels[$channel] = ['ok' => $ok, 'message' => (string) ($result['message'] ?? ''), 'data' => $data];
+            $messages[] = $label.': '.(string) ($result['message'] ?? '');
+            $sent += (int) ($data['sent'] ?? 0);
+            $failed += (int) ($data['failed'] ?? 0);
+            $skipped += (int) ($data['skipped'] ?? 0);
+
+            if (! empty($data['reference'])) {
+                $references[] = (string) $data['reference'];
+            }
+
+            foreach ((array) ($data['results'] ?? []) as $row) {
+                $row['name'] = trim((string) ($row['name'] ?? '')).' — '.$label;
+                $row['channel'] = $channel;
+                $results[] = $row;
+            }
+        }
+
+        $merged = [
+            'reference' => implode(' / ', $references),
+            'channel' => 'both',
+            'channel_label' => 'SMS and WhatsApp',
+            'sent' => $sent,
+            'failed' => $failed,
+            'skipped' => $skipped,
+            'results' => $results,
+            'channels' => $channels,
+        ];
+
+        return [
+            'state' => $sent > 0 ? 'sent' : 'failed',
+            'message' => implode(' ', $messages),
+            'data' => $merged,
+            'pending' => null,
         ];
     }
 
@@ -489,9 +696,21 @@ class ParentMessageFlow
     {
         $channel = null;
 
-        if (preg_match('/\bwhats\s?app\b/i', $text)) {
+        // "Both" is read from the request itself, never from the wording being sent: the quoted text and anything
+        // after "saying" / ":" are cut away first, so "WhatsApp ... saying check your SMS" stays WhatsApp.
+        $head = preg_replace('/["“”][^"“”]{2,}["“”]/u', ' ', $text) ?? $text;
+        $head = preg_replace('/\b(?:saying|says|that says|message\s+is|with the message|telling them|informing them)\b.*$/is', ' ', $head) ?? $head;
+        $head = preg_replace('/:.*$/s', ' ', $head) ?? $head;
+        $sms = '(?:sms|text\s+message)';
+        $wa = 'whats\s?app';
+        $isBoth = preg_match('/\b'.$sms.'\s*(?:and|&|\+|\/|,|plus)\s*(?:by\s+|on\s+|via\s+)?'.$wa.'\b|\b'.$wa.'\s*(?:and|&|\+|\/|,|plus)\s*(?:by\s+|on\s+|via\s+)?'.$sms.'\b/i', $head) === 1
+            || preg_match('/\b(?:by|via|on|through|using|with|in)\s+both\b|\bboth\s+(?:sms|whats\s?app|channels?|ways)\b/i', $head) === 1;
+
+        if ($isBoth) {
+            $channel = 'both';
+        } elseif (preg_match('/\bwhats\s?app\b/i', $head)) {
             $channel = 'whatsapp';
-        } elseif (preg_match('/\b(sms|text message|text them|text the)\b/i', $text)) {
+        } elseif (preg_match('/\b(sms|text message|text them|text the)\b/i', $head)) {
             $channel = 'sms';
         }
 
