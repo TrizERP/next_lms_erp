@@ -195,17 +195,41 @@ class ExamQuestionHelpAnswer
             JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES
         );
 
-        try {
-            $reply = $client->json(
-                [
-                    ['role' => 'system', 'content' => $this->systemPrompt($revealed)],
-                    ['role' => 'user', 'content' => "FACTS (from the school's exam database):\n".$facts."\n\nSTUDENT SAID: ".$context->question],
-                ],
-                model: null,
-                maxTokens: self::MAX_TOKENS,
-                temperature: 0.2,
-            );
-        } catch (Throwable) {
+        $ask = function (string $extra = '') use ($client, $revealed, $facts, $context) {
+            try {
+                return $client->json(
+                    [
+                        ['role' => 'system', 'content' => $this->systemPrompt($revealed)],
+                        ['role' => 'user', 'content' => "FACTS (from the school's exam database):\n".$facts."\n\nSTUDENT SAID: ".$context->question.$extra],
+                    ],
+                    model: null,
+                    maxTokens: self::MAX_TOKENS,
+                    temperature: 0.2,
+                );
+            } catch (Throwable) {
+                return null;
+            }
+        };
+
+        $reply = $ask();
+        $teacherText = (string) ($result['question']['teacher_explanation'] ?? '');
+
+        // A smaller fallback model (used when the main one's daily quota is spent) sometimes returns nothing usable, or
+        // hands back the teacher's one-line note word for word, which restates the answer instead of teaching the idea.
+        // One more try, told so; whichever reply teaches is used, and if neither does, the guards below and the teacher's
+        // own text still stand.
+        $unusable = fn ($r): bool => ! is_array($r) || $this->explanationOf($r) === '' || $this->tooThin($this->explanationOf($r), $teacherText);
+
+        if ($unusable($reply)) {
+            $second = $ask("\n\nYour last reply was missing, too short, or only repeated the teacher's note. Teach the idea: say in simple words what the concept is, "
+                .'then why the correct option is right, then how it differs from a tempting option. Two or three full sentences.');
+
+            if (! $unusable($second)) {
+                $reply = $second;
+            }
+        }
+
+        if ($reply === null) {
             return null;
         }
 
@@ -244,6 +268,37 @@ class ExamQuestionHelpAnswer
         }
 
         return ['text' => $text, 'concern' => null];
+    }
+
+    /** The model's explanation text, with emphasis marks removed, or '' when there is none. */
+    private function explanationOf(mixed $reply): string
+    {
+        return is_array($reply) && is_scalar($reply['explanation'] ?? null)
+            ? trim((string) preg_replace('/\*\*|__/', '', (string) $reply['explanation']))
+            : '';
+    }
+
+    /**
+     * Whether an explanation is too slight to teach anything: under two sentences or about eighteen words, or just the
+     * teacher's own line again.
+     */
+    private function tooThin(string $text, string $teacher): bool
+    {
+        if ($text === '') {
+            return false;
+        }
+
+        $norm = static fn (string $v): string => trim((string) preg_replace('/[^\p{L}\p{N}]+/u', ' ', mb_strtolower($v)));
+        $words = count(array_filter(explode(' ', $norm($text))));
+        $sentences = preg_match_all('/[.!?](?:\s|$)/u', $text);
+
+        if ($words < 18 || $sentences < 2) {
+            return true;
+        }
+
+        $t = $norm($teacher);
+
+        return $t !== '' && ($norm($text) === $t || str_contains($t, $norm($text)));
     }
 
     /** The text as a sentence: one full stop, never two (option texts often end in one already). */

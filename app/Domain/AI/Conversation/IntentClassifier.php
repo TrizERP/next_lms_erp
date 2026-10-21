@@ -603,6 +603,8 @@ class IntentClassifier
                 '/^(?!\s*(?:was|were|did|do|does|has|have|had|is|are|how|which|what|why|who|when)\b)(?!.*\b(fees?|dues|outstanding|unpaid|arrears|defaulters?|owe[sd]?|owing)\b).*\b(sms|whats\s?app)\b.{0,50}\b(class|standard|grade|std)\s*\d/i',
                 // The two options by name, as the whole sentence: "Send SMS", "Send WhatsApp Message".
                 '/^\s*(please\s+)?(send|open|start)\s+(an?\s+)?(sms|whats\s?app(\s+message)?)\s*$/i',
+                // The third option: "Send SMS and WhatsApp".
+                '/^\s*(please\s+)?(send|open|start)\s+(an?\s+)?(sms\s*(and|&|\+)\s*whats\s?app(\s+message)?|whats\s?app(\s+message)?\s*(and|&|\+)\s*sms)\s*$/i',
                 // "Send SMS to Aarav Shah": a name straight after the channel. No digit and no group word, so a
                 // fee follow-up such as "send an SMS to all 10 by 31 October" is never taken.
                 '/^(?!.*\d)(?!.*\b(fees?|dues|outstanding|unpaid|arrears|defaulters?|owe[sd]?|owing)\b)\s*(please\s+)?(send|text)\s+(an?\s+)?(sms|whats\s?app(\s+message)?)\s+to\s+(?!(all|them|him|her|these|those|everyone|the|class|parents?|guardians?|each)\b)[a-z]+/i',

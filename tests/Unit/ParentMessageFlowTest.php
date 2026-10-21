@@ -274,4 +274,165 @@ class ParentMessageFlowTest extends TestCase
             $this->assertFalse($flow->looksLikeApproval($text), $text);
         }
     }
+
+    /** @return array<string, array{0:string, 1:?string}> */
+    public static function bothSentences(): array
+    {
+        return [
+            'and' => ['Send SMS and WhatsApp to the parents of class 10 A saying hello', 'both'],
+            'reversed' => ['WhatsApp and SMS the parents of class 8 "Exam Monday"', 'both'],
+            'by both' => ['Message the parents of class 7 B by both: PTM on Friday', 'both'],
+            'plus' => ['send sms + whatsapp to the parent of Aarav Shah', 'both'],
+            // The other channel's name inside the wording is wording, not a request for it.
+            'wording mentions sms' => ['WhatsApp the parents of class 9 saying check your SMS for the code', 'whatsapp'],
+            'quoted wording mentions whatsapp' => ['Send an SMS to class 9 parents "join the WhatsApp group"', 'sms'],
+        ];
+    }
+
+    #[DataProvider('bothSentences')]
+    public function test_both_channels_are_read_from_the_request_not_the_wording(string $text, string $channel): void
+    {
+        $this->assertSame($channel, ParentMessageFlow::parse($text)['channel']);
+    }
+
+    public function test_the_third_option_by_name_and_a_channel_only_reply_set_both(): void
+    {
+        [$flow] = $this->flow();
+
+        $this->assertSame('both', $flow->start($this->context('Send SMS and WhatsApp'))['pending']['args']['channel']);
+
+        $pending = ['kind' => ParentMessageFlow::KIND, 'state' => 'need_channel', 'args' => ['channel' => null, 'message' => null, 'standard_id' => null, 'division_id' => null, 'student_ids' => [], 'target_label' => null]];
+        $this->assertSame('both', $flow->advance($this->context('both'), $pending)['pending']['args']['channel']);
+        $this->assertFalse($flow->looksLikeApproval('send it by both'));
+    }
+
+    private function bothReady(): array
+    {
+        return [
+            'kind' => ParentMessageFlow::KIND,
+            'state' => 'ready',
+            'args' => ['channel' => 'both', 'message' => 'Closed tomorrow', 'student_ids' => [1, 2], 'standard_id' => null, 'division_id' => null, 'target_label' => 'Class 10 A'],
+            'fingerprint' => json_encode(['sms' => 'fp-sms', 'whatsapp' => 'fp-wa']),
+        ];
+    }
+
+    private function channelPreview(string $channel, ?string $fingerprint = 'fp'): array
+    {
+        return ToolResult::success('communication.send_parent_message', '2 ready.', [
+            'channel' => $channel, 'channel_label' => $channel === 'sms' ? 'SMS' : 'WhatsApp', 'recipient_count' => 2,
+            'fingerprint' => $fingerprint, 'recipients' => [], 'unreachable' => [], 'warnings' => [],
+        ]);
+    }
+
+    public function test_both_previews_each_channel_separately_and_the_approval_carries_both_fingerprints(): void
+    {
+        [$flow, $service] = $this->flow();
+        $service->expects($this->never())->method('send');
+        $seen = [];
+        $service->expects($this->exactly(2))->method('preview')->willReturnCallback(function ($scope, array $args) use (&$seen) {
+            $seen[] = $args['channel'];
+
+            return $this->channelPreview($args['channel'], 'fp-'.$args['channel']);
+        });
+
+        $result = $flow->advance($this->context('Send it by both'), $this->ready());
+
+        $this->assertSame(['sms', 'whatsapp'], $seen);
+        $this->assertSame('ready', $result['state']);
+        $this->assertSame(['sms' => 'fp-sms', 'whatsapp' => 'fp-whatsapp'], json_decode($result['pending']['fingerprint'], true));
+        $this->assertSame('both', $result['pending']['args']['channel']);
+    }
+
+    public function test_an_unconfigured_channel_is_named_and_the_other_is_still_previewed(): void
+    {
+        [$flow, $service] = $this->flow();
+        $service->method('preview')->willReturnCallback(fn ($scope, array $args) => $args['channel'] === 'whatsapp'
+            ? ToolResult::failure('communication.send_parent_message', 'WhatsApp is not configured for this institute.', 'channel_not_configured')
+            : $this->channelPreview('sms', 'fp-sms'));
+
+        $result = $flow->advance($this->context('Send it by both'), $this->ready());
+
+        $this->assertSame('ready', $result['state']);
+        $this->assertSame(['sms' => 'fp-sms'], json_decode($result['pending']['fingerprint'], true));
+        $this->assertStringContainsString('WhatsApp will NOT be sent', $result['message']);
+        $this->assertArrayHasKey('whatsapp', $result['pending']['unavailable']);
+    }
+
+    public function test_both_unavailable_is_a_failure_that_sends_nothing(): void
+    {
+        [$flow, $service] = $this->flow();
+        $service->expects($this->never())->method('send');
+        $service->method('preview')->willReturn(ToolResult::failure('communication.send_parent_message', 'Not configured.', 'channel_not_configured'));
+
+        $result = $flow->advance($this->context('Send it by both'), $this->ready());
+
+        $this->assertSame('failed', $result['state']);
+        $this->assertNull($result['pending']);
+    }
+
+    public function test_approving_both_sends_each_channel_with_its_own_fingerprint(): void
+    {
+        [$flow, $service] = $this->flow();
+        $calls = [];
+        $service->expects($this->exactly(2))->method('send')->willReturnCallback(function ($scope, array $args, $fingerprint) use (&$calls) {
+            $calls[$args['channel']] = $fingerprint;
+
+            return ToolResult::success('communication.send_parent_message', '2 accepted.', ['reference' => 'PM-'.$args['channel'], 'sent' => 2, 'failed' => 0, 'skipped' => 0, 'results' => [['student_id' => 1, 'name' => 'Asha', 'status' => 'sent', 'detail' => 'ok', 'provider_id' => 'x']]]);
+        });
+
+        $result = $flow->advance($this->context('Yes, send them.'), $this->bothReady());
+
+        $this->assertSame(['sms' => 'fp-sms', 'whatsapp' => 'fp-wa'], $calls);
+        $this->assertSame('sent', $result['state']);
+        $this->assertSame(4, $result['data']['sent']);
+        $this->assertSame('both', $result['data']['channel']);
+        $this->assertNull($result['pending']);
+    }
+
+    public function test_one_channel_failing_or_throwing_never_stops_the_other(): void
+    {
+        [$flow, $service] = $this->flow();
+        $service->expects($this->exactly(2))->method('send')->willReturnCallback(function ($scope, array $args) {
+            if ($args['channel'] === 'sms') {
+                throw new \RuntimeException('gateway exploded');
+            }
+
+            return ToolResult::success('communication.send_parent_message', '1 accepted.', ['reference' => 'PM-wa', 'sent' => 1, 'failed' => 0, 'skipped' => 0, 'results' => []]);
+        });
+
+        $result = $flow->advance($this->context('Yes'), $this->bothReady());
+
+        $this->assertSame('sent', $result['state'], 'WhatsApp went out, so the turn is not reported as a total failure');
+        $this->assertFalse($result['data']['channels']['sms']['ok']);
+        $this->assertTrue($result['data']['channels']['whatsapp']['ok']);
+        $this->assertStringContainsString('gateway exploded', $result['message']);
+    }
+
+    public function test_both_failing_is_reported_as_failed(): void
+    {
+        [$flow, $service] = $this->flow();
+        $service->method('send')->willReturn(ToolResult::failure('communication.send_parent_message', 'The list changed.', 'recipients_changed', ['sent' => 0]));
+
+        $result = $flow->advance($this->context('Yes'), $this->bothReady());
+
+        $this->assertSame('failed', $result['state']);
+        $this->assertSame(0, $result['data']['sent']);
+    }
+
+    public function test_a_channel_missing_from_the_approval_is_not_sent_and_is_explained(): void
+    {
+        [$flow, $service] = $this->flow();
+        $service->expects($this->once())->method('send')->with($this->anything(), $this->callback(fn (array $a) => $a['channel'] === 'sms'), 'fp-sms')
+            ->willReturn(ToolResult::success('communication.send_parent_message', 'ok', ['sent' => 1, 'failed' => 0, 'skipped' => 0, 'results' => []]));
+
+        $pending = $this->bothReady();
+        $pending['fingerprint'] = json_encode(['sms' => 'fp-sms']);
+        $pending['unavailable'] = ['whatsapp' => 'WhatsApp is not configured for this institute.'];
+
+        $result = $flow->advance($this->context('Yes'), $pending);
+
+        $this->assertSame('sent', $result['state']);
+        $this->assertStringContainsString('WhatsApp was not sent: WhatsApp is not configured', $result['message']);
+    }
 }
+
