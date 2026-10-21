@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers\api\PAL;
 
-use App\Domain\AI\Support\ModelClient;
+use App\Domain\AI\Configuration\AiConfigurationException;
+use App\Domain\AI\Configuration\AiModelClientFactory;
 use App\Http\Controllers\Controller;
 use App\Services\PAL\Examination\ExamBlueprintService;
 use App\Services\PAL\Reporting\AttainmentReportService;
@@ -23,7 +24,7 @@ class AttainmentReportController extends Controller
     public function __construct(
         protected AttainmentReportService $report,
         protected ExamBlueprintService $blueprint,
-        protected ModelClient $modelClient
+        protected AiModelClientFactory $aiFactory
     ) {
     }
 
@@ -167,7 +168,8 @@ class AttainmentReportController extends Controller
             ], 404);
         }
 
-        $client = $this->modelClient->forInstitute($staff);
+        // Provider, model, key and fallbacks come from the school's saved PAL Intelligence configuration.
+        $client = $this->aiFactory->for('pal_intelligence', $staff);
 
         if (! $client->isConfigured()) {
             return response()->json([
@@ -186,6 +188,11 @@ class AttainmentReportController extends Controller
                 maxTokens: 1024,
                 temperature: 0.3,
             );
+        } catch (AiConfigurationException $exception) {
+            return response()->json([
+                'success' => false,
+                'message' => $exception->getMessage(),
+            ], 503);
         } catch (Throwable $exception) {
             return response()->json([
                 'success' => false,

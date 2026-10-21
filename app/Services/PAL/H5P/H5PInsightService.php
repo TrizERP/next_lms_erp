@@ -320,18 +320,18 @@ class H5PInsightService
     // The DeepSeek half
     // ══════════════════════════════════════════════════════════════════════
 
-    public function available(): bool
+    public function available(?int $tenant = null): bool
     {
-        return (bool) config('pal_h5p.insight.enabled', true) && $this->llm->enabled();
+        return (bool) config('pal_h5p.insight.enabled', true) && $this->llm->forInstitute($tenant)->enabled();
     }
 
-    public function unavailableReason(): ?string
+    public function unavailableReason(?int $tenant = null): ?string
     {
         if (! config('pal_h5p.insight.enabled', true)) {
             return 'H5P insight generation is switched off for this deployment (PAL_H5P_INSIGHT).';
         }
 
-        return $this->llm->unavailableReason();
+        return $this->llm->forInstitute($tenant)->unavailableReason();
     }
 
     /**
@@ -358,32 +358,35 @@ class H5PInsightService
             );
         }
 
-        if (! $this->available()) {
-            return $this->noInsight('unavailable', $this->unavailableReason());
+        if (! $this->available($tenant ?: null)) {
+            return $this->noInsight('unavailable', $this->unavailableReason($tenant ?: null));
         }
 
+        // The school's own AI configuration applies to this call.
+        $llm = $this->llm->forInstitute($tenant ?: null);
+
         $input = $this->promptInput($pack, $tenant);
-        $fingerprint = $this->llm->fingerprint($input);
+        $fingerprint = $llm->fingerprint($input);
         $kind = (string) config('pal_h5p.insight.cache_kind', 'h5p_insight');
         $cacheKey = sprintf('H5P.%d.insight%s', (int) ($context['chapter_id'] ?? 0), $pack['learner_id'] ? '.' . $pack['learner_id'] : '');
 
         // Keyed on a fingerprint of the exact evidence the model saw, so new
         // events invalidate the answer and a page reload never re-bills.
-        $cached = $this->llm->cached($cacheKey, $kind, null, $fingerprint, $tenant);
+        $cached = $llm->cached($cacheKey, $kind, null, $fingerprint, $tenant);
         $data = $cached['payload'] ?? null;
         $model = $cached['model'] ?? null;
 
         if ($data === null) {
-            $response = $this->llm->json($this->systemPrompt(), json_encode($input, JSON_UNESCAPED_UNICODE));
+            $response = $llm->json($this->systemPrompt(), json_encode($input, JSON_UNESCAPED_UNICODE));
 
             if (empty($response['ok'])) {
                 return $this->noInsight('failed', $response['error'] ?? 'The AI provider did not return a usable response.');
             }
 
             $data = (array) ($response['data'] ?? []);
-            $model = $response['model'] ?? $this->llm->model();
+            $model = $response['model'] ?? $llm->model();
 
-            $this->llm->remember(
+            $llm->remember(
                 $cacheKey, $kind, null, $fingerprint, $tenant,
                 $data, null, $model, (array) ($response['usage'] ?? []), $userId
             );
@@ -392,7 +395,7 @@ class H5PInsightService
         return $this->validate($data, $pack, $tenant) + [
             'status' => 'ok',
             'reason' => null,
-            'provider' => $this->llm->providerName(),
+            'provider' => $llm->providerName(),
             'model' => $model,
             'cached' => $cached !== null,
             'generated_from' => [

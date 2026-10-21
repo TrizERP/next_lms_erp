@@ -2,11 +2,13 @@
 
 namespace App\Services\lms\Content;
 
+use App\Domain\AI\Configuration\AiConfigurationException;
+use App\Domain\AI\Configuration\AiModelClientFactory;
 use App\Services\GammaService;
 use App\Services\QuestionGenerationService;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
+use Throwable;
 
 /**
  * The one place LMS content authoring talks to a model provider.
@@ -57,18 +59,19 @@ class ContentGenerationGateway
      *
      * @throws RuntimeException on provider failure, with a single consistent shape.
      */
-    public function generate(string $provider, array $params): array
+    public function generate(string $provider, array $params, int|string|null $subInstituteId = null): array
     {
         $startedAt = microtime(true);
 
         $result = match ($provider) {
             'gamma'    => $this->viaGamma($params),
-            'gemini'   => $this->viaGemini($params),
+            'gemini'   => $this->viaGemini($params, $subInstituteId),
             'question' => $this->viaQuestionService($params),
             default    => throw new RuntimeException("No generator is registered for provider \"{$provider}\"."),
         };
 
-        $result['provider'] = $provider;
+        // The document path reports the provider that really answered.
+        $result['provider'] = $result['provider'] ?? $provider;
         $result['latency_ms'] = (int) round((microtime(true) - $startedAt) * 1000);
 
         return $result;
@@ -118,57 +121,44 @@ class ContentGenerationGateway
      * @param  array<string,mixed>  $params
      * @return array<string,mixed>
      */
-    private function viaGemini(array $params): array
+    private function viaGemini(array $params, int|string|null $subInstituteId = null): array
     {
-        $apiKey = config('gemini.api_key');
+        // Provider, model, key and fallbacks come from the central AI configuration
+        // ('content_generation'); an unconfigured module throws AiConfigurationException,
+        // whose message tells the administrator what to set up.
+        $client = app(AiModelClientFactory::class)->for('content_generation', $subInstituteId);
 
-        if (empty($apiKey)) {
-            throw new RuntimeException('The document generator is not configured (missing Gemini API key).');
-        }
-
-        $model = config('gemini.model', 'gemini-2.5-flash');
-        // 2.5, not 2.0: config/gemini.php is now development's shim over config/ai.php and
-        // always resolves a model, so this in-code fallback is unreachable today. It is kept
-        // correct anyway - every other call site in this repo defaults to 2.5, and a 2.0 here
-        // would silently call a different model than the legacy path it claims parity with.
-        $baseUrl = rtrim((string) config('gemini.base_url'), '/');
-
-        $response = Http::timeout((int) config('gemini.request_timeout', 120))
-            ->retry(1, 500)
-            ->withHeaders(['x-goog-api-key' => $apiKey])
-            ->post("{$baseUrl}/models/{$model}:generateContent", [
-                'contents' => [[
-                    'parts' => [['text' => (string) ($params['prompt'] ?? '')]],
-                ]],
-                'generationConfig' => [
-                    'temperature'     => 0.35,
-                    'topP'            => 0.9,
-                    'maxOutputTokens' => 24000,
-                ],
+        try {
+            $text = trim((string) $client->chat(
+                [['role' => 'user', 'content' => (string) ($params['prompt'] ?? '')]],
+                null,
+                24000,
+                0.35,
+                false,
+                (int) config('gemini.request_timeout', 120)
+            ));
+        } catch (AiConfigurationException $e) {
+            throw new RuntimeException($e->getMessage(), 0, $e);
+        } catch (Throwable $e) {
+            Log::channel('daily')->warning('lms.gateway: document generation failed', [
+                'error' => $e->getMessage(),
             ]);
 
-        if (! $response->successful()) {
-            Log::channel('daily')->warning('lms.gateway: gemini generation failed', [
-                'status' => $response->status(),
-            ]);
-
-            throw new RuntimeException('The document generator failed to produce content.');
+            throw new RuntimeException('The document generator failed to produce content.', 0, $e);
         }
-
-        $body = $response->json();
-        $text = $this->extractGeminiText($body);
 
         if ($text === '') {
             throw new RuntimeException('The document generator returned an empty result.');
         }
 
-        $usage = $body['usageMetadata'] ?? [];
+        $used = $client->lastUsed();
 
         return [
-            'model'         => $model,
+            'provider'      => $used?->provider,
+            'model'         => $used?->model,
             'output'        => $text,
-            'input_tokens'  => isset($usage['promptTokenCount']) ? (int) $usage['promptTokenCount'] : null,
-            'output_tokens' => isset($usage['candidatesTokenCount']) ? (int) $usage['candidatesTokenCount'] : null,
+            'input_tokens'  => null,
+            'output_tokens' => null,
         ];
     }
 
@@ -188,25 +178,11 @@ class ContentGenerationGateway
         $output = $this->questions->generate($params);
 
         return [
-            'model'         => config('deepseek.model'),
+            'model'         => null,   // QuestionGenerationService owns its provider; none is reported here.
             'output'        => $output,
             'input_tokens'  => is_array($output) ? ($output['input_tokens'] ?? null) : null,
             'output_tokens' => is_array($output) ? ($output['output_tokens'] ?? null) : null,
         ];
     }
 
-    /** @param array<string,mixed>|null $payload */
-    private function extractGeminiText(?array $payload): string
-    {
-        $parts = $payload['candidates'][0]['content']['parts'] ?? [];
-        $text = '';
-
-        foreach ((array) $parts as $part) {
-            if (isset($part['text'])) {
-                $text .= $part['text'];
-            }
-        }
-
-        return trim($text);
-    }
 }

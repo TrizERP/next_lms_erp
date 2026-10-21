@@ -3,13 +3,14 @@
 namespace App\Domain\AI\Configuration;
 
 /**
- * What one AI module should call, and where that answer came from.
+ * One provider, model and credential a module can be sent to.
  *
- * `source` is not decoration. When an administrator saves "Conversational AI uses
- * OpenRouter" and the next answer still comes back from Gemini, the only useful
- * question is which rule won — and without this field the answer is a debugging
- * session. It is carried on the object, logged with the call, and shown on the admin
- * screen beside each module.
+ * A module resolves to an ORDERED LIST of these — the first is what it calls, the rest are what
+ * it falls back to — see `AiConfigurationResolver::resolveChain()`.
+ *
+ * `priority` is the position the administrator gave it (1 = first), or null when unranked.
+ * `inheritedFrom` names the module whose configuration this one is using, when it has none of
+ * its own.
  */
 final class ResolvedAiConfiguration
 {
@@ -17,13 +18,13 @@ final class ResolvedAiConfiguration
         public readonly string $provider,
         public readonly ?string $model,
         public readonly ?string $apiKey,
-        /** `module` | `module_platform` | `pool` | `pool_platform` | `env` | `config` */
         public readonly string $source,
-        /** The `ai_api_keys` row this resolved through, when it resolved through one. */
         public readonly int|string|null $keyId = null,
-        /** `institute` | `platform` | `env` | `config` */
         public readonly string $scope = 'config',
         public readonly ?int $maxOutputTokens = null,
+        public readonly ?int $priority = null,
+        public readonly ?string $inheritedFrom = null,
+        public readonly ?string $module = null,
     ) {
     }
 
@@ -32,17 +33,23 @@ final class ResolvedAiConfiguration
         return $this->apiKey !== null && trim($this->apiKey) !== '';
     }
 
-    /**
-     * The configuration without its credential, for logs, audit rows and API responses.
-     *
-     * There is no method on this class that returns the key inside an array. That is
-     * deliberate: `toArray()` is what gets reached for when something needs to be
-     * logged or serialised, and a key that can ride along in it will eventually ride
-     * into a log file. Callers that need the credential read `$config->apiKey`
-     * explicitly, which is a line that stands out in review.
-     *
-     * @return array<string, mixed>
-     */
+    /** The same configuration attributed to a module — used so usage rows name the caller. */
+    public function forModule(?string $module): self
+    {
+        return new self(
+            $this->provider,
+            $this->model,
+            $this->apiKey,
+            $this->source,
+            $this->keyId,
+            $this->scope,
+            $this->maxOutputTokens,
+            $this->priority,
+            $this->inheritedFrom,
+            $module,
+        );
+    }
+
     public function toArray(): array
     {
         return [
@@ -52,6 +59,8 @@ final class ResolvedAiConfiguration
             'scope' => $this->scope,
             'key_id' => $this->keyId,
             'has_key' => $this->hasKey(),
+            'priority' => $this->priority,
+            'inherited_from' => $this->inheritedFrom,
         ];
     }
 }

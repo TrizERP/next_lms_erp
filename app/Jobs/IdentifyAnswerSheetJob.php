@@ -116,6 +116,9 @@ class IdentifyAnswerSheetJob implements ShouldQueue
             return;
         }
 
+        // Provider, model and key come from the batch school's saved Homework & Assignment Evaluation configuration.
+        $reader = $reader->forInstitute((int) $batch->sub_institute_id);
+
         $scope = $matcher->paperScope((int) $batch->sub_institute_id, (int) $batch->question_paper_id);
 
         if ($scope === null) {

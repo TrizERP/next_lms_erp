@@ -303,49 +303,32 @@ class syllabusController extends Controller
             }
         }
         // echo "<pre>";print_r($prompt);exit;
-        // Tracker Decision #10 (credential rotation), 2026-09-08. A live OpenAI key
-        // was hardcoded here. It is in git history, so removing it does NOT revoke it
-        // - rotation at the OpenAI account is the only fix. Verified before the swap:
-        // env('OPENAI_API_KEY') resolves to the byte-identical value.
-        // See docs/decisions/2026-09-08-credential-remediation.md.
-        $apiKey = env('OPENAI_API_KEY');
-
-        if (empty($apiKey)) {
+        // Provider, model, key and fallback order come from the school's central AI configuration
+        // ('content_generation'); nothing is read from .env. (The previously hardcoded OpenAI key is in
+        // git history and must still be rotated at the provider - see
+        // docs/decisions/2026-09-08-credential-remediation.md.)
+        try {
+            $output = app(\App\Domain\AI\Configuration\AiModelClientFactory::class)
+                ->for('content_generation', $sub_institute_id)
+                ->chat(
+                    [['role' => 'user', 'content' => $prompt]],
+                    null,
+                    2000,
+                    0.7
+                );
+        } catch (\App\Domain\AI\Configuration\AiConfigurationException $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'OPENAI_API_KEY is not configured on this server.',
+                'message' => $e->getMessage(),
             ], 500);
-        }
-        $endpoint = "https://api.openai.com/v1/chat/completions";
-
-        $data = [
-            'model' => 'gpt-3.5-turbo',
-            'messages' => [
-                [
-                    'role' => 'user',
-                    'content' => $prompt,
-                ]
-            ],
-            "temperature" => 0.7,
-            "max_tokens" => 2000,
-            "top_p" => 1,
-            "frequency_penalty" => 0,
-            "presence_penalty" => 0,
-            "stop" => ["11."]
-        ];
-
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'Authorization' => 'Bearer ' . $apiKey,
-        ])->post($endpoint, $data)->json();
-
-        if (isset($response['choices'][0]['message']['content'])) {
-          
-            $output = $response['choices'][0]['message']['content'];
-        }else{
-            $output = $response;
+        } catch (\Throwable $e) {
+            \Log::warning('Syllabus generation failed: ' . $e->getMessage());
+            $output = ['error' => ['message' => $e->getMessage()]];
         }
 
+        if ($output === null || $output === '') {
+            $output = ['error' => ['message' => 'The AI provider returned no answer.']];
+        }
         // echo "<pre>";print_r($output);exit;
         
         $returnReaponse = [

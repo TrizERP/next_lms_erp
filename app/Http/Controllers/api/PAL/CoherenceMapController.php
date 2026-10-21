@@ -2,7 +2,8 @@
 
 namespace App\Http\Controllers\api\PAL;
 
-use App\Domain\AI\Support\ModelClient;
+use App\Domain\AI\Configuration\AiConfigurationException;
+use App\Domain\AI\Configuration\AiModelClientFactory;
 use App\Exceptions\GraphUnavailableException;
 use App\Http\Controllers\Controller;
 use App\Services\PAL\Coherence\CoherenceMapRepository;
@@ -37,7 +38,7 @@ class CoherenceMapController extends Controller
         protected CoherenceRecommender $recommender,
         protected MasteryUpdater $mastery,
         protected GraphRagRetriever $graphRag,
-        protected ModelClient $modelClient,
+        protected AiModelClientFactory $aiFactory,
     ) {}
 
     // ══════════════════════════════════════════════════════════════════
@@ -250,7 +251,8 @@ class CoherenceMapController extends Controller
             DB::table('lms_concept')->where('id', $conceptId)->value('name') ?? "Concept {$conceptId}"
         );
 
-        $client = $this->modelClient->forInstitute($scope['sub_institute_id']);
+        // Provider, model, key and fallbacks come from the school's saved PAL Intelligence configuration.
+        $client = $this->aiFactory->for('pal_intelligence', $scope['sub_institute_id']);
 
         if (! $client->isConfigured()) {
             return $this->fail('No AI model is configured for this institute.', 503);
@@ -271,6 +273,8 @@ class CoherenceMapController extends Controller
                 maxTokens: 2048,
                 temperature: 0.3,
             );
+        } catch (AiConfigurationException $exception) {
+            return $this->fail($exception->getMessage(), 503);
         } catch (Throwable $exception) {
             return $this->fail('The explanation could not be generated.', 502);
         }

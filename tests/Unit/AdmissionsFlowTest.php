@@ -6,6 +6,7 @@ use App\Domain\AI\Lifecycle\Flows\AdmissionsFlow;
 use App\Domain\AI\Lifecycle\Modules\ModuleCapability;
 use App\Domain\AI\Lifecycle\StageContext;
 use App\Domain\AI\Lifecycle\Support\McpToolCaller;
+use App\Domain\AI\Support\ModelClient;
 use App\Domain\AI\Support\OpenRouterClient;
 use App\Services\Mcp\McpRequestContext;
 use PHPUnit\Framework\TestCase;
@@ -69,7 +70,19 @@ class AdmissionsFlowTest extends TestCase
             }
         };
 
-        return new AdmissionsFlow($caller, $llm);
+        // The flow takes its client from the module factory; the test hands it the fake directly.
+        return new class($caller, $llm) extends AdmissionsFlow
+        {
+            public function __construct(McpToolCaller $caller, private readonly ModelClient $fake)
+            {
+                parent::__construct($caller);
+            }
+
+            protected function llmFor(StageContext $context): ModelClient
+            {
+                return $this->fake;
+            }
+        };
     }
 
     private function context(string $question = 'Confirm the admission for enquiry 21'): StageContext

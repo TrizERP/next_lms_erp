@@ -192,30 +192,11 @@ class H5PIndexController extends Controller
     }
 
     try {
-        // Use OpenRouter API with DeepSeek model
-        $client = new Client();
-        $response = $client->post('https://openrouter.ai/api/v1/chat/completions', [
-            'verify' => false,
-            'headers' => [
-                'Authorization' => 'Bearer ' . env('OPENROUTER_API_KEY'),
-                'Content-Type' => 'application/json',
-                'HTTP-Referer' => 'https://nextlms.in',
-                'X-Title' => 'Next LMS ERP',
-            ],
-            'json' => [
-                'model' => 'deepseek/deepseek-chat',
-                'messages' => [
-                    ['role' => 'user', 'content' => $prompt],
-                ],
-                'max_tokens' => 4096,
-                'temperature' => 1.8,
-                'top_p' => 0.5,
-            ],
-        ]);
+        // Provider, model, key and fallback order come from the school's central AI configuration.
+        $generatedText = (string) app(\App\Domain\AI\Configuration\AiModelClientFactory::class)
+            ->for('content_generation', session()->get('sub_institute_id'))
+            ->chat([['role' => 'user', 'content' => $prompt]], null, 4096, 1.8);
 
-        $data = json_decode($response->getBody(), true);
-        $generatedText = $data['choices'][0]['message']['content'];
-        
         // Parse the generated text to extract JSON
         $jsonData = null;
         
@@ -256,7 +237,7 @@ class H5PIndexController extends Controller
             ]);
         }
         
-    } catch (RequestException $e) {
+    } catch (RequestException|\App\Domain\AI\Support\AiProviderException $e) {
         return response()->json([
             'status_code' => 0,
             'message' => 'API call failed: ' . $e->getMessage(),

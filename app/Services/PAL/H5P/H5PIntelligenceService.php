@@ -80,8 +80,8 @@ class H5PIntelligenceService
             'tagging_health' => $this->taggingHealth($tags),
             'telemetry' => $this->engagement->summary($context, $window),
             'ai' => [
-                'available' => $this->tagging->aiAvailable(),
-                'unavailable_reason' => $this->tagging->aiUnavailableReason(),
+                'available' => $this->tagging->aiAvailable($tenant ?: null),
+                'unavailable_reason' => $this->tagging->aiUnavailableReason($tenant ?: null),
             ],
         ];
     }

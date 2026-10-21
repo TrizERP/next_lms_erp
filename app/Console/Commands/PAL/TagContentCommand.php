@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands\PAL;
 
+use App\Domain\AI\Configuration\AiConfigurationResolver;
+use App\Domain\AI\Configuration\AiModelClientFactory;
 use App\Models\PAL\ContentMetadata;
 use App\Models\PAL\QuestionMetadata;
 use App\Services\PAL\AI\AIOrchestrationService;
@@ -98,9 +100,13 @@ class TagContentCommand extends Command
 
         // The AI engine is useless without a key and would write 62k rows of
         // "AI generation temporarily unavailable" — check before starting.
-        if ($engine === 'ai' && ! $this->aiAvailable()) {
-            $this->error('AI engine selected but OpenRouter is not configured (config/openrouter.php).');
-            $this->line('Run with --engine=heuristic, or configure the key first.');
+        $checkTenant = $this->option('tenant') !== null ? (int) $this->option('tenant') : null;
+
+        if ($engine === 'ai' && ! $this->aiAvailable($checkTenant)) {
+            $this->error('AI engine selected but PAL Intelligence has no usable AI provider configured'
+                . ($checkTenant !== null ? " for sub_institute_id {$checkTenant}." : ' at platform level (pass --tenant=ID to check one school).'));
+            $this->line($this->aiUnavailableReason($checkTenant));
+            $this->line('Run with --engine=heuristic, or configure the provider in AI & Intelligence -> AI Providers first.');
 
             return self::FAILURE;
         }
@@ -321,7 +327,7 @@ class TagContentCommand extends Command
         }
 
         if ($engine === 'ai') {
-            $enriched = $this->aiEnrich($ai, $text, $bloom);
+            $enriched = $this->aiEnrich($ai, $text, $bloom, (int) $row->sub_institute_id);
             if ($enriched !== []) {
                 $proposal = array_merge($proposal, $enriched);
                 $proposal['ai_rationale']['ai_fields'] = array_keys($enriched);
@@ -388,7 +394,7 @@ class TagContentCommand extends Command
         }
 
         if ($engine === 'ai') {
-            $enriched = $this->aiEnrich($ai, $text, $proposal['bloom_level_served'] ?? null);
+            $enriched = $this->aiEnrich($ai, $text, $proposal['bloom_level_served'] ?? null, (int) $row->sub_institute_id);
             unset($enriched['knowledge_type']);   // not a content field
             if ($enriched !== []) {
                 $proposal = array_merge($proposal, $enriched);
@@ -645,7 +651,7 @@ class TagContentCommand extends Command
      * returns that is not in the closed vocabulary is dropped here rather than
      * failing validation downstream.
      */
-    protected function aiEnrich(AIOrchestrationService $ai, string $text, ?string $bloom): array
+    protected function aiEnrich(AIOrchestrationService $ai, string $text, ?string $bloom, ?int $tenant = null): array
     {
         $contexts = implode('|', config('pal_content.cultural_contexts'));
         $knowledge = implode('|', config('pal_content.knowledge_types'));
@@ -661,7 +667,8 @@ class TagContentCommand extends Command
         Item text: {$text}
         PROMPT;
 
-        $response = $ai->batchProcess([['prompt' => $prompt]])[0] ?? null;
+        // The row's own school's PAL Intelligence configuration applies.
+        $response = $ai->forInstitute($tenant ?: null)->batchProcess([['prompt' => $prompt]])[0] ?? null;
 
         if (! $response || ! empty($response['error'])) {
             return [];
@@ -702,12 +709,14 @@ class TagContentCommand extends Command
         return $s;
     }
 
-    protected function aiAvailable(): bool
+    protected function aiAvailable(?int $tenant = null): bool
     {
-        $headers = config('openrouter.headers', []);
-        $auth = $headers['Authorization'] ?? '';
+        return app(AiModelClientFactory::class)->for('pal_intelligence', $tenant)->isConfigured();
+    }
 
-        return config('openrouter.base_url') && trim(str_replace('Bearer', '', $auth)) !== '';
+    protected function aiUnavailableReason(?int $tenant = null): string
+    {
+        return app(AiConfigurationResolver::class)->explainEmpty('pal_intelligence', $tenant)->getMessage();
     }
 
     protected function persist(string $estate, $row, array $proposal): void

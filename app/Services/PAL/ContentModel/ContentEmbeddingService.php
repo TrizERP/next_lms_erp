@@ -2,7 +2,8 @@
 
 namespace App\Services\PAL\ContentModel;
 
-use App\Domain\AI\Support\GeminiClient;
+use App\Domain\AI\Configuration\AiModelClientFactory;
+use App\Domain\AI\Support\FallbackChainModelClient;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
@@ -40,14 +41,33 @@ class ContentEmbeddingService
 
     private const EMBEDDING_VERSION = 'v1';
 
-    public function __construct(private readonly GeminiClient $gemini)
+    public function __construct(private readonly AiModelClientFactory $factory)
     {
     }
 
-    /** Whether a usable embedding-capable key is configured right now. */
-    public function enabled(): bool
+    /** The module's provider chain for one school (null = platform keys only). */
+    private function client(int|string|null $tenant): FallbackChainModelClient
     {
-        return $this->gemini->isConfigured();
+        return $this->factory->for('content_embeddings', $tenant ?: null);
+    }
+
+    /**
+     * The embedding model the administrator chose for this module, for this school.
+     *
+     * Falls back to the catalogue-wide embedding default only when the saved configuration
+     * names no model.
+     */
+    private function embeddingModel(int|string|null $tenant): string
+    {
+        $saved = $this->factory->configurationFor('content_embeddings', $tenant ?: null)->model;
+
+        return (string) ($saved ?: config('ai.provider.gemini.embedding_model', 'text-embedding-004'));
+    }
+
+    /** Whether a usable embedding-capable provider is configured right now. */
+    public function enabled(int|string|null $tenant = null): bool
+    {
+        return $this->client($tenant)->isConfigured();
     }
 
     /**
@@ -73,12 +93,14 @@ class ContentEmbeddingService
             return ['ok' => false, 'error' => 'This content has no title, description or tags to embed.'];
         }
 
-        $model = (string) config('ai.provider.gemini.embedding_model', 'text-embedding-004');
+        $tenant = $row->sub_institute_id ?? null;
+        $client = $this->client($tenant);
+        $model = $this->embeddingModel($tenant);
         $encoded = [];
 
         foreach ($this->chunk($text) as $index => $chunkText) {
             try {
-                $vector = $this->gemini->embed($chunkText, $model);
+                $vector = $client->embed($chunkText, $model);
             } catch (Throwable $e) {
                 Log::warning('ContentEmbeddingService embed failed: ' . $e->getMessage(), [
                     'content_master_id' => $contentMasterId,
@@ -158,7 +180,9 @@ class ContentEmbeddingService
             return ['ok' => false, 'error' => 'No concepts exist in this chapter/subject to compare against.'];
         }
 
-        $model = (string) ($row->embedding_model ?: config('ai.provider.gemini.embedding_model', 'text-embedding-004'));
+        $tenant = $row->sub_institute_id ?? null;
+        $client = $this->client($tenant);
+        $model = (string) ($row->embedding_model ?: $this->embeddingModel($tenant));
         $scored = [];
 
         foreach ($concepts as $concept) {
@@ -169,7 +193,7 @@ class ContentEmbeddingService
             }
 
             try {
-                $vector = $this->gemini->embed($label, $model);
+                $vector = $client->embed($label, $model);
             } catch (Throwable $e) {
                 Log::warning('ContentEmbeddingService concept embed failed: ' . $e->getMessage(), [
                     'concept_id' => $concept->id,
@@ -221,10 +245,10 @@ class ContentEmbeddingService
             return ['ok' => false, 'error' => 'A question is required.'];
         }
 
-        $model = (string) config('ai.provider.gemini.embedding_model', 'text-embedding-004');
+        $model = $this->embeddingModel($subInstituteId);
 
         try {
-            $queryVector = $this->gemini->embed($query, $model);
+            $queryVector = $this->client($subInstituteId)->embed($query, $model);
         } catch (Throwable $e) {
             Log::warning('ContentEmbeddingService searchChunks embed failed: ' . $e->getMessage());
 
@@ -327,10 +351,10 @@ class ContentEmbeddingService
             return ['ok' => false, 'error' => "No embedded content exists in this concept's chapter yet."];
         }
 
-        $model = (string) config('ai.provider.gemini.embedding_model', 'text-embedding-004');
+        $model = $this->embeddingModel($subInstituteId);
 
         try {
-            $conceptVector = $this->gemini->embed($name, $model);
+            $conceptVector = $this->client($subInstituteId)->embed($name, $model);
         } catch (Throwable $e) {
             Log::warning('ContentEmbeddingService suggestContentForConcept embed failed: ' . $e->getMessage(), [
                 'concept_id' => $conceptId,

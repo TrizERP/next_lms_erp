@@ -29,7 +29,7 @@ class TextExtractionManager
     /**
      * Extract text from file path and mime type
      */
-    public function extractText(string $filePath, string $mimeType, string $originalFileName): array
+    public function extractText(string $filePath, string $mimeType, string $originalFileName, int|string|null $subInstituteId = null): array
     {
         $extension = pathinfo($originalFileName, PATHINFO_EXTENSION);
         $extractedText = '';
@@ -47,8 +47,11 @@ class TextExtractionManager
         $isImage = str_starts_with($mimeType, 'image/');
         $isPdf = $mimeType === 'application/pdf' || strtolower($extension) === 'pdf';
 
-        if (($isImage || ($isPdf && strlen(trim($extractedText)) < 50)) && $this->ocr->isAvailable()) {
-            $ocrText = $this->ocr->performOcr($filePath, config('idms.ocr_languages', ['eng', 'guj', 'hin']));
+        // The document's school's Document Intelligence configuration applies to cloud OCR.
+        $ocr = $this->ocr instanceof GeminiVisionOcrProvider ? $this->ocr->forInstitute($subInstituteId) : $this->ocr;
+
+        if (($isImage || ($isPdf && strlen(trim($extractedText)) < 50)) && $ocr->isAvailable()) {
+            $ocrText = $ocr->performOcr($filePath, config('idms.ocr_languages', ['eng', 'guj', 'hin']));
             if (strlen(trim($ocrText)) > strlen(trim($extractedText))) {
                 $extractedText = $ocrText;
                 $usedOcr = true;

@@ -2549,55 +2549,32 @@ foreach ($previous_standard as $item) {
         }else{
             $message = array($request->message);            
         }
-        // Tracker Decision #10 (credential rotation), 2026-09-08.
-        //
-        // This line previously held a live OpenAI key as a literal, plus a second,
-        // older key in a trailing comment. Both are in git history, so removing them
-        // from the file does NOT revoke them - only rotation at the OpenAI account
-        // does. See docs/decisions/2026-09-08-credential-remediation.md.
-        //
-        // Verified before the swap: env('OPENAI_API_KEY') already resolved to the
-        // byte-identical value, so this is a no-op at runtime here. It is NOT a no-op
-        // on a server where the variable is unset - hence the explicit guard below
-        // rather than sending an unauthenticated request and surfacing a confusing
-        // provider error.
-        $apiKey = env('OPENAI_API_KEY');
-
-        if (empty($apiKey)) {
+        // Provider, model, key and fallback order come from the school's central AI configuration;
+        // nothing is read from .env. (The previously hardcoded OpenAI keys are in git history and
+        // must still be rotated at the provider - see docs/decisions/2026-09-08-credential-remediation.md.)
+        // Rich-text drafting is content authoring; every other search is assessment mapping/question work.
+        $aiModule = (isset($request->search) && $request->search == "summernote") ? 'content_generation' : 'assessment_ai';
+        try {
+            $res['answer'] = app(\App\Domain\AI\Configuration\AiModelClientFactory::class)
+                ->for($aiModule, $sub_institute_id)
+                ->chat(
+                    [['role' => 'user', 'content' => json_encode($message)]],
+                    null,
+                    1024,
+                    0.7
+                );
+        } catch (\App\Domain\AI\Configuration\AiConfigurationException $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'OPENAI_API_KEY is not configured on this server.',
+                'message' => $e->getMessage(),
             ], 500);
+        } catch (\Throwable $e) {
+            \Log::warning('AJAX AI chat failed: ' . $e->getMessage());
+            $res['answer'] = ['error' => ['message' => $e->getMessage()]];
         }
-        // echo "<pre>";print_r('API');exit;
-        $endpoint = "https://api.openai.com/v1/chat/completions";
 
-        $data = [
-            'model' => 'gpt-3.5-turbo',
-            'messages' => [
-                [
-                    'role' => 'user',
-                    'content' => json_encode($message)
-                ]
-            ],
-            "temperature" => 0.7,
-            "max_tokens" => 256,
-            "top_p" => 1,
-            "frequency_penalty" => 0,
-            "presence_penalty" => 0,
-            "stop" => ["11."]
-        ];
-
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'Authorization' => 'Bearer ' . $apiKey,
-        ])->post($endpoint, $data)->json();
-
-        if (isset($response['choices'][0]['message']['content'])) {
-          
-            $res['answer'] = $response['choices'][0]['message']['content'];
-        }else{
-            $res['answer'] = $response;
+        if ($res['answer'] === null || $res['answer'] === '') {
+            $res['answer'] = ['error' => ['message' => 'The AI provider returned no answer.']];
         }
        return $res['answer'];
     }

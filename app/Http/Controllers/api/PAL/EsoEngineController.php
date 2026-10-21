@@ -496,7 +496,7 @@ class EsoEngineController extends Controller
             'context' => 'nullable|array',
         ]);
 
-        $rendered = $this->renderer->render($validated['instruction'], $validated['context'] ?? []);
+        $rendered = $this->renderer->render($validated['instruction'], $validated['context'] ?? [], $this->callerInstitute($request));
 
         if ($rendered === null) {
             // LLM unavailable or failed — the caller falls back to the plain

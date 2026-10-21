@@ -26,11 +26,13 @@ class GeminiDocumentClientTest extends ExamEvaluationTestCase
     {
         parent::setUp();
         Sleep::fake();
-        config([
-            'gemini.api_key' => 'test-key-not-real',
-            'gemini.model' => 'main-model',
-            'ai.provider.gemini.fallback_model' => '',
-        ]);
+        config(['ai.provider.gemini.fallback_model' => '']);
+    }
+
+    /** A client handed the configuration the module would resolve to, so no database is needed. */
+    private function client(?string $key = 'test-key-not-real'): GeminiClient
+    {
+        return (new GeminiClient())->forConfiguration(new ResolvedAiConfiguration('gemini', 'main-model', $key, 'test'));
     }
 
     private function ok(string $text = '{"a":1}', string $finish = 'STOP'): \GuzzleHttp\Promise\PromiseInterface
@@ -47,7 +49,7 @@ class GeminiDocumentClientTest extends ExamEvaluationTestCase
     {
         Http::fake([self::MAIN => $this->ok('hello')]);
 
-        $result = (new GeminiClient())->generateContent([['text' => 'hi']]);
+        $result = $this->client()->generateContent([['text' => 'hi']]);
 
         $this->assertSame('hello', $result['text']);
         $this->assertSame('STOP', $result['finish_reason']);
@@ -59,7 +61,7 @@ class GeminiDocumentClientTest extends ExamEvaluationTestCase
         // Homework callers ignore finish_reason and behave as before; exam callers act on it.
         Http::fake([self::MAIN => $this->ok('{"half":', 'MAX_TOKENS')]);
 
-        $result = (new GeminiClient())->generateContent([['text' => 'hi']]);
+        $result = $this->client()->generateContent([['text' => 'hi']]);
 
         $this->assertSame('MAX_TOKENS', $result['finish_reason']);
         $this->assertSame('{"half":', $result['text']);
@@ -82,7 +84,7 @@ class GeminiDocumentClientTest extends ExamEvaluationTestCase
         $this->expectException(ProviderBusyException::class);
 
         try {
-            (new GeminiClient())->generateContent([['text' => 'hi']]);
+            $this->client()->generateContent([['text' => 'hi']]);
         } finally {
             $this->assertSame(4, $this->requestsTo(self::MAIN));
         }
@@ -96,7 +98,7 @@ class GeminiDocumentClientTest extends ExamEvaluationTestCase
             self::BACKUP => $this->ok('from backup'),
         ]);
 
-        $result = (new GeminiClient())->generateContent([['text' => 'hi']]);
+        $result = $this->client()->generateContent([['text' => 'hi']]);
 
         $this->assertSame('from backup', $result['text']);
         $this->assertSame('backup-model', $result['model']);
@@ -108,7 +110,7 @@ class GeminiDocumentClientTest extends ExamEvaluationTestCase
         Http::fake([self::MAIN => Http::response(['error' => ['message' => 'high demand']], 503)]);
 
         try {
-            (new GeminiClient())->generateContent([['text' => 'hi']]);
+            $this->client()->generateContent([['text' => 'hi']]);
             $this->fail('should have raised');
         } catch (ProviderBusyException) {
             // expected
@@ -123,7 +125,7 @@ class GeminiDocumentClientTest extends ExamEvaluationTestCase
         Http::fake([self::MAIN => Http::response(['error' => ['message' => 'high demand']], 503)]);
 
         $this->expectException(ProviderBusyException::class);
-        (new GeminiClient())->generateContent([['text' => 'hi']]);
+        $this->client()->generateContent([['text' => 'hi']]);
     }
 
     public function test_a_rate_limit_is_its_own_type_and_is_not_retried_at_once(): void
@@ -131,7 +133,7 @@ class GeminiDocumentClientTest extends ExamEvaluationTestCase
         Http::fake([self::MAIN => Http::response(['error' => ['message' => 'quota']], 429)]);
 
         try {
-            (new GeminiClient())->generateContent([['text' => 'hi']]);
+            $this->client()->generateContent([['text' => 'hi']]);
             $this->fail('should have raised');
         } catch (RateLimitedException $exception) {
             // Still a RuntimeException, so every existing `catch (\RuntimeException)` keeps working.
@@ -150,7 +152,7 @@ class GeminiDocumentClientTest extends ExamEvaluationTestCase
         ]], 429)]);
 
         $this->expectException(ModelQuotaExhaustedException::class);
-        (new GeminiClient())->generateContent([['text' => 'hi']]);
+        $this->client()->generateContent([['text' => 'hi']]);
     }
 
     public function test_a_bad_key_is_a_plain_runtime_exception_with_a_message_a_teacher_can_act_on(): void
@@ -158,12 +160,12 @@ class GeminiDocumentClientTest extends ExamEvaluationTestCase
         Http::fake([self::MAIN => Http::response(['error' => ['message' => 'API key not valid']], 403)]);
 
         try {
-            (new GeminiClient())->generateContent([['text' => 'hi']]);
+            $this->client()->generateContent([['text' => 'hi']]);
             $this->fail('should have raised');
         } catch (\RuntimeException $exception) {
             $this->assertNotInstanceOf(RateLimitedException::class, $exception);
             $this->assertNotInstanceOf(ProviderBusyException::class, $exception);
-            $this->assertStringContainsString('GEMINI_API_KEY', $exception->getMessage());
+            $this->assertStringContainsString('Gemini key', $exception->getMessage());
         }
     }
 
@@ -172,7 +174,7 @@ class GeminiDocumentClientTest extends ExamEvaluationTestCase
         Http::fake([self::MAIN => fn () => throw new ConnectionException('cURL error 28: Operation timed out')]);
 
         $this->expectException(ConnectionException::class);
-        (new GeminiClient())->generateContent([['text' => 'hi']]);
+        $this->client()->generateContent([['text' => 'hi']]);
     }
 
     public function test_a_refused_prompt_says_why_instead_of_returning_nothing(): void
@@ -180,7 +182,7 @@ class GeminiDocumentClientTest extends ExamEvaluationTestCase
         Http::fake([self::MAIN => Http::response(['promptFeedback' => ['blockReason' => 'SAFETY']], 200)]);
 
         try {
-            (new GeminiClient())->generateContent([['text' => 'hi']]);
+            $this->client()->generateContent([['text' => 'hi']]);
             $this->fail('should have raised');
         } catch (\RuntimeException $exception) {
             $this->assertStringContainsString('SAFETY', $exception->getMessage());
@@ -192,21 +194,18 @@ class GeminiDocumentClientTest extends ExamEvaluationTestCase
         Http::fake([self::MAIN => Http::response(['candidates' => [['content' => ['parts' => [['text' => '   ']]]]]], 200)]);
 
         $this->expectExceptionMessage('Gemini returned an empty response.');
-        (new GeminiClient())->generateContent([['text' => 'hi']]);
+        $this->client()->generateContent([['text' => 'hi']]);
     }
 
     public function test_a_missing_key_fails_before_any_request_is_made(): void
     {
-        config(['gemini.api_key' => '']);
-        putenv('GEMINI_API_KEY');
-        unset($_ENV['GEMINI_API_KEY'], $_SERVER['GEMINI_API_KEY']);
         Http::fake();
 
         try {
-            (new GeminiClient())->generateContent([['text' => 'hi']]);
+            $this->client(null)->generateContent([['text' => 'hi']]);
             $this->fail('should have raised');
         } catch (\RuntimeException $exception) {
-            $this->assertStringContainsString('GEMINI_API_KEY', $exception->getMessage());
+            $this->assertStringContainsString('AI Providers', $exception->getMessage());
         }
 
         Http::assertNothingSent();
@@ -222,7 +221,7 @@ class GeminiDocumentClientTest extends ExamEvaluationTestCase
         Http::fake([self::MAIN => Http::response(['error' => ['message' => str_repeat('x', 5000)]], 403)]);
 
         try {
-            (new GeminiClient())->generateContent([['text' => 'hi']]);
+            $this->client()->generateContent([['text' => 'hi']]);
         } catch (\RuntimeException) {
         }
 
