@@ -20,6 +20,11 @@ class Kernel extends ConsoleKernel
     {
         // $schedule->command('check:broken-links')->everyMinute();
 
+        // Platform services: runs each school's due scheduled tasks, retries queued
+        // notifications and escalates overdue approvals. withoutOverlapping(5) so a
+        // run that dies cannot hold the lock for the default 24 hours.
+        $schedule->command('platform:schedule-run')->everyMinute()->withoutOverlapping(5);
+
         // MariaDB -> Neo4j outbox. Controllers flush inline so a change is
         // visible immediately; this is the safety net that catches anything the
         // inline flush could not deliver (Neo4j restart, bolt timeout) and, more
