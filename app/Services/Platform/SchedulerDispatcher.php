@@ -25,7 +25,7 @@ class SchedulerDispatcher
     /** @return array<string,callable(PlatformScheduledTask):string> task_key => handler returning a summary */
     private function handlers(): array
     {
-        return [
+        return array_merge(ScheduledJobs::registry(), [
             'reports.scheduled.dispatch' => function (): string {
                 $n = app(ReportScheduler::class)->runDue();
 
@@ -36,7 +36,13 @@ class SchedulerDispatcher
 
                 return "Retried {$n} queued or failed notifications.";
             },
-        ];
+        ]);
+    }
+
+    /** Whether a job is registered for this task key, so a screen can say so before anyone presses Run now. */
+    public static function hasJob(string $taskKey): bool
+    {
+        return array_key_exists($taskKey, (new self())->handlers());
     }
 
     /** @return array{ran:int,failed:int,no_handler:int,escalated:int} */
