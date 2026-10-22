@@ -499,7 +499,16 @@ class RouteServiceProvider extends ServiceProvider
     {
         Route::prefix('api/platform')
             ->middleware('api')
-            ->group(base_path('routes/platform.php'));
+            ->group(function () {
+                require base_path('routes/platform.php');
+
+                // One file per platform service (audit, integrations, engines,
+                // reports and dashboard), so a service can be added without
+                // editing a shared file.
+                foreach (glob(base_path('routes/platform/*.php')) ?: [] as $file) {
+                    require $file;
+                }
+            });
     }
 
     /**
