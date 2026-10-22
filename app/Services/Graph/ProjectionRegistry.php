@@ -40,6 +40,11 @@ class ProjectionRegistry
         // ingest claimed, :Staff for the other 4,653 — and which one a row
         // belongs to is a fact about the graph, not about the row.
         StaffGraphProjection::class,
+        // `lms_student_engagement.activity_id` resolves to a DIFFERENT target
+        // label depending on the row's own `activity_type` (:TeachingResource
+        // for 'content_view', :Concept for 'practice'/'quiz') — a per-row
+        // choice of target label a column-map spec cannot express.
+        EngagementGraphProjection::class,
     ];
 
     /** @var array<string, GraphProjection>|null  table => projection */

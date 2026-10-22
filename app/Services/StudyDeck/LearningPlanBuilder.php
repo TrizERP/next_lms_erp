@@ -20,9 +20,11 @@ class LearningPlanBuilder
     /**
      * @param array<string,mixed> $context ConceptContextBuilder::assemble()
      * @param array<int,array<int,array<string,mixed>>> $eligibleQuestions concept_id => questions
+     * @param array<string,int> $limits max_practice, questions_per_slide, max_visuals; a key left out keeps SlidePlanner's default
+     * @param string|null $teachingMethod a TeachingMethodProfile key; null (the default) leaves the map exactly as it was
      * @return array<string,mixed>
      */
-    public function build(array $context, array $eligibleQuestions, int $minSlides = 30, int $maxSlides = 35): array
+    public function build(array $context, array $eligibleQuestions, int $minSlides = 30, int $maxSlides = 35, array $limits = [], ?string $teachingMethod = null): array
     {
         $concepts = $context['concepts'];
         $warnings = [];
@@ -79,8 +81,9 @@ class LearningPlanBuilder
             ];
         }
 
-        return [
+        return ($teachingMethod !== null ? ['teaching_method' => $teachingMethod] : []) + [
             'target_slides' => ['min' => $minSlides, 'max' => $maxSlides],
+            'limits' => SlidePlanner::limits(['limits' => $limits]),
             'sequence' => $sequence,
             'topics' => $topicOrder,
             'concepts' => $map,

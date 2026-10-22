@@ -33,9 +33,19 @@ class HomeworkMarkingService
 
     public function __construct(
         private readonly AnswerKeyService $answerKeys,
-        private readonly AnswerSheetReaderService $reader,
-        private readonly AnswerSheetScoringService $scorer
+        private AnswerSheetReaderService $reader,
+        private AnswerSheetScoringService $scorer
     ) {
+    }
+
+    /** A copy whose reader and scorer resolve the `evaluation_ai` configuration for one school. */
+    public function forInstitute(int|string|null $subInstituteId): static
+    {
+        $copy = clone $this;
+        $copy->reader = $this->reader->forInstitute($subInstituteId);
+        $copy->scorer = $this->scorer->forInstitute($subInstituteId);
+
+        return $copy;
     }
 
     /**

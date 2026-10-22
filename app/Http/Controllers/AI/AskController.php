@@ -6,6 +6,7 @@ use App\Domain\AI\Conversation\AskPipeline;
 use App\Services\AI\AiPolicyResolver;
 use App\Domain\AI\Conversation\AskService;
 use App\Domain\AI\Conversation\ConversationStore;
+use App\Domain\AI\Conversation\ResponseLanguage;
 use App\Domain\AI\Lifecycle\Modules\ModuleRegistry;
 use App\Domain\AI\Lifecycle\StageKey;
 use App\Domain\AI\Lifecycle\StageOutcome;
@@ -73,6 +74,9 @@ class AskController extends AiController
                 'payload.student_id' => 'nullable|integer|min:1',
                 'payload.recommendation_id' => 'nullable|integer|min:1',
                 'payload.workflow_approval_id' => 'nullable|integer|min:1',
+                // The exam a student is sitting and the question they are on; the tool still checks both are theirs.
+                'payload.paper_id' => 'nullable|integer|min:1',
+                'payload.question_id' => 'nullable|integer|min:1',
                 'limit' => 'nullable|integer|min:1|max:200',
                 // The screen the question was asked from, and the module it belongs to.
                 // Both are hints: the resolver treats a declared module as authoritative
@@ -80,6 +84,9 @@ class AskController extends AiController
                 // on and the words alone often do not.
                 'module' => 'nullable|string|max:64',
                 'route' => 'nullable|string|max:512',
+                // Voice and language hints. Hints only: the sentence itself decides first.
+                'language' => 'nullable|string|max:16',
+                'input_mode' => 'nullable|string|in:voice,text',
             ]);
 
             $options = [
@@ -87,6 +94,8 @@ class AskController extends AiController
                 'limit' => $validated['limit'] ?? null,
                 'module' => $validated['module'] ?? null,
                 'route' => $validated['route'] ?? null,
+                'language' => $validated['language'] ?? null,
+                'input_mode' => $validated['input_mode'] ?? null,
             ];
 
             $policy = $this->policyResolver->resolve($scope->selectedInstituteId, $this->policyContext($validated, $options));
@@ -152,9 +161,14 @@ class AskController extends AiController
                 'payload.student_id' => 'nullable|integer|min:1',
                 'payload.recommendation_id' => 'nullable|integer|min:1',
                 'payload.workflow_approval_id' => 'nullable|integer|min:1',
+                // The exam a student is sitting and the question they are on; the tool still checks both are theirs.
+                'payload.paper_id' => 'nullable|integer|min:1',
+                'payload.question_id' => 'nullable|integer|min:1',
                 'limit' => 'nullable|integer|min:1|max:200',
                 'module' => 'nullable|string|max:64',
                 'route' => 'nullable|string|max:512',
+                'language' => 'nullable|string|max:16',
+                'input_mode' => 'nullable|string|in:voice,text',
             ]);
         } catch (Throwable $exception) {
             // Validation and scope failures happen before a byte is streamed, so they
@@ -168,6 +182,8 @@ class AskController extends AiController
             'limit' => $validated['limit'] ?? null,
             'module' => $validated['module'] ?? null,
             'route' => $validated['route'] ?? null,
+            'language' => $validated['language'] ?? null,
+            'input_mode' => $validated['input_mode'] ?? null,
         ];
 
         $response = new StreamedResponse(function () use ($validated, $scope, $options): void {
@@ -339,6 +355,68 @@ class AskController extends AiController
             return $this->success('Question interpreted.', [
                 'intent' => $this->ask->interpret($validated['question'], $validated['memory'] ?? []),
                 'note' => 'Read-only. No agent ran, no case was opened, nothing was recorded.',
+            ]);
+        } catch (Throwable $exception) {
+            return $this->handle($exception);
+        }
+    }
+
+    /**
+     * A Hindi or Gujarati sentence in English, so the screen can recognise "open admissions"
+     * (a page to navigate to) in the language it was said in.
+     *
+     * Read-only and tenant-scoped like every route here: it answers with a translation and
+     * nothing else, and runs no tool.
+     */
+    public function translate(Request $request, ResponseLanguage $language)
+    {
+        try {
+            $scope = $this->scope($request);
+
+            $validated = $request->validate([
+                'text' => 'required|string|max:1000',
+                'language' => 'nullable|string|max:16',
+                'module' => 'nullable|string|max:64',
+            ]);
+
+            $resolved = $language->resolve($validated['text'], ['language' => $validated['language'] ?? null, 'input_mode' => 'voice']);
+            $english = $resolved['translate']
+                ? $language->toEnglish($resolved['question'], $resolved['script'] !== 'en' ? $resolved['script'] : $resolved['code'], $scope, $validated['module'] ?? null)
+                : $resolved['question'];
+
+            return $this->success($english === null ? 'Could not translate.' : 'Translated.', [
+                'english' => $english,
+                'code' => $resolved['code'],
+                'explicit' => $resolved['explicit'],
+            ]);
+        } catch (Throwable $exception) {
+            return $this->handle($exception);
+        }
+    }
+
+    /**
+     * Fixed wording the screen builds itself (for example an "open this page" card), in the
+     * language of the answer next to it.
+     *
+     * Read-only and tenant-scoped like every route here. It translates the strings it is given and
+     * returns only the lines that were translated; anything it cannot translate is simply absent,
+     * and the caller keeps its own text.
+     */
+    public function localize(Request $request, ResponseLanguage $language)
+    {
+        try {
+            $scope = $this->scope($request);
+
+            $validated = $request->validate([
+                'strings' => 'required|array|min:1|max:20',
+                'strings.*' => 'required|string|max:300',
+                'to' => 'required|string|in:hi,gu',
+                'module' => 'nullable|string|max:64',
+            ]);
+
+            return $this->success('Localized.', [
+                'to' => $validated['to'],
+                'translations' => (object) $language->localizeStrings($validated['strings'], $validated['to'], $scope, $validated['module'] ?? null),
             ]);
         } catch (Throwable $exception) {
             return $this->handle($exception);

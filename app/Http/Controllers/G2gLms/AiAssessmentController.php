@@ -130,7 +130,7 @@ class AiAssessmentController extends Controller
         if (!$ai->isConfigured()) {
             return response()->json([
                 'status' => 0, 'reason' => 'not_configured',
-                'message' => 'AI assessment generation is not configured. DEEPSEEK_API_KEY is not set.',
+                'message' => 'AI assessment generation is not configured. An administrator needs to add a provider and API key for Assessment AI in AI & Intelligence → AI Providers.',
             ], 503);
         }
 

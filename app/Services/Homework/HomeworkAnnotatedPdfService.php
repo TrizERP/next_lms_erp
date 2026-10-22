@@ -138,6 +138,7 @@ class HomeworkAnnotatedPdfService
         match ($status) {
             'correct' => $this->drawTick($pdf, $x, $y, $size),
             'partially_correct' => $this->drawTriangle($pdf, $x, $y, $size),
+            'pending' => $this->drawQuestionMark($pdf, $x, $y, $size),
             default => $this->drawCross($pdf, $x, $y, $size),
         };
     }
@@ -156,6 +157,16 @@ class HomeworkAnnotatedPdfService
         $pdf->Line($x, $y + $size, $x + $size, $y);
     }
 
+    /** Not yet marked: neither a verdict for nor against the answer. */
+    private function drawQuestionMark(Fpdi $pdf, float $x, float $y, float $size): void
+    {
+        $pdf->SetDrawColor(107, 114, 128); // grey
+        $pdf->SetTextColor(107, 114, 128);
+        $pdf->SetFont('Helvetica', 'B', $size);
+        $pdf->Text($x + $size * 0.2, $y + $size * 0.9, '?');
+        $pdf->SetTextColor(0, 0, 0);
+    }
+
     private function drawTriangle(Fpdi $pdf, float $x, float $y, float $size): void
     {
         $pdf->SetDrawColor(217, 119, 6); // amber
@@ -170,6 +181,14 @@ class HomeworkAnnotatedPdfService
             return; // no room — the mark alone still communicates the verdict
         }
 
+        // Optional, set by the exam evaluation: which question this is (as the sheet numbers it),
+        // whose mark it is, and the mark itself. Homework sets none of them and is drawn as before.
+        $heading = trim(implode('  ', array_filter([
+            (string) ($annotation['label'] ?? ''),
+            (string) ($annotation['score_text'] ?? ''),
+            (string) ($annotation['source_tag'] ?? ''),
+        ], static fn ($part) => trim($part) !== '')));
+
         $lines = [];
         if ($annotation['status'] === 'wrong' && trim((string) $annotation['expected_answer']) !== '') {
             $lines[] = 'Correct answer: ' . $this->truncate((string) $annotation['expected_answer'], 90);
@@ -177,14 +196,27 @@ class HomeworkAnnotatedPdfService
         if (trim((string) $annotation['remarks']) !== '') {
             $lines[] = $this->truncate((string) $annotation['remarks'], 90);
         }
-        if (empty($lines)) {
+        if ($heading === '' && empty($lines)) {
             return;
         }
 
-        $pdf->SetFont('Helvetica', '', 7);
-        $pdf->SetTextColor(...($annotation['status'] === 'wrong' ? [185, 28, 28] : [75, 85, 99]));
+        $textColor = $annotation['status'] === 'wrong' ? [185, 28, 28] : [75, 85, 99];
         $pdf->SetXY($x, $y);
-        $pdf->MultiCell($width, 9, implode("\n", $lines), 0, 'L');
+
+        if ($heading !== '') {
+            // A teacher's mark is set in blue, the AI's in the usual grey, so the two read apart.
+            $pdf->SetFont('Helvetica', 'B', 8);
+            $pdf->SetTextColor(...(($annotation['source'] ?? '') === 'teacher' ? [30, 64, 175] : $textColor));
+            $pdf->MultiCell($width, 10, $heading, 0, 'L');
+            $pdf->SetX($x);
+        }
+
+        if ($lines !== []) {
+            $pdf->SetFont('Helvetica', '', 7);
+            $pdf->SetTextColor(...$textColor);
+            $pdf->MultiCell($width, 9, implode("\n", $lines), 0, 'L');
+        }
+
         $pdf->SetTextColor(0, 0, 0);
     }
 

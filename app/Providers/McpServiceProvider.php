@@ -16,6 +16,7 @@ use App\Mcp\Tools\AiTemplatesGenerateTool;
 use App\Mcp\Tools\AiTemplatesListTool;
 use App\Mcp\Tools\AiTemplatesRenderTool;
 use App\Mcp\Tools\AssignmentStatusTool;
+use App\Mcp\Tools\AttendanceDailyTool;
 use App\Mcp\Tools\AttendanceOverviewTool;
 use App\Mcp\Tools\AttendanceStudentTool;
 use App\Mcp\Tools\CertificateIssuedTool;
@@ -24,8 +25,22 @@ use App\Mcp\Tools\CircularsListTool;
 use App\Mcp\Tools\CircularsTypesTool;
 use App\Mcp\Tools\CommunicationChannelsTool;
 use App\Mcp\Tools\CommunicationMessagesTool;
+use App\Mcp\Tools\CommunicationChannelHealthTool;
+use App\Mcp\Tools\CommunicationParentMessageHistoryTool;
+use App\Mcp\Tools\CommunicationSendParentMessageTool;
 use App\Mcp\Tools\ComplaintsListTool;
 use App\Mcp\Tools\ComplaintsSummaryTool;
+use App\Mcp\Tools\AlumniDirectoryTool;
+use App\Mcp\Tools\AlumniEventsTool;
+use App\Mcp\Tools\AlumniOverviewTool;
+use App\Mcp\Tools\DonationsListTool;
+use App\Mcp\Tools\DonationsSummaryTool;
+use App\Mcp\Tools\PayrollHeadsTool;
+use App\Mcp\Tools\PayrollMonthlyTool;
+use App\Mcp\Tools\StaffAttendanceRecordsTool;
+use App\Mcp\Tools\StaffAttendanceSummaryTool;
+use App\Mcp\Tools\LeaveRequestsTool;
+use App\Mcp\Tools\LeaveSummaryTool;
 use App\Mcp\Tools\ConsentRecordsTool;
 use App\Mcp\Tools\ConsentSummaryTool;
 use App\Mcp\Tools\CurriculumPlanningOutcomesTool;
@@ -37,6 +52,8 @@ use App\Mcp\Tools\EngagementStudentsNeedingAttentionTool;
 use App\Mcp\Tools\ExamsListTool;
 use App\Mcp\Tools\ExamsResultsTool;
 use App\Mcp\Tools\FeesArrearsTool;
+use App\Mcp\Tools\FeesReminderHistoryTool;
+use App\Mcp\Tools\FeesSendRemindersTool;
 use App\Mcp\Tools\FeesCollectionReportTool;
 use App\Mcp\Tools\FeesGetPendingTool;
 use App\Mcp\Tools\FeesOutstandingAccountsTool;
@@ -58,11 +75,13 @@ use App\Mcp\Tools\LibraryCatalogueTool;
 use App\Mcp\Tools\LibraryCirculationTool;
 use App\Mcp\Tools\LmsActivitiesTool;
 use App\Mcp\Tools\LmsCoursesTool;
+use App\Mcp\Tools\LmsCourseSummaryTool;
 use App\Mcp\Tools\MobileAppsHomescreenTool;
 use App\Mcp\Tools\MobileAppsSectionsTool;
 use App\Mcp\Tools\NewPalCoherenceGapsTool;
 use App\Mcp\Tools\NewPalContentModelStatusTool;
 use App\Mcp\Tools\NewPalGamificationSummaryTool;
+use App\Mcp\Tools\ExamAssessmentQuestionHelpTool;
 use App\Mcp\Tools\OnlineExamSummaryTool;
 use App\Mcp\Tools\ParentCommunicationMessagesTool;
 use App\Mcp\Tools\ParentCommunicationSummaryTool;
@@ -89,6 +108,7 @@ use App\Mcp\Tools\TasksOverdueTool;
 use App\Mcp\Tools\TasksProjectsTool;
 use App\Mcp\Tools\TeachersDailyReportTool;
 use App\Mcp\Tools\TeachersDirectoryTool;
+use App\Mcp\Tools\TeachLearnCoursesTool;
 use App\Mcp\Tools\TimetableConflictsTool;
 use App\Mcp\Tools\TimetableScheduleTool;
 use App\Mcp\Tools\TransportAssignmentsTool;
@@ -139,10 +159,13 @@ class McpServiceProvider extends ServiceProvider
 
         // Academic records
         AttendanceOverviewTool::class,
+        AttendanceDailyTool::class,
         AttendanceStudentTool::class,
         HomeworkListTool::class,
         LmsActivitiesTool::class,
         LmsCoursesTool::class,
+        LmsCourseSummaryTool::class,
+        TeachLearnCoursesTool::class,
         ExamsListTool::class,
         ExamsResultsTool::class,
 
@@ -162,6 +185,8 @@ class McpServiceProvider extends ServiceProvider
         // projects. `HomeworkListTool` above already covers Homework/Homework
         // Submission; these two are new.
         OnlineExamSummaryTool::class,
+        // The one tool in this module a student may call: a single question of the exam they are attempting.
+        ExamAssessmentQuestionHelpTool::class,
         AssignmentStatusTool::class,
 
         // Money
@@ -170,6 +195,10 @@ class McpServiceProvider extends ServiceProvider
         FeesGetPendingTool::class,
         FeesPositionTool::class,
         FeesOutstandingAccountsTool::class,
+        // The one money tool that writes to families: previews, sends only on confirmation, administrators
+        // only. Its history twin is read-only.
+        FeesSendRemindersTool::class,
+        FeesReminderHistoryTool::class,
 
         // Boarding, meetings, requests and notices.
         //
@@ -201,6 +230,9 @@ class McpServiceProvider extends ServiceProvider
         CertificateIssuedTool::class,
         CertificateTemplatesTool::class,
         CommunicationMessagesTool::class,
+        CommunicationSendParentMessageTool::class,
+        CommunicationParentMessageHistoryTool::class,
+        CommunicationChannelHealthTool::class,
         CommunicationChannelsTool::class,
         TimetableScheduleTool::class,
         TimetableConflictsTool::class,
@@ -246,6 +278,21 @@ class McpServiceProvider extends ServiceProvider
         TasksProjectsTool::class,
         ComplaintsListTool::class,
         ComplaintsSummaryTool::class,
+        // Staff leave. Read-only; staff only, never the students' leave applications.
+        LeaveRequestsTool::class,
+        LeaveSummaryTool::class,
+        // Staff punches, payroll in totals and donations. Payroll and donations are
+        // admin-only; payroll never returns one named person's pay.
+        StaffAttendanceRecordsTool::class,
+        StaffAttendanceSummaryTool::class,
+        PayrollHeadsTool::class,
+        PayrollMonthlyTool::class,
+        DonationsListTool::class,
+        DonationsSummaryTool::class,
+        // Alumni Management. Read-only and admin-only; never contact details.
+        AlumniDirectoryTool::class,
+        AlumniEventsTool::class,
+        AlumniOverviewTool::class,
         UtilityCustomModulesTool::class,
         UtilityRolloverScopeTool::class,
         DocumentTemplatesListTool::class,

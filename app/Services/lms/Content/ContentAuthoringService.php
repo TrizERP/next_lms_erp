@@ -91,7 +91,7 @@ class ContentAuthoringService
 
         try {
             $artefact = $mode === 'generate'
-                ? $this->generate($type, $input)
+                ? $this->generate($type, $input, $tenantId)
                 : $this->upload($type, $tenantId, $input, $file);
 
             $result = DB::transaction(function () use ($type, $mode, $input, $actor, $tenantId, $artefact) {
@@ -143,7 +143,7 @@ class ContentAuthoringService
      * @param  array<string,mixed>  $input
      * @return array<string,mixed>
      */
-    private function generate(string $type, array $input): array
+    private function generate(string $type, array $input, int $tenantId): array
     {
         $provider = $this->registry->provider($type);
 
@@ -151,7 +151,7 @@ class ContentAuthoringService
             throw new RuntimeException("No generator is registered for content type \"{$type}\".");
         }
 
-        return $this->gateway->generate($provider, $input);
+        return $this->gateway->generate($provider, $input, $tenantId);
     }
 
     /**

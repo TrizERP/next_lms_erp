@@ -70,6 +70,22 @@ final class StudyDeckImageUrls
                 }
             }
         }
+        // A story scene's own picture.
+        foreach ((array) ($deck['slides'] ?? []) as $slide) {
+            foreach ((array) ($slide['interaction']['nodes'] ?? []) as $node) {
+                foreach (array_merge([$node['image'] ?? null], (array) ($node['extra_images'] ?? [])) as $img) {
+                    if (($id = StudyDeckImages::idFromRef($img['url'] ?? null)) !== null) {
+                        $wanted[$id] = $id;
+                    }
+                }
+            }
+        }
+        // A study document may also hold a picture per concept.
+        foreach ((array) ($deck['concept_images'] ?? []) as $image) {
+            if (($id = StudyDeckImages::idFromRef($image['url'] ?? null)) !== null) {
+                $wanted[$id] = $id;
+            }
+        }
         if (!$wanted) {
             return $deck;
         }
@@ -86,6 +102,43 @@ final class StudyDeckImageUrls
                 } else {
                     Log::warning('Study deck picture is not available to this school', ['image_id' => $id, 'tenant' => $tenant]);
                 }
+            }
+        }
+
+        foreach ((array) ($deck['slides'] ?? []) as $si => $slide) {
+            foreach ((array) ($slide['interaction']['nodes'] ?? []) as $k => $node) {
+                // the scene's main picture, then each supporting one
+                $refs = [['image']];
+                foreach (array_keys((array) ($node['extra_images'] ?? [])) as $e) {
+                    $refs[] = ['extra_images', $e];
+                }
+                foreach ($refs as $path) {
+                    $img = $path === ['image'] ? ($node['image'] ?? null) : ($node['extra_images'][$path[1]] ?? null);
+                    $id = StudyDeckImages::idFromRef($img['url'] ?? null);
+                    if ($id === null) {
+                        continue;
+                    }
+                    if (!isset($urls[$id])) {
+                        Log::warning('Study deck scene picture is not available to this school', ['image_id' => $id, 'tenant' => $tenant]);
+                        continue;
+                    }
+                    if ($path === ['image']) {
+                        $deck['slides'][$si]['interaction']['nodes'][$k]['image']['url'] = $urls[$id];
+                    } else {
+                        $deck['slides'][$si]['interaction']['nodes'][$k]['extra_images'][$path[1]]['url'] = $urls[$id];
+                    }
+                }
+            }
+        }
+        foreach ((array) ($deck['concept_images'] ?? []) as $conceptId => $image) {
+            $id = StudyDeckImages::idFromRef($image['url'] ?? null);
+            if ($id === null) {
+                continue;
+            }
+            if (isset($urls[$id])) {
+                $deck['concept_images'][$conceptId]['url'] = $urls[$id];
+            } else {
+                Log::warning('Study document concept picture is not available to this school', ['image_id' => $id, 'tenant' => $tenant]);
             }
         }
 

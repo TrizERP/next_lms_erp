@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\G2gLms;
 
+use App\Domain\AI\Configuration\AiConfigurationException;
+use App\Domain\AI\Configuration\AiModelClientFactory;
 use App\Http\Controllers\Controller;
 use App\Http\Controllers\G2gLms\Concerns\ResolvesLmsIdentity;
 use App\Models\G2gLms\AiCourseOutline;
@@ -12,6 +14,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use RuntimeException;
+use Throwable;
 
 /**
  * "Build with AI" — Course Builder's outline generator + Gamma deck renderer.
@@ -48,6 +51,9 @@ class AiCourseController extends Controller
 {
     use ResolvesLmsIdentity;
 
+    /** Centralised AI configuration module (see AiModuleRegistry). */
+    private const AI_MODULE = 'content_generation';
+
     public function __construct(private readonly GammaService $gamma)
     {
     }
@@ -62,9 +68,30 @@ class AiCourseController extends Controller
     /** GET /api/g2g-lms/course-builder/ai/status */
     public function status(Request $request)
     {
+        $context = $this->lmsContext($request);
+        $tenant = $context['sub_institute_id'] ?: null;
+        $factory = app(AiModelClientFactory::class);
+
+        // Report the centralised configuration truthfully. The `deepseek_*` keys are kept
+        // for the frontend contract; they now describe whichever provider is configured.
+        $configured = false;
+        $model = '';
+        $provider = null;
+        try {
+            $configured = $factory->for(self::AI_MODULE, $tenant)->isConfigured();
+            $head = $factory->configurationFor(self::AI_MODULE, $tenant);
+            $model = (string) $head->model;
+            $provider = $head->provider;
+        } catch (Throwable $e) {
+            Log::warning('[g2g-lms/ai] could not resolve the AI configuration', ['error' => $e->getMessage()]);
+        }
+
         return $this->lmsOk([
-            'deepseek_configured' => (bool) config('deepseek.api_key'),
-            'deepseek_model' => (string) config('deepseek.model'),
+            'deepseek_configured' => $configured,
+            'deepseek_model' => $model,
+            'ai_configured' => $configured,
+            'ai_provider' => $provider,
+            'ai_model' => $model,
             'gamma_configured' => (bool) env('GAMMA_API_KEY'),
         ]);
     }
@@ -100,7 +127,10 @@ class AiCourseController extends Controller
         $slideCount = (int) ($request->input('slide_count') ?: 10);
 
         try {
+            $usedModel = null;
             $outline = $this->chatJson(
+                $context['sub_institute_id'] ?: null,
+                $usedModel,
                 [
                     [
                         'role' => 'system',
@@ -109,8 +139,7 @@ class AiCourseController extends Controller
                             . 'Reply with a single valid JSON object and nothing else.',
                     ],
                     ['role' => 'user', 'content' => $this->buildOutlinePrompt($request, $slideCount)],
-                ],
-                $request->input('model') ?: null
+                ]
             );
 
             $normalised = $this->normaliseOutline($outline, $slideCount);
@@ -118,7 +147,7 @@ class AiCourseController extends Controller
             return $this->lmsOk([
                 'outline' => $normalised,
                 'plain_text' => $this->outlineToPlainText($normalised),
-                'model' => $request->input('model') ?: config('deepseek.model'),
+                'model' => $usedModel,
                 'slide_count' => count($normalised['slides']),
             ], 'Course outline generated successfully');
         } catch (RuntimeException $e) {
@@ -284,7 +313,8 @@ class AiCourseController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
                 'presentation_platform' => 'gamma',
-                'ai_model' => $request->input('ai_model') ?: config('deepseek.model'),
+                'ai_model' => $request->input('ai_model')
+                    ?: (string) app(AiModelClientFactory::class)->configurationFor(self::AI_MODULE, $context['sub_institute_id'] ?: null)->model,
                 'slide_count' => $slideCount,
                 'generation_id' => $generationId,
                 'status' => 'pending',
@@ -461,34 +491,37 @@ class AiCourseController extends Controller
      * DeepSeek — simplified inline client. See class doc-comment.
      * ================================================================== */
 
-    /** @param array<int, array{role:string, content:string}> $messages */
-    private function chatJson(array $messages, ?string $model = null): array
+    /**
+     * @param array<int, array{role:string, content:string}> $messages
+     * @param string|null $usedModel Set to the model that actually answered.
+     */
+    private function chatJson(int|string|null $tenant, ?string &$usedModel, array $messages): array
     {
-        if (! config('deepseek.api_key')) {
-            throw new RuntimeException('DeepSeek is not configured. Set DEEPSEEK_API_KEY in the environment.');
+        $client = app(AiModelClientFactory::class)->for(self::AI_MODULE, $tenant);
+
+        try {
+            $content = $client->chat(
+                $messages,
+                null,
+                null,
+                (float) config('deepseek.temperature_narrative', 0.6),
+                true,
+                (int) config('deepseek.timeout_seconds', 60)
+            );
+        } catch (AiConfigurationException $e) {
+            // Tell the administrator what to configure, in the module's RuntimeException -> 502 shape.
+            throw new RuntimeException($e->getMessage(), 0, $e);
+        } catch (Throwable $e) {
+            Log::error('[g2g-lms/ai] AI request failed', ['error' => $e->getMessage()]);
+            throw new RuntimeException('AI request failed: ' . $e->getMessage(), 0, $e);
         }
 
-        $response = Http::withToken(config('deepseek.api_key'))
-            ->timeout((int) config('deepseek.timeout_seconds', 60))
-            ->acceptJson()
-            ->asJson()
-            ->post(rtrim(config('deepseek.base_url'), '/') . '/chat/completions', [
-                'model' => $model ?: config('deepseek.model'),
-                'messages' => $messages,
-                'temperature' => config('deepseek.temperature_narrative', 0.6),
-                'response_format' => ['type' => 'json_object'],
-                'stream' => false,
-            ]);
+        $used = $client->lastUsed();
+        $usedModel = $used !== null ? (string) $used->model : null;
 
-        if ($response->failed()) {
-            Log::error('[g2g-lms/ai] DeepSeek request failed', ['status' => $response->status(), 'body' => $response->body()]);
-            $message = $response->json('error.message');
-            throw new RuntimeException($message ? "DeepSeek error: {$message}" : "DeepSeek request failed with status {$response->status()}.");
-        }
-
-        $content = trim((string) $response->json('choices.0.message.content'));
+        $content = trim((string) $content);
         if ($content === '') {
-            throw new RuntimeException('DeepSeek returned an empty completion.');
+            throw new RuntimeException('The AI provider returned an empty completion.');
         }
 
         if (str_starts_with($content, '```')) {
@@ -497,8 +530,8 @@ class AiCourseController extends Controller
 
         $decoded = json_decode($content, true);
         if (! is_array($decoded)) {
-            Log::warning('[g2g-lms/ai] DeepSeek returned unparsable JSON', ['raw' => $content]);
-            throw new RuntimeException('DeepSeek returned a response that could not be parsed as JSON.');
+            Log::warning('[g2g-lms/ai] AI provider returned unparsable JSON', ['raw' => $content]);
+            throw new RuntimeException('The AI provider returned a response that could not be parsed as JSON.');
         }
 
         return $decoded;

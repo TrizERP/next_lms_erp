@@ -124,8 +124,9 @@ class SessionController extends Controller
                     'key' => 'gemini',
                     'name' => 'Gemini AI task generation',
                     'description' => 'Drafts task titles and descriptions in the create-task form.',
-                    'configured' => (string) config('gemini.api_key', env('GEMINI_API_KEY', '')) !== '',
-                    'env' => 'GEMINI_API_KEY',
+                    // Reported from AI Providers (the module this feature uses), not from an environment variable.
+                    'configured' => app(\App\Domain\AI\Configuration\AiModelClientFactory::class)->for('content_generation', null)->isConfigured(),
+                    'env' => 'AI & Intelligence → AI Providers',
                 ],
                 [
                     'key' => 'fcm',

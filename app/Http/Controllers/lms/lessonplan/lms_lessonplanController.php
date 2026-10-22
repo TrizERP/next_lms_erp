@@ -644,47 +644,31 @@ class lms_lessonplanController extends Controller
 
         $prompt = array($main_prompt);
 
-        // Tracker Decision #10 (credential rotation), 2026-09-08. A live OpenAI key
-        // was hardcoded here. It is in git history, so removing it does NOT revoke it
-        // - rotation at the OpenAI account is the only fix. Verified before the swap:
-        // env('OPENAI_API_KEY') resolves to the byte-identical value.
-        // See docs/decisions/2026-09-08-credential-remediation.md.
-        $apiKey = env('OPENAI_API_KEY');
-
-        if (empty($apiKey)) {
+        // Provider, model, key and fallback order come from the school's central AI configuration
+        // ('lesson_planning'); nothing is read from .env. (The previously hardcoded OpenAI key is in
+        // git history and must still be rotated at the provider - see
+        // docs/decisions/2026-09-08-credential-remediation.md.)
+        try {
+            $res['answer'] = app(\App\Domain\AI\Configuration\AiModelClientFactory::class)
+                ->for('lesson_planning', $request->session()->get('sub_institute_id'))
+                ->chat(
+                    [['role' => 'user', 'content' => json_encode($prompt)]],
+                    null,
+                    1024,
+                    0.7
+                );
+        } catch (\App\Domain\AI\Configuration\AiConfigurationException $e) {
             return response()->json([
                 'status' => false,
-                'message' => 'OPENAI_API_KEY is not configured on this server.',
+                'message' => $e->getMessage(),
             ], 500);
+        } catch (\Throwable $e) {
+            \Log::warning('Lesson plan chat failed: ' . $e->getMessage());
+            $res['answer'] = ['error' => $e->getMessage()];
         }
-      
-        $endpoint = "https://api.openai.com/v1/chat/completions";
 
-        $data = [
-            'model' => 'gpt-3.5-turbo',
-            'messages' => [
-                [
-                    'role' => 'user',
-                    'content' => json_encode($prompt)
-                ]
-            ],
-            "temperature" => 0.7,
-            "max_tokens" => 256,
-            "top_p" => 1,
-            "frequency_penalty" => 0,
-            "presence_penalty" => 0,
-            "stop" => ["11."]
-        ];
-
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/json',
-            'Authorization' => 'Bearer ' . $apiKey,
-        ])->post($endpoint, $data)->json();
-
-        if (isset($response['choices'][0]['message']['content'])) {
-            $res['answer'] = $response['choices'][0]['message']['content'];
-        }else{
-            $res['answer']['error'] = $response['error']['message'];
+        if ($res['answer'] === null || $res['answer'] === '') {
+            $res['answer'] = ['error' => 'The AI provider returned no answer.'];
         }
        return $res['answer'];
     }

@@ -2,8 +2,13 @@
 
 namespace App\Services\Homework;
 
+use App\Domain\AI\Configuration\AiConfigurationException;
+use App\Domain\AI\Configuration\AiModelClientFactory;
+use App\Domain\AI\Configuration\ResolvedAiConfiguration;
 use App\Services\Homework\Exceptions\ModelQuotaExhaustedException;
 use App\Services\Homework\Exceptions\ProviderBusyException;
+use App\Services\Homework\Exceptions\ProviderConfigurationException;
+use App\Services\Homework\Exceptions\RateLimitedException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
@@ -30,18 +35,190 @@ class GeminiClient
 
     private const MAX_ATTEMPTS = 4;
 
-    private ?string $apiKey;
-    private string $model;
+    /** The school this client works for; null means platform keys only. */
+    private int|string|null $subInstituteId = null;
 
-    public function __construct()
+    /** Resolved lazily, once per client, from the `evaluation_ai` module's saved configuration. */
+    private ?ResolvedAiConfiguration $resolved = null;
+
+    private ?string $configurationProblem = null;
+
+    /** True when a configuration was handed in rather than resolved for a school. */
+    private bool $pinned = false;
+
+    private ?string $apiKey = null;
+    private string $model = '';
+
+    /** The configuration that answered the last call, for audit rows that record provider/model. */
+    private ?ResolvedAiConfiguration $used = null;
+
+    /**
+     * A copy of this client that resolves its provider, model and key for one school.
+     *
+     * Provider, model and key are never read from the environment: what the administrator
+     * saved for `evaluation_ai` is what is called.
+     */
+    public function forInstitute(int|string|null $subInstituteId): static
     {
-        $this->apiKey = config('gemini.api_key') ?: env('GEMINI_API_KEY');
-        $this->model = config('gemini.model');
+        $copy = clone $this;
+        $copy->subInstituteId = $subInstituteId;
+
+        // A configuration handed in with forConfiguration() was already decided; keep it.
+        if (! $this->pinned) {
+            $copy->resolved = null;
+            $copy->configurationProblem = null;
+            $copy->apiKey = null;
+            $copy->model = '';
+        }
+
+        return $copy;
+    }
+
+    /**
+     * Resolve the module's configuration. This client sends whole documents in Gemini's own
+     * wire format, so it can only serve a Gemini configuration; anything else is refused with a
+     * reason an administrator can act on.
+     */
+    private function resolveConfiguration(): void
+    {
+        if ($this->resolved !== null || $this->configurationProblem !== null) {
+            return;
+        }
+
+        try {
+            $configuration = app(AiModelClientFactory::class)
+                ->configurationFor('evaluation_ai', $this->subInstituteId);
+        } catch (\Throwable $e) {
+            // A diagnostic or an evaluation must say what is wrong, not fail on the way to saying it.
+            $this->configurationProblem = $e instanceof AiConfigurationException
+                ? $e->getMessage()
+                : 'The AI configuration for Homework & Assignment Evaluation could not be read. Check AI Providers.';
+
+            return;
+        }
+
+        $this->accept($configuration);
+    }
+
+    /**
+     * A copy that uses an already-resolved configuration instead of looking one up.
+     *
+     * For callers that have resolved once and for tests, which must not need a database. The
+     * same Gemini-only and key checks apply, and the fallback model comes from the same
+     * configuration key, not from the module's saved chain.
+     */
+    public function forConfiguration(ResolvedAiConfiguration $configuration): static
+    {
+        $copy = clone $this;
+        $copy->resolved = null;
+        $copy->configurationProblem = null;
+        $copy->apiKey = null;
+        $copy->model = '';
+        $copy->pinned = true;
+        $copy->accept($configuration);
+
+        return $copy;
+    }
+
+    private function accept(ResolvedAiConfiguration $configuration): void
+    {
+        if (! $configuration->hasKey()) {
+            $this->configurationProblem = AiConfigurationException::notConfigured(
+                'evaluation_ai',
+                'Homework & Assignment Evaluation'
+            )->getMessage();
+
+            return;
+        }
+
+        if ($configuration->provider !== 'gemini') {
+            $this->configurationProblem = 'Homework & Assignment Evaluation reads whole scanned documents and '
+                . 'can only do that with Gemini, but it is configured to use "' . $configuration->provider . '". '
+                . 'An administrator needs to set its provider to Gemini in AI & Intelligence → AI Providers.';
+
+            return;
+        }
+
+        $this->resolved = $configuration->forModule('evaluation_ai');
+        $this->apiKey = (string) $configuration->apiKey;
+        $this->model = (string) ($configuration->model ?? '');
+
+        if ($this->model === '') {
+            $this->resolved = null;
+            $this->apiKey = null;
+            $this->configurationProblem = 'Homework & Assignment Evaluation has a Gemini key but no model chosen. '
+                . 'An administrator needs to pick a model in AI & Intelligence → AI Providers.';
+        }
+    }
+
+    /** What provider/model answered the last call, or the one that would answer next. */
+    public function resolvedConfiguration(): ?ResolvedAiConfiguration
+    {
+        if ($this->used !== null) {
+            return $this->used;
+        }
+
+        $this->resolveConfiguration();
+
+        return $this->resolved;
+    }
+
+    /**
+     * Seconds to wait on one request.
+     *
+     * Read from config so a cached config still honours the timeout setting.
+     * The 90 here is deliberate and is NOT config('gemini.request_timeout')'s 45:
+     * this client sends whole scanned documents, which take longer than the
+     * brain's short text calls, and it has always defaulted to 90.
+     */
+    private function requestTimeout(): int
+    {
+        return (int) config('ai.provider.gemini.document_timeout', 90);
     }
 
     public function isConfigured(): bool
     {
+        $this->resolveConfiguration();
+
         return !empty($this->apiKey);
+    }
+
+    /**
+     * What is wrong with the configured key that can be told from its FORMAT alone, or null.
+     *
+     * This calls the Gemini Developer API (generativelanguage.googleapis.com), which accepts
+     * only API keys made in Google AI Studio: "AIza", 39 characters. A Vertex AI key ("AQ.",
+     * 53 characters) or an OAuth access token ("ya29.") is a different credential for a
+     * different service and is refused with a 401 that says nothing about which is wrong.
+     * Saying so up front saves an administrator the guesswork.
+     *
+     * Made without any request, and without ever repeating the key: only what KIND it looks
+     * like. An unfamiliar format returns null rather than a guess -- Google may well add
+     * formats, and a false alarm is worse than none; the 401 itself still reports a real rejection.
+     */
+    public function credentialProblem(): ?string
+    {
+        $this->resolveConfiguration();
+
+        if ($this->configurationProblem !== null) {
+            return $this->configurationProblem;
+        }
+
+        $key = trim((string) $this->apiKey);
+
+        if ($key === '') {
+            return 'The AI service is not set up: no Gemini API key is saved. An administrator needs to add a Gemini API key from Google AI Studio in AI & Intelligence → AI Providers.';
+        }
+
+        if (str_starts_with($key, 'AQ.')) {
+            return 'The key in use looks like a Vertex AI key, which this service cannot use. It needs a Gemini API key from Google AI Studio (starts with “AIza”).';
+        }
+
+        if (str_starts_with($key, 'ya29.')) {
+            return 'The key in use looks like an OAuth access token, not an API key. It needs a Gemini API key from Google AI Studio (starts with “AIza”).';
+        }
+
+        return null;
     }
 
     /**
@@ -56,11 +233,15 @@ class GeminiClient
     public function generateContent(array $parts, array $generationConfig = []): array
     {
         if (!$this->isConfigured()) {
-            throw new \RuntimeException('Gemini API key is not configured. Please set GEMINI_API_KEY in the backend .env file.');
+            throw new ProviderConfigurationException(
+                $this->configurationProblem ?? 'Gemini API key is not configured. An administrator needs to add one in AI & Intelligence → AI Providers.'
+            );
         }
 
+        $this->used = $this->resolved;
+
         try {
-            return $this->send($this->model, $parts, $generationConfig);
+            return $this->send($this->model, $parts, $generationConfig, (string) $this->apiKey);
         } catch (ProviderBusyException|ModelQuotaExhaustedException $unavailable) {
             // Both mean "this model cannot answer, another one can": a capacity
             // spike, or that model's own daily allowance spent. Neither is a
@@ -73,13 +254,18 @@ class GeminiClient
                 throw $unavailable;
             }
 
+            [$fallback, $fallbackKey, $fallbackConfiguration] = $fallback;
+
             Log::warning('Gemini homework call falling back to another model', [
                 'from' => $this->model,
                 'to' => $fallback,
                 'reason' => $unavailable->getMessage(),
             ]);
 
-            return $this->send($fallback, $parts, $generationConfig);
+            $result = $this->send($fallback, $parts, $generationConfig, $fallbackKey);
+            $this->used = $fallbackConfiguration;
+
+            return $result;
         }
     }
 
@@ -90,17 +276,38 @@ class GeminiClient
      * caller then sees the original ProviderBusyException rather than the same
      * refusal twice.
      */
-    private function fallbackModel(): ?string
+    private function fallbackModel(): ?array
     {
-        $fallback = trim((string) env('GEMINI_FALLBACK_MODEL', 'gemini-2.5-flash'));
+        // The next Gemini entry the administrator ranked for this module, with its own key.
+        try {
+            $chain = $this->pinned
+                ? []
+                : app(AiModelClientFactory::class)->chainFor('evaluation_ai', $this->subInstituteId);
+        } catch (AiConfigurationException) {
+            $chain = [];
+        }
 
-        return ($fallback === '' || $fallback === $this->model) ? null : $fallback;
+        foreach ($chain as $candidate) {
+            if ($candidate->provider === 'gemini' && $candidate->hasKey()
+                && trim((string) $candidate->model) !== '' && $candidate->model !== $this->model) {
+                return [(string) $candidate->model, (string) $candidate->apiKey, $candidate->forModule('evaluation_ai')];
+            }
+        }
+
+        // Otherwise a same-key alternative model, a model name rather than a credential.
+        // No default id: the old default, gemini-2.5-flash, is one config/ai.php remaps as
+        // retired, so "falling back" to it was a second refusal.
+        $fallback = trim((string) config('ai.provider.gemini.fallback_model', ''));
+
+        return ($fallback === '' || $fallback === $this->model)
+            ? null
+            : [$fallback, (string) $this->apiKey, $this->resolved];
     }
 
     /**
      * @return array{text: string, raw: array, model: string}
      */
-    private function send(string $model, array $parts, array $generationConfig): array
+    private function send(string $model, array $parts, array $generationConfig, string $apiKey): array
     {
 
         // `retry(1, 500)` meant one attempt: Laravel counts total tries, not extra
@@ -109,7 +316,7 @@ class GeminiClient
         // in a student's `ai_failure_reason` as a terminal "Evaluation Failed".
         // Four attempts over roughly seven seconds ride out a capacity spike,
         // which is the shape these actually have.
-        $response = Http::timeout((int) env('GEMINI_REQUEST_TIMEOUT', 90))
+        $response = Http::timeout($this->requestTimeout())
             ->retry(
                 self::MAX_ATTEMPTS,
                 self::backoff(...),
@@ -123,7 +330,7 @@ class GeminiClient
             )
             ->withHeaders([
                 'Content-Type' => 'application/json',
-                'x-goog-api-key' => $this->apiKey,
+                'x-goog-api-key' => $apiKey,
             ])
             ->post("https://generativelanguage.googleapis.com/v1beta/models/{$model}:generateContent", [
                 'contents' => [
@@ -144,7 +351,8 @@ class GeminiClient
                 'model' => $model,
                 'status' => $response->status(),
                 'attempts' => self::MAX_ATTEMPTS,
-                'body' => $response->body(),
+                // Enough to diagnose, not the whole body.
+                'body' => mb_substr($response->body(), 0, 1000),
             ]);
 
             throw $this->failure($response, $model);
@@ -154,10 +362,24 @@ class GeminiClient
         $text = $this->extractText($payload);
 
         if ($text === '') {
-            throw new \RuntimeException('Gemini returned an empty response.');
+            $blocked = trim((string) ($payload['promptFeedback']['blockReason'] ?? ''));
+
+            throw new \RuntimeException(
+                $blocked !== ''
+                    ? 'The AI provider declined to read this file (' . $blocked . ').'
+                    : 'Gemini returned an empty response.'
+            );
         }
 
-        return ['text' => $text, 'raw' => $payload, 'model' => $model];
+        return [
+            'text' => $text,
+            'raw' => $payload,
+            'model' => $model,
+            // Additive: callers that care whether the answer was cut short
+            // (the exam reader and grader, whose JSON is useless half-written)
+            // can check it. Homework callers ignore it and behave as before.
+            'finish_reason' => (string) ($payload['candidates'][0]['finishReason'] ?? ''),
+        ];
     }
 
     private function extractText(array $payload): string
@@ -213,11 +435,16 @@ class GeminiClient
                 . 'model can still grade - or add billing to the account the key belongs to.',
             $status === 429 => 'The rate limit for the configured AI key has been reached. Wait a minute '
                 . 'before evaluating again, or raise the quota on the account the key belongs to.',
-            in_array($status, [401, 403], true) => 'The AI provider rejected the configured credential. '
-                . 'GEMINI_API_KEY is missing, disabled or no longer valid - an administrator can fix it.',
+            // When the key's format already says why (a Vertex key on the Developer API), say that
+            // instead of the generic line: `failure_reason` keeps only 250 characters, and both
+            // together ran past it, cutting the sentence that names the fix mid-word.
+            in_array($status, [401, 403], true) => ($hint = $this->credentialProblem()) !== null
+                ? 'The AI provider rejected the saved Gemini key. ' . $hint
+                : 'The AI provider rejected the configured credential. '
+                    . 'The saved Gemini key is missing, disabled or no longer valid - an administrator can fix it in AI Providers.',
             $status === 404 => 'The AI provider does not recognise the model it was asked for ('
-                . $model . '). It may have been retired - check GEMINI_MODEL, and the retired-id remap '
-                . 'in config/ai.php that may be rewriting it.',
+                . $model . '). It may have been retired - check the model saved for Homework & Assignment Evaluation '
+                . 'in AI Providers, and the retired-id remap in config/ai.php that may be rewriting it.',
             $status === 400 => 'The AI provider rejected the request as malformed, which is a fault in this '
                 . 'platform rather than in the submitted work.',
             default => sprintf('The AI provider returned %d.', $status),
@@ -235,6 +462,17 @@ class GeminiClient
         // is not, because the model this would move to shares it.
         if ($status === 429 && $this->isPerModelQuota($response->json())) {
             return new ModelQuotaExhaustedException($message);
+        }
+
+        // Still a RuntimeException to every existing caller; the type only
+        // lets a queued job tell "wait a minute" from "will never work".
+        if ($status === 429) {
+            return new RateLimitedException($message);
+        }
+
+        // A key the provider refuses will be refused for every sheet until it is replaced.
+        if (in_array($status, [401, 403], true)) {
+            return new ProviderConfigurationException($message);
         }
 
         return new \RuntimeException($message);

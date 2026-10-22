@@ -259,6 +259,85 @@ class IntentClassifier
             ],
             'slots' => [],
         ],
+        /*
+        | Fee payment reminders: an ACTION, not a question about fees.
+        |
+        | `fees_query` also lists "reminder" and "send a fee reminder" among its phrases, so
+        | before this key existed "send reminders to the defaulters" was answered by reading
+        | out the list of defaulters — which looked like a reminder having been sent and was
+        | not. Every sentence that asks for something to be SENT, with a fee noun beside it,
+        | belongs here, where the answer is a preview that waits for a person's approval.
+        |
+        | Note what is NOT matched: "send a notification to parents about the holiday" names
+        | no fee noun and is the Communication module's, and a bare "remind me" is not about
+        | fees at all.
+        */
+        'fees_send_reminders' => [
+            'label' => 'Send fee payment reminders',
+            'description' => 'Previews, then on approval emails a payment reminder with a deadline to students who owe fees.',
+            'anchors' => ['fee', 'fees', 'outstanding', 'defaulter', 'defaulters', 'owe', 'owing', 'dues', 'reminder', 'reminders'],
+            // Signals name the thing, never just the verb: "notify" and "remind" on their
+            // own score nothing here, because "notify parents about the holiday" and "remind
+            // me to review attendance" are not about fees. The patterns below do the work,
+            // and each of them requires a fee noun.
+            'signals' => [
+                'send a fee reminder' => 5.0, 'send fee reminders' => 5.0, 'fee reminder' => 3.0, 'fee reminders' => 3.0,
+                'payment reminder' => 3.0, 'payment reminders' => 3.0, 'pay by' => 2.0, 'pending fees' => 1.0,
+            ],
+            'patterns' => [
+                // A sending verb, then a fee noun a few words on.
+                '/\b(send|email|mail|notify|remind|alert|message|text)\b.{0,60}\b(fees?|outstanding|owe|owes|owing|dues?|defaulters?|arrears|unpaid)\b/i',
+                // The same, with the order reversed: "defaulters ... send them a reminder".
+                '/\b(fees?|outstanding|dues?|defaulters?|arrears|unpaid)\b.{0,60}\b(send|email|mail|notify|remind|alert)\b/i',
+                '/\b(send|give)\b.{0,15}\b(a\s+)?(fee|payment)\s+reminders?\b/i',
+                // "Prepare a WhatsApp fee reminder for this student's parent", "draft an SMS fee reminder".
+                '/\b(prepare|draft|compose|create|write|set up)\b.{0,30}\b(fee|payment)\s+reminders?\b/i',
+                '/\bwhats\s?app\b.{0,40}\b(fee|payment)\s+reminders?\b/i',
+                '/\bremind\b.{0,50}\b(to\s+pay|pay|fees?|dues?)\b/i',
+                // A notifying verb and a fee noun anywhere in the sentence, in either order:
+                // "notify students whose fees are outstanding", "email the defaulters about ...".
+                '/^(?=.*\b(fees?|outstanding|dues?|defaulters?|arrears|unpaid|owe|owes|owing)\b).*\b(notify|remind|email|mail|alert)\b/i',
+                '/^(?=.*\b(fees?|outstanding|dues?|defaulters?|arrears|unpaid|owe|owes|owing)\b).*\bsend\b.*\b(reminders?|notifications?|notices?|messages?|emails?|sms|texts?)\b/i',
+                // "pending fees" is also what the read intent weighs most, so a request to notify about
+                // them needs its own say to be heard as the action it is. Both still require the verb.
+                '/^(?=.*\b(pending|outstanding|unpaid|overdue|due)\b)(?=.*\b(fees?|dues?|payments?)\b).*\b(notify|remind|email|mail|alert)\b/i',
+                '/\b(notify|remind|email|mail|alert)\b.{0,40}\b(students?|parents?|guardians?|families|defaulters?)\b.{0,60}\b(fees?|dues?|outstanding|unpaid|owe|owes|owing|pay)\b/i',
+            ],
+            'slots' => [],
+        ],
+
+        /*
+        | Whether those reminders went. A question about a record of past actions, answered
+        | from the ledger the sending writes to — never from the list of defaulters.
+        |
+        | It needs the word "reminder" (or a "fee" notification), so "did the notifications go
+        | out?" on the Communication screen stays Communication's question.
+        */
+        'fees_reminder_status' => [
+            'label' => 'Fee reminder status',
+            'description' => 'Shows which fee reminders were sent or failed, from the record of past sends.',
+            'anchors' => ['reminder', 'reminders'],
+            'signals' => [
+                'reminder status' => 7.0, 'reminders status' => 7.0, 'reminder history' => 7.0,
+                'history of fee reminders' => 7.0, 'fee reminder status' => 7.5, 'fee notification status' => 6.0,
+                'reminders sent' => 5.0, 'reminders failed' => 5.5, 'were the reminders' => 5.5,
+                'did the reminders' => 5.5, 'were the fee reminders' => 6.0, 'did the fee reminders' => 6.0,
+            ],
+            'patterns' => [
+                '/\b(status|history|log|record)\b.{0,40}\b(fee\s+)?reminders?\b/i',
+                '/\b(fee\s+)?reminders?\b.{0,30}\b(status|history|log)\b/i',
+                '/\b(did|were|have|has|was)\b.{0,40}\breminders?\b.{0,40}\b(sent|send|go|went|deliver\w*|reach\w*|fail\w*)\b/i',
+                '/\b(which|what|how many)\b.{0,30}\breminders?\b.{0,30}\b(sent|failed|bounced)\b/i',
+                // "Was the SMS delivered?", "Did the message reach them?", "Has the reminder been received?"
+                // The Fees planner takes it only on the Fees module, so on any other screen it is left alone.
+                '/\b(was|were|is|are|did|has|have)\b.{0,30}\b(sms|whats\s?app|text|e-?mail|message|reminder)s?\b.{0,30}\b(deliver\w*|received|reach\w*|arriv\w*|read|seen)\b/i',
+                '/\b(delivery|delivered)\b.{0,25}\b(status|report|confirmation|of the (sms|reminder|message))\b/i',
+                '/\b(report|summary|list)\b.{0,30}\b(fee\s+)?reminders?\b/i',
+                '/\bstudents?\W{0,2}s?\s+(sms|fee|text)\s+(notifications?|messages?|reminders?)\b.{0,25}\b(failed|sent|bounced|went)\b/i',
+                '/\b(which|what|how many)\b.{0,40}\b(sms|text)\s+(notifications?|messages?)\b.{0,25}\b(failed|sent|bounced)\b/i',
+            ],
+            'slots' => [],
+        ],
         'fees_query' => [
             'label' => 'Answer a fee query',
             'description' => 'Recognises fees, pending payments, defaulters, fee collection, reminders, and fee summary questions.',
@@ -498,6 +577,83 @@ class IntentClassifier
             'anchors' => [],
             'signals' => [],
             'patterns' => [],
+            'slots' => [],
+        ],
+
+        /*
+        | A message to parents by SMS or WhatsApp. Never about fees: a fee notice has its own flow, with its
+        | own amounts and deadline, so every pattern here refuses a sentence that carries a fee word ("due" alone is not one: "closed due to rain") and
+        | leaves it to `fees_send_reminders`. The planner also declines this intent on any module that does
+        | not bind `communication.send_parent_message`, so a stray match elsewhere answers nothing and
+        | sends nothing.
+        */
+        'parent_message_send' => [
+            'label' => 'Message parents by SMS or WhatsApp',
+            'description' => 'Previews, then on approval sends an SMS or WhatsApp message to the parents of a class or a student.',
+            'anchors' => ['sms', 'whatsapp', 'parents', 'parent', 'guardians'],
+            'signals' => [
+                // Only phrases that name the parents. A bare "send an SMS" is also how a fee follow-up
+                // begins ("send an SMS to all 10 by 31 October"), so it must not score here.
+                'sms to parents' => 3.0, 'whatsapp to parents' => 3.0, 'message the parents' => 3.0,
+                'notify the parents' => 3.0, 'notify parents' => 3.0,
+            ],
+            'patterns' => [
+                '/^(?!\s*(?:was|were|did|do|does|has|have|had|is|are|how|which|what|why|who|when)\b)(?!.*\b(fees?|dues|outstanding|unpaid|arrears|defaulters?|owe[sd]?|owing)\b).*\b(sms|whats\s?app|text|message|notify|inform|tell|alert|send)\b.{0,60}\b(parents?|guardians?)\b/i',
+                '/^(?!\s*(?:was|were|did|do|does|has|have|had|is|are|how|which|what|why|who|when)\b)(?!.*\b(fees?|dues|outstanding|unpaid|arrears|defaulters?|owe[sd]?|owing)\b).*\b(parents?|guardians?)\b.{0,60}\b(sms|whats\s?app)\b/i',
+                '/^(?!\s*(?:was|were|did|do|does|has|have|had|is|are|how|which|what|why|who|when)\b)(?!.*\b(fees?|dues|outstanding|unpaid|arrears|defaulters?|owe[sd]?|owing)\b).*\b(sms|whats\s?app)\b.{0,50}\b(class|standard|grade|std)\s*\d/i',
+                // The two options by name, as the whole sentence: "Send SMS", "Send WhatsApp Message".
+                '/^\s*(please\s+)?(send|open|start)\s+(an?\s+)?(sms|whats\s?app(\s+message)?)\s*$/i',
+                // The third option: "Send SMS and WhatsApp".
+                '/^\s*(please\s+)?(send|open|start)\s+(an?\s+)?(sms\s*(and|&|\+)\s*whats\s?app(\s+message)?|whats\s?app(\s+message)?\s*(and|&|\+)\s*sms)\s*$/i',
+                // "Send SMS to Aarav Shah": a name straight after the channel. No digit and no group word, so a
+                // fee follow-up such as "send an SMS to all 10 by 31 October" is never taken.
+                '/^(?!.*\d)(?!.*\b(fees?|dues|outstanding|unpaid|arrears|defaulters?|owe[sd]?|owing)\b)\s*(please\s+)?(send|text)\s+(an?\s+)?(sms|whats\s?app(\s+message)?)\s+to\s+(?!(all|them|him|her|these|those|everyone|the|class|parents?|guardians?|each)\b)[a-z]+/i',
+            ],
+            'slots' => [],
+        ],
+
+        /*
+        | Whether the SMS / WhatsApp messages sent to parents went. Needs a channel or "parent message" so it never
+        | takes a fee-reminder question (those say "reminder" and have their own status intent) or a Communication
+        | report question that names no send. The planner takes it only where `communication.parent_message_history`
+        | is bound.
+        */
+        'parent_message_status' => [
+            'label' => 'Parent message status',
+            'description' => 'Shows which SMS or WhatsApp messages to parents were sent, failed or delivered, from the saved record.',
+            'anchors' => ['sms', 'whatsapp', 'message', 'messages'],
+            'signals' => [
+                'message status' => 4.0, 'messages status' => 4.0, 'sms status' => 4.5, 'whatsapp status' => 4.5,
+                'parent message status' => 6.0,
+            ],
+            'patterns' => [
+                '/^(?!.*\breminders?\b)(?!.*\b(fees?|dues|outstanding)\b).*\b(status|history|log|record)\b.{0,25}\b(sms|whats\s?app|parent)\s*(messages?|texts?)?\b/i',
+                '/^(?!.*\breminders?\b)(?!.*\b(fees?|dues|outstanding)\b).*\b(sms|whats\s?app)\b.{0,25}\b(status|history)\b/i',
+                '/^(?!.*\breminders?\b)(?!.*\b(fees?|dues|outstanding)\b).*\b(was|were|is|are|did|has|have)\b.{0,30}\b(the\s+)?(sms|whats\s?app|text|message)s?\b.{0,30}\b(sent|deliver\w*|received|reach\w*|read|seen|fail\w*)\b/i',
+                '/^(?!.*\breminders?\b)(?!.*\b(fees?|dues|outstanding)\b)\s*(show|list|view)\b.{0,15}\b(message|sms|whats\s?app)\s+(status|history)\b/i',
+            ],
+            'slots' => [],
+        ],
+
+        /*
+        | "Check whether the WhatsApp configuration and template are valid", "is SMS set up properly", "why are the messages not arriving".
+        | Asked of the providers; the planner takes it only where `communication.channel_health` is bound.
+        */
+        'channel_health' => [
+            'label' => 'Check messaging channels',
+            'description' => 'Checks whether SMS and WhatsApp are configured and able to reach parents, asking the providers themselves.',
+            'anchors' => ['sms', 'whatsapp'],
+            'signals' => [
+                'whatsapp configuration' => 5.0, 'sms configuration' => 5.0, 'whatsapp template valid' => 5.0,
+                'not arriving' => 4.0, 'did not arrive' => 4.0, 'didnt arrive' => 4.0, "didn't arrive" => 7.0, 'not arrive' => 4.0,
+                'sms arrive' => 3.0, 'whatsapp arrive' => 3.0, 'message arrive' => 3.0,
+            ],
+            'patterns' => [
+                '/\b(check|verify|validate|test|diagnose|inspect)\b.{0,50}\b(whats\s?app|sms|messaging|channels?)\b.{0,50}\b(config\w*|set\s?up|template|credentials?|provider|gateway|valid|working|health|status)\b/i',
+                '/\b(is|are)\b.{0,20}\b(whats\s?app|sms)\b.{0,30}\b(config\w*|set\s?up|working|valid|connected)\b/i',
+                '/\bwhy\b.{0,30}\b(sms|whats\s?app|messages?)\b.{0,30}\b(not|never|n\x27t|didn\x27t|didnt|haven\x27t|havent)\b.{0,20}\b(arriv\w*|deliver\w*|reach\w*|receiv\w*|work\w*)\b/i',
+                '/\b(sms|whats\s?app|messages?)\b.{0,30}\b(not|never|n\x27t|didn\x27t|didnt|haven\x27t|havent)\s+(arriv\w*|deliver\w*|reach\w*|receiv\w*)\b/i',
+            ],
             'slots' => [],
         ],
 

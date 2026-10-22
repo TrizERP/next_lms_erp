@@ -168,6 +168,10 @@ class AnswerKeyService
             $kind = $correctLetters !== [] ? self::KIND_OBJECTIVE : self::KIND_SUBJECTIVE;
             $kind === self::KIND_OBJECTIVE ? $objective++ : $subjective++;
 
+            // A generated written question keeps its key as a JSON document; read
+            // it as one so the per-mark criteria reach the grader as a rubric.
+            $rubric = QuestionRubric::parse((string) ($row->answer ?? ''));
+
             $questions[] = [
                 'question_no' => $questionNo,
                 'question_id' => (int) $row->id,
@@ -178,7 +182,9 @@ class AnswerKeyService
                 'multiple_answer' => (int) ($row->multiple_answer ?? 0) === 1,
                 'options' => $built,
                 'correct_letters' => $correctLetters,
-                'model_answer' => $this->plainText((string) ($row->answer ?? '')),
+                'model_answer' => $rubric['model_answer'],
+                // Only present when the key really is a structured rubric.
+                'rubric' => $rubric['structured'] ? $rubric : null,
             ];
         }
 
@@ -220,10 +226,6 @@ class AnswerKeyService
     /** Question titles are stored as HTML by the rich-text authoring screens. */
     private function plainText(string $value): string
     {
-        $value = preg_replace('/<br\s*\/?>/i', ' ', $value) ?? $value;
-        $value = strip_tags($value);
-        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-
-        return trim(preg_replace('/\s+/u', ' ', $value) ?? $value);
+        return QuestionRubric::plainText($value);
     }
 }

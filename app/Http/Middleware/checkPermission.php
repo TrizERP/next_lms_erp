@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -37,28 +38,38 @@ class checkPermission
             
             $currentRouteName = $request->route()->getName();
             // 02-01-2025 check menu_id by url
-            $menu_id = DB::table('tblmenumaster')->where('status',1)->where('link',$currentRouteName)->value('id');
+            $menu_id = Cache::remember('perm_menu_id:'.$currentRouteName, 300, function () use ($currentRouteName) {
+                return DB::table('tblmenumaster')->where('status',1)->where('link',$currentRouteName)->value('id');
+            });
             // echo "<pre>";print_r($currentRouteName);exit;
             // 02-01-2025 end
 
             if($menu_id!=''){
               
-                $individual = DB::table('tblindividual_rights')->where('menu_id', $menu_id)
-                    ->where('profile_id', $userProfileId)
-                    ->where('user_id', $user_id)
-                    ->where('sub_institute_id', $sub_institute_id)
-                    ->first();
+                // Two lookups on every request. Rights are saved from many controllers, so a
+                // short TTL (rather than invalidation) bounds how stale a change can look.
+                $permissions = Cache::remember(
+                    'perm_rights:'.$menu_id.':'.$userProfileId.':'.$user_id.':'.$sub_institute_id,
+                    60,
+                    function () use ($menu_id, $userProfileId, $user_id, $sub_institute_id) {
+                        $individual = DB::table('tblindividual_rights')->where('menu_id', $menu_id)
+                            ->where('profile_id', $userProfileId)
+                            ->where('user_id', $user_id)
+                            ->where('sub_institute_id', $sub_institute_id)
+                            ->first();
 
-                $group = DB::table('tblgroupwise_rights')->where('menu_id', $menu_id)
-                    ->where('profile_id', $userProfileId)
-                    ->where('sub_institute_id', $sub_institute_id)
-                    ->first();
+                        if (!empty($individual)) {
+                            return $individual;
+                        }
 
-                if (!empty($individual)) {
-                    $permissions = $individual;
-                } else {
-                    $permissions = $group;
-                }
+                        // false (not null) so "no rights row" is cached too; Cache::remember
+                        // would otherwise re-query on every request for a null result.
+                        return DB::table('tblgroupwise_rights')->where('menu_id', $menu_id)
+                            ->where('profile_id', $userProfileId)
+                            ->where('sub_institute_id', $sub_institute_id)
+                            ->first() ?: false;
+                    }
+                ) ?: null;
 
                 $can_view = $permissions->can_view ?? 0;
                 $can_add = $permissions->can_add ?? 0;

@@ -2,6 +2,7 @@
 
 namespace App\Domain\AI\Lifecycle\Modules;
 
+use App\Domain\AI\Lifecycle\Flows\ExamQuestionHelpFlow;
 use App\Domain\AI\Workspace\RouteMatcher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -59,6 +60,13 @@ class ModuleResolver
      */
     private const ESCALATION_FLOOR = 4.0;
 
+    /**
+     * How loudly the words must name another strict page before a question is sent there.
+     * One genuine domain word ("absent", "timetable", "hostel") reaches it; an incidental word
+     * does not.
+     */
+    private const OTHER_PAGE_FLOOR = 3.0;
+
     public function __construct(
         private readonly ModuleRegistry $registry,
         private readonly RouteMatcher $routes,
@@ -93,6 +101,13 @@ class ModuleResolver
         // selection would have been answered from memory either way, but under the wrong
         // module, bound to the wrong detail tool and offering the wrong hand-off.
         $pointsBack = ($options['points_at_previous_answer'] ?? false) === true;
+
+        // 0. A question button on the exam screen. It pins the paper and the question the student is on,
+        // and the route confirms they are on that paper's attempt screen, so the words ("explain it in
+        // simpler words") cannot be allowed to stand the turn down onto a module they happen to resemble.
+        if (isset($modules['exam_assessment']) && ExamQuestionHelpFlow::isPinned($options)) {
+            return $this->answer($modules['exam_assessment'], 'exam_question_pinned', $scores);
+        }
 
         // 1. Named outright — unless the words plainly belong somewhere else.
         if (is_string($explicit) && isset($modules[$explicit])) {
@@ -136,6 +151,72 @@ class ModuleResolver
             $scores === [] ? 'no_module_matched' : 'ambiguous_between_modules',
             $scores
         );
+    }
+
+    /**
+     * Whether a question belongs to a different module's page than the one it was asked on.
+     *
+     * Only the pages in `ai.lifecycle.page_scoped_modules` are strict, and only another page from
+     * that same list can be the place a question is sent to. That keeps a generic noun such as
+     * "students" from bouncing a question off the Attendance page: it names no page of its own.
+     *
+     * Two ways a question qualifies, both decided by the words and never by the thread:
+     *
+     *   - the older stand-down rule already moved it (`question_overrode_*`): the words name another
+     *     domain outright; or
+     *   - the page's own vocabulary has no claim on it and another strict page's clearly does — the
+     *     case the stand-down rule's high floor misses, such as "how many students are absent today?"
+     *     asked on the Fees page, where "absent" is the only attendance word.
+     *
+     * A question that names no module — general knowledge, "show me their names" — scores for none,
+     * so it never reaches here.
+     *
+     * @param  array{module:ModuleCapability, source:string, considered?:array<string,float>, stood_down?:?string}  $resolution
+     * @return array{page:ModuleCapability, asked:ModuleCapability}|null
+     */
+    public function outsideThisPage(array $resolution, ?int $subInstituteId = null): ?array
+    {
+        $strict = (array) config('ai.lifecycle.page_scoped_modules', []);
+        $source = (string) ($resolution['source'] ?? '');
+        $scores = (array) ($resolution['considered'] ?? []);
+        $module = $resolution['module'];
+
+        if (str_starts_with($source, 'question_overrode_')) {
+            $pageKey = $resolution['stood_down'] ?? null;
+            $askedKey = $module->key;
+        } elseif (in_array($source, ['declared_by_caller', 'page_route'], true)) {
+            $pageKey = $module->key;
+            $askedKey = null;
+
+            // The best-scoring OTHER strict page, if it clearly beats this one.
+            foreach ($scores as $key => $score) {
+                if ($key === $pageKey || ! in_array($key, $strict, true)) {
+                    continue;
+                }
+
+                if ($score >= self::OTHER_PAGE_FLOOR && ($score - (float) ($scores[$pageKey] ?? 0.0)) >= self::MARGIN) {
+                    $askedKey = $key;
+                }
+
+                break;
+            }
+        } else {
+            return null;
+        }
+
+        if (! is_string($pageKey) || ! is_string($askedKey) || $askedKey === $pageKey) {
+            return null;
+        }
+
+        if (! in_array($pageKey, $strict, true) || ! in_array($askedKey, $strict, true)) {
+            return null;
+        }
+
+        $modules = $this->registry->all($subInstituteId);
+
+        return isset($modules[$pageKey], $modules[$askedKey])
+            ? ['page' => $modules[$pageKey], 'asked' => $modules[$askedKey]]
+            : null;
     }
 
     // ------------------------------------------------------- context override
@@ -295,24 +376,47 @@ class ModuleResolver
      */
     private function fromRoute(string $route, array $modules): ?ModuleCapability
     {
-        if (! Schema::hasTable('ai_modules')) {
-            return null;
-        }
-
         $normalised = $this->routes->normalize($route);
         $best = null;
         $bestSpecificity = -1;
 
-        $rows = DB::table('ai_modules')
-            ->select('module_key', 'route_patterns', 'match_priority')
-            ->orderBy('match_priority')
-            ->get();
+        $rows = Schema::hasTable('ai_modules')
+            ? DB::table('ai_modules')
+                ->select('module_key', 'route_patterns', 'match_priority')
+                ->orderBy('match_priority')
+                ->get()
+            : collect();
+
+        // Modules bound in config with their own route patterns and no `ai_modules` row.
+        // They take part in the same specificity contest; a real row for the same key
+        // is never shadowed by its config twin.
+        $known = $rows->pluck('module_key')->all();
+
+        foreach ((array) config('ai.lifecycle.modules', []) as $key => $binding) {
+            $patterns = is_array($binding) ? (array) ($binding['route_patterns'] ?? []) : [];
+
+            if ($patterns !== [] && ! in_array($key, $known, true)) {
+                $rows->push((object) [
+                    'module_key' => (string) $key,
+                    'route_patterns' => json_encode(array_values($patterns)),
+                    'match_priority' => 80,
+                ]);
+            }
+        }
 
         foreach ($rows as $row) {
             $patterns = json_decode((string) $row->route_patterns, true);
 
             if (! is_array($patterns)) {
                 continue;
+            }
+
+            // A real row's patterns are widened, never replaced, by the ones config declares for
+            // the same key — the row predates screens such as /lms/homework, and the row cannot be
+            // edited without a migration. Only pages the row did not already claim are added.
+            if (in_array($row->module_key, $known, true)) {
+                $extra = (array) (config('ai.lifecycle.modules.' . $row->module_key . '.route_patterns') ?? []);
+                $patterns = array_values(array_unique(array_merge($patterns, $extra)));
             }
 
             $match = $this->routes->best($patterns, $normalised);

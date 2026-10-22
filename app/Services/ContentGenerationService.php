@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
-use Anthropic\Client as AnthropicClient;
-use Anthropic\Core\Exceptions\APIStatusException;
-use Anthropic\Lib\Streaming\MessageAccumulator;
+use App\Domain\AI\Configuration\AiConfigurationException;
+use App\Domain\AI\Configuration\AiModelClientFactory;
+use App\Domain\AI\Support\AiProviderException;
+use App\Domain\AI\Support\FallbackChainModelClient;
 use App\Models\lms\contentModel;
 use App\Services\Content\RendersContentPresentation;
 use App\Services\Content\RendersGeneratedContent;
@@ -14,10 +15,13 @@ use App\Services\StudyDeck\ClaudeCliCompleter;
 use App\Services\StudyDeck\Contracts\Completer;
 use App\Services\StudyDeck\Documents\CompactRevisionPdfRenderer;
 use App\Services\StudyDeck\Documents\DocumentKind;
+use App\Services\StudyDeck\Documents\DocumentPictures;
 use App\Services\StudyDeck\Documents\PurposePdfRenderer;
 use App\Services\StudyDeck\Documents\StudyDocumentPdfRenderer;
 use App\Services\StudyDeck\Documents\StudyDocumentService;
 use App\Services\StudyDeck\StudyDeckImages;
+use App\Services\StudyDeck\PdfOutline;
+use App\Services\StudyDeck\StudyDeckGuidePdfRenderer;
 use App\Services\StudyDeck\StudyDeckPdfRenderer;
 use App\Services\StudyDeck\StudyDeckPublisher;
 use App\Services\StudyDeck\StudyDeckQuestions;
@@ -120,37 +124,39 @@ class ContentGenerationService
         return in_array($chapterId, $allowed, true);
     }
 
-    /**
-     * Key precedence matches every other provider in this app (and the promise
-     * in the .env comment): the rotating ai_api_keys table first, .env second.
-     */
-    protected function resolveApiKey(): string
+    /** The school whose AI configuration (providers, keys, fallback order) the model calls use. */
+    protected ?int $aiTenant = null;
+
+    private ?FallbackChainModelClient $aiClient = null;
+
+    /** Point the model calls at one school's AI configuration; null means platform configuration only. */
+    protected function useAiTenant(int|string|null $subInstituteId): void
     {
-        $apiType = config('claude.api_type', 'ANTHROPIC_API_KEY');
+        $tenant = is_numeric($subInstituteId) && (int) $subInstituteId > 0 ? (int) $subInstituteId : null;
+        if ($tenant !== $this->aiTenant) {
+            $this->aiTenant = $tenant;
+            $this->aiClient = null;
+        }
+    }
 
-        // getAIKey() is declared inside the App\Helpers namespace, so an
-        // unqualified call from here does not resolve to it - the same reason
-        // QuestionGenerationService guards the call and queries the table
-        // directly when the guard fails. Both names are checked so this keeps
-        // working if the helper is ever moved to the global namespace.
-        $row = null;
-        if (function_exists('getAIKey')) {
-            $row = getAIKey($apiType, 1);
-        } elseif (function_exists('App\Helpers\getAIKey')) {
-            $row = \App\Helpers\getAIKey($apiType, 1);
-        } else {
-            $row = DB::table('ai_api_keys')
-                ->where('api_type', $apiType)
-                ->where('status', 1)
-                ->first();
+    /**
+     * Provider, model, key and fallback order all come from the central AI configuration
+     * for the 'content_generation' module - never from .env or the ai_api_keys table directly.
+     * Using the client with nothing configured throws AiConfigurationException.
+     */
+    protected function aiClient(): FallbackChainModelClient
+    {
+        return $this->aiClient ??= app(AiModelClientFactory::class)->for('content_generation', $this->aiTenant);
+    }
+
+    /** The model that really answered the last call (recorded in the stored row and the response). */
+    protected function modelUsed(): string
+    {
+        if (config('claude.executor', 'api') === 'cli') {
+            return 'claude-cli (dev)';
         }
 
-        // getAIKey() returns the string '-' rather than null when it misses.
-        if (is_object($row) && !empty($row->api_key) && $row->api_key !== '-') {
-            return trim((string) $row->api_key);
-        }
-
-        return trim((string) config('claude.api_key', ''));
+        return (string) ($this->aiClient?->lastUsed()?->model ?? '');
     }
 
     /**
@@ -171,14 +177,7 @@ class ContentGenerationService
         // deck at effort=high can outlast that.
         @set_time_limit((int) config('claude.timeout_seconds', 600) + 120);
 
-        $apiKey = $this->resolveApiKey();
-        if ($apiKey === '') {
-            return $this->fail(
-                'Claude API key is not configured. Set ANTHROPIC_API_KEY in the backend .env file, '
-                . 'or add an ai_api_keys row with api_type=' . config('claude.api_type', 'ANTHROPIC_API_KEY') . ' and status=1.',
-                500
-            );
-        }
+        $this->useAiTenant($input['sub_institute_id'] ?? null);
 
         $prompt = trim((string) ($input['prompt'] ?? ''));
         if ($prompt === '') {
@@ -186,11 +185,11 @@ class ContentGenerationService
         }
 
         $contentType = (string) $input['content_type'];
-        $model = (string) config('claude.model', 'claude-opus-5');
-
         try {
-            $generated = $this->callClaude($apiKey, $model, $prompt);
-        } catch (APIStatusException $e) {
+            $generated = $this->callClaude($prompt);
+        } catch (AiConfigurationException $e) {
+            return $this->fail($e->getMessage(), 500);
+        } catch (AiProviderException $e) {
             Log::error('Claude content generation failed', [
                 'chapter_id' => $input['chapter']->id ?? null,
                 'content_type' => $contentType,
@@ -215,7 +214,7 @@ class ContentGenerationService
             return $this->fail('Claude returned an empty document' . $suffix . '.', 502);
         }
 
-        return $this->persist($input, $generated, $model);
+        return $this->persist($input, $generated, $this->modelUsed());
     }
 
     /**
@@ -267,14 +266,8 @@ class ContentGenerationService
             if (config('claude.executor', 'api') === 'cli') {
                 $completer = new ClaudeCliCompleter();
             } else {
-                $apiKey = $this->resolveApiKey();
-                if ($apiKey === '') {
-                    return $this->fail('Claude API key is not configured. Set ANTHROPIC_API_KEY or an ai_api_keys row.', 500);
-                }
-                $model = (string) config('claude.model', 'claude-opus-5');
-                $completer = new ClaudeApiCompleter(
-                    fn (string $system, string $prompt, int $max): array => $this->callClaude($apiKey, $model, $prompt, $system, $max)
-                );
+                $this->useAiTenant($input['sub_institute_id'] ?? null);
+                $completer = $this->studyCompleter();
             }
         }
 
@@ -283,7 +276,9 @@ class ContentGenerationService
             $tenant = (int) ($input['sub_institute_id'] ?? 1);
             $result = StudyDeckService::make($completer, StudyImageStores::database($tenant, (int) $input['chapter']->id))
                 ->generate((int) $input['chapter']->id, $tenant);
-        } catch (APIStatusException $e) {
+        } catch (AiConfigurationException $e) {
+            return $this->fail($e->getMessage(), 500);
+        } catch (AiProviderException $e) {
             return $this->fail($this->readableApiError($e), 502);
         } catch (Throwable $e) {
             Log::error('Study deck generation failed', ['chapter_id' => $input['chapter']->id ?? null, 'error' => $e->getMessage()]);
@@ -305,13 +300,13 @@ class ContentGenerationService
         }
 
         // The pictures were stored while the deck was generated; publishing checks they are really there.
-        return $this->publishStudyDeck($input, $result['deck'], $result['html'], null, false, (string) config('claude.model', 'claude-opus-5'));
+        return $this->publishStudyDeck($input, $result['deck'], $result['html'], null, false, $this->modelUsed());
     }
 
     /** Is this content_master file name a study deck? (Its name is its identity: no extra column.) */
     public static function isStudyDeckFilename(?string $filename): bool
     {
-        return str_starts_with((string) $filename, 'study_deck_') && str_ends_with((string) $filename, '.pptx');
+        return (str_starts_with((string) $filename, 'study_deck_') || str_starts_with((string) $filename, \App\Services\StudyDeck\Story\StoryTemplate::FILE_PREFIX)) && str_ends_with((string) $filename, '.pptx');
     }
 
     /**
@@ -507,7 +502,13 @@ class ContentGenerationService
         }
 
         $input['filename'] = $filename;
-        $input['title'] = mb_substr((string) $input['chapter_name'] . ' Study Deck', 0, 250);
+        // A story lesson is filed as an Interactive item under its own name; it is never a Classroom Presentation, so storing it
+        // cannot hide, replace or alter the chapter's presentation.
+        $isStory = \App\Services\StudyDeck\Story\StoryTemplate::isStory($prepared['deck']);
+        if ($isStory) {
+            $input['content_type'] = \App\Services\StudyDeck\Story\StoryTemplate::CATEGORY;
+        }
+        $input['title'] = mb_substr((string) $input['chapter_name'] . ($isStory ? ' Story Lesson' : ' Study Deck'), 0, 250);
         $result = $this->storeStudyDeck($input, $prepared['html'], $prepared['deck'], $authoredBy);
         if (($result['http'] ?? 0) !== 201) {
             $publisher->cleanup();
@@ -558,8 +559,11 @@ class ContentGenerationService
         $tenant = (int) ($input['sub_institute_id'] ?? 1);
         $input['tenant'] = $tenant;
         // Inside the transaction that inserts the row: the deck and the record of which pictures it uses land together or not at all.
-        $input['in_transaction'] = function (int $id) use ($chapterId, $tenant, $deck): void {
-            $this->hidePreviousStudyDecks($chapterId, $tenant, $id);
+        // Only decks of the SAME kind are replaced: a story lesson hides older story lessons, a presentation hides older presentations.
+        // Worked out here, because the closure below cannot see $input.
+        $kindPrefix = $this->studyDeckLikePrefix((string) $input['filename']);
+        $input['in_transaction'] = function (int $id) use ($chapterId, $tenant, $deck, $kindPrefix): void {
+            $this->hidePreviousStudyDecks($chapterId, $tenant, $id, $kindPrefix);
             $this->linkStudyDeckImages($id, $deck, $chapterId);
         };
 
@@ -599,7 +603,7 @@ class ContentGenerationService
     private function drawStudyDeckPdf(array $deck, array $options): string
     {
         // Stored pictures are read from the database and embedded in the page (never fetched over the network).
-        $renderer = new StudyDeckPdfRenderer($this->deckImageResolver, base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf'));
+        $renderer = new StudyDeckGuidePdfRenderer($this->deckImageResolver, base_path('vendor/dompdf/dompdf/lib/fonts/DejaVuSans-Bold.ttf'));
         $html = $renderer->html($deck, $this->generatedContentCss(), [
             'variant' => $options['variant'] ?? StudyDeckPdfRenderer::REVISION,
             'questions' => $this->loadStudyDeckQuestions(StudyDeckQuestions::idsIn($deck)),
@@ -610,7 +614,48 @@ class ContentGenerationService
         $title = StudyDeckPdfRenderer::runningTitle($deck);
         $subject = StudyDeckPdfRenderer::runningSubject($deck);
 
-        return $this->renderHtmlToPdf($html, $this->studyPageFurniture($title, $subject, 'Study Deck'));
+        // The page furniture (running header, footer with a link back to the contents) and the document's own details, then
+        // the places the HTML named (an element's `id` is a destination), read back so they can be listed as bookmarks.
+        $furniture = $this->studyPageFurniture($title, $subject, 'Study Deck', false, 'contents');
+        $destinations = [];
+        $bytes = $this->renderHtmlToPdf($html, function ($dompdf) use ($furniture, &$destinations, $title, $subject, $deck): void {
+            $dompdf->addInfo('Title', $title . ' - study guide');
+            $dompdf->addInfo('Subject', $subject);
+            $dompdf->addInfo('Author', 'EduERP Study Deck');
+            $dompdf->addInfo('Keywords', implode(', ', array_slice(array_values(array_map(fn ($c) => (string) ($c['name'] ?? ''), $deck['concepts'] ?? [])), 0, 40)));
+            $furniture($dompdf);
+            $cpdf = method_exists($dompdf->getCanvas(), 'get_cpdf') ? $dompdf->getCanvas()->get_cpdf() : null;
+            $destinations = $cpdf ? (array) $cpdf->destinations : [];
+        });
+
+        return PdfOutline::add($bytes, $this->studyDeckBookmarks($renderer->outline($deck), $destinations));
+    }
+
+    /**
+     * The renderer's bookmark tree with each anchor turned into the destination object Dompdf wrote for it; a bookmark whose
+     * anchor was not written (nothing is drawn there) is left out.
+     *
+     * @param array<int,array{title:string,anchor:string,children:array<int,array{title:string,anchor:string}>}> $outline
+     * @param array<string,int> $destinations label => object number
+     * @return array<int,array{title:string,dest:int,children:array<int,array{title:string,dest:int}>}>
+     */
+    protected function studyDeckBookmarks(array $outline, array $destinations): array
+    {
+        $out = [];
+        foreach ($outline as $node) {
+            if (!isset($destinations[$node['anchor']])) {
+                continue;
+            }
+            $children = [];
+            foreach ($node['children'] ?? [] as $child) {
+                if (isset($destinations[$child['anchor']])) {
+                    $children[] = ['title' => $child['title'], 'dest' => (int) $destinations[$child['anchor']]];
+                }
+            }
+            $out[] = ['title' => $node['title'], 'dest' => (int) $destinations[$node['anchor']], 'children' => $children];
+        }
+
+        return $out;
     }
 
     /**
@@ -621,11 +666,11 @@ class ContentGenerationService
      *        the footer and its page number like the rest, and no running header (the title band is its header)
      * @return callable(\Dompdf\Dompdf):void
      */
-    protected function studyPageFurniture(string $title, string $subject, string $footerLabel, bool $firstPageHasContent = false): callable
+    protected function studyPageFurniture(string $title, string $subject, string $footerLabel, bool $firstPageHasContent = false, ?string $contentsAnchor = null): callable
     {
-        return function ($dompdf) use ($title, $subject, $footerLabel, $firstPageHasContent): void {
+        return function ($dompdf) use ($title, $subject, $footerLabel, $firstPageHasContent, $contentsAnchor): void {
             // A running header and footer with the page number, on every page but the cover.
-            $dompdf->getCanvas()->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) use ($title, $subject, $footerLabel, $firstPageHasContent): void {
+            $dompdf->getCanvas()->page_script(function ($pageNumber, $pageCount, $canvas, $fontMetrics) use ($title, $subject, $footerLabel, $firstPageHasContent, $contentsAnchor): void {
                 if ($pageNumber === 1 && !$firstPageHasContent) {
                     return;
                 }
@@ -649,6 +694,13 @@ class ContentGenerationService
                 }
                 $canvas->line(31.5, $h - 38, $w - 31.5, $h - 38, [0.89, 0.91, 0.94], 0.8);
                 $canvas->text(31.5, $h - 28, $footerLabel, $font, 8, $grey);
+                // A way back: a link to the named place the document's contents begin at, on every page after the first.
+                if ($contentsAnchor !== null && $pageNumber > 1) {
+                    $back = 'Back to contents';
+                    $x = 31.5 + $fontMetrics->getTextWidth($footerLabel, $font, 8) + 14;
+                    $canvas->text($x, $h - 28, $back, $bold, 8, $ink);
+                    $canvas->add_link('#' . $contentsAnchor, $x, $h - 28 - 1, $fontMetrics->getTextWidth($back, $bold, 8), 10);
+                }
                 $label = 'Page ' . $pageNumber . ' of ' . $pageCount;
                 $canvas->text($w - 31.5 - $fontMetrics->getTextWidth($label, $font, 8), $h - 28, $label, $font, 8, $grey);
             });
@@ -732,16 +784,22 @@ class ContentGenerationService
     }
 
     /** Hide the other study decks of this chapter and school: the new one replaces them. */
-    protected function hidePreviousStudyDecks(int $chapterId, int $tenant, int $keepId): int
+    protected function hidePreviousStudyDecks(int $chapterId, int $tenant, int $keepId, string $like = 'study\\_deck\\_'): int
     {
         return DB::table('content_master')
             ->where('chapter_id', $chapterId)
             ->where('sub_institute_id', $tenant)
             ->where('file_type', 'pptx')
-            ->where('filename', 'like', 'study\\_deck\\_%')
+            ->where('filename', 'like', $like . '%')
             ->where('id', '<>', $keepId)
             ->where(fn ($q) => $q->whereNull('show_hide')->orWhere('show_hide', '<>', 0))
             ->update(['show_hide' => 0]);
+    }
+
+    /** The LIKE prefix of the kind of deck a file name belongs to: story lessons and presentations are kept apart. */
+    protected function studyDeckLikePrefix(string $filename): string
+    {
+        return str_starts_with($filename, \App\Services\StudyDeck\Story\StoryTemplate::FILE_PREFIX) ? 'study\\_story\\_' : 'study\\_deck\\_';
     }
 
     /** Make an older, hidden study deck the current one again (and hide the rest). */
@@ -749,7 +807,7 @@ class ContentGenerationService
     {
         return (bool) DB::transaction(function () use ($id, $chapterId, $tenant) {
             DB::table('content_master')->where('id', $id)->update(['show_hide' => 1]);
-            $this->hidePreviousStudyDecks($chapterId, $tenant, $id);
+            $this->hidePreviousStudyDecks($chapterId, $tenant, $id, $this->studyDeckLikePrefix((string) DB::table('content_master')->where('id', $id)->value('filename')));
 
             return true;
         });
@@ -849,10 +907,8 @@ class ContentGenerationService
         // waiting, the document is still written and stored (it then shows up in the list), instead of the work being lost.
         ignore_user_abort(true);
 
+        $this->useAiTenant($input['sub_institute_id'] ?? null);
         $completer ??= $this->studyCompleter();
-        if ($completer === null) {
-            return $this->fail('Claude API key is not configured. Set ANTHROPIC_API_KEY or an ai_api_keys row.', 500);
-        }
 
         $tenant = (int) ($input['sub_institute_id'] ?? 1);
         $chapterId = (int) $input['chapter']->id;
@@ -861,7 +917,9 @@ class ContentGenerationService
         try {
             $result = $this->studyDocumentService($completer, $tenant, $chapterId)
                 ->generate($kind, $chapterId, $tenant, ['concept_ids' => (array) ($input['concept_ids'] ?? [])]);
-        } catch (APIStatusException $e) {
+        } catch (AiConfigurationException $e) {
+            return $this->fail($e->getMessage(), 500);
+        } catch (AiProviderException $e) {
             return $this->fail($this->readableApiError($e), 502);
         } catch (\InvalidArgumentException $e) {
             return $this->fail($e->getMessage(), 422);
@@ -884,7 +942,7 @@ class ContentGenerationService
             ];
         }
 
-        return $this->publishStudyDocument($kind, $input, $result['document'], $result['html'], false, (string) config('claude.model', 'claude-opus-5'));
+        return $this->publishStudyDocument($kind, $input, $result['document'], $result['html'], false, $this->modelUsed());
     }
 
     /**
@@ -912,14 +970,11 @@ class ContentGenerationService
         // Two model stages with several calls each; the web server's default would end it mid-way.
         @set_time_limit((int) config('claude.timeout_seconds', 600) * 3 + 120);
 
+        $this->useAiTenant($input['sub_institute_id'] ?? null);
         $completer ??= $this->studyCompleter();
-        if ($completer === null) {
-            return $this->fail('Claude API key is not configured. Set ANTHROPIC_API_KEY or an ai_api_keys row.', 500);
-        }
 
         $tenant = (int) ($input['sub_institute_id'] ?? 1);
         $chapterId = (int) $input['chapter']->id;
-        $model = (string) config('claude.model', 'claude-opus-5');
 
         try {
             $result = BranchingScenarioService::make($completer)->generate($chapterId, $tenant, [
@@ -929,9 +984,11 @@ class ContentGenerationService
                 'length' => $input['length'] ?? 'standard',
                 'use_questions' => $input['use_questions'] ?? true,
                 'existing' => (array) ($input['existing'] ?? []),
-                'model' => config('claude.executor', 'api') === 'cli' ? 'claude-cli (dev)' : $model,
+                'model' => config('claude.executor', 'api') === 'cli' ? 'claude-cli (dev)' : $this->aiClient()->defaultModel(),
             ]);
-        } catch (APIStatusException $e) {
+        } catch (AiConfigurationException $e) {
+            return $this->fail($e->getMessage(), 500);
+        } catch (AiProviderException $e) {
             return $this->fail($this->readableApiError($e), 502);
         } catch (\InvalidArgumentException $e) {
             return $this->fail($e->getMessage(), 422);
@@ -974,21 +1031,15 @@ class ContentGenerationService
     }
 
     /**
-     * The model to ask: the dev-only CLI when `claude.executor=cli`, otherwise the Anthropic API with the key this
-     * class resolves. Null when there is no key (the CLI is never chosen implicitly).
+     * The model to ask: the dev-only CLI when `claude.executor=cli`, otherwise the school's configured
+     * 'content_generation' providers. Nothing configured surfaces as an AiConfigurationException on first use.
      */
     protected function studyCompleter(): ?Completer
     {
         if (config('claude.executor', 'api') === 'cli') {
             return new ClaudeCliCompleter();
         }
-        $apiKey = $this->resolveApiKey();
-        if ($apiKey === '') {
-            return null;
-        }
-        $model = (string) config('claude.model', 'claude-opus-5');
-
-        return new ClaudeApiCompleter(fn (string $system, string $prompt, int $max): array => $this->callClaude($apiKey, $model, $prompt, $system, $max));
+        return new ClaudeApiCompleter(fn (string $system, string $prompt, int $max): array => $this->callClaude($prompt, $system, $max));
     }
 
     /**
@@ -1010,6 +1061,137 @@ class ContentGenerationService
         $tenant = (int) ($input['sub_institute_id'] ?? 1);
 
         return $this->withStudyDeckImages($tenant, fn () => $this->publishStudyDocumentNow($kind, $input, $document, $html, $dryRun, $authoredBy));
+    }
+
+    /**
+     * The pictures the chapter's visible classroom presentation already stores, as candidates for a study document
+     * (DocumentPictures). Read-only: it reads the stored deck's structured source and nothing else.
+     *
+     * @param list<int> $exclude picture ids to leave out
+     * @return list<array{concepts:list<int>,image:array<string,mixed>}>
+     */
+    public function studyDeckPictureCandidates(int $chapterId, int $tenant, array $exclude = []): array
+    {
+        $rows = DB::table('content_master')->where('chapter_id', $chapterId)->where('sub_institute_id', $tenant)
+            ->where('content_category', 'Classroom Presentation')->where(fn ($q) => $q->whereNull('show_hide')->orWhere('show_hide', '<>', 0))
+            ->orderByDesc('id')->get(['filename']);
+        foreach ($rows as $row) {
+            if (!self::isStudyDeckFilename($row->filename)) {
+                continue;
+            }
+            $deck = json_decode((string) Storage::disk('digitalocean')->get(self::studyDeckSidecarPath($row->filename)), true);
+            if (is_array($deck)) {
+                return DocumentPictures::candidatesFromDeck($deck, $exclude);
+            }
+        }
+
+        return [];
+    }
+
+    /**
+     * Replace what a stored study document holds, in the SAME content_master row.
+     *
+     * Storing a changed document normally makes a new row (the file name carries a hash of the content) and hides the old one.
+     * This is for improving a document that is already live without changing its address: the row keeps its id, its file name,
+     * its title and its visibility; its structured source, both PDF copies and its markup (`description`) are replaced.
+     * Both PDF copies are drawn first and the old files are kept in memory, so any failure puts the old files back.
+     *
+     * @param array<string,mixed> $input chapter, chapter_name, sub_institute_id
+     * @param array<string,mixed> $document the assembled study document
+     * @return array{http:int, body:array<string,mixed>}
+     */
+    public function updateStudyDocument(DocumentKind $kind, array $input, array $document, string $html, int $contentId, bool $dryRun = false): array
+    {
+        $tenant = (int) ($input['sub_institute_id'] ?? 1);
+
+        return $this->withStudyDeckImages($tenant, fn () => $this->updateStudyDocumentNow($kind, $input, $document, $html, $contentId, $dryRun));
+    }
+
+    private function updateStudyDocumentNow(DocumentKind $kind, array $input, array $document, string $html, int $contentId, bool $dryRun): array
+    {
+        $tenant = (int) ($input['sub_institute_id'] ?? 1);
+        $chapter = $input['chapter'];
+        $name = strtolower($kind->label());
+
+        $row = DB::table('content_master')->where('id', $contentId)->first();
+        if (!$row || (int) $row->chapter_id !== (int) $chapter->id || (int) $row->sub_institute_id !== $tenant
+            || $row->content_category !== $kind->category() || DocumentKind::fromFilename($row->filename) !== $kind) {
+            return $this->fail('Content ' . $contentId . ' is not a ' . $name . ' of this chapter and school, so it was not updated.', 422);
+        }
+
+        $publisher = $this->studyDeckPublisher($tenant);
+        try {
+            $prepared = $publisher->prepare($document, $html, null, !$dryRun);
+        } catch (Throwable $e) {
+            $publisher->cleanup();
+
+            return $this->fail('The ' . $name . ' was not updated: ' . $e->getMessage(), 422);
+        }
+        if ($prepared['missing'] !== []) {
+            $publisher->cleanup();
+
+            return $this->fail('The ' . $name . ' refers to pictures that are not stored for this school: ' . implode(', ', $prepared['missing']), 422);
+        }
+
+        $doc = $prepared['deck'];
+        $sidecar = self::studyDocumentSidecarPath($row->filename);
+        $pdfPath = self::studyDocumentPdfPath($row->filename);
+        $practicePath = self::studyDocumentPracticePdfPath($row->filename);
+        $summary = ['kind' => $kind->value, 'filename' => $row->filename, 'content_id' => $contentId, 'section_count' => count($doc['sections'] ?? [])];
+
+        try {
+            $pdf = $this->renderStudyDocumentPdf($doc, ['tenant' => $tenant]);
+            $practice = $this->renderStudyDocumentPdf($doc, ['tenant' => $tenant, 'variant' => StudyDocumentPdfRenderer::STUDENT]);
+        } catch (Throwable $e) {
+            $publisher->cleanup();
+
+            return $this->fail('The ' . $name . ' was not updated: its PDF could not be made: ' . $e->getMessage(), 500);
+        }
+        foreach ([$pdf, $practice] as $bytes) {
+            if (!str_starts_with($bytes, '%PDF-')) {
+                $publisher->cleanup();
+
+                return $this->fail('The ' . $name . ' was not updated: a PDF came out empty.', 500);
+            }
+        }
+        if ($dryRun) {
+            return ['http' => 200, 'body' => ['success' => true, 'status_code' => 1, 'status' => 'would_update', 'dry_run' => true] + $summary];
+        }
+
+        $disk = Storage::disk('digitalocean');
+        $new = [$sidecar => $this->studyDeckJson($doc), $pdfPath => $pdf, $practicePath => $practice];
+        $old = [];
+        try {
+            foreach (array_keys($new) as $path) {
+                $old[$path] = $disk->exists($path) ? $disk->get($path) : null;
+            }
+            foreach ($new as $path => $bytes) {
+                $disk->put($path, $bytes, 'public');
+                if (!$disk->exists($path) || (int) $disk->size($path) !== strlen($bytes)) {
+                    throw new \RuntimeException('a file was not stored correctly: ' . $path);
+                }
+            }
+            DB::transaction(function () use ($contentId, $prepared, $doc, $chapter) {
+                DB::table('content_master')->where('id', $contentId)->update([
+                    'description' => $this->formatGeneratedPdfBody($prepared['html']),
+                ]);
+                $this->linkStudyDeckImages($contentId, $doc, (int) $chapter->id);
+            });
+        } catch (Throwable $e) {
+            // Put every file back the way it was: a half-updated document is worse than the old one.
+            foreach ($old as $path => $bytes) {
+                try {
+                    $bytes === null ? $disk->delete($path) : $disk->put($path, $bytes, 'public');
+                } catch (Throwable) {
+                    // Nothing more can be done for this file; the error below says what happened.
+                }
+            }
+            Log::error('Study document update failed', ['content_id' => $contentId, 'error' => $e->getMessage()]);
+
+            return $this->fail('The ' . $name . ' was not updated (the old files were put back): ' . $e->getMessage(), 500);
+        }
+
+        return ['http' => 200, 'body' => ['success' => true, 'status_code' => 1, 'status' => 'updated'] + $summary];
     }
 
     private function publishStudyDocumentNow(DocumentKind $kind, array $input, array $document, string $html, bool $dryRun, string $authoredBy): array
@@ -1273,64 +1455,37 @@ class ContentGenerationService
     }
 
     /**
-     * One streamed Messages API call.
+     * One model call through the central AI configuration ('content_generation').
      *
-     * Streamed rather than a plain create() because max_output_tokens is well
-     * above the range a non-streaming HTTP request comfortably survives, and a
-     * full chapter deck routinely uses it.
-     *
-     * Deliberately absent: temperature, top_p, top_k, budget_tokens and
-     * assistant prefill. Claude Opus 5 rejects every one of them with a 400.
-     * QuestionGenerationService sends temperature to DeepSeek - do not copy
-     * that pattern here.
+     * The provider, model, key and fallback order are the administrator's; this method states only
+     * what the content needs: the system prompt, the user prompt, the output budget and the timeout.
+     * Anthropic-specific request options this class used to send (adaptive thinking, effort,
+     * streaming, refusal stop-reason) are not expressible through the provider-neutral client.
      *
      * @return array{text:string, stop_reason:?string, input_tokens:int, output_tokens:int}
      */
-    protected function callClaude(string $apiKey, string $model, string $prompt, ?string $system = null, ?int $maxTokens = null): array
+    protected function callClaude(string $prompt, ?string $system = null, ?int $maxTokens = null): array
     {
-        $client = new AnthropicClient(apiKey: $apiKey);
-
-        $stream = $client->messages->createStream(
-            maxTokens: $maxTokens ?? (int) config('claude.max_output_tokens', 32000),
-            messages: [['role' => 'user', 'content' => $prompt]],
-            model: $model,
-            outputConfig: ['effort' => config('claude.effort', 'high')],
-            system: $system ?? self::OUTPUT_FORMAT_SYSTEM,
-            thinking: ['type' => 'adaptive'],
-            requestOptions: ['timeout' => (float) config('claude.timeout_seconds', 600)],
+        $text = $this->aiClient()->chat(
+            [
+                ['role' => 'system', 'content' => $system ?? self::OUTPUT_FORMAT_SYSTEM],
+                ['role' => 'user', 'content' => $prompt],
+            ],
+            null,
+            $maxTokens ?? (int) config('claude.max_output_tokens', 32000),
+            null,
+            false,
+            (int) config('claude.timeout_seconds', 600)
         );
 
-        $accumulator = MessageAccumulator::forMessages();
-        foreach ($stream as $event) {
-            $accumulator->accumulate($event);
-        }
-        $message = $accumulator->message();
-
-        // A policy decline arrives as HTTP 200 with stop_reason 'refusal', so it
-        // has to be checked before the content is read.
-        if ($message->stopReason === 'refusal') {
-            $reason = $message->stopDetails->explanation ?? 'no explanation given';
-
-            throw new \RuntimeException('Claude declined to generate this content (' . $reason . ').');
-        }
-
-        // With adaptive thinking on, content[0] is a ThinkingBlock, not text.
-        // Concatenate every text block instead of indexing.
-        $text = '';
-        foreach ($message->content as $block) {
-            if (($block->type ?? null) === 'text') {
-                $text .= $block->text;
-            }
-        }
-
+        // The provider-neutral client returns text only; token counts are not available.
         return [
-            'text' => $text,
-            'stop_reason' => $message->stopReason,
-            'input_tokens' => (int) ($message->usage->inputTokens ?? 0),
-            'output_tokens' => (int) ($message->usage->outputTokens ?? 0),
+            'text' => (string) $text,
+            'stop_reason' => null,
+            'input_tokens' => 0,
+            'output_tokens' => 0,
         ];
     }
-
     /**
      * Render, upload and insert.
      *
@@ -1520,17 +1675,17 @@ class ContentGenerationService
         return $isPresentation ? 'pptx' : 'pdf';
     }
 
-    protected function readableApiError(APIStatusException $e): string
+    protected function readableApiError(AiProviderException $e): string
     {
-        $status = (int) ($e->status ?? 0);
+        $status = (int) $e->status;
 
         return match (true) {
-            $status === 401 => 'The Claude API key was rejected. Check ANTHROPIC_API_KEY.',
-            $status === 403 => 'The Claude API key is not permitted to use ' . config('claude.model') . '.',
-            $status === 404 => 'Claude model "' . config('claude.model') . '" was not found. Check ANTHROPIC_MODEL.',
-            $status === 429 => 'Claude is rate limiting this account. Try again shortly.',
-            $status >= 500 => 'Claude is temporarily unavailable (HTTP ' . $status . '). Try again shortly.',
-            default => 'Claude rejected the request (HTTP ' . $status . '): ' . $e->getMessage(),
+            $status === 401 => 'The AI provider rejected its API key. Check the Content Generation settings.',
+            $status === 403 => 'The configured AI key is not permitted to use the configured model. Check the Content Generation settings.',
+            $status === 404 => 'The configured AI model was not found. Check the Content Generation settings.',
+            $status === 429 => 'The AI provider is rate limiting this account. Try again shortly.',
+            $status >= 500 => 'The AI provider is temporarily unavailable (HTTP ' . $status . '). Try again shortly.',
+            default => 'The AI provider rejected the request (HTTP ' . $status . '): ' . $e->getMessage(),
         };
     }
 

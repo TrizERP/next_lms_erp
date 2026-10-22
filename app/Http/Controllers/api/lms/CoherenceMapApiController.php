@@ -22,7 +22,9 @@ use Illuminate\Support\Facades\Validator;
  * six shipped call sites which its own docblock says are "not mine to choose".
  *
  * This endpoint serves the Next.js curriculum authoring screen. It reads MariaDB
- * (Neo4j carries no Unit and no Topic), is gated by `lms.auth` - the same JWT the
+ * (Neo4j's Coherence Map spine still carries no Unit - see CurriculumGraphBuilder's
+ * own docblock; Topic was added 2026-10-06 and is no longer the reason), is gated
+ * by `lms.auth` - the same JWT the
  * frontend already sends - and answers in `{status, message, data}`, the convention
  * of every other Next-facing LMS route. Bolting a fourth shape onto a controller
  * whose contract is frozen would make both harder to reason about.

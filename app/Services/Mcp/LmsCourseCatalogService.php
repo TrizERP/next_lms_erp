@@ -56,6 +56,16 @@ class LmsCourseCatalogService
                 ->where('name', $standardName)
                 ->value('id');
 
+            // Estates name a class "8" or "CBSE-8". A sentence says "Grade 8", and the planner hands
+            // over just the number, so a bare number also matches the "<board>-8" form.
+            if ($resolved === null && ctype_digit($standardName)) {
+                $resolved = DB::table('standard')
+                    ->whereIn('sub_institute_id', $scope)
+                    ->where('name', 'like', '%-' . $standardName)
+                    ->orderBy('id')
+                    ->value('id');
+            }
+
             if ($resolved === null) {
                 return [
                     'count' => 0,

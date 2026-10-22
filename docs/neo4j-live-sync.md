@@ -121,14 +121,49 @@ the other's.
 ### The scheduler must actually run
 
 **`$schedule->command(...)` does nothing unless `schedule:run` runs.** There was
-no cron entry on the Windows dev host, which is why no failed row was ever
-retried. On Windows:
+no cron entry on the Windows dev host for a long stretch, which is why failed
+rows piled up with zero retries. **Fixed as of 2026-10-10**: a Task Scheduler
+entry named `LaravelScheduler_next_lms_erp` is registered on this box and
+firing every minute (`Get-ScheduledTaskInfo -TaskName LaravelScheduler_next_lms_erp`
+to confirm `LastTaskResult = 0`). The original snippet below omitted a
+`-Principal`, which on Windows means the task either runs interactively
+(popping a console window every minute) or silently fails to run at all when
+no one is logged in — the registered task uses an S4U principal instead, so it
+runs non-interactively under the dev account without a stored password:
 
 ```powershell
-$action  = New-ScheduledTaskAction -Execute 'C:\xampp\php\php.exe' -Argument 'artisan schedule:run' -WorkingDirectory 'C:\xampp\htdocs\next_lms_erp'
-$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date).Date -RepetitionInterval (New-TimeSpan -Minutes 1)
-Register-ScheduledTask -TaskName 'LaravelScheduler_next_lms_erp' -Action $action -Trigger $trigger -Force
+$action    = New-ScheduledTaskAction -Execute 'C:\xampp\php\php.exe' `
+    -Argument 'artisan schedule:run' -WorkingDirectory 'C:\xampp\htdocs\next_lms_erp'
+$trigger   = New-ScheduledTaskTrigger -Once -At (Get-Date) `
+    -RepetitionInterval (New-TimeSpan -Minutes 1) -RepetitionDuration ([TimeSpan]::MaxValue)
+$settings  = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -ExecutionTimeLimit (New-TimeSpan -Minutes 5)
+$principal = New-ScheduledTaskPrincipal -UserId "$env:COMPUTERNAME\$env:USERNAME" -LogonType S4U -RunLevel Limited
+Register-ScheduledTask -TaskName 'LaravelScheduler_next_lms_erp' -Action $action -Trigger $trigger -Principal $principal -Settings $settings
 ```
+
+`-RepetitionDuration` and `-MultipleInstances IgnoreNew` also aren't in the
+original snippet: without them, behavior around indefinite repetition is
+version-dependent, and nothing stops Task Scheduler itself from launching a
+second `schedule:run` process if one run takes longer than a minute (Laravel's
+`withoutOverlapping()` only protects the *scheduled command*, not the outer
+`schedule:run` process).
+
+On a remote deployment host without this registration, use SYSTEM instead if
+S4U is blocked by a "log on as a batch job" policy restriction:
+
+```powershell
+$principal = New-ScheduledTaskPrincipal -UserId "NT AUTHORITY\SYSTEM" -LogonType ServiceAccount -RunLevel Limited
+```
+
+**Before registering a second scheduler against the same remote
+`DB_HOST`/`NEO4J_URI`**: `GraphDrain`'s row-claim query has no row-level lock
+(a plain `SELECT ... WHERE status='PENDING'` followed by a later `UPDATE`), so
+two hosts draining the same queue concurrently can select the same pending
+rows before either updates them. The writes are idempotent MERGEs, so the
+likely worst case is wasted work rather than corruption, but check for an
+existing active consumer first (e.g. `processed_at` cadence on
+`neo4j_sync_queue` during a window this host's task wasn't running) rather
+than assuming you're the only one.
 
 On Linux: `* * * * * cd /path && php artisan schedule:run >> /dev/null 2>&1`.
 

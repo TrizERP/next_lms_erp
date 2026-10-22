@@ -37,6 +37,7 @@ class StoreStudyDocumentCommand extends Command
         {--tenant= : sub_institute_id the row belongs to (default: the chapter\'s own)}
         {--user=1 : content_master.created_by}
         {--profile=ADMIN : content_master.user_profile_name}
+        {--update= : replace the files and markup of THIS content_master row in place (same id, file name, title and visibility) instead of creating a new row}
         {--redraw-pdf : draw the PDF again (after a layout change) and replace the stored one; the row and the source file are left as they are}
         {--dry-run : check everything and report, write nothing}';
 
@@ -99,7 +100,7 @@ class StoreStudyDocumentCommand extends Command
 
         $this->line(($dry ? 'DRY RUN - nothing will be written. ' : '') . "Chapter $chapterId \"{$chapter->chapter_name}\", tenant $tenant, " . $kind->label() . ', ' . count($document['sections'] ?? []) . ' parts');
 
-        $result = $content->publishStudyDocument($kind, [
+        $input = [
             'chapter' => $chapter,
             'chapter_name' => $chapter->chapter_name,
             'grade_id' => $gradeId,
@@ -109,7 +110,11 @@ class StoreStudyDocumentCommand extends Command
             'created_by' => (int) $this->option('user'),
             'user_profile_name' => (string) $this->option('profile'),
             'refresh_pdf' => (bool) $this->option('redraw-pdf'),
-        ], $document, (string) file_get_contents($files['html']), $dry, 'study-document');
+        ];
+        $html = (string) file_get_contents($files['html']);
+        $result = $this->option('update')
+            ? $content->updateStudyDocument($kind, $input, $document, $html, (int) $this->option('update'), $dry)
+            : $content->publishStudyDocument($kind, $input, $document, $html, $dry, 'study-document');
 
         $body = $result['body'];
         if (($result['http'] ?? 0) >= 400) {

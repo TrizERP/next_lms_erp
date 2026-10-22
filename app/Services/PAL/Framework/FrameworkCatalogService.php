@@ -2,11 +2,129 @@
 
 namespace App\Services\PAL\Framework;
 
+use App\Exceptions\GraphUnavailableException;
+use App\Services\Neo4jService;
+use Throwable;
+
 class FrameworkCatalogService
 {
+    public function __construct(private ?Neo4jService $neo4j = null)
+    {
+        $this->neo4j ??= app(Neo4jService::class);
+    }
+
     public function catalog(): array
     {
         return config('pal_v4', []);
+    }
+
+    /**
+     * Real `(:Framework)-[:MAPS_TO]->(target)` mappings, read live from the
+     * K12 Neo4j graph — NOT the static `config('pal_v4')` slugs `catalog()`
+     * returns above.
+     *
+     * As of 2026-10-12, four frameworks are seeded under
+     * database/neo4j/frameworks/ (loaded via `php artisan
+     * pal:seed-framework-graph`) — each against a DIFFERENT real target
+     * label, chosen per-framework rather than forced onto `:Concept`:
+     *   - NGSS    -> :Concept (ngss.cypher)
+     *   - GARDNER -> :Concept, cross-curricular (gardner.cypher)
+     *   - CASEL   -> :CoScholasticArea, the live sync of `result_co_scholastic`
+     *     report-card grading areas — real behavioural data, since
+     *     `pal_contents.casel_domain` is still 100% null (verified again
+     *     2026-10-12) and no academic Concept honestly represents a
+     *     social-emotional competency (casel.cypher)
+     *   - NCDG    -> :Occupation / :Exam / :Degree, the CAI-CORE career graph
+     *     (App\CareerIntelligence\CaiCoreService's seed) — the real anchor for
+     *     a career-development framework, not an academic concept (ncdg.cypher)
+     *
+     * Two frameworks are deliberately NOT seeded:
+     *   - RIASEC: Holland Code career-interest theory has no real citable
+     *     correspondence to curriculum Concepts (no RIASEC document claims a
+     *     specific chapter "is" Investigative, say) and its real home —
+     *     `:Occupation`-level RIASEC codes via the `HasInterest`/
+     *     `HasWorkValue` edges GraphSchema.php already whitelists — carries no
+     *     real data yet (confirmed by a prior agent the same day this file was
+     *     last touched). Seeding a Framework->Concept RIASEC file would
+     *     duplicate the career-graph work under a different, less honest
+     *     label, so it is not done.
+     *   - HPC (Holistic Progress Card, NEP 2020/NCF/PARAKH): real, cited, and
+     *     already fully implemented — see App\Domain\Exam\HpcBlueprint and
+     *     HpcBlueprintPresets — but structurally NOT a Framework->Concept
+     *     mapping. Its own curricular-goal/competency chain is deliberately
+     *     left blank in HpcBlueprintPresets because the official PARAKH
+     *     documents themselves don't publish one; seeding a Concept mapping
+     *     here would require fabricating exactly the chain that file refuses
+     *     to invent.
+     *
+     * Because the real anchor differs per framework, the Cypher below does
+     * NOT restrict the MAPS_TO target to `:Concept` — it matches any label and
+     * reads a generic id/name via COALESCE across every target type's own key
+     * property (`uid` for Concept, `occupation_id`/`exam_id`/`degree_id` for
+     * the CAI-CORE labels, `coscholasticareaId` for CoScholasticArea).
+     * Additive change from the NGSS-only version of this method: NGSS's own
+     * rows are unaffected (c.uid/c.name still resolve first via COALESCE).
+     *
+     * @return array{frameworks: array<int, array{code:string, name:string, fullName:string, sourceUrl:?string, practices: array<int, array{code:string, name:string, concepts: array<int, array{uid:string, name:string, type:?string, rationale:?string}>}>}>}
+     */
+    public function graphMappings(): array
+    {
+        try {
+            $client = $this->neo4j->getClient();
+
+            $rows = $client->run(
+                'MATCH (f:Framework)-[m:MAPS_TO]->(c) '
+                .'RETURN f.framework_code AS frameworkCode, f.name AS frameworkName, '
+                .'f.full_name AS frameworkFullName, f.source_url AS frameworkSourceUrl, '
+                .'m.practice_code AS practiceCode, m.practice_name AS practiceName, '
+                .'m.rationale AS rationale, '
+                .'COALESCE(c.uid, c.occupation_id, c.exam_id, c.degree_id, c.coscholasticareaId) AS conceptUid, '
+                .'COALESCE(c.name, c.title) AS conceptName, '
+                .'labels(c)[0] AS conceptType '
+                .'ORDER BY f.framework_code, m.practice_code, conceptName'
+            );
+        } catch (GraphUnavailableException|Throwable $e) {
+            // Same "say so, don't force it" rule as every other graph read in
+            // this codebase: an unreachable graph returns an honestly empty
+            // result, never a fabricated one.
+            return ['frameworks' => [], 'available' => false, 'reason' => $e->getMessage()];
+        }
+
+        $frameworks = [];
+        foreach ($rows as $row) {
+            $code = (string) $row->get('frameworkCode');
+            if ($code === '') {
+                continue;
+            }
+
+            $frameworks[$code] ??= [
+                'code' => $code,
+                'name' => $row->get('frameworkName'),
+                'fullName' => $row->get('frameworkFullName'),
+                'sourceUrl' => $row->get('frameworkSourceUrl'),
+                'practices' => [],
+            ];
+
+            $practiceCode = (string) $row->get('practiceCode');
+            $frameworks[$code]['practices'][$practiceCode] ??= [
+                'code' => $practiceCode,
+                'name' => $row->get('practiceName'),
+                'concepts' => [],
+            ];
+
+            $frameworks[$code]['practices'][$practiceCode]['concepts'][] = [
+                'uid' => $row->get('conceptUid'),
+                'name' => $row->get('conceptName'),
+                'type' => $row->get('conceptType'),
+                'rationale' => $row->get('rationale'),
+            ];
+        }
+
+        foreach ($frameworks as &$framework) {
+            $framework['practices'] = array_values($framework['practices']);
+        }
+
+        return ['frameworks' => array_values($frameworks), 'available' => true, 'reason' => null];
     }
 
     public function pedagogies(): array

@@ -104,7 +104,7 @@ class AskAuditor
         $source = $result['answer_source'] ?? null;
 
         if ($source !== null) {
-            return $source === 'fallback' ? 'refused' : 'success';
+            return in_array($source, ['fallback', 'out_of_page'], true) ? 'refused' : 'success';
         }
 
         // The legacy pipeline does not report a source. Fall back to stage counts, which

@@ -133,7 +133,19 @@ return [
      *     `--relationships` stale-edge check repairs the backlog with `--fix`.
      *     (An earlier read of this also suspected `CoherenceGraphProjection::
      *     projectAssesses()` as a second writer in conflict — it exists, but has
-     *     barely run against production, 26 edges, zero conflicts. Not the cause.)
+     *     barely run against production, 26 edges, zero conflicts. Not the cause.
+     *     Re-measured 2026-10-10 after the drain backlog cleared: the split is now
+     *     16,135 edges with no `quality_status` (this pipeline) vs 20,259 tagged
+     *     (CoherenceGraphProjection's nightly pass) — the ratio moved because the
+     *     outbox scheduler had been dormant for days and just drained a large
+     *     backlog, not because of a new conflict. The two pipelines still can't
+     *     clobber each other: this spec sets no properties on ASSESSES at all
+     *     (see `key_column`/`properties` above — there is no entry for this
+     *     relationship), so it can only ever MERGE the bare edge, never touch
+     *     `quality_status`. If a future edit here adds a `properties` entry to
+     *     this relationship, check `CoherenceGraphProjection::projectAssesses()`'s
+     *     `quality_status` discriminator first — that guard assumes this pipeline
+     *     stays property-free on this edge.)
      *   - `lms_lesson_plan` has NO `lesson_title`, `teacher_id`, `pedagogy_tag` or
      *     `status`. The script's displayLabel for :Lesson referenced
      *     `row.curriculum_name`, a column of a different table entirely, which is
@@ -149,6 +161,35 @@ return [
      *     :LearningContent block reads (no `concept_id`, `misconception_id`,
      *     `title`, `modality`, `bloom_level`). Projecting it would produce nodes
      *     made entirely of nulls, so it is left out.
+     *   - `content_master` (added 2026-10-10, for Chapter Management / Teach-Learn's
+     *     teaching-resource browsing) is the real table behind both screens'
+     *     content lists — confirmed live via chapterController's own
+     *     `content_master.chapter_id = chapter_master.id` join. Two things
+     *     the original ask assumed turned out not to hold:
+     *       - `concept_id` exists on the table but is populated on 1 row out of
+     *         30,792. A :TeachingResource-[:TEACHES]->:Concept edge from it would
+     *         be correct for exactly one row and is not built here — that is the
+     *         "say so plainly" case, not a column to project nulls from. The
+     *         concept-level edge this screen would want already exists, for the
+     *         rows that genuinely carry concept-level data: see
+     *         CoherenceGraphProjection::projectTeaches(), which builds
+     *         (:Content)-[:TEACHES]->(:Concept) by joining `pal_content_metadata`
+     *         onto `content_master.id` — 124 of the 30,792 rows, the ones with a
+     *         PAL-generated variant attached, labelled :Content there (a
+     *         different label/key convention than :TeachingResource — see
+     *         GraphSchema's note on this label for why the two must not merge).
+     *       - `chapter_id` IS the working join (30,787/30,792 rows carry one),
+     *         but only 4,632 of those values currently resolve to a row that
+     *         still exists in `chapter_master` — the rest are pre-2022
+     *         sub_institute_id 47/195 content tagged against a chapter id space
+     *         that was since renumbered. HAS_CONTENT is still built from it, the
+     *         same way HAS_CONCEPT/HAS_LESSON are: the edges whose Chapter
+     *         endpoint cannot be found fail and retry through the normal outbox
+     *         path, visible in `neo4j:reconcile`, exactly like every other
+     *         FK-drift edge in this set — not a new failure mode.
+     *     Labelled :TeachingResource, NOT :Content or :LearningContent — see
+     *     GraphSchema's note on this label for why reusing either would double-key
+     *     or silently collide with an unrelated node.
      *
      * displayLabel prefixes match the LIVE nodes exactly — note `chapter:` is
      * lower-case where every other label is capitalised. That inconsistency is
@@ -240,6 +281,31 @@ return [
             'lms_offline_exam',
             'lms_online_exam_student',
             'lms_question_mapping',
+
+            // teach-learn / chapter management (added 2026-10-10)
+            'content_master',
+
+            // LMS Quiz feature (added 2026-10-10) — see entity spec below.
+            'lms_quiz_attempts',
+
+            // Student engagement (added 2026-10-10). NOT a config entity below
+            // — EngagementGraphProjection (bespoke, in ProjectionRegistry's
+            // BESPOKE list) owns it, because the edge's target label
+            // (:TeachingResource vs :Concept) depends on the row's own
+            // `activity_type`, which a column-map spec cannot express. Its
+            // trigger is installed by its own migration
+            // (..._142000_create_neo4j_sync_trigger_lms_student_engagement),
+            // with watch/hint columns hand-listed there for the same reason
+            // `tblstudent`/`lms_online_exam`/`tbluser` are hand-listed in the
+            // original trigger migration — there is no entity spec here to
+            // derive them from.
+            'lms_student_engagement',
+
+            // Talent Management / Competency Framework Studio (added
+            // 2026-10-12) — see entity specs below.
+            's_users_skills',
+            's_competency_frameworks',
+            's_competency_framework_items',
         ],
 
         'entities' => [
@@ -969,6 +1035,165 @@ return [
                 'edges_only' => true,
                 'relationships' => [
                     ['type' => 'TAGGED_AS', 'from' => ['Question', 'questionmaster_id'], 'to' => ['MappingType', 'mapping_value_id']],
+                ],
+            ],
+
+            // ---------------------------------------------------------------
+            // TeachingResource  (30,792 rows — content_master)
+            //
+            // Backs both Chapter Management's content list and Teach-Learn's
+            // teaching-resource browsing (Course Catalog). See the big docblock
+            // above for why this is its own label rather than :Content or
+            // :LearningContent, and why there is no Concept edge from this
+            // table. `filename`, not `url`, is the live file reference — `url`
+            // is null on every sampled row.
+            // ---------------------------------------------------------------
+            'content_master' => [
+                'label' => 'TeachingResource',
+                'properties' => [
+                    'title'            => 'title',
+                    'chapter_id'       => 'chapter_id',
+                    'subject_id'       => 'subject_id',
+                    'standard_id'      => 'standard_id',
+                    'topic_id'         => 'topic_id',
+                    'concept_id'       => 'concept_id',
+                    'content_category' => 'content_category',
+                    'file_type'        => 'file_type',
+                    'filename'         => 'filename',
+                    'source'           => 'source',
+                    'syear'            => 'syear',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => [
+                    'title' => 'string', 'content_category' => 'string',
+                    'file_type' => 'string', 'filename' => 'string', 'source' => 'string',
+                    'syear' => 'int',
+                ],
+                'display_label' => ['prefix' => 'TeachingResource:', 'column' => 'title'],
+                'relationships' => [
+                    ['type' => 'HAS_CONTENT', 'from' => ['Chapter', 'chapter_id'], 'to' => ['TeachingResource', 'id']],
+                ],
+            ],
+
+            // ---------------------------------------------------------------
+            // QuizAttempt  (lms_quiz_attempts — LMS Quiz feature, added
+            // 2026-10-10)
+            //
+            // One row per student attempt at a teacher-authored, non-adaptive
+            // quiz. The quiz itself is just a `question_paper` row (exam_type
+            // = 'quiz') that already gets :Assessment + HAS_QUESTION edges
+            // from the `question_paper` spec above — nothing new was needed
+            // there. This spec only has to project the ATTEMPT.
+            //
+            // Shaped exactly like `lms_offline_exam` above (same two-edge
+            // pattern: student -> attempt, attempt -> assessment) rather than
+            // inventing a relationship-with-properties shortcut: the generic
+            // TableGraphProjection never sets properties on an edge (see its
+            // own docblock), only on the node it MERGEs — so the score lives
+            // on the :QuizAttempt node, the same place OfflineExam's
+            // obtain_marks lives on :OfflineExam. Both relationship types
+            // used here (ATTEMPTED, FOR_ASSESSMENT) were already in
+            // GraphSchema's whitelist before this entry; neither needed
+            // adding.
+            //
+            // The node is written on every INSERT (attempt started) and again
+            // on the UPDATE that completes it (status/score columns change) -
+            // the migration's watch-column diff (derived from this spec)
+            // takes care of only firing on an actual change.
+            // ---------------------------------------------------------------
+            'lms_quiz_attempts' => [
+                'label' => 'QuizAttempt',
+                'properties' => [
+                    'student_id'        => 'student_id',
+                    'question_paper_id' => 'question_paper_id',
+                    'status'            => 'status',
+                    'total_questions'   => 'total_questions',
+                    'correct_count'     => 'correct_count',
+                    'wrong_count'       => 'wrong_count',
+                    'score_marks'       => 'score_marks',
+                    'max_marks'         => 'max_marks',
+                    'syear'             => 'syear',
+                    'sub_institute_id'  => 'sub_institute_id',
+                ],
+                'casts' => [
+                    'status' => 'string', 'total_questions' => 'int', 'correct_count' => 'int',
+                    'wrong_count' => 'int', 'score_marks' => 'float', 'max_marks' => 'float',
+                    'syear' => 'int',
+                ],
+                'display_label' => ['prefix' => 'QuizAttempt:', 'column' => 'status'],
+                'relationships' => [
+                    ['type' => 'ATTEMPTED',      'from' => ['StuDetail', 'student_id'], 'to' => ['QuizAttempt', 'id']],
+                    ['type' => 'FOR_ASSESSMENT', 'from' => ['QuizAttempt', 'id'],       'to' => ['Assessment', 'question_paper_id']],
+                ],
+            ],
+
+            // ---------------------------------------------------------------
+            // Competency  (added 2026-10-12 — Talent Management / Competency
+            // Framework Studio. `s_users_skills`, 5,029 rows, the tenant
+            // competency catalog CompetencyStudioController's own
+            // `frameworkStructure()`/`weights()` already read. This is NOT
+            // PAL's `lms_concept`/:Concept graph and NOT G2G's hp_erp
+            // Competency/KASBA graph — see GraphSchema's note on this label
+            // for the two collisions checked and ruled out before adding it.
+            // ---------------------------------------------------------------
+            's_users_skills' => [
+                'label' => 'Competency',
+                'properties' => [
+                    'title'            => 'title',
+                    'description'      => 'description',
+                    'category'         => 'category',
+                    'sub_category'     => 'sub_category',
+                    'competency_type'  => 'competency_type',
+                    'approve_status'   => 'approve_status',
+                    'status'           => 'status',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => [
+                    'category' => 'string', 'sub_category' => 'string',
+                    'competency_type' => 'string', 'approve_status' => 'string', 'status' => 'string',
+                ],
+                'display_label' => ['prefix' => 'Competency:', 'column' => 'title'],
+            ],
+
+            // ---------------------------------------------------------------
+            // CompetencyFramework  (added 2026-10-12). `s_competency_frameworks`,
+            // 5 live rows, CRUD'd by CompetencyFrameworkController. No FK
+            // relationship on this row itself — the framework -> competency
+            // hierarchy is the join table just below, because a framework's
+            // competency set is a MANY-rows-to-many-rows fact
+            // (`s_competency_framework_items`), not a column on this one.
+            // ---------------------------------------------------------------
+            's_competency_frameworks' => [
+                'label' => 'CompetencyFramework',
+                'properties' => [
+                    'name'             => 'name',
+                    'description'      => 'description',
+                    'status'           => 'status',
+                    'version'          => 'version',
+                    'jobrole'          => 'jobrole',
+                    'sub_institute_id' => 'sub_institute_id',
+                ],
+                'casts' => ['status' => 'string', 'version' => 'string', 'jobrole' => 'string'],
+                'display_label' => ['prefix' => 'CompetencyFramework:', 'column' => 'name'],
+            ],
+
+            // ---------------------------------------------------------------
+            // Framework -> Competency hierarchy  (added 2026-10-12).
+            // `s_competency_framework_items`, 36 rows — a pure join between two
+            // rows that already have their own node above (CompetencyFramework,
+            // Competency); it mints no node of its own, same pattern as
+            // `class_teacher`/`hrms_emp_leaves` below. `required_proficiency`
+            // is NOT carried onto the edge: this pipeline's relationships are
+            // bare MERGEs (see TableGraphProjection's `edgeKey` — no spec in
+            // this file sets edge properties; ASSESSES's own docblock entry
+            // above explains why that discipline matters), so the proficiency
+            // value stays a MariaDB-only fact, read from
+            // `CompetencyFrameworkController::items()` as today.
+            // ---------------------------------------------------------------
+            's_competency_framework_items' => [
+                'edges_only' => true,
+                'relationships' => [
+                    ['type' => 'HAS_COMPETENCY', 'from' => ['CompetencyFramework', 'framework_id'], 'to' => ['Competency', 'competency_id']],
                 ],
             ],
         ],

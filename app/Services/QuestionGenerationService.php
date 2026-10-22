@@ -2,6 +2,9 @@
 
 namespace App\Services;
 
+use App\Domain\AI\Configuration\AiConfigurationException;
+use App\Domain\AI\Configuration\AiModelClientFactory;
+use App\Domain\AI\Support\FallbackChainModelClient;
 use App\Models\lms\lmsQuestionMasterModel;
 use App\Services\QuestionGeneration\H5p\ClaudeQuestionClient;
 use App\Services\QuestionGeneration\H5p\H5pContentType;
@@ -28,7 +31,8 @@ use Throwable;
  */
 class QuestionGenerationService
 {
-    protected string $model;
+    /** Resolved lazily from the centralised `assessment_ai` configuration; see configuredModel(). */
+    protected ?string $model = null;
     protected float $temperature;
     protected int $timeout;
     protected int $maxTokens;
@@ -76,7 +80,6 @@ class QuestionGenerationService
     public function __construct(?QuestionFormatRegistry $formatRegistry = null)
     {
         $this->formatRegistry = $formatRegistry;
-        $this->model         = config('deepseek.model', 'deepseek-chat');
         $this->temperature   = config('deepseek.temperature_mcq', 0.4);
         $this->timeout       = (int) config('deepseek.timeout_seconds', 600);
         $this->maxTokens     = (int) config('deepseek.max_output_tokens', 0);
@@ -115,27 +118,33 @@ class QuestionGenerationService
         return $this->formatRegistry ??= app(QuestionFormatRegistry::class);
     }
 
-    /**
-     * The provider credential, from the platform's shared pool.
-     *
-     * Was two private copies of the same lookup — `getAIKey($type, 1)` with an
-     * unordered `first()` and no tenant filter, plus an inline DB fallback that did
-     * the same thing. Both meant question generation used whichever key the database
-     * happened to return, regardless of which school was generating.
-     *
-     * `ProviderKeyResolver` is the one lookup the Gemini and OpenRouter clients also
-     * use: a school's own key first, the platform key next, newest active row within
-     * either, env last.
-     */
-    protected function resolveApiKey(): ?string
-    {
-        $key = app(\App\Domain\AI\Support\ProviderKeyResolver::class)->resolve(
-            (string) config('deepseek.api_type', 'DEEPSEEK_API_KEY'),
-            $this->subInstituteId,
-            config('deepseek.api_key'),
-        );
+    /** Centralised AI configuration module (see AiModuleRegistry). */
+    public const AI_MODULE = 'assessment_ai';
 
-        return $key['api_key'] ?? null;
+    /**
+     * The provider chain for this school: provider, model, key and fallback providers all
+     * come from what the administrator saved for `assessment_ai`. Nothing is read from
+     * config/deepseek.php or the environment, and an unconfigured module throws
+     * AiConfigurationException on use rather than falling back to an env key.
+     */
+    protected function aiClient(): FallbackChainModelClient
+    {
+        return app(AiModelClientFactory::class)->for(self::AI_MODULE, $this->subInstituteId);
+    }
+
+    /** The model at the head of the configured chain (what a first attempt will use). */
+    protected function configuredModel(): string
+    {
+        if ($this->model === null) {
+            try {
+                $this->model = (string) app(AiModelClientFactory::class)
+                    ->configurationFor(self::AI_MODULE, $this->subInstituteId)->model;
+            } catch (Throwable $e) {
+                $this->model = '';
+            }
+        }
+
+        return $this->model;
     }
 
     /* ----------------------------------------------------------------
@@ -1452,158 +1461,83 @@ SCHEMA;
      * LLM call
      * ---------------------------------------------------------------- */
 
+    /**
+     * Output tokens allowed for one batch when DEEPSEEK_MAX_OUTPUT_TOKENS is not set. 8192 fits every
+     * mainstream chat model's ceiling (deepseek-chat rejects more) and holds a 10-question batch.
+     */
+    protected const DEFAULT_BATCH_MAX_TOKENS = 8192;
+
     protected function callDeepSeek(string $system, string $user, array $opts): array
     {
-        $apiKey = $this->resolveApiKey();
-        if (empty($apiKey)) {
-            return ['ok' => false, 'error' => 'DeepSeek API key not configured (set DEEPSEEK_API_KEY or ai_api_keys row).'];
-        }
-
-        $model = $opts['model'] ?? $this->model;
+        // Name kept for the callers and tests that already use it; the call itself now goes
+        // through the centralised `assessment_ai` chain (administrator-ranked providers with
+        // automatic fallback), not DeepSeek directly.
         $temperature = $opts['temperature'] ?? $this->temperature;
-        $seed = $opts['seed'] ?? random_int(1000, 999999);
-
-        $body = [
-            'model'    => $model,
-            'messages' => [
-                ['role' => 'system', 'content' => $system],
-                ['role' => 'user',   'content' => $user],
-            ],
-            'temperature' => (float) $temperature,
-            'stream'      => false,
-        ];
-
-        if ($this->maxTokens > 0) {
-            $body['max_tokens'] = $this->maxTokens;
-        }
-
-        if (!empty($opts['seed'])) {
-            $body['seed'] = (int) $opts['seed'];
-        }
-        if (!empty(config('deepseek.thinking'))) {
-            $body['thinking'] = ['type' => 'enabled'];
-        }
-        if (!empty(config('deepseek.reasoning_effort'))) {
-            $body['reasoning_effort'] = config('deepseek.reasoning_effort');
-        }
+        $client = $this->aiClient();
 
         try {
             // Ensure PHP doesn't kill the script before the HTTP timeout fires.
             set_time_limit($this->timeout + 60);
 
-            $headers = [
-                'Authorization' => 'Bearer ' . $apiKey,
-                'Content-Type'  => 'application/json',
-            ];
-
-            $response = Http::withHeaders($headers)
-                ->timeout($this->timeout)
-                ->connectTimeout(20)
-                ->post(rtrim(config('deepseek.base_url'), '/') . '/chat/completions', $body);
-
-            if ($response->status() === 402 && filled(config('openrouter.api_key'))) {
-                $body['model'] = config('openrouter.model', 'openai/gpt-4o-mini');
-                $response = Http::withHeaders(config('openrouter.headers'))
-                    ->timeout($this->timeout)
-                    ->connectTimeout(20)
-                    ->post(rtrim(config('openrouter.base_url'), '/') . '/chat/completions', $body);
-            }
-
-            if ($response->status() === 402) {
-                // Same shared resolver as the primary key above, so the last-resort
-                // provider is scoped to the same school rather than picking whichever
-                // gemini row the table returned first — this pool holds two active
-                // gemini rows, one of which answers 400 API_KEY_INVALID.
-                $geminiKey = app(\App\Domain\AI\Support\ProviderKeyResolver::class)->resolve(
-                    'gemini',
-                    $this->subInstituteId,
-                    config('ai.provider.gemini.api_key'),
-                )['api_key'] ?? null;
-
-                if (filled($geminiKey)) {
-                    $geminiResponse = Http::withHeaders([
-                        'Content-Type' => 'application/json',
-                        'x-goog-api-key' => $geminiKey,
-                    ])
-                        ->timeout($this->timeout)
-                        ->connectTimeout(20)
-                        ->post(
-                            'https://generativelanguage.googleapis.com/v1beta/models/'
-                            . config('gemini.model') . ':generateContent',
-                            [
-                                'contents' => [[
-                                    'role' => 'user',
-                                    'parts' => [[
-                                        'text' => $system . "\n\n" . $user,
-                                    ]],
-                                ]],
-                                'generationConfig' => [
-                                    'temperature' => (float) $temperature,
-                                    'maxOutputTokens' => $this->maxTokens > 0 ? $this->maxTokens : 8000,
-                                ],
-                            ]
-                        );
-
-                    if ($geminiResponse->successful()) {
-                        $geminiParts = $geminiResponse->json('candidates.0.content.parts', []);
-                        $content = collect($geminiParts)
-                            ->pluck('text')
-                            ->filter(fn ($text) => is_string($text))
-                            ->implode('');
-
-                        if (trim($content) !== '') {
-                            return [
-                                'ok' => true,
-                                'content' => $content,
-                                'model' => config('gemini.model'),
-                                'finish_reason' => $geminiResponse->json('candidates.0.finishReason'),
-                                'usage' => $geminiResponse->json('usageMetadata', []),
-                            ];
-                        }
-                    }
-
-                    return [
-                        'ok' => false,
-                        'error' => 'Gemini request failed: ' . $geminiResponse->status() . ' ' . $geminiResponse->body(),
-                    ];
-                }
-            }
-
-            if (!$response->successful()) {
-                return [
-                    'ok'    => false,
-                    'error' => 'DeepSeek request failed: ' . $response->status() . ' ' . $response->body(),
-                ];
-            }
-
-            $json = $response->json();
-            $choice = $json['choices'][0] ?? [];
-            $content = $choice['message']['content'] ?? null;
-            if ($content === null) {
-                return ['ok' => false, 'error' => 'DeepSeek returned an empty message.'];
-            }
-
-            return [
-                'ok'           => true,
-                'content'      => is_string($content) ? $content : json_encode($content, JSON_UNESCAPED_UNICODE),
-                'model'        => $json['model'] ?? $model,
-                'usage'        => $json['usage'] ?? [],
-                'finish_reason'=> $choice['finish_reason'] ?? null,
-                'seed'         => $seed,
-            ];
+            // No model is passed: the configured one is used (an explicit model would bind
+            // to the first provider only). Seed, `thinking` and `reasoning_effort` are
+            // DeepSeek-specific request fields that the provider-neutral client cannot carry.
+            $content = $client->chat(
+                [
+                    ['role' => 'system', 'content' => $system],
+                    ['role' => 'user',   'content' => $user],
+                ],
+                null,
+                // Always an explicit budget. Left null, the provider-neutral client falls back to its own
+                // 1466-token default (DEEPSEEK_MAX_OUTPUT_TOKENS=0 reads as "unset"), which a reasoning model
+                // (deepseek-v4-pro) spends almost entirely on hidden reasoning: the batch came back cut off or
+                // with no text at all - "The AI provider returned an empty message". The old direct call sent
+                // no max_tokens, so the provider's own large default applied; this restores that headroom.
+                $this->maxTokens > 0 ? $this->maxTokens : self::DEFAULT_BATCH_MAX_TOKENS,
+                (float) $temperature,
+                true,
+                $this->timeout
+            );
+        } catch (AiConfigurationException $e) {
+            // An administrator-fixable condition: say what to configure, verbatim.
+            return ['ok' => false, 'error' => $e->getMessage()];
         } catch (Throwable $e) {
-            Log::error('DeepSeek call failed: ' . $e->getMessage());
-            return ['ok' => false, 'error' => 'DeepSeek call exception: ' . $e->getMessage()];
+            Log::error('Question generation AI call failed: ' . $e->getMessage());
+            return ['ok' => false, 'error' => 'AI call exception: ' . $e->getMessage()];
         }
+
+        if ($content === null || trim($content) === '') {
+            return ['ok' => false, 'error' => 'The AI provider returned an empty message. A reasoning model can use its whole output budget thinking: '
+                . 'raise DEEPSEEK_MAX_OUTPUT_TOKENS, or choose a non-reasoning model (e.g. deepseek-chat) for Assessment AI.'];
+        }
+
+        $used = $client->lastUsed();
+
+        return [
+            'ok'           => true,
+            'content'      => $content,
+            // Token counts and finish_reason are not exposed by the provider-neutral client;
+            // a truncated reply is caught by parseResponse() (no complete JSON object).
+            'model'        => $used !== null ? (string) $used->model : $this->configuredModel(),
+            'provider'     => $used?->provider,
+            'usage'        => [],
+            'finish_reason'=> null,
+            'seed'         => $opts['seed'] ?? null,
+        ];
     }
 
     /* ----------------------------------------------------------------
-     * H5P content-type driven generation (Claude)
+     * H5P content-type driven generation
      *
      * For a format that has an active H5P content type the selected type chooses the
-     * prompt, the JSON Claude returns and the validator. What it hands back is a list of
-     * ordinary rows, so everything after the model call -- validateRows(), prepareRow(),
+     * prompt, the JSON the model returns and the validator. What it hands back is a list
+     * of ordinary rows, so everything after the model call -- validateRows(), prepareRow(),
      * dedup, persist() -- is the existing pipeline, unchanged.
+     *
+     * generateH5pBatch() below calls callDeepSeek(), not Claude: no environment of this
+     * app has ever carried an Anthropic key, and DeepSeek is already the provider every
+     * other format uses, so the H5P prompts (plain text, no provider-specific features)
+     * are written against it rather than against an unprovisioned ClaudeQuestionClient.
      * ---------------------------------------------------------------- */
 
     /** The H5P content type this format is generated from, or null for the existing path. */
@@ -1614,7 +1548,11 @@ SCHEMA;
         return $code === null ? null : app(H5pContentTypeRegistry::class)->activeFor($code);
     }
 
-    /** One Claude call, in callDeepSeek()'s return shape. */
+    /**
+     * One Claude call, in callDeepSeek()'s return shape. Unused by generateH5pBatch()
+     * (see above) while no Anthropic key is provisioned; kept for a future caller that
+     * has one, so reintroducing Claude anywhere is a one-line swap back, not a rewrite.
+     */
     protected function callClaude(string $system, string $user, array $opts): array
     {
         return app(ClaudeQuestionClient::class)->complete($system, $user, $this->subInstituteId);
@@ -1742,7 +1680,7 @@ SCHEMA;
         for ($attempt = 1; $attempt <= $attempts; $attempt++) {
             $user = $reasons === [] ? $base : $base . H5pPrompts::retryNotice($reasons, $expected);
 
-            $call = $this->callClaude($system, $user, $opts);
+            $call = $this->callDeepSeek($system, $user, $opts);
             if (!$call['ok']) {
                 // Provider / credential failures are not something a second prompt fixes.
                 return ['ok' => false, 'error' => $call['error']];
@@ -2769,7 +2707,7 @@ SCHEMA;
         // even if a caller manages to smuggle them past the validator: a
         // client-selected model is a direct spend vector on the tenant's key.
         $opts = [
-            'model'       => $this->model,
+            'model'       => $this->configuredModel(),
             // The legacy formats read the same config/deepseek.php keys as before;
             // every other format carries its own temperature.
             'temperature' => $format->temperature(),

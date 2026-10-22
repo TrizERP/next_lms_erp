@@ -153,6 +153,49 @@ class AiContextService
             }
         }
 
+        // Config widens a real row's route patterns for screens the row predates (see
+        // ModuleResolver::fromRoute). A copy is modified so the cached row stays untouched.
+        foreach ($byKey as $key => $row) {
+            $extra = (array) (config('ai.lifecycle.modules.' . $key . '.route_patterns') ?? []);
+
+            if ($extra === []) {
+                continue;
+            }
+
+            $merged = clone $row;
+            $merged->route_patterns = json_encode(array_values(array_unique(
+                array_merge($this->decode($row->route_patterns), $extra)
+            )));
+            $byKey[$key] = $merged;
+        }
+
+        // A module bound in `config/ai.php` WITH route patterns, and with no `ai_modules`
+        // row, still has pages. Without this its screens resolved to no module at all, so
+        // the assistant on those pages answered from nowhere. A real row always wins.
+        foreach ((array) config('ai.lifecycle.modules', []) as $key => $binding) {
+            $patterns = is_array($binding) ? (array) ($binding['route_patterns'] ?? []) : [];
+
+            if (isset($byKey[$key]) || $patterns === []) {
+                continue;
+            }
+
+            $byKey[$key] = (object) [
+                'module_key' => (string) $key,
+                'label' => (string) ($binding['label'] ?? ucfirst(str_replace('_', ' ', (string) $key))),
+                'description' => (string) ($binding['description'] ?? ''),
+                'route_patterns' => json_encode(array_values($patterns)),
+                'entity_key' => null,
+                'entity_param' => null,
+                'capabilities' => json_encode(['conversational' => true, 'generative' => false,
+                    'agent' => false, 'workflow' => false, 'ontology' => false]),
+                'allowed_roles' => null,
+                'match_priority' => 80,
+                'sort_order' => 1000,
+                'status' => 1,
+                'sub_institute_id' => null,
+            ];
+        }
+
         return array_values($byKey);
     }
 

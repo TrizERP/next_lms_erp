@@ -59,6 +59,38 @@ class HumanApprovalStage implements LifecycleStage
             return $this->admissionsGate($admissions);
         }
 
+        // Fee reminders have a human gate of their own: the list is shown, and only a person's
+        // "yes" to that exact list sends anything. Reporting "no agent is registered for fees"
+        // while somebody was in fact asked to approve emailing families would describe a
+        // different turn than the one that happened.
+        $feeReminders = $context->get('fees_reminders_flow');
+
+        if (is_array($feeReminders)) {
+            return $this->feeRemindersGate($feeReminders);
+        }
+
+        // A message to parents has the same human gate: the list is shown, and only a person's "yes" to that
+        // exact list sends anything.
+        $parentMessage = $context->get('parent_message_flow');
+
+        if (is_array($parentMessage)) {
+            $gate = 'App\\Mcp\\Tools\\CommunicationSendParentMessageTool';
+            $base = [
+                'gate' => $gate,
+                'why_it_gates' => 'Sending messages real families, so the tool previews first and sends only when a person '
+                    .'approves that exact list; it refuses if the students, numbers, channel or wording have changed.',
+            ];
+
+            return match ((string) ($parentMessage['state'] ?? '')) {
+                'ready' => StageOutcome::pending('A parent message is waiting on a person to approve the list.', $base + ['blocking' => true])->withComponent($gate),
+                'sent' => StageOutcome::ran('A person approved the list on this turn, and it was sent.', $base + ['approved' => true])->withComponent($gate),
+                'need_channel', 'need_recipients', 'need_message' => StageOutcome::notReached('The message is still missing a detail, so there is no list to approve.'),
+                'cancelled' => StageOutcome::skipped('The user stopped before approving; nothing was sent.'),
+                'status' => StageOutcome::skipped('This turn only read the record of parent messages already sent.'),
+                default => StageOutcome::notReached('The message flow stopped before anything could be approved.'),
+            };
+        }
+
         $decision = $this->decisionFrom($context);
 
         if ($decision !== null) {
@@ -87,6 +119,40 @@ class HumanApprovalStage implements LifecycleStage
         }
 
         return $this->record($context, (int) $recommendationId, $decision);
+    }
+
+    /**
+     * @param  array<string, mixed>  $flow
+     */
+    private function feeRemindersGate(array $flow): StageOutcome
+    {
+        $base = [
+            'gate' => 'App\\Mcp\\Tools\\FeesSendRemindersTool',
+            'why_it_gates' => 'Sending emails real families, so the tool previews first and sends only when a person '
+                .'approves that exact list; it refuses if the ledger no longer gives the same list.',
+        ];
+
+        return match ((string) ($flow['state'] ?? '')) {
+            'ready' => StageOutcome::pending(
+                'Fee reminders are waiting on a person to approve the list.',
+                $base + ['blocking' => true]
+            )->withComponent($base['gate']),
+
+            'sent' => StageOutcome::ran(
+                'A person approved the list on this turn, and it was sent.',
+                $base + ['approved' => true]
+            )->withComponent($base['gate']),
+
+            'need_deadline' => StageOutcome::notReached(
+                'The reminders have no payment deadline yet, so there is no list to approve.'
+            ),
+
+            'cancelled' => StageOutcome::skipped('The user stopped before approving; nothing was sent.'),
+
+            'status' => StageOutcome::skipped('This turn only read the record of reminders already sent.'),
+
+            default => StageOutcome::notReached('The reminder flow stopped before anything could be approved.'),
+        };
     }
 
     /**

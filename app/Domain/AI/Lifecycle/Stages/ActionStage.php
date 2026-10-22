@@ -56,6 +56,48 @@ class ActionStage implements LifecycleStage
             return $this->admissionsAction($admissions, $context);
         }
 
+        // Emailing fee reminders is a real action on real families. It goes through its own
+        // confirmable tool, not the workflow engine, and this stage reports what it did.
+        $feeReminders = $context->get('fees_reminders_flow');
+
+        if (is_array($feeReminders)) {
+            return $this->feeRemindersAction($feeReminders);
+        }
+
+        // Messaging parents goes through its own confirmable tool too, and this stage reports what it did.
+        $parentMessage = $context->get('parent_message_flow');
+
+        if (is_array($parentMessage)) {
+            $data = is_array($parentMessage['data'] ?? null) ? $parentMessage['data'] : [];
+
+            if ((string) ($parentMessage['state'] ?? '') === 'sent') {
+                return StageOutcome::ran(
+                    sprintf(
+                        'Parent messages were submitted by %s: %d accepted by the provider, %d failed, %d skipped. Acceptance is not delivery.',
+                        (string) ($data['channel_label'] ?? 'SMS'),
+                        (int) ($data['sent'] ?? 0),
+                        (int) ($data['failed'] ?? 0),
+                        (int) ($data['skipped'] ?? 0)
+                    ),
+                    [
+                        'reference' => $data['reference'] ?? null,
+                        'performed_by' => 'App\\Mcp\\Tools\\CommunicationSendParentMessageTool::executeConfirmed',
+                        'recorded_in' => 'ai_audit_logs (module.communication.parent_message)',
+                    ],
+                    ['table' => 'ai_audit_logs', 'ids' => []]
+                )->withComponent('App\\Mcp\\Tools\\CommunicationSendParentMessageTool');
+            }
+
+            return StageOutcome::notReached(match ((string) ($parentMessage['state'] ?? '')) {
+                'ready' => 'Waiting on the person to approve. This is the gate, not a gap — nothing is sent until they say yes.',
+                'need_channel', 'need_recipients', 'need_message' => 'The message is still missing a detail, so nothing has been prepared or sent.',
+                'cancelled' => 'The user stopped the flow, so nothing was sent.',
+                'status' => 'This turn read the record of parent messages already sent and changed nothing.',
+                'failed' => 'The provider accepted none of the messages, so nothing was sent. The reason for each is recorded against it.',
+                default => 'The message flow stopped before anything could be sent.',
+            });
+        }
+
         $module = $context->module;
 
         if ($context->intent?->key === 'learning_effectiveness') {
@@ -115,6 +157,45 @@ class ActionStage implements LifecycleStage
     /**
      * @param  array<string, mixed>  $flow
      */
+    /** @param  array<string, mixed>  $flow */
+    private function feeRemindersAction(array $flow): StageOutcome
+    {
+        $state = (string) ($flow['state'] ?? '');
+        $data = is_array($flow['data'] ?? null) ? $flow['data'] : [];
+
+        if ($state === 'sent') {
+            return StageOutcome::ran(
+                sprintf(
+                    'Fee reminders were submitted by %s: %d accepted by the %s, %d failed, %d skipped. Acceptance is not delivery.',
+                    ($data['channel'] ?? 'email') === 'sms' ? 'SMS' : 'email',
+                    (int) ($data['sent'] ?? 0),
+                    ($data['channel'] ?? 'email') === 'sms' ? 'SMS gateway' : 'mail server',
+                    (int) ($data['failed'] ?? 0),
+                    (int) ($data['skipped'] ?? 0)
+                ),
+                [
+                    'reference' => $data['reference'] ?? null,
+                    'performed_by' => 'App\\Mcp\\Tools\\FeesSendRemindersTool::executeConfirmed',
+                    'recorded_in' => 'ai_audit_logs (module.fees.fee_reminder)',
+                ],
+                ['table' => 'ai_audit_logs', 'ids' => []]
+            )->withComponent('App\\Mcp\\Tools\\FeesSendRemindersTool');
+        }
+
+        $sms = ($data['channel'] ?? 'email') === 'sms';
+
+        return StageOutcome::notReached(match ($state) {
+            'ready' => 'Waiting on the person to approve. This is the gate, not a gap — nothing is '.($sms ? 'texted' : 'emailed').' until they say yes.',
+            'need_deadline' => 'There is no payment deadline yet, so nothing has been prepared or sent.',
+            'cancelled' => 'The user stopped the flow, so nothing was sent.',
+            'status' => 'This turn read the record of past reminders and changed nothing.',
+            'failed' => $sms
+                ? 'The SMS gateway did not accept any of the messages, so nothing was sent. The reason for each is recorded against it.'
+                : 'The mail server accepted none of the messages, so nothing was delivered.',
+            default => 'The reminder flow stopped before anything could be sent.',
+        });
+    }
+
     private function admissionsAction(array $flow, StageContext $context): StageOutcome
     {
         if ((string) ($flow['state'] ?? '') !== 'confirmed') {

@@ -224,7 +224,7 @@ class H5PContentAdapter
      * tracker asks for: it sits on the same axis as Presentations / Videos, not on
      * the audience axis that Classroom vs Teacher occupies.
      */
-    public const CATEGORY = 'H5P Interactive';
+    public const CATEGORY = 'Interactive';
 
     /**
      * H5P assets for one chapter, in the same shape as a content_master row.

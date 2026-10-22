@@ -28,7 +28,7 @@ final class ResultSet
 
     /** Keys that make a good heading for a row, most identifying first. */
     private const TITLE_KEYS = [
-        'student_name', 'teacher_name', 'full_name', 'name', 'title', 'label',
+        'student_name', 'teacher_name', 'full_name', 'name', 'title', 'label', 'chapter_name',
         'department', 'subject_name', 'standard_name', 'exam_title', 'display_name',
         'enquiry_no', 'enrollment_no',
     ];
@@ -50,6 +50,14 @@ final class ResultSet
         public readonly string $question,
         /** The tool's own total, which can exceed what was shown. */
         public readonly int $total,
+        /**
+         * What the tool was called with — the date, the class — so a follow-up that only narrows or
+         * extends the question can keep them. "What about Class 6?" after a list for 5 October is
+         * about 5 October; without this it was read against today.
+         *
+         * @var array<string, mixed>
+         */
+        public readonly array $arguments = [],
     ) {
     }
 
@@ -64,7 +72,8 @@ final class ResultSet
         string $key,
         array $rows,
         string $question,
-        ?int $total = null
+        ?int $total = null,
+        array $arguments = []
     ): ?self {
         $rows = array_values(array_filter($rows, 'is_array'));
 
@@ -96,6 +105,7 @@ final class ResultSet
             items: $items,
             question: $question,
             total: $total ?? count($rows),
+            arguments: $arguments,
         );
     }
 
@@ -238,6 +248,7 @@ final class ResultSet
             'items' => $this->items,
             'question' => $this->question,
             'total' => $this->total,
+            'arguments' => $this->arguments,
         ];
     }
 
@@ -278,6 +289,7 @@ final class ResultSet
             items: $items,
             question: (string) ($raw['question'] ?? ''),
             total: (int) ($raw['total'] ?? count($items)),
+            arguments: is_array($raw['arguments'] ?? null) ? $raw['arguments'] : [],
         );
     }
 
@@ -401,6 +413,9 @@ final class ResultSet
         return match (true) {
             $noun === '' => 'record',
             str_ends_with($noun, 'ies') => substr($noun, 0, -3) . 'y',
+            // "courses" is "course" + s, not "cours" + es: the shape below strips two letters for "statuses"
+            // and "buses", and was reading "show the first cours" back to the user.
+            (bool) preg_match('/(ourses|ouses|enses|ponses|poses|hases|bases)$/i', $noun) => substr($noun, 0, -1),
             (bool) preg_match('/(ses|xes|zes|ches|shes)$/i', $noun) => substr($noun, 0, -2),
             str_ends_with($noun, 'ss') => $noun,
             str_ends_with($noun, 's') => substr($noun, 0, -1),

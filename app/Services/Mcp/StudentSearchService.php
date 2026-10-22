@@ -37,6 +37,22 @@ class StudentSearchService
                     ->orWhere('student_mobile', 'like', '%' . $queryText . '%')
                     ->orWhere('email', 'like', '%' . $queryText . '%')
                     ->orWhereRaw("CONCAT_WS(' ', first_name, middle_name, last_name) like ?", ['%' . $queryText . '%']);
+
+                // "Greeva Rafaliya" must find GREEVA RAJESH RAFALIYA. The contiguous match above cannot,
+                // because a middle name sits between the two words. Every word of a multi-word query
+                // appearing in the name is also a match — only ever additional to the match above.
+                $words = array_values(array_filter(preg_split('/\s+/u', $queryText) ?: [], static fn ($w) => mb_strlen($w) >= 2));
+
+                if (count($words) > 1) {
+                    $builder->orWhere(function ($all) use ($words) {
+                        foreach ($words as $word) {
+                            $all->whereRaw(
+                                "CONCAT_WS(' ', first_name, middle_name, last_name) like ?",
+                                ['%' . str_replace(['%', '_'], ['\\%', '\\_'], $word) . '%']
+                            );
+                        }
+                    });
+                }
             });
         }
 

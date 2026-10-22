@@ -1,0 +1,41 @@
+{
+    "chapter_id": 25851,
+    "chapter_name": "Linear Equations in One Variable",
+    "standard_id": 41,
+    "standard_name": "8",
+    "subject_id": 3976,
+    "subject_name": "Mathematics",
+    "sub_institute_id": 1,
+    "concept_count": 16,
+    "ground_truth_chars": 8638,
+    "board": "cbse",
+    "board_label": "CBSE",
+    "board_profile_complete": true,
+    "framework": "NCERT Learning Outcomes at the Elementary Stage",
+    "question_types": {
+        "mcq": "Multiple choice",
+        "assertion_reason": "Assertion-Reason",
+        "very_short_answer": "Very short answer",
+        "short_answer": "Short answer",
+        "long_answer": "Long answer",
+        "case_based": "Case based / source based",
+        "hots": "Higher order thinking skills",
+        "competency": "Competency based"
+    },
+    "cognitive_bands": [
+        "remember",
+        "understand",
+        "apply",
+        "analyze",
+        "evaluate",
+        "create"
+    ],
+    "difficulty_labels": [
+        "easy",
+        "medium",
+        "hard"
+    ],
+    "learning_objective": "Classify given algebraic items such as 5x and 5x = 25 as expressions or equations.\nLabel the LHS and the RHS of a given linear equation.\nDetermine whether a proposed value is a solution by comparing the two sides.\nCount the distinct variables in a given expression and decide whether it qualifies.\nInspect an expression and state whether the highest power of its variable is one.\nRecognise a linear equation in one variable by applying both restrictions together.\nApply the same operation to both sides of an equation and write the new equation.\nCheck a proposed solution of 2x - 3 = 7 by evaluating both sides at that value.\nTranspose a term across the equality sign and name the balanced step it replaces.\nRearrange 2x - 3 = x + 2 so that the variable terms stand on one side only.\nJustify subtracting a term in the variable from both sides of an equation.\nSelect the multiplier that clears the fractions in 5x + 7/2 = 3x/2 - 14.\nCalculate the lowest common multiple of the denominators and use it to clear the fractions.\nExpand the brackets on both sides of an equation before transposing any term.\nEvaluate the LHS and the RHS separately at the solution and compare the two values.\nFormulate a linear equation in one variable from a stated problem on ages or perimeters.",
+    "already_generated": [],
+    "exported_at": "2026-10-16T17:22:04+05:30"
+}

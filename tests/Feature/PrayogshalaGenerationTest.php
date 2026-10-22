@@ -24,6 +24,9 @@ class PrayogshalaGenerationTest extends TestCase
 {
     private FakeProvider $ai;
 
+    /** @var list<int> pauses the generator asked for instead of sleeping */
+    private array $sleeps = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -81,6 +84,7 @@ class PrayogshalaGenerationTest extends TestCase
         });
         (require base_path('database/migrations/2026_10_08_100000_create_lms_prayogshala_activity_table.php'))->up();
         (require base_path('database/migrations/2026_10_09_100000_add_generation_tracking_to_lms_prayogshala_activity_table.php'))->up();
+        (require base_path('database/migrations/2026_10_15_100000_add_generation_error_code_to_lms_prayogshala_activity_table.php'))->up();
 
         DB::table('school_setup')->insert([['Id' => 1, 'is_Lms' => 'Y'], ['Id' => 7, 'is_Lms' => 'Y'], ['Id' => 8, 'is_Lms' => 'N']]);
         DB::table('standard')->insert([['id' => 42, 'name' => '9']]);
@@ -107,6 +111,16 @@ class PrayogshalaGenerationTest extends TestCase
 
         $this->ai = new FakeProvider();
         app()->instance(ClaudeQuestionClient::class, $this->ai);
+        // Retry pauses are recorded, never slept.
+        $this->sleeps = [];
+        app()->bind(PrayogshalaGenerator::class, fn ($app) => new PrayogshalaGenerator(
+            $app->make(PrayogshalaService::class),
+            $app->make(SimulationConfigValidator::class),
+            $app->make(ClaudeQuestionClient::class),
+            function (int $seconds): void {
+                $this->sleeps[] = $seconds;
+            },
+        ));
     }
 
     // ----------------------------------------------------------------- fixtures
@@ -251,6 +265,24 @@ class PrayogshalaGenerationTest extends TestCase
         }
     }
 
+    public function test_whitelisted_maths_functions_are_allowed_and_nothing_else_is_callable(): void
+    {
+        $v = new SimulationConfigValidator();
+        $lab = self::goodActivity()['lab_config'];
+
+        $lab['simulation']['params']['derived'][0]['formula'] = 'gcd(heat,20)+lcm(4,6)+mod(heat,7)+isqrt(heat)+icbrt(heat)+digitsum(heat)+abs(heat-50)+max(1,2)';
+        $this->assertSame([], $v->validate($lab));
+
+        foreach (['system(heat)', 'eval(1)', 'constructor(heat)', 'heat(2)'] as $bad) {
+            $lab['simulation']['params']['derived'][0]['formula'] = $bad;
+            $this->assertStringContainsString('not an allowed function', implode(' ', $v->validate($lab)), $bad);
+        }
+
+        // A function name is not a fact, and a fact is not a function.
+        $lab['simulation']['params']['derived'][0]['formula'] = 'gcd+1';
+        $this->assertStringContainsString("uses 'gcd'", implode(' ', $v->validate($lab)));
+    }
+
     public function test_a_predict_condition_may_only_use_facts_the_engine_provides(): void
     {
         $lab = self::goodActivity()['lab_config'];
@@ -384,13 +416,16 @@ class PrayogshalaGenerationTest extends TestCase
 
     public function test_a_provider_failure_is_recorded_and_a_retry_reuses_the_same_row(): void
     {
-        $this->ai->queue(['__error' => 'Claude is rate limiting this account. Try again shortly.']);
+        $this->ai->queue(['__error' => 'The Claude API key was rejected. Check ANTHROPIC_API_KEY.']);
         $failed = $this->generator()->generate(11, 1, 55);
 
         $this->assertSame('failed', $failed['outcome']);
+        $this->assertSame('invalid_key', $failed['error_code']);
         $row = $this->rows()->sole();
         $this->assertSame('failed', $row->generation_status);
-        $this->assertStringContainsString('rate limiting', $row->generation_error);
+        $this->assertSame('invalid_key', $row->generation_error_code);
+        $this->assertStringContainsString('AI Providers', $row->generation_error);
+        $this->assertStringNotContainsString('ANTHROPIC_API_KEY', $row->generation_error, 'only fixed, safe wording is stored');
         $this->assertNull($row->lab_config, 'nothing fake is shown when the provider is down');
 
         $this->ai->queue(self::goodActivity());
@@ -402,6 +437,7 @@ class PrayogshalaGenerationTest extends TestCase
         $this->assertSame('ready', $row->generation_status);
         $this->assertSame(2, (int) $row->generation_attempts);
         $this->assertNull($row->generation_error);
+        $this->assertNull($row->generation_error_code, 'a successful retry clears the failure');
     }
 
     public function test_an_invalid_config_gets_one_repair_round_then_fails(): void
@@ -456,14 +492,19 @@ class PrayogshalaGenerationTest extends TestCase
         $first = $this->generator()->generate(11, 1, 55);
         DB::table('lms_prayogshala_activity')->where('id', $first['activity_id'])->update(['status' => 'published']);
 
-        $this->ai->queue(['__error' => 'Claude is temporarily unavailable (HTTP 503).']);
+        $before = $this->rows()->sole();
+        for ($i = 0; $i < 3; $i++) {
+            $this->ai->queue(['__error' => 'Claude is temporarily unavailable (HTTP 503).']);
+        }
         $this->assertSame('failed', $this->generator()->generate(11, 1, 55, true)['outcome']);
 
         $row = $this->rows()->sole();
         $this->assertSame('published', $row->status, 'learners keep what they had');
         $this->assertSame('ready', $row->generation_status);
-        $this->assertNotNull($row->lab_config);
-        $this->assertStringContainsString('503', $row->generation_error);
+        $this->assertSame($before->lab_config, $row->lab_config, 'the lab is byte-for-byte what it was');
+        $this->assertSame($before->title, $row->title);
+        $this->assertSame((int) $before->generation_version, (int) $row->generation_version);
+        $this->assertSame('provider_unavailable', $row->generation_error_code);
     }
 
     // ------------------------------------------------------------------ tenancy
@@ -707,7 +748,7 @@ class FakeProvider extends ClaudeQuestionClient
 
     public function __construct()
     {
-        parent::__construct(fn () => 'test-key');
+        // No parent constructor: the client has no credential of its own any more.
     }
 
     public function queue(array $reply): void
@@ -715,7 +756,7 @@ class FakeProvider extends ClaudeQuestionClient
         $this->replies[] = $reply;
     }
 
-    public function complete(string $system, string $user, int|string|null $subInstituteId = null): array
+    public function complete(string $system, string $user, int|string|null $subInstituteId = null, string $module = 'assessment_ai'): array
     {
         $this->calls++;
         $this->lastPrompt = $user;

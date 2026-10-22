@@ -7,6 +7,34 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
 
+/**
+ * NAMING NOTE (2026-10-10) — this is NOT the PAL V4 "Pedagogy Engine".
+ *
+ * Two controllers share the class name `PedagogyEngineController` in this
+ * app: this one (`App\Http\Controllers\lms\PedagogyEngineController`) and
+ * `App\Http\Controllers\api\PAL\PedagogyEngineController`. They are not
+ * duplicates of one feature — they diverge completely:
+ *
+ *   - `api\PAL\PedagogyEngineController` is the canonical "Pedagogy Engine":
+ *     a thin, service-delegating, read-only rule-set API
+ *     (`routes/pal_api.php`, prefix `api/pal/pedagogy-engine`), and it is
+ *     what the frontend page literally named "Pedagogy Engine"
+ *     (`app/pal/pedagogy-engine/` in the K12 Next.js app) actually calls.
+ *   - THIS class implements a different, older subsystem: legacy inline-SQL
+ *     student/teacher/content intelligence — learner profiling, the
+ *     Ebbinghaus forgetting curve, class insights, knowledge-graph
+ *     building, and suggested-content tracking — wired through
+ *     `routes/web.php` (session-based, e.g. `getPedagogySuggestedContent`
+ *     at `/lms/pedagogy-suggested-content`) and still actively consumed by
+ *     the frontend (`app/pal/data/pal.ts`).
+ *
+ * Do not delete or merge this class into the other one — its methods are
+ * still live. Do not add new "Pedagogy Engine" rule-set behaviour here
+ * either; that belongs in `api\PAL\PedagogyEngineController`. A future
+ * refactor should rename this class to something like
+ * `StudentIntelligenceController` to stop the two from reading as the same
+ * feature.
+ */
 class PedagogyEngineController extends Controller
 {
     // ============================================================

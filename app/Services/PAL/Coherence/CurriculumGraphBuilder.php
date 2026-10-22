@@ -14,10 +14,15 @@ use Illuminate\Support\Facades\DB;
  * projection written by `pal:coherence-sync`, and that projection cannot answer
  * this question for two independent reasons.
  *
- * First, it has no Unit and no Topic. CoherenceGraphProjection writes
- * (:Subject)-[:COVERS_CHAPTER]->(:Chapter)-[:HAS_CONCEPT]->(:Concept) and nothing
- * above or between; `topic_master` has no label anywhere in config/neo4j.php. The
- * map specified here is four levels deep, so two of them simply are not there.
+ * First, it still has no Unit integrated into this spine. `projectTopics()` was
+ * added 2026-10-06 and does write `topic_master` as (:Chapter)-[:HAS_TOPIC]->(:Topic)
+ * -[:HAS_CONCEPT]->(:Concept) (live count 2026-10-12: 16,158 Topic nodes, 8,746
+ * HAS_TOPIC edges) - so Topic is no longer missing. Unit is a separate story: bare
+ * `:Unit` nodes exist (194, via the generic `lms_units` trigger in config/neo4j.php,
+ * not CoherenceGraphProjection), but nothing in this class links them into the
+ * Subject/Chapter/Topic/Concept chain - only 66 HAS_UNIT edges exist graph-wide, none
+ * written here. The map specified here is four levels deep; one of them, Unit, is
+ * still not there.
  *
  * Second, the sync is a deployment gap rather than a guarantee - it runs where the
  * command has been scheduled, and a teacher-facing screen that renders blank on a
@@ -81,8 +86,14 @@ class CurriculumGraphBuilder
         $includeCrossGrade = $options['include_cross_grade'] ?? true;
 
         $curriculum = $this->curriculum($subInstituteId, $subjectId, $standardId, $syear);
-        $syear = $syear ?? ($curriculum->syear ?? null);
 
+        // Chapters are filtered by the syear the caller actually asked for - never by
+        // lms_curriculum's own syear. The two drift on this estate (chapter_master can
+        // hold 2026 while the lms_curriculum header row is still 2022), so inheriting
+        // the header's year silently narrowed an unscoped request into one for a year
+        // that has no chapters. The Coherence Map is a direct view of whatever
+        // curriculum exists for this subject+grade, not scoped to lms_curriculum's own
+        // year; an explicit `syear` (the "Show <year>" button) still filters exactly.
         $chapters = $this->chapters($subInstituteId, $subjectId, $standardId, $syear);
 
         // An empty chapter list is a real answer, not an error: a subject can exist

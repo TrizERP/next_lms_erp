@@ -55,4 +55,39 @@ return [
         'url' => env('ERP_API_URL', 'https://erp.triz.co.in'),
         'token' => env('ERP_API_TOKEN'),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | G2G (hp_erp) cross-product Competency/KASBA/Framework graph
+    |--------------------------------------------------------------------------
+    |
+    | No default base_url: unlike `erp` above, there is no known-good deployed
+    | host for hp_erp today (its own .env points APP_URL at 127.0.0.1:8000, a
+    | local dev server, not a stable address this application can default to).
+    | Both values are empty until someone sets them, and
+    | App\Services\Integrations\G2GCompetencyGraphClient treats that as a real
+    | "not configured" state rather than guessing a host.
+    |
+    | G2G_API_TOKEN must be a Sanctum personal access token from hp_erp's own
+    | `personal_access_tokens` table, ideally a dedicated service account's -
+    | see that client class's docblock for why none is defaulted here and what
+    | was checked before concluding one does not exist yet.
+    |
+    */
+    'g2g' => [
+        'base_url' => env('G2G_API_BASE_URL'),
+        'token' => env('G2G_API_TOKEN'),
+        'timeout' => env('G2G_API_TIMEOUT', 8),
+    ],
+
+    /*
+    | Meta WhatsApp Cloud API callbacks (delivery receipts). Both are required and neither has a default, so an
+    | unconfigured server accepts nothing: see WhatsappWebhookController.
+    |   WHATSAPP_WEBHOOK_VERIFY_TOKEN  any secret string; the same one is typed into Meta's webhook settings.
+    |   WHATSAPP_APP_SECRET            the Meta app's "App secret"; used to check each callback's signature.
+    */
+    'whatsapp' => [
+        'verify_token' => env('WHATSAPP_WEBHOOK_VERIFY_TOKEN'),
+        'app_secret' => env('WHATSAPP_APP_SECRET'),
+    ],
 ];

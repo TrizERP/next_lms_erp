@@ -9,6 +9,7 @@ use App\Domain\AI\Conversation\FollowUpComposer;
 use App\Domain\AI\Conversation\GeneralAnswerService;
 use App\Domain\AI\Conversation\Intent;
 use App\Domain\AI\Lifecycle\Modules\ModuleResolver;
+use App\Domain\AI\Lifecycle\Plan\Plan;
 use App\Domain\AI\Workspace\ModuleSuggestions;
 use App\Services\Mcp\McpRequestContext;
 
@@ -76,6 +77,17 @@ class LifecycleAskService
 
         $resolution = $this->modules->resolve($question, $options, $scope->selectedInstituteId);
 
+        // A question about another module, asked on a page that answers only its own, is pointed
+        // at that module's page rather than answered from its data. The turn stays on the page's
+        // module, so the follow-ups it offers are this page's.
+        $outside = $this->modules->outsideThisPage($resolution, $scope->selectedInstituteId);
+
+        if ($outside !== null) {
+            $resolution['module'] = $outside['page'];
+            $resolution['source'] = 'question_belongs_to_another_page';
+            $resolution['stood_down'] = null;
+        }
+
         $context = new StageContext(
             question: $question,
             scope: $scope,
@@ -89,6 +101,10 @@ class LifecycleAskService
         // Named on the context so the trace can say the turn ran somewhere other than
         // the screen it was asked on. Silent re-routing would be worse than none.
         $context->set('module_stood_down', $resolution['stood_down'] ?? null);
+        $context->set('out_of_page', $outside === null ? null : [
+            'page' => ['key' => $outside['page']->key, 'label' => $outside['page']->label],
+            'asked' => ['key' => $outside['asked']->key, 'label' => $outside['asked']->label],
+        ]);
 
         $trace = $this->pipeline->run($context, $onStage);
 
@@ -222,7 +238,7 @@ class LifecycleAskService
         // to tell a refusal from a general answer, and both leave planning blocked —
         // guessing from stage counts marks "what is the capital of Australia" as refused
         // when it was answered perfectly well.
-        $context->set('answer_source', 'stages');
+        $context->set('answer_source', $context->get('out_of_page') !== null ? 'out_of_page' : 'stages');
 
         if ($headline === null) {
             // Before falling back to "nothing to report", see whether this was simply
@@ -263,6 +279,24 @@ class LifecycleAskService
                 $headline = $narrated;
                 $context->set('narrated', true);
             }
+        }
+
+        // The plain module read is a guess: no intent matched and no model could plan the
+        // question, so the module's first tools were called with default arguments. What comes
+        // back is a real overview of the screen's data and not an answer to what was asked
+        // ("is any teacher double booked?" returned "28 periods."). Say so, rather than let a
+        // list stand as the answer. A model-narrated answer is left alone: it has read the rows.
+        if ($context->plan?->source === Plan::SOURCE_MODULE_READ
+            && ! ($context->plan->context['dated'] ?? false)
+            && ! ($context->plan->context['targeted'] ?? false)
+            && $context->get('answer_source') === 'stages'
+            && ! $context->get('narrated')) {
+            $headline = sprintf(
+                'I could not match that to a specific lookup, so this is the general %s overview, not an '
+                .'answer to your exact question. %s',
+                $context->module->label,
+                $headline
+            );
         }
 
         if ($followUps === []) {
@@ -356,12 +390,28 @@ class LifecycleAskService
      */
     private function general(StageContext $context, LifecycleTrace $trace, ?callable $onToken = null): ?array
     {
-        if (! $this->general->isAvailable() || $context->module->mcpTools !== []) {
+        if (! $this->general->isAvailable()) {
             return null;
         }
 
+        // A module with tools of its own is a page about that module's data, and a general answer
+        // on it used to be refused outright — so "what is the capital of India?" asked on the
+        // Attendance or Hostel page was answered "I could not answer that". The sentence itself
+        // settles it: when no module's vocabulary matched ANY word of it, planning has already said
+        // it is not about this page's data, and that is what general knowledge and small talk look
+        // like. A question that names a module — this one or another — still never reaches a model
+        // from here, and every condition below still holds.
+        if ($context->module->mcpTools !== [] && $context->get('modules_considered', []) !== []) {
+            return null;
+        }
+
+        // A sentence that names no module can still reach reasoning when the model plans it without a
+        // tool; reasoning then reports "no student or case identified", which for such a sentence means
+        // "there was no subject", not a refusal worth keeping. Any other blocked stage still is.
+        $domainFree = $context->get('modules_considered', []) === [];
+
         foreach (StageKey::inExecutionOrder() as $key) {
-            if ($key === StageKey::Planning) {
+            if ($key === StageKey::Planning || ($domainFree && $key === StageKey::Reasoning)) {
                 continue;
             }
 
@@ -389,6 +439,10 @@ class LifecycleAskService
             // And so a PRODUCT module that chose its own conversational model on its own
             // AI Stack uses that. A module that chose nothing resolves as before.
             $context->module->key,
+            // The student a console button pinned to this turn, so PalGraphContext can
+            // ground a PAL-shaped question that reached here for want of a bound tool.
+            // Null on every turn without one, which is most of them — same as today.
+            $context->payload('student_id'),
         );
     }
 

@@ -45,6 +45,10 @@ class ConversationalNarrator
     public function __construct(
         private readonly ModelClient $client,
         private readonly ?AiModelClientFactory $clients = null,
+        // Optional for the same reason $clients is: existing unit tests construct
+        // this class with one positional arg. The container always supplies the
+        // real one, so grounding is live in production without any caller change.
+        private readonly ?PalGraphContext $palContext = null,
     ) {
     }
 
@@ -124,36 +128,57 @@ class ConversationalNarrator
     /**
      * What the tools returned this turn, or null when narrating would be inventing.
      *
-     * Only a turn answered wholly by completed tool calls qualifies. A confirmation, a
-     * drafted action, a case from an agent run or a refusal keeps its own wording - those
-     * are governed sentences, and a model paraphrasing one is a model changing what a
-     * person is about to approve.
+     * Only a turn answered wholly by completed tool calls, or grounded by the PAL
+     * knowledge graph, qualifies. A confirmation, a drafted action, a case from an
+     * agent run or a refusal keeps its own wording - those are governed sentences,
+     * and a model paraphrasing one is a model changing what a person is about to
+     * approve.
      *
      * @return array<int, array<string, mixed>>|null
      */
     private function dataFrom(StageContext $context): ?array
     {
         if ($context->actions() !== [] || $context->cases !== [] || $context->pendingRecommendation !== null
-            || $context->get('admissions_flow') !== null) {
-            return null;
-        }
-
-        $results = $context->get('mcp_step_results', []);
-
-        if (! is_array($results) || $results === []) {
+            || $context->get('admissions_flow') !== null
+            || $context->get('fees_reminders_flow') !== null
+            || $context->get('parent_message_flow') !== null
+            || $context->get('fees_student_flow') !== null
+            || $context->plan?->route === 'exam_question_help_flow') {
             return null;
         }
 
         $data = [];
 
-        foreach ($results as $step => $payload) {
-            if (! is_array($payload) || ($payload['success'] ?? true) === false) {
-                continue;
+        $results = $context->get('mcp_step_results', []);
+
+        if (is_array($results)) {
+            foreach ($results as $step => $payload) {
+                if (! is_array($payload) || ($payload['success'] ?? true) === false) {
+                    continue;
+                }
+
+                $body = is_array($payload['data'] ?? null) ? $payload['data'] : $payload;
+
+                $data[] = ['step' => (string) $step, 'result' => $this->slim($body)];
             }
+        }
 
-            $body = is_array($payload['data'] ?? null) ? $payload['data'] : $payload;
+        // PAL grounding is additive to whatever the tools returned — including when
+        // they returned nothing at all, which is the common case for a question no
+        // module claims. `forQuestion()` is a narrow, cheap guard (see
+        // PalGraphContext's docblock) that returns null on the overwhelming majority
+        // of turns, so this costs nothing when it does not apply. Numbers in the
+        // eventual reply are still checked against this same encoded data by
+        // numbersNotInData() below, so a graph-sourced fact is held to the identical
+        // bar a tool-sourced one is.
+        $graphContext = $this->palContext?->forQuestion(
+            $context->question,
+            $context->scope,
+            $context->payload('student_id')
+        );
 
-            $data[] = ['step' => (string) $step, 'result' => $this->slim($body)];
+        if ($graphContext !== null) {
+            $data[] = ['step' => 'pal_knowledge_graph', 'result' => $graphContext];
         }
 
         return $data === [] ? null : $data;

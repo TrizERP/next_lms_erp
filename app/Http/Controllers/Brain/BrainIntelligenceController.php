@@ -1125,10 +1125,13 @@ class BrainIntelligenceController extends Controller
         }
 
         if ($type !== '') {
+            $nodes = $explorer->nodes($type, trim((string) $request->query('q', '')));
+
             return response()->json([
-                'available' => true,
+                'available' => $explorer->graphError() === null,
+                'reason' => $explorer->graphError(),
                 'type' => $type,
-                'nodes' => $explorer->nodes($type, trim((string) $request->query('q', ''))),
+                'nodes' => $nodes,
             ]);
         }
 

@@ -8,6 +8,7 @@ use App\Http\Controllers\AI\AskController;
 use App\Http\Controllers\AI\CapabilityController;
 use App\Http\Controllers\AI\CaseController;
 use App\Http\Controllers\AI\GenerationController;
+use App\Http\Controllers\AI\KnowledgeRagController;
 use App\Http\Controllers\AI\OntologyController;
 use App\Http\Controllers\AI\OutcomeController;
 use App\Http\Controllers\AI\RecommendationController;
@@ -66,6 +67,15 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
                 ->where('capability', '[a-z0-9\-]+');
 
             /*
+            | Knowledge & RAG — the one real capability behind the
+            | `knowledge-rag` console entry: ask a free-text question and get
+            | back an answer grounded in this institute's own ingested
+            | curriculum content, or an honest `insufficient_evidence` /
+            | `model_unavailable` when it cannot. See KnowledgeRagController.
+            */
+            Route::post('/knowledge-rag/ask', [KnowledgeRagController::class, 'ask']);
+
+            /*
             | AI Provider & Model Management — the write half of the console.
             |
             | The capability routes above report what is configured; these change it.
@@ -78,9 +88,20 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             | dropdown reads, so a model added here is immediately selectable there —
             | one list, not two.
             */
-            Route::get('/configuration/options', [AiConfigurationController::class, 'options']);
+            // A text completion for the web frontend's server routes, through AI Providers — so the
+            // frontend holds no provider key. See AiCompletionController.
+            Route::post('/complete', [\App\Http\Controllers\AI\AiCompletionController::class, 'complete']);
+
+            Route::get('/configuration/options',[AiConfigurationController::class, 'options']);
+            // Which providers and models can really serve one module, ranked — what the form
+            // shows the moment a module is picked. Registered before `/configuration/{id}`
+            // routes so the word is never read as an id.
+            Route::get('/configuration/compatibility', [AiConfigurationController::class, 'compatibility']);
+            Route::post('/configuration/reorder', [AiConfigurationController::class, 'reorder']);
             Route::get('/configuration', [AiConfigurationController::class, 'index']);
             Route::post('/configuration', [AiConfigurationController::class, 'store']);
+            Route::post('/configuration/{id}/verify', [AiConfigurationController::class, 'verify'])
+                ->where('id', '[0-9]+');
             Route::put('/configuration/{id}', [AiConfigurationController::class, 'update'])
                 ->where('id', '[0-9]+');
             Route::delete('/configuration/{id}', [AiConfigurationController::class, 'destroy'])
@@ -233,6 +254,10 @@ Route::prefix(config('ai.route_prefix', 'api/ai'))
             // it was for tests, the interpret route and any existing caller.
             Route::post('/ask/stream', [AskController::class, 'stream']);
             Route::post('/ask/interpret', [AskController::class, 'interpret']);
+            // A sentence in Hindi or Gujarati, in English, for the screen's own page navigation.
+            Route::post('/ask/translate', [AskController::class, 'translate']);
+            // Fixed wording the screen builds itself, in the answer's language.
+            Route::post('/ask/localize', [AskController::class, 'localize']);
             Route::get('/ask/intents', [AskController::class, 'intents']);
             // Which modules the lifecycle serves and how deep each one reaches — the
             // honest inventory behind "what can this thing actually answer?".

@@ -47,7 +47,7 @@ class ArchitectureHealthService
             'hpc-stages' => $this->hpcStages($tenant),
             'progression-rubric' => $this->progressionRubric(),
             'knowledge-graph' => $this->knowledgeGraph(),
-            'ai-agents' => $this->aiAgents(),
+            'ai-agents' => $this->aiAgents($tenant),
             'student-model' => $this->studentModel(),
             'career-pathway' => $this->careerPathway(),
         ];
@@ -275,11 +275,26 @@ class ArchitectureHealthService
         );
     }
 
-    private function aiAgents(): array
+    private function aiAgents(?int $tenant = null): array
     {
         $agents = (array) config('pal_architecture.subsystems.ai-agents.settings.agents', []);
-        $keyPresent = trim((string) config('openrouter.api_key', getenv('OPENROUTER_API_KEY') ?: '')) !== '';
-        $baseUrl = (string) config('openrouter.base_url', '');
+
+        // What the administrator saved for PAL Intelligence in AI Providers -- the same
+        // configuration the orchestrator actually calls -- not a key read from the environment.
+        $providerLabel = null;
+
+        try {
+            $resolved = app(\App\Domain\AI\Configuration\AiModelClientFactory::class)
+                ->configurationFor('pal_intelligence', $tenant);
+
+            if ($resolved->hasKey()) {
+                $providerLabel = $resolved->provider . ($resolved->model ? ' / ' . $resolved->model : '');
+            }
+        } catch (\Throwable) {
+            $providerLabel = null;
+        }
+
+        $keyPresent = $providerLabel !== null;
         $orchestratorExists = class_exists(\App\Services\PAL\AI\AIOrchestrationService::class);
 
         $enabled = 0;
@@ -289,16 +304,16 @@ class ArchitectureHealthService
             }
         }
 
-        $ready = $keyPresent && $baseUrl !== '' && $orchestratorExists;
+        $ready = $keyPresent && $orchestratorExists;
 
         return $this->report(
             $ready ? 'operational' : 'inactive',
             $ready
-                ? "The provider is configured; {$enabled} of " . count($agents) . ' agent personas are enabled.'
-                : 'No AI provider credential is configured on this server, so every agent falls back to its non-generative behaviour.',
+                ? "PAL Intelligence is configured to use {$providerLabel}; {$enabled} of " . count($agents) . ' agent personas are enabled.'
+                : 'PAL Intelligence has no usable AI provider configured in AI Providers, so every agent falls back to its non-generative behaviour.',
             [
                 $this->metric('Orchestrator', $orchestratorExists ? 'Deployed' : 'Missing', $orchestratorExists ? 'good' : 'critical'),
-                $this->metric('Provider key', $keyPresent ? 'Configured' : 'Missing', $keyPresent ? 'good' : 'critical'),
+                $this->metric('AI provider', $keyPresent ? $providerLabel : 'Not configured', $keyPresent ? 'good' : 'critical'),
                 $this->metric('Agents enabled', $enabled . '/' . count($agents), $enabled > 0 ? 'good' : 'warn'),
             ]
         );

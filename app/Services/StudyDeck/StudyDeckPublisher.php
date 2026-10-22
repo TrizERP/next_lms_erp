@@ -95,6 +95,63 @@ class StudyDeckPublisher
             }
         }
 
+        // A story scene may carry its own picture (interaction.nodes[].image): the same checks, storage and rewrite as a slide's.
+        foreach ((array) ($deck['slides'] ?? []) as $i => $slide) {
+            foreach ((array) ($slide['interaction']['nodes'] ?? []) as $k => $node) {
+                $places = [['image']];
+                foreach (array_keys((array) ($node['extra_images'] ?? [])) as $e) {
+                    $places[] = ['extra_images', $e];
+                }
+                foreach ($places as $place) {
+                    $image = $place === ['image'] ? ($node['image'] ?? null) : ($node['extra_images'][$place[1]] ?? null);
+                    if (!is_array($image) || empty($image['url'])) {
+                        continue;
+                    }
+                    $url = (string) $image['url'];
+                    [$asset, $how] = $this->resolve($url, $image, $deck, $imageDir, $write);
+                    if (($asset['missing'] ?? false) === true) {
+                        $missing[$url] = $url;
+                        continue;
+                    }
+                    $key = $asset['sha256'];
+                    if (!isset($assets[$key])) {
+                        $assets[$key] = $asset;
+                        $how === 'stored' ? $stored[] = $asset['ref'] : $reused[] = $asset['ref'];
+                    }
+                    if ($place === ['image']) {
+                        $deck['slides'][$i]['interaction']['nodes'][$k]['image']['url'] = $asset['ref'];
+                        $deck['slides'][$i]['interaction']['nodes'][$k]['image']['asset_id'] = $key;
+                    } else {
+                        $deck['slides'][$i]['interaction']['nodes'][$k]['extra_images'][$place[1]]['url'] = $asset['ref'];
+                        $deck['slides'][$i]['interaction']['nodes'][$k]['extra_images'][$place[1]]['asset_id'] = $key;
+                    }
+                    $rewrites[$url] = $asset['ref'];
+                }
+            }
+        }
+
+        // A study document may also carry a picture per CONCEPT (`concept_images`, keyed by concept id): the same checks, the same
+        // storage, the same rewrite to a stored reference as a part's picture.
+        foreach ((array) ($deck['concept_images'] ?? []) as $conceptId => $image) {
+            if (!is_array($image) || empty($image['url'])) {
+                continue;
+            }
+            $url = (string) $image['url'];
+            [$asset, $how] = $this->resolve($url, $image, $deck, $imageDir, $write);
+            if (($asset['missing'] ?? false) === true) {
+                $missing[$url] = $url;
+                continue;
+            }
+            $key = $asset['sha256'];
+            if (!isset($assets[$key])) {
+                $assets[$key] = $asset;
+                $how === 'stored' ? $stored[] = $asset['ref'] : $reused[] = $asset['ref'];
+            }
+            $deck['concept_images'][$conceptId]['url'] = $asset['ref'];
+            $deck['concept_images'][$conceptId]['asset_id'] = $key;
+            $rewrites[$url] = $asset['ref'];
+        }
+
         // The keys are checksums of the pictures, so the map is stable and sorted.
         ksort($assets);
         $deck['assets'] = $assets;
@@ -217,6 +274,24 @@ class StudyDeckPublisher
             }
         }
 
+        foreach ((array) ($deck['slides'] ?? []) as $slide) {
+            foreach ((array) ($slide['interaction']['nodes'] ?? []) as $node) {
+                foreach (array_merge([$node['image'] ?? null], (array) ($node['extra_images'] ?? [])) as $img) {
+                    $url = (string) ($img['url'] ?? '');
+                    if ($url !== '' && StudyDeckImages::idFromRef($url) === null && !($allowPending && preg_match(self::PENDING, $url))) {
+                        throw new \RuntimeException("Slide {$slide['n']}'s story scene picture \"$url\" is not a stored picture reference.");
+                    }
+                }
+            }
+        }
+
+        foreach ((array) ($deck['concept_images'] ?? []) as $conceptId => $image) {
+            $url = (string) ($image['url'] ?? '');
+            if ($url !== '' && StudyDeckImages::idFromRef($url) === null && !($allowPending && preg_match(self::PENDING, $url))) {
+                throw new \RuntimeException("The picture of concept $conceptId (\"$url\") is not a stored picture reference.");
+            }
+        }
+
         $text = json_encode($deck, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) . "\n" . $html;
         // A drive letter ("C:\..." or "C:/..."), a UNC path, a review folder, a storage path or a local host.
         // The lookbehind keeps "https://" from looking like a drive.
@@ -234,7 +309,10 @@ class StudyDeckPublisher
         $slug = trim(strtolower(preg_replace('/[^a-z0-9]+/i', '_', $chapterName) ?? ''), '_');
         $hash = substr(sha1((string) json_encode($deck, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)), 0, 12);
 
-        return 'study_deck_' . substr($slug, 0, 80) . '_' . $hash . '.pptx';
+        // A story lesson has its own name, so it is a separate content item and never replaces a Classroom Presentation.
+        $prefix = \App\Services\StudyDeck\Story\StoryTemplate::isStory($deck) ? \App\Services\StudyDeck\Story\StoryTemplate::FILE_PREFIX : 'study_deck_';
+
+        return $prefix . substr($slug, 0, 80) . '_' . $hash . '.pptx';
     }
 
     /** Remove the pictures this run stored for the first time, unless a deck uses them. Used when a later step failed. */

@@ -18,7 +18,18 @@ class FrameworkProgressService
 
     public function getCatalog(): array
     {
-        return $this->catalog->catalog();
+        // `graphFrameworks` is real, live `(:Framework)-[:MAPS_TO]->(target)`
+        // data read from the K12 Neo4j graph (App\Services\PAL\Framework\
+        // FrameworkCatalogService::graphMappings()) — distinct from every
+        // other key in config('pal_v4'), which is static pedagogy/tag
+        // configuration, not graph data. As of 2026-10-12, NGSS, GARDNER,
+        // CASEL and NCDG are populated (each against a different real target
+        // label — see graphMappings()'s own docblock); RIASEC and HPC are
+        // deliberately left empty rather than faked — same docblock explains
+        // why for each.
+        return $this->catalog->catalog() + [
+            'graphFrameworks' => $this->catalog->graphMappings(),
+        ];
     }
 
     public function getContentMetadata(int $contentId): array

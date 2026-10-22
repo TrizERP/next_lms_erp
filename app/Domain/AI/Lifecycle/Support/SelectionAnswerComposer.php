@@ -54,6 +54,16 @@ class SelectionAnswerComposer
         $singular = $set?->singular ?? 'record';
 
         $remembered = $this->rememberedRow($context, $set);
+
+        // A lookup that summarises the selected record — a headline and the records inside it, such
+        // as a course's chapters — is the answer in its own words. Flattening it to the columns of
+        // one row would drop exactly what was asked for.
+        $summary = $this->loadedSummary($context);
+
+        if ($summary !== null) {
+            return $this->summary($context, $summary, $title !== '' ? $title : ucfirst($singular));
+        }
+
         $loaded = $this->loadedRecord($context, $singular);
         $missingFromTool = $this->declaredMissing($context);
 
@@ -298,6 +308,87 @@ class SelectionAnswerComposer
      *
      * @return array<string, mixed>|null
      */
+    /**
+     * A lookup's own summary of the record: its stated headline plus a list of the records inside it.
+     *
+     * @return array{headline:string, key:string, rows:array<int, array<string, mixed>>}|null
+     */
+    private function loadedSummary(StageContext $context): ?array
+    {
+        foreach ((array) $context->get('mcp_step_results', []) as $payload) {
+            $payload = $this->unwrap($payload);
+            $headline = is_array($payload) ? ($payload['headline'] ?? null) : null;
+
+            if (! is_string($headline) || trim($headline) === '') {
+                continue;
+            }
+
+            foreach ($payload as $key => $value) {
+                if (is_array($value) && $value !== [] && array_is_list($value) && is_array($value[0])) {
+                    return ['headline' => trim($headline), 'key' => (string) $key, 'rows' => array_values($value)];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array{headline:string, key:string, rows:array<int, array<string, mixed>>}  $summary
+     */
+    private function summary(StageContext $context, array $summary, string $title): StageOutcome
+    {
+        $shown = array_slice($summary['rows'], 0, self::MAX_FIELDS * 2);
+
+        $context->setHeadline($summary['headline']);
+        $context->addSection($this->compose->records(
+            ucfirst(str_replace('_', ' ', $summary['key'])),
+            array_map(static function (array $row) {
+                $name = null;
+
+                foreach (['chapter_name', 'subject_name', 'name', 'title'] as $key) {
+                    if (! empty($row[$key]) && is_scalar($row[$key])) {
+                        $name = (string) $row[$key];
+                        break;
+                    }
+                }
+
+                $meta = [];
+
+                foreach ($row as $field => $value) {
+                    if (! is_scalar($value) || $value === '' || (string) $value === $name || str_ends_with((string) $field, '_id')) {
+                        continue;
+                    }
+
+                    $meta[ucfirst(str_replace('_', ' ', (string) $field))] = (string) $value;
+                }
+
+                return ['title' => $name ?? 'Record', 'lines' => [], 'meta' => $meta];
+            }, $shown)
+        ));
+
+        if (count($summary['rows']) > count($shown)) {
+            $context->addSection($this->compose->text(
+                'Not all shown',
+                sprintf('Showing %d of %d.', count($shown), count($summary['rows']))
+            ));
+        }
+
+        $context->addSection($this->compose->text(
+            'Where this came from',
+            sprintf(
+                'Read live through %s. Nothing here was written by a model: a chapter with no lesson plan '
+                . 'is reported as having none.',
+                implode(', ', $context->executedTools()) ?: 'the module lookup'
+            )
+        ));
+
+        return StageOutcome::ran(
+            sprintf('Summarised "%s" from the previous answer through %s.', $title, implode(', ', $context->executedTools())),
+            ['loaded_through' => $context->executedTools(), 'rows' => count($summary['rows'])]
+        );
+    }
+
     private function loadedRecord(StageContext $context, string $singular): ?array
     {
         foreach ((array) $context->get('mcp_step_results', []) as $payload) {

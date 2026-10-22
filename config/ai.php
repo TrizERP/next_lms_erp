@@ -4,17 +4,33 @@
 // the user as a failed generation rather than as a config error. Any retired id
 // still pinned in a deployed .env is mapped forward to its replacement here, so a
 // stale environment keeps working without an .env edit on every server.
-$geminiModel = (static function (): string {
+$retiredGeminiModels = [
+    'gemini-2.5-flash' => 'gemini-3.6-flash',
+    'gemini-1.5-flash' => 'gemini-3.6-flash',
+    'gemini-1.5-pro'   => 'gemini-3.6-pro',
+];
+
+$geminiModel = (static function () use ($retiredGeminiModels): string {
     $model = trim((string) env('GEMINI_MODEL', ''));
 
-    $retired = [
-        'gemini-2.5-flash' => 'gemini-3.6-flash',
-        'gemini-1.5-flash' => 'gemini-3.6-flash',
-        'gemini-1.5-pro'   => 'gemini-3.6-pro',
-    ];
-
-    return $retired[$model] ?? ($model !== '' ? $model : 'gemini-3.6-flash');
+    return $retiredGeminiModels[$model] ?? ($model !== '' ? $model : 'gemini-3.6-flash');
 })();
+
+// The model the document (homework / exam answer-sheet) client tries when the main
+// one is busy or out of quota. Empty means "no fallback". A retired id is remapped
+// the same way as above, so a stale GEMINI_FALLBACK_MODEL=gemini-2.5-flash resolves
+// to the main model and the client treats it as no fallback rather than retrying it.
+$geminiFallbackModel = (static function () use ($retiredGeminiModels): string {
+    $model = trim((string) env('GEMINI_FALLBACK_MODEL', ''));
+
+    return $retiredGeminiModels[$model] ?? $model;
+})();
+
+// Seconds a whole-document Gemini call may take (see 'document_timeout' below). Anything
+// that is not a positive number falls back to 90 rather than being used: a 0 or a typo
+// would otherwise time every scanned sheet out at once.
+$geminiDocumentTimeout = (int) env('GEMINI_DOCUMENT_TIMEOUT', env('GEMINI_REQUEST_TIMEOUT', 90));
+$geminiDocumentTimeout = $geminiDocumentTimeout > 0 ? $geminiDocumentTimeout : 90;
 
 return [
     /*
@@ -27,6 +43,17 @@ return [
     |
     */
     'route_prefix' => env('AI_ROUTE_PREFIX', 'api/ai'),
+
+    /*
+    | Student exam-question help ("Ask AI" on an exam question).
+    |
+    | By default the answer key is given whatever the paper's `result_show_ans` says. Set
+    | AI_EXAM_HELP_RESPECT_TEACHER_SETTING=true to withhold the answer (hint only) on papers where the
+    | teacher turned that off.
+    */
+    'exam_help' => [
+        'respect_teacher_setting' => (bool) env('AI_EXAM_HELP_RESPECT_TEACHER_SETTING', false),
+    ],
 
     /*
     |--------------------------------------------------------------------------
@@ -48,7 +75,27 @@ return [
     | belong. See config/deepseek.php.
     |
     */
+    /*
+    | Reading and answering in Hindi and Gujarati. When the configured Gemini model is out of
+    | quota or overloaded, these models of the same provider are tried in order.
+    */
+    'language' => [
+        'fallback_models' => array_values(array_filter(array_map('trim', explode(',', (string) env('AI_LANGUAGE_FALLBACK_MODELS', 'gemini-3.1-flash-lite,gemini-3.5-flash-lite'))))),
+    ],
+
+    /*
+    | Whether a provider key found in the environment (GEMINI_API_KEY, OPENROUTER_API_KEY, ...) may
+    | stand in when `ai_api_keys` holds none. OFF, and it should stay off: providers, models and keys
+    | are chosen in AI & Intelligence -> AI Providers, and an environment key quietly overriding that
+    | is how a module ends up on an account nobody can see. Turn it on only to bootstrap a fresh
+    | install before anyone has opened that screen.
+    */
+    'allow_env_credentials' => (bool) env('AI_ALLOW_ENV_CREDENTIALS', false),
+
     'provider' => [
+        // A tiebreak only: with no provider ranked in AI Providers, the pool provider named here is
+        // listed first among those that already have a stored key. It never supplies a key or
+        // names a provider that has none.
         'driver' => env('AI_PROVIDER', 'gemini'),
 
         'gemini' => [
@@ -58,7 +105,40 @@ return [
             'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
             'model' => $geminiModel,
             'timeout' => (int) env('GEMINI_REQUEST_TIMEOUT', 45),
+            // Whole-document calls (scanned homework, exam answer sheets) need longer than
+            // the brain's text calls. Read by App\Services\Homework\GeminiClient.
+            //
+            // Precedence: GEMINI_DOCUMENT_TIMEOUT, then GEMINI_REQUEST_TIMEOUT, then 90.
+            // The second step keeps what this client has always done -- it read
+            // GEMINI_REQUEST_TIMEOUT directly -- now from config, so a cached config honours
+            // it too. The catch is that the same variable is the brain's 45s: setting
+            // GEMINI_REQUEST_TIMEOUT=45 also gives scanned documents 45s unless
+            // GEMINI_DOCUMENT_TIMEOUT=90 is set beside it. See docs/EXAM_EVALUATION_DEPLOYMENT_RUNBOOK.md.
+            'document_timeout' => $geminiDocumentTimeout,
+            'fallback_model' => $geminiFallbackModel,
             'max_output_tokens' => (int) env('GEMINI_MAX_OUTPUT_TOKENS', 1466),
+            // Tried in this order when the model above answers a free-tier DAILY-quota 429 (the
+            // allowance is per model, so a sibling on the same key still answers). Only that one 429
+            // triggers it. Verified live 2026-10-15: `gemini-flash-lite-latest` and
+            // `gemini-3.1-flash-lite` answered while `gemini-flash-latest` was out of quota.
+            'fallback_models' => array_values(array_filter(array_map(
+                'trim',
+                explode(',', (string) env('GEMINI_FALLBACK_MODELS', 'gemini-flash-lite-latest,gemini-3.1-flash-lite'))
+            ))),
+            // The embedding model (added 2026-10-10 for the Content Authoring RAG
+            // row — ContentEmbeddingService). A SEPARATE endpoint from the chat
+            // model above (:embedContent, not :generateContent) and a separate
+            // model family. hpbrain_backend's own Embeddings.php/GeminiProvider
+            // default to `text-embedding-004`, but that model is RETIRED on this
+            // estate's live key — verified 2026-10-10, `:embedContent` against it
+            // returns 404 "not found ... or not supported for embedContent".
+            // `GET /v1beta/models` against the same key lists exactly three
+            // models whose supportedGenerationMethods include `embedContent`:
+            // gemini-embedding-001, gemini-embedding-2-preview, gemini-embedding-2.
+            // `gemini-embedding-001` is the stable (non-preview) one and is what
+            // this defaults to — the same "retired model -> its live replacement"
+            // mapping `$geminiModel` above already does for chat.
+            'embedding_model' => env('GEMINI_EMBEDDING_MODEL', 'gemini-embedding-001'),
             // The api_type used to look the key up in the ai_api_keys pool, which
             // takes precedence over the env value above. Lowercase `gemini` is not a
             // typo — it is what the rows in that table are actually tagged with, and
@@ -400,6 +480,15 @@ return [
                     'fees.getPending',
                     'fees.arrears',
                     'fees.collection_report',
+                    // Not read-only, so it is never a report source or a fallback read: it is reached
+                    // only through the reminder flow, which previews and waits for approval.
+                    'fees.send_reminders',
+                    // The saved record of reminders already sent. Read-only; it is what "Show reminder
+                    // status" and "Was the SMS delivered?" are answered from, and it is called as a tool so
+                    // the answer's sources and audit trail name it.
+                    'fees.reminder_history',
+                    // Read-only: asks the SMS gateway and Meta whether messages can really reach parents, and names what is wrong.
+                    'communication.channel_health',
                     'ai.templates.list',
                     'ai.templates.render',
                     'ai.templates.generate',
@@ -466,6 +555,9 @@ return [
                 'detail_tools' => ['student_id' => 'attendance.student'],
                 'mcp_tools' => [
                     'attendance.overview',
+                    // The day's own register: who was absent on a date, and the counts for it.
+                    // `overview` is a rate over a window and cannot answer "who is absent today?".
+                    'attendance.daily',
                     'attendance.student',
                     'ai.templates.list',
                     'ai.templates.render',
@@ -527,9 +619,13 @@ return [
             | `exam` above does.
             */
             'teach_learn' => [
-                'detail_tools' => ['standard_id' => 'lms.courses'],
+                'read_hints' => ['lms.course_summary' => ['chapter', 'lesson plan', 'syllabus', 'summarise', 'summarize']],
+                // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
+                'route_patterns' => ['/lms/global-mapping', '/lms/global-mapping/**'],
+                'detail_tools' => ['standard_id' => 'lms.course_summary', 'subject_id' => 'lms.course_summary'],
                 'mcp_tools' => [
                     'lms.courses',
+                    'lms.course_summary',
                     'lms.activities',
                     'academics.structure',
                     'academics.subjects',
@@ -542,6 +638,8 @@ return [
             ],
 
             'curriculum_planning' => [
+                // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
+                'route_patterns' => ['/lms/curriculum-planning', '/lms/curriculum-planning/**', '/lms/monthly-plan', '/lms/monthly-plan/**', '/lms/lesson-plan', '/lms/lesson-plan/**', '/lms/reports', '/lms/reports/**', '/lms/teacher-diary', '/lms/teacher-diary/**', '/lms/book-list', '/lms/book-list/**', '/lms/syllabus-plan', '/lms/syllabus-plan/**'],
                 'detail_tools' => ['standard_id' => 'curriculum_planning.status'],
                 'mcp_tools' => [
                     'curriculum_planning.status',
@@ -557,6 +655,8 @@ return [
             ],
 
             'engagement' => [
+                // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
+                'route_patterns' => ['/lmsLeaderboard', '/lmsLeaderboard/**', '/lmsSocialCollabrotive', '/lmsSocialCollabrotive/**', '/lmsPortfolio', '/lmsPortfolio/**', '/lmsVirtualClassroom', '/lmsVirtualClassroom/**', '/lmsActivityStream', '/lmsActivityStream/**'],
                 'detail_tools' => ['student_id' => 'engagement.student_summary'],
                 'mcp_tools' => [
                     'engagement.student_summary',
@@ -574,6 +674,8 @@ return [
             ],
 
             'interactions' => [
+                // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
+                'route_patterns' => ['/lmsCommunication', '/lmsCommunication/**', '/lb_master', '/lb_master/**', '/lms/student-analysis', '/lms/student-analysis/**', '/lms/dashboard', '/lms/dashboard/**'],
                 'detail_tools' => ['related_id' => 'interactions.list'],
                 'mcp_tools' => [
                     'interactions.list',
@@ -596,6 +698,8 @@ return [
             | tables — never the older pal module's.
             */
             'new_pal' => [
+                // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
+                'route_patterns' => ['/new_pal', '/new_pal/**', '/coherence/**'],
                 'agent_key' => 'k12_new_pal',
                 'workflow_key' => 'pal_intervention_followup',
                 'case_type' => 'pal_intervention_review',
@@ -627,12 +731,15 @@ return [
             | `teach_learn`/`student`/`students` too.
             */
             'exam_assessment' => [
+                // Widens the ai_modules row's patterns for screens it predates (see ModuleResolver::fromRoute).
+                'route_patterns' => ['/lms/homework', '/lms/homework/**', '/lms/lmsAssignment', '/lms/lmsAssignment/**', '/lmsAssignment_submission', '/lmsAnnotate_assignment', '/lms/worksheet', '/lms/worksheet/**', '/lms/project', '/lms/project/**', '/lms/question-wise-report', '/exam/online', '/exam/online/**', '/exam/progress-report', '/question_paper', '/question_paper/**'],
                 'agent_key' => 'k12_exam_assessment',
                 'workflow_key' => 'exam_assessment_followup',
                 'case_type' => 'exam_assessment_follow_up',
                 'detail_tools' => ['student_id' => 'exam_assessment.online_exam_summary'],
                 'mcp_tools' => [
                     'exam_assessment.online_exam_summary',
+                    'exam_assessment.question_help',
                     'exam_assessment.assignment_status',
                     'homework.list',
                     'academics.structure',
@@ -778,6 +885,11 @@ return [
                 'mcp_tools' => [
                     'communication.messages',
                     'communication.channels',
+                    // Approval-gated: previews who would be messaged and sends only after confirmation.
+                    'communication.send_parent_message',
+                    // Read-only: the saved record of those sends, with the provider's reply and delivery state.
+                    'communication.parent_message_history',
+                    'communication.channel_health',
                     'academics.structure',
                     'ai.templates.list',
                     'ai.templates.render',
@@ -1201,6 +1313,123 @@ return [
             ],
 
             /*
+            | Leave (staff).
+            |
+            | Two reads over `hrms_emp_leaves`. STAFF leave only: students' leave applications
+            | are `leave_applications`, a Front Desk table, and are not bound here. Balances
+            | are deliberately not offered — entitlement lives in LeaveAnalyticsService's
+            | allocation rules and a figure computed here would disagree with the Leave
+            | Summary report.
+            */
+            'leave' => [
+                'label' => 'Leave',
+                'description' => 'Staff leave requests, who they are for and whether they are approved.',
+                // Config-only registration: resolves this module's own pages with no ai_modules row.
+                'route_patterns' => ['/modules/leave', '/modules/leave/**', '/leave-type', '/leave-authorisation', '/leave-apply', '/my-leave', '/import-leave', '/hrms/designation_leave'],
+                'detail_tools' => ['request_id' => 'leave.requests'],
+                'mcp_tools' => [
+                    'leave.requests',
+                    'leave.summary',
+                    'ai.templates.list',
+                    'ai.templates.render',
+                    'ai.templates.generate',
+                ],
+                'depth_reason' => 'Leave requests, their dates and their status are readable. Leave '
+                    . 'balances and days taken are not computed here because entitlement depends on '
+                    . 'allocation rules held in the Leave module, and `day_type` holds thirteen different '
+                    . 'spellings. Students\' leave is a separate module.',
+            ],
+
+            /*
+            | User Attendance (staff punches) over `hrms_attendances`.
+            |
+            | STAFF only; student attendance is the `attendance` module. The table has no
+            | shift, expected start or leave link, so "late" and "absent" are not derivable.
+            */
+            'user_attendance' => [
+                'label' => 'User Attendance',
+                'description' => 'Staff punch-in and punch-out records and the days they cover.',
+                // Config-only registration: resolves this module's own pages with no ai_modules row.
+                'route_patterns' => ['/modules/user-attendance', '/modules/user-attendance/**', '/hrms-attendance', '/hrms-inout-time', '/hrms/user_shift_master', '/hrms/user_bulk_shift_update'],
+                'mcp_tools' => [
+                    'staff_attendance.records',
+                    'staff_attendance.summary',
+                    'ai.templates.list',
+                    'ai.templates.render',
+                    'ai.templates.generate',
+                ],
+                'depth_reason' => 'Punches and missing sign-outs are readable. The table records no '
+                    . 'shift, expected start time or leave link, so nothing here can say a person was '
+                    . 'late, absent or on leave.',
+            ],
+
+            /*
+            | Payroll, in TOTALS. Admin-only tools; never one named person's pay.
+            */
+            'payroll' => [
+                'label' => 'Payroll',
+                'description' => 'The pay heads defined for staff and the payslips generated each month, in totals.',
+                // Config-only registration: resolves this module's own pages with no ai_modules row.
+                'route_patterns' => ['/modules/payroll', '/modules/payroll/**', '/payroll-type', '/employee-salary-structure', '/payroll-deduction', '/form16', '/hrms-salary-certificate', '/hrms-general-setting'],
+                'mcp_tools' => [
+                    'payroll.heads',
+                    'payroll.monthly',
+                    'ai.templates.list',
+                    'ai.templates.render',
+                    'ai.templates.generate',
+                ],
+                'depth_reason' => 'Pay heads and monthly payslip totals are readable. Individual '
+                    . 'salaries are deliberately not provided, and the amounts carry no tax or net-pay '
+                    . 'interpretation.',
+            ],
+
+            /*
+            | Donation (`donation_collection`). Alumni giving is a different module.
+            | Donor PAN, address, phone and bank details are never returned.
+            */
+            'donation' => [
+                'label' => 'Donation',
+                'description' => 'Donations received by the school, by head and payment mode.',
+                // Config-only registration: resolves this module's own pages with no ai_modules row.
+                'route_patterns' => ['/modules/donation-management', '/modules/donation-management/**', '/donation_collection', '/donation_report'],
+                'mcp_tools' => [
+                    'donations.list',
+                    'donations.summary',
+                    'ai.templates.list',
+                    'ai.templates.render',
+                    'ai.templates.generate',
+                ],
+                'depth_reason' => 'Donations, their heads, modes and totals are readable. Donor '
+                    . 'identity beyond the name, and any tax-exemption status, are not provided.',
+            ],
+
+            /*
+            | Alumni Management (`alumni*` tables).
+            |
+            | Read-only and admin-only. Contact details, date of birth and photographs are
+            | never returned, and donations are totals only because a donor may have given
+            | anonymously. Attendance at events is not recorded.
+            */
+            'alumni' => [
+                'label' => 'Alumni Management',
+                'description' => 'Alumni, their events, mentorship, opportunities, surveys and giving.',
+                // Config-only registration: resolves this module's own pages with no ai_modules row.
+                'route_patterns' => ['/modules/alumni-management', '/modules/alumni-management/**', '/alumni', '/alumni/**'],
+                'mcp_tools' => [
+                    'alumni.directory',
+                    'alumni.events',
+                    'alumni.overview',
+                    'ai.templates.list',
+                    'ai.templates.render',
+                    'ai.templates.generate',
+                ],
+                'depth_reason' => 'Alumni, their professional status, events, mentorship, opportunities, '
+                    . 'surveys and donation totals are readable. Contact details are withheld because '
+                    . 'alumni consent per channel, event attendance is not recorded, and donations are '
+                    . 'never attributed to a named alumnus.',
+            ],
+
+            /*
             | Utility — which in this ERP is bulk data operations, NOT utilities.
             |
             | Keyed `migration-modules` because that row has claimed `/Utility/**` since the
@@ -1359,7 +1588,9 @@ return [
             ],
 
             'course' => [
-                'mcp_tools' => ['academics.subjects', 'lms.courses', 'ai.templates.list', 'ai.templates.render'],
+                'detail_tools' => ['subject_id' => 'lms.course_summary'],
+                'read_hints' => ['lms.course_summary' => ['chapter', 'lesson plan', 'syllabus', 'summarise', 'summarize']],
+                'mcp_tools' => ['lms.courses', 'lms.course_summary', 'academics.subjects', 'ai.templates.list', 'ai.templates.render'],
                 'depth_reason' => 'The course module can generate from templates but has no agent, so '
                     . 'nothing here opens a case or requires an approval.',
             ],
@@ -1402,7 +1633,9 @@ return [
             ],
 
             'course-master' => [
-                'mcp_tools' => ['academics.subjects', 'academics.structure', 'lms.courses'],
+                'detail_tools' => ['subject_id' => 'lms.course_summary'],
+                'read_hints' => ['lms.course_summary' => ['chapter', 'lesson plan', 'syllabus', 'summarise', 'summarize']],
+                'mcp_tools' => ['lms.courses', 'lms.course_summary', 'academics.subjects', 'academics.structure'],
             ],
 
             'classteacher' => [
@@ -1469,6 +1702,19 @@ return [
         ],
 
         /*
+        | Pages that answer only their own module's questions.
+        |
+        | On one of these, a question whose words clearly name a DIFFERENT module is not
+        | answered from that module's data. It is told, in a sentence, which page it belongs to,
+        | and nothing is read. Any other page keeps the older behaviour of running the question
+        | in the module its words name (the dashboard, which summarises everything, relies on it).
+        |
+        | Questions that name no module at all — general knowledge, small talk, "show me their
+        | names" — are never affected: there is nothing to redirect.
+        */
+        'page_scoped_modules' => ['attendance', 'fees', 'timetable', 'hostel'],
+
+        /*
         | The words that route a question to a module, when neither the caller nor the
         | page said which one. Weighted, and a winner must beat the runner-up by a clear
         | margin before the words alone decide — an ambiguous question goes to the
@@ -1492,6 +1738,12 @@ return [
                 'fee' => 3.0, 'fees' => 3.0, 'payment' => 2.5, 'paid' => 2.0, 'unpaid' => 3.0,
                 'defaulter' => 3.5, 'defaulters' => 3.5, 'collection' => 2.5, 'outstanding' => 2.5,
                 'invoice' => 2.5, 'receipt' => 2.0, 'pending fees' => 4.0, 'due' => 1.5,
+                // "How much was collected in the last 7 days?" names no other fees word, and without
+                // these it matched no module at all and was treated as not being about fees.
+                'collected' => 3.0, 'amount collected' => 3.5, 'money collected' => 3.5,
+                // "How much did student 163416 pay on 13 October?" — without a fees word of its own, the word
+                // "student" alone moved it to the Student page.
+                'pay' => 2.5,
             ],
             'attendance' => [
                 'attendance' => 3.5, 'absent' => 3.0, 'absence' => 3.0, 'present' => 2.0,
@@ -1751,6 +2003,33 @@ return [
                 'complained' => 3.5, 'raised a complaint' => 4.5,
                 // "issue" and "problem" are far too general to claim a module.
                 'issue' => 1.0, 'problem' => 1.0,
+            ],
+            'leave' => [
+                'leave request' => 4.5, 'leave requests' => 4.5, 'on leave' => 4.5,
+                'casual leave' => 4.5, 'sick leave' => 4.5, 'earned leave' => 4.5,
+                'leave type' => 4.0, 'leave approval' => 4.5, 'leave balance' => 4.0,
+                'staff leave' => 4.5, 'pending leave' => 4.5, 'approved leave' => 4.5,
+                // Students' leave is the Front Desk module's, so the bare word stays weak.
+                'leave' => 2.0,
+            ],
+            'user_attendance' => [
+                'staff attendance' => 4.5, 'punch in' => 4.5, 'punched in' => 4.5, 'punch out' => 4.5,
+                'punch-out' => 4.5, 'punch-in' => 4.5, 'punches' => 4.0, 'sign out' => 2.5,
+                'biometric' => 3.5, 'check in' => 2.0, 'check-in' => 2.0,
+            ],
+            'payroll' => [
+                'payroll' => 4.5, 'payslip' => 4.5, 'payslips' => 4.5, 'salary' => 3.5,
+                'salaries' => 3.5, 'pay head' => 4.5, 'pay heads' => 4.5, 'allowance' => 3.0,
+                'payroll deduction' => 4.5, 'form 16' => 4.5, 'form16' => 4.5,
+            ],
+            'donation' => [
+                'donation' => 4.5, 'donations' => 4.5, 'donor' => 4.5, 'donors' => 4.5,
+                'donated' => 4.0, 'donation head' => 4.5,
+            ],
+            'alumni' => [
+                'alumni' => 4.5, 'alumnus' => 4.5, 'alumna' => 4.5, 'old student' => 3.0,
+                'former student' => 3.0, 'passed out' => 3.0, 'reunion' => 4.0,
+                'mentorship' => 3.5, 'mentor' => 3.0, 'batch of' => 3.0, 'graduate' => 2.0,
             ],
             'migration-modules' => [
                 'rollover' => 4.5, 'roll over' => 4.0, 'roll-over' => 4.0,

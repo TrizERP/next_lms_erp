@@ -120,7 +120,6 @@ class send_sms_parents_controller extends Controller
             $isError = 0;
             $errorMessage = true;
 
-            $text = urlencode($text);
             //$data['last_var'] = urlencode($data['last_var']);
             /*
             if($template_id !=''){
@@ -128,7 +127,9 @@ class send_sms_parents_controller extends Controller
             }
             */
 
-            $url = $data['url'].$data['pram'].$template_id.$data['mobile_var'].$mobile.$data['text_var'].$text.$data['last_var'];
+            // One place assembles the gateway address (see gatewayUrl()), so this screen and the assistant
+            // send the same request.
+            $url = $this->gatewayUrl($data, $mobile, $text, $template_id);
             //echo $url;
             //die();
             $ch = curl_init();
@@ -158,6 +159,86 @@ class send_sms_parents_controller extends Controller
         }
 
         return $responce;
+    }
+
+    /**
+     * The address the institute's SMS gateway is called on, from its saved row (`sms_api_details`):
+     * `url . pram . [template_id] . mobile_var . <mobile> . text_var . <message> . last_var`.
+     *
+     * The message is URL-encoded; the saved parts are used as saved, except that a raw space in them is written
+     * as %20. A signature such as ".(Generated at CMA)" is kept in `last_var` and libcurl refuses a URL that
+     * contains a space ("Malformed input to a URL function", curl error 3), so without this the request never
+     * left the server — which was the case for 24 of the 34 institutes with a gateway saved. The gateway decodes
+     * %20 to a space, so what it receives is what the school saved.
+     *
+     * Used by sendSMS() and sendSMSDetailed() alike: it is the same request, whoever sends it.
+     *
+     * @param  array<string, mixed>  $gateway  A `sms_api_details` row.
+     */
+    public function gatewayUrl(array $gateway, $mobile, $text, $template_id = ''): string
+    {
+        $url = $gateway['url'].$gateway['pram'].$template_id.$gateway['mobile_var'].$mobile.$gateway['text_var'].urlencode($text).$gateway['last_var'];
+
+        return str_replace(' ', '%20', $url);
+    }
+
+    /**
+     * The same send as sendSMS() — same gateway row, same URL assembly — that also reports what the
+     * provider answered.
+     *
+     * sendSMS() is left exactly as it was, because Communication → Send SMS to Parents depends on it
+     * and it only ever reports a request that could not be made. A caller that has to tell the
+     * person whether the provider took the message (the chatbot's fee reminders) needs the reply, and
+     * a redirect or an error body is a refusal that sendSMS() calls a success.
+     *
+     * Two differences from sendSMS(), both about the URL and nothing else:
+     *   - raw spaces in the saved parts (a signature such as "- School Name" kept in `last_var`) are
+     *     written as %20, because libcurl refuses a URL containing them ("Malformed input to a URL
+     *     function", curl error 3) and the request never leaves the server;
+     *   - a redirect is not followed. Providers retire an old address by redirecting it to a web page
+     *     that answers for a different service, and following it turns a refusal into noise.
+     *
+     * @return array{error:int, message?:string, http?:int, body?:string, redirect_host?:?string}
+     */
+    public function sendSMSDetailed($mobile, $text, $sub_institute_id, $template_id = '')
+    {
+        $data = manage_sms_api::where(['sub_institute_id' => $sub_institute_id])->get()->first();
+
+        if (! $data) {
+            return ['error' => 1, 'message' => 'Please add api details first.'];
+        }
+
+        $data = $data->toArray();
+        $url = $this->gatewayUrl($data, $mobile, $text, $template_id);
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
+        curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 8);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+        curl_setopt($ch, CURLOPT_URL, $url);
+        $body = curl_exec($ch);
+
+        if (curl_errno($ch)) {
+            $error = ['error' => 1, 'message' => curl_error($ch).'-'.curl_errno($ch)];
+            curl_close($ch);
+
+            return $error;
+        }
+
+        $http = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $redirect = (string) curl_getinfo($ch, CURLINFO_REDIRECT_URL);
+        curl_close($ch);
+
+        return [
+            'error' => 0,
+            'http' => $http,
+            'body' => is_string($body) ? $body : '',
+            // The host only: the full address carries the account's key.
+            'redirect_host' => $redirect !== '' ? (parse_url($redirect, PHP_URL_HOST) ?: null) : null,
+        ];
     }
 
     public function saveParentLog($student_id, $msg, $number, $sub_institute_id, $syear)

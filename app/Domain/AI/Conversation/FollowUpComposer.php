@@ -77,6 +77,18 @@ class FollowUpComposer
      */
     private function forTaskInFlight(StageContext $context): array
     {
+        $feeFlow = $context->get('fees_reminders_flow');
+
+        if (is_array($feeFlow)) {
+            return match ((string) ($feeFlow['state'] ?? '')) {
+                'need_deadline' => ['By 31 October.', 'Send it by SMS.', 'Cancel.'],
+                'need_student' => ['The first one.', 'Cancel.'],
+                'ready' => ['Yes, send the reminders.', 'Cancel.'],
+                'sent' => ['Show reminder status.'],
+                default => [],
+            };
+        }
+
         $flow = $context->get('admissions_flow');
 
         if (! is_array($flow)) {

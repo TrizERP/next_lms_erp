@@ -49,6 +49,27 @@ class CaiCoreService
      */
     private const OCCUPATION_MAP = [
         '17-1011.00' => 'OCC-ARCHITECT', // O*NET: "Architects, Except Landscape and Naval"
+        // Expansion, 2026-10-10 — 10 more real, sourced occupations (see
+        // database/neo4j/cai/occupations/*.cypher for the full citation on
+        // each). This is still a small, curated subset chosen for Indian
+        // CBSE-stream relevance and RIASEC/stream spread — NOT full O*NET
+        // coverage (O*NET lists 900+ occupations; this wedge now covers 11).
+        '29-1215.00' => 'OCC-DOCTOR-FAMILY-MEDICINE',   // O*NET: "Family Medicine Physicians"
+        '15-1252.00' => 'OCC-SOFTWARE-DEVELOPER',       // O*NET: "Software Developers"
+        '17-2051.00' => 'OCC-CIVIL-ENGINEER',           // O*NET: "Civil Engineers"
+        '23-1011.00' => 'OCC-LAWYER',                   // O*NET: "Lawyers"
+        // Approximation, documented in chartered_accountant.cypher: O*NET has
+        // no India-specific "Chartered Accountant" occupation, so the nearest
+        // real O*NET entry a CBSE student's aspiration dropdown could
+        // actually hold is mapped here instead of an unreachable invented code.
+        '13-2011.00' => 'OCC-CHARTERED-ACCOUNTANT',     // O*NET: "Accountants and Auditors" (nearest match)
+        '29-1141.00' => 'OCC-NURSE',                    // O*NET: "Registered Nurses"
+        '29-1051.00' => 'OCC-PHARMACIST',               // O*NET: "Pharmacists"
+        '29-1131.00' => 'OCC-VETERINARIAN',             // O*NET: "Veterinarians"
+        '27-1022.00' => 'OCC-FASHION-DESIGNER',         // O*NET: "Fashion Designers"
+        // Same documented approximation as the CA entry above — see
+        // hotel_management.cypher.
+        '11-9081.00' => 'OCC-HOTEL-MANAGEMENT',         // O*NET: "Lodging Managers" (nearest match)
     ];
 
     /**

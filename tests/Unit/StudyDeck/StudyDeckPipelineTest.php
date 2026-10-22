@@ -3,6 +3,7 @@
 namespace Tests\Unit\StudyDeck;
 
 use App\Services\StudyDeck\ConceptContextBuilder;
+use App\Services\StudyDeck\Contracts\Completer;
 use App\Services\StudyDeck\DeckValidator;
 use App\Services\StudyDeck\ImagePlanner;
 use App\Services\StudyDeck\ImageRelevanceJudge;
@@ -316,6 +317,157 @@ class StudyDeckPipelineTest extends TestCase
         $p = $this->plan();
         $p['slides'][3]['diagram'] = ['layout' => 'flow', 'title' => 'x', 'nodes' => ['a', 'b']];
         $this->assertStringContainsString('a diagram needs a visual alongside it', $errors($p));
+    }
+
+    public function test_a_run_can_raise_the_practice_per_slide_and_picture_limits_and_the_defaults_stay(): void
+    {
+        $defaults = ['max_practice' => 10, 'questions_per_slide' => 1, 'max_visuals' => 10, 'max_scenarios' => 3];
+        $this->assertSame($defaults, SlidePlanner::limits([]));
+        $this->assertSame(
+            ['max_practice' => 24, 'questions_per_slide' => 2, 'max_visuals' => 10, 'max_scenarios' => 4],
+            SlidePlanner::limits(['limits' => ['max_practice' => 24, 'questions_per_slide' => 2, 'max_scenarios' => 4]])
+        );
+
+        $context = (new ConceptContextBuilder())->assemble($this->raw());
+        $sel = (new QuestionSelector())->select($this->raw()['questions']);
+        $builder = new LearningPlanBuilder();
+        $plain = $builder->build($context, $sel['eligible'], 6, 8);
+        $raised = $builder->build($context, $sel['eligible'], 6, 8, ['max_practice' => 24, 'questions_per_slide' => 3]);
+        $this->assertSame($defaults, $plain['limits']);
+        $this->assertSame(24, $raised['limits']['max_practice']);
+
+        // Three questions on one slide: refused at the default, accepted when the run raises the cap.
+        $p = $this->plan();
+        $p['slides'][1]['question_ids'] = [101, 103, 104];
+        $p['slides'][2]['question_ids'] = [];
+        $p['slides'][4]['question_ids'] = [];
+        $planner = new SlidePlanner($this->completer([]));
+        $this->assertStringContainsString('the limit is 1', implode("\n", $planner->validate($p, $plain, $sel['eligible'])));
+        $this->assertStringNotContainsString('the limit is', implode("\n", $planner->validate($p, $raised, $sel['eligible'])));
+
+        // The validator holds a deck to the same numbers the planner was given.
+        $r = $this->deck();
+        $validator = new DeckValidator();
+        $errors = fn (array $map, array $deck) => implode("\n", $validator->validate($r['context'], $map, $r['selection']['eligible'], ['html' => $r['html'], 'deck' => $deck])['errors']);
+        $deck = $r['deck'];
+        $deck['slides'][1]['question_ids'] = [101, 103, 104];
+        $this->assertStringContainsString('the limit is 1', $errors($r['map'], $deck));
+        $map = $r['map'];
+        $map['limits']['questions_per_slide'] = 3;
+        $this->assertStringNotContainsString('the limit is', $errors($map, $deck));
+    }
+
+    public function test_the_planner_asks_for_practice_spread_through_the_lesson_only_when_the_cap_is_raised(): void
+    {
+        $context = (new ConceptContextBuilder())->assemble($this->raw());
+        $sel = (new QuestionSelector())->select($this->raw()['questions']);
+        $ask = function (array $limits) use ($context, $sel): string {
+            $map = (new LearningPlanBuilder())->build($context, $sel['eligible'], 6, 8, $limits);
+            $completer = $this->completer([json_encode($this->plan())]);
+            try {
+                (new SlidePlanner($completer))->plan($context, $map, $sel['eligible']);
+            } catch (\RuntimeException) {
+                // Only the first prompt is read; whether the canned plan passes is not this test's business.
+            }
+
+            return $completer->prompts[0];
+        };
+
+        $default = $ask([]);
+        $this->assertStringContainsString('OPTIONAL PRACTICE. Place at most 10 in the whole deck, at most 1 per slide', $default);
+        $this->assertStringContainsString('Visuals: at most 10', $default);
+
+        $spread = $ask(['max_practice' => 24, 'questions_per_slide' => 2, 'max_visuals' => 18]);
+        $this->assertStringContainsString('spread through the whole lesson', $spread);
+        $this->assertStringContainsString('between 16 and 24', $spread);
+        $this->assertStringContainsString('at most 2 per slide', $spread);
+        $this->assertStringContainsString('Visuals: at most 18', $spread);
+        $this->assertStringNotContainsString('OPTIONAL PRACTICE', $spread);
+        // Self-checking practice and real photographs first are asked for only by a run that raised the caps.
+        $this->assertStringContainsString('check itself and give feedback at once', $spread);
+        $this->assertStringContainsString('Real pictures first', $spread);
+        $this->assertStringNotContainsString('check itself and give feedback at once', $default);
+        $this->assertStringNotContainsString('Real pictures first', $default);
+    }
+
+    public function test_a_replay_rebuilds_the_same_deck_from_the_saved_model_output_and_calls_no_model(): void
+    {
+        $first = $this->service([json_encode($this->plan()), json_encode($this->slideText()), '{}', '{}'])
+            ->fromRaw($this->raw(), ['min_slides' => 6, 'max_slides' => 8]);
+        $this->assertTrue($first['report']['ok']);
+
+        // What a bundle keeps: JSON files, so slide numbers come back as integer keys of a decoded object.
+        $saved = json_decode(json_encode([
+            'plan' => $first['plan'], 'content' => $first['content'], 'images' => $first['images'], 'interactions' => $first['interactions'],
+        ]), true);
+
+        $noModel = new class implements Completer {
+            public function complete(string $system, string $prompt, int $maxTokens = 16000): string
+            {
+                throw new \LogicException('A replay must not call the model.');
+            }
+        };
+        $images = new ImagePlanner($this->imageSearch($this->goodImage()), $this->memoryStore(), fn () => $this->png(), 2.0, null);
+        $replay = new StudyDeckService(
+            new ConceptContextBuilder(), new QuestionSelector(), new LearningPlanBuilder(),
+            new SlidePlanner($noModel), new SlideContentGenerator($noModel, 8), $images,
+            new SlideHtmlRenderer(), new DeckValidator(images: $images),
+        );
+
+        $again = $replay->replay($this->raw(), $saved, ['min_slides' => 6, 'max_slides' => 8]);
+
+        $this->assertSame($first['html'], $again['html']);
+        $this->assertEquals($first['deck'], $again['deck']);
+        $this->assertEquals($first['report'], $again['report']);
+        $this->assertEquals($first['activities'], $again['activities']);
+    }
+
+    public function test_a_number_in_a_concept_definition_is_grounded_but_one_found_nowhere_is_not(): void
+    {
+        $context = [
+            'ground_truth' => 'The total magnification is the eyepiece power multiplied by the objective power.',
+            'concepts' => [['name' => 'Total magnification', 'definition' => 'A 10x eyepiece with a 40x objective gives 400x.']],
+            'chapter' => ['chapter_name' => 'Cells', 'subject_name' => 'Science', 'standard_name' => '9'],
+        ];
+        $check = function (string $html, array $context) {
+            $errors = [];
+            $warnings = [];
+            (new DeckValidator())->groundingCheck($html, '', $context, [], $errors, $warnings);
+
+            return $errors;
+        };
+
+        $this->assertSame([], $check('<p>Ten times forty gives 400 times.</p>', $context));
+        $this->assertStringContainsString('not in the chapter text: 777', implode(' ', $check('<p>A magnification of 777 times.</p>', $context)));
+
+        $context['concepts'][0]['definition'] = null;
+        $this->assertStringContainsString('not in the chapter text: 400', implode(' ', $check('<p>Ten times forty gives 400 times.</p>', $context)));
+    }
+
+    public function test_the_chapters_practical_activities_reach_the_planner_as_context(): void
+    {
+        $raw = $this->raw();
+        $raw['practicals'] = [[
+            'id' => 4, 'topic_id' => null, 'concept_id' => null, 'title' => 'Potato in water and in salt solution',
+            'activity_type' => 'experiment', 'objective' => 'Predict which way water moves.', 'description' => 'Place a potato piece in water.', 'result' => 'It swells.',
+        ]];
+        $builder = new ConceptContextBuilder();
+        $this->assertSame('Potato in water and in salt solution', $builder->assemble($raw)['practicals'][0]['title']);
+        $this->assertSame([], $builder->assemble($this->raw())['practicals']);
+
+        $context = $builder->assemble($raw);
+        $sel = (new QuestionSelector())->select($raw['questions']);
+        $map = (new LearningPlanBuilder())->build($context, $sel['eligible'], 6, 8);
+        $completer = $this->completer([json_encode($this->plan())]);
+        try {
+            (new SlidePlanner($completer))->plan($context, $map, $sel['eligible']);
+        } catch (\RuntimeException) {
+            // Only the first prompt is read here.
+        }
+
+        $this->assertStringContainsString('"practical_activities":[{', $completer->prompts[0]);
+        $this->assertStringContainsString('Potato in water and in salt solution', $completer->prompts[0]);
+        $this->assertStringContainsString('add no step, quantity or result that the chapter text does not give', $completer->prompts[0]);
     }
 
     public function test_content_generator_flags_thin_missing_and_repeating_slides(): void

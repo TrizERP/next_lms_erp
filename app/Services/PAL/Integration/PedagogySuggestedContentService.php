@@ -16,10 +16,16 @@ class PedagogySuggestedContentService
 
     private CoherenceMapRepository $coherenceMap;
 
-    public function __construct(?PedagogyOrchestrationService $pedagogy = null, ?CoherenceMapRepository $coherenceMap = null)
-    {
+    private PedagogySuggestedContentContextRecorder $contextRecorder;
+
+    public function __construct(
+        ?PedagogyOrchestrationService $pedagogy = null,
+        ?CoherenceMapRepository $coherenceMap = null,
+        ?PedagogySuggestedContentContextRecorder $contextRecorder = null
+    ) {
         $this->pedagogy = $pedagogy;
         $this->coherenceMap = $coherenceMap ?? app(CoherenceMapRepository::class);
+        $this->contextRecorder = $contextRecorder ?? app(PedagogySuggestedContentContextRecorder::class);
     }
 
     public function getSuggestions(array $context = []): array
@@ -197,6 +203,17 @@ class PedagogySuggestedContentService
         $message = !empty($contentRows)
             ? 'Pedagogy-Enhanced Content Loaded'
             : 'Pedagogy profile loaded, but no mapped content was found for this chapter';
+
+        $this->contextRecorder->record(
+            $learnerId,
+            $subInstituteId,
+            $chapterId ?: null,
+            $subjectId ?: null,
+            $standardId ?: null,
+            $studentLevel,
+            $enrichedWeakConcepts,
+            $contentData
+        );
 
         return [
             'status_code' => 1,

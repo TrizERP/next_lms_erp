@@ -3,53 +3,61 @@
 namespace App\Domain\AI\Configuration;
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Throwable;
 
 /**
- * One answer to "what should this module call", for every AI module.
+ * One answer to "what should this module call", for every AI module — as an ordered list.
  *
- * THE PRECEDENCE, AND WHY IT IS THIS ORDER
+ * A module does not resolve to one provider but to a CHAIN: the first entry is what it calls,
+ * the rest are what it falls back to when the first fails or its quota is spent. A single
+ * `resolve()` is the head of that chain, so callers that want one answer still get one.
  *
- * Six rules, narrowest first. Each step is strictly more specific than the one below
- * it, so the most deliberate thing anyone has said always wins:
+ * WHERE THE CHAIN COMES FROM — AND WHAT IT NEVER COMES FROM
  *
- *   1. `module`          — this school saved a row for this module. The most specific
- *                          statement anyone can make, so nothing overrides it.
- *   2. `module_platform` — the platform saved a row for this module, for all schools.
- *   3. `pool`            — this school's key for the configured driver.
- *   4. `pool_platform`   — the platform's key for the configured driver. **This is where
- *                          every module on this estate resolves today**, which is why
- *                          nothing changes until somebody saves a module row.
- *   5. `env`             — the driver's key from `config/ai.php`, so a key-table
- *                          outage degrades instead of taking AI down.
- *   6. `config`          — no key at all: provider and model resolved, credential
- *                          missing. Returned rather than thrown so the caller can say
- *                          "not configured" instead of "something failed".
+ *   0. `binding`         — a product module's own choice on its own AI Stack (one entry, no fallback:
+ *                          the module chose a model deliberately).
+ *   1. `module`          — this school's saved rows for the module, ranked by `priority`.
+ *   2. `module_platform` — the platform's saved rows for the module, ranked the same way.
+ *      A module with no rows of its own uses the module it `inherits` from, if it names one.
+ *   3. `pool`            — this school's shared keys, one per provider, when the module has no rows.
+ *   4. `pool_platform`   — the platform's shared keys. This is where every module with nothing
+ *                          saved resolves today.
  *
- * Steps 3-6 are not reimplemented here — they are `ProviderKeyResolver`, called. This
- * class wraps it and adds the module dimension in front, so a caller with no module
- * gets byte-identical behaviour and the two cannot drift apart later.
+ * There is no step for the environment file. Credentials come from `ai_api_keys` and nowhere
+ * else (`config('ai.allow_env_credentials')` exists for a deliberate bootstrap and is off). A
+ * module whose saved configuration is missing or unusable resolves to NOTHING and is reported
+ * as such — it is never quietly handed a provider the administrator did not choose.
  *
- * WHICH PROVIDER WHEN NOBODY SAID — AND WHY IT IS NOT THE NEWEST KEY
+ * A PROVIDER MUST BE ABLE TO DO THE JOB
  *
- * Only a module row may name a provider. With no module row the provider is
- * `config('ai.provider.driver')` — the same value `AiServiceProvider` has always used
- * to pick a client — and the credential is then looked up *for that provider*.
+ * Every candidate is checked against the module's declared needs (`AiModuleRegistry::requires`)
+ * using what the provider's client can really do (`ProviderCapabilities`). An incapable
+ * provider is skipped here exactly as the admin screen refuses to save it.
  *
- * The inverse, taking the newest active key and inferring the provider from it, is
- * wrong and measurably so on this estate: the newest active row is a Gemini credential
- * while `AI_PROVIDER` is openrouter, so inferring would have moved every unconfigured
- * module onto a provider it is not running on today. Driver first, then its key.
+ * HOW A MODULE WITH NOTHING SAVED IS ORDERED
+ *
+ * Among the shared pool's providers, an administrator's explicit priority decides. With none, the
+ * order is what suits THIS module (`ProviderFitRanker`) — the same order the admin dropdown shows,
+ * so what is displayed is what is executed. Only a call with no module at all lists the provider
+ * named by `ai.provider.driver` first. Either way this orders credentials already stored in the
+ * database; it never supplies a provider or a key that is not.
  *
  * NOTHING HERE READS REQUEST INPUT
  *
- * `$subInstituteId` comes from the caller's `McpRequestContext`, which is derived from
- * their token. This class never reads the request, so no caller can resolve another
- * school's credential by naming it.
+ * `$subInstituteId` comes from the caller's `McpRequestContext`, derived from their token, so no
+ * caller can resolve another school's credential by naming it.
  */
 final class AiConfigurationResolver
 {
+    /** @var array<string, array<int, object>|null> */
+    private array $rowCache = [];
+
+    /** @var array<string, array<string, mixed>|null> */
+    private array $poolKeyCache = [];
+
+    /** @var array<string, string|null> */
+    private array $defaultModelCache = [];
+
     public function __construct(
         private readonly ProviderCatalog $providers,
         private readonly ModelCatalog $models,
@@ -57,48 +65,337 @@ final class AiConfigurationResolver
         private readonly \App\Domain\AI\Support\ProviderKeyResolver $keys,
         private readonly \App\Domain\AI\Support\SchemaCache $schema,
         private readonly ModuleModelBindings $bindings,
+        private readonly ProviderCapabilities $capabilities,
+        private readonly ProviderFitRanker $ranker,
     ) {
     }
 
+    // ---------------------------------------------------------------------
+    // Public API
+    // ---------------------------------------------------------------------
+
     /**
-     * Build a configuration from a product module's own binding.
+     * Resolve the provider, model and credential for one module — the head of its chain.
      *
-     * THE CREDENTIAL IS USUALLY NOT THE BINDING'S OWN
-     *
-     * A binding names a provider and a model; `api_key_id` is optional and usually null,
-     * because the common case is a school wanting one module on a different MODEL while
-     * still using the estate's credential and quota. When it is null the key is resolved
-     * for the chosen provider exactly as it would have been — so choosing a model never
-     * silently demands a second key, and a module whose provider matches the estate's
-     * keeps using the same pool row it always did.
-     *
-     * A binding naming a key that has since been deleted or deactivated falls back to the
-     * pool rather than failing: the module's model choice survives its credential being
-     * rotated, which is the behaviour somebody rotating a key expects.
+     * @param  string|null  $moduleKey  A key from `AiModuleRegistry` — the CAPABILITY, e.g.
+     *                                  `conversational_ai` — or null for no module.
+     * @param  string|null  $productModuleKey  An `ai_modules` key — the PRODUCT module the call is
+     *                                  being made for, e.g. `fees`.
      */
-    private function fromBinding(object $binding, int|string|null $subInstituteId): ResolvedAiConfiguration
+    public function resolve(
+        ?string $moduleKey,
+        int|string|null $subInstituteId = null,
+        ?string $productModuleKey = null
+    ): ResolvedAiConfiguration {
+        $moduleKey = $moduleKey !== null && $this->modules->exists($moduleKey) ? $moduleKey : null;
+        $chain = $this->resolveChain($moduleKey, $subInstituteId, $productModuleKey);
+
+        return $chain[0] ?? $this->unconfigured($moduleKey);
+    }
+
+    /**
+     * Every provider this module may call, first choice first.
+     *
+     * @return array<int, ResolvedAiConfiguration>  Empty when nothing usable is configured.
+     */
+    public function resolveChain(
+        ?string $moduleKey,
+        int|string|null $subInstituteId = null,
+        ?string $productModuleKey = null
+    ): array {
+        $moduleKey = $moduleKey !== null && $this->modules->exists($moduleKey) ? $moduleKey : null;
+
+        // Step 0. The product module's OWN choice. Ahead of everything because it is the most
+        // specific statement anybody has made: "when Fees makes a conversational call, use this model".
+        $binding = $this->bindings->find($productModuleKey, $moduleKey, $subInstituteId);
+
+        if ($binding !== null) {
+            $config = $this->fromBinding($binding, $subInstituteId, $moduleKey);
+
+            return $config !== null && $config->hasKey() ? [$config] : [];
+        }
+
+        // Steps 1-2. Saved rows for this module — or, with none, for the module it inherits from.
+        $inheritedFrom = null;
+        $rows = $this->moduleRowsFor($moduleKey, $subInstituteId, usableOnly: false);
+
+        if ($rows === [] && $moduleKey !== null) {
+            $parent = $this->modules->inheritsFrom($moduleKey);
+
+            if ($parent !== null) {
+                $rows = $this->moduleRowsFor($parent, $subInstituteId, usableOnly: false);
+                $inheritedFrom = $rows === [] ? null : $parent;
+            }
+        }
+
+        if ($rows !== []) {
+            return $this->chainFromRows($rows, $moduleKey, $subInstituteId, $inheritedFrom);
+        }
+
+        // Steps 3-4. Nothing saved for this module: the shared pool, one entry per provider.
+        return $this->chainFromPool($moduleKey, $subInstituteId);
+    }
+
+    /**
+     * Why a module has no usable provider, as an exception an administrator can act on.
+     *
+     * Called by the factory when the chain is empty, so the message says WHICH of "nothing saved",
+     * "saved with no key" and "saved but incapable" applies rather than one vague refusal.
+     */
+    public function explainEmpty(?string $moduleKey, int|string|null $subInstituteId = null): AiConfigurationException
     {
-        // Reuses the same normalisation a credential row gets, so a binding saying
-        // `OPENROUTER_API_KEY` and one saying `openrouter` resolve to one provider —
-        // the screen offers canonical keys, but a row written by hand may not.
+        $key = $moduleKey ?? 'ai';
+        $label = $moduleKey !== null ? $this->modules->label($moduleKey) : 'This AI feature';
+        $requires = $moduleKey !== null ? $this->modules->requires($moduleKey) : ['chat'];
+
+        $rows = $this->moduleRowsFor($moduleKey, $subInstituteId, usableOnly: false);
+
+        if ($rows === [] && $moduleKey !== null && ($parent = $this->modules->inheritsFrom($moduleKey)) !== null) {
+            $rows = $this->moduleRowsFor($parent, $subInstituteId, usableOnly: false);
+        }
+
+        if ($rows !== []) {
+            $row = $rows[0];
+            $provider = $this->providerFromRow($row);
+
+            if (trim((string) ($row->api_key ?? '')) === '' || trim((string) $row->api_key) === '-') {
+                return AiConfigurationException::missingCredential($key, $label, $this->providers->label($provider));
+            }
+
+            $missing = $this->capabilities->missing($provider, $requires);
+
+            if ($missing !== []) {
+                return AiConfigurationException::noCapableProvider($key, $label, $this->capabilities->describe($missing));
+            }
+        }
+
+        // Pool rows exist but none can serve the module: say what is missing.
+        $poolProviders = $this->poolProviders($subInstituteId, $moduleKey);
+
+        if ($rows === [] && $poolProviders !== []) {
+            $needs = [];
+
+            foreach ($poolProviders as $provider) {
+                $needs = array_merge($needs, $this->capabilities->missing($provider, $requires));
+            }
+
+            if ($needs !== []) {
+                return AiConfigurationException::noCapableProvider($key, $label, $this->capabilities->describe(array_values(array_unique($needs))));
+            }
+        }
+
+        return AiConfigurationException::notConfigured($key, $label);
+    }
+
+    /**
+     * What every module resolves to right now, for the admin screen's list.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function overview(int|string|null $subInstituteId = null): array
+    {
+        $out = [];
+
+        foreach ($this->modules->all() as $module) {
+            $chain = $this->resolveChain($module['key'], $subInstituteId);
+            $head = $chain[0] ?? null;
+
+            $out[] = [
+                'module' => $module['key'],
+                'module_label' => $module['label'],
+                'description' => $module['description'],
+                'wired' => $module['wired'],
+                'runtime' => $module['runtime'],
+                'gap' => $module['gap'],
+                'requires' => $module['requires'],
+                // Nothing configured means no provider — the environment's driver is not an answer.
+                'provider' => $head?->provider,
+                'provider_label' => $head !== null ? $this->providers->label($head->provider) : null,
+                'model' => $head?->model,
+                'source' => $head?->source ?? 'config',
+                'scope' => $head?->scope ?? 'config',
+                'key_id' => $head?->keyId,
+                'has_key' => $head?->hasKey() ?? false,
+                'driveable' => $head !== null && $this->providers->isDriveable($head->provider),
+                'inherited_from' => $head?->inheritedFrom,
+                'chain' => array_map(fn (ResolvedAiConfiguration $c, int $i) => [
+                    'order' => $i + 1,
+                    'provider' => $c->provider,
+                    'provider_label' => $this->providers->label($c->provider),
+                    'model' => $c->model,
+                    'priority' => $c->priority,
+                    'source' => $c->source,
+                    'key_id' => $c->keyId,
+                    'has_key' => $c->hasKey(),
+                ], $chain, array_keys($chain)),
+            ];
+        }
+
+        return $out;
+    }
+
+    /** Whether `ai_api_keys.priority` exists on this estate. */
+    public function supportsPriority(): bool
+    {
+        return $this->schema->hasColumn('ai_api_keys', 'priority');
+    }
+
+    /**
+     * Which provider a credential row belongs to.
+     *
+     * A row saved by the admin screen carries a provider key in `api_type`. The rows that predate
+     * it carry whatever convention was current when they were written — `gemini` for one,
+     * `OPENROUTER_API_KEY` for another — so each catalogue entry's declared `api_type` is matched.
+     */
+    public function providerFromRow(object $row): ?string
+    {
+        $apiType = trim((string) ($row->api_type ?? ''));
+
+        if ($apiType === '') {
+            return null;
+        }
+
+        if ($this->providers->exists($apiType)) {
+            return $apiType;
+        }
+
+        foreach ($this->providers->keys() as $provider) {
+            if (strcasecmp($this->providers->apiType($provider), $apiType) === 0) {
+                return $provider;
+            }
+        }
+
+        return null;
+    }
+
+    // ---------------------------------------------------------------------
+    // Chain construction
+    // ---------------------------------------------------------------------
+
+    /**
+     * @param  array<int, object>  $rows  Already scoped and ranked: school before platform, then priority.
+     * @return array<int, ResolvedAiConfiguration>
+     */
+    private function chainFromRows(array $rows, ?string $moduleKey, int|string|null $subInstituteId, ?string $inheritedFrom): array
+    {
+        $requires = $moduleKey !== null ? $this->modules->requires($moduleKey) : ['chat'];
+        $chain = [];
+        $seen = [];
+
+        foreach ($rows as $row) {
+            $provider = $this->providerFromRow($row);
+
+            // One entry per provider: a school's row for a provider shadows the platform's.
+            if ($provider === null || isset($seen[$provider])) {
+                continue;
+            }
+
+            // A row the administrator saved with no usable key is reported, not skipped past to the pool.
+            if (empty($row->api_key) || trim((string) $row->api_key) === '-') {
+                continue;
+            }
+
+            if (! $this->providers->isDriveable($provider) || $this->capabilities->missing($provider, $requires) !== []) {
+                continue;
+            }
+
+            if ($moduleKey !== null && ! $this->modules->isOffered($moduleKey, $provider)) {
+                continue;
+            }
+
+            $seen[$provider] = true;
+
+            $chain[] = new ResolvedAiConfiguration(
+                provider: $provider,
+                model: $this->modelFor($provider, $row->model ?? null, $subInstituteId, $moduleKey),
+                apiKey: trim((string) $row->api_key),
+                source: (string) $row->source,
+                keyId: $row->id ?? null,
+                scope: ($row->sub_institute_id ?? null) === null ? 'platform' : 'institute',
+                maxOutputTokens: $this->maxTokens($row),
+                priority: $this->priorityOf($row),
+                inheritedFrom: $inheritedFrom,
+                module: $moduleKey,
+            );
+        }
+
+        return $chain;
+    }
+
+    /**
+     * One entry per provider that has an active key in the shared pool.
+     *
+     * @return array<int, ResolvedAiConfiguration>
+     */
+    private function chainFromPool(?string $moduleKey, int|string|null $subInstituteId): array
+    {
+        $requires = $moduleKey !== null ? $this->modules->requires($moduleKey) : ['chat'];
+        $chain = [];
+
+        foreach ($this->poolProviders($subInstituteId, $moduleKey) as $provider) {
+            if (! $this->providers->isDriveable($provider) || $this->capabilities->missing($provider, $requires) !== []) {
+                continue;
+            }
+
+            if ($moduleKey !== null && ! $this->modules->isOffered($moduleKey, $provider)) {
+                continue;
+            }
+
+            $key = $this->poolKey($provider, $subInstituteId);
+
+            if ($key === null) {
+                continue;
+            }
+
+            $chain[] = new ResolvedAiConfiguration(
+                provider: $provider,
+                model: $this->modelFor($provider, null, $subInstituteId, $moduleKey),
+                apiKey: $key['api_key'],
+                source: $this->sourceFor($key),
+                keyId: $key['id'] ?? null,
+                scope: $key['scope'] ?? 'platform',
+                maxOutputTokens: $this->poolMaxTokens($key, $provider),
+                priority: $key['priority'] ?? null,
+                module: $moduleKey,
+            );
+        }
+
+        return $chain;
+    }
+
+    /** A product module's own binding as a configuration, or null when its provider is unusable. */
+    private function fromBinding(object $binding, int|string|null $subInstituteId, ?string $moduleKey): ?ResolvedAiConfiguration
+    {
         $provider = $this->providerFromRow((object) ['api_type' => $binding->provider ?? null]);
+
+        if ($provider === null || ! $this->providers->isDriveable($provider)) {
+            return null;
+        }
+
+        $requires = $moduleKey !== null ? $this->modules->requires($moduleKey) : ['chat'];
+
+        if ($this->capabilities->missing($provider, $requires) !== []) {
+            return null;
+        }
+
         $key = $this->bindingKey($binding, $provider, $subInstituteId);
 
         return new ResolvedAiConfiguration(
             provider: $provider,
-            model: $this->modelFor($provider, $binding->model ?? null, $subInstituteId),
+            model: $this->modelFor($provider, $binding->model ?? null, $subInstituteId, $moduleKey),
             apiKey: $key['api_key'] ?? null,
             source: (string) $binding->source,
             keyId: $key['id'] ?? null,
-            // The scope of the CHOICE, not of the credential: what the screen asked about
-            // is whose decision this was.
+            // The scope of the CHOICE, not of the credential: what the screen asked about is whose decision this was.
             scope: ($binding->sub_institute_id ?? null) === null ? 'platform' : 'institute',
             maxOutputTokens: $this->bindingMaxTokens($binding, $key, $provider),
+            module: $moduleKey,
         );
     }
 
     /**
-     * The credential a binding uses: its own named key if it has a usable one, else the pool.
+     * The credential a binding uses: its own named key if it has a usable one, else the pool's key
+     * for the same provider.
      *
      * @return array<string, mixed>|null
      */
@@ -144,114 +441,243 @@ final class AiConfigurationResolver
         return $this->poolMaxTokens($key, $provider);
     }
 
-    /**
-     * Per-request memos.
-     *
-     * `overview()` asks this class the same three questions fourteen times over — which
-     * module credentials exist, which credential the shared pool resolves to, and what the
-     * model catalogue's default is for a provider. Measured before these memos, that call
-     * ran 126 queries in 31.1 seconds against a remote database; the answers were
-     * identical every time, because none of them can change inside one request.
-     *
-     * The instance is resolved per request, so nothing here outlives the request that
-     * built it. `resolve()` for a single module behaves exactly as it did — it simply
-     * fills a cache nobody else asks for.
-     *
-     * @var array<string, array<int, object>|null>
-     */
-    private array $moduleRowCache = [];
-
-    /** @var array<string, array<string, mixed>|null> */
-    private array $poolKeyCache = [];
-
-    /** @var array<string, string|null> */
-    private array $defaultModelCache = [];
-
-    /**
-     * Resolve the provider, model and credential for one module.
-     *
-     * @param  string|null  $moduleKey  A key from `AiModuleRegistry` — the CAPABILITY, e.g.
-     *                                  `conversational_ai` — or null for the unbound pool
-     *                                  behaviour every legacy caller has.
-     * @param  string|null  $productModuleKey  An `ai_modules` key — the PRODUCT module the
-     *                                  call is being made for, e.g. `fees`. Optional, and
-     *                                  omitting it gives exactly the behaviour this method
-     *                                  had before per-module bindings existed.
-     */
-    public function resolve(
-        ?string $moduleKey,
-        int|string|null $subInstituteId = null,
-        ?string $productModuleKey = null
-    ): ResolvedAiConfiguration {
-        $moduleKey = $moduleKey !== null && $this->modules->exists($moduleKey) ? $moduleKey : null;
-
-        // Step 0. The product module's OWN choice, made on its own AI Stack.
-        //
-        // Ahead of everything else because it is the most specific statement anybody has
-        // made: "when Fees makes a conversational call, use this model". A module that has
-        // chosen nothing has no row and falls straight through, so this step is invisible
-        // on an estate where nobody has used it.
-        $binding = $this->bindings->find($productModuleKey, $moduleKey, $subInstituteId);
-
-        if ($binding !== null) {
-            return $this->fromBinding($binding, $subInstituteId);
-        }
-
-        // Steps 1-2. Only a module row may choose the provider, because only a module
-        // row was saved by someone who meant to choose one.
-        $row = $this->findModuleRow($moduleKey, $subInstituteId);
-
-        if ($row !== null) {
-            $provider = $this->providerFromRow($row);
-
-            return new ResolvedAiConfiguration(
-                provider: $provider,
-                model: $this->modelFor($provider, $row->model ?? null, $subInstituteId),
-                apiKey: trim((string) $row->api_key),
-                source: $row->source,
-                keyId: $row->id ?? null,
-                scope: ($row->sub_institute_id ?? null) === null ? 'platform' : 'institute',
-                maxOutputTokens: $this->maxTokens($row),
-            );
-        }
-
-        // Steps 3-6. Nothing was saved for this module, so the provider is the
-        // configured driver and the credential is that driver's own — which is
-        // precisely `ProviderKeyResolver`, delegated to rather than reimplemented so
-        // the two cannot drift.
-        //
-        // Deriving the provider from whichever key happens to be newest would be
-        // wrong, and was: on this estate the newest active row is a Gemini key while
-        // `AI_PROVIDER` is openrouter, so inferring from the row would silently move
-        // every unconfigured module onto a different provider than the one running
-        // today. The driver decides; the key is then looked up for it.
-        $provider = $this->defaultProvider();
-        $key = $this->poolKey($provider, $subInstituteId);
-
+    /** What a module resolves to when nothing usable exists: no key, so nothing can be called. */
+    private function unconfigured(?string $moduleKey): ResolvedAiConfiguration
+    {
         return new ResolvedAiConfiguration(
-            provider: $provider,
-            model: $this->modelFor($provider, null, $subInstituteId),
-            apiKey: $key['api_key'] ?? null,
-            source: $this->sourceFor($key),
-            keyId: $key['id'] ?? null,
-            scope: $key['scope'] ?? 'config',
-            maxOutputTokens: $this->poolMaxTokens($key, $provider),
+            provider: $this->defaultProvider(),
+            model: null,
+            apiKey: null,
+            source: 'config',
+            keyId: null,
+            scope: 'config',
+            maxOutputTokens: null,
+            module: $moduleKey,
         );
     }
 
+    // ---------------------------------------------------------------------
+    // Rows
+    // ---------------------------------------------------------------------
+
     /**
-     * How a pool credential was found, in this class's vocabulary.
+     * Active rows saved for one module, school first then platform, each ranked by priority.
      *
-     * `ProviderKeyResolver` reports `institute`, `platform` or `env`; the overview
-     * screen and the logs speak in precedence steps, so they are mapped here rather
-     * than leaking two vocabularies for one fact.
+     * @return array<int, object>
      */
+    private function moduleRowsFor(?string $moduleKey, int|string|null $subInstituteId, bool $usableOnly = true): array
+    {
+        if ($moduleKey === null || ! $this->schema->hasColumn('ai_api_keys', 'ai_module')) {
+            return [];
+        }
+
+        $institute = $this->normaliseInstitute($subInstituteId);
+        $all = $this->activeRows($institute);
+
+        if ($all === null) {
+            // A key-table outage: no rows is the honest answer, and the caller reports it.
+            return [];
+        }
+
+        $out = [];
+
+        foreach ([['module', fn (object $r) => $institute !== null && (string) ($r->sub_institute_id ?? '') === $institute],
+                  ['module_platform', fn (object $r) => ($r->sub_institute_id ?? null) === null]] as [$source, $matches]) {
+            $scoped = [];
+
+            foreach ($all as $row) {
+                if ((string) ($row->ai_module ?? '') !== $moduleKey || ! $matches($row)) {
+                    continue;
+                }
+
+                if ($usableOnly && (empty($row->api_key) || trim((string) $row->api_key) === '-')) {
+                    continue;
+                }
+
+                // Cloned before stamping: the row is shared with every other module resolved from
+                // this cache, and writing `source` onto the original would leak one module's
+                // precedence onto the next one's copy.
+                $found = clone $row;
+                $found->source = $source;
+                $scoped[] = $found;
+            }
+
+            $out = array_merge($out, $this->ranked($scoped));
+        }
+
+        return $out;
+    }
+
+    /**
+     * Providers that have an active key in the shared pool, first choice first.
+     *
+     * @return array<int, string>
+     */
+    private function poolProviders(int|string|null $subInstituteId, ?string $moduleKey = null): array
+    {
+        $institute = $this->normaliseInstitute($subInstituteId);
+        $all = $this->activeRows($institute);
+
+        if ($all === null) {
+            return [];
+        }
+
+        $hasModuleColumn = $this->schema->hasColumn('ai_api_keys', 'ai_module');
+        $pool = [];
+
+        foreach ($all as $row) {
+            if ($hasModuleColumn && ($row->ai_module ?? null) !== null && trim((string) $row->ai_module) !== '') {
+                continue;
+            }
+
+            if (empty($row->api_key) || trim((string) $row->api_key) === '-') {
+                continue;
+            }
+
+            $pool[] = $row;
+        }
+
+        // A school's own keys come before the platform's, as everywhere else; each group is ranked.
+        $isOwn = fn (object $r) => $institute !== null && (string) ($r->sub_institute_id ?? '') === $institute;
+
+        $ranked = array_merge(
+            $this->ranked(array_values(array_filter($pool, $isOwn))),
+            $this->ranked(array_values(array_filter($pool, fn (object $r) => ! $isOwn($r))))
+        );
+
+        $anyRanked = false;
+
+        foreach ($ranked as $row) {
+            if ($this->priorityOf($row) !== null) {
+                $anyRanked = true;
+                break;
+            }
+        }
+
+        $providers = [];
+
+        foreach ($ranked as $row) {
+            $provider = $this->providerFromRow($row);
+
+            if ($provider !== null && ! in_array($provider, $providers, true)) {
+                $providers[] = $provider;
+            }
+        }
+
+        // Nobody ranked the pool. For a module, order by what suits THAT module (`ProviderFitRanker` —
+        // the same order the admin dropdown shows). Only with no module at all is the configured
+        // driver listed first; either way this orders credentials already in the database and
+        // supplies none.
+        if (! $anyRanked) {
+            if ($moduleKey !== null) {
+                $providers = $this->ranker->order($moduleKey, $providers, $subInstituteId);
+            } else {
+                $driver = $this->defaultProvider();
+
+                if (in_array($driver, $providers, true)) {
+                    $providers = array_values(array_unique([$driver, ...$providers]));
+                }
+            }
+        }
+
+        return $providers;
+    }
+
+    /**
+     * Rank by priority (1 first, unranked last), newest first among equals — the convention a
+     * rotated key expects, and what stops a dead older key being picked.
+     *
+     * @param  array<int, object>  $rows
+     * @return array<int, object>
+     */
+    private function ranked(array $rows): array
+    {
+        usort($rows, function (object $a, object $b) {
+            $pa = $this->priorityOf($a) ?? PHP_INT_MAX;
+            $pb = $this->priorityOf($b) ?? PHP_INT_MAX;
+
+            return [$pa, -((int) ($a->id ?? 0))] <=> [$pb, -((int) ($b->id ?? 0))];
+        });
+
+        return array_values($rows);
+    }
+
+    private function priorityOf(object $row): ?int
+    {
+        $value = $row->priority ?? null;
+
+        return is_numeric($value) && (int) $value > 0 ? (int) $value : null;
+    }
+
+    /**
+     * Every active credential row this institute can see, read once per request.
+     *
+     * Returns null — distinct from an empty list — when the table could not be read, so a caller
+     * can tell "no credentials" from "no answer".
+     *
+     * @return array<int, object>|null
+     */
+    private function activeRows(?string $institute): ?array
+    {
+        $cacheKey = $institute ?? '';
+
+        if (array_key_exists($cacheKey, $this->rowCache)) {
+            return $this->rowCache[$cacheKey];
+        }
+
+        if (! $this->schema->hasTable('ai_api_keys')) {
+            return $this->rowCache[$cacheKey] = [];
+        }
+
+        try {
+            $rows = DB::table('ai_api_keys')
+                ->where('status', 1)
+                ->where(function ($inner) use ($institute) {
+                    $inner->whereNull('sub_institute_id');
+
+                    if ($institute !== null) {
+                        $inner->orWhere('sub_institute_id', $institute);
+                    }
+                })
+                ->orderByDesc('id')
+                ->get()
+                ->all();
+        } catch (Throwable) {
+            return $this->rowCache[$cacheKey] = null;
+        }
+
+        return $this->rowCache[$cacheKey] = $rows;
+    }
+
+    /**
+     * The shared pool's credential for a provider, resolved once per (provider, institute).
+     *
+     * Delegates to `ProviderKeyResolver` — with no environment fallback — so the key a legacy
+     * caller finds and the key this chain finds cannot disagree.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function poolKey(string $provider, int|string|null $subInstituteId): ?array
+    {
+        $cacheKey = $provider . '|' . ($subInstituteId === null ? '' : (string) $subInstituteId);
+
+        if (array_key_exists($cacheKey, $this->poolKeyCache)) {
+            return $this->poolKeyCache[$cacheKey];
+        }
+
+        return $this->poolKeyCache[$cacheKey] = $this->keys->resolve(
+            $this->providers->apiType($provider),
+            $subInstituteId,
+            null,
+        );
+    }
+
+    /** How a pool credential was found, in this class's vocabulary. */
     private function sourceFor(?array $key): string
     {
         return match ($key['scope'] ?? null) {
             'institute' => 'pool',
             'platform' => 'pool_platform',
-            'env' => 'env',
             default => 'config',
         };
     }
@@ -269,198 +695,10 @@ final class AiConfigurationResolver
     }
 
     /**
-     * What every module resolves to right now, for the admin screen's list.
-     *
-     * @return array<int, array<string, mixed>>
+     * The saved model, else the catalogue's first model for this provider that can serve the
+     * module, else config's.
      */
-    public function overview(int|string|null $subInstituteId = null): array
-    {
-        $out = [];
-
-        foreach ($this->modules->all() as $module) {
-            $config = $this->resolve($module['key'], $subInstituteId);
-
-            $out[] = [
-                'module' => $module['key'],
-                'module_label' => $module['label'],
-                'description' => $module['description'],
-                'wired' => $module['wired'],
-                'provider' => $config->provider,
-                'provider_label' => $this->providers->label($config->provider),
-                'model' => $config->model,
-                'source' => $config->source,
-                'scope' => $config->scope,
-                'key_id' => $config->keyId,
-                'has_key' => $config->hasKey(),
-                'driveable' => $this->providers->isDriveable($config->provider),
-            ];
-        }
-
-        return $out;
-    }
-
-    /**
-     * The module's own row — this school's first, then the platform's.
-     *
-     * Two ordered queries rather than one clever one: the precedence is the part of
-     * this class most likely to be read in an incident, and two named steps are worth
-     * more then than a saved round trip.
-     *
-     * Returns null when the module column has not been migrated onto this estate, so
-     * an un-migrated deployment simply never takes steps 1-2 and behaves as it always
-     * has.
-     */
-    private function findModuleRow(?string $moduleKey, int|string|null $subInstituteId): ?object
-    {
-        if ($moduleKey === null || ! $this->schema->hasColumn('ai_api_keys', 'ai_module')) {
-            return null;
-        }
-
-        $institute = $subInstituteId === null ? null : trim((string) $subInstituteId);
-        $institute = $institute === '' ? null : $institute;
-
-        $rows = $this->moduleRows($institute);
-
-        if ($rows === null) {
-            // A key-table outage falls through to the env fallback rather than failing
-            // the call outright — the same answer the per-module query gave before.
-            return null;
-        }
-
-        // Precedence, unchanged: this school's own row first, then the platform's, and
-        // within each the newest active row — the convention a rotated key expects, and
-        // what stops a dead older key being picked.
-        $attempts = [];
-
-        if ($institute !== null) {
-            $attempts[] = ['module', fn (object $row) => (string) ($row->sub_institute_id ?? '') === $institute];
-        }
-
-        $attempts[] = ['module_platform', fn (object $row) => ($row->sub_institute_id ?? null) === null];
-
-        foreach ($attempts as [$source, $matches]) {
-            foreach ($rows as $row) {
-                if ((string) ($row->ai_module ?? '') !== $moduleKey || ! $matches($row)) {
-                    continue;
-                }
-
-                if (empty($row->api_key) || trim((string) $row->api_key) === '-') {
-                    // Keep looking within this scope, then fall through to the next one,
-                    // exactly as the `limit 1` query did by returning a row the caller
-                    // then rejected.
-                    continue;
-                }
-
-                // Cloned before stamping: the row is shared with every other module
-                // resolved from this cache, and writing `source` onto the original would
-                // leak one module's precedence onto the next one's copy.
-                $found = clone $row;
-                $found->source = $source;
-
-                return $found;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Every module-bound credential this institute can see, read once.
-     *
-     * `overview()` resolves fourteen modules, and each one used to run two `ai_api_keys`
-     * queries of its own — twenty-eight round trips to a remote database for rows that
-     * one query returns. The filter is deliberately wider than any single module's and
-     * the choosing is done in PHP, so the precedence above stays the only place that
-     * decides which row wins.
-     *
-     * Returns null — distinct from an empty list — when the table could not be read, so
-     * the caller can tell "no module credential" from "no answer".
-     *
-     * @return array<int, object>|null
-     */
-    private function moduleRows(?string $institute): ?array
-    {
-        $cacheKey = $institute ?? '';
-
-        if (array_key_exists($cacheKey, $this->moduleRowCache)) {
-            return $this->moduleRowCache[$cacheKey];
-        }
-
-        try {
-            $rows = DB::table('ai_api_keys')
-                ->where('status', 1)
-                ->whereNotNull('ai_module')
-                ->where(function ($inner) use ($institute) {
-                    $inner->whereNull('sub_institute_id');
-
-                    if ($institute !== null) {
-                        $inner->orWhere('sub_institute_id', $institute);
-                    }
-                })
-                ->orderByDesc('id')
-                ->get()
-                ->all();
-        } catch (Throwable) {
-            return $this->moduleRowCache[$cacheKey] = null;
-        }
-
-        return $this->moduleRowCache[$cacheKey] = $rows;
-    }
-
-    /**
-     * Which provider a credential row belongs to.
-     *
-     * A row saved by the admin screen carries a provider key in `api_type`. The rows
-     * that predate it carry whatever convention was current when they were written —
-     * `gemini` for one, `OPENROUTER_API_KEY` for another — so each catalogue entry's
-     * declared `api_type` is matched before falling back to the active driver.
-     */
-    private function providerFromRow(object $row): string
-    {
-        $apiType = trim((string) ($row->api_type ?? ''));
-
-        if ($apiType === '') {
-            return $this->defaultProvider();
-        }
-
-        if ($this->providers->exists($apiType)) {
-            return $apiType;
-        }
-
-        foreach ($this->providers->keys() as $provider) {
-            if (strcasecmp($this->providers->apiType($provider), $apiType) === 0) {
-                return $provider;
-            }
-        }
-
-        return $this->defaultProvider();
-    }
-
-    /**
-     * The shared pool's credential for a provider, resolved once per (provider, institute).
-     *
-     * Delegates to `ProviderKeyResolver` exactly as before — this only stops fourteen
-     * identical lookups happening where one will do.
-     *
-     * @return array<string, mixed>|null
-     */
-    private function poolKey(string $provider, int|string|null $subInstituteId): ?array
-    {
-        $cacheKey = $provider . '|' . ($subInstituteId === null ? '' : (string) $subInstituteId);
-
-        if (array_key_exists($cacheKey, $this->poolKeyCache)) {
-            return $this->poolKeyCache[$cacheKey];
-        }
-
-        return $this->poolKeyCache[$cacheKey] = $this->keys->resolve(
-            $this->providers->apiType($provider),
-            $subInstituteId,
-            $this->providers->envKey($provider),
-        );
-    }
-
-    /** The saved model, else the catalogue's first for this provider, else config's. */
-    private function modelFor(string $provider, ?string $saved, int|string|null $subInstituteId): ?string
+    private function modelFor(string $provider, ?string $saved, int|string|null $subInstituteId, ?string $moduleKey = null): ?string
     {
         $saved = trim((string) $saved);
 
@@ -468,18 +706,42 @@ final class AiConfigurationResolver
             return $saved;
         }
 
-        $cacheKey = $provider . '|' . ($subInstituteId === null ? '' : (string) $subInstituteId);
+        // An embedding or image module has no sensible text-model default: handing it the catalogue's
+        // chat model would 404 at the provider. Null lets the caller use its own purpose-specific default.
+        if ($moduleKey !== null && array_intersect($this->modules->requires($moduleKey), ['embedding', 'image_generation']) !== []) {
+            return null;
+        }
+
+        $cacheKey = $provider . '|' . ($subInstituteId === null ? '' : (string) $subInstituteId) . '|' . ($moduleKey ?? '');
 
         if (! array_key_exists($cacheKey, $this->defaultModelCache)) {
-            $this->defaultModelCache[$cacheKey] = $this->models->defaultFor($provider, $subInstituteId);
+            $this->defaultModelCache[$cacheKey] = $this->catalogueDefault($provider, $subInstituteId, $moduleKey);
         }
 
         return $this->defaultModelCache[$cacheKey] ?? $this->providers->defaultModel($provider);
     }
 
+    private function catalogueDefault(string $provider, int|string|null $subInstituteId, ?string $moduleKey): ?string
+    {
+        $min = $moduleKey !== null ? $this->modules->minOutputTokens($moduleKey) : null;
+
+        foreach ($this->models->forProvider($provider, $subInstituteId) as $model) {
+            $ceiling = $model['max_output_tokens'] ?? null;
+
+            // A model whose recorded ceiling is below what the module needs is not a default for it.
+            if ($min !== null && $ceiling !== null && $ceiling < $min) {
+                continue;
+            }
+
+            return $model['model_id'];
+        }
+
+        return null;
+    }
+
     /**
-     * `api_limit` has always doubled as the per-key output ceiling — `OpenRouterClient`
-     * reads it that way — so it keeps that meaning here rather than gaining a column.
+     * `api_limit` has always doubled as the per-key output ceiling — `OpenRouterClient` reads it
+     * that way — so it keeps that meaning here rather than gaining a column.
      */
     private function maxTokens(object $row): ?int
     {
@@ -488,6 +750,14 @@ final class AiConfigurationResolver
         return is_numeric($limit) && (int) $limit > 0 ? (int) $limit : null;
     }
 
+    private function normaliseInstitute(int|string|null $subInstituteId): ?string
+    {
+        $institute = $subInstituteId === null ? null : trim((string) $subInstituteId);
+
+        return $institute === '' ? null : $institute;
+    }
+
+    /** Only used to label an unconfigured module and to order unranked pool providers. */
     private function defaultProvider(): string
     {
         $driver = trim((string) config('ai.provider.driver', 'gemini'));

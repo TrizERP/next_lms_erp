@@ -2,6 +2,9 @@
 
 namespace App\Services\StudyDeck;
 
+use App\Services\StudyDeck\Story\StoryGraph;
+use App\Services\StudyDeck\Story\StoryTemplate;
+
 use DOMDocument;
 use DOMElement;
 use DOMXPath;
@@ -42,8 +45,13 @@ class DeckValidator
         private readonly int $maxBullets = 7,
         private readonly int $minBloom = 3,
         private readonly float $maxMissingVisualShare = 0.4,
+        /** StoryTemplate::resolve()['config'] for the school; the built-in defaults when null. */
+        private readonly ?array $storyConfig = null,
     ) {
     }
+
+    /** The story configuration of the run being judged (set from the learning map); the constructor's, when given, wins. */
+    private ?array $runStoryConfig = null;
 
     /**
      * @param array<string,mixed> $context ConceptContextBuilder::assemble()
@@ -55,6 +63,10 @@ class DeckValidator
      */
     public function validate(array $context, array $map, array $eligible, array $rendered, array $flagged = []): array
     {
+        if (!empty($map['story_mode'])) {
+            return $this->validateStory($context, $map, $rendered);
+        }
+
         $errors = [];
         $warnings = [];
         $deck = $rendered['deck'];
@@ -66,11 +78,11 @@ class DeckValidator
         }
 
         $this->teaching($map, $deck, $errors);
-        $this->questionRules($deck, $eligible, $flagged, $errors, $warnings);
+        $this->questionRules($deck, $eligible, $flagged, $errors, $warnings, SlidePlanner::limits($map));
         $this->activityRules($deck, $eligible, $errors);
         $this->patternRules($deck, $errors);
-        $this->interactionRules($deck, $errors, $warnings);
-        $this->imageRules($deck, $errors, $warnings);
+        $this->interactionRules($deck, $errors, $warnings, InteractionPlanner::capsFor($map));
+        $this->imageRules($deck, $errors, $warnings, SlidePlanner::limits($map)['max_visuals']);
         $this->duplicateRules($deck, $errors);
         $this->markup($rendered['html'], $map, $deck, $errors);
         $this->grounding($rendered['html'], $deck, $context, $eligible, $errors, $warnings);
@@ -91,6 +103,98 @@ class DeckValidator
                 'interactive_slides' => count(array_filter($deck['slides'], fn ($s) => ($s['interaction'] ?? null) !== null)),
                 'learning_slides' => count(array_filter($deck['slides'], fn ($s) => $s['slide_type'] !== 'cover')),
                 'discussion_prompts' => count(array_filter($deck['slides'], fn ($s) => !empty($s['content']['discussion']))),
+            ],
+        ];
+    }
+
+    /**
+     * A story lesson, judged by the rules that still make sense for one: slide count, that every concept is taught and explained, the story
+     * rules for every act (graph, merges, path-by-path coverage, wording, pictures), no repeated titles, a lighter markup check and the same
+     * grounding of numbers and names in the chapter text. What does not apply is left out on purpose: no practice questions are placed, the
+     * Bloom range and the per-slide word and callout limits describe the printed presentation, and a story act teaches many concepts.
+     *
+     * @return array{ok:bool, errors:array<int,string>, warnings:array<int,string>, stats:array<string,mixed>}
+     */
+    private function validateStory(array $context, array $map, array $rendered): array
+    {
+        $this->runStoryConfig = $map['story_config'] ?? null;
+        $errors = [];
+        $warnings = [];
+        $deck = $rendered['deck'];
+        [$min, $max] = [$map['target_slides']['min'], $map['target_slides']['max']];
+        if ($deck['slide_count'] < $min || $deck['slide_count'] > $max) {
+            $errors[] = sprintf('Deck has %d slides; the target is %d-%d.', $deck['slide_count'], $min, $max);
+        }
+
+        $explained = [];
+        foreach ($deck['slides'] as $s) {
+            foreach ($s['content']['explanations'] as $e) {
+                if (trim((string) $e['text']) !== '') {
+                    $explained[$e['concept_id']] = true;
+                }
+            }
+        }
+        $missing = [];
+        foreach ($map['concepts'] as $id => $c) {
+            if (empty($deck['taught_by'][$id]) || empty($explained[$id])) {
+                $missing[] = $c['name'];
+            }
+        }
+        if ($missing) {
+            $errors[] = 'Concepts with no story act and explanation of their own: ' . implode('; ', $missing);
+        }
+
+        $story = [];
+        foreach ($deck['slides'] as $s) {
+            if (($s['interaction']['template'] ?? null) === StoryTemplate::KEY) {
+                $story[] = $s;
+            }
+        }
+        if ($story === []) {
+            $errors[] = 'The lesson has no story act.';
+        }
+        $this->interactionRules($deck, $errors, $warnings, []);
+        $this->duplicateRules($deck, $errors);
+
+        $doc = new DOMDocument();
+        $prev = libxml_use_internal_errors(true);
+        $doc->loadHTML('<?xml encoding="UTF-8"><div id="root">' . $rendered['html'] . '</div>', LIBXML_HTML_NOIMPLIED | LIBXML_HTML_NODEFDTD);
+        libxml_clear_errors();
+        libxml_use_internal_errors($prev);
+        $x = new DOMXPath($doc);
+        foreach ($x->query('//img') as $img) {
+            if (trim($img->getAttribute('alt')) === '') {
+                $errors[] = 'An image has no alt text.';
+            }
+        }
+        if (preg_match('/[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]/u', $rendered['html'])) {
+            $errors[] = 'Contains emoji.';
+        }
+
+        // Continuity: the same characters run through the story, so every act's wording shares at least one proper name with the next.
+        $this->grounding($rendered['html'], $deck, $context, [], $errors, $warnings);
+
+        $stats = ['acts' => count($story), 'nodes' => 0, 'paths' => 0, 'merges' => 0, 'endings' => 0, 'pictures' => 0];
+        foreach ($story as $s) {
+            $check = StoryGraph::check($s['interaction'], array_map('intval', (array) $s['taught_concept_ids']), $this->storyConfig ?? $this->runStoryConfig ?? StoryTemplate::defaults());
+            foreach (['nodes', 'paths', 'merges', 'endings'] as $k) {
+                $stats[$k] += (int) $check['stats'][$k];
+            }
+            $stats['pictures'] += array_sum(array_map(fn ($n) => (empty($n['image']) ? 0 : 1) + count((array) ($n['extra_images'] ?? [])), $s['interaction']['nodes']));
+        }
+
+        return [
+            'ok' => $errors === [],
+            'errors' => $errors,
+            'warnings' => $warnings,
+            'stats' => [
+                'slides' => $deck['slide_count'], 'concepts' => count($map['concepts']), 'questions_placed' => 0, 'activities' => 0,
+                'images' => $stats['pictures'], 'visuals_planned' => 0, 'wording_flagged' => 0,
+                'interactions' => array_count_values(array_filter(array_map(fn ($s) => $s['interaction']['kind'] ?? null, $deck['slides']))),
+                'interactive_slides' => count(array_filter($deck['slides'], fn ($s) => ($s['interaction'] ?? null) !== null)),
+                'learning_slides' => count(array_filter($deck['slides'], fn ($s) => $s['slide_type'] !== 'cover')),
+                'discussion_prompts' => 0,
+                'story' => $stats,
             ],
         ];
     }
@@ -127,7 +231,8 @@ class DeckValidator
         }
     }
 
-    private function questionRules(array $deck, array $eligible, array $flagged, array &$errors, array &$warnings): void
+    /** @param array{max_practice:int,questions_per_slide:int,max_visuals:int} $limits */
+    private function questionRules(array $deck, array $eligible, array $flagged, array &$errors, array &$warnings, array $limits): void
     {
         $byId = [];
         foreach ($eligible as $list) {
@@ -138,14 +243,14 @@ class DeckValidator
         $flags = array_column($flagged, 'flags', 'id');
 
         $placed = array_sum(array_map(fn ($s) => count($s['question_ids']), $deck['slides']));
-        if ($placed > SlidePlanner::MAX_PRACTICE) {
-            $errors[] = "The deck places $placed practice questions; practice is optional, so the limit is " . SlidePlanner::MAX_PRACTICE . '.';
+        if ($placed > $limits['max_practice']) {
+            $errors[] = "The deck places $placed practice questions; practice is optional, so the limit is " . $limits['max_practice'] . '.';
         }
 
         $seen = [];
         foreach ($deck['slides'] as $s) {
-            if (count($s['question_ids']) > SlidePlanner::MAX_QUESTIONS_PER_SLIDE) {
-                $errors[] = "Slide {$s['n']} has " . count($s['question_ids']) . ' bank questions; the limit is ' . SlidePlanner::MAX_QUESTIONS_PER_SLIDE . '.';
+            if (count($s['question_ids']) > $limits['questions_per_slide']) {
+                $errors[] = "Slide {$s['n']} has " . count($s['question_ids']) . ' bank questions; the limit is ' . $limits['questions_per_slide'] . '.';
             }
             if ($s['question_ids'] && in_array($s['slide_type'], SlidePlanner::FRAMING, true)) {
                 $errors[] = "Slide {$s['n']} is a {$s['slide_type']} slide and must carry no bank question.";
@@ -225,7 +330,8 @@ class DeckValidator
      * a well-formed shape, labels that really are on the drawn picture, a scenario graph that
      * ends, and a stated reason. The grounding check reads their wording too.
      */
-    private function interactionRules(array $deck, array &$errors, array &$warnings): void
+    /** @param array<string,int> $caps InteractionPlanner::capsFor(): most of each capped kind the run may carry */
+    private function interactionRules(array $deck, array &$errors, array &$warnings, array $caps = InteractionPlanner::CAPS): void
     {
         $count = [];
 
@@ -246,18 +352,33 @@ class DeckValidator
             if ($s['slide_type'] === 'cover') {
                 $errors[] = "Slide $n: the title slide carries no interaction.";
             }
-            $count[$kind] = ($count[$kind] ?? 0) + 1;
+            // A story act (made with the Story-Based Branching Scenario template) is bounded by the template's own budget, not by the
+            // deck's few-scenarios cap.
+            $story = $kind === 'scenario' && ($i['template'] ?? null) === StoryTemplate::KEY;
+            if (!$story) {
+                $count[$kind] = ($count[$kind] ?? 0) + 1;
+            }
 
-            if ($kind === 'hotspots') {
+            if ($story) {
+                if (!in_array($s['slide_type'], ['scenario', 'application', 'challenge'], true)) {
+                    $errors[] = "Slide $n: a story act needs a scenario, application or challenge slide; this is a {$s['slide_type']} slide.";
+                }
+                $check = StoryGraph::check($i, array_map('intval', (array) ($s['taught_concept_ids'] ?? [])), $this->storyConfig ?? $this->runStoryConfig ?? StoryTemplate::defaults());
+                foreach ($check['errors'] as $e) {
+                    $errors[] = "Slide $n: $e";
+                }
+            } elseif ($kind === 'hotspots') {
                 $labels = array_map('mb_strtolower', (array) ($s['image']['texts'] ?? []));
-                if (($s['image']['type'] ?? '') !== 'diagram') {
-                    $errors[] = "Slide $n: hotspots need a drawn diagram to sit on.";
+                // A drawn diagram, or a stored picture whose parts a person marked ('annotated'): its spots sit where they were put.
+                $marked = !empty($s['image']['annotated']);
+                if (($s['image']['type'] ?? '') !== 'diagram' && !$marked) {
+                    $errors[] = "Slide $n: hotspots need a drawn diagram or a marked picture to sit on.";
                 }
                 if (count($i['spots'] ?? []) < 2) {
                     $errors[] = "Slide $n: hotspots need at least two spots.";
                 }
                 foreach ((array) ($i['spots'] ?? []) as $sp) {
-                    if (!in_array(mb_strtolower((string) $sp['label']), $labels, true)) {
+                    if (!$marked && !in_array(mb_strtolower((string) $sp['label']), $labels, true)) {
                         $errors[] = "Slide $n: hotspot \"{$sp['label']}\" is not a label on the diagram.";
                     }
                     if ($sp['x'] < 0 || $sp['x'] > 100 || $sp['y'] < 0 || $sp['y'] > 100) {
@@ -311,7 +432,7 @@ class DeckValidator
             }
         }
 
-        foreach (InteractionPlanner::CAPS as $kind => $limit) {
+        foreach ($caps as $kind => $limit) {
             if (($count[$kind] ?? 0) > $limit) {
                 $errors[] = "The deck has {$count[$kind]} $kind interactions; the limit is $limit.";
             }
@@ -337,7 +458,7 @@ class DeckValidator
         }
     }
 
-    private function imageRules(array $deck, array &$errors, array &$warnings): void
+    private function imageRules(array $deck, array &$errors, array &$warnings, int $maxVisuals = SlidePlanner::MAX_VISUALS): void
     {
         $planned = 0;
         $missing = 0;
@@ -382,8 +503,8 @@ class DeckValidator
             }
         }
 
-        if ($planned > SlidePlanner::MAX_VISUALS) {
-            $errors[] = "The deck plans $planned visuals; the limit is " . SlidePlanner::MAX_VISUALS . '.';
+        if ($planned > $maxVisuals) {
+            $errors[] = "The deck plans $planned visuals; the limit is " . $maxVisuals . '.';
         }
         if ($planned > 0 && $missing / $planned > $this->maxMissingVisualShare) {
             $errors[] = sprintf('%d of %d planned visuals could not be sourced - too many for a visual lesson.', $missing, $planned);
@@ -513,8 +634,18 @@ class DeckValidator
             if (($s['image']['type'] ?? '') === 'diagram') {
                 $extra .= ' ' . implode(' ', $s['image']['texts']);
             }
+            // A story scene's own diagram: its labels are slide wording (grounded like any diagram's), and its picture record is not.
+            $interaction = $s['interaction'] ?? null;
+            foreach ((array) ($interaction['nodes'] ?? []) as $k => $node) {
+                foreach (array_merge([$node['image'] ?? null], (array) ($node['extra_images'] ?? [])) as $img) {
+                    if (!empty($img['texts'])) {
+                        $extra .= ' ' . implode(' ', $img['texts']);
+                    }
+                }
+                unset($interaction['nodes'][$k]['image'], $interaction['nodes'][$k]['extra_images']);
+            }
             // Discussion prompts and interactions are slide wording too.
-            $extra .= ' ' . implode(' ', array_map(fn ($v) => rtrim((string) $v, '.') . '.', array_merge($this->wording($s['content']['discussion'] ?? null), $this->wording($s['interaction'] ?? null), $this->wording($s['content']['key_idea'] ?? null))));
+            $extra .= ' ' . implode(' ', array_map(fn ($v) => rtrim((string) $v, '.') . '.', array_merge($this->wording($s['content']['discussion'] ?? null), $this->wording($interaction), $this->wording($s['content']['key_idea'] ?? null))));
         }
 
         $this->groundingCheck($html, $extra, $context, $eligible, $errors, $warnings);
@@ -545,8 +676,10 @@ class DeckValidator
                 $allowed .= ' ' . mb_strtolower(preg_replace('/<[^>]+>/', ' ', $q['stem'] . ' ' . implode(' ', array_column($q['options'], 'text')) . ' ' . $q['explanation'] . ' ' . $q['answer_text']));
             }
         }
+        // A concept's definition is a row of the school's own data, handed to the model with the chapter text: a number in it
+        // ("a 10x eyepiece with a 40x objective gives 400x") is as grounded as one in the text itself.
         foreach ($context['concepts'] as $c) {
-            $allowed .= ' ' . mb_strtolower($c['name']);
+            $allowed .= ' ' . mb_strtolower($c['name'] . ' ' . ($c['definition'] ?? ''));
         }
         $allowed .= ' ' . mb_strtolower($context['chapter']['chapter_name'] . ' ' . $context['chapter']['subject_name'] . ' ' . $context['chapter']['standard_name']);
 
@@ -605,7 +738,7 @@ class DeckValidator
     /** Every string in a nested structure, in order, skipping machine fields (ids, kinds, flags, coordinates). @return array<int,string> */
     public function wording(mixed $node): array
     {
-        $skip = ['id', 'kind', 'start', 'next', 'sound', 'x', 'y', 'w', 'h', 'reason', 'style'];
+        $skip = ['id', 'kind', 'start', 'next', 'after', 'sound', 'x', 'y', 'w', 'h', 'reason', 'style'];
         $out = [];
         $walk = function ($v, $key = null) use (&$walk, &$out, $skip) {
             if (is_array($v)) {

@@ -199,8 +199,8 @@ class GamificationService
 
         return [
             'pal_attempts' => $attempts->count(),
-            'first_attempt_at' => $attempts->first()['occurred_at']?->toIso8601String(),
-            'last_attempt_at' => $attempts->last()['occurred_at']?->toIso8601String(),
+            'first_attempt_at' => ($attempts->first()['occurred_at'] ?? null)?->toIso8601String(),
+            'last_attempt_at' => ($attempts->last()['occurred_at'] ?? null)?->toIso8601String(),
             'concepts_by_mastery_source' => $bySource,
             'tables' => array_values(array_filter([
                 'question_paper + lms_online_exam (exam_type = PAL)',
