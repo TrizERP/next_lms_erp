@@ -139,27 +139,27 @@ Route::middleware('api.session')->prefix('hrms')->group(function () {
 });
 // check_permissions reads session()->get('user_profile_id'/'sub_institute_id'/'user_id'),
 // so api.session (JWT-hydrated session) must run first for type=API requests.
-Route::middleware(['api.session', 'check_permissions'])->post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
+Route::middleware(['api.session', 'check_permissions', 'api.cache:60'])->post('fees-dashboard/summary', [FeesDashboardApiController::class, 'summary']);
 // Flat "who owes money" list backing the Outstanding tile's drill-in (see
 // FeesDashboardApiController@defaulters and MobileDynamicPageFieldRegistry).
-Route::middleware(['api.session', 'check_permissions'])->post('fees-dashboard/defaulters', [FeesDashboardApiController::class, 'defaulters']);
+Route::middleware(['api.session', 'check_permissions', 'api.cache:60'])->post('fees-dashboard/defaulters', [FeesDashboardApiController::class, 'defaulters']);
 // Module dashboards (Admissions/Students) — stateless: tenant/year travel in
 // the request body and there's no permission check, so no session middleware
 // is required.
-Route::post('admissions-dashboard/summary', [AdmissionsDashboardApiController::class, 'summary']);
-Route::post('students-dashboard/summary', [StudentsDashboardApiController::class, 'summary']);
-Route::post('library-dashboard/summary', [LibraryDashboardApiController::class, 'summary']);
-Route::post('hostel-dashboard/summary', [HostelDashboardApiController::class, 'summary']);
-Route::post('transportation-dashboard/summary', [TransportationDashboardApiController::class, 'summary']);
+Route::post('admissions-dashboard/summary', [AdmissionsDashboardApiController::class, 'summary'])->middleware('api.cache:60');
+Route::post('students-dashboard/summary', [StudentsDashboardApiController::class, 'summary'])->middleware('api.cache:60');
+Route::post('library-dashboard/summary', [LibraryDashboardApiController::class, 'summary'])->middleware('api.cache:60');
+Route::post('hostel-dashboard/summary', [HostelDashboardApiController::class, 'summary'])->middleware('api.cache:60');
+Route::post('transportation-dashboard/summary', [TransportationDashboardApiController::class, 'summary'])->middleware('api.cache:60');
 // Role-based dashboards (Admin/Teacher/Student) — identity comes only from the
 // JWT via ApiSessionHydrator, never from the request body, so a token cannot
 // be used to fetch another role's or another user's data.
 Route::middleware('api.session')->group(function () {
-    Route::post('admin-dashboard/summary', [RoleDashboardApiController::class, 'adminSummary']);
-    Route::post('teacher-dashboard/summary', [RoleDashboardApiController::class, 'teacherSummary']);
-    Route::post('teacher-timetable/summary', [TeacherTimetableApiController::class, 'summary']);
-    Route::post('teacher-fee-dues/summary', [TeacherFeeDuesApiController::class, 'summary']);
-    Route::post('student-dashboard/summary', [RoleDashboardApiController::class, 'studentSummary']);
+    Route::post('admin-dashboard/summary', [RoleDashboardApiController::class, 'adminSummary'])->middleware('api.cache:60');
+    Route::post('teacher-dashboard/summary', [RoleDashboardApiController::class, 'teacherSummary'])->middleware('api.cache:60');
+    Route::post('teacher-timetable/summary', [TeacherTimetableApiController::class, 'summary'])->middleware('api.cache:60');
+    Route::post('teacher-fee-dues/summary', [TeacherFeeDuesApiController::class, 'summary'])->middleware('api.cache:60');
+    Route::post('student-dashboard/summary', [RoleDashboardApiController::class, 'studentSummary'])->middleware('api.cache:60');
     // Self-service "My ID card" — scoped to the caller's own user_id only,
     // see App\Http\Controllers\api\TeacherIcardApiController::mine().
     Route::post('teacher-icard/mine', [TeacherIcardApiController::class, 'mine']);
@@ -197,8 +197,8 @@ Route::post('/compliance/create',[instituteDetailController::class,'store']);
 Route::post('/compliance/update/{id}',[instituteDetailController::class,'update']);
 Route::post('/compliance/delete/{id}',[instituteDetailController::class,'destroy']);
 //getmenu rights level wise
-Route::post('/menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMenuRightsLevelWise']);
-Route::get('/master-menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMasterMenuApi']);
+Route::post('/menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMenuRightsLevelWise'])->middleware('api.cache:120');
+Route::get('/master-menu-rights', [App\Http\Controllers\api\MenuRightsController::class, 'getMasterMenuApi'])->middleware('api.cache:120');
 
 // Per-action permission flags (tracker "Content & LMS Architecture" row 5 / Decision #37).
 // Separate from /menu-rights on purpose: that endpoint returns WHICH MENUS EXIST
@@ -451,7 +451,7 @@ Route::middleware('api.session')->prefix('lms')->group(function () {
 // LMS > Test > Exam. Teacher-side only, same gate as the exam screens.
 // ------------------------------------------------------------------
 Route::middleware(['api.session', 'staff.only'])->group(function () {
-    Route::post('lms-result-dashboard/summary', [\App\Http\Controllers\api\lms\LmsResultDashboardApiController::class, 'summary']);
+    Route::post('lms-result-dashboard/summary', [\App\Http\Controllers\api\lms\LmsResultDashboardApiController::class, 'summary'])->middleware('api.cache:60');
 });
 
 Route::controller(admissionEnquiryAPIController::class)->group(function () {
@@ -1146,4 +1146,21 @@ Route::middleware('api.session')->prefix('capture-photo')->group(function () {
     Route::match(['GET', 'POST'], 'students', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'searchStudents']);
     Route::post('store', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'store']);
     Route::post('delete', [\App\Http\Controllers\api\StudentCapturePhotoApiController::class, 'destroy']);
+});
+
+// Course Presentation pilot: the two choices and a read-only source pre-flight. See CoursePresentationController.
+Route::middleware(['api.session', 'staff.only'])->prefix('lms/course-presentation')->group(function () {
+    Route::get('options', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'options']);
+    Route::get('fit', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'fit']);
+    Route::get('preflight', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'preflight']);
+    Route::get('status', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'status']);
+    Route::get('draft', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'draft']);
+    Route::get('preview', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'preview']);
+});
+// Generating spends a model call and approving stores a presentation, so they sit behind the same content-create gate
+// the other generators use (a teacher who may add content), plus an allowance for the spend.
+Route::middleware(['api.session', 'lms.auth', 'perm:lms.content,create'])->prefix('lms/course-presentation')->group(function () {
+    Route::post('generate', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'generate'])->middleware('throttle:10,1');
+    Route::post('approve', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'approve']);
+    Route::post('discard', [\App\Http\Controllers\api\lms\CoursePresentationController::class, 'discard']);
 });

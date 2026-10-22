@@ -287,6 +287,7 @@ class SlideContentGenerator
         $outlineText = implode("\n", $outline);
         $words = self::EXPLANATION_WORDS;
         $min = self::MIN_EXPLANATION_WORDS;
+        $methodRule = TeachingMethodProfile::contentRule($plan['teaching_method'] ?? null);
 
         return <<<PROMPT
 Write the slide text for the slides listed under SLIDES TO WRITE. The whole deck is outlined first so you keep the flow; write only the listed slides.
@@ -304,7 +305,7 @@ Rules
 - Do not write alt text or captions; pictures are described after they are chosen.
 - "bloom" is one of remember, understand, apply, analyze, evaluate, create. "dok" is 1 to 4. "minutes" is whole minutes.
 - The cover slide has no question: set its check to null.
-- Cover and hook slides: "body" is the one-line promise to the learner. Objectives slides: bullets are the objectives in "you will" form, and they must be things this deck teaches.
+- Cover and hook slides: "body" is the one-line promise to the learner. Objectives slides: bullets are the objectives in "you will" form, and they must be things this deck teaches.{$methodRule}
 
 Reply with:
 {"slides": [{"n": 1, "title": "", "body": "", "explanations": [{"concept_id": 0, "text": ""}], "bullets": [], "example": null, "misconception": null, "relationship_note": null, "key_idea": null, "check": null, "bloom": "understand", "dok": 2, "minutes": 2}]}

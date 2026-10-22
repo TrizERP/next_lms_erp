@@ -2,7 +2,8 @@
 
 namespace App\Services\PAL\AI;
 
-use Illuminate\Support\Facades\Http;
+use App\Domain\AI\Configuration\AiConfigurationException;
+use App\Domain\AI\Configuration\AiModelClientFactory;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -14,8 +15,31 @@ use App\Models\PAL\Remediation;
  */
 class AIOrchestrationService
 {
-    protected string $model = 'openai/gpt-4o';
     protected int $maxTokens = 2000;
+
+    /** The school this service acts for; null means platform keys only. */
+    protected int|string|null $subInstituteId = null;
+
+    /**
+     * A copy scoped to one school, so that school's `pal_intelligence` AI configuration applies.
+     * Learner-scoped methods resolve the learner's own school and do not need this.
+     */
+    public function forInstitute(int|string|null $subInstituteId): static
+    {
+        $copy = clone $this;
+        $copy->subInstituteId = $subInstituteId;
+
+        return $copy;
+    }
+
+    /** A learner's own school, from the database -- never from request input. */
+    protected function learnerInstitute(int $learnerId): ?int
+    {
+        $value = DB::table('tblstudent')->where('id', $learnerId)->value('sub_institute_id')
+            ?? DB::table('tbluser')->where('id', $learnerId)->value('sub_institute_id');
+
+        return $value !== null && $value !== '' ? (int) $value : null;
+    }
 
     /**
      * Generate personalized explanation
@@ -41,7 +65,7 @@ class AIOrchestrationService
             'style' => $style,
             'concept_id' => $conceptId,
             'learner_level' => $learnerLevel,
-        ]);
+        ], $this->learnerInstitute($learnerId));
 
     }
 
@@ -64,7 +88,7 @@ class AIOrchestrationService
         $result = $this->callAI($prompt, [
             'type' => 'remediation',
             'misconception_id' => $misconceptionId,
-        ]);
+        ], $this->learnerInstitute($learnerId));
 
         // Cache the result for reuse
         Cache::put("ai_remediation_{$misconceptionId}", $result, now()->addHours(24));
@@ -107,7 +131,7 @@ class AIOrchestrationService
             'type' => 'practice',
             'concept_id' => $conceptId,
             'difficulty' => $difficulty,
-        ]);
+        ], $this->learnerInstitute($learnerId));
     }
 
     /**
@@ -130,7 +154,7 @@ class AIOrchestrationService
             'type' => 'summary',
             'content_id' => $contentId,
             'format' => $format,
-        ]);
+        ], $content->sub_institute_id ?? null);
     }
 
     /**
@@ -157,7 +181,7 @@ class AIOrchestrationService
             'type' => 'teacher_insight',
             'learner_id' => $learnerId,
             'classroom_id' => $classroomId,
-        ]);
+        ], $this->learnerInstitute($learnerId));
     }
 
     /**
@@ -175,7 +199,7 @@ class AIOrchestrationService
         return $this->callAI($prompt, [
             'type' => 'metacognition',
             'context' => $context,
-        ]);
+        ], $this->learnerInstitute($learnerId));
     }
 
     /**
@@ -198,31 +222,40 @@ class AIOrchestrationService
         return array_map(fn($p) => $this->callAI($p['prompt']), $prompts);
     }
 
-    protected function callAI(string $systemPrompt, array $metadata = []): array
+    protected function callAI(string $systemPrompt, array $metadata = [], int|string|null $subInstituteId = null): array
     {
         try {
-            $response = Http::withHeaders(config('openrouter.headers'))
-                ->timeout(30)
-                ->post(config('openrouter.base_url') . '/chat/completions', [
-                    'model' => $this->model,
-                    'messages' => [
-                        ['role' => 'system', 'content' => $systemPrompt],
-                        ...($metadata['history'] ?? []),
-                    ],
-                    'max_tokens' => $this->maxTokens,
-                    'temperature' => 0.7,
-                ]);
+            // Provider, model, key and fallbacks come from the school's saved PAL Intelligence configuration.
+            $client = app(AiModelClientFactory::class)->for('pal_intelligence', $subInstituteId ?? $this->subInstituteId);
 
-            if ($response->successful()) {
-                $content = $response->json('choices.0.message.content');
-                
+            $content = $client->chat(
+                [
+                    ['role' => 'system', 'content' => $systemPrompt],
+                    ...($metadata['history'] ?? []),
+                ],
+                null,
+                $this->maxTokens,
+                0.7,
+                false,
+                30,
+            );
+
+            if (is_string($content) && trim($content) !== '') {
                 return [
                     'content' => $content,
-                    'model' => $this->model,
+                    'model' => $client->lastUsed()?->model,
                     'metadata' => $metadata,
                     'generated_at' => now()->toIso8601String(),
                 ];
             }
+        } catch (AiConfigurationException $e) {
+            Log::warning('AI call not configured', ['error' => $e->getMessage()]);
+
+            return [
+                'content' => $e->getMessage(),
+                'error' => true,
+                'metadata' => $metadata,
+            ];
         } catch (\Exception $e) {
             Log::warning('AI call failed', ['error' => $e->getMessage()]);
         }

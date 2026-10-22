@@ -33,6 +33,7 @@ use App\Domain\K12\AcademicRisk\AttendanceRiskDetector;
 use App\Domain\K12\AcademicRisk\CreateAcademicInterventionAction;
 use App\Domain\K12\AcademicRisk\Metrics\AssessmentAverageResolver;
 use App\Domain\K12\AcademicRisk\Metrics\AttendanceRateResolver;
+use App\Domain\K12\AcademicRisk\Metrics\PalMasteryTrendResolver;
 use App\Domain\K12\AcademicRisk\MissedAssignmentDetector;
 use App\Domain\K12\AcademicRisk\StudentScope;
 use App\Domain\KnowledgeGraph\GraphQueryService;
@@ -198,6 +199,7 @@ class AiServiceProvider extends ServiceProvider
         $this->app->tag([
             AssessmentAverageResolver::class,
             AttendanceRateResolver::class,
+            PalMasteryTrendResolver::class,
         ], 'ai.metric_resolvers');
 
         $this->app->singleton(OutcomeTracker::class, fn ($app) => new OutcomeTracker(
@@ -396,26 +398,20 @@ class AiServiceProvider extends ServiceProvider
         $this->app->singleton(\App\Domain\AI\Configuration\AiConfigurationResolver::class);
         $this->app->singleton(\App\Domain\AI\Configuration\AiModelClientFactory::class);
 
-        // The default when nobody asks for a module's client.
+        // The default when nobody asks for a module's client: the SHARED POOL chain.
         //
-        // Unchanged on purpose: every existing caller resolves ModelClient and gets
-        // the driver `AI_PROVIDER` names, exactly as before. Per-module configuration
-        // is opt-in through AiModelClientFactory::for(), so a module that has not been
-        // migrated to it cannot have its provider changed underneath it by a row
-        // somebody saved on the admin screen.
-        $this->app->singleton(\App\Domain\AI\Support\ModelClient::class, function ($app) {
-            $driver = match ((string) config('ai.provider.driver', 'gemini')) {
-                'openrouter' => $app->make(\App\Domain\AI\Support\OpenRouterClient::class),
-                default => $app->make(\App\Domain\AI\Support\GeminiClient::class),
-            };
-
-            // D6 (shared cross-product AI gateway), minimal first step: every
-            // caller that resolves ModelClient from the container gets usage
-            // recorded (provider/model/outcome/latency) without any of them
-            // changing. AiModelClientFactory's own construction path is
-            // wrapped separately (see its fromConfiguration()) since it
-            // bypasses this binding — see UsageTrackingModelClient's docblock.
-            return new \App\Domain\AI\Support\UsageTrackingModelClient($driver);
+        // This used to be whichever driver `AI_PROVIDER` named, built straight from the
+        // environment — which meant any caller that injected `ModelClient` instead of asking
+        // the factory ran on a provider the administrator had never chosen and could not see.
+        // It is now the same chain a module with nothing saved resolves to: the providers that
+        // have an active key in `ai_api_keys`, in the order the administrator ranked them, with
+        // fallback and usage recording. Nothing here reads a key from the environment.
+        //
+        // `bind`, not `singleton`: a chain captures the keys as they were when it was built, so
+        // a long-lived worker would otherwise keep a rotated key forever. Building one is a few
+        // cached lookups.
+        $this->app->bind(\App\Domain\AI\Support\ModelClient::class, function ($app) {
+            return $app->make(\App\Domain\AI\Configuration\AiModelClientFactory::class)->for(null);
         });
 
         $this->app->singleton(

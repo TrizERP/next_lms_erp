@@ -4,8 +4,11 @@ namespace App\Http\Controllers\AI;
 
 use App\Domain\AI\Configuration\AiConfigurationResolver;
 use App\Domain\AI\Configuration\AiModuleRegistry;
+use App\Domain\AI\Configuration\CredentialInspector;
 use App\Domain\AI\Configuration\ModelCatalog;
 use App\Domain\AI\Configuration\ProviderCatalog;
+use App\Domain\AI\Configuration\ProviderCompatibility;
+use App\Domain\AI\Configuration\ProviderModelDiscovery;
 use App\Domain\AI\Support\AiAuditLogger;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -43,6 +46,9 @@ class AiConfigurationController extends AiController
         private readonly ModelCatalog $models,
         private readonly AiConfigurationResolver $resolver,
         private readonly AiAuditLogger $audit,
+        private readonly ProviderCompatibility $compatibility,
+        private readonly CredentialInspector $credentials,
+        private readonly ProviderModelDiscovery $discovery,
     ) {
     }
 
@@ -61,7 +67,7 @@ class AiConfigurationController extends AiController
                 'modules' => $this->modules->all(),
                 'providers' => $this->providers->all(),
                 'models' => $this->models->grouped($institute, false),
-                'active_driver' => (string) config('ai.provider.driver'),
+                'priority_supported' => $this->resolver->supportsPriority(),
             ]);
         } catch (Throwable $exception) {
             return $this->handle($exception);
@@ -81,14 +87,203 @@ class AiConfigurationController extends AiController
         try {
             $institute = $this->scope($request)->selectedInstituteId;
 
+            // `verify=0` reads cached credential verdicts only — for a caller that must not wait on
+            // a provider. The default asks, once per distinct key, and the answer is cached.
+            $live = $request->query('verify', '1') !== '0';
+
             return $this->success('AI configurations resolved.', [
                 'sub_institute_id' => $institute,
+                'priority_supported' => $this->resolver->supportsPriority(),
                 'configurations' => $this->configurations($institute),
-                'resolved' => $this->resolver->overview($institute),
+                'resolved' => $this->resolvedWithCredentials($institute, $live),
             ]);
         } catch (Throwable $exception) {
             return $this->handle($exception);
         }
+    }
+
+    /**
+     * Which providers and models can really serve one module, ranked.
+     *
+     * What the form asks the moment a module is picked. It reads the providers' own model lists, so
+     * it is slower than `options` and is asked per module rather than for all of them at once.
+     */
+    public function compatibility(Request $request)
+    {
+        try {
+            $institute = $this->scope($request)->selectedInstituteId;
+
+            $request->validate(['module' => ['required', 'string', Rule::in($this->modules->keys())]]);
+
+            return $this->success('AI compatibility resolved.', $this->compatibility->forModule(
+                (string) $request->query('module'),
+                $institute,
+                $request->query('verify', '1') !== '0'
+            ));
+        } catch (Throwable $exception) {
+            return $this->handle($exception);
+        }
+    }
+
+    /**
+     * Rank a module's providers: `order` is this school's configuration ids, first choice first.
+     *
+     * Only rows this school owns can be ranked, and only for the module named — an id from another
+     * school or another module is refused, not skipped, so a stale screen cannot half-apply.
+     */
+    public function reorder(Request $request)
+    {
+        try {
+            $scope = $this->scope($request);
+            $institute = $scope->selectedInstituteId;
+
+            $data = $request->validate([
+                'ai_module' => ['required', 'string', Rule::in($this->modules->keys())],
+                'order' => ['required', 'array', 'min:1', 'max:20'],
+                'order.*' => ['integer', 'distinct'],
+            ]);
+
+            if (! $this->resolver->supportsPriority()) {
+                return $this->failure(
+                    'Provider priority cannot be saved on this installation yet — the priority column has not been added. '
+                    . 'Providers are tried newest-first until it is.',
+                    409
+                );
+            }
+
+            $rows = DB::table('ai_api_keys')
+                ->whereIn('id', $data['order'])
+                ->where('ai_module', $data['ai_module'])
+                ->where('sub_institute_id', $institute)
+                ->pluck('id')
+                ->all();
+
+            if (count($rows) !== count($data['order'])) {
+                return $this->failure('One of those configurations was not found for this module.', 422);
+            }
+
+            DB::transaction(function () use ($data) {
+                foreach (array_values($data['order']) as $position => $id) {
+                    DB::table('ai_api_keys')->where('id', $id)->update([
+                        'priority' => $position + 1,
+                        'updated_at' => now(),
+                    ]);
+                }
+            });
+
+            $this->audit->record('ai.configuration.reordered', $scope, [
+                'related_type' => 'ai_api_keys',
+                'message' => sprintf('Provider order set for %s.', $this->modules->label($data['ai_module'])),
+                'payload' => ['ai_module' => $data['ai_module'], 'order' => array_values($data['order'])],
+            ]);
+
+            return $this->success('Provider order saved.', [
+                'configurations' => $this->configurations($institute),
+                'resolved' => $this->resolvedWithCredentials($institute, false),
+            ]);
+        } catch (Throwable $exception) {
+            return $this->handle($exception);
+        }
+    }
+
+    /** Ask the provider whether a stored key is accepted, and say so. */
+    public function verify(Request $request, int $id)
+    {
+        try {
+            $institute = $this->scope($request)->selectedInstituteId;
+
+            // Visible rows, not only owned ones: a school may check the shared key it is using.
+            $row = DB::table('ai_api_keys')
+                ->where('id', $id)
+                ->where(function ($q) use ($institute) {
+                    $q->whereNull('sub_institute_id');
+
+                    if ($institute !== null && trim((string) $institute) !== '') {
+                        $q->orWhere('sub_institute_id', $institute);
+                    }
+                })
+                ->first();
+
+            if ($row === null) {
+                return $this->failure('That AI configuration was not found.', 404);
+            }
+
+            $provider = $this->resolver->providerFromRow($row);
+
+            if ($provider === null) {
+                return $this->failure('This row is not tagged with a provider this platform knows.', 422);
+            }
+
+            $key = trim((string) ($row->api_key ?? ''));
+            $verdict = $key === '' ? null : $this->discovery->verify($provider, $key, fresh: true);
+
+            return $this->success('Credential checked.', [
+                'id' => $id,
+                'credential' => $key === '' ? $this->credentials->inspect($provider, null) : $this->credentials->describe($verdict),
+            ]);
+        } catch (Throwable $exception) {
+            return $this->handle($exception);
+        }
+    }
+
+    /**
+     * The overview, with each module's credential judged rather than assumed.
+     *
+     * A module's credential is the head of its chain: the key it will actually send. It is checked
+     * once per distinct key, so fourteen modules sharing two keys cost two checks.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function resolvedWithCredentials(int|string|null $institute, bool $live): array
+    {
+        $rows = $this->resolver->overview($institute);
+        $apiKeys = [];
+
+        foreach ($rows as $i => $row) {
+            if ($row['runtime'] === 'none') {
+                $rows[$i]['credential'] = [
+                    'status' => 'not_required',
+                    'label' => 'Not used',
+                    'detail' => 'This module makes no model call, so no credential is used.',
+                ];
+                continue;
+            }
+
+            if (! $row['has_key'] || $row['provider'] === null) {
+                $rows[$i]['credential'] = $this->credentials->inspect((string) ($row['provider'] ?? ''), null);
+                continue;
+            }
+
+            $keyId = $row['key_id'];
+            $cacheKey = $row['provider'] . '|' . ($keyId ?? 'env');
+
+            if (! array_key_exists($cacheKey, $apiKeys)) {
+                $stored = $keyId === null ? null : DB::table('ai_api_keys')->where('id', $keyId)->value('api_key');
+                $apiKeys[$cacheKey] = $this->credentials->inspect($row['provider'], $stored, $live);
+            }
+
+            $rows[$i]['credential'] = $apiKeys[$cacheKey];
+
+            // The chain's other legs get a status too, so a fallback that would fail shows as such.
+            foreach ($rows[$i]['chain'] as $c => $leg) {
+                if ($c === 0) {
+                    $rows[$i]['chain'][$c]['credential'] = $apiKeys[$cacheKey];
+                    continue;
+                }
+
+                $legKey = $leg['key_id'];
+                $legCache = $leg['provider'] . '|' . ($legKey ?? 'env');
+
+                if (! array_key_exists($legCache, $apiKeys)) {
+                    $stored = $legKey === null ? null : DB::table('ai_api_keys')->where('id', $legKey)->value('api_key');
+                    $apiKeys[$legCache] = $this->credentials->inspect($leg['provider'], $stored, $live);
+                }
+
+                $rows[$i]['chain'][$c]['credential'] = $apiKeys[$legCache];
+            }
+        }
+
+        return $rows;
     }
 
     /** Add a configuration: module → provider → model → key. */
@@ -118,7 +313,13 @@ class AiConfigurationController extends AiController
                 );
             }
 
-            $id = DB::table('ai_api_keys')->insertGetId([
+            // The provider is asked whether it accepts the key BEFORE anything is written: a key the
+            // provider refuses would otherwise sit in the table looking configured and fail at the
+            // moment a user asked a question. A provider that cannot be reached does not block the
+            // save — "could not check" is not "checked and refused" — and the status says so.
+            $credential = $this->checkCredential($data['provider'], $data['api_key']);
+
+            $insert = [
                 'ai_module' => $data['ai_module'],
                 'api_type' => $data['api_type'],
                 'model' => $data['model'],
@@ -129,12 +330,27 @@ class AiConfigurationController extends AiController
                 'sub_institute_id' => $institute,
                 'created_at' => now(),
                 'updated_at' => now(),
-            ]);
+            ];
+
+            if ($this->resolver->supportsPriority()) {
+                // A new provider goes to the back of the module's order unless one was named.
+                $insert['priority'] = $data['priority'] ?? ((int) DB::table('ai_api_keys')
+                    ->where('ai_module', $data['ai_module'])
+                    ->where('sub_institute_id', $institute)
+                    ->where('status', 1)
+                    ->max('priority') + 1);
+            }
+
+            $id = DB::table('ai_api_keys')->insertGetId($insert);
 
             $this->recordChange('created', $id, $data, $scope, $request);
 
             return $this->success('AI configuration saved.', [
                 'configuration' => $this->configuration((int) $id, $institute),
+                'credential' => $credential,
+                // The table the form refreshes: what each module calls, straight after the write,
+                // from the same resolver the runtime uses — not from what the form was sent.
+                'resolved' => $this->resolvedWithCredentials($institute, false),
             ], 201);
         } catch (Throwable $exception) {
             return $this->handle($exception);
@@ -162,6 +378,18 @@ class AiConfigurationController extends AiController
 
             $data = $this->validated($request, $institute, requireKey: false);
 
+            $previousProvider = $this->resolver->providerFromRow($row);
+
+            // A key belongs to one provider. Pointing an existing row at a different provider while
+            // keeping the old key would store, say, a Google key as an OpenAI credential.
+            if ($data['api_key'] === null && $previousProvider !== null && $previousProvider !== $data['provider']) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'api_key' => ['Changing the provider needs that provider\'s own API key — the stored key belongs to ' . $this->providers->label($previousProvider) . '.'],
+                ]);
+            }
+
+            $credential = $data['api_key'] !== null ? $this->checkCredential($data['provider'], $data['api_key']) : null;
+
             $update = [
                 'ai_module' => $data['ai_module'],
                 'api_type' => $data['api_type'],
@@ -171,6 +399,10 @@ class AiConfigurationController extends AiController
                 'status' => $data['status'],
                 'updated_at' => now(),
             ];
+
+            if ($data['priority'] !== null && $this->resolver->supportsPriority()) {
+                $update['priority'] = $data['priority'];
+            }
 
             if ($data['api_key'] !== null) {
                 $update['api_key'] = $data['api_key'];
@@ -182,6 +414,8 @@ class AiConfigurationController extends AiController
 
             return $this->success('AI configuration updated.', [
                 'configuration' => $this->configuration($id, $institute),
+                'credential' => $credential,
+                'resolved' => $this->resolvedWithCredentials($institute, false),
             ]);
         } catch (Throwable $exception) {
             return $this->handle($exception);
@@ -354,9 +588,16 @@ class AiConfigurationController extends AiController
             'account_email' => ['nullable', 'email', 'max:191'],
             'api_limit' => ['nullable', 'integer', 'min:1', 'max:1000000'],
             'status' => ['nullable', 'integer', Rule::in([0, 1])],
+            'priority' => ['nullable', 'integer', 'min:1', 'max:99'],
         ]);
 
         $provider = $validated['provider'];
+
+        if (isset($validated['priority']) && ! $this->resolver->supportsPriority()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'priority' => ['Provider priority cannot be saved on this installation yet — the priority column has not been added.'],
+            ]);
+        }
 
         // Refused at Save rather than at the moment a user asks a question. A provider
         // with no client cannot be called, and storing the configuration anyway would
@@ -379,6 +620,20 @@ class AiConfigurationController extends AiController
             ]);
         }
 
+        // The same rules the form shows beside each provider and model, applied here as well: a
+        // provider that cannot do what the module needs, or a model that does not fit it, is
+        // refused no matter how the request was built.
+        $refusals = $this->compatibility->refusals($validated['ai_module'], $provider, $model, $institute);
+
+        if ($refusals !== []) {
+            $errors = [];
+
+            foreach ($refusals as $refusal) {
+                $errors[$refusal['field']][] = $refusal['message'];
+            }
+
+            throw \Illuminate\Validation\ValidationException::withMessages($errors);
+        }
         $key = $validated['api_key'] ?? null;
         $key = is_string($key) && trim($key) !== '' ? trim($key) : null;
 
@@ -393,7 +648,34 @@ class AiConfigurationController extends AiController
             'account_email' => $validated['account_email'] ?? null,
             'api_limit' => isset($validated['api_limit']) ? (string) $validated['api_limit'] : null,
             'status' => (int) ($validated['status'] ?? 1),
+            'priority' => isset($validated['priority']) ? (int) $validated['priority'] : null,
         ];
+    }
+
+    /**
+     * Ask the provider whether it accepts a key, refusing the save when it plainly does not.
+     *
+     * @return array{status:string, label:string, detail:string|null}
+     */
+    private function checkCredential(string $provider, ?string $apiKey): array
+    {
+        if ($apiKey === null) {
+            return $this->credentials->inspect($provider, null);
+        }
+
+        $verdict = $this->discovery->verify($provider, $apiKey, fresh: true);
+
+        if (($verdict['status'] ?? null) === 'invalid') {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'api_key' => [sprintf(
+                    '%s rejected this API key. Check that it is a %s key and that it has not been revoked.',
+                    $this->providers->label($provider),
+                    $this->providers->label($provider)
+                )],
+            ]);
+        }
+
+        return $this->credentials->describe($verdict);
     }
 
     /** @return array<string, mixed> */
@@ -477,6 +759,9 @@ class AiConfigurationController extends AiController
     {
         $module = $hasModule ? ($row->ai_module ?? null) : null;
         $provider = $this->providerFor($row);
+        // Cached verdict only: a list of rows must not make one provider call per row. Saving and the
+        // Verify button are what put a verdict in the cache.
+        $credential = $this->credentials->inspect($provider, (string) ($row->api_key ?? ''), live: false);
         $isPlatform = ($row->sub_institute_id ?? null) === null;
 
         return [
@@ -486,6 +771,9 @@ class AiConfigurationController extends AiController
             // to — so it is labelled as what it is rather than left blank.
             'module_label' => $module === null ? 'All modules (shared pool)' : $this->modules->label($module),
             'module_wired' => $module !== null && $this->modules->isWired($module),
+            'module_runtime' => $module !== null ? $this->modules->runtime($module) : null,
+            'priority' => is_numeric($row->priority ?? null) && (int) $row->priority > 0 ? (int) $row->priority : null,
+            'credential' => $credential,
             'provider' => $provider,
             'provider_label' => $this->providers->label($provider),
             'api_type' => (string) ($row->api_type ?? ''),

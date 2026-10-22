@@ -4,6 +4,7 @@ namespace App\Domain\AI\Lifecycle\Flows;
 
 use App\Domain\AI\Lifecycle\StageContext;
 use App\Domain\AI\Lifecycle\Support\McpToolCaller;
+use App\Domain\AI\Configuration\AiModelClientFactory;
 use App\Domain\AI\Support\ModelClient;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -53,8 +54,20 @@ class AdmissionsFlow
 
     public function __construct(
         private readonly McpToolCaller $mcp,
-        private readonly ModelClient $llm,
+        private readonly ?AiModelClientFactory $aiFactory = null,
     ) {
+    }
+
+    /**
+     * The model client for this conversation's school.
+     *
+     * Provider, model, key and fallbacks come from the school's saved Conversational AI
+     * configuration. Overridable so a test can supply a fake without a database.
+     */
+    protected function llmFor(StageContext $context): ModelClient
+    {
+        return ($this->aiFactory ?? app(AiModelClientFactory::class))
+            ->for('conversational_ai', $context->scope->selectedInstituteId);
     }
 
     // ------------------------------------------------------------- recognising
@@ -379,6 +392,16 @@ class AdmissionsFlow
         ));
     }
 
+    /** The planner has somewhere else to go, so a failed provider is "no answer", not an error. */
+    private function safeJson(ModelClient $llm, array $messages, ?string $model = null, int $maxTokens = 900): ?array
+    {
+        try {
+            return $llm->json($messages, $model, $maxTokens);
+        } catch (AiConfigurationException|\Throwable) {
+            return null;
+        }
+    }
+
     /**
      * Read the named fields out of what the user typed.
      *
@@ -392,7 +415,13 @@ class AdmissionsFlow
      */
     private function extractFields(string $question, array $missing, StageContext $context): array
     {
-        if ($missing === [] || ! $this->llm->isConfigured()) {
+        if ($missing === []) {
+            return [];
+        }
+
+        $llm = $this->llmFor($context);
+
+        if (! $llm->isConfigured()) {
             return [];
         }
 
@@ -402,7 +431,7 @@ class AdmissionsFlow
             $wanted[] = sprintf('- %s (%s)', $field, self::FIELD_LABELS[$field]);
         }
 
-        $response = $this->llm->json(
+        $response = $this->safeJson($llm,
             [
                 [
                     'role' => 'system',

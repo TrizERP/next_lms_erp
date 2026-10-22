@@ -74,6 +74,9 @@ class AskController extends AiController
                 'payload.student_id' => 'nullable|integer|min:1',
                 'payload.recommendation_id' => 'nullable|integer|min:1',
                 'payload.workflow_approval_id' => 'nullable|integer|min:1',
+                // The exam a student is sitting and the question they are on; the tool still checks both are theirs.
+                'payload.paper_id' => 'nullable|integer|min:1',
+                'payload.question_id' => 'nullable|integer|min:1',
                 'limit' => 'nullable|integer|min:1|max:200',
                 // The screen the question was asked from, and the module it belongs to.
                 // Both are hints: the resolver treats a declared module as authoritative
@@ -158,6 +161,9 @@ class AskController extends AiController
                 'payload.student_id' => 'nullable|integer|min:1',
                 'payload.recommendation_id' => 'nullable|integer|min:1',
                 'payload.workflow_approval_id' => 'nullable|integer|min:1',
+                // The exam a student is sitting and the question they are on; the tool still checks both are theirs.
+                'payload.paper_id' => 'nullable|integer|min:1',
+                'payload.question_id' => 'nullable|integer|min:1',
                 'limit' => 'nullable|integer|min:1|max:200',
                 'module' => 'nullable|string|max:64',
                 'route' => 'nullable|string|max:512',

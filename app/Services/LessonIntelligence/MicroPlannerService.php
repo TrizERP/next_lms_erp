@@ -3,7 +3,7 @@
 namespace App\Services\LessonIntelligence;
 
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Http;
+use App\Domain\AI\Configuration\AiModelClientFactory;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
 
@@ -97,7 +97,7 @@ PROMPT;
                 'lp.id'
             )
             ->where('p.id', $periodId)
-            ->first(['p.*', 'lp.standard_id', 'lp.subject_id']);
+            ->first(['p.*', 'lp.standard_id', 'lp.subject_id', 'lp.sub_institute_id as plan_sub_institute_id']);
 
         if (!$period) {
             throw new RuntimeException("Period {$periodId} not found.");
@@ -119,7 +119,7 @@ PROMPT;
         }
 
         $prompt = $this->buildPrompt($period, $concepts);
-        $data   = $this->callDeepSeek($prompt);
+        $data   = $this->callPlanner($prompt, $period->plan_sub_institute_id ?? null);
 
         DB::table(LessonIntelligenceService::TBL_PLAN_PERIODS)
             ->where('id', $periodId)
@@ -334,81 +334,46 @@ PROMPT;
     }
 
     /**
-     * Call DeepSeek and return the decoded JSON object.
-     * Key resolution matches QuestionGenerationService: ai_api_keys table first,
-     * then the DEEPSEEK_API_KEY env var.
+     * Ask the model for the period plan and return the decoded JSON object.
+     *
+     * Provider, model, key and fallback order come from the school's central AI configuration
+     * ('lesson_planning'). An unconfigured module throws AiConfigurationException, whose message
+     * tells the administrator what to set up; it is deliberately not swallowed.
      */
-    private function callDeepSeek(string $userPrompt): array
+    private function callPlanner(string $userPrompt, int|string|null $subInstituteId): array
     {
-        $apiKey = $this->resolveApiKey();
-        if (!$apiKey) {
-            throw new RuntimeException('No DeepSeek API key is configured. Add one to ai_api_keys or set DEEPSEEK_API_KEY.');
-        }
-
         $timeout = (int) config('deepseek.timeout_seconds', 600);
         set_time_limit($timeout + 60);
 
-        $body = [
-            'model'    => config('deepseek.model', 'deepseek-chat'),
-            'messages' => [
+        $maxTokens = (int) config('deepseek.max_output_tokens', 0);
+
+        $client = app(AiModelClientFactory::class)->for('lesson_planning', $subInstituteId);
+        $content = $client->chat(
+            [
                 ['role' => 'system', 'content' => self::SYSTEM_PROMPT],
                 ['role' => 'user',   'content' => $userPrompt],
             ],
-            'response_format' => ['type' => 'json_object'],
-            'temperature'     => (float) config('deepseek.temperature_narrative', 0.6),
-            'stream'          => false,
-        ];
+            null,
+            $maxTokens > 0 ? $maxTokens : null,
+            (float) config('deepseek.temperature_narrative', 0.6),
+            true,
+            $timeout
+        );
 
-        $maxTokens = (int) config('deepseek.max_output_tokens', 0);
-        if ($maxTokens > 0) {
-            $body['max_tokens'] = $maxTokens;
-        }
-
-        $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $apiKey,
-            'Content-Type'  => 'application/json',
-        ])
-            ->timeout($timeout)
-            ->connectTimeout(20)
-            ->post(rtrim((string) config('deepseek.base_url', 'https://api.deepseek.com'), '/') . '/chat/completions', $body);
-
-        if (!$response->successful()) {
-            throw new RuntimeException('DeepSeek request failed: ' . $response->status() . ' ' . $response->body());
-        }
-
-        $content = $response->json('choices.0.message.content');
         if (!is_string($content) || $content === '') {
-            throw new RuntimeException('DeepSeek returned an empty message.');
+            throw new RuntimeException('The AI provider returned an empty message.');
         }
 
         $data = json_decode($content, true);
         if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
-            throw new RuntimeException('DeepSeek returned malformed JSON: ' . json_last_error_msg());
+            // Providers without a JSON mode may still fence the object.
+            $stripped = trim((string) preg_replace('/^```(?:json)?\s*|\s*```$/i', '', trim($content)));
+            $data = json_decode($stripped, true);
+        }
+        if (!is_array($data)) {
+            throw new RuntimeException('The AI provider returned malformed JSON: ' . json_last_error_msg());
         }
 
         return $data;
-    }
-
-    private function resolveApiKey(): ?string
-    {
-        if (function_exists('getAIKey')) {
-            $row = getAIKey(config('deepseek.api_type', 'DEEPSEEK_API_KEY'), 1);
-            if (!empty($row->api_key) && $row->api_key !== '-') {
-                return $row->api_key;
-            }
-        }
-
-        $row = DB::table('ai_api_keys')
-            ->where('api_type', config('deepseek.api_type', 'DEEPSEEK_API_KEY'))
-            ->where('status', 1)
-            ->first();
-
-        if (!empty($row->api_key) && $row->api_key !== '-') {
-            return $row->api_key;
-        }
-
-        $envKey = config('deepseek.api_key');
-
-        return !empty($envKey) ? $envKey : null;
     }
 }

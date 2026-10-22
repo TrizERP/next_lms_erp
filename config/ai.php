@@ -45,6 +45,17 @@ return [
     'route_prefix' => env('AI_ROUTE_PREFIX', 'api/ai'),
 
     /*
+    | Student exam-question help ("Ask AI" on an exam question).
+    |
+    | By default the answer key is given whatever the paper's `result_show_ans` says. Set
+    | AI_EXAM_HELP_RESPECT_TEACHER_SETTING=true to withhold the answer (hint only) on papers where the
+    | teacher turned that off.
+    */
+    'exam_help' => [
+        'respect_teacher_setting' => (bool) env('AI_EXAM_HELP_RESPECT_TEACHER_SETTING', false),
+    ],
+
+    /*
     |--------------------------------------------------------------------------
     | Model provider — the single source of truth
     |--------------------------------------------------------------------------
@@ -72,7 +83,19 @@ return [
         'fallback_models' => array_values(array_filter(array_map('trim', explode(',', (string) env('AI_LANGUAGE_FALLBACK_MODELS', 'gemini-3.1-flash-lite,gemini-3.5-flash-lite'))))),
     ],
 
+    /*
+    | Whether a provider key found in the environment (GEMINI_API_KEY, OPENROUTER_API_KEY, ...) may
+    | stand in when `ai_api_keys` holds none. OFF, and it should stay off: providers, models and keys
+    | are chosen in AI & Intelligence -> AI Providers, and an environment key quietly overriding that
+    | is how a module ends up on an account nobody can see. Turn it on only to bootstrap a fresh
+    | install before anyone has opened that screen.
+    */
+    'allow_env_credentials' => (bool) env('AI_ALLOW_ENV_CREDENTIALS', false),
+
     'provider' => [
+        // A tiebreak only: with no provider ranked in AI Providers, the pool provider named here is
+        // listed first among those that already have a stored key. It never supplies a key or
+        // names a provider that has none.
         'driver' => env('AI_PROVIDER', 'gemini'),
 
         'gemini' => [
@@ -716,6 +739,7 @@ return [
                 'detail_tools' => ['student_id' => 'exam_assessment.online_exam_summary'],
                 'mcp_tools' => [
                     'exam_assessment.online_exam_summary',
+                    'exam_assessment.question_help',
                     'exam_assessment.assignment_status',
                     'homework.list',
                     'academics.structure',

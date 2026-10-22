@@ -62,6 +62,10 @@ class EvaluateAssignmentSubmissionJob implements ShouldQueue
         HomeworkEvaluationService $evaluationService,
         HomeworkAnnotatedPdfService $annotatedPdfService
     ): void {
+        // Provider, model and key come from the school's saved Homework & Assignment Evaluation configuration.
+        $extractor = $extractor->forInstitute($this->subInstituteId);
+        $locator = $locator->forInstitute($this->subInstituteId);
+        $evaluationService = $evaluationService->forInstitute($this->subInstituteId);
         $assignment = lms_assignmentModel::where([
             'id' => $this->assignmentId,
             'sub_institute_id' => $this->subInstituteId,

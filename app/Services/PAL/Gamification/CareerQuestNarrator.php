@@ -3,7 +3,8 @@
 namespace App\Services\PAL\Gamification;
 
 use App\CareerIntelligence\CaiCoreService;
-use App\Domain\AI\Support\ModelClient;
+use App\Domain\AI\Configuration\AiConfigurationException;
+use App\Domain\AI\Configuration\AiModelClientFactory;
 use App\Exceptions\GraphUnavailableException;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -36,7 +37,7 @@ class CareerQuestNarrator
 {
     public function __construct(
         private readonly CaiCoreService $cai,
-        private readonly ModelClient $modelClient,
+        private readonly AiModelClientFactory $aiFactory,
     ) {
     }
 
@@ -66,7 +67,8 @@ class CareerQuestNarrator
                 . 'the RIASEC profile — to write an honest narrative.');
         }
 
-        $client = $this->modelClient->forInstitute($subInstituteId);
+        // Provider, model, key and fallbacks come from the school's saved Career Intelligence configuration.
+        $client = $this->aiFactory->for('career_intelligence', $subInstituteId);
 
         if (! $client->isConfigured()) {
             return $this->result('model_unavailable', null, 'No AI model is configured for this institute.');
@@ -85,6 +87,8 @@ class CareerQuestNarrator
                 maxTokens: 2048,
                 temperature: 0.3,
             );
+        } catch (AiConfigurationException $exception) {
+            return $this->result('model_unavailable', null, $exception->getMessage());
         } catch (Throwable $exception) {
             return $this->result('model_unavailable', null, 'The narrative could not be generated.');
         }

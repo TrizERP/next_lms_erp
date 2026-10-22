@@ -2,6 +2,7 @@
 
 namespace App\Domain\AI\Lifecycle\Modules;
 
+use App\Domain\AI\Lifecycle\Flows\ExamQuestionHelpFlow;
 use App\Domain\AI\Workspace\RouteMatcher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -100,6 +101,13 @@ class ModuleResolver
         // selection would have been answered from memory either way, but under the wrong
         // module, bound to the wrong detail tool and offering the wrong hand-off.
         $pointsBack = ($options['points_at_previous_answer'] ?? false) === true;
+
+        // 0. A question button on the exam screen. It pins the paper and the question the student is on,
+        // and the route confirms they are on that paper's attempt screen, so the words ("explain it in
+        // simpler words") cannot be allowed to stand the turn down onto a module they happen to resemble.
+        if (isset($modules['exam_assessment']) && ExamQuestionHelpFlow::isPinned($options)) {
+            return $this->answer($modules['exam_assessment'], 'exam_question_pinned', $scores);
+        }
 
         // 1. Named outright — unless the words plainly belong somewhere else.
         if (is_string($explicit) && isset($modules[$explicit])) {

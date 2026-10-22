@@ -3,6 +3,7 @@
 namespace App\Domain\AI\Lifecycle\Plan;
 
 use App\Domain\AI\Lifecycle\Flows\AdmissionsFlow;
+use App\Domain\AI\Lifecycle\Flows\ExamQuestionHelpFlow;
 use App\Domain\AI\Lifecycle\Flows\FeesRemindersFlow;
 use App\Domain\AI\Lifecycle\Flows\FeesStudentDetailFlow;
 use App\Domain\AI\Lifecycle\Flows\ParentMessageFlow;
@@ -94,6 +95,15 @@ class DeterministicPlanner implements Planner
 
         if ($continuation !== null) {
             return $continuation;
+        }
+
+        // A student stuck on a question of the exam they are sitting. Taken before the intent is read,
+        // because the classifier knows nothing of exam screens and read "can you help me answer it?" as
+        // "reject the recommendation".
+        $examHelp = $this->examQuestionHelpPlan($context);
+
+        if ($examHelp !== null) {
+            return $examHelp;
         }
 
         $intent = $context->intent;
@@ -249,6 +259,53 @@ class DeterministicPlanner implements Planner
     }
 
     // ---------------------------------------------------------------- internals
+
+    /**
+     * Help with one exam question, read by `exam_assessment.question_help`.
+     *
+     * The intent is replaced as well as the route: the later stages (approval, recommendation, action)
+     * key off the intent, and left as the classifier guessed it they would act on a sentence that was
+     * never about a recommendation.
+     */
+    private function examQuestionHelpPlan(StageContext $context): ?Plan
+    {
+        $arguments = ExamQuestionHelpFlow::target($context);
+
+        if ($arguments === null) {
+            return null;
+        }
+
+        $context->intent = new Intent(
+            key: ExamQuestionHelpFlow::INTENT,
+            label: 'Help with an exam question',
+            confidence: 0.95,
+            slots: array_diff_key($arguments, ['question_text' => true]),
+            matched: ['resolved_by' => 'exam attempt screen + question reference'],
+        );
+
+        return new Plan(
+            goal: 'Help the student understand one question of the exam they are attempting.',
+            steps: [
+                new PlanStep(
+                    'read_question',
+                    'Read the question, its options and what the teacher allows students to see.',
+                    ExamQuestionHelpFlow::TOOL,
+                    $arguments
+                ),
+                new PlanStep('explain', 'Explain the idea to the student in plain words.'),
+            ],
+            source: Plan::SOURCE_DETERMINISTIC,
+            route: 'exam_question_help_flow',
+            intentKey: ExamQuestionHelpFlow::INTENT,
+            candidateTools: [ExamQuestionHelpFlow::TOOL],
+            toolSelectionStrategy: 'exam_question_help',
+            context: [
+                'module' => $context->module->key,
+                'confidence' => 0.95,
+                'matched_by' => 'exam attempt screen',
+            ],
+        );
+    }
 
     /**
      * A plan for continuing a task the thread is already part-way through.

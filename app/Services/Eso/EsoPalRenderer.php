@@ -425,9 +425,12 @@ class EsoPalRenderer
      * (callers should fall back to showing $instruction's plain content
      * directly rather than blocking the student on an LLM outage).
      */
-    public function render(string $instruction, array $context = []): ?string
+    public function render(string $instruction, array $context = [], ?int $subInstituteId = null): ?string
     {
-        if (! $this->client->enabled()) {
+        // The caller's school's AI configuration applies.
+        $client = $this->client->forInstitute($subInstituteId);
+
+        if (! $client->enabled()) {
             return null;
         }
 
@@ -446,7 +449,7 @@ class EsoPalRenderer
             $user .= "\n\nContext (for tone only, not for content decisions): " . json_encode($context);
         }
 
-        $result = $this->client->json($system, $user);
+        $result = $client->json($system, $user);
 
         if (empty($result['ok'])) {
             return null;

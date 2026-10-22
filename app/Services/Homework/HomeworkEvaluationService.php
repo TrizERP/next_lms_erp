@@ -10,8 +10,19 @@ use App\Services\Homework\Exceptions\EvaluationException;
  */
 class HomeworkEvaluationService
 {
-    public function __construct(private readonly GeminiClient $gemini)
+    public function __construct(private GeminiClient $gemini)
     {
+    }
+
+    /**
+     * A copy of this service whose model calls resolve the `evaluation_ai` configuration for one school.
+     */
+    public function forInstitute(int|string|null $subInstituteId): static
+    {
+        $copy = clone $this;
+        $copy->gemini = $this->gemini->forInstitute($subInstituteId);
+
+        return $copy;
     }
 
     /**

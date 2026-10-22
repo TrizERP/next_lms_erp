@@ -36,72 +36,35 @@ use Tests\TestCase;
  */
 class AiConfigurationResolverTest extends TestCase
 {
-    public function test_it_matches_the_container_binding_when_nothing_is_configured(): void
+    public function test_the_container_binding_is_the_shared_pool_chain_not_an_environment_driver(): void
     {
-        $factory = app(AiModelClientFactory::class);
-        $container = app(ModelClient::class);
-
-        foreach (app(AiModuleRegistry::class)->keys() as $module) {
-            $resolved = $factory->for($module, null);
-
-            $this->assertSame(
-                $container::class,
-                $resolved::class,
-                "Module {$module} resolved to a different client than the container binding."
-            );
-
-            $this->assertSame(
-                $container->defaultModel(),
-                $resolved->defaultModel(),
-                "Module {$module} resolved to a different model than the container binding."
-            );
-
-            $this->assertSame(
-                $container->isConfigured(),
-                $resolved->isConfigured(),
-                "Module {$module} disagrees with the container binding about being configured."
-            );
-        }
+        $this->assertInstanceOf(
+            \App\Domain\AI\Support\FallbackChainModelClient::class,
+            app(ModelClient::class),
+            'Injecting ModelClient must give the configured chain, not a client built from AI_PROVIDER.'
+        );
     }
 
-    public function test_the_unbound_provider_is_the_configured_driver_not_the_newest_key(): void
-    {
-        $driver = (string) config('ai.provider.driver');
-        $resolver = app(AiConfigurationResolver::class);
-
-        // Both the "no module" case and a module with nothing saved.
-        foreach ([null, 'conversational_ai', 'generative_ai'] as $module) {
-            $this->assertSame(
-                $driver,
-                $resolver->resolve($module, null)->provider,
-                'An unconfigured module must resolve to the configured driver.'
-            );
-        }
-    }
-
-    public function test_every_module_resolves_to_something_callable(): void
+    public function test_every_module_resolves_only_to_capable_callable_providers(): void
     {
         $resolver = app(AiConfigurationResolver::class);
         $providers = app(ProviderCatalog::class);
+        $capabilities = app(\App\Domain\AI\Configuration\ProviderCapabilities::class);
+        $modules = app(AiModuleRegistry::class);
 
-        foreach (app(AiModuleRegistry::class)->keys() as $module) {
-            $configuration = $resolver->resolve($module, null);
-
-            $this->assertTrue(
-                $providers->exists($configuration->provider),
-                "Module {$module} resolved to unknown provider {$configuration->provider}."
-            );
-
-            // A resolved provider with no client is a configuration the runtime cannot
-            // honour. The controller refuses to save one; this proves the fallback
-            // cannot produce one either.
-            $this->assertTrue(
-                $providers->isDriveable($configuration->provider),
-                "Module {$module} resolved to {$configuration->provider}, which has no client."
-            );
+        foreach ($modules->keys() as $module) {
+            foreach ($resolver->resolveChain($module, null) as $configuration) {
+                $this->assertTrue($providers->isDriveable($configuration->provider), "{$module}: {$configuration->provider} has no client.");
+                $this->assertSame(
+                    [],
+                    $capabilities->missing($configuration->provider, $modules->requires($module)),
+                    "{$module} resolved to {$configuration->provider}, which cannot do what it needs."
+                );
+                $this->assertTrue($configuration->hasKey(), "{$module}: a chain entry without a key cannot be called.");
+                $this->assertNotSame('env', $configuration->source, "{$module} must never resolve to an environment credential.");
+            }
         }
     }
-
     public function test_every_catalogued_provider_maps_to_a_real_client_class(): void
     {
         $providers = app(ProviderCatalog::class);

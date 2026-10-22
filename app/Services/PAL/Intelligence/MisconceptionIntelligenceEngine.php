@@ -7,7 +7,9 @@ use App\Models\PAL\Misconception;
 use App\Models\PAL\MisconceptionCorrective;
 use App\Models\PAL\MisconceptionLibrary;
 use App\Models\PAL\Remediation;
-use Illuminate\Support\Facades\Http;
+use App\Domain\AI\Configuration\AiConfigurationException;
+use App\Domain\AI\Configuration\AiModelClientFactory;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -177,7 +179,7 @@ class MisconceptionIntelligenceEngine
 
         // If no pre-defined remediations, use AI
         if ($remediations->isEmpty()) {
-            $aiRemediation = $this->generateAIRemediation($misconception);
+            $aiRemediation = $this->generateAIRemediation($misconception, $learnerId);
             return [
                 'ai_generated' => $aiRemediation,
                 'alternative_pedagogies' => $this->getAlternativePedagogies($misconception),
@@ -303,34 +305,39 @@ class MisconceptionIntelligenceEngine
         // Use AI to infer root cause
         $prompt = $this->buildDiagnosticPrompt($learnerId, $cluster);
 
-        $headers = config('openrouter.headers');
-        $baseUrl = config('openrouter.base_url');
+        // Provider, model, key and fallbacks come from the learner's school's PAL Intelligence configuration.
+        $client = app(AiModelClientFactory::class)->for('pal_intelligence', $this->learnerInstitute($learnerId));
 
-        if (!$headers || !$baseUrl) {
+        if (! $client->isConfigured()) {
             return [
                 'inferred_cause' => $cluster,
                 'fallback' => true,
-                'reason' => 'OpenRouter not configured',
+                'reason' => 'PAL Intelligence has no AI provider configured',
             ];
         }
-        
-        try {
-            $response = Http::withHeaders($headers)
-                ->post($baseUrl . '/chat/completions', [
-                    'model' => config('openrouter.model'),
-                    'messages' => [
-                        ['role' => 'system', 'content' => $this->getDiagnosticSystemPrompt()],
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'max_tokens' => 300,
-                ]);
 
-            if ($response->successful()) {
+        try {
+            $content = $client->chat(
+                [
+                    ['role' => 'system', 'content' => $this->getDiagnosticSystemPrompt()],
+                    ['role' => 'user', 'content' => $prompt],
+                ],
+                null,
+                300,
+            );
+
+            if (is_string($content) && trim($content) !== '') {
                 return [
-                    'ai_diagnostic' => $response->json('choices.0.message.content'),
+                    'ai_diagnostic' => $content,
                     'inferred_cause' => $cluster,
                 ];
             }
+        } catch (AiConfigurationException $e) {
+            return [
+                'inferred_cause' => $cluster,
+                'fallback' => true,
+                'reason' => $e->getMessage(),
+            ];
         } catch (\Exception $e) {
             Log::warning('AI diagnostic failed', ['error' => $e->getMessage()]);
         }
@@ -353,35 +360,47 @@ class MisconceptionIntelligenceEngine
         return in_array($cluster, ['persistent_misconception', 'procedural_error']);
     }
 
-    protected function generateAIRemediation($misconception): array
+    /** A learner's own school, from the database -- never from request input. */
+    protected function learnerInstitute(int $learnerId): ?int
+    {
+        $value = DB::table('tblstudent')->where('id', $learnerId)->value('sub_institute_id')
+            ?? DB::table('tbluser')->where('id', $learnerId)->value('sub_institute_id');
+
+        return $value !== null && $value !== '' ? (int) $value : null;
+    }
+
+    protected function generateAIRemediation($misconception, ?int $learnerId = null): array
     {
         $prompt = "Generate a clear, simple explanation to correct the misconception: {$misconception->pattern}. Provide a different teaching approach (analogy, visual, or story-based) that would help a student overcome this specific error.";
 
-        $headers = config('openrouter.headers');
-        $baseUrl = config('openrouter.base_url');
+        $client = app(AiModelClientFactory::class)->for(
+            'pal_intelligence',
+            $learnerId !== null ? $this->learnerInstitute($learnerId) : null
+        );
 
-        if (!$headers || !$baseUrl) {
-            return ['content' => 'Please review the concept explanation and try again.', 'fallback' => true, 'reason' => 'OpenRouter not configured'];
+        if (! $client->isConfigured()) {
+            return ['content' => 'Please review the concept explanation and try again.', 'fallback' => true, 'reason' => 'PAL Intelligence has no AI provider configured'];
         }
-        
-        try {
-            $response = Http::withHeaders($headers)
-                ->post($baseUrl . '/chat/completions', [
-                    'model' => config('openrouter.model'),
-                    'messages' => [
-                        ['role' => 'system', 'content' => 'You are an expert K12 educator. Generate personalized remediation content.'],
-                        ['role' => 'user', 'content' => $prompt],
-                    ],
-                    'max_tokens' => 500,
-                ]);
 
-            if ($response->successful()) {
+        try {
+            $content = $client->chat(
+                [
+                    ['role' => 'system', 'content' => 'You are an expert K12 educator. Generate personalized remediation content.'],
+                    ['role' => 'user', 'content' => $prompt],
+                ],
+                null,
+                500,
+            );
+
+            if (is_string($content) && trim($content) !== '') {
                 return [
-                    'content' => $response->json('choices.0.message.content'),
+                    'content' => $content,
                     'format' => 'text',
                     'generated_at' => now()->toIso8601String(),
                 ];
             }
+        } catch (AiConfigurationException $e) {
+            return ['content' => 'Please review the concept explanation and try again.', 'fallback' => true, 'reason' => $e->getMessage()];
         } catch (\Exception $e) {
             Log::warning('AI remediation generation failed', ['error' => $e->getMessage()]);
         }

@@ -62,6 +62,12 @@ class DiagramRenderer
         ['solid' => [190, 24, 93], 'tint' => [252, 231, 243]],
     ];
 
+    /** Steps that are not the one being looked at are drawn in these quiet greys, so the step in focus stands out. */
+    private const QUIET = ['solid' => [148, 163, 184], 'tint' => [241, 245, 249]];
+
+    /** The ring drawn round the step in focus. */
+    private const RING = [245, 158, 11];
+
     /** @return array<int,string> problems with a spec; empty when it can be drawn */
     public static function problems(array $spec): array
     {
@@ -72,6 +78,13 @@ class DiagramRenderer
         }
         if (trim((string) ($spec['title'] ?? '')) === '') {
             $out[] = 'a diagram needs a title';
+        }
+        // `focus` (flow only): the zero-based step to emphasise, for a sequence shown once for each of its steps.
+        if (array_key_exists('focus', $spec) && $spec['focus'] !== null) {
+            $count = count(array_filter(array_map(fn ($x) => trim((string) (is_array($x) ? ($x['text'] ?? '') : $x)), (array) ($spec['nodes'] ?? []))));
+            if ($layout !== 'flow' || !is_int($spec['focus']) || $spec['focus'] < 0 || $spec['focus'] >= $count) {
+                $out[] = 'focus must be the number of one step of a flow diagram';
+            }
         }
 
         $labels = static fn (array $xs) => array_values(array_filter(array_map(fn ($x) => trim((string) (is_array($x) ? ($x['text'] ?? '') : $x)), $xs)));
@@ -131,7 +144,8 @@ class DiagramRenderer
         $nodes = array_map(fn ($n) => trim((string) (is_array($n) ? ($n['text'] ?? '') : $n)), (array) ($spec['nodes'] ?? []));
 
         return match ($spec['layout']) {
-            'flow' => "Diagram: $title. Steps in order: " . implode(', then ', $nodes) . '.',
+            'flow' => "Diagram: $title. Steps in order: " . implode(', then ', $nodes) . '.'
+                . (isset($spec['focus'], $nodes[$spec['focus']]) ? ' The step in focus is ' . $nodes[$spec['focus']] . '.' : ''),
             'hub' => "Diagram: $title. '" . trim((string) $spec['center']) . "' connected to " . implode(', ', $nodes) . '.',
             'compare' => "Diagram: $title. " . trim((string) $spec['left']['heading']) . ': ' . implode('; ', array_map('trim', (array) $spec['left']['items']))
                 . '. ' . trim((string) $spec['right']['heading']) . ': ' . implode('; ', array_map('trim', (array) $spec['right']['items'])) . '.',
@@ -162,7 +176,7 @@ class DiagramRenderer
 
         $nodes = fn () => array_map(fn ($n) => is_array($n) ? $n['text'] : $n, (array) $spec['nodes']);
         match ($spec['layout']) {
-            'flow' => $this->flow($im, $bold, $nodes()),
+            'flow' => $this->flow($im, $bold, $nodes(), isset($spec['focus']) ? (int) $spec['focus'] : null),
             'hub' => $this->hub($im, $bold, (string) $spec['center'], $nodes()),
             'compare' => $this->compare($im, $font, $bold, $spec),
         };
@@ -195,7 +209,7 @@ class DiagramRenderer
         $this->circle($im, 40, 700, 96, self::TONES[1]['solid'], 112);
     }
 
-    private function flow($im, string $bold, array $nodes): void
+    private function flow($im, string $bold, array $nodes, ?int $focus = null): void
     {
         $nodes = array_values(array_map('trim', $nodes));
         ['perRow' => $perRow, 'bw' => $bw, 'bh' => $bh, 'gap' => $gap, 'place' => $place] = self::flowGeometry(count($nodes));
@@ -208,7 +222,7 @@ class DiagramRenderer
                 continue;
             }
             $mid = $y + intdiv($bh, 2);
-            $tone = self::TONES[$i % count(self::TONES)];
+            $tone = $focus === null ? self::TONES[$i % count(self::TONES)] : self::QUIET;
             if ($col < $perRow - 1) {
                 // Within a row: right on even rows, left on odd rows.
                 if ($row % 2 === 0) {
@@ -222,7 +236,15 @@ class DiagramRenderer
         }
         foreach ($nodes as $i => $label) {
             [$x, $y] = $place($i);
-            $this->box($im, $bold, $x, $y, $bw, $bh, $label, $i === 0 || $i === $last, self::TONES[$i % count(self::TONES)]);
+            if ($focus === null) {
+                $this->box($im, $bold, $x, $y, $bw, $bh, $label, $i === 0 || $i === $last, self::TONES[$i % count(self::TONES)]);
+                continue;
+            }
+            // One step in focus: a ring and its own colour; the others recede.
+            if ($i === $focus) {
+                $this->rrect($im, $x - 9, $y - 9, $bw + 18, $bh + 18, 30, self::RING);
+            }
+            $this->box($im, $bold, $x, $y, $bw, $bh, $label, $i === $focus, $i === $focus ? self::TONES[$i % count(self::TONES)] : self::QUIET);
         }
     }
 

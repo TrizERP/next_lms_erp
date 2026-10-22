@@ -81,6 +81,7 @@ use App\Mcp\Tools\MobileAppsSectionsTool;
 use App\Mcp\Tools\NewPalCoherenceGapsTool;
 use App\Mcp\Tools\NewPalContentModelStatusTool;
 use App\Mcp\Tools\NewPalGamificationSummaryTool;
+use App\Mcp\Tools\ExamAssessmentQuestionHelpTool;
 use App\Mcp\Tools\OnlineExamSummaryTool;
 use App\Mcp\Tools\ParentCommunicationMessagesTool;
 use App\Mcp\Tools\ParentCommunicationSummaryTool;
@@ -184,6 +185,8 @@ class McpServiceProvider extends ServiceProvider
         // projects. `HomeworkListTool` above already covers Homework/Homework
         // Submission; these two are new.
         OnlineExamSummaryTool::class,
+        // The one tool in this module a student may call: a single question of the exam they are attempting.
+        ExamAssessmentQuestionHelpTool::class,
         AssignmentStatusTool::class,
 
         // Money

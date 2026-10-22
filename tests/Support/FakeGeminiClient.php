@@ -35,6 +35,12 @@ class FakeGeminiClient extends GeminiClient
         return true;
     }
 
+    /** The double is not tenant-scoped; keep one instance so recorded calls stay visible. */
+    public function forInstitute(int|string|null $subInstituteId): static
+    {
+        return $this;
+    }
+
     public function generateContent(array $parts, array $generationConfig = []): array
     {
         $this->calls[] = $parts;

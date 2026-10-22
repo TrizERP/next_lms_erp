@@ -83,8 +83,8 @@ class PalH5PModelController extends Controller
             'quality_statuses' => array_keys(config('pal_content.quality_statuses', [])),
             'cultural_contexts' => array_keys(config('pal_content.cultural_contexts', [])),
             'ai' => [
-                'available' => $this->tagging->aiAvailable(),
-                'unavailable_reason' => $this->tagging->aiUnavailableReason(),
+                'available' => $this->tagging->aiAvailable($tenant ?: null),
+                'unavailable_reason' => $this->tagging->aiUnavailableReason($tenant ?: null),
             ],
         ]);
     }
@@ -1127,8 +1127,8 @@ class PalH5PModelController extends Controller
                 'evidence' => $evidence,
                 'insight' => null,
                 'ai' => [
-                    'available' => $insights->available(),
-                    'unavailable_reason' => $insights->unavailableReason(),
+                    'available' => $insights->available((int) ($context['sub_institute_id'] ?? 0) ?: null),
+                    'unavailable_reason' => $insights->unavailableReason((int) ($context['sub_institute_id'] ?? 0) ?: null),
                 ],
             ]);
         }
@@ -1137,8 +1137,8 @@ class PalH5PModelController extends Controller
             'evidence' => $evidence,
             'insight' => $insights->insight($evidence, $context, (int) ($auth['user_id'] ?? 0)),
             'ai' => [
-                'available' => $insights->available(),
-                'unavailable_reason' => $insights->unavailableReason(),
+                'available' => $insights->available((int) ($context['sub_institute_id'] ?? 0) ?: null),
+                'unavailable_reason' => $insights->unavailableReason((int) ($context['sub_institute_id'] ?? 0) ?: null),
             ],
         ]);
     }

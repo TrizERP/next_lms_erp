@@ -93,7 +93,7 @@ class RecommendationFeedController extends Controller
 
         $contentByConcept = [];
         $embeddingByConcept = [];
-        $embeddingEnabled = $this->contentEmbedding->enabled();
+        $embeddingEnabled = $this->contentEmbedding->enabled($subInstituteId ?: null);
 
         foreach ($conceptIds as $conceptId) {
             $contentByConcept[$conceptId] = $this->recommendations->getContentRecommendation($learnerId, $conceptId);

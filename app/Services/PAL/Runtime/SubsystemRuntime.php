@@ -51,7 +51,7 @@ class SubsystemRuntime
             'hpc-stages' => $this->hpcStages($tenant),
             'knowledge-graph' => $this->knowledgeGraph($tenant),
             'career-pathway' => $this->careerPathway($tenant),
-            'ai-agents' => $this->aiAgents(),
+            'ai-agents' => $this->aiAgents($tenant),
             default => $this->unavailable('No live computation is defined for this subsystem.'),
         });
     }
@@ -885,13 +885,28 @@ class SubsystemRuntime
     // 7. AI agents
     // ══════════════════════════════════════════════════════════════════════
 
-    private function aiAgents(): array
+    private function aiAgents(?int $tenant = null): array
     {
         $agents = (array) config('pal_architecture.subsystems.ai-agents.settings.agents', []);
-        $key = trim((string) config('openrouter.api_key', ''));
-        $baseUrl = trim((string) config('openrouter.base_url', ''));
+
+        // The configuration the orchestrator actually calls: what the administrator saved for
+        // PAL Intelligence in AI Providers, not a key read from the environment.
+        $providerLabel = null;
+
+        try {
+            $resolved = app(\App\Domain\AI\Configuration\AiModelClientFactory::class)
+                ->configurationFor('pal_intelligence', $tenant);
+
+            if ($resolved->hasKey()) {
+                $providerLabel = $resolved->provider . ($resolved->model ? ' / ' . $resolved->model : '');
+            }
+        } catch (\Throwable) {
+            $providerLabel = null;
+        }
+
+        $hasProvider = $providerLabel !== null;
         $orchestrator = class_exists(\App\Services\PAL\AI\AIOrchestrationService::class);
-        $ready = $key !== '' && $baseUrl !== '' && $orchestrator;
+        $ready = $hasProvider && $orchestrator;
 
         $rows = array_map(static fn ($agent) => [
             'name' => (string) ($agent['name'] ?? ''),
@@ -900,7 +915,7 @@ class SubsystemRuntime
             'can_run' => $ready && ! empty($agent['enabled']) ? 'yes' : 'no',
             'blocker' => $ready
                 ? (! empty($agent['enabled']) ? '' : 'Disabled in configuration.')
-                : 'No AI provider credential is configured on this server.',
+                : 'PAL Intelligence has no usable AI provider configured in AI Providers.',
         ], $agents);
 
         $enabled = count(array_filter($agents, static fn ($a) => ! empty($a['enabled'])));
@@ -910,15 +925,15 @@ class SubsystemRuntime
             'reason' => null,
             'headline' => [
                 $this->stat('Orchestrator', $orchestrator ? 'Deployed' : 'Missing', $orchestrator ? 'good' : 'critical'),
-                $this->stat('Provider credential', $key !== '' ? 'Present' : 'Missing', $key !== '' ? 'good' : 'critical'),
+                $this->stat('AI provider', $hasProvider ? $providerLabel : 'Not configured', $hasProvider ? 'good' : 'critical'),
                 $this->stat('Agents enabled', $enabled . '/' . count($agents), $enabled > 0 ? 'good' : 'warn'),
                 $this->stat('Agents able to run', $ready ? (string) $enabled : '0', $ready ? 'good' : 'critical'),
             ],
             'tables' => [[
                 'title' => 'Agent readiness',
                 'note' => $ready
-                    ? 'The provider is configured; enabled agents can execute.'
-                    : 'Without a provider credential every agent falls back to its non-generative behaviour.',
+                    ? 'PAL Intelligence has a provider configured; enabled agents can execute.'
+                    : 'Without a configured AI provider every agent falls back to its non-generative behaviour.',
                 'columns' => [
                     ['key' => 'name', 'label' => 'Agent'],
                     ['key' => 'autonomy', 'label' => 'Autonomy'],

@@ -5,6 +5,8 @@ namespace App\Services\Platform;
 use App\Models\Platform\PlatformScheduledTask;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -25,7 +27,7 @@ class SchedulerDispatcher
     /** @return array<string,callable(PlatformScheduledTask):string> task_key => handler returning a summary */
     private function handlers(): array
     {
-        return [
+        return array_merge(ScheduledJobs::registry(), [
             'reports.scheduled.dispatch' => function (): string {
                 $n = app(ReportScheduler::class)->runDue();
 
@@ -36,7 +38,13 @@ class SchedulerDispatcher
 
                 return "Retried {$n} queued or failed notifications.";
             },
-        ];
+        ]);
+    }
+
+    /** Whether a job is registered for this task key, so a screen can say so before anyone presses Run now. */
+    public static function hasJob(string $taskKey): bool
+    {
+        return array_key_exists($taskKey, (new self())->handlers());
     }
 
     /** @return array{ran:int,failed:int,no_handler:int,escalated:int} */
@@ -48,15 +56,68 @@ class SchedulerDispatcher
         // Engine housekeeping that belongs to no single school's task list.
         $summary['escalated'] = app(WorkflowEngine::class)->escalateOverdue();
 
-        foreach (PlatformScheduledTask::query()->where('disabled', false)->get() as $task) {
-            if (! $this->isDue($task, $now)) {
-                continue;
+        // Every school, every task that has a job. A school does NOT need a row in
+        // platform_scheduled_tasks for its tasks to run: a row only exists once someone
+        // saves a schedule, so requiring one meant most schools' tasks never ran.
+        // Without a row the shipped default schedule applies; the row is created the
+        // first time the task runs, so its last run shows on the screen.
+        $catalogue = (array) config('platform_services.tasks', []);
+        $keys = array_values(array_filter(array_keys($catalogue), fn ($key) => self::hasJob($key)));
+        $tenants = DB::table('school_setup')->pluck('Id')->map(fn ($id) => (int) $id)->all();
+
+        $rows = PlatformScheduledTask::query()->whereIn('task_key', $keys)->get()
+            ->keyBy(fn ($row) => $row->sub_institute_id.'|'.$row->task_key);
+
+        foreach ($tenants as $tenant) {
+            foreach ($keys as $key) {
+                $task = $rows[$tenant.'|'.$key] ?? null;
+
+                if ($task) {
+                    if ($task->disabled || ! $this->isDue($task, $now)) {
+                        continue;
+                    }
+                } else {
+                    if (! empty($catalogue[$key]['disabled_by_default']) || ! $this->defaultIsDue($catalogue[$key], $now)) {
+                        continue;
+                    }
+                    $task = $this->createDefaultRow($tenant, $key, $catalogue[$key]);
+                }
+
+                $result = $this->run($task, $now);
+                $summary[$result['status'] === 'ok' ? 'ran' : ($result['status'] === 'no_handler' ? 'no_handler' : 'failed')]++;
             }
-            $result = $this->run($task, $now);
-            $summary[$result['status'] === 'ok' ? 'ran' : ($result['status'] === 'no_handler' ? 'no_handler' : 'failed')]++;
         }
 
         return $summary;
+    }
+
+    /** True when the shipped schedule has a run time in the minute that just passed. */
+    private function defaultIsDue(array $definition, CarbonImmutable $now): bool
+    {
+        try {
+            $next = (new CronSchedule((array) ($definition['schedule'] ?? [])))->nextRunAt($now->subMinute());
+        } catch (InvalidArgumentException $e) {
+            return false;
+        }
+
+        return $next !== null && $next->lessThanOrEqualTo($now);
+    }
+
+    private function createDefaultRow(int $tenant, string $key, array $definition): PlatformScheduledTask
+    {
+        $schedule = (array) ($definition['schedule'] ?? []);
+        $parts = explode('.', $key);
+
+        return PlatformScheduledTask::firstOrCreate(
+            ['sub_institute_id' => $tenant, 'task_key' => $key],
+            [
+                'module' => $parts[0], 'component' => $parts[0].'.'.($parts[1] ?? ''),
+                'minute' => (string) ($schedule['minute'] ?? '0'), 'hour' => (string) ($schedule['hour'] ?? '0'),
+                'day' => (string) ($schedule['day'] ?? '*'), 'month' => (string) ($schedule['month'] ?? '*'),
+                'day_of_week' => (string) ($schedule['day_of_week'] ?? '*'), 'disabled' => false, 'fail_delay' => 0,
+                'updated_by' => 'scheduler',
+            ]
+        );
     }
 
     /** @return array{status:string,message:string} */

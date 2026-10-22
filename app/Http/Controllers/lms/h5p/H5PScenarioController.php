@@ -391,31 +391,20 @@ class H5PScenarioController extends Controller
             $contextPrompt .= "\n" . $prompt;
         }
         
-        // Use OpenRouter API with DeepSeek model
-        $client = new Client();
-        $response = $client->post('https://openrouter.ai/api/v1/chat/completions', [
-            'verify' => false,
-            'headers' => [
-                'Authorization' => 'Bearer ' . env('OPENROUTER_API_KEY'),
-                'Content-Type' => 'application/json',
-                'HTTP-Referer' => 'https://nextlms.in',
-                'X-Title' => 'Next LMS ERP',
-            ],
-            'json' => [
-                'model' => 'deepseek/deepseek-chat',
-                'messages' => [
+        // Provider, model, key and fallback order come from the school's central AI configuration.
+        // (The request's `image` field was never sent to the model and still is not.)
+        $generatedText = (string) app(\App\Domain\AI\Configuration\AiModelClientFactory::class)
+            ->for('content_generation', session()->get('sub_institute_id'))
+            ->chat(
+                [
                     ['role' => 'system', 'content' => 'You are an expert educational content creator specializing in creating age-appropriate learning materials. You analyze images and create detailed, accurate educational content. You understand human anatomy, biology, fruits, plants, and various educational subjects. Always return valid JSON responses.'],
                     ['role' => 'user', 'content' => $contextPrompt],
                 ],
-                'max_tokens' => 4096,
-                'temperature' => 0.7,
-                'top_p' => 0.9,
-            ],
-        ]);
+                null,
+                4096,
+                0.7
+            );
 
-        $data = json_decode($response->getBody(), true);
-        $generatedText = $data['choices'][0]['message']['content'];
-        
         // Parse the generated text to extract JSON
         $jsonData = null;
         
@@ -456,7 +445,7 @@ class H5PScenarioController extends Controller
             ]);
         }
         
-    } catch (RequestException $e) {
+    } catch (RequestException|\App\Domain\AI\Support\AiProviderException $e) {
         return response()->json([
             'status_code' => 0,
             'message' => 'API call failed: ' . $e->getMessage(),

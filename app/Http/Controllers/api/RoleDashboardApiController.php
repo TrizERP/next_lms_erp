@@ -171,6 +171,62 @@ class RoleDashboardApiController extends Controller
             ->orderBy('s.sort_order')
             ->get();
 
+        // Student attendance — today, plus the last 7 days for the trend chart. Same
+        // `attendance_student` codes the legacy dashboardController counts ('P' / 'A').
+        $attendanceByDay = DB::table('attendance_student')
+            ->selectRaw("DATE(attendance_date) as day, SUM(CASE WHEN attendance_code = 'P' THEN 1 ELSE 0 END) as present, SUM(CASE WHEN attendance_code = 'A' THEN 1 ELSE 0 END) as absent")
+            ->where('sub_institute_id', $subInstituteId)
+            ->where('syear', $syear)
+            ->whereDate('attendance_date', '>=', $startDate)
+            ->groupBy('day')
+            ->get()
+            ->keyBy('day');
+
+        $attendanceTrend = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $day = Carbon::today()->subDays($i)->toDateString();
+            $present = (int) ($attendanceByDay[$day]->present ?? 0);
+            $absent = (int) ($attendanceByDay[$day]->absent ?? 0);
+            $attendanceTrend[] = [
+                'date' => $day,
+                'label' => Carbon::parse($day)->format('D'),
+                'present' => $present,
+                'absent' => $absent,
+                // null, not 0, for a day nobody marked — a holiday is not a 0% day.
+                'rate' => ($present + $absent) > 0 ? round($present / ($present + $absent) * 100, 1) : null,
+            ];
+        }
+        $todayPresent = (int) ($attendanceByDay[$today]->present ?? 0);
+        $todayAbsent = (int) ($attendanceByDay[$today]->absent ?? 0);
+
+        // Recent activity — the latest circulars and admission enquiries, newest first.
+        // Fee receipts already have their own list, so they are not repeated here.
+        $recentCirculars = DB::table('circular')
+            ->select('id', 'title', 'date_ as occurred_at')
+            ->where('sub_institute_id', $subInstituteId)
+            ->where('syear', $syear)
+            ->orderByDesc('date_')
+            ->orderByDesc('id')
+            ->limit(5)
+            ->get()
+            ->map(static fn ($row) => ['type' => 'circular', 'id' => (int) $row->id, 'title' => (string) $row->title, 'detail' => null, 'occurred_at' => $row->occurred_at]);
+
+        $recentEnquiries = DB::table('admission_enquiry')
+            ->selectRaw("id, enquiry_no, CONCAT_WS(' ', first_name, last_name) as student_name, created_on as occurred_at")
+            ->where('sub_institute_id', $subInstituteId)
+            ->where('syear', $syear)
+            ->whereNull('deleted_at')
+            ->orderByDesc('created_on')
+            ->orderByDesc('id')
+            ->limit(5)
+            ->get()
+            ->map(static fn ($row) => ['type' => 'admission_enquiry', 'id' => (int) $row->id, 'title' => trim((string) $row->student_name), 'detail' => $row->enquiry_no ? (string) $row->enquiry_no : null, 'occurred_at' => $row->occurred_at]);
+
+        $recentActivity = $recentCirculars->concat($recentEnquiries)
+            ->sortByDesc(static fn ($row) => (string) $row['occurred_at'])
+            ->take(6)
+            ->values();
+
         return response()->json([
             'status' => '1',
             'message' => 'Success',
@@ -188,6 +244,14 @@ class RoleDashboardApiController extends Controller
             'recent_fee_receipts' => $recentFeeReceipts,
             'fee_collection_trend' => $feeCollectionTrend,
             'students_by_class' => $studentsByClass,
+            'attendance_today' => [
+                'present' => $todayPresent,
+                'absent' => $todayAbsent,
+                'not_marked' => max(0, $totalStudents - $todayPresent - $todayAbsent),
+                'total_students' => $totalStudents,
+            ],
+            'attendance_trend' => $attendanceTrend,
+            'recent_activity' => $recentActivity,
         ]);
     }
 

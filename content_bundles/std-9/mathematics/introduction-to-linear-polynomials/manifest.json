@@ -1,0 +1,43 @@
+{
+    "chapter_id": 8595,
+    "chapter_name": "Introduction to Linear Polynomials",
+    "standard_id": 42,
+    "standard_name": "9",
+    "subject_id": 3976,
+    "subject_name": "Mathematics",
+    "sub_institute_id": 1,
+    "concept_count": 12,
+    "ground_truth_chars": 35554,
+    "board": "cbse",
+    "board_label": "CBSE",
+    "board_profile_complete": true,
+    "framework": "NCF-SE 2023",
+    "question_types": {
+        "mcq": "Multiple choice",
+        "assertion_reason": "Assertion-Reason",
+        "very_short_answer": "Very short answer",
+        "short_answer": "Short answer",
+        "long_answer": "Long answer",
+        "case_based": "Case based / source based",
+        "hots": "Higher order thinking skills",
+        "competency": "Competency based"
+    },
+    "cognitive_bands": [
+        "remember",
+        "understand",
+        "apply",
+        "analyze",
+        "evaluate",
+        "create"
+    ],
+    "difficulty_labels": [
+        "easy",
+        "medium",
+        "hard"
+    ],
+    "learning_objective": "Identify terms, variables, coefficients, and constants in algebraic expressions.\nClassify components of algebraic expressions as terms, variables, coefficients, or constants.\nModel real-life situations by constructing algebraic expressions.\nCompare algebraic expressions to determine similarities and differences in structure, terms, and coefficients.\nDefine a univariate polynomial and its degree.\nIdentify univariate polynomials from a set of algebraic expressions.\nClassify univariate polynomials as linear, quadratic, cubic, or constant based on their degree.\nCreate a univariate polynomial satisfying given conditions on degree and coefficients.\nDefine the degree of a polynomial.\nIdentify the degree of a given polynomial.\nClassify polynomials as cubic, quadratic, linear, or constant based on their degree.\nExplain the relationship between degree and polynomial classification, particularly for linear polynomials.\nCompare the degrees of polynomials to analyze their classification.\nDefine a linear polynomial as a polynomial of degree 1.\nModel a real-world situation with a constant rate of change as a linear polynomial.\nPredict the change in output of a linear polynomial when the input changes by a constant amount.\nDefine a linear pattern and identify the constant difference in sequences and visual patterns.\nPredict terms in a linear pattern using the general term expression.\nAnalyze linear patterns to derive the general term (nth term) from given terms or visual stages.\nModel real-world situations using linear patterns and solve problems involving constant growth or decay.\nDefine linear growth as a constant additive increase.\nRecognize linear growth in a table of values.\nApply the concept of linear growth to predict future values.\nDifferentiate linear growth from exponential growth.\nConstruct a linear growth model from a real-world scenario.\nDefine linear decay as a process where a quantity decreases by a constant amount over equal intervals.\nCalculate the constant rate of decay from a table of values.\nPredict future values using a linear decay function.\nDifferentiate between linear decay and linear growth based on the sign and constancy of the rate of change.\nModel a real-world linear decay scenario using a linear function.\nRecall the definition of a linear relationship and its algebraic form y = ax + b.\nExplain the roles of the slope (a) and y-intercept (b) in the equation y = ax + b.\nApply the linear relationship formula to describe a growing pattern of square tiles.\nModel real-world scenarios (e.g., telecom charges) using a linear equation.\nAnalyze a set of data to derive the linear equation y = ax + b.\nCreate a novel real-world situation that can be modeled by a linear equation.\nDefine the slope of a line in the equation y = ax.\nInterpret the slope a as the steepness of the line relative to y = x.\nCompare the steepness of two lines by analyzing their slopes.\nPredict the relative steepness of y = ax compared to y = x for any given a.\nUnderstand the definition and geometric interpretation of y-intercept in the slope-intercept form y=ax+b.\nApply the rule to determine the y-intercept from various linear equations.\nAnalyze how changing the y-intercept value affects the graph of a linear equation and its real-world interpretation.\nRecall the standard form of a linear equation y = ax + b and its graph as a straight line.\nUnderstand the graphical significance of slope a and y-intercept b.\nApply the two-point method to accurately graph linear equations on a coordinate plane.\nAnalyze linear equations to compare steepness and determine parallelism.\nEvaluate the graphical behavior of a line (growth/decay) from its equation.\nCreate a linear graph from a real–world scenario and interpret its features.\nExplain why lines with equal slopes and different y-intercepts are parallel.\nCompare the slopes of two linear equations to determine if the lines are parallel.\nPredict whether two given lines will be parallel based on their equations.\nUse the concept of parallel lines to find the equation of a line parallel to a given line passing through a given point.",
+    "already_generated": [
+        "Teacher training presentation"
+    ],
+    "exported_at": "2026-10-16T16:51:47+05:30"
+}

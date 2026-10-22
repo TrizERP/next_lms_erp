@@ -7,6 +7,7 @@ use App\Brain\Support\LmsQueryScope;
 use App\Brain\Support\SchemaCache;
 use App\Services\Neo4jService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -39,6 +40,13 @@ final class GraphExplorer
      * included withdrawn records the student roll excludes.
      */
     use LmsQueryScope;
+
+    /**
+     * Set the moment a Neo4j call fails, so a caller can tell "the taxonomy is
+     * unreachable" apart from "the taxonomy genuinely has no match" — both of
+     * which used to come back as the same empty array. See {@see graphError()}.
+     */
+    private ?string $graphError = null;
 
     /**
      * $organizationLabel is the name the Organization node carries. The caller
@@ -312,6 +320,9 @@ final class GraphExplorer
                 ['search' => $search]
             );
         } catch (Throwable $e) {
+            $this->graphError = $e->getMessage();
+            Log::warning('Capability Explorer: skill query failed: '.$e->getMessage());
+
             return [];
         }
 
@@ -351,6 +362,9 @@ final class GraphExplorer
                 ['search' => $search]
             );
         } catch (Throwable $e) {
+            $this->graphError = $e->getMessage();
+            Log::warning('Capability Explorer: job role query failed: '.$e->getMessage());
+
             return [];
         }
 
@@ -926,6 +940,12 @@ final class GraphExplorer
         return (int) DB::table($table)->where('sub_institute_id', $this->tenantId)->count();
     }
 
+    /** Whatever broke the most recent Neo4j call, or null if nothing has. */
+    public function graphError(): ?string
+    {
+        return $this->graphError;
+    }
+
     /** The Skill/JobRole taxonomy lives in Neo4j, not this institute's MySQL schema. */
     private function neo4j(): ?Neo4jService
     {
@@ -935,6 +955,9 @@ final class GraphExplorer
 
             return $service;
         } catch (Throwable $e) {
+            $this->graphError = $e->getMessage();
+            Log::warning('Capability Explorer: Neo4j client unavailable: '.$e->getMessage());
+
             return null;
         }
     }

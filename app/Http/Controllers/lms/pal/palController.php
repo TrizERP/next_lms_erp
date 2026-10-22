@@ -505,7 +505,9 @@ class palController extends Controller
         try {
             $openAIService = new OpenAIService();
             $generatedContent = trim((string) $openAIService->generateContent(
-                $this->buildMisconceptionAIPrompt($question, $chapterName, $subjectName)
+                $this->buildMisconceptionAIPrompt($question, $chapterName, $subjectName),
+                0,
+                'pal_intelligence'
             ));
 
             if (!empty($generatedContent)) {

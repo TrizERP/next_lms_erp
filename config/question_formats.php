@@ -27,8 +27,16 @@ return [
     | (config/claude.php, `question_generation`). Every other format keeps its
     | existing prompt and provider untouched.
     |
-    |   enabled            QGEN_H5P_DRIVEN=false switches the whole layer off, which
-    |                      restores the previous DeepSeek behaviour for every format.
+    |   enabled            QGEN_H5P_DRIVEN=true switches the layer on. Defaults OFF: this
+    |                      layer requires config('claude.api_key') / ANTHROPIC_API_KEY (or
+    |                      an ai_api_keys row for config('claude.api_type')), which no
+    |                      environment of this app has ever had configured -- so defaulting
+    |                      it on (as af89b92c8 did) makes every mcq/true_false generation
+    |                      call fail outright with "Claude API key is not configured" rather
+    |                      than falling back. Defaulting it off restores the DeepSeek
+    |                      behaviour every environment actually runs on, with no env change
+    |                      required; set QGEN_H5P_DRIVEN=true only once an Anthropic key is
+    |                      actually provisioned somewhere this app can read.
     |   types              Catalogue codes offered and generated this way. Phase 1 is
     |                      mcq and true_false; a code with no H5P definition is ignored.
     |   questions_per_type Exactly this many questions per selected type. Server-owned:
@@ -37,7 +45,7 @@ return [
     |                      validation failure back to the model. Never unbounded.
     */
     'h5p' => [
-        'enabled' => (bool) env('QGEN_H5P_DRIVEN', true),
+        'enabled' => (bool) env('QGEN_H5P_DRIVEN', false),
         'types' => array_values(array_filter(array_map('trim', explode(',', (string) env('QGEN_H5P_TYPES', 'mcq,true_false'))))),
         'questions_per_type' => (int) env('QGEN_H5P_QUESTIONS_PER_TYPE', 2),
         'max_attempts' => (int) env('QGEN_H5P_MAX_ATTEMPTS', 3),

@@ -74,7 +74,7 @@ class LaravelMcpStage implements LifecycleStage
             // from a row the previous answer printed, so there is no subject left to
             // resolve and running the student resolver here would search for a name
             // nobody typed.
-            'mcp_tools', 'selected_record' => $this->runPlannedSteps($context),
+            'mcp_tools', 'selected_record', 'exam_question_help_flow' => $this->runPlannedSteps($context),
             default => $plan->source === Plan::SOURCE_LLM
                 ? $this->runPlannedSteps($context)
                 : $this->resolveSubject($context),
