@@ -289,6 +289,8 @@ class PlatformRegistry
             $tasks[] = array_merge(['key' => $key, 'module' => self::moduleOf($key), 'component' => self::componentOf($key)], (array) $row, [
                 'schedule' => $this->defaultScheduleFor($key),
                 'disabled_by_default' => (bool) ($row['disabled_by_default'] ?? false),
+                // Whether a job is registered to run this task, so a screen can leave out tasks that do nothing yet.
+                'has_job' => \App\Services\Platform\SchedulerDispatcher::hasJob($key),
             ]);
         }
 

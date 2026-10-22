@@ -5,6 +5,7 @@ namespace App\Domain\AI\Decisions;
 use App\Domain\AI\Support\AiAuditLogger;
 use App\Domain\Governance\EsoBindingRule;
 use App\Services\Mcp\McpRequestContext;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use RuntimeException;
@@ -148,6 +149,25 @@ class DecisionGate
         DB::beginTransaction();
 
         try {
+            // Atomic, row-locked guard: this UPDATE only matches a recommendation
+            // still awaiting a decision. Two concurrent/retried calls both pass the
+            // pre-check above (it reads before either writes), but only the first to
+            // reach this UPDATE can actually move the status — the second finds 0
+            // matching rows once the first commits, and must not fall through to
+            // insert a second decision row or seed a second outcome.
+            $moved = DB::table('ai_recommendations')
+                ->where('id', $recommendationId)
+                ->where('sub_institute_id', $context->selectedInstituteId)
+                ->whereIn('status', ['draft', 'pending_approval'])
+                ->update([
+                    'status' => $this->statusFor($decision),
+                    'updated_at' => now(),
+                ]);
+
+            if ($moved === 0) {
+                throw new RuntimeException('This recommendation has already been decided.');
+            }
+
             $decisionId = (int) DB::table('ai_decisions')->insertGetId([
                 'recommendation_id' => $recommendationId,
                 'case_id' => $recommendation->case_id,
@@ -166,13 +186,6 @@ class DecisionGate
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-
-            DB::table('ai_recommendations')
-                ->where('id', $recommendationId)
-                ->update([
-                    'status' => $this->statusFor($decision),
-                    'updated_at' => now(),
-                ]);
 
             if ($recommendation->case_id) {
                 DB::table('ai_cases')
@@ -275,21 +288,32 @@ class DecisionGate
             return null;
         }
 
-        return (int) DB::table('ai_outcomes')->insertGetId([
-            'case_id' => $recommendation->case_id,
-            'recommendation_id' => $recommendation->id,
-            'subject_entity_key' => $plan['subject_entity_key'],
-            'subject_id' => $plan['subject_id'],
-            'metric_key' => $plan['metric_key'],
-            'metric_label' => $plan['metric_label'] ? mb_substr((string) $plan['metric_label'], 0, 200) : null,
-            'target_value' => $plan['target_value'],
-            'status' => 'pending',
-            'measure_after' => $plan['measure_after'],
-            'detail' => json_encode($plan['detail']),
-            'sub_institute_id' => $context->selectedInstituteId,
-            'academic_year' => $context->academicYear,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        try {
+            return (int) DB::table('ai_outcomes')->insertGetId([
+                'case_id' => $recommendation->case_id,
+                'recommendation_id' => $recommendation->id,
+                'subject_entity_key' => $plan['subject_entity_key'],
+                'subject_id' => $plan['subject_id'],
+                'metric_key' => $plan['metric_key'],
+                'metric_label' => $plan['metric_label'] ? mb_substr((string) $plan['metric_label'], 0, 200) : null,
+                'target_value' => $plan['target_value'],
+                'status' => 'pending',
+                'measure_after' => $plan['measure_after'],
+                'detail' => json_encode($plan['detail']),
+                'sub_institute_id' => $context->selectedInstituteId,
+                'academic_year' => $context->academicYear,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (UniqueConstraintViolationException $exception) {
+            // The status guard in record() makes this practically unreachable
+            // through this class's own callers, but the unique index on
+            // ai_outcomes.recommendation_id is the real guarantee: any path that
+            // tries to seed a second outcome for an already-measured
+            // recommendation gets the existing row back, never a silent duplicate.
+            return (int) DB::table('ai_outcomes')
+                ->where('recommendation_id', $recommendation->id)
+                ->value('id');
+        }
     }
 }

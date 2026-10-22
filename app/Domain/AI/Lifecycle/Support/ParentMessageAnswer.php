@@ -55,11 +55,13 @@ class ParentMessageAnswer
             'Choose how to send it',
             "• Send SMS — through the school's SMS gateway, the same one Send SMS to Parents uses.\n"
             ."• Send WhatsApp Message — through the school's WhatsApp Business account.\n"
+            ."• Send SMS and WhatsApp — both, each through its own channel; if one fails the other is still sent.\n"
             .'Nothing is sent until you have reviewed the message and approved it. Say "cancel" to stop.'
         ));
         $context->addAction($this->compose->action('choose_sms', 'Send SMS', 'parent_message_send', ['utterance' => 'Send SMS'], 'primary'));
         $context->addAction($this->compose->action('choose_whatsapp', 'Send WhatsApp Message', 'parent_message_send', ['utterance' => 'Send WhatsApp Message'], 'default'));
-        $context->suggestFollowUp('Send SMS', 'Send WhatsApp Message', 'Cancel.');
+        $context->addAction($this->compose->action('choose_both', 'Send SMS and WhatsApp', 'parent_message_send', ['utterance' => 'Send SMS and WhatsApp'], 'default'));
+        $context->suggestFollowUp('Send SMS', 'Send WhatsApp Message', 'Send SMS and WhatsApp', 'Cancel.');
 
         return StageOutcome::pending('A parent message is waiting on the channel.', ['sent' => false]);
     }
@@ -94,14 +96,34 @@ class ParentMessageAnswer
             ));
         }
 
-        $context->addSection($this->compose->keyValues($label.' details', array_filter([
-            'Sent through' => (string) ($details['provider']['name'] ?? '').(! empty($details['provider']['host']) ? ' ('.$details['provider']['host'].')' : ''),
-            'Template' => $this->templateLine($template),
-            'Longest message' => isset($details['limit']) ? $details['limit'].' characters' : null,
-        ], static fn ($value) => $value !== null && $value !== '')));
+        $channels = is_array($details['channels'] ?? null) ? $details['channels'] : [];
 
-        if (! empty($template['note'])) {
-            $context->addSection($this->compose->text('About the template', (string) $template['note']));
+        if ($channels !== []) {
+            // Both: each channel's own provider and template, side by side.
+            $rows = [];
+
+            foreach ($channels as $channel => $part) {
+                $name = $channel === 'sms' ? 'SMS' : 'WhatsApp';
+                $rows[$name.' sent through'] = (string) ($part['provider']['name'] ?? '').(! empty($part['provider']['host']) ? ' ('.$part['provider']['host'].')' : '');
+                $rows[$name.' template'] = $this->templateLine(is_array($part['template'] ?? null) ? $part['template'] : []);
+            }
+
+            $rows['Longest message (the shorter limit applies)'] = isset($details['limit']) ? $details['limit'].' characters' : null;
+            $context->addSection($this->compose->keyValues($label.' details', array_filter($rows, static fn ($value) => $value !== null && $value !== '')));
+
+            foreach ((array) ($details['unavailable'] ?? []) as $channel => $reason) {
+                $context->addSection($this->compose->text(($channel === 'sms' ? 'SMS' : 'WhatsApp').' is not available', (string) $reason.' The other channel can still be sent.'));
+            }
+        } else {
+            $context->addSection($this->compose->keyValues($label.' details', array_filter([
+                'Sent through' => (string) ($details['provider']['name'] ?? '').(! empty($details['provider']['host']) ? ' ('.$details['provider']['host'].')' : ''),
+                'Template' => $this->templateLine($template),
+                'Longest message' => isset($details['limit']) ? $details['limit'].' characters' : null,
+            ], static fn ($value) => $value !== null && $value !== '')));
+
+            if (! empty($template['note'])) {
+                $context->addSection($this->compose->text('About the template', (string) $template['note']));
+            }
         }
 
         $variables = is_array($details['variables'] ?? null) ? $details['variables'] : [];
@@ -248,6 +270,7 @@ class ParentMessageAnswer
         $unreachable = is_array($data['unreachable'] ?? null) ? $data['unreachable'] : [];
         $count = (int) ($data['recipient_count'] ?? count($recipients));
         $label = (string) ($data['channel_label'] ?? 'Message');
+        $channels = is_array($data['channels'] ?? null) ? $data['channels'] : [];
         $other = ($data['channel'] ?? 'sms') === 'sms' ? 'WhatsApp' : 'SMS';
 
         $context->setHeadline(sprintf('Review this %s to %d parent%s before anything is sent.', $label, $count, $count === 1 ? '' : 's'));
@@ -291,19 +314,29 @@ class ParentMessageAnswer
             ));
         }
 
-        $template = is_array($data['template'] ?? null) ? $data['template'] : [];
+        // One section per channel when both are going out; otherwise the single channel as before.
+        $views = $channels !== [] ? $channels : [(string) ($data['channel'] ?? 'sms') => $data];
 
-        if ($template !== [] && $this->templateLine($template) !== '') {
-            $context->addSection($this->compose->text('Template', $this->templateLine($template).(! empty($template['note']) ? "\n".$template['note'] : '')));
+        foreach ($views as $channel => $view) {
+            $name = $channels === [] ? '' : ($channel === 'sms' ? 'SMS' : 'WhatsApp').' — ';
+            $template = is_array($view['template'] ?? null) ? $view['template'] : [];
+
+            if ($template !== [] && $this->templateLine($template) !== '') {
+                $context->addSection($this->compose->text($name.'Template', $this->templateLine($template).(! empty($template['note']) ? "\n".$template['note'] : '')));
+            }
+
+            // The finished text, as the provider will receive it: the template's saved text included.
+            $final = (string) ($view['final_message'] ?? $view['sample_message'] ?? '');
+
+            $context->addSection($this->compose->text(
+                $name.'The message the first parent will receive',
+                $final."\n\n(Variables such as {name} are filled in from each student's own record.)"
+            ));
         }
 
-        // The finished text, as the provider will receive it: the template's saved text included.
-        $final = (string) ($data['final_message'] ?? $data['sample_message'] ?? '');
-
-        $context->addSection($this->compose->text(
-            'The message the first parent will receive',
-            $final."\n\n(Variables such as {name} are filled in from each student's own record.)"
-        ));
+        foreach ((array) ($data['unavailable'] ?? []) as $channel => $reason) {
+            $context->addSection($this->compose->text(($channel === 'sms' ? 'SMS' : 'WhatsApp').' will NOT be sent', (string) $reason));
+        }
 
         $warnings = is_array($data['warnings'] ?? null) ? $data['warnings'] : [];
 
@@ -329,7 +362,7 @@ class ParentMessageAnswer
             'primary'
         ));
 
-        $context->suggestFollowUp('Send it by '.$other.' instead.', 'Cancel.');
+        $context->suggestFollowUp(...($channels !== [] ? ['Send it by SMS instead.', 'Send it by WhatsApp instead.', 'Cancel.'] : ['Send it by '.$other.' instead.', 'Cancel.']));
 
         return StageOutcome::pending(
             sprintf('%d parent message%s are waiting for a person to approve the list.', $count, $count === 1 ? '' : 's'),
@@ -342,10 +375,22 @@ class ParentMessageAnswer
     private function sent(StageContext $context, array $data, string $message): StageOutcome
     {
         $results = is_array($data['results'] ?? null) ? $data['results'] : [];
+        $both = ($data['channel'] ?? 'sms') === 'both';
         $whatsapp = ($data['channel'] ?? 'sms') === 'whatsapp';
-        $by = $whatsapp ? 'WhatsApp' : 'the SMS gateway';
+        $by = $both ? 'the SMS gateway or WhatsApp' : ($whatsapp ? 'WhatsApp' : 'the SMS gateway');
 
         $context->setHeadline($message);
+
+        if ($both) {
+            // Each channel's own outcome, so one failing is never hidden behind the other succeeding.
+            $lines = [];
+
+            foreach ((array) ($data['channels'] ?? []) as $channel => $outcome) {
+                $lines[($channel === 'sms' ? 'SMS' : 'WhatsApp')] = ($outcome['ok'] ?? false ? 'Accepted — ' : 'NOT sent — ').(string) ($outcome['message'] ?? '');
+            }
+
+            $context->addSection($this->compose->keyValues('Result by channel', $lines));
+        }
 
         $context->addSection($this->compose->keyValues('Summary', array_filter([
             'Reference' => (string) ($data['reference'] ?? ''),
@@ -360,10 +405,11 @@ class ParentMessageAnswer
         $context->addSection($this->compose->text(
             'What "accepted" means',
             ucfirst($by).' took the message. That is not proof it reached the phone'
-            .($whatsapp ? ', and WhatsApp reports delivered and read later — ask for the Communication messages to see the current status.' : ' — this gateway sends no delivery receipt back.')
+            .($both ? ' — WhatsApp reports delivered and read later (ask for the WhatsApp messages sent); the SMS gateway sends no delivery receipt back.'
+                : ($whatsapp ? ', and WhatsApp reports delivered and read later — ask for the Communication messages to see the current status.' : ' — this gateway sends no delivery receipt back.'))
         ));
 
-        $context->suggestFollowUp($whatsapp ? 'Show the WhatsApp messages sent.' : 'Show the SMS messages sent.');
+        $context->suggestFollowUp($both ? 'Show the WhatsApp messages sent.' : ($whatsapp ? 'Show the WhatsApp messages sent.' : 'Show the SMS messages sent.'));
 
         return StageOutcome::ran(
             sprintf('%d message(s) accepted, %d failed, %d skipped.', (int) ($data['sent'] ?? 0), (int) ($data['failed'] ?? 0), (int) ($data['skipped'] ?? 0)),

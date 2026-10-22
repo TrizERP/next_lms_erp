@@ -257,4 +257,78 @@ class ExamQuestionHelpTest extends TestCase
         $this->assertStringContainsString('1. First?', $this->body($context));
         $this->assertContains('Help me with question 1.', $context->followUps());
     }
+
+    /**
+     * A model that answers a different reply each time it is asked.
+     *
+     * @param  array<int, array<string, mixed>>  $replies
+     */
+    private function tutorSequence(array $replies, int &$asked): ExamQuestionHelpAnswer
+    {
+        $client = new class($replies, $asked) extends OpenRouterClient
+        {
+            public function __construct(private array $replies, private int &$asked)
+            {
+            }
+
+            public function isConfigured(): bool
+            {
+                return true;
+            }
+
+            public function json(array $messages, ?string $model = null, int $maxTokens = 900, float $temperature = 0.0): ?array
+            {
+                $this->asked++;
+
+                return array_shift($this->replies);
+            }
+        };
+
+        return new ExamQuestionHelpAnswer(new AnswerComposer(), $client);
+    }
+
+    public function test_an_explanation_that_only_repeats_the_teachers_line_is_asked_for_again(): void
+    {
+        $thin = $this->lesson('Combination of chromosomes XX lead to the birth of a baby girl.');
+        $good = $this->lesson('Sex chromosomes decide whether a baby is a girl or a boy. The combination XX gives a girl, because she receives an X from each parent. XY gives a boy, so it is the tempting but wrong choice.');
+        $asked = 0;
+
+        $context = $this->compose($this->tutorSequence([$thin, $good], $asked), $this->row(true));
+
+        $this->assertSame(2, $asked);
+        $this->assertStringContainsString('receives an X from each parent', $this->card($context)['text']);
+        $this->assertSame('XX.', $this->card($context)['value'], 'the answer is the database key whatever the model says');
+    }
+
+    public function test_a_good_first_explanation_is_not_asked_for_twice(): void
+    {
+        $good = $this->lesson('Sex chromosomes decide whether a baby is a girl or a boy. The combination XX gives a girl, because she receives an X from each parent. XY gives a boy, so it is the tempting but wrong choice.');
+        $asked = 0;
+
+        $this->compose($this->tutorSequence([$good, $good], $asked), $this->row(true));
+
+        $this->assertSame(1, $asked);
+    }
+
+    public function test_when_the_retry_is_no_better_the_first_reply_still_stands(): void
+    {
+        $thin = $this->lesson('The correct option is XX. A girl gets an X from each parent.');
+        $asked = 0;
+
+        $context = $this->compose($this->tutorSequence([$thin, $thin], $asked), $this->row(true));
+
+        $this->assertSame(2, $asked);
+        $this->assertStringContainsString('A girl gets an X from each parent.', $this->card($context)['text']);
+    }
+
+    public function test_a_model_that_returns_nothing_usable_the_first_time_is_asked_once_more(): void
+    {
+        $good = $this->lesson('Sex chromosomes decide whether a baby is a girl or a boy. The combination XX gives a girl, because she receives an X from each parent. XY gives a boy, so it is the tempting but wrong choice.');
+        $asked = 0;
+
+        $context = $this->compose($this->tutorSequence([null, $good], $asked), $this->row(true));
+
+        $this->assertSame(2, $asked);
+        $this->assertStringContainsString('receives an X from each parent', $this->card($context)['text']);
+    }
 }
