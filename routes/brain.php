@@ -6,6 +6,8 @@ use App\Http\Controllers\Brain\BrainAttendanceIntelligenceController;
 use App\Http\Controllers\Brain\BrainCapabilityIntelligenceController;
 use App\Http\Controllers\Brain\BrainCommunicationIntelligenceController;
 use App\Http\Controllers\Brain\BrainController;
+use App\Http\Controllers\Brain\BrainCrossModuleController;
+use App\Http\Controllers\Brain\BrainExecutionCenterController;
 use App\Http\Controllers\Brain\BrainCorrespondenceIntelligenceController;
 use App\Http\Controllers\Brain\BrainFeesIntelligenceController;
 use App\Http\Controllers\Brain\BrainHomeworkIntelligenceController;
@@ -86,6 +88,10 @@ Route::middleware(['brain.auth', 'brain.tenant'])->group(function () {
         // the loop into an outcome. Both require a named LMS user.
         Route::post('recommendations/{id}/decide', [BrainIntelligenceController::class, 'decide'])->middleware('brain.permission:update');
         Route::post('executions/{id}/complete', [BrainIntelligenceController::class, 'executionComplete'])->middleware('brain.permission:update');
+        // Execution Center: health, verification, attention, impact and history; and the evidence writer.
+        Route::get('execution-center', [BrainExecutionCenterController::class, 'index'])->middleware('brain.permission:read');
+        Route::get('execution-center/{id}', [BrainExecutionCenterController::class, 'show'])->middleware('brain.permission:read');
+        Route::post('executions/{id}/evidence', [BrainExecutionCenterController::class, 'linkEvidence'])->middleware('brain.permission:update');
 
         /*
          * Fees Intelligence — the Fees module's own loop, for the academic year
@@ -202,6 +208,8 @@ Route::middleware(['brain.auth', 'brain.tenant'])->group(function () {
         Route::post('modules/{module}/workflows/{flowKey}/trigger', [BrainIntelligenceIntegrationController::class, 'triggerWorkflow'])->middleware('brain.permission:create');
 
         // Executive intelligence: health, what changed, what is at risk, what to do.
+        // Relationships BETWEEN modules (attendance x results ...), computed from the module services.
+        Route::get('cross-module/intelligence', [BrainCrossModuleController::class, 'index'])->middleware('brain.permission:read');
         Route::get('executive', [BrainIntelligenceController::class, 'executive'])->middleware('brain.permission:read');
 
         // Intelligence about one kind of thing, in the school's own language.
