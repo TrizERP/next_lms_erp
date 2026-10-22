@@ -213,6 +213,8 @@ class SchedulerController extends PlatformController
             'describes' => $describes,
             'disabled' => $disabled,
             'disabled_by_default' => (bool) ($definition['disabled_by_default'] ?? false),
+            // Whether a job is registered to run this task. Without one, Run now has nothing to do.
+            'has_job' => \App\Services\Platform\SchedulerDispatcher::hasJob($key),
             'fail_delay' => $row ? (int) $row->fail_delay : 0,
             'last_run_at' => $row?->last_run_at?->toIso8601String(),
             'last_run_status' => $row?->last_run_status,
