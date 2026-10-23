@@ -6,6 +6,9 @@ use App\Services\ContentGenerationService;
 use App\Services\StudyDeck\ClaudeApiCompleter;
 use App\Services\StudyDeck\ClaudeCliCompleter;
 use App\Services\StudyDeck\Contracts\Completer;
+use App\Services\QuestionGeneration\DragDrop\Contracts\DiagramImageStore;
+use App\Services\StudyDeck\IsolatedImageDatabase;
+use App\Services\StudyDeck\StudyDeckImages;
 use App\Services\StudyDeck\StudyDeckService;
 use App\Services\StudyDeck\StudyImageStores;
 use App\Services\StudyDeck\TeachingMethodProfile;
@@ -31,7 +34,9 @@ class GenerateStudyDeckCommand extends Command
     protected $signature = 'lms:generate-study-deck
         {chapter : chapter_master.id}
         {--tenant=1 : sub_institute_id}
-        {--executor= : api | cli (cli is dev-only; default from config claude.executor)}
+        {--executor= : api | cli | gemini (cli is dev-only; gemini writes slides through the estate Gemini client and key pool; default from config claude.executor)}
+        {--repair-rounds= : how many times a rejected slide plan is sent back to the model with its reasons (default 2, at most 6)}
+        {--require-concept-visuals : every concept_intro / concept_visual slide must carry a picture or diagram (the plan is refused otherwise)}
         {--out= : bundle directory (default storage/app/study-deck/chapter-<id>)}
         {--teaching-method= : shape the deck for a teaching method (explicit_instruction, inquiry_based, problem_based, project_based, experiential, collaborative, socratic, flipped_classroom, differentiated_mastery, gamified); none keeps the default deck}
         {--template= : build the lesson with a reusable template instead of the slide planner (story_branching_scenario: a story with an act per topic, in the study-deck story player)}
@@ -50,7 +55,13 @@ class GenerateStudyDeckCommand extends Command
         {--recheck-images : with --replay: read the chosen photographs back and replace any that fail the picture rules (out of focus) by the diagram planned for the slide; no search, no model call}
         {--redraw-diagrams : with --replay: draw the diagrams of the deck again with the current DiagramRenderer (same words, same places; only the look changes)}
         {--images-from= : with --replay: a JSON file of chosen pictures to swap in (photographs by source, or figures drawn for the lesson); each faces the picture rules and its hotspots are moved to match (see AppServicesStudyDeckImageOverrides)}
-        {--export-player= : copy deck.json (picture references only, no picture files) to this directory so the local student player can load the review bundle}
+        {--export-player= : copy deck.json (picture references only, no picture files) to this directory so the local student player can load the review bundle. With --isolated-images the pictures are written there too, beside deck.json (a folder that already holds a deck.json is refused)}
+        {--ai-scene-art : with --template: when no related, topic or reused picture is found for a scene, ask the image model (Gemini) for an illustration of it, checked by the picture check and labelled "AI-generated illustration", never a photograph. Off by default; the labelled placeholder is used instead}
+        {--allow-placeholder : with --template: when no real picture (exact, related, topic, reused, AI-generated or generic educational photograph) can be found for a scene, use a drawn, labelled placeholder card instead of failing. Off by default: a placeholder is not a picture}
+        {--ai-scene-max=60 : with --ai-scene-art: the most illustrations one run may ask for}
+        {--no-image-coverage : with --template: do not require a picture on every scene and ending (by default a story run gives each one a picture: exact, related, topic, reused, AI-generated or a labelled placeholder)}
+        {--image-library= : with --template: the JSON file that keeps accepted pictures, generated illustrations and failed searches between runs (default: beside the isolated store, else storage/app/study-deck/image-library/)}
+        {--isolated-images= : DRY RUN: keep this run\'s pictures in this local SQLite file (must end in .sqlite) instead of the shared study_deck_images table. The bundle is marked and cannot be stored; it is played from --export-player. Not combinable with --store}
         {--store : on a passing validation, store THIS bundle (see lms:store-study-deck: writes to the DB and shared storage)}';
 
     protected $description = 'Generate a 30-35 slide classroom study deck from a chapter\'s LMS data';
@@ -63,8 +74,36 @@ class GenerateStudyDeckCommand extends Command
         $dir = rtrim((string) ($this->option('out') ?: storage_path('app/study-deck/chapter-' . $chapterId)), '/\\');
         $store = (bool) $this->option('store');
 
+        // The isolated store is settled FIRST, before anything reads the application's database: a refusal here has touched nothing.
+        $isolatedPath = trim((string) $this->option('isolated-images'));
+        $isolated = null;
+        if ($isolatedPath !== '') {
+            if ($store) {
+                $this->error('--isolated-images is a dry run: its pictures are not in the shared table, so it cannot be combined with --store.');
+
+                return self::FAILURE;
+            }
+            try {
+                $isolated = IsolatedImageDatabase::open($isolatedPath);
+            } catch (\Throwable $e) {
+                $this->error($e->getMessage());
+
+                return self::FAILURE;
+            }
+            $isolatedPath = IsolatedImageDatabase::checkedPath($isolatedPath);
+            $this->line('Pictures: <options=bold>isolated</> in ' . $isolatedPath . ' (the shared study_deck_images table is not used; nothing here can be stored)');
+        }
+
+        if ($this->option('ai-scene-art') && !$this->option('template')) {
+            $this->error('--ai-scene-art works with --template (it illustrates story scenes).');
+
+            return self::FAILURE;
+        }
+
         // A story lesson is always written by Gemini (the estate's own client and key pool): never the Anthropic key or the Claude CLI.
         $story = $this->option('template') === \App\Services\StudyDeck\Story\StoryTemplate::KEY;
+        $gemini = $story || $executor === 'gemini';
+        $gemini = $story || $executor === 'gemini';
         $this->line($story ? 'Model: <options=bold>gemini</> (story lessons always use Gemini)' : 'Executor: <options=bold>' . $executor . '</>' . ($executor === 'cli' ? ' (dev-only, tools disabled)' : ''));
 
         try {
@@ -72,10 +111,10 @@ class GenerateStudyDeckCommand extends Command
             if (!$replay && $this->option('images-from')) {
                 throw new RuntimeException('--images-from works with --replay (it changes the pictures of a deck that is already planned).');
             }
-            $completer = $replay ? $this->noModel() : ($story ? $this->geminiCompleter($tenant) : $this->completer($executor, $content));
+            $completer = $replay ? $this->noModel() : ($gemini ? $this->geminiCompleter($tenant) : $this->completer($executor, $content));
             // Pictures go straight into the database (study_deck_images) and the bundle carries only their
             // references: a run writes no picture file anywhere. Publishing is lms:store-study-deck's job.
-            $images = StudyImageStores::database($tenant, $chapterId);
+            $images = $this->pictureStore($tenant, $chapterId, $isolated);
             $service = StudyDeckService::make($completer, $images);
 
             $method = $this->option('teaching-method') ?: null;
@@ -102,6 +141,11 @@ class GenerateStudyDeckCommand extends Command
                 // Finished acts are kept between runs of the same chapter, so a failure late in the story is resumed, not redone.
                 'story_checkpoint_dir' => $template !== null ? storage_path('app/study-deck/story-checkpoints/chapter-' . $chapterId . '-school-' . $tenant) : null,
                 'teaching_method' => $method,
+                'image_coverage' => $template !== null && !$this->option('no-image-coverage'),
+                'ai_scene_art' => $template !== null && (bool) $this->option('ai-scene-art'),
+                'ai_scene_max' => max(1, (int) $this->option('ai-scene-max')),
+                'allow_placeholder' => $template !== null && (bool) $this->option('allow-placeholder'),
+                'image_library' => $template !== null ? ($this->option('image-library') ?: ($isolatedPath !== '' ? $isolatedPath . '.library.json' : storage_path('app/study-deck/image-library/school-' . $tenant . '-chapter-' . $chapterId . '.json'))) : null,
                 'rejected_replies_dir' => $dir,
                 'min_slides' => (int) $this->option('min-slides'),
                 'max_slides' => (int) $this->option('max-slides'),
@@ -110,6 +154,10 @@ class GenerateStudyDeckCommand extends Command
                     'max_practice' => $this->option('max-practice') ?: null,
                     'questions_per_slide' => $this->option('per-slide') ?: null,
                     'max_visuals' => $this->option('max-visuals') ?: null,
+                    'require_concept_visuals' => $this->option('require-concept-visuals') ? 1 : null,
+                    'repair_rounds' => $this->option('repair-rounds') !== null && $this->option('repair-rounds') !== '' ? (int) $this->option('repair-rounds') : null,
+                    'require_concept_visuals' => $this->option('require-concept-visuals') ? 1 : null,
+                    'repair_rounds' => $this->option('repair-rounds') !== null && $this->option('repair-rounds') !== '' ? (int) $this->option('repair-rounds') : null,
                     'max_scenarios' => $this->option('max-scenarios') ?: null,
                 ], fn ($v) => $v !== null),
             ];
@@ -142,9 +190,24 @@ class GenerateStudyDeckCommand extends Command
             return self::FAILURE;
         }
 
+        $this->checkPictureCoverage($result, $isolated ?? new StudyDeckImages());
         $this->writeBundle($dir, $result);
+        if ($isolated !== null) {
+            IsolatedImageDatabase::markBundle($dir, $isolatedPath);
+        }
         if ($target = (string) $this->option("export-player")) {
-            $this->exportPlayer($dir, $target);
+            if ($isolated !== null) {
+                try {
+                    $made = IsolatedImageDatabase::exportPlayer($dir, $target, $isolated);
+                    $this->line('Player copy: ' . $made['deck'] . ' with ' . $made['pictures'] . ' pictures beside it (' . round($made['bytes'] / 1024) . ' KB)');
+                } catch (\Throwable $e) {
+                    $this->error($e->getMessage());
+
+                    return self::FAILURE;
+                }
+            } else {
+                $this->exportPlayer($dir, $target);
+            }
         }
         $this->newLine();
         $this->line('Bundle: ' . $dir);
@@ -155,6 +218,7 @@ class GenerateStudyDeckCommand extends Command
         foreach ($result['report']['errors'] as $e) {
             $this->line('  <fg=red>FAIL</> ' . $e);
         }
+        $this->printPictureCoverage($result);
         $this->line('  ' . json_encode($result['report']['stats']));
 
         if (!$result['report']['ok']) {
@@ -173,6 +237,62 @@ class GenerateStudyDeckCommand extends Command
 
         return $this->call('lms:store-study-deck', ['chapter' => $chapterId, '--bundle' => $dir, '--tenant' => $tenant]);
     }
+    /**
+     * Where this run keeps its pictures: the application's own table (every normal run), or the isolated store of a dry run.
+     * Kept as one method so a test can show which of the two a run gets.
+     */
+    public function pictureStore(int $tenant, int $chapterId, ?StudyDeckImages $isolated = null): DiagramImageStore
+    {
+        return StudyImageStores::database($tenant, $chapterId, $isolated);
+    }
+
+    /**
+     * The picture coverage of a finished story, read from the deck the player will get: counts by kind and by match level, and every stored picture
+     * read back from the store. A picture that cannot be read back makes the deck not ready.
+     *
+     * @param array<string,mixed> $result
+     */
+    private function checkPictureCoverage(array &$result, StudyDeckImages $images): void
+    {
+        if (!isset($result['picture_coverage'])) {
+            return;
+        }
+        $interactions = array_values(array_filter(array_map(fn ($s) => isset($s['interaction']['nodes']) ? $s['interaction'] : null, (array) ($result['deck']['slides'] ?? []))));
+        $result['picture_coverage']['summary'] = \App\Services\StudyDeck\Story\StoryPictureCover::summarise($interactions);
+        $result['picture_coverage']['verification'] = $check = \App\Services\StudyDeck\Story\StoryPictureCover::verify($interactions, $images);
+        foreach ($check['failures'] as $failure) {
+            $result['report']['errors'][] = 'Picture check: ' . $failure;
+        }
+        if ($check['failures'] !== []) {
+            $result['report']['ok'] = false;
+        }
+    }
+
+    /** @param array<string,mixed> $result */
+    private function printPictureCoverage(array $result): void
+    {
+        if (!isset($result['picture_coverage']['summary'])) {
+            return;
+        }
+        $c = $result['picture_coverage'];
+        $s = $c['summary'];
+        $l = $s['by_match_level'];
+        $this->newLine();
+        $this->line('<options=bold>Picture coverage</>');
+        $this->line(sprintf('  nodes %d (scenes %d, decisions %d, endings %d); scenes and endings with a picture of their own: %d of %d (%s%%)', $s['nodes'], $s['by_kind']['scene'], $s['by_kind']['decision'], $s['by_kind']['ending'], $s['scenes_and_endings_with_picture'], $s['scenes_and_endings'], $s['coverage_percent']));
+        $this->line(sprintf('  by match: exact %d, related %d, topic %d, reused %d, AI-generated %d, generic %d, placeholder %d, drawn diagram %d', $l['exact'], $l['related'], $l['topic'], $l['reused'], $l['ai_generated'], $l['generic'], $l['placeholder'], $l['drawn_diagram']));
+        $this->line(sprintf('  interactive pictures (hotspots): %d scenes with %d openable parts', $s['scenes_with_hotspots'], $s['hotspot_parts']));
+        $this->line('  scenes that would render bare: ' . count($s['would_render_bare']) . '; pictures used more often than allowed: ' . $s['pictures_used_more_than_allowed']);
+        $ai = $c['ai_scene_art'];
+        $this->line(sprintf('  searches %d (failed %d); library pictures %d; AI scene art: %s', $c['searches_made'], $c['search_failures'], $c['library_pictures'], $ai['enabled'] ? sprintf('made %d, failed %d%s', $ai['made'], $ai['failed'], $ai['unavailable'] ? ', off: ' . $ai['unavailable'] : '') : 'off'));
+        if (isset($c['verification'])) {
+            $this->line(sprintf('  read back from the store: %d pictures checked, %d failures, %d addresses not checkable', $c['verification']['checked'], count($c['verification']['failures']), $c['verification']['unverifiable']));
+        }
+        foreach (array_slice($c['problems'], 0, 8) as $p) {
+            $this->warn('  ' . $p);
+        }
+    }
+
     /** A replay calls no model; if anything asks for one, that is a bug to stop on, not to paper over. */
     private function noModel(): Completer
     {
@@ -214,7 +334,7 @@ class GenerateStudyDeckCommand extends Command
     {
         $client = app(\App\Domain\AI\Support\GeminiClient::class)->forInstitute($tenant);
         if (!$client->isConfigured()) {
-            throw new RuntimeException('No Gemini API key (ai_api_keys api_type=gemini, or GEMINI_API_KEY). Story lessons are written by Gemini only.');
+            throw new RuntimeException('No Gemini API key (ai_api_keys api_type=gemini, or GEMINI_API_KEY).');
         }
         $completer = new \App\Services\StudyDeck\Story\GeminiStoryCompleter($client);
         $this->line('  Gemini model: ' . $completer->model());
@@ -318,6 +438,10 @@ class GenerateStudyDeckCommand extends Command
         if (isset($r['pictures'])) {
             // What the picture pass did (counts, why images were refused, licences), the plan it followed and the searches that found nothing.
             file_put_contents($dir . '/pictures.json', $json($r['pictures']));
+        }
+        if (isset($r['picture_coverage'])) {
+            // How every scene and ending got its picture (or why a rung was skipped), and what the finished deck holds.
+            file_put_contents($dir . '/picture-coverage.json', $json($r['picture_coverage']));
         }
         if (isset($r['story'])) {
             // The story's bible, its checked skeletons and what was left out (a picture whose labels the chapter does not support).

@@ -4,6 +4,7 @@ namespace App\Console\Commands\LMS;
 
 use App\Models\lms\chapterModel;
 use App\Services\ContentGenerationService;
+use App\Services\StudyDeck\StudyDeckPublisher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -33,6 +34,7 @@ class StoreStudyDeckCommand extends Command
         {--tenant= : sub_institute_id the row belongs to (default: the chapter\'s own)}
         {--user=1 : content_master.created_by}
         {--profile=ADMIN : content_master.user_profile_name}
+        {--teaching-method= : store the deck for this teaching method: it is part of the stored name and title, and only a deck of the same kind AND method is replaced (default: stored without one, as before)}
         {--redraw-pdf : draw the PDF again (after a layout change) and replace the stored one; the row, presentation and deck file are left as they are}
         {--dry-run : check everything and report, write nothing}';
 
@@ -43,6 +45,13 @@ class StoreStudyDeckCommand extends Command
         $chapterId = (int) $this->argument('chapter');
         $dir = rtrim((string) ($this->option('bundle') ?: storage_path('app/study-deck/chapter-' . $chapterId)), '/\\');
         $dry = (bool) $this->option('dry-run');
+
+        // A dry-run bundle's pictures live in a local file; its references mean other pictures (or none) in the shared table. Checked before anything else, even --dry-run.
+        if (\App\Services\StudyDeck\IsolatedImageDatabase::isIsolatedBundle($dir)) {
+            $this->error('This bundle was made with --isolated-images: its pictures are not in the shared study_deck_images table, so it cannot be stored. Generate it again without --isolated-images to store a deck.');
+
+            return self::FAILURE;
+        }
 
         $chapter = chapterModel::find($chapterId);
         if (!$chapter) {
@@ -76,6 +85,18 @@ class StoreStudyDeckCommand extends Command
             $this->error('The bundle is for chapter ' . ($deck['chapter']['id'] ?? '?') . ', not ' . $chapterId . '.');
 
             return self::FAILURE;
+        }
+
+        // The teaching method the deck is stored for. It is written into the deck (so the stored file says what it was made
+        // for) and from there into the file name: another method is another stored item.
+        $method = trim((string) $this->option('teaching-method'));
+        if ($method !== '') {
+            if (StudyDeckPublisher::methodOf(['variant' => ['teaching_method' => $method]]) === null) {
+                $this->error("'$method' is not a teaching-method key (lower case letters, digits and single underscores).");
+
+                return self::FAILURE;
+            }
+            $deck['variant'] = ['teaching_method' => $method];
         }
 
         $gradeId = $chapter->grade_id ?: DB::table('standard')->where('id', $chapter->standard_id)->value('grade_id');

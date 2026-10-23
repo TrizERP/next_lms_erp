@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\GenerateCoursePresentationJob;
 use App\Services\CoursePresentation\Templates\ImagePool;
 use App\Services\CoursePresentation\Templates\SlideDeckAdapter;
+use App\Services\CoursePresentation\Templates\TextbookPicturePool;
 use App\Services\StudyDeck\ConceptContextBuilder;
 use App\Services\StudyDeck\StudyDeckImageUrls;
 use App\Services\CoursePresentation\FitValidator;
@@ -93,9 +94,10 @@ class CoursePresentationController extends Controller
             'sources' => $this->visibleSources($found['sources']),
             'existing_content' => $found['existing_content'],
             'images' => (new ImageReadiness())->forChapter($chapter, $raw),
-            'coverage' => $this->coverageReport($found['coverage'], (new ImagePool())->forChapter($this->poolContext($chapter, $found['coverage'], $found['textbook_text']), (int) $chapter['sub_institute_id'])),
-            // Only what is already stored in THIS format: a stored presentation is not listed under a story lesson, nor the reverse.
-            'existing_resources' => array_values(array_filter($found['existing_resources'], fn ($r) => ($r['format'] ?? 'interactive_slides') === $data['format'])),
+            'coverage' => $this->coverageReport($found['coverage'], (new ImagePool())->forChapter($this->poolContext($chapter, $found['coverage'], $found['textbook_text']), (int) $chapter['sub_institute_id']), $this->hasOutcomes($found['sources'])),
+            // Only what is already stored for THIS format AND teaching method: a presentation is not listed under a story lesson,
+            // nor one method's presentation under another method, nor one stored without a method under any.
+            'existing_resources' => array_values(array_filter($found['existing_resources'], fn ($r) => ($r['format'] ?? 'interactive_slides') === $data['format'] && ($r['method'] ?? null) === $data['pedagogy'])),
             'not_used' => $found['not_used'],
             'wrote_nothing' => true,
         ]);
@@ -318,6 +320,10 @@ class CoursePresentationController extends Controller
         $registry = new SourceRegistry((int) config('course_presentation_pilot.min_text_chars', 2000));
         $coverage = $registry->coverage($chapter, $raw);
         $pictures = (new ImagePool())->forChapter($this->poolContext($chapter, $coverage, $registry->textbookText($chapter, $raw)), (int) $chapter['sub_institute_id']);
+        // Pictures: a verified drawn diagram from an earlier draft where there is one, otherwise the chapter's own textbook picture that shows the
+        // concept (curated manifest; no web search, nothing stored). A concept with neither gets none, and its slide says so.
+        $book = (new TextbookPicturePool())->forChapter((int) $chapter['id'], $coverage['concepts']);
+        $pictures['by_concept'] = $pictures['by_concept'] + $book['by_concept'];
         $built = (new SlideDeckAdapter())->build($chapter, $coverage, $registry->acceptedOutcomes($chapter, $raw), $data['pedagogy'], $pictures['by_concept']);
         // The viewer's own step: pictures become addresses this school may load (signed); nothing is created.
         $deck = (new StudyDeckImageUrls())->hydrate($built['deck'], (int) $chapter['sub_institute_id']);
@@ -326,17 +332,30 @@ class CoursePresentationController extends Controller
             'status_code' => 1,
             'kind' => 'study_deck',
             'origin' => 'source_data_preview',
-            'notice' => 'This is a preview built from the chapter\'s stored data. It is not a generated, approved or published presentation.',
+            'notice' => 'This is a preview built from the chapter\'s stored data. It is the same lesson text for every teaching method (only its order of slides is adjusted), and it is not a generated, approved or published presentation. Use Create to generate the lesson for the chosen teaching method.',
+            'method_specific' => false,
             'deck' => $deck,
             'summary' => $this->publicSummary($built['summary']),
             'missing' => $built['missing'],
             'quality' => $built['quality'],
-            'coverage' => $this->coverageReport($coverage, $pictures),
-            'pictures' => ['placed' => $built['summary']['pictures_placed'], 'verified_available' => count($pictures['by_concept']), 'rejected' => $pictures['rejected']],
+            'coverage' => $this->coverageReport($coverage, $pictures, $this->hasOutcomes($found['sources'])),
+            'pictures' => ['placed' => $built['summary']['pictures_placed'], 'verified_available' => count($pictures['by_concept']), 'rejected' => $pictures['rejected'], 'from_book_pictures' => count($book['by_concept']), 'concepts_without_picture' => $book['missing']],
             'fit' => ['fit_status' => $fit['fit_status'], 'reason' => $fit['reason']],
             'wrote_nothing' => true,
         ]);
     }
+    /** Does the school hold learning outcomes for the chapter? (They are optional context: the source list only carries them when present.) @param array<int|string,array<string,mixed>> $sources */
+    private function hasOutcomes(array $sources): bool
+    {
+        foreach ($sources as $s) {
+            if (($s['key'] ?? null) === 'outcomes' && ($s['status'] ?? 'missing') !== 'missing') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /** The textbook is a hidden fallback: it is never listed as a source on the screen. @param array<int|string,array<string,mixed>> $sources */
     private function visibleSources(array $sources): array
     {
@@ -390,7 +409,7 @@ class CoursePresentationController extends Controller
      * @param array{by_concept:array<int,array<string,mixed>>,rejected:array<int,array<string,mixed>>,considered:int} $pictures
      * @return array<string,mixed>
      */
-    private function coverageReport(array $coverage, array $pictures): array
+    private function coverageReport(array $coverage, array $pictures, bool $hasOutcomes = false): array
     {
         $rows = array_values(array_map(fn ($c) => [
             'name' => $c['name'],
@@ -410,7 +429,8 @@ class CoursePresentationController extends Controller
             'unresolved' => array_values(array_filter(array_map(fn ($r) => $r['sufficient'] ? null : ['name' => $r['name'], 'reason' => $r['reason']], $rows))),
             'intelligence_entries_not_mapped' => $coverage['unmapped_entries'],
             'pictures' => ['with_a_verified_picture' => $with, 'without' => count($rows) - $with, 'candidates_rejected' => count($pictures['rejected'])],
-            'learning_outcomes' => 'chapter-level: the stored concept-to-outcome links are blanket links, so none is attributed to a single concept',
+            // Said only where the school has stored outcomes for the chapter: a chapter without any is not told about them.
+            'learning_outcomes' => $hasOutcomes ? 'chapter-level: the stored concept-to-outcome links are blanket links, so none is attributed to a single concept' : null,
         ];
     }
 

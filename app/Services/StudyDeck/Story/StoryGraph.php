@@ -180,6 +180,9 @@ final class StoryGraph
                 if (isset($img['focus']) && StoryPixelJudge::region($img['focus']) === null) {
                     $errors[] = "The highlighted part of a picture of $id is not a rectangle inside the picture.";
                 }
+                foreach (StoryHotspots::errors($img) as $why) {
+                    $errors[] = "A picture of $id: $why.";
+                }
             }
         }
         if ((string) ($interaction['start'] ?? '') !== (string) ($nodes[0]['id'] ?? '')) {
@@ -193,10 +196,68 @@ final class StoryGraph
         if ($pictures < $plo || $pictures > $phi) {
             $errors[] = "The act has $pictures pictures; the template allows $plo to $phi per act.";
         }
+        if (!empty($config['image_coverage'])) {
+            foreach (self::bareNodes($interaction) as $id => $why) {
+                $errors[] = "Picture coverage: $why ($id).";
+            }
+        }
 
         $structure = self::structure($interaction, $requiredConceptIds, $config, $errors === []);
 
         return ['errors' => array_merge($errors, $structure['errors']), 'stats' => $structure['stats']];
+    }
+
+    /**
+     * The nodes that would render without a picture in the player.
+     *
+     * A scene and an ending must carry their own main picture. A decision keeps the latest picture on the learner's path (the player's own rule,
+     * `picturesFor` in lib/study-deck/interactions.ts), so it is bare only when some path reaches it before any picture has been shown. Every path
+     * is walked, so a decision reachable by a picture-less route is named.
+     *
+     * @param array<string,mixed> $interaction
+     * @return array<string,string> node id => why it would be bare
+     */
+    public static function bareNodes(array $interaction): array
+    {
+        $nodes = [];
+        foreach ((array) ($interaction['nodes'] ?? []) as $n) {
+            if (isset($n['id'])) {
+                $nodes[(string) $n['id']] = $n;
+            }
+        }
+        $has = fn (array $n): bool => !empty($n['image']) && is_array($n['image']) && trim((string) ($n['image']['url'] ?? '')) !== '';
+        $bare = [];
+        foreach ($nodes as $id => $n) {
+            if (in_array($n['kind'] ?? null, [self::SCENE, self::ENDING], true) && !$has($n)) {
+                $bare[$id] = ($n['kind'] === self::ENDING ? 'this ending' : 'this scene') . ' has no picture of its own';
+            }
+        }
+
+        // Walk every path from the start, carrying whether a picture has been shown yet. Visiting a node twice in the same state is skipped.
+        $start = (string) ($interaction['start'] ?? array_key_first($nodes));
+        $seen = [];
+        $stack = [[$start, false]];
+        while ($stack) {
+            [$id, $shown] = array_pop($stack);
+            if (!isset($nodes[$id]) || isset($seen[$id . '|' . (int) $shown])) {
+                continue;
+            }
+            $seen[$id . '|' . (int) $shown] = true;
+            $n = $nodes[$id];
+            $own = $has($n);
+            if (($n['kind'] ?? null) === self::DECISION && !$own && !$shown) {
+                $bare[$id] = 'a decision is reached before any picture has been shown on its path';
+            }
+            $shownNow = $shown || $own;
+            foreach ((array) ($n['choices'] ?? []) as $c) {
+                $next = (string) ($c['next'] ?? '');
+                if ($next !== '') {
+                    $stack[] = [$next, $shownNow];
+                }
+            }
+        }
+
+        return $bare;
     }
 
     private static function normText(string $s): string

@@ -4,6 +4,7 @@ namespace App\Services\StudyDeck\Story;
 
 use App\Services\StudyDeck\Contracts\Completer;
 use App\Services\StudyDeck\ImagePlanner;
+use App\Services\StudyDeck\TextbookImages;
 
 /**
  * The story lesson's generation, as StudyDeckService runs it for the story template: acts, then a story bible, then for every act a
@@ -16,10 +17,25 @@ class StoryLessonGenerator
 
     public StoryWriter $writer;
 
-    public function __construct(Completer $completer, ?ImagePlanner $images = null)
+    public function __construct(Completer $completer, private readonly ?ImagePlanner $images = null)
     {
         $this->planner = new StoryPlanner($completer);
         $this->writer = new StoryWriter($completer, $images);
+    }
+
+    /**
+     * Give this run the picture ladder: every scene and ending ends with a picture of its own (see StoryPictureCover). Without a picture planner there
+     * is nowhere to store pictures, so nothing is enabled and the coverage rule will name the scenes that stayed bare.
+     */
+    /** The chapter's textbook pictures for the picture ladder (see ImagePlanner::textbookPicture); a no-op without a picture planner. */
+    public function withTextbookImages(?TextbookImages $textbook, int $chapterId): void
+    {
+        $this->images?->withTextbookImages($textbook, $chapterId);
+    }
+
+    public function enableCoverage(StoryImageLibrary $library, ?SceneIllustrator $illustrator = null, bool $allowPlaceholder = false): ?StoryPictureCover
+    {
+        return $this->images === null ? null : ($this->writer->cover = new StoryPictureCover($this->images, $library, $illustrator, $allowPlaceholder));
     }
 
     /**
@@ -38,6 +54,7 @@ class StoryLessonGenerator
             throw new \RuntimeException('The chapter has no topic with a concept, so there is nothing to build a story from.');
         }
 
+        $this->writer->useMap($map);
         $keep = $checkpointDir === null ? null : new Checkpoint($checkpointDir, [$method, $config, $acts, hash('sha1', (string) $context['ground_truth'])]);
 
         $bible = $keep?->load('bible');
@@ -55,8 +72,12 @@ class StoryLessonGenerator
         foreach ($acts as $i => $act) {
             $label = 'Act ' . ($i + 1) . '/' . count($acts);
             $done = $keep?->load('written-' . $act['key']);
-            if ($done !== null && StoryGraph::check($done['interaction'], array_map('intval', $act['required_ids']), $config)['errors'] === []) {
+            // Picture coverage is not asked of the saved words: an act kept from an earlier run keeps its text and is given its pictures now.
+            if ($done !== null && StoryGraph::check($done['interaction'], array_map('intval', $act['required_ids']), array_merge($config, ['image_coverage' => false]))['errors'] === []) {
                 $say('story', "$label \"{$act['title']}\": kept from an earlier run");
+                $coverNotes = [];
+                $done['interaction'] = $this->writer->coverInteraction($done['interaction'], $context, $act, $config, $coverNotes);
+                $done['notes'] = array_merge((array) $done['notes'], $coverNotes);
                 foreach ((array) $done['notes'] as $n) {
                     $notes[] = 'Act ' . ($i + 1) . ': ' . $n;
                 }
@@ -239,6 +260,15 @@ class StoryLessonGenerator
             unset($story['acts'][$ai]['interaction']['key']);
             if ((++$done % 5) === 0) {
                 $say('pictures', "$done of " . count($ranked) . ' scenes worked; ' . $this->writer->pictureStats['photos'] . ' photographs and ' . $this->writer->pictureStats['diagrams'] . ' diagrams kept');
+            }
+        }
+
+        // Picture coverage: every scene and ending the search left bare goes down the ladder, within no time limit (a placeholder takes no search).
+        if (!empty($config['image_coverage'])) {
+            foreach ($story['acts'] as $ai => $a) {
+                $coverNotes = [];
+                $story['acts'][$ai]['interaction'] = $this->writer->coverInteraction($a['interaction'], $context, $a['act'], $config, $coverNotes);
+                $notes = array_merge($notes, $coverNotes);
             }
         }
 

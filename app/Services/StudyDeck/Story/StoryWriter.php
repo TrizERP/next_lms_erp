@@ -32,6 +32,9 @@ class StoryWriter
     /** Source addresses of the photographs already used in this lesson, so no picture appears twice (kept across acts). */
     public array $usedImageUrls = [];
 
+    /** The picture ladder for a run that asks for picture coverage (see StoryPictureCover); null leaves the normal step as it was. */
+    public ?StoryPictureCover $cover = null;
+
     /** @var array<int,string> concept id => name, for what a picture is meant to teach */
     private array $conceptNames = [];
 
@@ -53,6 +56,7 @@ class StoryWriter
         $prompt = $this->prompt($context, $map, $act, $skeleton, $bible, $config, $method, $previous);
         $noPictures = $config;
         $noPictures['images'] = [0, 99];   // pictures are added after the words, and judged then
+        $noPictures['image_coverage'] = false;
 
         $errors = [];
         $interaction = [];
@@ -85,6 +89,7 @@ class StoryWriter
 
         $notes = [];
         $interaction = $this->pictures($interaction, $skeleton, $context, $config, $notes);
+        $interaction = $this->coverInteraction($interaction, $context, $act, $config, $notes);
         foreach ($interaction['nodes'] as $k => $node) {
             unset($interaction['nodes'][$k]['picture_caption']);   // it lives on as the picture's caption, when the node has a picture
         }
@@ -360,7 +365,8 @@ class StoryWriter
                 continue;
             }
             $this->usedImageUrls[] = (string) $found['source_image_url'];
-            $photo = $this->photoImage($found, (string) $q);
+            $photo = self::photoImage($found, (string) $q);
+            $this->cover?->learn($photo, array_values(array_filter(array_map(fn ($id) => (string) ($this->conceptNames[$id] ?? ''), (array) $node['concept_ids']))));
             break;
         }
 
@@ -405,6 +411,42 @@ class StoryWriter
         return $images;
     }
 
+    /**
+     * Give every scene and ending of an act that has no picture one, down the ladder (StoryPictureCover). A no-op unless the run asked for picture
+     * coverage. Needs the picture planner (it stores the pictures); without one the scenes stay bare and the coverage rule says so.
+     *
+     * @param array<string,mixed> $interaction
+     * @param array<string,mixed> $act StoryActs entry (key, title)
+     * @param array<int,string> $notes
+     * @return array<string,mixed>
+     */
+    public function coverInteraction(array $interaction, array $context, array $act, array $config, array &$notes, ?float $deadline = null): array
+    {
+        if (empty($config['image_coverage'])) {
+            return $interaction;
+        }
+        if ($this->cover === null && $this->images !== null) {
+            $this->cover = new StoryPictureCover($this->images, new StoryImageLibrary(null));
+        }
+        if ($this->cover === null) {
+            $notes[] = 'Picture coverage was asked for but no picture store is available to this run.';
+
+            return $interaction;
+        }
+        $chapter = (array) ($context['chapter'] ?? []);
+        $ctx = [
+            'key' => (string) ($act['key'] ?? ''),
+            'concepts' => $this->conceptNames,
+            // Most story nodes carry no concept of their own; the act's concepts say what the whole scene sequence is about.
+            'act_concepts' => array_values(array_filter(array_map(fn ($id) => (string) ($this->conceptNames[$id] ?? ''), (array) ($act['required_ids'] ?? [])))),
+            'chapter' => (string) ($chapter['chapter_name'] ?? $chapter['name'] ?? ''),
+            'subject' => (string) ($chapter['subject_name'] ?? ''),
+            'topic' => (string) (($act['kind'] ?? '') === 'topic' ? ($act['title'] ?? '') : ($chapter['chapter_name'] ?? $chapter['name'] ?? '')),
+        ];
+
+        return $this->cover->cover($interaction, $ctx, $this->usedImageUrls, $notes, $deadline);
+    }
+
     /** Counts of what the picture pass did (scenes searched, photographs and diagrams kept, scenes left without one). */
     public array $pictureStats = ['scenes_searched' => 0, 'photos' => 0, 'diagrams' => 0, 'no_picture' => 0, 'pending' => 0, 'cached_misses' => 0, 'stopped_by_deadline' => 0];
 
@@ -427,6 +469,12 @@ class StoryWriter
     public function imageStats(): array
     {
         return ($this->images?->stats ?? []) + ['by_source' => $this->images?->bySource ?? []];
+    }
+
+    /** The chapter's concept names, for the picture steps that run before any act is written (an act kept from an earlier run). @param array<string,mixed> $map */
+    public function useMap(array $map): void
+    {
+        $this->conceptNames = array_map(fn ($c) => (string) $c['name'], (array) ($map['concepts'] ?? []));
     }
 
     /** The hard limit of a picture pass: no search, download or picture check starts after it. */
@@ -636,15 +684,18 @@ PROMPT;
     }
 
     /** @param array<string,mixed> $found ImagePlanner::find() result @return array<string,mixed> */
-    private function photoImage(array $found, string $query): array
+    public static function photoImage(array $found, string $query): array
     {
         return [
-            'type' => 'photo', 'role' => 'scene', 'url' => $found['url'], 'alt' => $found['alt'], 'caption' => $found['caption'] ?? null,
+            'type' => 'photo', 'role' => 'scene', 'match_level' => $found['match_level'] ?? 'exact', 'fetched_from' => $found['fetched_from'] ?? null, 'url' => $found['url'], 'alt' => $found['alt'], 'caption' => $found['caption'] ?? null,
             'width' => $found['width'], 'height' => $found['height'], 'title' => $found['title'] ?? null, 'query' => $query,
             'licence' => $found['licence'] ?? null, 'source_url' => $found['source_url'] ?? null, 'creator' => $found['creator'] ?? null,
             'attribution' => $found['attribution'] ?? '', 'attribution_required' => (bool) ($found['attribution_required'] ?? false),
             'review' => $found['review'] ?? null, 'source_image_url' => $found['source_image_url'] ?? null,
             ...(isset($found['focus']) ? ['focus' => $found['focus']] : []), ...(isset($found['notice']) ? ['notice' => $found['notice']] : []), ...(isset($found['focus_label']) ? ['focus_label' => $found['focus_label']] : []), 'provider' => $found['provider'] ?? null,
+            // Parts of the picture a learner can open, found on the picture by the picture check. Only an exact or a related picture keeps them: a
+            // part's words are about what the picture shows for THIS scene's idea, which a topic or reused picture does not.
+            ...(in_array($found['match_level'] ?? 'exact', ['exact', 'related'], true) && ($parts = StoryHotspots::spots((array) ($found['parts'] ?? []))) !== [] ? ['hotspots' => $parts] : []),
         ];
     }
 

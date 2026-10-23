@@ -48,6 +48,15 @@ class TeachingMethodTest extends CoursePresentationTestCase
         return $p;
     }
 
+    /** The written slides of an inquiry deck: a prediction prompt, evidence to look at, and a conclusion that cites it. */
+    private function inquiryText(): array
+    {
+        return $this->slideText([
+            2 => ['body' => 'What do you think a model is, and why? Look closely at the evidence and compare what you notice.'],
+            6 => ['body' => 'Conclusion: what can we say now? The evidence shows how models help us state laws.'],
+        ]);
+    }
+
     public function test_with_no_method_the_prompt_and_the_result_are_unchanged(): void
     {
         [$service, $model] = $this->service([json_encode($this->plan()), json_encode($this->slideText()), '{}', '{}']);
@@ -59,20 +68,20 @@ class TeachingMethodTest extends CoursePresentationTestCase
         $this->assertArrayNotHasKey('teaching_method', $r['map']);
         $this->assertArrayNotHasKey('teaching_method', $r['plan']);
         $this->assertArrayNotHasKey('teaching_method', $r['report']);
-        $this->assertTrue($r['report']['ok']);
+        $this->assertTrue($r['report']['ok'], implode(' | ', $r['report']['errors']));
     }
 
     public function test_a_plan_that_ignores_the_method_is_sent_back_with_the_reason_and_the_corrected_plan_is_used(): void
     {
-        // Inquiry needs a scenario and a concept_visual slide; the fixture plan has neither.
+        // Inquiry needs a scenario, a concept_visual and a misconception slide; the fixture plan has none.
         $bad = $this->plan();
-        $good = $this->planWith([1 => 'concept_visual', 2 => 'scenario']);
-        [$service, $model] = $this->service([json_encode($bad), json_encode($good), json_encode($this->slideText()), '{}', '{}']);
+        $good = $this->planWith([1 => 'concept_visual', 2 => 'scenario', 3 => 'misconception']);
+        [$service, $model] = $this->service([json_encode($bad), json_encode($good), json_encode($this->inquiryText()), '{}', '{}']);
 
         $r = $service->fromRaw($this->raw(), ['min_slides' => 6, 'max_slides' => 8, 'teaching_method' => 'inquiry_based']);
 
         $this->assertStringContainsString('TEACHING METHOD: Inquiry-based learning', $model->prompts[0]);
-        $this->assertStringContainsString('Observe -> Investigable question -> Evidence -> Explanation', $model->prompts[0]);
+        $this->assertStringContainsString('Observe and question -> Hypothesis -> Investigate and gather evidence -> Compare observations -> Conclusion -> Reflect', $model->prompts[0]);
         $this->assertStringContainsString('Your previous plan was rejected', $model->prompts[1]);
         $this->assertStringContainsString('needs at least 1 "scenario"', $model->prompts[1]);
         $this->assertStringContainsString('needs at least 1 "concept_visual"', $model->prompts[1]);
@@ -115,13 +124,13 @@ class TeachingMethodTest extends CoursePresentationTestCase
         $s = fn (string $type, array $concepts) => ['slide_type' => $type, 'concept_ids' => $concepts];
         // Inquiry: for concept 1 the observation (concept_visual) must come before the explanation (concept_intro).
         $wrong = [$s('cover', []), $s('concept_intro', [1]), $s('concept_visual', [1]), $s('scenario', [2]), $s('summary', [])];
-        $right = [$s('cover', []), $s('concept_visual', [1]), $s('concept_intro', [1]), $s('scenario', [2]), $s('summary', [])];
+        $right = [$s('cover', []), $s('concept_visual', [1]), $s('concept_intro', [1]), $s('scenario', [2]), $s('misconception', [3]), $s('summary', [])];
 
         $errors = TeachingMethodProfile::planErrors('inquiry_based', $wrong);
         $this->assertStringContainsString('must be concept_visual then concept_intro', implode(' ', $errors));
         $this->assertSame([], TeachingMethodProfile::planErrors('inquiry_based', $right));
         // Concepts that have only one of the two slides are not constrained.
-        $this->assertSame([], TeachingMethodProfile::planErrors('inquiry_based', [$s('cover', []), $s('concept_intro', [1]), $s('concept_visual', [2]), $s('scenario', [3])]));
+        $this->assertSame([], TeachingMethodProfile::planErrors('inquiry_based', [$s('cover', []), $s('concept_intro', [1]), $s('concept_visual', [2]), $s('scenario', [3]), $s('misconception', [4])]));
     }
 
     public function test_the_final_deck_is_held_to_the_method_even_if_the_plan_check_was_passed(): void
@@ -129,7 +138,7 @@ class TeachingMethodTest extends CoursePresentationTestCase
         // replay() judges a saved plan by the current rules: a plan that ignores the method fails the deck report.
         [$first] = $this->service([json_encode($this->plan()), json_encode($this->slideText()), '{}', '{}']);
         $made = $first->fromRaw($this->raw(), ['min_slides' => 6, 'max_slides' => 8]);
-        $this->assertTrue($made['report']['ok']);
+        $this->assertTrue($made['report']['ok'], implode(' | ', $made['report']['errors']));
 
         [$service] = $this->service([]);
         $saved = ['plan' => $made['plan'], 'content' => $made['content'], 'images' => $made['images'], 'interactions' => $made['interactions']];

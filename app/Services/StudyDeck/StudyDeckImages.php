@@ -44,6 +44,35 @@ final class StudyDeckImages
     /** Everything but the picture itself. */
     private const META = ['id', 'sub_institute_id', 'chapter_id', 'sha256', 'mime_type', 'format', 'byte_size', 'width', 'height', 'created_at'];
 
+    /**
+     * @param string|null $connection the database connection the pictures live on. Null is the application's own (shared) database and is
+     *                                what every caller gets. Only an isolated dry run names another one (see IsolatedImageDatabase).
+     */
+    public function __construct(private readonly ?string $connection = null)
+    {
+    }
+
+    /** True when the pictures are kept in an isolated store and not in the application's database. */
+    public function isIsolated(): bool
+    {
+        return $this->connection !== null;
+    }
+
+    public function connectionName(): ?string
+    {
+        return $this->connection;
+    }
+
+    private function db(): \Illuminate\Database\ConnectionInterface
+    {
+        return DB::connection($this->connection);
+    }
+
+    private function table(string $name): \Illuminate\Database\Query\Builder
+    {
+        return $this->db()->table($name);
+    }
+
     // -----------------------------------------------------------------------------------------------------
     // References
 
@@ -152,7 +181,7 @@ final class StudyDeckImages
                 $fill += ['source_url_hash' => $sourceHash, 'source_url' => mb_substr((string) $sourceUrl, 0, 2048)];
             }
             if ($fill) {
-                DB::table(self::TABLE)->where('id', $id)->update($fill);
+                $this->table(self::TABLE)->where('id', $id)->update($fill);
             }
         }
 
@@ -172,7 +201,7 @@ final class StudyDeckImages
      */
     private function insert(array $columns, string $bytes): int
     {
-        $pdo = DB::connection()->getPdo();
+        $pdo = $this->db()->getPdo();
         $statement = $pdo->prepare(sprintf(
             'INSERT INTO %s (%s, data) VALUES (%s)',
             self::TABLE,
@@ -192,7 +221,7 @@ final class StudyDeckImages
 
     private function findBySha(int $tenant, string $sha): ?object
     {
-        return DB::table(self::TABLE)->where('sub_institute_id', $tenant)->where('sha256', $sha)
+        return $this->table(self::TABLE)->where('sub_institute_id', $tenant)->where('sha256', $sha)
             ->first(['id', 'byte_size', 'chapter_id', 'source_url_hash']);
     }
 
@@ -214,7 +243,7 @@ final class StudyDeckImages
      */
     public function meta(int $id): ?array
     {
-        $row = DB::table(self::TABLE)->where('id', $id)->first(self::META);
+        $row = $this->table(self::TABLE)->where('id', $id)->first(self::META);
 
         return $row ? $this->shape($row) : null;
     }
@@ -241,7 +270,7 @@ final class StudyDeckImages
         }
         $out = [];
         foreach (array_chunk($ids, 500) as $part) {
-            foreach (DB::table(self::TABLE)->whereIn('id', $part)->whereIn('sub_institute_id', $this->visibleTenants($tenant))->get(self::META) as $row) {
+            foreach ($this->table(self::TABLE)->whereIn('id', $part)->whereIn('sub_institute_id', $this->visibleTenants($tenant))->get(self::META) as $row) {
                 $out[(int) $row->id] = $this->shape($row);
             }
         }
@@ -253,6 +282,9 @@ final class StudyDeckImages
     public function visibleTenants(int $tenant): array
     {
         $tenants = [$tenant];
+        if ($this->isIsolated()) {
+            return $tenants;   // an isolated store holds one run's pictures for one school; it never reads the application's school table
+        }
         if ($tenant !== self::PLATFORM_TENANT && DB::table('school_setup')->where('Id', $tenant)->value('is_Lms') === 'Y') {
             $tenants[] = self::PLATFORM_TENANT;
         }
@@ -263,7 +295,7 @@ final class StudyDeckImages
     /** The whole picture, for the renderers that need it all at once (one picture at a time). */
     public function bytes(int $id): ?string
     {
-        $value = DB::table(self::TABLE)->where('id', $id)->value('data');
+        $value = $this->table(self::TABLE)->where('id', $id)->value('data');
         if (is_resource($value)) {
             $value = stream_get_contents($value);
         }
@@ -289,7 +321,7 @@ final class StudyDeckImages
         }
 
         for ($offset = 1; $offset <= $byteSize; $offset += $chunk) {
-            $piece = DB::table(self::TABLE)->where('id', $id)->selectRaw('SUBSTR(data, ?, ?) AS piece', [$offset, $chunk])->first();
+            $piece = $this->table(self::TABLE)->where('id', $id)->selectRaw('SUBSTR(data, ?, ?) AS piece', [$offset, $chunk])->first();
             $slice = $piece->piece ?? null;
             if (is_resource($slice)) {
                 $slice = stream_get_contents($slice);
@@ -358,7 +390,7 @@ final class StudyDeckImages
      */
     public function cachedDownload(int $tenant, string $url): ?array
     {
-        $row = DB::table(self::TABLE)->where('sub_institute_id', $tenant)->where('source_url_hash', sha1($url))
+        $row = $this->table(self::TABLE)->where('sub_institute_id', $tenant)->where('source_url_hash', sha1($url))
             ->orderByDesc('id')->first(['id', 'mime_type', 'width', 'height', 'byte_size']);
         if (!$row) {
             return null;
@@ -388,7 +420,7 @@ final class StudyDeckImages
         }
         $added = 0;
         foreach (array_chunk($rows, 200) as $part) {
-            $added += (int) DB::table(self::LINKS)->insertOrIgnore($part);
+            $added += (int) $this->table(self::LINKS)->insertOrIgnore($part);
         }
 
         return $added;
@@ -401,8 +433,8 @@ final class StudyDeckImages
      */
     public function unlink(int $contentId): array
     {
-        $ids = DB::table(self::LINKS)->where('content_id', $contentId)->pluck('image_id')->map(fn ($v) => (int) $v)->all();
-        DB::table(self::LINKS)->where('content_id', $contentId)->delete();
+        $ids = $this->table(self::LINKS)->where('content_id', $contentId)->pluck('image_id')->map(fn ($v) => (int) $v)->all();
+        $this->table(self::LINKS)->where('content_id', $contentId)->delete();
 
         return $ids;
     }
@@ -419,14 +451,14 @@ final class StudyDeckImages
             return [];
         }
 
-        return DB::table(self::LINKS)->whereIn('image_id', array_map('intval', $ids))->where('content_id', '<>', $exceptContentId)
+        return $this->table(self::LINKS)->whereIn('image_id', array_map('intval', $ids))->where('content_id', '<>', $exceptContentId)
             ->distinct()->pluck('image_id')->map(fn ($v) => (int) $v)->all();
     }
 
     /** @return array<int,int> */
     public function linkedImageIds(int $contentId): array
     {
-        return DB::table(self::LINKS)->where('content_id', $contentId)->pluck('image_id')->map(fn ($v) => (int) $v)->all();
+        return $this->table(self::LINKS)->where('content_id', $contentId)->pluck('image_id')->map(fn ($v) => (int) $v)->all();
     }
 
     /**
@@ -439,8 +471,8 @@ final class StudyDeckImages
     {
         $deleted = 0;
         foreach (array_chunk(array_values(array_unique(array_map('intval', $ids))), 500) as $part) {
-            $deleted += DB::table(self::TABLE)->whereIn('id', $part)
-                ->whereNotIn('id', DB::table(self::LINKS)->select('image_id'))->delete();
+            $deleted += $this->table(self::TABLE)->whereIn('id', $part)
+                ->whereNotIn('id', $this->table(self::LINKS)->select('image_id'))->delete();
         }
 
         return $deleted;
@@ -454,8 +486,8 @@ final class StudyDeckImages
     public function orphans(int $olderThanDays): array
     {
         $cutoff = now()->subDays(max(0, $olderThanDays));
-        $rows = DB::table(self::TABLE)->where('created_at', '<', $cutoff)
-            ->whereNotIn('id', DB::table(self::LINKS)->select('image_id'))->get(['id', 'byte_size']);
+        $rows = $this->table(self::TABLE)->where('created_at', '<', $cutoff)
+            ->whereNotIn('id', $this->table(self::LINKS)->select('image_id'))->get(['id', 'byte_size']);
 
         return ['count' => $rows->count(), 'bytes' => (int) $rows->sum('byte_size'), 'ids' => $rows->pluck('id')->map(fn ($v) => (int) $v)->all()];
     }

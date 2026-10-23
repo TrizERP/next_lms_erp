@@ -41,13 +41,18 @@ class TeachingMethodProfile
             ],
             'inquiry_based' => [
                 'label' => 'Inquiry-based learning',
-                'phases' => ['Observe', 'Investigable question', 'Evidence', 'Explanation'],
-                'directive' => 'Students meet the phenomenon before the explanation. For each topic: a concept_visual or scenario slide that shows something to observe and asks a question worth investigating, then the evidence, and only then the concept_intro that explains it. Use misconception slides to test what students think.',
-                'content' => 'Open each slide with what students can observe or a question to investigate, and put the explanation AFTER the evidence. Phrase the "check" as an investigable question ("what would happen if...", "how could we find out...").',
+                'phases' => ['Observe and question', 'Hypothesis', 'Investigate and gather evidence', 'Compare observations', 'Conclusion', 'Reflect'],
+                'directive' => 'Students find the idea out; the teacher does not tell it first. For each topic: (1) a concept_visual or scenario slide that shows something to observe and poses ONE investigable question; (2) on that slide, ask students to commit to a hypothesis ("What do you think, and why?") BEFORE any explanation; (3) evidence students examine (hotspots, compare, data from the chapter); (4) a comparison of what they observed with what they predicted; and only then (5) the concept_intro that states the conclusion the evidence supports, and (6) a reflection that points back to the evidence. Use misconception slides to test what students think. Never state the answer on the slide that asks the question.',
+                'content' => 'Open each topic with what students can observe and ONE investigable question. Put a prediction prompt ("What do you think will happen, and why?") on that opening slide. Write evidence as things to look at and compare, state the conclusion only after the evidence, and make the "check" a reflection that points back to the evidence ("What evidence supports your idea?"). Never open a slide with the definition.',
+                'markers' => [
+                    ['a hypothesis or prediction prompt ("What do you think...?")', '/what do you think|predict|hypothes|your idea|your guess|what would happen|why might/iu', 3],
+                    ['an investigation or evidence prompt', '/investigat|evidence|compare|find out|look closely|what do you notice/iu', 6],
+                    ['a conclusion or reflection that cites evidence', '/conclusion|what can we say|the evidence (shows|suggests)|what did (we|you) (find|learn|notice)|reflect/iu', 2],
+                ],
                 'interaction' => 'Prefer "hotspots" and "compare" (evidence to examine) and "scenario" (a situation to reason about) over "reveal". Each interaction should make the student look at evidence before reading the conclusion.',
-                'min' => ['scenario' => 2, 'concept_visual' => 3],
+                'min' => ['scenario' => 2, 'concept_visual' => 3, 'misconception' => 1],
                 'min_any' => [],
-                'order' => [['concept_visual', 'concept_intro'], ['scenario', 'concept_intro']],
+                'order' => [['concept_visual', 'concept_intro'], ['scenario', 'concept_intro'], ['misconception', 'concept_intro']],
             ],
             'problem_based' => [
                 'label' => 'Problem-based learning',
@@ -71,9 +76,15 @@ class TeachingMethodProfile
             ],
             'experiential' => [
                 'label' => 'Experiential / learning by doing',
-                'phases' => ['Do', 'Observe', 'Explain', 'Apply'],
-                'directive' => 'Students act first. For each topic: a slide that has students do or observe something (an activity, an experiment, a phenomenon to see), then the concept_intro that explains what they saw, then an application slide. Use the school\'s practical_activities wherever one matches.',
-                'content' => 'Write each slide as an instruction to do or observe something, then explain what it shows. The "check" asks what students noticed.',
+                'phases' => ['Task and materials', 'Do it, step by step', 'Record observations', 'Discuss the result', 'Apply to real life'],
+                'directive' => 'Students act first and learn from what they did. For each topic: (1) an activity slide (concept_visual) that names the hands-on task, the MATERIALS students need and how to set up; (2) numbered, step-by-step student actions (a "steps" interaction); (3) a prompt to RECORD what they observe (a table or notes); (4) a discussion of the result; and only then (5) the concept_intro that explains what the activity showed, and (6) an application slide that takes it to real life. Use the school\'s practical_activities and the textbook\'s own activities wherever one matches. Every activity must be doable in a Std 4 classroom with ordinary, safe materials and teacher supervision.',
+                'content' => 'Write each activity slide as instructions to students: "You will need...", then numbered actions, then "Record...". Keep materials ordinary and safe. Explain only AFTER the doing, and make the "check" ask what students noticed and how it connects to daily life.',
+                'markers' => [
+                    ['the materials and preparation ("You will need...")', '/you will need|materials|equipment|set up|get ready|prepare/iu', 3],
+                    ['step-by-step student actions', '/\\bstep\\b|first,|next,|then,|follow these/iu', 5],
+                    ['a prompt to record observations', '/record|write down|note down|observation (table|sheet)|draw what/iu', 3],
+                    ['an application to real life', '/daily life|at home|real life|everyday|in your (home|school|village|town)/iu', 2],
+                ],
                 'interaction' => 'Prefer "hotspots" (examine the set-up), "steps" (the procedure to carry out) and "scenario" (predict, then see the outcome).',
                 'min' => ['concept_visual' => 3, 'scenario' => 2, 'application' => 2],
                 'min_any' => [],
@@ -194,6 +205,32 @@ class TeachingMethodProfile
         return array_slice($errors, 0, 12);
     }
 
+    /**
+     * What the WRITTEN deck must show for the method, beyond the plan's slide types and order: a few phrases the method's own sequence cannot do
+     * without (an inquiry deck asks students to predict and cites evidence in its conclusion; an experiential deck lists materials, steps and
+     * what to record). Mechanical and deliberately modest, so a deck cannot pass while teaching another way; `markers` are [label, regex, slides].
+     *
+     * @param array<int,string> $slideTexts the written text and interaction of each slide, lower-case or not
+     * @return array<int,string>
+     */
+    public static function contentErrors(?string $key, array $slideTexts): array
+    {
+        $p = self::get($key);
+        if ($p === null || empty($p['markers'])) {
+            return [];
+        }
+        $errors = [];
+        foreach ((array) $p['markers'] as [$label, $regex, $n]) {
+            $n = self::scaled((int) $n, count($slideTexts));
+            $have = count(array_filter($slideTexts, fn ($t) => (bool) preg_match($regex, (string) $t)));
+            if ($have < $n) {
+                $errors[] = "Teaching method \"{$p['label']}\": the written slides need $label on at least $n slide(s); $have have it.";
+            }
+        }
+
+        return $errors;
+    }
+
     /** A profile's minimum is for a full chapter deck; a shorter deck is asked for proportionally fewer (one per six slides, at least one). */
     private static function scaled(int $n, int $slideCount): int
     {
@@ -225,7 +262,7 @@ class TeachingMethodProfile
     {
         $p = self::get($key);
 
-        return $p === null ? '' : "\n- TEACHING METHOD: {$p['label']}. {$p['content']}";
+        return $p === null ? '' : "\n- TEACHING METHOD: {$p['label']}. {$p['content']}" . (empty($p['markers']) ? '' : ' Across the deck, the written slides must include: ' . implode('; ', array_map(fn ($m) => $m[0] . ' on at least ' . $m[2] . ' slide(s)', (array) $p['markers'])) . '.');
     }
 
     /** One paragraph for the interaction prompt. */

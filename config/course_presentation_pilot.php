@@ -25,9 +25,14 @@ return [
     'resource' => 'course_presentation',
 
     'scope' => [
-        'label' => 'the Std 9 Science chapter "Exploration: Entering the World of Secondary Science" (chapter 1)',
+        'label' => 'the Std 9 Science pilot chapter and the four Std 4 EVS "Water" chapters',
         'chapters' => [
             ['chapter_id' => 8592, 'standard_id' => 42, 'subject_id' => 3975, 'sub_institute_id' => 1],
+            // Std 4 EVS (subject 48385), school 341: verified against chapter_master, document_extractions and semantic_intelligence.
+            ['chapter_id' => 41675, 'standard_id' => 4258, 'subject_id' => 48385, 'sub_institute_id' => 341],
+            ['chapter_id' => 41676, 'standard_id' => 4258, 'subject_id' => 48385, 'sub_institute_id' => 341],
+            ['chapter_id' => 41677, 'standard_id' => 4258, 'subject_id' => 48385, 'sub_institute_id' => 341],
+            ['chapter_id' => 41678, 'standard_id' => 4258, 'subject_id' => 48385, 'sub_institute_id' => 341],
         ],
     ],
 
@@ -161,9 +166,9 @@ return [
     // What each format needs and where it would open. `viewer` names an existing viewer that can show the
     // format's output (null: none exists); `required_sources` are the SourceRegistry keys that must be present.
     'format_capability' => [
-        'interactive_slides' => ['viewer' => 'study_deck', 'viewer_label' => 'the study-deck viewer', 'required_sources' => ['textbook', 'curriculum', 'outcomes'], 'pedagogy_applied' => true, 'trigger' => true,
+        'interactive_slides' => ['viewer' => 'study_deck', 'viewer_label' => 'the study-deck viewer', 'required_sources' => ['textbook'], 'pedagogy_applied' => true, 'trigger' => true,
             'admin_commands' => ['php artisan lms:generate-study-deck {chapter} --tenant={tenant}', 'php artisan lms:store-study-deck {chapter} --tenant={tenant}']],
-        'branching_scenario' => ['viewer' => 'study_deck', 'viewer_label' => 'the study-deck story player', 'required_sources' => ['textbook', 'curriculum', 'outcomes'], 'pedagogy_applied' => true, 'trigger' => true,
+        'branching_scenario' => ['viewer' => 'study_deck', 'viewer_label' => 'the study-deck story player', 'required_sources' => ['textbook'], 'pedagogy_applied' => true, 'trigger' => true,
             'admin_commands' => ['php artisan lms:generate-study-deck {chapter} --tenant={tenant} --template=story_branching_scenario', 'php artisan lms:store-study-deck {chapter} --tenant={tenant}']],
         'worksheet_guide' => ['viewer' => 'study_document', 'viewer_label' => 'the study-document viewer', 'required_sources' => ['textbook', 'outcomes'], 'admin_commands' => []],
         'scenario_lesson' => ['viewer' => null, 'viewer_label' => null, 'required_sources' => ['textbook'], 'admin_commands' => []],
@@ -179,6 +184,10 @@ return [
     'generation' => [
         'enabled' => true,
         'formats' => ['interactive_slides', 'branching_scenario'],
+        // Slides: the most pictures/diagrams a deck may carry (every concept slide must have one; the default cap is 10).
+        'max_visuals' => 24,
+        // How many times a rejected slide plan is sent back to the model with its reasons (the default elsewhere is 2).
+        'repair_rounds' => 4,
         'run_dir' => 'app/course-presentation',
     ],
     // Where an earlier, unstored study-deck bundle of a chapter is looked for (read only, its report.json). Tests point it elsewhere.
@@ -186,6 +195,15 @@ return [
     // cannot be checked that way (a recorded review once passed a photograph of a plastic bag as "a magnifying glass"), so it
     // is left out unless this is switched on.
     'preview_photographs' => false,
+
+    // PICTURES. Order of preference: a relevant, licence-checked web picture; then (only when the search finds nothing suitable) a
+    // picture from the chapter's own textbook; then a diagram drawn from verified content; otherwise no picture and the slide says so.
+    // The textbook pictures are a curated manifest (what each shows, its page and chapter) beside the extracted picture files.
+    // Unset or missing files: the textbook tier is simply off. Nothing is copied until a deck uses a picture.
+    'textbook_images' => [
+        'manifest' => base_path('content_bundles/textbook-images/evs-std4-water.json'),
+        'directory' => env('COURSE_PRESENTATION_TEXTBOOK_IMAGES', ''),
+    ],
 
     'earlier_bundle_base' => 'app/study-deck',
 

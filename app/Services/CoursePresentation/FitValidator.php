@@ -57,9 +57,10 @@ class FitValidator
             }
         }
 
-        // A duplicate is a stored item of THIS format: a stored presentation does not make a story lesson a duplicate, nor the reverse.
+        // A duplicate is a stored item of THIS format AND THIS teaching method: a presentation stored for another method (or for
+        // none) does not make this combination a duplicate, nor does a story lesson make a presentation one.
         $duplicate = in_array($format, ['interactive_slides', 'branching_scenario'], true)
-            && array_filter($existing, fn ($e) => ($e['format'] ?? 'interactive_slides') === $format) !== [];
+            && array_filter($existing, fn ($e) => ($e['format'] ?? 'interactive_slides') === $format && ($e['method'] ?? null) === $pedagogy) !== [];
         $template = $this->template($format, $byKey, (int) ($context['concept_count'] ?? 0), $context['story_template'] ?? null);
 
         // ---- fit_status
@@ -106,8 +107,8 @@ class FitValidator
         }
         if ($duplicate) {
             $blockers[] = $format === 'branching_scenario'
-                ? 'A story lesson already exists for this chapter; a second one would be a duplicate.'
-                : 'A presentation already exists for this chapter; a second one would be a duplicate.';
+                ? 'A story lesson already exists for this chapter and teaching method; a second one would be a duplicate.'
+                : 'A presentation already exists for this chapter and teaching method; a second one would be a duplicate.';
         }
 
         return [

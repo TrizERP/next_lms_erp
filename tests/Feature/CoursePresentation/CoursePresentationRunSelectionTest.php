@@ -157,8 +157,8 @@ class CoursePresentationRunSelectionTest extends CoursePresentationTestCase
     {
         $row = ['standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT, 'show_hide' => 1];
         \Illuminate\Support\Facades\DB::table('content_master')->insert([
-            $row + ['id' => 501, 'content_category' => 'Classroom Presentation', 'title' => 'Exploration Study Deck', 'filename' => 'study_deck_exploration_a1b2c3d4e5f6.pptx'],
-            $row + ['id' => 502, 'content_category' => 'Interactive', 'title' => 'Exploration story', 'filename' => 'study_story_exploration_a1b2c3d4e5f6.pptx'],
+            $row + ['id' => 501, 'content_category' => 'Classroom Presentation', 'title' => 'Exploration Study Deck', 'filename' => 'study_deck_' . self::SLIDES[0] . '__exploration_a1b2c3d4e5f6.pptx'],
+            $row + ['id' => 502, 'content_category' => 'Interactive', 'title' => 'Exploration story', 'filename' => 'study_story_' . self::STORY[0] . '__exploration_a1b2c3d4e5f6.pptx'],
         ]);
         $preflight = fn (array $choice) => $this->asTeacher()->getJson(self::BASE . 'preflight?' . $this->query($choice))->assertOk()->json();
 

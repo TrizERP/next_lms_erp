@@ -20,6 +20,9 @@ class StoryPixelJudge
 {
     use ExtractsJson;
 
+    /** Marks a purpose as "check an ILLUSTRATION made for this scene" (an image model's picture), not a found photograph. */
+    public const AI_PREFIX = 'AI ILLUSTRATION: ';
+
     /** When set, a picture check never waits longer than the time left before this moment (a unix time). */
     public ?float $deadline = null;
 
@@ -86,22 +89,37 @@ class StoryPixelJudge
     /** @return array{ok:bool,shows:string,reason:string} */
     public function __invoke(string $bytes, string $mime, string $query, string $purpose, string $teaches): array
     {
+        $mode = str_starts_with($purpose, self::AI_PREFIX) ? 'ai'
+            : (str_starts_with($purpose, \App\Services\StudyDeck\ImagePlanner::GENERIC_PREFIX) ? 'generic'
+            : (str_starts_with($purpose, \App\Services\StudyDeck\ImagePlanner::RELATED_PREFIX) ? 'related' : 'exact'));
+        $purpose = preg_replace('/^(' . preg_quote(self::AI_PREFIX, '/') . '|' . preg_quote(\App\Services\StudyDeck\ImagePlanner::GENERIC_PREFIX, '/') . '|' . preg_quote(\App\Services\StudyDeck\ImagePlanner::RELATED_PREFIX, '/') . ')/', '', $purpose);
+        $rules = match ($mode) {
+            'ai' => "Look at the picture itself and answer strictly. This is an ILLUSTRATION made by an image model for this scene (not a photograph). Reject it unless ALL of these are true:\n- it plainly depicts the situation described (the people, apparatus and setting the scene names, doing what the scene says);\n- it would help a student picture this scene (clear and uncluttered; no garbled or misspelt writing, no distorted hands or faces, no unrelated objects);\n- it contains nothing unsuitable for school.",
+            'generic' => "Look at the picture itself and answer strictly. No picture of this scene or of its idea was found, so a GENERIC educational picture is acceptable: a clear, real photograph of a school science activity, a laboratory, an instrument, a material or a natural phenomenon that suits a lesson on this subject. Reject it unless ALL of these are true:\n- it is a clear, ordinary, realistic photograph with a recognisable science-education subject (not a logo, coat of arms, cartoon, map, screenshot, text-only page, collage, portrait or decorative texture);\n- it is something a student of this subject would find reasonable beside the lesson (it need not show this scene);\n- it contains no watermark across the subject and nothing unsuitable for school.",
+            'related' => "Look at the picture itself and answer strictly. No picture of the exact scene was found, so a RELATED picture is acceptable. Reject it unless ALL of these are true:\n- it plainly shows the same kind of object, instrument, activity, phenomenon or environment as the subject named above (it need not be this exact scene);\n- it would help a student understand the idea behind this scene (a clear, ordinary, realistic view; not a logo, coat of arms, cartoon, map, screenshot, text-only page, collage or decorative texture);\n- it contains no watermark across the subject and nothing unsuitable for school.",
+            default => "Look at the picture itself and answer strictly. Reject it unless ALL of these are true:\n- it plainly shows the subject named above (the real thing, clearly visible and recognisable, not only something with a similar name);\n- it would help a student understand this scene (a clear, ordinary, realistic view; not a logo, coat of arms, cartoon, map, screenshot, text-only page, collage or decorative texture);\n- it contains no watermark across the subject and nothing unsuitable for school.",
+        };
+        $what = $mode === 'ai' ? 'an illustration' : 'a photograph';
+        // Two to four separate parts of the picture a student could open and learn from, each found on the picture itself. Not asked of a generic
+        // picture: it is not about this scene, so what it shows says nothing about the scene.
+        $partsAsk = $mode === 'generic'
+            ? 'Give "parts": [] (this picture is not about the scene).'
+            : 'Also list "parts": if the picture shows two to four separate parts that matter for this scene (for example an instrument\'s scale, a wheel, a flame, a leaf), give each as a tight rectangle (x and y the top-left corner, w and h the size, as percentages of the picture) with a name of at most 3 words and ONE plain sentence of 10 to 30 words, with no numbers, saying what that part is and how it connects to the scene or the idea named above. Only describe what you can really see. Give "parts": [] when the picture has no distinct parts worth opening.';
         $prompt = <<<PROMPT
-You are checking a photograph for a school science lesson (students aged 14 to 15).
+You are checking {$what} for a school science lesson (students aged 14 to 15).
 
 The scene needs a picture of: "{$query}"
 The scene is about: {$purpose}
 It helps teach: {$teaches}
 
-Look at the picture itself and answer strictly. Reject it unless ALL of these are true:
-- it plainly shows the subject named above (the real thing, clearly visible and recognisable, not only something with a similar name);
-- it would help a student understand this scene (a clear, ordinary, realistic view; not a logo, coat of arms, cartoon, map, screenshot, text-only page, collage or decorative texture);
-- it contains no watermark across the subject and nothing unsuitable for school.
+{$rules}
 
 Also point out WHERE in the picture the thing that matters is: a rectangle around it as percentages of the picture's width and height (x and y are the top-left corner, w and h the size; all between 0 and 100), tight enough to be useful and not the whole picture unless nothing smaller makes sense. Name that part in at most 3 words (for example "Leaf veins"), and say in one short sentence what a student should notice there.
 
+{$partsAsk}
+
 Reply with JSON and nothing else:
-{"matches": true or false, "shows": "one plain sentence on what the picture actually shows (no more than 25 words)", "reason": "one sentence on why it fits or why it does not", "focus": {"x": 0, "y": 0, "w": 100, "h": 100}, "label": "name of that part, at most 3 words", "notice": "what a student should notice, at most 20 words"}
+{"matches": true or false, "shows": "one plain sentence on what the picture actually shows (no more than 25 words)", "reason": "one sentence on why it fits or why it does not", "focus": {"x": 0, "y": 0, "w": 100, "h": 100}, "label": "name of that part, at most 3 words", "notice": "what a student should notice, at most 20 words", "parts": [{"label": "name, at most 3 words", "x": 0, "y": 0, "w": 10, "h": 10, "text": "one plain sentence"}]}
 PROMPT;
 
         if ($this->unavailable !== null) {
@@ -134,6 +152,7 @@ PROMPT;
             'reason' => trim((string) preg_replace('/\s+/u', ' ', (string) ($data['reason'] ?? ''))),
             ...($focus !== null ? ['focus' => $focus] : []),
             ...($notice !== '' && mb_strlen($notice) <= 200 ? ['notice' => $notice] : []),
+            ...(is_array($data['parts'] ?? null) && $mode !== 'generic' ? ['parts' => array_slice(array_values(array_filter($data['parts'], 'is_array')), 0, 6)] : []),
             ...($focus !== null && $label !== '' && mb_strlen($label) <= 30 && !preg_match('/\d/', $label) ? ['label' => $label] : []),
         ];
     }

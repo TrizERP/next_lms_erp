@@ -15,7 +15,17 @@ class ModelAvailability
     /** Whether the model a given format needs is reachable: a story lesson needs Gemini, everything else the Claude setup. */
     public function availableFor(string $format): bool
     {
-        return $format === 'branching_scenario' ? $this->geminiAvailable() : $this->available();
+        return $format === 'branching_scenario' ? $this->geminiAvailable() : ($this->available() || $this->geminiAvailable());
+    }
+
+    /** Which executor writes slides: the configured Claude one when it is reachable, otherwise the estate's Gemini client. */
+    public function slidesExecutor(): string
+    {
+        if ($this->available()) {
+            return (string) config('claude.executor', 'api');
+        }
+
+        return $this->geminiAvailable() ? 'gemini' : (string) config('claude.executor', 'api');
     }
 
     /** Story lessons use the estate's Gemini key (key pool or GEMINI_API_KEY); no Anthropic key or Claude CLI is involved. */
