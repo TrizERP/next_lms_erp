@@ -171,6 +171,18 @@ class StoryPictureCoverTest extends BootSafeTestCase
         return $cover->cover($act, $ctx ?? $this->ctx, $used, $notes);
     }
 
+    /** A ladder that may fall back to the labelled placeholder (the old default; now opt-in). */
+    private function placeholderCover(ImagePlanner $planner, StoryImageLibrary $library, ?SceneIllustrator $ai = null): StoryPictureCover
+    {
+        return new StoryPictureCover($planner, $library, $ai, true);
+    }
+
+    /** A ladder as a run gets it by default: real pictures only. */
+    private function realOnlyCover(ImagePlanner $planner, StoryImageLibrary $library, ?SceneIllustrator $ai = null): StoryPictureCover
+    {
+        return new StoryPictureCover($planner, $library, $ai);
+    }
+
     private function levels(array $act): array
     {
         $out = [];
@@ -190,7 +202,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
     {
         // Only the idea ("speed time") has a picture; the scene's own words find nothing.
         $search = $this->search(fn (string $q) => str_contains($q, 'speed') ? [[$this->candidate('speed time')], null] : [[], null]);
-        $cover = new StoryPictureCover($this->planner($search), new StoryImageLibrary(null));
+        $cover = $this->placeholderCover($this->planner($search), new StoryImageLibrary(null));
 
         $act = $this->cover($cover, $this->act());
 
@@ -245,7 +257,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
         $search = $this->search(fn (string $q) => [[$this->candidate('speed time')], null]);
         $library = new StoryImageLibrary(null);
 
-        $act = $this->cover(new StoryPictureCover($this->planner($search, null, null, false), $library), $this->act());
+        $act = $this->cover($this->placeholderCover($this->planner($search, null, null, false), $library), $this->act());
 
         $this->assertSame('placeholder', $act['nodes'][0]['image']['match_level'], 'no relevance review and no picture check: nothing vouches for a related picture');
         $this->assertSame([], $search->calls, 'and no search was spent on it');
@@ -272,7 +284,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
         $search = $this->search(fn (string $q) => [[], null]);
         $ctx = $this->ctx + ['act_concepts' => ['Speed and time', 'Measurement error']];
 
-        $this->cover(new StoryPictureCover($this->planner($search), new StoryImageLibrary(null)), $act, $ctx);
+        $this->cover($this->placeholderCover($this->planner($search), new StoryImageLibrary(null)), $act, $ctx);
 
         $this->assertContains('speed time', $search->calls, 'the act\'s idea is the related query');
         $this->assertNotContains('measuring speed stopwatch', $search->calls, 'a generic scene-title query is not the first resort');
@@ -281,7 +293,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
     public function test_a_topic_picture_is_used_when_the_scene_and_its_idea_find_nothing(): void
     {
         $search = $this->search(fn (string $q) => str_contains($q, 'measurement') ? [[$this->candidate('measurement tools')], null] : [[], null]);
-        $cover = new StoryPictureCover($this->planner($search), new StoryImageLibrary(null));
+        $cover = $this->placeholderCover($this->planner($search), new StoryImageLibrary(null));
 
         $act = $this->cover($cover, $this->act());
 
@@ -292,19 +304,19 @@ class StoryPictureCoverTest extends BootSafeTestCase
     public function test_relaxing_relevance_never_relaxes_the_licence_the_type_or_the_size(): void
     {
         $search = $this->search(fn (string $q) => [[$this->candidate('speed time', 'BY-NC 4.0')], null]);   // a non-commercial licence
-        $act = $this->cover(new StoryPictureCover($this->planner($search), new StoryImageLibrary(null)), $this->act());
+        $act = $this->cover($this->placeholderCover($this->planner($search), new StoryImageLibrary(null)), $this->act());
         $this->assertSame('placeholder', $act['nodes'][0]['image']['match_level'], 'an unacceptable licence is refused at every level');
 
         $tiny = $this->search(fn (string $q) => [[$this->candidate('speed time')], null]);
         $planner = new ImagePlanner($tiny, $this->store(), fn (string $url) => ['bytes' => $this->busy(120, 100), 'mime' => 'image/png', 'width' => 120, 'height' => 100, 'source' => $url], 1.0, null);
-        $act = $this->cover(new StoryPictureCover($planner, new StoryImageLibrary(null)), $this->act());
+        $act = $this->cover($this->placeholderCover($planner, new StoryImageLibrary(null)), $this->act());
         $this->assertSame('placeholder', $act['nodes'][0]['image']['match_level'], 'a thumbnail is refused at every level');
     }
 
     public function test_a_failing_search_never_leaves_a_scene_bare_and_stops_asking_after_three_failures(): void
     {
         $search = $this->search(fn (string $q) => [[], 'timeout']);
-        $cover = new StoryPictureCover($this->planner($search), new StoryImageLibrary(null));
+        $cover = $this->placeholderCover($this->planner($search), new StoryImageLibrary(null));
 
         $act = $this->cover($cover, $this->act());
 
@@ -329,7 +341,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
 
         // Now the provider is down.
         $down = $this->search(fn (string $q) => [[], 'http_error']);
-        $cover = new StoryPictureCover($this->planner($down, $store), $library);
+        $cover = $this->placeholderCover($this->planner($down, $store), $library);
         $act = $this->cover($cover, $this->act());
 
         $levels = $this->levels($act);
@@ -352,7 +364,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
         $record['attribution'] = '';   // the credit is lost
         $library->remember($record, ['Speed and time']);
 
-        $act = $this->cover(new StoryPictureCover($this->planner($this->search(fn (string $q) => [[], 'timeout']), $store), $library), $this->act());
+        $act = $this->cover($this->placeholderCover($this->planner($this->search(fn (string $q) => [[], 'timeout']), $store), $library), $this->act());
 
         $this->assertSame('placeholder', $act['nodes'][0]['image']['match_level']);
     }
@@ -371,7 +383,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
     {
         $asked = 0;
         $search = $this->search(fn (string $q) => [[], 'timeout']);
-        $cover = new StoryPictureCover($this->planner($search), new StoryImageLibrary(null), null);
+        $cover = $this->placeholderCover($this->planner($search), new StoryImageLibrary(null), null);
 
         $act = $this->cover($cover, $this->act());
 
@@ -384,7 +396,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
         $search = $this->search(fn (string $q) => [[], 'timeout']);
         $judge = fn (string $b, string $m, string $q, string $purpose, string $t) => ['ok' => true, 'shows' => 'Students timing a cyclist with a stopwatch', 'reason' => 'it shows the scene', 'notice' => 'Look at the stopwatch.'];
         $ai = $this->illustrator();
-        $cover = new StoryPictureCover($this->planner($search, null, $judge), new StoryImageLibrary(null), $ai);
+        $cover = $this->placeholderCover($this->planner($search, null, $judge), new StoryImageLibrary(null), $ai);
 
         $act = $this->cover($cover, $this->act());
 
@@ -409,7 +421,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
     {
         $search = $this->search(fn (string $q) => [[], 'timeout']);
         $judge = fn (string $b, string $m, string $q, string $purpose, string $t) => ['ok' => false, 'shows' => 'a blurred road', 'reason' => 'the stopwatch is not there'];
-        $cover = new StoryPictureCover($this->planner($search, null, $judge), new StoryImageLibrary(null), $this->illustrator());
+        $cover = $this->placeholderCover($this->planner($search, null, $judge), new StoryImageLibrary(null), $this->illustrator());
 
         $act = $this->cover($cover, $this->act());
 
@@ -421,7 +433,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
     {
         $search = $this->search(fn (string $q) => [[], 'timeout']);
         $judge = fn (string $b, string $m, string $q, string $purpose, string $t) => ['ok' => false, 'unverified' => true, 'shows' => '', 'reason' => 'the AI quota is used up'];
-        $cover = new StoryPictureCover($this->planner($search, null, $judge), new StoryImageLibrary(null), $this->illustrator());
+        $cover = $this->placeholderCover($this->planner($search, null, $judge), new StoryImageLibrary(null), $this->illustrator());
 
         $act = $this->cover($cover, $this->act());
 
@@ -436,7 +448,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
             throw new AiProviderException('key rejected', 403);
         };
         $ai = $this->illustrator($generate);
-        $cover = new StoryPictureCover($this->planner($this->search(fn (string $q) => [[], 'timeout'])), new StoryImageLibrary(null), $ai);
+        $cover = $this->placeholderCover($this->planner($this->search(fn (string $q) => [[], 'timeout'])), new StoryImageLibrary(null), $ai);
 
         $act = $this->cover($cover, $this->act());
 
@@ -475,7 +487,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
     {
         $ai = $this->illustrator(null, 2);
         $judge = fn (string $b, string $m, string $q, string $purpose, string $t) => ['ok' => true, 'shows' => 'x', 'reason' => 'ok'];
-        $cover = new StoryPictureCover($this->planner($this->search(fn (string $q) => [[], 'timeout']), null, $judge), new StoryImageLibrary(null), $ai);
+        $cover = $this->placeholderCover($this->planner($this->search(fn (string $q) => [[], 'timeout']), null, $judge), new StoryImageLibrary(null), $ai);
 
         $levels = $this->levels($this->cover($cover, $this->act()));
 
@@ -490,11 +502,11 @@ class StoryPictureCoverTest extends BootSafeTestCase
         $library = new StoryImageLibrary(null);
         $judge = fn (string $b, string $m, string $q, string $purpose, string $t) => ['ok' => true, 'shows' => 'x', 'reason' => 'ok'];
         $first = $this->illustrator();
-        $this->cover(new StoryPictureCover($this->planner($this->search(fn (string $q) => [[], 'timeout']), $store, $judge), $library, $first), $this->act());
+        $this->cover($this->placeholderCover($this->planner($this->search(fn (string $q) => [[], 'timeout']), $store, $judge), $library, $first), $this->act());
         $this->assertSame(4, $first->made);
 
         $second = $this->illustrator();
-        $act = $this->cover(new StoryPictureCover($this->planner($this->search(fn (string $q) => [[], 'timeout']), $store, $judge), $library, $second), $this->act());
+        $act = $this->cover($this->placeholderCover($this->planner($this->search(fn (string $q) => [[], 'timeout']), $store, $judge), $library, $second), $this->act());
 
         $this->assertSame(0, $second->made, 'every illustration came back from the library');
         $this->assertSame('ai_generated', $act['nodes'][0]['image']['match_level']);
@@ -544,7 +556,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
     {
         $exact = ['type' => 'photo', 'url' => 'study-deck-image:99', 'alt' => 'x', 'width' => 600, 'height' => 400, 'match_level' => 'exact', 'caption' => 'c'];
         $search = $this->search(fn (string $q) => [[], 'timeout']);
-        $cover = new StoryPictureCover($this->planner($search), new StoryImageLibrary(null));
+        $cover = $this->placeholderCover($this->planner($search), new StoryImageLibrary(null));
 
         $act = $this->cover($cover, $this->act(['s1' => $exact]));
 
@@ -557,7 +569,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
     public function test_only_an_exact_match_is_described_as_the_scene(): void
     {
         $search = $this->search(fn (string $q) => str_contains($q, 'speed') ? [[$this->candidate('speed time')], null] : [[], 'timeout']);
-        $act = $this->cover(new StoryPictureCover($this->planner($search), new StoryImageLibrary(null)), $this->act());
+        $act = $this->cover($this->placeholderCover($this->planner($search), new StoryImageLibrary(null)), $this->act());
 
         foreach ($act['nodes'] as $n) {
             if (empty($n['image'])) {
@@ -572,7 +584,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
     {
         $library = new StoryImageLibrary($this->tmp . '/library.json');
         $search = $this->search(fn (string $q) => [[], null]);   // a valid empty answer
-        $this->cover(new StoryPictureCover($this->planner($search), $library), $this->act());
+        $this->cover($this->placeholderCover($this->planner($search), $library), $this->act());
         $first = count($search->calls);
         $this->assertGreaterThan(0, $first);
         $library->miss('speed time failed one', 'image search failed: timed out');
@@ -581,7 +593,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
 
         // A new run, a new library object reading the same file: the lasting misses are not searched again.
         $again = $this->search(fn (string $q) => [[], null]);
-        $this->cover(new StoryPictureCover($this->planner($again), new StoryImageLibrary($this->tmp . '/library.json')), $this->act());
+        $this->cover($this->placeholderCover($this->planner($again), new StoryImageLibrary($this->tmp . '/library.json')), $this->act());
 
         $this->assertLessThan($first, count($again->calls), 'known misses are skipped');
     }
@@ -605,6 +617,153 @@ class StoryPictureCoverTest extends BootSafeTestCase
 
     // ---------------------------------------------------------------------------------------------------------------
     // The rule, the summary and the read-back
+
+    // ---------------------------------------------------------------------------------------------------------------
+    // Real pictures only, and interactive pictures
+
+    /** @return array<string,mixed> */
+    private function twoParts(): array
+    {
+        return ['parts' => [
+            ['label' => 'Stopwatch', 'x' => 10, 'y' => 10, 'w' => 25, 'h' => 25, 'text' => 'The stopwatch starts when the rider passes the first mark on the road.'],
+            ['label' => 'Rider', 'x' => 55, 'y' => 40, 'w' => 30, 'h' => 40, 'text' => 'The rider covers the marked distance while the class records the time.'],
+        ]];
+    }
+
+    /** A picture check that approves everything and finds two parts, as a vision model looking at a good picture would. */
+    private function okPixel(): \Closure
+    {
+        $parts = $this->twoParts();
+
+        return fn (string $b, string $m, string $q, string $purpose, string $t) => ['ok' => true, 'shows' => 'a clear picture', 'reason' => 'it fits', 'notice' => 'Look at the main object.'] + $parts;
+    }
+
+    private function genericAnswer(): \Closure
+    {
+        return function (string $q): array {
+            foreach (['microscope', 'glassware', 'magnifying', 'thermometer', 'telescope'] as $word) {
+                if (str_contains($q, $word)) {
+                    return [[$this->candidate($word . ' on a laboratory bench')], null];
+                }
+            }
+
+            return [[], null];
+        };
+    }
+
+    public function test_the_last_real_rung_is_a_generic_educational_photograph_that_says_it_is_not_this_scene_and_spreads_across_scenes(): void
+    {
+        $search = $this->search($this->genericAnswer());
+        $cover = $this->realOnlyCover($this->planner($search, null, $this->okPixel()), new StoryImageLibrary(null));
+
+        $this->assertGreaterThanOrEqual(2, $cover->prepareGenericPool(['subject' => 'Science', 'chapter' => 'Exploration'], 3));
+        $act = $this->cover($cover, $this->act());
+
+        $this->assertSame([], StoryGraph::bareNodes($act));
+        $this->assertSame(['s1' => 'generic', 's2a' => 'generic', 's2b' => 'generic', 'e1' => 'generic'], $this->levels($act));
+        $img = $act['nodes'][0]['image'];
+        $this->assertSame('photo', $img['type'], 'a real photograph, not a drawn card');
+        $this->assertStringStartsWith('Generic picture for this topic, not this exact scene', $img['caption']);
+        $this->assertSame('BY-SA 4.0', $img['licence']);
+        $this->assertStringContainsString('A. Photographer', $img['attribution']);
+        $this->assertNotEmpty($img['source_url']);
+        $this->assertArrayNotHasKey('hotspots', $img, 'a generic picture is not about the scene, so its parts are not offered');
+        $sources = array_unique(array_filter(array_map(fn ($n) => $n['image']['source_image_url'] ?? null, $act['nodes'])));
+        $this->assertGreaterThanOrEqual(2, count($sources), 'the scenes share the pool out instead of all using one picture');
+    }
+
+    public function test_by_default_a_scene_with_no_real_picture_stays_bare_and_is_reported_and_a_placeholder_only_when_asked_for(): void
+    {
+        $search = $this->search(fn (string $q) => [[], null]);
+
+        $cover = $this->realOnlyCover($this->planner($search, null, $this->okPixel()), new StoryImageLibrary(null));
+        $act = $this->cover($cover, $this->act());
+        $this->assertSame([], array_filter($this->levels($act)), 'no picture of any kind was invented');
+        $this->assertCount(4, array_filter(StoryGraph::bareNodes($act), fn ($why) => str_contains($why, 'no picture of its own')));
+        $this->assertStringContainsString('no real picture could be found', implode(' ', $cover->problems));
+
+        $allowed = $this->placeholderCover($this->planner($search, null, $this->okPixel()), new StoryImageLibrary(null));
+        $this->assertSame('placeholder', $this->cover($allowed, $this->act())['nodes'][0]['image']['match_level']);
+    }
+
+    public function test_the_generic_pool_is_empty_when_search_is_down_so_a_run_can_stop_before_it_writes_anything(): void
+    {
+        $cover = $this->realOnlyCover($this->planner($this->search(fn (string $q) => [[], 'timeout']), null, $this->okPixel()), new StoryImageLibrary(null));
+
+        $this->assertSame(0, $cover->prepareGenericPool(['subject' => 'Science']));
+        $this->assertSame(0, $cover->genericPoolSize());
+    }
+
+    public function test_a_generic_picture_is_never_accepted_without_a_picture_check(): void
+    {
+        $cover = $this->realOnlyCover($this->planner($this->search($this->genericAnswer())), new StoryImageLibrary(null));   // a text review, but no vision check
+
+        $this->assertSame(0, $cover->prepareGenericPool(['subject' => 'Science']));
+    }
+
+    public function test_an_exact_and_a_related_picture_keep_the_parts_the_picture_check_found_and_a_topic_or_reused_one_does_not(): void
+    {
+        // related: found by the scene's idea, the check finds two parts
+        $related = $this->search(fn (string $q) => str_contains($q, 'speed') ? [[$this->candidate('speed time')], null] : [[], null]);
+        $act = $this->cover($this->realOnlyCover($this->planner($related, null, $this->okPixel()), new StoryImageLibrary(null)), $this->act());
+        $this->assertSame('related', $act['nodes'][0]['image']['match_level']);
+        $spots = $act['nodes'][0]['image']['hotspots'];
+        $this->assertSame(['Stopwatch', 'Rider'], array_column($spots, 'label'));
+        $this->assertSame([], StoryGraph::check($act, [1], ['image_coverage' => false, 'images' => [0, 60]] + $this->cfg())['errors'] === [] ? [] : array_filter(StoryGraph::check($act, [1], ['image_coverage' => false, 'images' => [0, 60]] + $this->cfg())['errors'], fn ($e) => str_contains($e, 'hotspot')));
+
+        // topic: the same check finds the same parts, but they were not described for this scene
+        $topic = $this->search(fn (string $q) => str_contains($q, 'measurement') ? [[$this->candidate('measurement tools')], null] : [[], null]);
+        $act = $this->cover($this->realOnlyCover($this->planner($topic, null, $this->okPixel()), new StoryImageLibrary(null)), $this->act());
+        $this->assertSame('topic', $act['nodes'][0]['image']['match_level']);
+        $this->assertArrayNotHasKey('hotspots', $act['nodes'][0]['image']);
+
+        // reused: the parts were written for the scene it was first accepted for
+        $store = $this->store();
+        $library = new StoryImageLibrary(null);
+        $first = $this->planner($this->search(fn (string $q) => [[$this->candidate('stopwatch speed time')], null]), $store, $this->okPixel())->find('stopwatch speed time');
+        $this->assertCount(2, $first['parts']);
+        $library->remember(\App\Services\StudyDeck\Story\StoryWriter::photoImage($first, 'stopwatch speed time'), ['Speed and time']);
+        $act = $this->cover($this->realOnlyCover($this->planner($this->search(fn (string $q) => [[], 'timeout']), $store, $this->okPixel()), $library), $this->act());
+        $this->assertSame('reused', $act['nodes'][0]['image']['match_level']);
+        $this->assertArrayNotHasKey('hotspots', $act['nodes'][0]['image']);
+    }
+
+    public function test_an_ai_illustration_carries_the_parts_the_picture_check_found_and_keeps_them_when_it_comes_back_from_the_library(): void
+    {
+        $store = $this->store();
+        $library = new StoryImageLibrary(null);
+        $search = $this->search(fn (string $q) => [[], 'timeout']);
+        $first = $this->realOnlyCover($this->planner($search, $store, $this->okPixel()), $library, $this->illustrator());
+        $act = $this->cover($first, $this->act());
+        $this->assertSame('ai_generated', $act['nodes'][0]['image']['match_level']);
+        $this->assertCount(2, $act['nodes'][0]['image']['hotspots']);
+
+        $second = $this->realOnlyCover($this->planner($search, $store, $this->okPixel()), $library, $this->illustrator());
+        $again = $this->cover($second, $this->act());
+        $this->assertCount(2, $again['nodes'][0]['image']['hotspots'], 'the same scene text gets the same picture and its parts back');
+    }
+
+    public function test_the_summary_counts_the_interactive_pictures(): void
+    {
+        $search = $this->search(fn (string $q) => str_contains($q, 'speed') ? [[$this->candidate('speed time')], null] : [[], 'timeout']);
+        $cover = $this->realOnlyCover($this->planner($search, null, $this->okPixel()), new StoryImageLibrary(null));
+        $act = $this->cover($cover, $this->act());
+
+        $s = StoryPictureCover::summarise([$act]);
+
+        $this->assertGreaterThanOrEqual(1, $s['scenes_with_hotspots']);
+        $this->assertSame($s['scenes_with_hotspots'] * 2, $s['hotspot_parts']);
+    }
+
+    public function test_the_story_rules_refuse_a_picture_with_a_broken_part(): void
+    {
+        $pic = ['url' => 'study-deck-image:1', 'width' => 10, 'height' => 10, 'alt' => 'a', 'hotspots' => [['id' => 'h1', 'label' => 'A', 'text' => 'x', 'x' => 99, 'y' => 10, 'w' => 30, 'h' => 10], ['id' => 'h2', 'label' => 'B', 'text' => 'y', 'x' => 10, 'y' => 10, 'w' => 10, 'h' => 10]]];
+        $act = $this->act(['s1' => $pic, 's2a' => $pic, 's2b' => $pic, 'e1' => $pic]);
+
+        $errors = StoryGraph::check($act, [1], ['image_coverage' => false, 'images' => [0, 60]] + $this->cfg())['errors'];
+
+        $this->assertStringContainsString('A picture of s1: hotspot 1 is outside its picture', implode(' | ', $errors));
+    }
 
     public function test_the_coverage_rule_is_off_unless_asked_for_and_names_every_bare_scene_when_on(): void
     {
@@ -634,7 +793,7 @@ class StoryPictureCoverTest extends BootSafeTestCase
 
     public function test_the_summary_counts_by_kind_and_by_match_level_from_the_finished_nodes(): void
     {
-        $act = $this->cover(new StoryPictureCover($this->planner($this->search(fn (string $q) => str_contains($q, 'speed') ? [[$this->candidate('speed time')], null] : [[], 'timeout'])), new StoryImageLibrary(null)), $this->act());
+        $act = $this->cover($this->placeholderCover($this->planner($this->search(fn (string $q) => str_contains($q, 'speed') ? [[$this->candidate('speed time')], null] : [[], 'timeout'])), new StoryImageLibrary(null)), $this->act());
 
         $s = StoryPictureCover::summarise([$act]);
 

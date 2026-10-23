@@ -181,8 +181,18 @@ class StudyDeckService
             $config['images'] = [0, max(60, (int) ($config['images'][1] ?? 10))];   // a main picture per scene and ending, and room for supporting ones
             $cover = $this->story->enableCoverage(
                 new Story\StoryImageLibrary($options['image_library'] ?? null),
-                !empty($options['ai_scene_art']) ? new Story\SceneIllustrator(null, (int) ($options['ai_scene_max'] ?? 60), 'gemini image model', 90, $options['tenant'] ?? null) : null
+                !empty($options['ai_scene_art']) ? new Story\SceneIllustrator(null, (int) ($options['ai_scene_max'] ?? 60), 'gemini image model', 90, $options['tenant'] ?? null) : null,
+                !empty($options['allow_placeholder'])
             );
+            // The real pictures the last rung draws from are found NOW, so a run with no way to find one stops here and not after hours of writing.
+            if ($cover !== null) {
+                $chapterRow = (array) ($context['chapter'] ?? []);
+                $generic = $cover->prepareGenericPool(['chapter' => (string) ($chapterRow['chapter_name'] ?? $chapterRow['name'] ?? ''), 'subject' => (string) ($chapterRow['subject_name'] ?? '')]);
+                $say('pictures', 'Generic educational pictures ready: ' . $generic);
+                if ($generic === 0 && empty($options['allow_placeholder'])) {
+                    throw new \RuntimeException('Picture coverage needs a real picture for every scene, and no generic educational picture could be found (is image search reachable and the picture check available?). Nothing was generated. Pass --allow-placeholder to accept labelled placeholders instead.');
+                }
+            }
             $say('pictures', 'Picture coverage on: exact, related, topic, reused' . ($cover?->illustrator() !== null ? ', AI-generated' : '') . ' and a labelled placeholder, in that order');
         }
         $methodKey = is_string($method) ? $method : (isset($method['key']) ? (string) $method['key'] : null);

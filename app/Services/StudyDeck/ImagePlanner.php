@@ -41,8 +41,24 @@ class ImagePlanner
     public const LEVEL_RELATED = 'related';
     public const LEVEL_TOPIC = 'topic';
 
+    /** A clear educational picture for the subject, not for this scene: the last real-picture rung before a labelled placeholder. */
+    public const LEVEL_GENERIC = 'generic';
+
+    /** Marks a purpose as "a generic educational picture is acceptable" (both judges read it). */
+    public const GENERIC_PREFIX = 'GENERIC PICTURE: ';
+
     /** Marks a purpose as "a related picture is acceptable": both judges read it and accept the same kind of subject, not only this exact scene. */
     public const RELATED_PREFIX = 'RELATED PICTURE: ';
+
+    /** The purpose the judges are given: the scene's own at the exact level, marked as related or generic below it. */
+    private function purposeFor(string $level, string $purpose): string
+    {
+        return match ($level) {
+            self::LEVEL_EXACT => $purpose,
+            self::LEVEL_GENERIC => self::GENERIC_PREFIX . $purpose,
+            default => self::RELATED_PREFIX . $purpose,
+        };
+    }
 
     /** What a related-picture search answers when no relevance review or picture check is available to vouch for what it finds. */
     public const NEEDS_CHECK = 'a related picture needs a relevance check and none is available';
@@ -611,6 +627,10 @@ class ImagePlanner
         if ($level !== self::LEVEL_EXACT && $this->judge === null && $this->pixelJudge === null) {
             return ['missing' => self::NEEDS_CHECK];
         }
+        // A generic picture is accepted on NO keyword evidence, so the picture itself must be looked at.
+        if ($level === self::LEVEL_GENERIC && $this->pixelJudge === null) {
+            return ['missing' => self::NEEDS_CHECK];
+        }
 
         // Several ranked candidates, not just the top one: for abstract topics the
         // best keyword match is often the wrong picture and the right one is third.
@@ -661,7 +681,7 @@ class ImagePlanner
                 $why[] = 'image title "' . ($image['title'] ?? '') . '" does not say what the picture shows';
                 $this->stats['rejected_title']++;
                 $this->event($image, 'rejected', 'its title does not say what it shows');
-            } elseif ($level === self::LEVEL_EXACT ? ($match["shared"] < min(2, max(1, $match["of"])) || $match["shared"] / max(1, $match["of"]) < 0.4) : count(array_diff($match['terms'], self::GENERIC)) < 1) {
+            } elseif ($level === self::LEVEL_GENERIC ? false : ($level === self::LEVEL_EXACT ? ($match["shared"] < min(2, max(1, $match["of"])) || $match["shared"] / max(1, $match["of"]) < 0.4) : count(array_diff($match['terms'], self::GENERIC)) < 1)) {
                 $why[] = 'image title and tags do not match enough of the query (' . $match['shared'] . ' of ' . $match['of'] . ' words)';
                 $this->stats['rejected_title']++;
                 $this->event($image, 'rejected', 'title and tags match only ' . $match['shared'] . ' of ' . $match['of'] . ' query words');
@@ -679,7 +699,7 @@ class ImagePlanner
         $order = array_keys($usable);
         $verdict = ['accepted' => $order, 'reasons' => []];
         if ($this->judge) {
-            $verdict = ($this->judge)($query, $level === self::LEVEL_EXACT ? $purpose : self::RELATED_PREFIX . $purpose, $usable, $teaches);
+            $verdict = ($this->judge)($query, $this->purposeFor($level, $purpose), $usable, $teaches);
             $order = array_values(array_filter((array) ($verdict['accepted'] ?? []), fn ($i) => isset($usable[$i])));
             $this->stats['rejected_text_review'] += count($usable) - count($order);
             foreach ($usable as $k => $u) {
@@ -747,7 +767,7 @@ class ImagePlanner
                 return ['missing' => self::TIME_UP];
             }
             if ($this->pixelJudge) {
-                $seen = ($this->pixelJudge)($file['bytes'], (string) $file['mime'], $query, $level === self::LEVEL_EXACT ? $purpose : self::RELATED_PREFIX . $purpose, $teaches);
+                $seen = ($this->pixelJudge)($file['bytes'], (string) $file['mime'], $query, $this->purposeFor($level, $purpose), $teaches);
                 if (!empty($seen['unverified'])) {
                     $this->stats['unverified'] = ($this->stats['unverified'] ?? 0) + 1;
                     $this->event($image, 'unverified', (string) $seen['reason']);
@@ -769,6 +789,8 @@ class ImagePlanner
                 'type' => 'photo',
                 // How close this picture is to the scene (see the ladder in StoryPictureCover), and the address the bytes were really fetched from,
                 // so a later run can reuse them from the store without searching again.
+                // What the picture check found on the picture to open (see StoryHotspots); only the exact and related levels keep it.
+                'parts' => (array) ($seen['parts'] ?? []),
                 'match_level' => $level,
                 'fetched_from' => (string) ($file['source'] ?? $image['url']),
                 // Written AFTER the choice. With a pixel check it is what the picture was seen to show; without one, what the picture is

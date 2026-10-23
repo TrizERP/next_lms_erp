@@ -30,13 +30,23 @@ final class StoryPictureCover
     public const TOPIC = ImagePlanner::LEVEL_TOPIC;
     public const REUSED = 'reused';
     public const AI = 'ai_generated';
+    public const GENERIC = ImagePlanner::LEVEL_GENERIC;
     public const PLACEHOLDER = 'placeholder';
+
+    /** The levels whose pictures may carry hotspots: their parts were described for THIS scene's idea. */
+    private const HOTSPOT_LEVELS = ['exact', self::RELATED, self::AI];
 
     /** @var array<string,array<int,string>> scene ref => what each rung did, in order */
     public array $log = [];
 
     /** @var array<string,int> pictures this pass gave, by rung */
-    public array $given = [self::RELATED => 0, self::TOPIC => 0, self::REUSED => 0, self::AI => 0, self::PLACEHOLDER => 0];
+    public array $given = [self::RELATED => 0, self::TOPIC => 0, self::REUSED => 0, self::AI => 0, self::GENERIC => 0, self::PLACEHOLDER => 0];
+
+    /** @var array<int,array<string,mixed>> the generic educational pictures this run can use (found now, or kept from an earlier run) */
+    private array $genericPool = [];
+
+    /** @var array<string,int> source address => how many scenes it has served as a generic picture */
+    private array $genericUses = [];
 
     /** @var array<int,string> things that went wrong on the way (a search that failed, a picture that was refused) */
     public array $problems = [];
@@ -56,7 +66,67 @@ final class StoryPictureCover
         private readonly ImagePlanner $images,
         private readonly StoryImageLibrary $library,
         private readonly ?SceneIllustrator $ai = null,
+        /** A drawn, labelled placeholder is NOT a picture: it is used only when this is asked for (--allow-placeholder). */
+        private readonly bool $allowPlaceholder = false,
     ) {
+    }
+
+    /**
+     * Gather the generic educational pictures the last real rung draws from: pictures kept from an earlier run that can still be brought back, then
+     * searches for a clear photograph of a science activity, laboratory or instrument, each looked at by the picture check. Done once, before the scenes,
+     * so a run with no way to find a real picture fails at the start and not after hours of writing.
+     *
+     * @param array{chapter?:string,subject?:string} $ctx
+     * @return int how many generic pictures the run now has
+     */
+    public function prepareGenericPool(array $ctx, int $want = 4, ?float $deadline = null): int
+    {
+        $this->genericPool = [];
+        foreach ($this->library->generic() as $record) {
+            if ($this->images->reuse($record) !== null) {
+                $this->genericPool[] = $record;
+            }
+        }
+        $subject = trim((string) ($ctx['subject'] ?? '')) ?: 'science';
+        // Single, clear objects that read as "science" on their own (a crowd, a building or a museum does not): the picture is only a suitable
+        // generic image, so what it shows must be unmistakable. A caller may name its own for another subject.
+        $queries = array_values(array_unique(array_filter(array_map([$this, 'clip'], (array) ($ctx['generic_queries'] ?? ['microscope', 'laboratory glassware', 'magnifying glass', 'thermometer', 'telescope'])))));
+        $used = array_map(fn ($r) => (string) ($r['source_image_url'] ?? ''), $this->genericPool);
+        $this->images->useProviders([]);
+        $this->images->skipSources([]);
+        foreach ($queries as $q) {
+            if (count($this->genericPool) >= $want || ($deadline !== null && microtime(true) >= $deadline) || $this->searchOut) {
+                break;
+            }
+            $this->searches++;
+            $found = $this->images->find($q, $used, 'A clear educational picture for a school science lesson', '', ImagePlanner::LEVEL_GENERIC);
+            $missing = (string) ($found['missing'] ?? '');
+            if ($missing !== '') {
+                $this->log['generic'][] = "\"$q\": $missing";
+                if (str_starts_with($missing, ImagePlanner::SEARCH_FAILED)) {
+                    $this->searchFailures++;
+                    if (++$this->failedInARow >= 3) {
+                        $this->searchOut = true;
+                    }
+                } else {
+                    $this->failedInARow = 0;
+                }
+                continue;
+            }
+            $this->failedInARow = 0;
+            $used[] = (string) $found['source_image_url'];
+            $record = StoryWriter::photoImage($found, $q);
+            $this->library->remember($record, [$subject]);
+            $this->genericPool[] = $record;
+            $this->log['generic'][] = "\"$q\": " . $found['source_image_url'];
+        }
+
+        return count($this->genericPool);
+    }
+
+    public function genericPoolSize(): int
+    {
+        return count($this->genericPool);
     }
 
     public function library(): StoryImageLibrary
@@ -90,6 +160,12 @@ final class StoryPictureCover
             }
             $ref = (string) ($ctx['key'] ?? '') . '/' . $node['id'];
             $image = $this->coverNode($node, $ref, $ctx, $usedUrls, $deadline);
+            if ($image === null) {
+                // No real picture could be found and a placeholder was not asked for: the scene stays bare, and the coverage rule says so.
+                $notes[] = 'Scene "' . $node['id'] . '": no real picture could be found.';
+                $this->problems[] = 'Scene ' . $ref . ': no real picture could be found and a placeholder was not asked for.';
+                continue;
+            }
             $interaction['nodes'][$k]['image'] = $image;
             unset($interaction['nodes'][$k]['extra_images']);   // a supporting picture needs a main one that was there first
             $notes[] = 'Scene "' . $node['id'] . '": ' . self::describe($image['match_level'] ?? '?') . '.';
@@ -98,8 +174,8 @@ final class StoryPictureCover
         return $interaction;
     }
 
-    /** @return array<string,mixed> */
-    private function coverNode(array $node, string $ref, array $ctx, array &$usedUrls, ?float $deadline): array
+    /** @return array<string,mixed>|null null only when no real picture was found and a placeholder was not asked for */
+    private function coverNode(array $node, string $ref, array $ctx, array &$usedUrls, ?float $deadline): ?array
     {
         $title = trim((string) $node['title']);
         $body = trim((string) ($node['body'] ?? ''));
@@ -174,8 +250,50 @@ final class StoryPictureCover
             return $ai;
         }
 
-        // 5: the placeholder.
+        // 5: a generic educational picture for the subject (a real photograph; not about this scene, and says so).
+        if (($generic = $this->genericFor($words, $title, $ref)) !== null) {
+            return $generic;
+        }
+
+        // 6: the labelled placeholder, only when asked for.
+        if (!$this->allowPlaceholder) {
+            $this->log[$ref][] = 'no real picture was available';
+
+            return null;
+        }
+
         return $this->label($this->images->placeholder($title, $concepts), self::PLACEHOLDER, $title, $ref);
+    }
+
+    /**
+     * The generic picture that has served the fewest scenes (the one that shares most words with the scene when they tie), brought back into the store.
+     *
+     * @param array<int,string> $words
+     * @return array<string,mixed>|null
+     */
+    private function genericFor(array $words, string $title, string $ref): ?array
+    {
+        $pool = $this->genericPool;
+        usort($pool, function (array $a, array $b) use ($words): int {
+            $ua = $this->genericUses[(string) ($a['source_image_url'] ?? '')] ?? 0;
+            $ub = $this->genericUses[(string) ($b['source_image_url'] ?? '')] ?? 0;
+            $wa = count(array_intersect($words, StoryImageLibrary::words((string) ($a['title'] ?? '') . ' ' . (string) ($a['query'] ?? ''))));
+            $wb = count(array_intersect($words, StoryImageLibrary::words((string) ($b['title'] ?? '') . ' ' . (string) ($b['query'] ?? ''))));
+
+            return [$ua, $wb] <=> [$ub, $wa];
+        });
+        foreach ($pool as $record) {
+            $back = $this->images->reuse($record);
+            if ($back === null) {
+                continue;
+            }
+            $key = (string) ($record['source_image_url'] ?? '');
+            $this->genericUses[$key] = ($this->genericUses[$key] ?? 0) + 1;
+
+            return $this->label(['type' => 'photo', 'role' => 'scene'] + $back, self::GENERIC, $title, $ref);
+        }
+
+        return null;
     }
 
     /** @return array<string,mixed>|null */
@@ -226,6 +344,9 @@ final class StoryPictureCover
 
             return null;
         }
+        if (($parts = StoryHotspots::spots((array) ($check['parts'] ?? []))) !== []) {
+            $record['hotspots'] = $parts;
+        }
         if (!empty($check['focus'])) {
             $record['focus'] = $check['focus'];
             if (!empty($check['label'])) {
@@ -250,12 +371,16 @@ final class StoryPictureCover
         $this->given[$level]++;
         $record['match_level'] = $level;
         $record['role'] = $record['role'] ?? 'scene';
+        if (!in_array($level, self::HOTSPOT_LEVELS, true)) {
+            unset($record['hotspots']);   // a topic, reused, generic or placeholder picture's parts are not about this scene
+        }
         $shown = trim((string) ($record['caption'] ?? '')) !== '' ? trim((string) $record['caption']) : ($record['title'] ?? $title);
         $shown = rtrim((string) $shown, '. ');
         $prefix = match ($level) {
             self::RELATED => 'Related picture, not this exact scene',
             self::TOPIC => 'Picture of the wider topic, not this exact scene',
             self::REUSED => 'A related picture also used earlier in this lesson, not this exact scene',
+            self::GENERIC => 'Generic picture for this topic, not this exact scene',
             default => null,
         };
         if ($prefix !== null) {
@@ -316,6 +441,7 @@ final class StoryPictureCover
             self::RELATED => 'a related picture (not this exact scene)',
             self::TOPIC => 'a picture of the wider topic',
             self::REUSED => 'a related picture reused from earlier in the lesson',
+            self::GENERIC => 'a generic educational picture for the subject',
             self::AI => 'an AI-generated illustration',
             self::PLACEHOLDER => 'a labelled placeholder',
             default => 'a picture',
@@ -337,7 +463,9 @@ final class StoryPictureCover
     {
         $kinds = ['scene' => 0, 'decision' => 0, 'ending' => 0];
         $own = ['scene' => 0, 'decision' => 0, 'ending' => 0];
-        $levels = ['exact' => 0, self::RELATED => 0, self::TOPIC => 0, self::REUSED => 0, self::AI => 0, self::PLACEHOLDER => 0, 'drawn_diagram' => 0];
+        $levels = ['exact' => 0, self::RELATED => 0, self::TOPIC => 0, self::REUSED => 0, self::AI => 0, self::GENERIC => 0, self::PLACEHOLDER => 0, 'drawn_diagram' => 0];
+        $withHotspots = 0;
+        $hotspotParts = 0;
         $bare = [];
         $uses = [];
         $extras = 0;
@@ -352,6 +480,10 @@ final class StoryPictureCover
                 $img = $n['image'] ?? null;
                 if (is_array($img) && trim((string) ($img['url'] ?? '')) !== '') {
                     $own[$kind]++;
+                    if (!empty($img['hotspots']) && is_array($img['hotspots'])) {
+                        $withHotspots++;
+                        $hotspotParts += count($img['hotspots']);
+                    }
                     $level = (string) ($img['match_level'] ?? '');
                     $levels[isset($levels[$level]) ? $level : (($img['type'] ?? '') === 'photo' ? 'exact' : 'drawn_diagram')]++;
                     if (($img['match_level'] ?? '') !== self::PLACEHOLDER) {
@@ -377,6 +509,8 @@ final class StoryPictureCover
             'would_render_bare' => $bare,
             'by_match_level' => $levels,
             'supporting_pictures' => $extras,
+            'scenes_with_hotspots' => $withHotspots,
+            'hotspot_parts' => $hotspotParts,
             'pictures_used_more_than_allowed' => count(array_filter($uses, fn ($n) => $n > StoryImageLibrary::MAX_USES)),
         ];
     }

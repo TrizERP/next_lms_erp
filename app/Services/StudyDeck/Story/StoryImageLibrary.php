@@ -75,7 +75,7 @@ final class StoryImageLibrary
         $words = self::words(implode(' ', [(string) ($record['title'] ?? ''), (string) ($record['alt'] ?? ''), (string) ($record['query'] ?? ''), implode(' ', $context)]));
         $keep = array_intersect_key($record, array_flip([
             'type', 'role', 'alt', 'caption', 'width', 'height', 'title', 'query', 'licence', 'source_url', 'creator', 'attribution', 'attribution_required',
-            'source_image_url', 'fetched_from', 'provider', 'review',
+            'source_image_url', 'fetched_from', 'provider', 'review', 'match_level', 'hotspots',
         ]));
         $this->entries[$key] = ['record' => $keep, 'words' => array_slice($words, 0, 40), 'uses' => $this->entries[$key]['uses'] ?? 0];
         $this->dirty = true;
@@ -92,7 +92,7 @@ final class StoryImageLibrary
     {
         $scored = [];
         foreach ($this->entries as $key => $e) {
-            if (in_array($key, $exclude, true) || $e['uses'] >= self::MAX_USES) {
+            if (in_array($key, $exclude, true) || $e['uses'] >= self::MAX_USES || ($e['record']['match_level'] ?? '') === 'generic') {
                 continue;
             }
             $overlap = count(array_intersect($sceneWords, $e['words']));
@@ -103,6 +103,16 @@ final class StoryImageLibrary
         usort($scored, fn ($a, $b) => $b[0] <=> $a[0] ?: strcmp($a[1], $b[1]));
 
         return array_map(fn ($s) => $this->entries[$s[1]]['record'], array_slice($scored, 0, $limit));
+    }
+
+    /**
+     * The generic educational pictures kept (any scene may use one: it is not about a scene), most-used last is the caller's business.
+     *
+     * @return array<int,array<string,mixed>> records
+     */
+    public function generic(): array
+    {
+        return array_values(array_map(fn ($e) => $e['record'], array_filter($this->entries, fn ($e) => ($e['record']['match_level'] ?? '') === 'generic')));
     }
 
     /** Note that a reused picture now serves one more scene. */
@@ -126,7 +136,7 @@ final class StoryImageLibrary
     {
         $this->generated[$promptHash] = array_intersect_key($record, array_flip([
             'type', 'role', 'layout', 'match_level', 'alt', 'caption', 'query', 'width', 'height', 'licence', 'source_url', 'creator', 'attribution',
-            'attribution_required', 'generated', 'review', 'fetched_from',
+            'attribution_required', 'generated', 'review', 'fetched_from', 'hotspots',
         ]));
         $this->dirty = true;
     }

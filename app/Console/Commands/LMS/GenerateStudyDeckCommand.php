@@ -55,6 +55,7 @@ class GenerateStudyDeckCommand extends Command
         {--images-from= : with --replay: a JSON file of chosen pictures to swap in (photographs by source, or figures drawn for the lesson); each faces the picture rules and its hotspots are moved to match (see AppServicesStudyDeckImageOverrides)}
         {--export-player= : copy deck.json (picture references only, no picture files) to this directory so the local student player can load the review bundle. With --isolated-images the pictures are written there too, beside deck.json (a folder that already holds a deck.json is refused)}
         {--ai-scene-art : with --template: when no related, topic or reused picture is found for a scene, ask the image model (Gemini) for an illustration of it, checked by the picture check and labelled "AI-generated illustration", never a photograph. Off by default; the labelled placeholder is used instead}
+        {--allow-placeholder : with --template: when no real picture (exact, related, topic, reused, AI-generated or generic educational photograph) can be found for a scene, use a drawn, labelled placeholder card instead of failing. Off by default: a placeholder is not a picture}
         {--ai-scene-max=60 : with --ai-scene-art: the most illustrations one run may ask for}
         {--no-image-coverage : with --template: do not require a picture on every scene and ending (by default a story run gives each one a picture: exact, related, topic, reused, AI-generated or a labelled placeholder)}
         {--image-library= : with --template: the JSON file that keeps accepted pictures, generated illustrations and failed searches between runs (default: beside the isolated store, else storage/app/study-deck/image-library/)}
@@ -139,6 +140,7 @@ class GenerateStudyDeckCommand extends Command
                 'image_coverage' => $template !== null && !$this->option('no-image-coverage'),
                 'ai_scene_art' => $template !== null && (bool) $this->option('ai-scene-art'),
                 'ai_scene_max' => max(1, (int) $this->option('ai-scene-max')),
+                'allow_placeholder' => $template !== null && (bool) $this->option('allow-placeholder'),
                 'image_library' => $template !== null ? ($this->option('image-library') ?: ($isolatedPath !== '' ? $isolatedPath . '.library.json' : storage_path('app/study-deck/image-library/school-' . $tenant . '-chapter-' . $chapterId . '.json'))) : null,
                 'rejected_replies_dir' => $dir,
                 'min_slides' => (int) $this->option('min-slides'),
@@ -270,7 +272,8 @@ class GenerateStudyDeckCommand extends Command
         $this->newLine();
         $this->line('<options=bold>Picture coverage</>');
         $this->line(sprintf('  nodes %d (scenes %d, decisions %d, endings %d); scenes and endings with a picture of their own: %d of %d (%s%%)', $s['nodes'], $s['by_kind']['scene'], $s['by_kind']['decision'], $s['by_kind']['ending'], $s['scenes_and_endings_with_picture'], $s['scenes_and_endings'], $s['coverage_percent']));
-        $this->line(sprintf('  by match: exact %d, related %d, topic %d, reused %d, AI-generated %d, placeholder %d, drawn diagram %d', $l['exact'], $l['related'], $l['topic'], $l['reused'], $l['ai_generated'], $l['placeholder'], $l['drawn_diagram']));
+        $this->line(sprintf('  by match: exact %d, related %d, topic %d, reused %d, AI-generated %d, generic %d, placeholder %d, drawn diagram %d', $l['exact'], $l['related'], $l['topic'], $l['reused'], $l['ai_generated'], $l['generic'], $l['placeholder'], $l['drawn_diagram']));
+        $this->line(sprintf('  interactive pictures (hotspots): %d scenes with %d openable parts', $s['scenes_with_hotspots'], $s['hotspot_parts']));
         $this->line('  scenes that would render bare: ' . count($s['would_render_bare']) . '; pictures used more often than allowed: ' . $s['pictures_used_more_than_allowed']);
         $ai = $c['ai_scene_art'];
         $this->line(sprintf('  searches %d (failed %d); library pictures %d; AI scene art: %s', $c['searches_made'], $c['search_failures'], $c['library_pictures'], $ai['enabled'] ? sprintf('made %d, failed %d%s', $ai['made'], $ai['failed'], $ai['unavailable'] ? ', off: ' . $ai['unavailable'] : '') : 'off'));

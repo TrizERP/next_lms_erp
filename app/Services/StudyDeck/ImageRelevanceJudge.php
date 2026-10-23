@@ -42,6 +42,9 @@ class ImageRelevanceJudge
             ];
         }
         // A related-picture search (the fallback ladder) accepts the same KIND of subject, not only this exact scene.
+        $generic = str_starts_with($purpose, \App\Services\StudyDeck\ImagePlanner::GENERIC_PREFIX)
+            ? "\n\nThis is a GENERIC-PICTURE search: nothing specific to the slide was found. Also accept a candidate whose title and tags show a clear photograph of a school science activity, laboratory, instrument, material or natural phenomenon that suits a lesson on this subject. Keep rejecting portraits, logos, maps, cartoons, book covers and anything not about science."
+            : '';
         $related = str_starts_with($purpose, \App\Services\StudyDeck\ImagePlanner::RELATED_PREFIX)
             ? "
 
@@ -52,7 +55,7 @@ This is a RELATED-PICTURE search: no picture of the exact scene was found. Also 
         $prompt = <<<PROMPT
 A classroom slide needs one picture. For each candidate, decide from its own title and tags whether it would clearly serve the slide.
 
-Be strict. Reject a candidate when its title or tags point to a different subject, to a person or portrait where an object or diagram is needed, to an unrelated sense of a shared word, or to something only loosely connected. Accept only when the title and tags indicate it shows what the slide needs AND seeing it helps the learner understand what the slide teaches. A picture of something that is merely an example, a prop or a setting for the idea (an object the text only mentions in passing), or any photograph for an abstract idea, does not teach it: reject it. Accepting none is a normal, correct answer.{$related}
+Be strict. Reject a candidate when its title or tags point to a different subject, to a person or portrait where an object or diagram is needed, to an unrelated sense of a shared word, or to something only loosely connected. Accept only when the title and tags indicate it shows what the slide needs AND seeing it helps the learner understand what the slide teaches. A picture of something that is merely an example, a prop or a setting for the idea (an object the text only mentions in passing), or any photograph for an abstract idea, does not teach it: reject it. Accepting none is a normal, correct answer.{$related}{$generic}
 
 Reply with JSON only:
 {"accepted": [indexes of acceptable candidates, best first], "reasons": {"<index>": "one short sentence"}, "reason": "if none accepted, one short sentence why"}

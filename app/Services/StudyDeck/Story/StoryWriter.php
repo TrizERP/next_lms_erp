@@ -693,6 +693,9 @@ PROMPT;
             'attribution' => $found['attribution'] ?? '', 'attribution_required' => (bool) ($found['attribution_required'] ?? false),
             'review' => $found['review'] ?? null, 'source_image_url' => $found['source_image_url'] ?? null,
             ...(isset($found['focus']) ? ['focus' => $found['focus']] : []), ...(isset($found['notice']) ? ['notice' => $found['notice']] : []), ...(isset($found['focus_label']) ? ['focus_label' => $found['focus_label']] : []), 'provider' => $found['provider'] ?? null,
+            // Parts of the picture a learner can open, found on the picture by the picture check. Only an exact or a related picture keeps them: a
+            // part's words are about what the picture shows for THIS scene's idea, which a topic or reused picture does not.
+            ...(in_array($found['match_level'] ?? 'exact', ['exact', 'related'], true) && ($parts = StoryHotspots::spots((array) ($found['parts'] ?? []))) !== [] ? ['hotspots' => $parts] : []),
         ];
     }
 

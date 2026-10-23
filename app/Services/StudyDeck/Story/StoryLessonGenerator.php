@@ -26,9 +26,9 @@ class StoryLessonGenerator
      * Give this run the picture ladder: every scene and ending ends with a picture of its own (see StoryPictureCover). Without a picture planner there
      * is nowhere to store pictures, so nothing is enabled and the coverage rule will name the scenes that stayed bare.
      */
-    public function enableCoverage(StoryImageLibrary $library, ?SceneIllustrator $illustrator = null): ?StoryPictureCover
+    public function enableCoverage(StoryImageLibrary $library, ?SceneIllustrator $illustrator = null, bool $allowPlaceholder = false): ?StoryPictureCover
     {
-        return $this->images === null ? null : ($this->writer->cover = new StoryPictureCover($this->images, $library, $illustrator));
+        return $this->images === null ? null : ($this->writer->cover = new StoryPictureCover($this->images, $library, $illustrator, $allowPlaceholder));
     }
 
     /**

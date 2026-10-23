@@ -180,6 +180,9 @@ final class StoryGraph
                 if (isset($img['focus']) && StoryPixelJudge::region($img['focus']) === null) {
                     $errors[] = "The highlighted part of a picture of $id is not a rectangle inside the picture.";
                 }
+                foreach (StoryHotspots::errors($img) as $why) {
+                    $errors[] = "A picture of $id: $why.";
+                }
             }
         }
         if ((string) ($interaction['start'] ?? '') !== (string) ($nodes[0]['id'] ?? '')) {
