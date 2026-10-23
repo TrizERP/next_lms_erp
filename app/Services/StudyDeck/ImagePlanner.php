@@ -33,6 +33,15 @@ class ImagePlanner
     /** Licences that require the creator to be credited. */
     private const NEEDS_CREDIT = '/^(BY|BY-SA|NASA media usage guidelines|Pexels License)(\s|$)/i';
 
+    /** The licence label of a picture taken from the chapter's own textbook (permitted for this project). Accepted by its exact name only. */
+    public const TEXTBOOK_LICENCE = 'Publisher textbook (permitted for this project)';
+
+    /** Where a deck picture came from: a web search, the chapter's textbook, a drawn diagram, or nowhere (no suitable picture). */
+    public const KIND_WEB = 'web';
+    public const KIND_TEXTBOOK = 'textbook';
+    public const KIND_DIAGRAM = 'diagram';
+    public const KIND_NONE = 'none';
+
     /** What a search stopped by its deadline answers: not a verdict on the query, so it is never remembered as a miss. */
     public const TIME_UP = 'time limit reached';
 
@@ -123,6 +132,22 @@ class ImagePlanner
     public function skipSources(array $names): static
     {
         $this->skip = array_values(array_map('strtolower', array_map('strval', $names)));
+
+        return $this;
+    }
+
+    private ?TextbookImages $textbook = null;
+
+    private int $textbookChapter = 0;
+
+    /** @var array<int,string> textbook files already placed in this lesson */
+    private array $textbookUsed = [];
+
+    /** The chapter's textbook pictures, offered only AFTER a web search found nothing suitable (see textbookPicture). */
+    public function withTextbookImages(?TextbookImages $textbook, int $chapterId): static
+    {
+        $this->textbook = $textbook;
+        $this->textbookChapter = $chapterId;
 
         return $this;
     }
@@ -223,14 +248,22 @@ class ImagePlanner
             if ($role === 'diagram' && $spec) {
                 $out[$n] = $this->diagram($spec) + ['purpose' => $visual['purpose']];
             } else {
+                // 1. The web first. 2. The chapter's textbook, when the search found nothing suitable. 3. A diagram, when one can be
+                // drawn from the plan's verified spec. 4. Otherwise no picture, said plainly.
                 $found = $this->find((string) $visual['query'], $usedUrls, (string) $visual['purpose'], $teaches);
                 if (isset($found['missing'])) {
-                    $out[$n] = $spec
-                        ? $this->diagram($spec) + ['purpose' => $visual['purpose'], 'photo_missing' => $found['missing']]
-                        : $found + ['query' => $visual['query'], 'purpose' => $visual['purpose']];
+                    $book = $this->textbookPicture((string) $visual['query'], (string) $visual['purpose'], $teaches);
+                    if ($book !== null) {
+                        $usedUrls[] = $book['source_image_url'];
+                        $out[$n] = $book + ['purpose' => $visual['purpose'], 'web_search' => $found['missing']];
+                    } elseif ($spec) {
+                        $out[$n] = $this->diagram($spec) + ['purpose' => $visual['purpose'], 'photo_missing' => $found['missing']];
+                    } else {
+                        $out[$n] = $found + ['query' => $visual['query'], 'purpose' => $visual['purpose'], 'source_kind' => self::KIND_NONE];
+                    }
                 } else {
                     $usedUrls[] = $found['source_image_url'];
-                    $out[$n] = $found + ['purpose' => $visual['purpose']];
+                    $out[$n] = $found + ['purpose' => $visual['purpose'], 'source_kind' => self::KIND_WEB];
                 }
             }
 
@@ -269,7 +302,69 @@ class ImagePlanner
             'attribution_required' => false,
             'attribution' => '',
             'review' => ['relevant' => true, 'reason' => 'drawn from the plan\'s own diagram spec'],
+            'source_kind' => self::KIND_DIAGRAM,
         ];
+    }
+
+    /**
+     * A picture from the chapter's own textbook that shows what the scene is about, or null. Called only after the web search found
+     * nothing suitable. The picture is chosen by the curated manifest's description of what it SHOWS and the words it shares with
+     * the scene, never by its file name; where a picture check is available (the pixel judge) it must also agree. The record carries
+     * the textbook as its source, the textbook licence label and a credit, and is marked `source_kind: textbook`.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function textbookPicture(string $query, string $purpose, string $teaches, array $skip = []): ?array
+    {
+        if ($this->textbook === null || $this->textbookChapter <= 0) {
+            return null;
+        }
+        $source = $this->textbook->source();
+        foreach ($this->textbook->candidates($this->textbookChapter, $query, $purpose, $teaches, array_merge($this->textbookUsed, $skip)) as $c) {
+            $e = $c['entry'];
+            $file = $this->textbook->read($e);
+            if ($file === null || min($file['width'], $file['height']) < 160) {
+                continue;
+            }
+            if ($this->pixelJudge !== null) {
+                $verdict = ($this->pixelJudge)($file['bytes'], $file['mime'], $query, $purpose, $teaches);
+                if (empty($verdict['ok'])) {
+                    continue;
+                }
+            }
+            $caption = trim((string) ($e['caption'] ?? '')) !== '' ? trim((string) $e['caption']) : trim((string) $e['shows']);
+            $page = (int) ($e['page'] ?? 0);
+            $book = trim((string) ($source['title'] ?? 'the chapter textbook'));
+            $credit = 'From ' . $book . ($page > 0 ? ', page ' . $page : '') . (!empty($source['publisher']) ? ' (' . $source['publisher'] . ')' : '') . '.';
+            $this->textbookUsed[] = (string) $e['file'];
+            $tags = array_merge((array) ($e['keywords'] ?? []), [(string) $e['shows']]);
+
+            return [
+                'type' => 'photo',
+                'alt' => trim((string) $e['shows']),
+                'caption' => $caption,
+                'url' => $this->store->store($file['bytes'], $file['mime'], 'textbook:' . (string) $e['file']),
+                'width' => $file['width'],
+                'height' => $file['height'],
+                'query' => $query,
+                'source_image_url' => 'textbook:' . (string) $e['file'],
+                'source_url' => 'textbook:' . (string) ($source['key'] ?? 'chapter') . ($page > 0 ? '#page-' . $page : ''),
+                'title' => $caption,
+                'creator' => (string) ($source['publisher'] ?? ''),
+                'provider' => 'textbook',
+                'licence' => self::TEXTBOOK_LICENCE,
+                'attribution_required' => true,
+                'attribution' => $credit,
+                'sha1' => sha1($file['bytes']),
+                'sha256' => hash('sha256', $file['bytes']),
+                // The scene's whole text (query, purpose, what it teaches) is what the picture was matched against, so the evidence is read from it.
+                'match' => $this->matchEvidence(trim($query . ' ' . $purpose . ' ' . $teaches), ['title' => $caption, 'tags' => $tags]) + ['evidence' => $c['shared']],
+                'review' => ['relevant' => true, 'reason' => 'A textbook picture whose recorded content (' . trim((string) $e['shows']) . ') shares ' . implode(', ', $c['shared']) . ' with the scene; it was matched on the page\'s caption and the picture itself, not on its file name.'],
+                'source_kind' => self::KIND_TEXTBOOK,
+            ];
+        }
+
+        return null;
     }
     /**
      * Draw the deck's diagrams again with the current DiagramRenderer, from the specs the plan already holds.
@@ -961,6 +1056,9 @@ class ImagePlanner
     public function licenceAccepted(string $licence): bool
     {
         $licence = trim($licence);
+        if ($licence === self::TEXTBOOK_LICENCE) {
+            return true;
+        }
         // Two sources whose terms are not Creative Commons labels, accepted by their exact names (see NasaImageSearch and PexelsImageSearch).
         if (in_array($licence, [\App\Services\PAL\Integration\NasaImageSearch::LICENCE, \App\Services\PAL\Integration\PexelsImageSearch::LICENCE], true)) {
             return true;

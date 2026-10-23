@@ -300,7 +300,9 @@ class StudyDeckApiController extends Controller
         $contentId = (int) $request->input('content_id', 0);
         $row = $contentId > 0
             ? ($visible()->where('id', $contentId)->first(['id', 'filename', 'sub_institute_id']) ?? $story()->where('id', $contentId)->first(['id', 'filename', 'sub_institute_id']))
-            : $visible()->orderByDesc('id')->get(['id', 'filename', 'sub_institute_id'])->first(fn ($r) => $this->hasDeck((string) $r->filename));
+            // Asked for without a content id, the chapter's default deck is the one stored WITHOUT a teaching method: a deck made for
+            // a method is opened by its own id and is never picked as "the latest".
+            : $visible()->orderByDesc('id')->get(['id', 'filename', 'sub_institute_id'])->first(fn ($r) => \App\Services\StudyDeck\StudyDeckPublisher::variantOf((string) $r->filename) === null && $this->hasDeck((string) $r->filename));
 
         $kind = null;
         if (!$row && $contentId > 0) {

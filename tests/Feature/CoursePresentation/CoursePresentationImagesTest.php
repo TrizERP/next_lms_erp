@@ -228,7 +228,7 @@ class CoursePresentationImagesTest extends CoursePresentationTestCase
                 return 0;
             }
             DB::table('content_master')->insert(['id' => 777, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT,
-                'content_category' => 'Classroom Presentation', 'title' => 'Course Presentation', 'filename' => 'study_deck_8592_abc.pptx', 'show_hide' => 1]);
+                'content_category' => 'Classroom Presentation', 'title' => 'Course Presentation', 'filename' => 'study_deck_' . ($args['--teaching-method'] ?? 'none') . '__8592_abc.pptx', 'show_hide' => 1]);
             if ($storeLinks) {
                 $deck = json_decode((string) file_get_contents($args['--bundle'] . '/deck.json'), true);
                 $ids = array_map(fn ($s) => StudyDeckImages::idFromRef($s['image']['url']), $deck['slides']);

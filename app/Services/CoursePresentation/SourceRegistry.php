@@ -29,12 +29,14 @@ class SourceRegistry
         // SOURCE MATERIAL: what a presentation is written from. Whether a presentation already exists is a different
         // question and is reported apart (existing_content), so a missing presentation can never make a valid
         // textbook look missing.
-        $sources = [
+        // Learning outcomes and the curriculum they hang from are OPTIONAL context: used when the school has stored them,
+        // and not mentioned at all when it has not (no warning, no block, nothing invented in their place).
+        $sources = array_values(array_filter([
             $this->curriculum($chapter, $raw),
             $this->textbook($chapter, $raw),
             $this->outcomes($chapter, $raw),
             $this->semantic($chapter, $raw),
-        ];
+        ], fn (array $s) => !(in_array($s['key'], ['curriculum', 'outcomes'], true) && $s['status'] === 'missing')));
 
         return [
             'sources' => $sources,
@@ -349,10 +351,13 @@ class SourceRegistry
             // Each stored item belongs to ONE format: a story lesson (its own category and file prefix) is not a Classroom Presentation.
             $category = strtolower((string) $r['content_category']);
             $story = str_starts_with((string) ($r['filename'] ?? ''), \App\Services\StudyDeck\Story\StoryTemplate::FILE_PREFIX);
+            // `method` is the teaching method the item was stored for (null: stored without one). A stored item answers only
+            // for its own format AND method; the poster and decks stored before methods were recorded answer for none.
+            $method = \App\Services\StudyDeck\StudyDeckPublisher::variantOf((string) ($r['filename'] ?? ''));
             if ($story && $category === strtolower(\App\Services\StudyDeck\Story\StoryTemplate::CATEGORY)) {
-                $out[] = ['type' => 'Story lesson', 'format' => 'branching_scenario', 'title' => (string) $r['title'], 'ref' => (int) $r['id'], 'status' => 'published'];
+                $out[] = ['type' => 'Story lesson', 'format' => 'branching_scenario', 'method' => $method, 'title' => (string) $r['title'], 'ref' => (int) $r['id'], 'status' => 'published'];
             } elseif (!$story && in_array($category, $cats, true)) {
-                $out[] = ['type' => 'Classroom presentation', 'format' => 'interactive_slides', 'title' => (string) $r['title'], 'ref' => (int) $r['id'], 'status' => 'published'];
+                $out[] = ['type' => 'Classroom presentation', 'format' => 'interactive_slides', 'method' => $method, 'title' => (string) $r['title'], 'ref' => (int) $r['id'], 'status' => 'published'];
             }
         }
 

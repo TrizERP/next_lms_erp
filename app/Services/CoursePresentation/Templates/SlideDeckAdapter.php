@@ -412,8 +412,9 @@ class SlideDeckAdapter
             if ($cur) {
                 $chunks[] = $cur;
             }
+            // Learning outcomes are optional context: a chapter that has none gets no such slide and no "missing" note, and nothing is invented.
             if (!$chunks) {
-                $this->missing[] = ['what' => $title, 'where' => 'whole chapter', 'why' => 'None are stored for this chapter.'];
+                continue;
             }
             foreach ($chunks as $i => $chunk) {
                 $this->add('objectives', $title . (count($chunks) > 1 ? ' (' . ($i + 1) . ' of ' . count($chunks) . ')' : ''), [], [], ['body' => 'From the curriculum for this chapter.', 'bullets' => $chunk], null, 'Introduction');
@@ -439,7 +440,7 @@ class SlideDeckAdapter
             'question_ids' => [], 'activities' => [], 'interaction' => $interaction,
             'interaction_reason' => $reason ?? 'Plain teaching: built directly from the stored chapter data.',
             'h5p_pattern' => null, 'image' => $image,
-            'image_missing' => $image === null && in_array($type, ['concept_intro', 'misconception'], true) && $taught ? 'No stored picture is verified for this concept.' : null,
+            'image_missing' => $image === null && in_array($type, ['concept_intro', 'misconception'], true) && $taught ? 'No suitable picture is available for this concept.' : null,
         ];
     }
 

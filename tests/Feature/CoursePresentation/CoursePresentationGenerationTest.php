@@ -62,7 +62,12 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
                 return $generateCode;
             }
             if ($command === 'lms:store-study-deck' && $storeCode === 0) {
-                DB::table('content_master')->insert(($this->storeRow ?? ['content_category' => 'Classroom Presentation', 'filename' => 'study_deck_8592_abc.pptx']) + ['id' => 777, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT,
+                $row = $this->storeRow ?? ['content_category' => 'Classroom Presentation', 'filename' => 'study_deck_8592_abc.pptx'];
+                // Like the real command, a deck stored for a teaching method carries it in its file name.
+                if (!empty($args['--teaching-method'])) {
+                    $row['filename'] = preg_replace('/^(study_(?:deck|story)_)/', '${1}' . $args['--teaching-method'] . '__', $row['filename']);
+                }
+                DB::table('content_master')->insert($row + ['id' => 777, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT,
                     'title' => 'Course Presentation', 'show_hide' => 1]);
             }
             $out->writeln($storeCode === 0 ? 'stored' : 'refused');
@@ -252,7 +257,7 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
 
         // A presentation being there is no reason to refuse the story (it is a different item), and storing it leaves the presentation visible.
         $res = $this->postRun('approve', $run, ['reviewed' => true])->assertOk();
-        $this->assertContains('study_story_8592_abc.pptx', DB::table('content_master')->pluck('filename')->all());
+        $this->assertContains('study_story_experiential__8592_abc.pptx', DB::table('content_master')->pluck('filename')->all());
         $this->assertSame(1, (int) DB::table('content_master')->where('id', 500)->value('show_hide'), 'the Classroom Presentation is untouched');
         $this->assertSame('/student/study-deck/8592?content=777', $res->json('run.stored.deep_link'));
         $this->assertContains('lms:store-study-deck', array_column($this->commands, 0));
@@ -268,7 +273,7 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
         $run = $this->act('generate', 'experiential', [], 'branching_scenario')->assertStatus(202)->json('run.run');
         $runs->execute(self::CHAPTER, self::TENANT, $run);
         DB::table('content_master')->insert(['id' => 600, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT,
-            'content_category' => 'Interactive', 'title' => 'Exploration Story Lesson', 'filename' => 'study_story_8592_first.pptx', 'show_hide' => 1]);
+            'content_category' => 'Interactive', 'title' => 'Exploration Story Lesson', 'filename' => 'study_story_experiential__8592_first.pptx', 'show_hide' => 1]);
 
         $this->postRun('approve', $run, ['reviewed' => true])->assertStatus(422);
         $this->assertNotContains('lms:store-study-deck', array_column($this->commands, 0), 'nothing was stored');
@@ -346,8 +351,8 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
         DB::table('document_extractions')->where('id', 81)->delete();
         $this->assertStringContainsString('Required source material is missing', $this->act('generate')->assertStatus(422)->json('message'));
         $this->seedPilotChapterTextbookAgain();
-        // A presentation already stored is a duplicate.
-        DB::table('content_master')->insert(['id' => 5, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT, 'content_category' => 'Classroom Presentation', 'title' => 'Existing', 'show_hide' => 1]);
+        // A presentation already stored for this teaching method is a duplicate.
+        DB::table('content_master')->insert(['id' => 5, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT, 'content_category' => 'Classroom Presentation', 'title' => 'Existing', 'filename' => 'study_deck_inquiry_based__existing.pptx', 'show_hide' => 1]);
         $this->assertStringContainsString('would be a duplicate', $this->act('generate')->assertStatus(422)->json('message'));
         // A client cannot name sources.
         DB::table('content_master')->delete();
@@ -455,7 +460,7 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
     {
         [$run] = $this->ready();
         DB::table('content_master')->insert(['id' => 9, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT,
-            'content_category' => 'Classroom Presentation', 'title' => 'Someone else', 'filename' => 'study_deck_8592_zzz.pptx', 'show_hide' => 1]);
+            'content_category' => 'Classroom Presentation', 'title' => 'Someone else', 'filename' => 'study_deck_inquiry_based__zzz.pptx', 'show_hide' => 1]);
         $this->assertStringContainsString('duplicate', $this->postRun('approve', $run, ['reviewed' => true])->assertStatus(422)->json('message'));
         $this->assertCount(1, $this->commands, 'the store command was not even called');
 

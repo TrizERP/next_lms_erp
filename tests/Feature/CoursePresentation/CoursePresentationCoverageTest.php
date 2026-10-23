@@ -345,7 +345,7 @@ T;
             $s = $this->explainSlide($deck, $id);
             $this->assertNotNull($s, "concept $id is still taught");
             $this->assertNull($s['image']);
-            $this->assertSame('No stored picture is verified for this concept.', $s['image_missing']);
+            $this->assertSame('No suitable picture is available for this concept.', $s['image_missing']);
         }
     }
 
@@ -422,7 +422,7 @@ T;
         $this->assertSame(['LO-1 Outcome 1', 'LO-2 Outcome 2', 'LO-3 Outcome 3', 'LO-4 Outcome 4', 'LO-5 Outcome 5'], $obj[0]['content']['bullets']);
         $this->assertSame(['C1.1 Compete'], $obj[2]['content']['bullets']);
         $none = (new SlideDeckAdapter())->build($chapter, $this->coverage(), [], 'explicit_instruction')['missing'];
-        $this->assertCount(2, array_filter($none, fn ($m) => in_array($m['what'], ['Learning outcomes', 'Competencies'], true)));
+        $this->assertCount(0, array_filter($none, fn ($m) => in_array($m['what'], ['Learning outcomes', 'Competencies'], true)), 'a chapter without outcomes gets no outcome slide and no "missing" note');
     }
 
     public function test_what_no_source_holds_is_reported_never_invented(): void
@@ -497,6 +497,7 @@ T;
         $this->assertSame(['Zinc smelting'], $cov['intelligence_entries_not_mapped']);
         $this->assertCount(6, $cov['concepts'], 'one line per concept');
         $this->assertSame(['name', 'topic', 'source', 'semantic', 'match', 'picture', 'sufficient', 'reason'], array_keys($cov['concepts'][0]), 'no record ids and no passage text');
+        // The school has stored outcomes for this synthetic chapter, so the note is there; a chapter without any gets none (see below).
         $this->assertStringContainsString('chapter-level', $cov['learning_outcomes']);
         // A missing semantic entry is not a blocker: the textbook covers the concept, and the combination still continues.
         $this->assertTrue($res->json('fit.continue_allowed'));

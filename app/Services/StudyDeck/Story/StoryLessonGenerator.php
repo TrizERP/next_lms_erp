@@ -4,6 +4,7 @@ namespace App\Services\StudyDeck\Story;
 
 use App\Services\StudyDeck\Contracts\Completer;
 use App\Services\StudyDeck\ImagePlanner;
+use App\Services\StudyDeck\TextbookImages;
 
 /**
  * The story lesson's generation, as StudyDeckService runs it for the story template: acts, then a story bible, then for every act a
@@ -26,6 +27,12 @@ class StoryLessonGenerator
      * Give this run the picture ladder: every scene and ending ends with a picture of its own (see StoryPictureCover). Without a picture planner there
      * is nowhere to store pictures, so nothing is enabled and the coverage rule will name the scenes that stayed bare.
      */
+    /** The chapter's textbook pictures for the picture ladder (see ImagePlanner::textbookPicture); a no-op without a picture planner. */
+    public function withTextbookImages(?TextbookImages $textbook, int $chapterId): void
+    {
+        $this->images?->withTextbookImages($textbook, $chapterId);
+    }
+
     public function enableCoverage(StoryImageLibrary $library, ?SceneIllustrator $illustrator = null, bool $allowPlaceholder = false): ?StoryPictureCover
     {
         return $this->images === null ? null : ($this->writer->cover = new StoryPictureCover($this->images, $library, $illustrator, $allowPlaceholder));

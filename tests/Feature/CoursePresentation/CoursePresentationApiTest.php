@@ -261,7 +261,7 @@ class CoursePresentationApiTest extends CoursePresentationTestCase
             $s = $this->source($json, $key);
             $this->assertSame('present', $s['status'], $key);
             $this->assertSame(['available', 'complete'], [$s['availability'], $s['quality']], $key);
-            $this->assertTrue($s['needed_for_slides'], $key);
+            $this->assertFalse($s['needed_for_slides'], "$key is optional context, not a requirement");
         }
         // Three separate questions: semantic intelligence is AVAILABLE but only PARTLY good, and slides do not need it.
         $sem = $this->source($json, 'semantic_intelligence');
@@ -450,11 +450,18 @@ class CoursePresentationApiTest extends CoursePresentationTestCase
         $fit = $this->fit('inquiry_based', 'interactive_slides');
         $this->assertSame(['textbook'], array_column($fit['missing_sources'], 'key'));
         $this->assertStringContainsString('Required source material is missing', implode(' ', $fit['generation_blockers']));
+        // Learning outcomes (and the curriculum found through them) are optional: a chapter without them is neither blocked nor warned.
         DB::table('lms_learning_outcomes')->delete();
-        // The curriculum is found through the chapter's outcomes, so without them it is missing as well.
-        $this->assertSame(['textbook', 'curriculum', 'outcomes'], array_column($this->fit('inquiry_based', 'interactive_slides')['missing_sources'], 'key'));
-        // The story needs the chapter text, the curriculum and the learning outcomes (what every path must teach).
-        $this->assertSame(['textbook', 'curriculum', 'outcomes'], array_column($this->fit('inquiry_based', 'branching_scenario')['missing_sources'], 'key'));
+        foreach (['interactive_slides', 'branching_scenario'] as $format) {
+            $fit = $this->fit('inquiry_based', $format);
+            $this->assertSame(['textbook'], array_column($fit['missing_sources'], 'key'), $format);
+            $this->assertStringNotContainsString('utcome', implode(' ', $fit['generation_blockers']), $format);
+        }
+        // Restore the chapter text: with only the outcomes gone, generation is not blocked on them.
+        DB::table('document_extractions')->insert(['id' => 81, 'document_type' => 'Chapter', 'chapter_id' => self::CHAPTER, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'sub_institute_id' => self::TENANT, 'md_content' => str_repeat('Atoms combine. ', 400)]);
+        $fit = $this->fit('inquiry_based', 'interactive_slides');
+        $this->assertSame([], $fit['missing_sources']);
+        $this->assertSame([], $fit['incomplete_sources']);
     }
 
     public function test_an_existing_presentation_is_a_duplicate_that_blocks_generation(): void
@@ -462,7 +469,7 @@ class CoursePresentationApiTest extends CoursePresentationTestCase
         $this->seedPilotChapter();
         $this->seedStrategies();
         $this->assertFalse($this->fit('inquiry_based', 'interactive_slides')['duplicate']);
-        DB::table('content_master')->insert(['id' => 5, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT, 'content_category' => 'Classroom Presentation', 'title' => 'Existing', 'show_hide' => 1]);
+        DB::table('content_master')->insert(['id' => 5, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT, 'content_category' => 'Classroom Presentation', 'title' => 'Existing', 'filename' => 'study_deck_inquiry_based__existing.pptx', 'show_hide' => 1]);
         $fit = $this->fit('inquiry_based', 'interactive_slides');
         $this->assertTrue($fit['duplicate']);
         $this->assertStringContainsString('would be a duplicate', implode(' ', $fit['generation_blockers']));

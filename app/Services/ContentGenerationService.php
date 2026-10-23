@@ -508,7 +508,10 @@ class ContentGenerationService
         if ($isStory) {
             $input['content_type'] = \App\Services\StudyDeck\Story\StoryTemplate::CATEGORY;
         }
-        $input['title'] = mb_substr((string) $input['chapter_name'] . ($isStory ? ' Story Lesson' : ' Study Deck'), 0, 250);
+        // A deck made for a teaching method says so in its title, so the Classroom Resource list tells the methods apart.
+        $method = StudyDeckPublisher::methodOf($prepared['deck']);
+        $methodLabel = $method === null ? '' : ' - ' . (string) (config('course_presentation_pilot.pedagogies')[$method] ?? ucfirst(str_replace('_', ' ', $method)));
+        $input['title'] = mb_substr((string) $input['chapter_name'] . ($isStory ? ' Story Lesson' : ' Study Deck') . $methodLabel, 0, 250);
         $result = $this->storeStudyDeck($input, $prepared['html'], $prepared['deck'], $authoredBy);
         if (($result['http'] ?? 0) !== 201) {
             $publisher->cleanup();
@@ -783,23 +786,37 @@ class ContentGenerationService
             ->first(['id', 'url', 'show_hide']);
     }
 
-    /** Hide the other study decks of this chapter and school: the new one replaces them. */
+    /**
+     * Hide the other study decks of this chapter and school that the new one replaces. $like is the kind AND teaching
+     * method of the new deck (see studyDeckLikePrefix): a deck replaces only a deck of the same kind and method, so the
+     * presentations of different teaching methods stay beside each other. A deck stored without a method (no
+     * delimiter in the prefix) replaces only other decks stored without one.
+     */
     protected function hidePreviousStudyDecks(int $chapterId, int $tenant, int $keepId, string $like = 'study\\_deck\\_'): int
     {
+        $delimiter = str_replace('_', '\\_', StudyDeckPublisher::VARIANT_DELIMITER);
+
         return DB::table('content_master')
             ->where('chapter_id', $chapterId)
             ->where('sub_institute_id', $tenant)
             ->where('file_type', 'pptx')
             ->where('filename', 'like', $like . '%')
+            ->when(!str_ends_with($like, $delimiter), fn ($q) => $q->where('filename', 'not like', '%' . $delimiter . '%'))
             ->where('id', '<>', $keepId)
             ->where(fn ($q) => $q->whereNull('show_hide')->orWhere('show_hide', '<>', 0))
             ->update(['show_hide' => 0]);
     }
 
-    /** The LIKE prefix of the kind of deck a file name belongs to: story lessons and presentations are kept apart. */
+    /**
+     * The LIKE prefix of the kind of deck (and teaching method) a file name belongs to: story lessons and presentations
+     * are kept apart, and so are the decks of different teaching methods.
+     */
     protected function studyDeckLikePrefix(string $filename): string
     {
-        return str_starts_with($filename, \App\Services\StudyDeck\Story\StoryTemplate::FILE_PREFIX) ? 'study\\_story\\_' : 'study\\_deck\\_';
+        $kind = str_starts_with($filename, \App\Services\StudyDeck\Story\StoryTemplate::FILE_PREFIX) ? 'study\\_story\\_' : 'study\\_deck\\_';
+        $method = StudyDeckPublisher::variantOf($filename);
+
+        return $method === null ? $kind : $kind . str_replace('_', '\\_', $method) . str_replace('_', '\\_', StudyDeckPublisher::VARIANT_DELIMITER);
     }
 
     /** Make an older, hidden study deck the current one again (and hide the rest). */

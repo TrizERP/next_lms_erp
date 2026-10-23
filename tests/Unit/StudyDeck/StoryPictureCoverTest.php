@@ -835,4 +835,57 @@ class StoryPictureCoverTest extends BootSafeTestCase
     {
         return \App\Services\StudyDeck\Story\StoryTemplate::defaults();
     }
+    // ---------------------------------------------------------------------------------------------------------------
+    // The chapter's own textbook: after the web search, before anything reused, generated or generic
+
+    private function textbookFor(string $caption, string $shows, array $keywords): \App\Services\StudyDeck\TextbookImages
+    {
+        file_put_contents($this->tmp . '/page_05_image_01.png', $this->busy());
+
+        return new \App\Services\StudyDeck\TextbookImages(
+            ['source' => ['key' => 'book', 'title' => 'The Textbook', 'publisher' => 'A Publisher'], 'images' => [['file' => 'page_05_image_01.png', 'page' => 5, 'chapter_id' => 77, 'caption' => $caption, 'shows' => $shows, 'keywords' => $keywords, 'usable' => true]]],
+            $this->tmp
+        );
+    }
+
+    public function test_the_textbook_is_used_when_the_web_finds_nothing_and_says_what_it_is(): void
+    {
+        $search = $this->search(fn (string $q) => [[], null]);
+        $planner = $this->planner($search)->withTextbookImages($this->textbookFor('Stopwatch', 'A hand holding a stopwatch while a child runs', ['speed', 'stopwatch', 'measuring time']), 77);
+
+        $act = $this->cover($this->realOnlyCover($planner, new StoryImageLibrary(null)), $this->act());
+
+        $img = $act['nodes'][0]['image'];
+        $this->assertSame('textbook', $img['match_level']);
+        $this->assertSame('textbook', $img['source_kind']);
+        $this->assertSame(ImagePlanner::TEXTBOOK_LICENCE, $img['licence']);
+        $this->assertStringStartsWith('Picture from the textbook, about the same idea', $img['caption']);
+        $this->assertStringContainsString('page 5', $img['attribution']);
+        $this->assertMatchesRegularExpression('/^study-deck-image:\d+$/', $img['url']);
+        $this->assertArrayNotHasKey('hotspots', $img, 'a textbook picture\'s parts were not described for this scene');
+        // One textbook picture is placed once: the other scenes find no other and stay bare rather than repeat it or invent.
+        $this->assertSame('textbook', $this->levels($act)['s1']);
+        $this->assertCount(1, array_filter($this->levels($act), fn ($l) => $l === 'textbook'));
+    }
+
+    public function test_a_web_picture_is_preferred_to_the_textbook(): void
+    {
+        $search = $this->search(fn (string $q) => str_contains($q, 'speed') ? [[$this->candidate('speed time')], null] : [[], null]);
+        $planner = $this->planner($search)->withTextbookImages($this->textbookFor('Stopwatch', 'A hand holding a stopwatch while a child runs', ['speed', 'stopwatch', 'measuring time']), 77);
+
+        $act = $this->cover($this->realOnlyCover($planner, new StoryImageLibrary(null)), $this->act());
+
+        $this->assertSame('related', $act['nodes'][0]['image']['match_level']);
+        $this->assertNotContains('textbook', $this->levels($act));
+    }
+
+    public function test_a_textbook_picture_of_another_chapter_is_never_used(): void
+    {
+        $search = $this->search(fn (string $q) => [[], null]);
+        $planner = $this->planner($search)->withTextbookImages($this->textbookFor('Stopwatch', 'A hand holding a stopwatch while a child runs', ['speed', 'stopwatch', 'measuring time']), 78);
+
+        $act = $this->cover($this->realOnlyCover($planner, new StoryImageLibrary(null)), $this->act());
+
+        $this->assertNotContains('textbook', $this->levels($act));
+    }
 }

@@ -69,6 +69,10 @@ class SlidePlanner
             'questions_per_slide' => max(1, (int) ($l['questions_per_slide'] ?? self::MAX_QUESTIONS_PER_SLIDE)),
             'max_visuals' => max(0, (int) ($l['max_visuals'] ?? self::MAX_VISUALS)),
             'max_scenarios' => max(0, (int) ($l['max_scenarios'] ?? InteractionPlanner::MAX_SCENARIOS)),
+            // 1 = every concept-teaching slide (concept_intro, concept_visual) must carry a picture or diagram; 0 = pictures only where they earn a place.
+            'require_concept_visuals' => (int) (!empty($l['require_concept_visuals'])),
+            // How many times a rejected plan is sent back with its reasons (the default is 2; a run on a weaker model may ask for more).
+            'repair_rounds' => max(0, min(6, (int) ($l['repair_rounds'] ?? 2))),
         ];
     }
 
@@ -95,7 +99,8 @@ class SlidePlanner
         $prompt = $this->prompt($context, $map, $eligible);
         [$plan, $errors] = $this->read($this->ask($prompt), $map, $eligible);
 
-        for ($round = 1; $errors && $round <= 2; $round++) {
+        $rounds = self::limits($map)['repair_rounds'];
+        for ($round = 1; $errors && $round <= $rounds; $round++) {
             $min = $map['target_slides']['min'];
             $max = $map['target_slides']['max'];
             $retry = $prompt . "\n\nYour previous plan was rejected for these reasons:\n- "
@@ -109,10 +114,47 @@ class SlidePlanner
         }
 
         if ($errors) {
-            throw new \RuntimeException("Slide plan is invalid after two repair attempts:\n- " . implode("\n- ", $errors));
+            throw new \RuntimeException("Slide plan is invalid after " . ($rounds === 2 ? 'two' : $rounds) . " repair attempts:\n- " . implode("\n- ", $errors));
         }
 
-        return $this->normalise($plan);
+        return $this->withConceptVisuals($this->normalise($plan), $map);
+    }
+
+    /**
+     * A run that requires a picture on every concept slide (limits.require_concept_visuals) gets one asked for on each concept_intro and
+     * concept_visual slide the plan left without. The model is told to ask for them, but a plan is not rejected for forgetting: the pipeline
+     * itself adds a search for the slide's own concept, so the picture ladder (a web picture, then the textbook, then a diagram drawn from the
+     * plan's spec, then an explicit "no suitable picture") always runs for it. Never more than the run's visual cap.
+     *
+     * @param array<string,mixed> $plan a normalised plan
+     * @param array<string,mixed> $map LearningPlanBuilder::build()
+     * @return array<string,mixed>
+     */
+    public function withConceptVisuals(array $plan, array $map): array
+    {
+        $lim = self::limits($map);
+        if (!$lim['require_concept_visuals']) {
+            return $plan;
+        }
+        $have = count(array_filter((array) $plan['slides'], fn ($s) => !empty($s['visual']['required'])));
+        foreach ((array) $plan['slides'] as $i => $s) {
+            if (!in_array($s['slide_type'] ?? '', ['concept_intro', 'concept_visual'], true) || !empty($s['visual']['required'])) {
+                continue;
+            }
+            if ($have >= $lim['max_visuals']) {
+                break;
+            }
+            $id = (int) ((array) ($s['concept_ids'] ?? []))[0] ?? 0;
+            $name = trim((string) ($map['concepts'][$id]['name'] ?? $s['title'] ?? ''));
+            $words = array_values(array_filter(preg_split('/[^\p{L}]+/u', mb_strtolower($name), -1, PREG_SPLIT_NO_EMPTY) ?: [], fn ($w) => mb_strlen($w) >= 3 && !in_array($w, ['the', 'and', 'for', 'with', 'from', 'into', 'how', 'why', 'what'], true)));
+            if ($words === []) {
+                continue;
+            }
+            $plan['slides'][$i]['visual'] = ['required' => true, 'role' => 'phenomenon', 'query' => implode(' ', array_slice($words, 0, 5)), 'purpose' => (string) ($s['teaches'] ?? ('Shows ' . $name . '.')), 'added_by_pipeline' => true];
+            $have++;
+        }
+
+        return $plan;
     }
 
     /**
@@ -146,6 +188,11 @@ class SlidePlanner
             }
             if (isset($s['visual']['role'])) {
                 $plan['slides'][$i]['visual']['role'] = strtolower(trim((string) $s['visual']['role']));
+            }
+            // A diagram spec is only the FALLBACK for a picture that cannot be found: a malformed one, or one on a slide with no visual, is dropped
+            // here (the picture search still runs) instead of costing the whole plan a repair round.
+            if (!empty($s['diagram']) && (!is_array($s['diagram']) || DiagramRenderer::problems($s['diagram']) !== [] || empty($s['visual']['required']))) {
+                $plan['slides'][$i]['diagram'] = null;
             }
         }
 
@@ -264,6 +311,7 @@ class SlidePlanner
             }
 
             $v = $s['visual'] ?? null;
+
             if (is_array($v) && !empty($v['required'])) {
                 $visuals++;
                 if (!in_array($v['role'] ?? '', self::VISUAL_ROLES, true)) {
@@ -345,7 +393,7 @@ class SlidePlanner
     private function pictureRule(int $maxV): string
     {
         if ($maxV <= self::MAX_VISUALS) {
-            return '';
+            return '';   // (a run that requires concept visuals gets its own rule beside this one)
         }
 
         return "- Real pictures first. Wherever a concept has something real to look at (a specimen, a micrograph, an instrument, an experiment set up), ask for the PHOTOGRAPH: give the visual a role of object, instrument or phenomenon and a short, concrete search query that names the thing, and ALSO put a \"diagram\" spec on the slide as the fallback (the system uses an openly licensed photograph when it finds a suitable one and draws your diagram when it does not). Use role \"diagram\" on its own only for a process, a comparison or a link between ideas that no single photograph shows. Aim for a real photograph on about half of the slides that have a visual.
@@ -404,7 +452,9 @@ class SlidePlanner
         $roles = implode(', ', self::VISUAL_ROLES);
         $framing = implode(', ', self::FRAMING);
         $practiceRule = $this->practiceRule($maxP, $maxQ);
-        $pictureRule = $this->pictureRule($maxV);
+        $pictureRule = $this->pictureRule($maxV) . ($lim['require_concept_visuals']
+            ? "\n- EVERY concept_intro and concept_visual slide MUST have a required visual: a photograph, map or real labelled figure where one exists, otherwise a role \"diagram\" with a \"diagram\" spec built only from words and numbers in the chapter text. A concept slide with no visual is rejected. Give each slide its own query (do not reuse one query for several slides)."
+            : '');
         $methodRule = TeachingMethodProfile::plannerRule($map['teaching_method'] ?? null);
 
         return <<<PROMPT

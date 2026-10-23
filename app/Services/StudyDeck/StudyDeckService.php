@@ -123,7 +123,7 @@ class StudyDeckService
 
         [$context, $selection, $eligible, $map] = $this->prepare($raw, $options, $say);
 
-        $say('plan', 'Stage 1: planning slides with Claude');
+        $say('plan', 'Stage 1: planning slides with the model');
         try {
             $plan = $this->planner->plan($context, $map, $eligible);
         } catch (\RuntimeException $e) {
@@ -139,7 +139,7 @@ class StudyDeckService
         }
         $say('plan', count($plan['slides']) . ' slides planned');
 
-        $say('content', 'Stage 2: writing slide content with Claude');
+        $say('content', 'Stage 2: writing slide content with the model');
         $content = $this->contentGenerator->generate($context, $map, $plan, fn ($done, $total) => $say('content', "$done/$total slides written"));
 
         $say('images', 'Finding openly licensed images');
@@ -301,6 +301,10 @@ class StudyDeckService
     private function prepare(array $raw, array $options, callable $say): array
     {
         $context = $this->contextBuilder->assemble($raw);
+        // The chapter's own textbook pictures, a fallback AFTER the web search found nothing suitable (none configured: nothing changes).
+        $textbook = TextbookImages::fromConfig();
+        $this->imagePlanner->withTextbookImages($textbook, (int) ($raw['chapter']['id'] ?? 0));
+        $this->story?->withTextbookImages($textbook, (int) ($raw['chapter']['id'] ?? 0));
         $say('context', sprintf('%d topics, %d concepts, %d without intelligence', count($context['topics']), count($context['concepts']), count($context['unmatched_concepts'])));
 
         $selection = $this->questionSelector->select(
@@ -334,6 +338,13 @@ class StudyDeckService
         // A deck made for a teaching method must still follow it after every later stage.
         if (!empty($map['teaching_method'])) {
             $methodErrors = TeachingMethodProfile::planErrors($map['teaching_method'], $plan['slides']);
+            // ...and what was actually WRITTEN must show the method's sequence (predictions and evidence; materials, steps and recording), not only the slide types.
+            $texts = [];
+            foreach ($plan['slides'] as $i => $s) {
+                $n = $s['n'] ?? ($i + 1);
+                $texts[] = (string) json_encode([$content[$n] ?? ($content[$i] ?? null), $interactions[$n] ?? ($interactions[$i] ?? null)], JSON_UNESCAPED_UNICODE);
+            }
+            $methodErrors = array_merge($methodErrors, TeachingMethodProfile::contentErrors($map['teaching_method'], $texts));
             $report['teaching_method'] = ['key' => $map['teaching_method'], 'followed' => $methodErrors === [], 'errors' => $methodErrors];
             if ($methodErrors) {
                 $report['ok'] = false;

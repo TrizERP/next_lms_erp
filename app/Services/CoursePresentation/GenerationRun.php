@@ -4,6 +4,7 @@ namespace App\Services\CoursePresentation;
 
 use App\Services\ContentGenerationService;
 use App\Services\StudyDeck\StudyDeckImages;
+use App\Services\StudyDeck\StudyDeckPublisher;
 use Closure;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
@@ -193,6 +194,12 @@ class GenerationRun
             $args = ['chapter' => $chapterId, '--tenant' => $tenant, '--out' => $bundle, '--teaching-method' => $status['method']];
             if (($status['format'] ?? '') === 'branching_scenario') {
                 $args['--template'] = \App\Services\StudyDeck\Story\StoryTemplate::KEY;
+            } else {
+                // Slides: every concept slide must show a picture or diagram, and the model is the configured Claude one or else Gemini.
+                $args['--require-concept-visuals'] = true;
+                $args['--max-visuals'] = (int) config('course_presentation_pilot.generation.max_visuals', 24);
+                $args['--repair-rounds'] = (int) config('course_presentation_pilot.generation.repair_rounds', 4);
+                $args['--executor'] = app(ModelAvailability::class)->slidesExecutor();
             }
             $code = ($this->artisan)('lms:generate-study-deck', $args, $out);
         } catch (\Throwable $e) {
@@ -355,18 +362,21 @@ class GenerationRun
         if ($blocking !== []) {
             return ['ok' => false, 'message' => 'The draft does not meet the presentation quality rules and cannot be stored: ' . implode(' ', array_slice(array_map(fn ($p) => ($p['slide'] ? 'Slide ' . $p['slide'] . ': ' : '') . $p['message'], $blocking), 0, 3)), 'status' => $status];
         }
-        // No second presentation beside one that is already stored.
-        if ($this->storedPresentation($chapterId, $tenant, (string) ($status['format'] ?? 'interactive_slides')) !== null) {
-            return ['ok' => false, 'message' => 'A presentation is already stored for this chapter; this draft would be a duplicate.', 'status' => $status];
+        // No second presentation beside one that is already stored FOR THIS teaching method and format. A presentation stored
+        // for another method (or none) is a different item and neither blocks this draft nor is replaced by it.
+        $format = (string) ($status['format'] ?? 'interactive_slides');
+        $method = (string) ($status['method'] ?? '');
+        if ($this->storedPresentation($chapterId, $tenant, $format, $method) !== null) {
+            return ['ok' => false, 'message' => 'A presentation is already stored for this chapter, teaching method and format; this draft would be a duplicate.', 'status' => $status];
         }
 
         $out = new BufferedOutput();
         try {
-            $code = ($this->artisan)('lms:store-study-deck', ['chapter' => $chapterId, '--bundle' => $bundle, '--tenant' => $tenant, '--user' => $userId, '--profile' => $profile], $out);
+            $code = ($this->artisan)('lms:store-study-deck', ['chapter' => $chapterId, '--bundle' => $bundle, '--tenant' => $tenant, '--user' => $userId, '--profile' => $profile, '--teaching-method' => $method], $out);
         } catch (\Throwable $e) {
             return ['ok' => false, 'message' => 'The draft could not be stored: ' . $e->getMessage(), 'status' => $status];
         }
-        $row = $code === 0 ? $this->storedPresentation($chapterId, $tenant, (string) ($status['format'] ?? 'interactive_slides')) : null;
+        $row = $code === 0 ? $this->storedPresentation($chapterId, $tenant, $format, $method) : null;
         if ($row === null) {
             return ['ok' => false, 'message' => 'The draft could not be stored. ' . (trim($out->fetch()) ?: 'No details were recorded.'), 'status' => $status];
         }
@@ -397,15 +407,26 @@ class GenerationRun
         return $status;
     }
 
-    /** The visible stored study-deck presentation row of the chapter and school, if any. @return array<string,mixed>|null */
-    public function storedPresentation(int $chapterId, int $tenant, string $format = 'interactive_slides'): ?array
+    /**
+     * The visible stored study-deck row of the chapter and school made for exactly this format AND teaching method, if any.
+     * With no method it is the deck stored without one (the chapter's original presentation): a deck stored for a method is
+     * never returned for another, and never for none.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function storedPresentation(int $chapterId, int $tenant, string $format = 'interactive_slides', ?string $method = null): ?array
     {
         // A story lesson and a Classroom Presentation are separate content items: each is a duplicate only of its own kind.
         $story = $format === 'branching_scenario';
+        $kind = $story ? 'study\\_story\\_' : 'study\\_deck\\_';
+        $delimiter = str_replace('_', '\\_', StudyDeckPublisher::VARIANT_DELIMITER);
         $rows = DB::table('content_master')
             ->where('chapter_id', $chapterId)->where('sub_institute_id', $tenant)
-            ->when($story, fn ($q) => $q->where('content_category', \App\Services\StudyDeck\Story\StoryTemplate::CATEGORY)->where('filename', 'like', 'study\\_story\\_%'),
-                fn ($q) => $q->whereIn('content_category', (array) config('course_presentation_pilot.presentation_categories', []))->where('filename', 'not like', 'study\\_story\\_%'))
+            ->when($story, fn ($q) => $q->where('content_category', \App\Services\StudyDeck\Story\StoryTemplate::CATEGORY),
+                fn ($q) => $q->whereIn('content_category', (array) config('course_presentation_pilot.presentation_categories', [])))
+            ->when($method !== null,
+                fn ($q) => $q->where('filename', 'like', $kind . str_replace('_', '\\_', $method) . $delimiter . '%'),
+                fn ($q) => $q->where('filename', 'like', $kind . '%')->where('filename', 'not like', '%' . $delimiter . '%'))
             ->where(fn ($q) => $q->whereNull('show_hide')->orWhere('show_hide', '<>', 0))
             ->orderByDesc('id')->get(['id', 'chapter_id', 'filename'])->map(fn ($r) => (array) $r)->all();
         foreach ($rows as $row) {

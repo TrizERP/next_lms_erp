@@ -433,7 +433,8 @@ return [
             // The timeout for background generation (study decks, study documents). The PAL Learn page answers a waiting student and
             // keeps 6 s; generation waits for the answer. Measured 2026-10-22 against the anonymous API: 9-17 s per search from this
             // network, so 6 s turned every search into a silent "no image" (1,595 timeouts in the logs, no other kind of failure).
-            'batch_timeout' => (int) env('OPENVERSE_BATCH_TIMEOUT', 40),
+            // 2026-10-23: a single anonymous query took 49 s from this network (the 40 s limit turned ~half the searches into "no image"), so 100 s.
+            'batch_timeout' => (int) env('OPENVERSE_BATCH_TIMEOUT', 100),
 
             // Broadest license set that still guarantees free reuse — nothing
             // ND (no-derivatives) is excluded because the point of the filter

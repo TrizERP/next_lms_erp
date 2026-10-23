@@ -34,7 +34,9 @@ class GenerateStudyDeckCommand extends Command
     protected $signature = 'lms:generate-study-deck
         {chapter : chapter_master.id}
         {--tenant=1 : sub_institute_id}
-        {--executor= : api | cli (cli is dev-only; default from config claude.executor)}
+        {--executor= : api | cli | gemini (cli is dev-only; gemini writes slides through the estate Gemini client and key pool; default from config claude.executor)}
+        {--repair-rounds= : how many times a rejected slide plan is sent back to the model with its reasons (default 2, at most 6)}
+        {--require-concept-visuals : every concept_intro / concept_visual slide must carry a picture or diagram (the plan is refused otherwise)}
         {--out= : bundle directory (default storage/app/study-deck/chapter-<id>)}
         {--teaching-method= : shape the deck for a teaching method (explicit_instruction, inquiry_based, problem_based, project_based, experiential, collaborative, socratic, flipped_classroom, differentiated_mastery, gamified); none keeps the default deck}
         {--template= : build the lesson with a reusable template instead of the slide planner (story_branching_scenario: a story with an act per topic, in the study-deck story player)}
@@ -100,6 +102,8 @@ class GenerateStudyDeckCommand extends Command
 
         // A story lesson is always written by Gemini (the estate's own client and key pool): never the Anthropic key or the Claude CLI.
         $story = $this->option('template') === \App\Services\StudyDeck\Story\StoryTemplate::KEY;
+        $gemini = $story || $executor === 'gemini';
+        $gemini = $story || $executor === 'gemini';
         $this->line($story ? 'Model: <options=bold>gemini</> (story lessons always use Gemini)' : 'Executor: <options=bold>' . $executor . '</>' . ($executor === 'cli' ? ' (dev-only, tools disabled)' : ''));
 
         try {
@@ -107,7 +111,7 @@ class GenerateStudyDeckCommand extends Command
             if (!$replay && $this->option('images-from')) {
                 throw new RuntimeException('--images-from works with --replay (it changes the pictures of a deck that is already planned).');
             }
-            $completer = $replay ? $this->noModel() : ($story ? $this->geminiCompleter($tenant) : $this->completer($executor, $content));
+            $completer = $replay ? $this->noModel() : ($gemini ? $this->geminiCompleter($tenant) : $this->completer($executor, $content));
             // Pictures go straight into the database (study_deck_images) and the bundle carries only their
             // references: a run writes no picture file anywhere. Publishing is lms:store-study-deck's job.
             $images = $this->pictureStore($tenant, $chapterId, $isolated);
@@ -150,6 +154,10 @@ class GenerateStudyDeckCommand extends Command
                     'max_practice' => $this->option('max-practice') ?: null,
                     'questions_per_slide' => $this->option('per-slide') ?: null,
                     'max_visuals' => $this->option('max-visuals') ?: null,
+                    'require_concept_visuals' => $this->option('require-concept-visuals') ? 1 : null,
+                    'repair_rounds' => $this->option('repair-rounds') !== null && $this->option('repair-rounds') !== '' ? (int) $this->option('repair-rounds') : null,
+                    'require_concept_visuals' => $this->option('require-concept-visuals') ? 1 : null,
+                    'repair_rounds' => $this->option('repair-rounds') !== null && $this->option('repair-rounds') !== '' ? (int) $this->option('repair-rounds') : null,
                     'max_scenarios' => $this->option('max-scenarios') ?: null,
                 ], fn ($v) => $v !== null),
             ];
@@ -326,7 +334,7 @@ class GenerateStudyDeckCommand extends Command
     {
         $client = app(\App\Domain\AI\Support\GeminiClient::class)->forInstitute($tenant);
         if (!$client->isConfigured()) {
-            throw new RuntimeException('No Gemini API key (ai_api_keys api_type=gemini, or GEMINI_API_KEY). Story lessons are written by Gemini only.');
+            throw new RuntimeException('No Gemini API key (ai_api_keys api_type=gemini, or GEMINI_API_KEY).');
         }
         $completer = new \App\Services\StudyDeck\Story\GeminiStoryCompleter($client);
         $this->line('  Gemini model: ' . $completer->model());

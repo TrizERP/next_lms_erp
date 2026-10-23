@@ -29,6 +29,8 @@ final class StoryPictureCover
     public const RELATED = ImagePlanner::LEVEL_RELATED;
     public const TOPIC = ImagePlanner::LEVEL_TOPIC;
     public const REUSED = 'reused';
+    /** A picture from the chapter's own textbook: used only after the web search found nothing suitable. */
+    public const TEXTBOOK = 'textbook';
     public const AI = 'ai_generated';
     public const GENERIC = ImagePlanner::LEVEL_GENERIC;
     public const PLACEHOLDER = 'placeholder';
@@ -40,7 +42,7 @@ final class StoryPictureCover
     public array $log = [];
 
     /** @var array<string,int> pictures this pass gave, by rung */
-    public array $given = [self::RELATED => 0, self::TOPIC => 0, self::REUSED => 0, self::AI => 0, self::GENERIC => 0, self::PLACEHOLDER => 0];
+    public array $given = [self::RELATED => 0, self::TOPIC => 0, self::TEXTBOOK => 0, self::REUSED => 0, self::AI => 0, self::GENERIC => 0, self::PLACEHOLDER => 0];
 
     /** @var array<int,array<string,mixed>> the generic educational pictures this run can use (found now, or kept from an earlier run) */
     private array $genericPool = [];
@@ -233,6 +235,14 @@ final class StoryPictureCover
             }
         }
 
+        // 2b: the chapter's own textbook, when the web search found nothing suitable (it comes before any picture reused, generated or generic).
+        if (($book = $this->images->textbookPicture($title, $purpose, $teaches)) !== null) {
+            $usedUrls[] = (string) $book['source_image_url'];
+            $this->log[$ref][] = 'textbook: ' . ($book['source_url'] ?? '?');
+
+            return $this->label(['role' => 'scene'] + $book, self::TEXTBOOK, $title, $ref);
+        }
+
         // 3: a verified picture accepted before, when it is related.
         foreach ($this->library->related($words, $usedUrls) as $candidate) {
             $reused = $this->images->reuse($candidate);
@@ -380,6 +390,7 @@ final class StoryPictureCover
             self::RELATED => 'Related picture, not this exact scene',
             self::TOPIC => 'Picture of the wider topic, not this exact scene',
             self::REUSED => 'A related picture also used earlier in this lesson, not this exact scene',
+            self::TEXTBOOK => 'Picture from the textbook, about the same idea',
             self::GENERIC => 'Generic picture for this topic, not this exact scene',
             default => null,
         };
@@ -441,6 +452,7 @@ final class StoryPictureCover
             self::RELATED => 'a related picture (not this exact scene)',
             self::TOPIC => 'a picture of the wider topic',
             self::REUSED => 'a related picture reused from earlier in the lesson',
+            self::TEXTBOOK => 'a picture from the chapter textbook',
             self::GENERIC => 'a generic educational picture for the subject',
             self::AI => 'an AI-generated illustration',
             self::PLACEHOLDER => 'a labelled placeholder',
@@ -463,7 +475,7 @@ final class StoryPictureCover
     {
         $kinds = ['scene' => 0, 'decision' => 0, 'ending' => 0];
         $own = ['scene' => 0, 'decision' => 0, 'ending' => 0];
-        $levels = ['exact' => 0, self::RELATED => 0, self::TOPIC => 0, self::REUSED => 0, self::AI => 0, self::GENERIC => 0, self::PLACEHOLDER => 0, 'drawn_diagram' => 0];
+        $levels = ['exact' => 0, self::RELATED => 0, self::TOPIC => 0, self::TEXTBOOK => 0, self::REUSED => 0, self::AI => 0, self::GENERIC => 0, self::PLACEHOLDER => 0, 'drawn_diagram' => 0];
         $withHotspots = 0;
         $hotspotParts = 0;
         $bare = [];
