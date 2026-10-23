@@ -62,8 +62,23 @@ class InactiveStudentReportController extends Controller
         ->orderByRaw('tab_sort_order,sort_order')
         ->get()->toArray();    
         
+        // `common_to_all = 1` rows are stored once per tenant, so the query above
+        // returns every tenant's copy of each common field. Keep one row per field
+        // (the tenant's own row wins over a copy owned by another tenant); the id
+        // is only used later to look the field up, and any common row resolves it.
+        $unique = [];
+        foreach ($tblcustoms as $value) {
+            $fieldKey = $value->column_header.'|'.$value->field_name.'|'.$value->field_label.'|'.$value->table_name;
+            if (! isset($unique[$fieldKey])) {
+                $unique[$fieldKey] = $value;
+            } elseif ((string) $value->sub_institute_id === (string) $sub_institute_id
+                && (string) $unique[$fieldKey]->sub_institute_id !== (string) $sub_institute_id) {
+                $unique[$fieldKey] = $value;
+            }
+        }
+
         $headerType =[];
-        foreach ($tblcustoms as $key => $value) {
+        foreach ($unique as $value) {
             $headerType[$value->column_header][]=$value;
         }
         return $headerType;
