@@ -231,7 +231,7 @@ class TransportationApiController extends Controller
                 $records = $this->vanWise($request);
                 break;
             case 'van-summary-report':
-                $records = $this->vanSummary($tenantId, $syear);
+                $records = $this->vanSummary($request, $tenantId, $syear);
                 break;
         }
 
@@ -405,7 +405,7 @@ class TransportationApiController extends Controller
         return $query->distinct()->orderBy('student.first_name')->get();
     }
 
-    private function vanSummary(int $tenantId, int $syear)
+    private function vanSummary(Request $request, int $tenantId, int $syear)
     {
         return DB::table('transport_vehicle as vehicle')
             ->join('transport_school_shift as shift', 'shift.id', '=', 'vehicle.school_shift')
@@ -417,6 +417,8 @@ class TransportationApiController extends Controller
             })
             ->select('vehicle.id as vehicle_id', 'shift.id as shift_id', 'vehicle.title as vehicle_name', 'shift.shift_title', DB::raw('count(distinct mapping.student_id) as student_count'))
             ->where('vehicle.sub_institute_id', $tenantId)->where('mapping.syear', $syear)
+            ->when($request->filled('van'), fn ($query) => $query->where('vehicle.id', $request->integer('van')))
+            ->when($request->filled('shift'), fn ($query) => $query->where('shift.id', $request->integer('shift')))
             ->groupBy('vehicle.id', 'shift.id', 'vehicle.title', 'shift.shift_title')->orderBy('vehicle.title')->get();
     }
 
