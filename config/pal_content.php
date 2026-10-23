@@ -389,6 +389,12 @@ return [
     'image' => [
         'enabled' => env('PAL_IMAGE_ENABLED', true),
 
+        // The User-Agent sent when searching for and downloading pictures. Wikimedia's policy (meta.wikimedia.org/wiki/User-Agent_policy) requires
+        // contact information in it; without it upload.wikimedia.org answers uncached files with HTTP 429. Measured 2026-10-22 on eight uncached
+        // files, none shared between the two groups: 4 of 4 refused without a contact URL, 4 of 4 served with one. Set IMAGE_FETCH_USER_AGENT to
+        // include an address the school monitors (an email or a URL); the default names the public repository.
+        'user_agent' => env('IMAGE_FETCH_USER_AGENT', 'EduERP-StudyDeck/1.0 (+https://github.com/TrizERP/next_lms_erp; educational content, openly licensed images only)'),
+
         // Extra picture sources for the story lesson's picture pass (see NasaImageSearch and PexelsImageSearch). Both are official APIs.
         // NASA Image and Video Library needs no key. Pexels does nothing until PEXELS_API_KEY is set (its key is sent in a header, never a URL).
         // Unsplash is not used: its API terms require hotlinking the URLs it returns, and the picture library keeps its own copy of a picture.
@@ -423,6 +429,11 @@ return [
 
             'max_results' => 12,
             'timeout'     => 6,
+
+            // The timeout for background generation (study decks, study documents). The PAL Learn page answers a waiting student and
+            // keeps 6 s; generation waits for the answer. Measured 2026-10-22 against the anonymous API: 9-17 s per search from this
+            // network, so 6 s turned every search into a silent "no image" (1,595 timeouts in the logs, no other kind of failure).
+            'batch_timeout' => (int) env('OPENVERSE_BATCH_TIMEOUT', 40),
 
             // Broadest license set that still guarantees free reuse — nothing
             // ND (no-derivatives) is excluded because the point of the filter

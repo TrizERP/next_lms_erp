@@ -44,6 +44,13 @@ class StoreStudyDeckCommand extends Command
         $dir = rtrim((string) ($this->option('bundle') ?: storage_path('app/study-deck/chapter-' . $chapterId)), '/\\');
         $dry = (bool) $this->option('dry-run');
 
+        // A dry-run bundle's pictures live in a local file; its references mean other pictures (or none) in the shared table. Checked before anything else, even --dry-run.
+        if (\App\Services\StudyDeck\IsolatedImageDatabase::isIsolatedBundle($dir)) {
+            $this->error('This bundle was made with --isolated-images: its pictures are not in the shared study_deck_images table, so it cannot be stored. Generate it again without --isolated-images to store a deck.');
+
+            return self::FAILURE;
+        }
+
         $chapter = chapterModel::find($chapterId);
         if (!$chapter) {
             $this->error("Chapter $chapterId does not exist.");

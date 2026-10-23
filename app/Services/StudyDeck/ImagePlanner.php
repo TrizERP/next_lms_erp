@@ -36,6 +36,20 @@ class ImagePlanner
     /** What a search stopped by its deadline answers: not a verdict on the query, so it is never remembered as a miss. */
     public const TIME_UP = 'time limit reached';
 
+    /** How close a found picture is to its scene. Only the first is the strict check; the others relax the relevance gates (never licence, type, size or sharpness). */
+    public const LEVEL_EXACT = 'exact';
+    public const LEVEL_RELATED = 'related';
+    public const LEVEL_TOPIC = 'topic';
+
+    /** Marks a purpose as "a related picture is acceptable": both judges read it and accept the same kind of subject, not only this exact scene. */
+    public const RELATED_PREFIX = 'RELATED PICTURE: ';
+
+    /** What a related-picture search answers when no relevance review or picture check is available to vouch for what it finds. */
+    public const NEEDS_CHECK = 'a related picture needs a relevance check and none is available';
+
+    /** Words that name a whole subject or setting, so they say nothing about whether a picture shows THIS subject (a book cover is not evidence for "science"). */
+    private const GENERIC = ['science', 'sciences', 'school', 'class', 'classroom', 'lesson', 'study', 'student', 'students', 'education', 'educational', 'learning', 'teacher', 'general', 'introduction'];
+
     private const SIGNIFICANT_MIN_LENGTH = 3;
 
     /** Ranked candidates examined per search pass. */
@@ -407,28 +421,184 @@ class ImagePlanner
     }
 
     /**
+     * A picture accepted earlier, brought back from the picture store instead of searched for again. Everything that made it usable the first
+     * time is checked again: the bytes are still there and still a PNG, JPEG or WebP, it still has detail, its licence is still accepted and a
+     * credit it needs is still recorded. The credit and source are the original's, unchanged. Null when any of that fails.
+     *
+     * @param array<string,mixed> $record a record ImagePlanner::find() returned earlier (it carries `fetched_from`)
+     * @return array<string,mixed>|null
+     */
+    public function reuse(array $record): ?array
+    {
+        $from = (string) ($record['fetched_from'] ?? '');
+        if ($from === '' || !($this->store instanceof SourceImageCache) || ($hit = $this->store->cached($from)) === null) {
+            return null;
+        }
+        $info = @getimagesizefromstring($hit['bytes']);
+        if ($info === false || !in_array($info['mime'] ?? '', ['image/jpeg', 'image/png', 'image/webp'], true) || min((int) $info[0], (int) $info[1]) < 240 || !self::hasDetail($hit['bytes'])) {
+            return null;
+        }
+        $licence = (string) ($record['licence'] ?? '');
+        // A picture an image model made has no licence and no credit to check; what it is called is recorded on it.
+        $generated = ($record['match_level'] ?? '') === 'ai_generated';
+        if (!$generated && (!$this->licenceAccepted($licence) || (preg_match(self::NEEDS_CREDIT, $licence) && trim((string) ($record['attribution'] ?? '')) === ''))) {
+            return null;
+        }
+
+        return [
+            'url' => $this->store->store($hit['bytes'], (string) $info['mime'], $from),
+            'width' => (int) $info[0],
+            'height' => (int) $info[1],
+            'sha1' => sha1($hit['bytes']),
+            'sha256' => hash('sha256', $hit['bytes']),
+        ] + $record;
+    }
+
+    /**
+     * A picture made for this scene by an image model. It is NOT a photograph and carries no licence or credit (nobody else made it); the record
+     * says what made it, and the alt text and caption say so too. The bytes face the same checks as any stored picture: a real PNG, JPEG or WebP
+     * of a usable size.
+     *
+     * @param array<string,mixed> $meta kind, model, alt, caption, prompt, query
+     * @return array<string,mixed>
+     * @throws \InvalidArgumentException when the bytes are not a usable picture
+     */
+    public function generated(string $bytes, string $mime, array $meta): array
+    {
+        $info = $bytes !== '' && strlen($bytes) <= 8 * 1024 * 1024 ? @getimagesizefromstring($bytes) : false;
+        if ($info === false || !in_array($info['mime'] ?? '', ['image/jpeg', 'image/png', 'image/webp'], true)) {
+            throw new \InvalidArgumentException('the generated picture is not a PNG, JPEG or WebP of acceptable size');
+        }
+        if (min((int) $info[0], (int) $info[1]) < 240) {
+            throw new \InvalidArgumentException('the generated picture is too small (' . $info[0] . 'x' . $info[1] . ')');
+        }
+
+        return [
+            'type' => 'diagram',
+            'role' => 'scene',
+            'layout' => 'ai_illustration',
+            'match_level' => 'ai_generated',
+            'url' => $this->store->store($bytes, (string) $info['mime'], $key = 'ai-illustration:' . sha1((string) ($meta['prompt'] ?? $bytes))),
+            'fetched_from' => $key,
+            'width' => (int) $info[0],
+            'height' => (int) $info[1],
+            'sha1' => sha1($bytes),
+            'sha256' => hash('sha256', $bytes),
+            'alt' => trim((string) ($meta['alt'] ?? '')),
+            'caption' => trim((string) ($meta['caption'] ?? '')),
+            'query' => (string) ($meta['query'] ?? ''),
+            'licence' => null,
+            'source_url' => null,
+            'creator' => null,
+            'attribution_required' => false,
+            'attribution' => 'AI-generated illustration' . (($meta['model'] ?? '') !== '' ? ' (' . $meta['model'] . ')' : '') . ' made for this lesson. Not a photograph.',
+            'generated' => ['kind' => (string) ($meta['kind'] ?? 'ai_illustration'), 'model' => (string) ($meta['model'] ?? ''), 'prompt_sha1' => sha1((string) ($meta['prompt'] ?? ''))],
+            'review' => ['relevant' => true, 'reason' => (string) ($meta['review'] ?? 'generated from the scene text'), 'pixel_checked' => (bool) ($meta['pixel_checked'] ?? false)],
+        ];
+    }
+
+    /**
+     * Look at a picture an image model made, with the picture check (when there is one): does it show the scene? Null when there is no check to
+     * ask. An unverified answer (the check could not run) is returned as it is, for the caller to refuse.
+     *
+     * @return array<string,mixed>|null
+     */
+    public function checkIllustration(string $bytes, string $mime, string $query, string $purpose, string $teaches): ?array
+    {
+        return $this->pixelJudge === null ? null : ($this->pixelJudge)($bytes, $mime, $query, \App\Services\StudyDeck\Story\StoryPixelJudge::AI_PREFIX . $purpose, $teaches);
+    }
+
+    /**
+     * The last rung of the ladder: a drawn, plainly labelled placeholder for a scene nothing better could be found for. A real PNG; no source,
+     * licence or credit, and it says on its face (and in its alt text and caption) that it is a placeholder, never that it shows the scene.
+     *
+     * @param array<int,string> $ideas up to three concept names
+     * @return array<string,mixed>
+     */
+    public function placeholder(string $topic, array $ideas): array
+    {
+        $stamp = 'Placeholder illustration: no picture of this scene was available';
+        $file = ($this->diagrams ?? new DiagramRenderer())->placeholder($topic, $ideas, $stamp);
+
+        return [
+            'type' => 'diagram',
+            'role' => 'scene',
+            'layout' => 'placeholder',
+            'match_level' => 'placeholder',
+            'url' => $this->store->store($file['bytes'], $file['mime']),
+            'width' => $file['width'],
+            'height' => $file['height'],
+            'sha1' => sha1($file['bytes']),
+            'sha256' => hash('sha256', $file['bytes']),
+            'texts' => $file['texts'],
+            'alt' => 'Placeholder illustration for this scene (topic: ' . trim($topic) . '). No picture of the scene itself was available.',
+            'caption' => 'Placeholder: no picture of this scene was available.',
+            'licence' => null,
+            'source_url' => null,
+            'creator' => null,
+            'attribution_required' => false,
+            'attribution' => '',
+            'review' => ['relevant' => true, 'reason' => 'drawn from the scene\'s own topic and ideas; a labelled placeholder, not a picture of the scene'],
+        ];
+    }
+
+    /**
      * Wikimedia first (the estate's configured, relevance-tuned source); if that
      * yields nothing usable, one more try across every Openverse source. Both
      * passes face the same licence, match and download checks.
      *
      * @return array<string,mixed>
      */
-    public function find(string $query, array $excludeUrls = [], string $purpose = "", string $teaches = ""): array
+    public function find(string $query, array $excludeUrls = [], string $purpose = "", string $teaches = "", string $level = self::LEVEL_EXACT): array
     {
         // With Wikimedia left out, the one search covers every other Openverse source at once instead of asking Wikimedia first.
-        $first = $this->attempt($query, $excludeUrls, in_array('wikimedia', $this->skip, true) ? '' : null, $purpose, $teaches);
+        $first = $this->attempt($query, $excludeUrls, in_array('wikimedia', $this->skip, true) ? '' : null, $purpose, $teaches, $level);
         if (in_array('wikimedia', $this->skip, true) && isset($first['missing'])) {
             return $first;
         }
-        if (!isset($first['missing']) || str_contains($first['missing'], 'disabled') || str_contains($first['missing'], 'licence') || $first['missing'] === self::TIME_UP || $this->timeUp()) {
+        if (!isset($first['missing']) || str_contains($first['missing'], 'disabled') || str_starts_with($first['missing'], self::SEARCH_FAILED) || str_contains($first['missing'], 'licence') || $first['missing'] === self::TIME_UP || $this->timeUp()) {
             return $first;
         }
-        $second = $this->attempt($query, $excludeUrls, "", $purpose, $teaches);
+        $second = $this->attempt($query, $excludeUrls, "", $purpose, $teaches, $level);
 
         return isset($second['missing']) ? $first : $second;
     }
 
-    private function attempt(string $query, array $excludeUrls, ?string $source, string $purpose, string $teaches = ""): array
+    /** Prefix of the reason given when the search itself failed (timeout, HTTP error), as opposed to finding nothing. */
+    public const SEARCH_FAILED = 'image search failed: ';
+
+    /**
+     * Why this attempt's searches failed technically, or null. Null unless EVERY search the attempt made failed (a timeout, an HTTP
+     * error, an unreadable answer): a valid answer with no results, or one served from the cache, is a real "nothing found".
+     */
+    private function searchFailure(): ?string
+    {
+        $rows = $this->search->searches;
+        if ($rows === []) {
+            return null;
+        }
+        foreach ($rows as $row) {
+            if (!in_array($row['outcome'] ?? '', ['timeout', 'http_error', 'error', 'malformed'], true)) {
+                return null;
+            }
+        }
+        $first = $rows[0];
+
+        return self::SEARCH_FAILED . match ($first['outcome']) {
+            'timeout' => 'timed out',
+            'http_error' => 'HTTP ' . ($first['status'] ?? '?') . (!empty($first['retry_after']) ? ' (retry after ' . $first['retry_after'] . ' s)' : ''),
+            'malformed' => 'unreadable answer',
+            default => 'request error',
+        };
+    }
+
+    /** A Wikimedia SVG: not stored as is, but Wikimedia renders it as a PNG (see preferThumbnail()). */
+    private function isWikimediaSvg(string $url): bool
+    {
+        return str_starts_with($url, 'https://upload.wikimedia.org/') && (bool) preg_match('/\.svg(\?|$)/i', $url);
+    }
+
+    private function attempt(string $query, array $excludeUrls, ?string $source, string $purpose, string $teaches = "", string $level = self::LEVEL_EXACT): array
     {
         if ($this->timeUp()) {
             return ['missing' => self::TIME_UP];
@@ -436,11 +606,18 @@ class ImagePlanner
         if (!$this->search->available()) {
             return ['missing' => 'image search is disabled'];
         }
+        // A related or topic picture is accepted on weaker keyword evidence, so something must LOOK at it: with neither a relevance review nor a
+        // picture check there is nothing to stand behind it, and the ladder goes on to the next rung instead.
+        if ($level !== self::LEVEL_EXACT && $this->judge === null && $this->pixelJudge === null) {
+            return ['missing' => self::NEEDS_CHECK];
+        }
 
         // Several ranked candidates, not just the top one: for abstract topics the
         // best keyword match is often the wrong picture and the right one is third.
-        $candidates = $this->search->rankedImagesFor($query, self::CANDIDATES, $this->minScore, $source);
+        $this->search->searches = [];   // this attempt's searches only, so an earlier scene's failure is never blamed on this one
+        $candidates = $this->search->rankedImagesFor($query, self::CANDIDATES, $level === self::LEVEL_EXACT ? $this->minScore : min(1.0, $this->minScore), $source);
         $this->stats['searches']++;
+        $searchFailure = $this->searchFailure();
         // The extra sources (NASA for astronomy and Earth scenes, Pexels when a key is configured) are asked once, with the first pass.
         if ($source === null || ($source === '' && $this->skip !== [])) {
             foreach ($this->active as $name) {
@@ -458,7 +635,8 @@ class ImagePlanner
             $this->tally((string) ($c['provider'] ?? 'openverse'), 'candidates');
         }
         if (!$candidates) {
-            return ['missing' => 'no sufficiently relevant, openly licensed image found'];
+            // A search that could not be made says nothing about whether a picture exists; only an answer with no usable result does.
+            return ['missing' => $searchFailure ?? 'no sufficiently relevant, openly licensed image found'];
         }
 
         $usable = [];
@@ -473,8 +651,9 @@ class ImagePlanner
                 $why[] = 'licence "' . ($image['license'] ?? 'unknown') . '" is not accepted';
                 $this->stats['rejected_licence']++;
                 $this->event($image, 'rejected', 'licence not accepted');
-            } elseif (preg_match('/\.(svg|tiff?|pdf|djvu|ogv|webm|ogg|gif)(\?|$)/i', (string) ($image['url'] ?? ''))) {
+            } elseif (!$this->isWikimediaSvg((string) ($image['url'] ?? '')) && preg_match('/\.(svg|tiff?|pdf|djvu|ogv|webm|ogg|gif)(\?|$)/i', (string) ($image['url'] ?? ''))) {
                 // The picture library stores PNG, JPEG and WebP: a candidate in another format would only fail at the download.
+                // (A Wikimedia SVG is the exception: it is fetched as the PNG Wikimedia renders from it, and the download still checks the type.)
                 $why[] = 'image format is not one the library stores';
                 $this->stats['rejected_format']++;
                 $this->event($image, 'rejected', 'format the library does not store');
@@ -482,7 +661,7 @@ class ImagePlanner
                 $why[] = 'image title "' . ($image['title'] ?? '') . '" does not say what the picture shows';
                 $this->stats['rejected_title']++;
                 $this->event($image, 'rejected', 'its title does not say what it shows');
-            } elseif ($match['shared'] < min(2, max(1, $match['of'])) || $match['shared'] / max(1, $match['of']) < 0.4) {
+            } elseif ($level === self::LEVEL_EXACT ? ($match["shared"] < min(2, max(1, $match["of"])) || $match["shared"] / max(1, $match["of"]) < 0.4) : count(array_diff($match['terms'], self::GENERIC)) < 1) {
                 $why[] = 'image title and tags do not match enough of the query (' . $match['shared'] . ' of ' . $match['of'] . ' words)';
                 $this->stats['rejected_title']++;
                 $this->event($image, 'rejected', 'title and tags match only ' . $match['shared'] . ' of ' . $match['of'] . ' query words');
@@ -500,7 +679,7 @@ class ImagePlanner
         $order = array_keys($usable);
         $verdict = ['accepted' => $order, 'reasons' => []];
         if ($this->judge) {
-            $verdict = ($this->judge)($query, $purpose, $usable, $teaches);
+            $verdict = ($this->judge)($query, $level === self::LEVEL_EXACT ? $purpose : self::RELATED_PREFIX . $purpose, $usable, $teaches);
             $order = array_values(array_filter((array) ($verdict['accepted'] ?? []), fn ($i) => isset($usable[$i])));
             $this->stats['rejected_text_review'] += count($usable) - count($order);
             foreach ($usable as $k => $u) {
@@ -568,7 +747,7 @@ class ImagePlanner
                 return ['missing' => self::TIME_UP];
             }
             if ($this->pixelJudge) {
-                $seen = ($this->pixelJudge)($file['bytes'], (string) $file['mime'], $query, $purpose, $teaches);
+                $seen = ($this->pixelJudge)($file['bytes'], (string) $file['mime'], $query, $level === self::LEVEL_EXACT ? $purpose : self::RELATED_PREFIX . $purpose, $teaches);
                 if (!empty($seen['unverified'])) {
                     $this->stats['unverified'] = ($this->stats['unverified'] ?? 0) + 1;
                     $this->event($image, 'unverified', (string) $seen['reason']);
@@ -588,6 +767,10 @@ class ImagePlanner
 
             return [
                 'type' => 'photo',
+                // How close this picture is to the scene (see the ladder in StoryPictureCover), and the address the bytes were really fetched from,
+                // so a later run can reuse them from the store without searching again.
+                'match_level' => $level,
+                'fetched_from' => (string) ($file['source'] ?? $image['url']),
                 // Written AFTER the choice. With a pixel check it is what the picture was seen to show; without one, what the picture is
                 // called - never what the plan hoped it would show.
                 'alt' => $seen !== null && trim((string) ($seen['shows'] ?? '')) !== '' ? 'Photograph: ' . rtrim(trim((string) $seen['shows']), '. ') . '.' : $this->altFor($image),
@@ -805,7 +988,7 @@ class ImagePlanner
     {
         $preferred = $this->preferThumbnail($url);
         $file = $this->fetchOne($preferred, $preferred !== $url ? 0 : 2);
-        if ($file === null && $preferred !== $url && !preg_match('/\.tiff?$/i', $url)) {
+        if ($file === null && $preferred !== $url && !preg_match('/\.(tiff?|svg)(\?|$)/i', $url)) {   // a TIFF or SVG original is not a picture the library can keep
             $file = $this->fetchOne($url, 2);
         }
 
@@ -847,7 +1030,7 @@ class ImagePlanner
             $response = null;
             for ($attempt = 0; $attempt <= $retries; $attempt++) {
                 $this->pace();
-                $response = Http::withUserAgent('EduERP-StudyDeck/1.0 (educational content; openly licensed images only)')
+                $response = Http::withUserAgent($this->userAgent())
                     ->timeout(25)->get($url);
                 if (!in_array($response->status(), [429, 503], true)) {
                     break;
@@ -908,6 +1091,18 @@ class ImagePlanner
         }
     }
 
+    /** The configured User-Agent (it carries the contact Wikimedia's policy asks for); the earlier fixed string when none is set. */
+    private function userAgent(): string
+    {
+        try {
+            $configured = trim((string) config('pal_content.image.user_agent', ''));
+        } catch (\Throwable) {
+            $configured = '';
+        }
+
+        return $configured !== '' ? $configured : 'EduERP-StudyDeck/1.0 (educational content; openly licensed images only)';
+    }
+
     /** Wait out the gap since the last real download; a stubbed download (tests) is never paced. */
     private function pace(): void
     {
@@ -927,9 +1122,13 @@ class ImagePlanner
      */
     private function preferThumbnail(string $url): string
     {
-        if (preg_match('#^(https://upload\.wikimedia\.org/wikipedia/commons)/([0-9a-f]/[0-9a-f]{2})/([^/]+\.(jpe?g|png|tiff?))$#i', $url, $m)) {
-            // A TIFF (common for micrographs) can only be had as a rendered copy, which Wikimedia serves as a JPEG.
-            return $m[1] . '/thumb/' . $m[2] . '/' . $m[3] . '/960px-' . $m[3] . (preg_match('/^tiff?$/i', $m[4]) ? '.jpg' : '');
+        // Openverse appends tracking parameters to Wikimedia addresses (?utm_source=...); the thumbnail address has none.
+        $bare = preg_replace('/\?.*$/', '', $url);
+        if (preg_match('#^(https://upload\.wikimedia\.org/wikipedia/commons)/([0-9a-f]/[0-9a-f]{2})/([^/]+\.(jpe?g|png|tiff?|svg))$#i', (string) $bare, $m)) {
+            // A TIFF (common for micrographs) can only be had as a rendered copy, which Wikimedia serves as a JPEG; an SVG as a PNG.
+            $ext = strtolower($m[4]);
+
+            return $m[1] . '/thumb/' . $m[2] . '/' . $m[3] . '/960px-' . $m[3] . (str_starts_with($ext, 'tif') ? '.jpg' : ($ext === 'svg' ? '.png' : ''));
         }
 
         return $url;

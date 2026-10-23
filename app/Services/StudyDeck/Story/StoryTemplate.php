@@ -115,6 +115,9 @@ final class StoryTemplate
             'three_choice_min' => 2,
             // Pictures an act may carry: a scene's main picture and up to two supporting ones (a photograph, a close-up, a drawn diagram).
             'images' => [0, 10],
+            // When true (a run that asks for it), every scene and ending must carry its own picture and no reachable decision may render
+            // without one (a decision shows the latest picture on the learner's path). Off here so a story without pictures stays valid.
+            'image_coverage' => false,
             // The closing mission applies the chapter: this many concepts (one per topic where it can) must be met on every path of it.
             'mission_concepts' => 6,
             // A story is not a quiz: at most this share of an act's nodes may be decisions.

@@ -63,7 +63,7 @@ class StudyDocumentService
             new QuestionSelector(),
             new LearningPlanBuilder(new H5pPatternSelector()),
             $placement,
-            new DocumentAssembler(new ImagePlanner($search ?? app(ConceptImageSearchService::class), $images), $checker, $placement),
+            new DocumentAssembler(new ImagePlanner(($search ?? app(ConceptImageSearchService::class))->forBatch(), $images), $checker, $placement),
             new DocumentHtmlRenderer(),
             new DocumentValidator($checker),
             [

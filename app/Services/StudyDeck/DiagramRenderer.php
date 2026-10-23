@@ -192,6 +192,64 @@ class DiagramRenderer
         return ['bytes' => $bytes, 'mime' => 'image/png', 'width' => self::W, 'height' => self::H];
     }
 
+    /**
+     * A plainly labelled stand-in picture for a scene no picture could be found for: the scene's topic and the ideas it teaches, and a visible
+     * stamp saying it is a placeholder. It is a real PNG like any drawn diagram. Not a layout a model can ask for (it is not in LAYOUTS): only
+     * the picture step calls it, as the last rung of the fallback ladder.
+     *
+     * @param array<int,string> $ideas up to three concept names
+     * @return array{bytes:string,mime:string,width:int,height:int,texts:array<int,string>}
+     */
+    public function placeholder(string $topic, array $ideas, string $stamp): array
+    {
+        $topic = trim((string) preg_replace('/\s+/u', ' ', $topic)) ?: 'Science';
+        $ideas = array_slice(array_values(array_filter(array_map(fn ($t) => trim((string) preg_replace('/\s+/u', ' ', (string) $t)), $ideas))), 0, 3);
+        $font = $this->font();
+        $bold = $this->boldFont();
+
+        $im = imagecreatetruecolor(self::W * self::SS, self::H * self::SS);
+        imagealphablending($im, true);
+        imageantialias($im, true);
+        $this->backdrop($im);
+
+        $this->text($im, $bold, 22, self::MUTED, 60, 70, 'SCENE TOPIC', self::W - 120);
+        [$titleSize, $titleLines] = $this->fit($bold, $topic, self::W - 120, 190, [54, 46, 40, 34, 28], 1.4);
+        foreach ($titleLines as $i => $line) {
+            $this->ttf($im, $bold, $titleSize, self::INK, 60, 150 + (int) round($titleSize * 1.4) * $i, $line);
+        }
+        foreach ([self::TONES[0], self::TONES[1], self::TONES[2]] as $k => $tone) {
+            $this->rect($im, 60 + $k * 44, 160 + (int) round($titleSize * 1.4) * count($titleLines), 44, 6, $tone['solid']);
+        }
+
+        if ($ideas !== []) {
+            $count = count($ideas);
+            $gap = 28;
+            $w = intdiv(self::W - 120 - $gap * ($count - 1), $count);
+            foreach ($ideas as $i => $idea) {
+                $this->box($im, $bold, 60 + $i * ($w + $gap), 400, $w, 130, $idea, false, self::TONES[$i % 3]);
+            }
+        }
+
+        // The stamp: a bar across the foot of the picture that says what this is.
+        $this->rrect($im, 60, 590, self::W - 120, 80, 18, self::INK);
+        $this->circle($im, 112, 630, 18, self::RING, 0);
+        [$stampSize, $stampLines] = $this->fit($bold, $stamp, self::W - 270, 64, [26, 24, 22, 20, 18], 1.5);
+        $startY = 630 + (int) round($stampSize * 0.36) - (int) round((count($stampLines) - 1) * $stampSize * 1.5 / 2);
+        foreach ($stampLines as $i => $line) {
+            $this->ttf($im, $bold, $stampSize, self::WHITE, 150, $startY + (int) round($stampSize * 1.5) * $i, $line);
+        }
+
+        $out = imagecreatetruecolor(self::W, self::H);
+        imagecopyresampled($out, $im, 0, 0, 0, 0, self::W, self::H, self::W * self::SS, self::H * self::SS);
+        imagedestroy($im);
+        ob_start();
+        imagepng($out);
+        $bytes = (string) ob_get_clean();
+        imagedestroy($out);
+
+        return ['bytes' => $bytes, 'mime' => 'image/png', 'width' => self::W, 'height' => self::H, 'texts' => array_merge(['Scene topic', $topic], $ideas, [$stamp])];
+    }
+
     /** A pale vertical wash and a few faint cells in the top-right corner: calm, and never behind a label. */
     private function backdrop($im): void
     {

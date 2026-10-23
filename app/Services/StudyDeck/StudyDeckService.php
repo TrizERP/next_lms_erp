@@ -46,7 +46,9 @@ class StudyDeckService
     public static function make(Completer $completer, DiagramImageStore $images, ?ConceptImageSearchService $search = null): self
     {
         $patterns = new H5pPatternSelector();
-        $imagePlanner = new ImagePlanner($search ?? app(ConceptImageSearchService::class), $images, null, 2.0, new ImageRelevanceJudge($completer));
+        // Generation waits for the picture search (the anonymous API takes 9-17 s); the Learn page keeps its short timeout.
+        $search = ($search ?? app(ConceptImageSearchService::class))->forBatch();
+        $imagePlanner = new ImagePlanner($search, $images, null, 2.0, new ImageRelevanceJudge($completer));
 
         return new self(
             new ConceptContextBuilder(),
@@ -60,7 +62,7 @@ class StudyDeckService
             new ActivityPlanner($patterns),
             new InteractionPlanner($completer),
             // A story's scene pictures are also looked at (by the estate's Gemini client) before they are kept; ordinary decks are not.
-            new StoryLessonGenerator($completer, (new ImagePlanner($search ?? app(ConceptImageSearchService::class), $images, null, 1.0, new ImageRelevanceJudge($completer)))
+            new StoryLessonGenerator($completer, (new ImagePlanner($search, $images, null, 1.0, new ImageRelevanceJudge($completer)))
                 ->withPixelJudge(new Story\StoryPixelJudge(app(\App\Domain\AI\Support\GeminiClient::class)))
                 ->withProviders([
                     'nasa' => fn (string $q, int $n): array => app(\App\Services\PAL\Integration\NasaImageSearch::class)->search($q, $n),
@@ -172,6 +174,17 @@ class StudyDeckService
         unset($map['teaching_method']);
         $config = $options['story_config'] ?? StoryTemplate::resolve((int) ($raw['chapter']['sub_institute_id'] ?? $options['tenant'] ?? 1))['config'];
 
+        // Picture coverage (a run that asks for it): every scene and ending ends with a picture of its own, by the ladder in StoryPictureCover.
+        $cover = null;
+        if (!empty($options['image_coverage'])) {
+            $config['image_coverage'] = true;
+            $config['images'] = [0, max(60, (int) ($config['images'][1] ?? 10))];   // a main picture per scene and ending, and room for supporting ones
+            $cover = $this->story->enableCoverage(
+                new Story\StoryImageLibrary($options['image_library'] ?? null),
+                !empty($options['ai_scene_art']) ? new Story\SceneIllustrator(null, (int) ($options['ai_scene_max'] ?? 60), 'gemini image model', 90, $options['tenant'] ?? null) : null
+            );
+            $say('pictures', 'Picture coverage on: exact, related, topic, reused' . ($cover?->illustrator() !== null ? ', AI-generated' : '') . ' and a labelled placeholder, in that order');
+        }
         $methodKey = is_string($method) ? $method : (isset($method['key']) ? (string) $method['key'] : null);
         if (isset($options['story_prebuilt'])) {
             // A finished story handed in (a bundle from an earlier run): its text is not written again.
@@ -188,6 +201,16 @@ class StudyDeckService
             $story['notes'] = array_merge($story['notes'] ?? [], array_map(fn ($n) => 'Pictures: ' . $n, $pass['notes']));
             $pictureReport = ['report' => $pass['report'], 'plan' => $pass['plan'], 'misses' => $pass['misses']];
         }
+        if ($cover !== null) {
+            // Whichever way the acts were built (written now, kept from an earlier run, handed in), none leaves here with a bare scene.
+            $this->story->writer->useMap($map);
+            foreach ($story['acts'] as $ai => $a) {
+                $coverNotes = [];
+                $story['acts'][$ai]['interaction'] = $this->story->writer->coverInteraction($a['interaction'], $context, $a['act'], $config, $coverNotes);
+                $story['notes'] = array_merge($story['notes'] ?? [], array_map(fn ($n) => 'Pictures: ' . $n, $coverNotes));
+            }
+            $cover->library()->save();
+        }
         ['plan' => $plan, 'content' => $content, 'images' => $images, 'interactions' => $interactions] = StoryLessonGenerator::assemble($context, $map, $story);
         $say('plan', count($plan['slides']) . ' slides assembled (' . count($story['acts']) . ' story acts)');
 
@@ -201,6 +224,15 @@ class StudyDeckService
         }
         if ($pictureReport !== null) {
             $result['pictures'] = $pictureReport;
+        }
+        if ($cover !== null) {
+            $ai = $cover->illustrator();
+            $result['picture_coverage'] = [
+                'given_by_the_ladder' => $cover->given, 'searches_made' => $cover->searches, 'search_failures' => $cover->searchFailures, 'problems' => $cover->problems, 'log' => $cover->log,
+                'ai_scene_art' => $ai === null ? ['enabled' => false] : ['enabled' => true, 'made' => $ai->made, 'failed' => $ai->failed, 'unavailable' => $ai->unavailable, 'last_error' => $ai->lastError],
+                'library_pictures' => $cover->library()->count(),
+                'summary' => Story\StoryPictureCover::summarise(array_map(fn ($a) => $a['interaction'], $story['acts'])),
+            ];
         }
         $result['story'] = ['template' => StoryTemplate::KEY, 'version' => (int) $config['version'], 'bible' => $story['bible'], 'notes' => $story['notes'],
             'acts' => array_map(fn ($a) => ['key' => $a['act']['key'], 'title' => $a['act']['title'], 'kind' => $a['act']['kind'], 'required_concept_ids' => $a['act']['required_ids'], 'skeleton' => $a['skeleton']], $story['acts'])];

@@ -44,10 +44,55 @@ class ConceptImageSearchService
 
     protected const TOKEN_CACHE_KEY = 'pal:image:openverse:token';
 
+    /** Seconds a search may take, when not the configured interactive default (see withTimeout()). */
+    protected ?int $timeoutOverride = null;
+
+    /**
+     * What each search did, in order: status, time, how many results came back and how many were usable. Never holds a token or a key.
+     * A caller reads it to say WHY nothing was found (a timeout is not "no relevant image").
+     *
+     * @var array<int,array{query:string,source:string,outcome:string,status:?int,ms:int,raw:int,usable:int,retry_after:?string,cached:bool}>
+     */
+    public array $searches = [];
+
     public function available(): bool
     {
         return (bool) config('pal_content.image.enabled', true)
             && (bool) config('pal_content.image.external.enabled', true);
+    }
+
+    /**
+     * A copy that waits `$seconds` for each search. For background generation: the 6 s default is right for a student waiting on the
+     * Learn page, but the anonymous API answers in 9-17 s, so every generation search timed out and was reported as "no image".
+     */
+    public function withTimeout(int $seconds): static
+    {
+        $copy = clone $this;
+        $copy->timeoutOverride = max(1, $seconds);
+        $copy->searches = [];
+
+        return $copy;
+    }
+
+    /** {@see withTimeout()} with the configured batch timeout. */
+    public function forBatch(): static
+    {
+        try {
+            $seconds = (int) config('pal_content.image.external.batch_timeout', 40);
+        } catch (\Throwable) {
+            $seconds = 40;   // built without the framework (a plain unit test hands this service in): the shipped default
+        }
+
+        return $this->withTimeout($seconds);
+    }
+
+    /** @param array{query:string,source:string,outcome:string,status:?int,ms:int,raw:int,usable:int,retry_after:?string,cached:bool} $row */
+    protected function noteSearch(array $row): void
+    {
+        $this->searches[] = $row;
+        $this->searches = array_slice($this->searches, -500);
+        // One line per search, so a missing picture can be traced to its search. No token or key is ever logged.
+        Log::info('[pal-image] openverse search', $row);
     }
 
     /**
@@ -179,6 +224,9 @@ class ConceptImageSearchService
 
             $candidates = $this->search($variant, $source);
             if ($candidates === []) {
+                if ($this->lastSearchFailed()) {
+                    break;   // the provider timed out or refused: the narrower variants of this query would wait just as long for the same answer
+                }
                 continue;
             }
 
@@ -219,6 +267,9 @@ class ConceptImageSearchService
 
             $candidates = $this->search($variant, $source);
             if ($candidates === []) {
+                if ($this->lastSearchFailed()) {
+                    break;   // see bestImageFor(): a failed search is the provider's, not the query's
+                }
                 continue;
             }
 
@@ -236,6 +287,14 @@ class ConceptImageSearchService
         }
 
         return array_values($out);
+    }
+
+    /** Did the search just made fail technically (a timeout, an HTTP error, an unreadable answer), as opposed to answering with no results? */
+    protected function lastSearchFailed(): bool
+    {
+        $row = end($this->searches);
+
+        return is_array($row) && in_array($row['outcome'] ?? '', ['timeout', 'http_error', 'error', 'malformed'], true);
     }
 
     /**
@@ -304,11 +363,19 @@ class ConceptImageSearchService
         $cacheKey = 'pal:image:openverse:' . sha1($effectiveSource . '|' . $query);
         $cached = Cache::get($cacheKey);
         if (is_array($cached)) {
+            $this->noteSearch(['query' => $query, 'source' => $effectiveSource ?: 'all', 'outcome' => 'cache', 'status' => null, 'ms' => 0, 'raw' => count($cached), 'usable' => count($cached), 'retry_after' => null, 'cached' => true]);
+
             return $cached;
         }
 
+        $started = microtime(true);
+        $note = fn (string $outcome, ?int $status, int $raw, int $usable, ?string $retryAfter = null) => $this->noteSearch([
+            'query' => $query, 'source' => $effectiveSource ?: 'all', 'outcome' => $outcome, 'status' => $status,
+            'ms' => (int) round((microtime(true) - $started) * 1000), 'raw' => $raw, 'usable' => $usable, 'retry_after' => $retryAfter, 'cached' => false,
+        ]);
+
         try {
-            $request = Http::timeout((int) config('pal_content.image.external.timeout', 6))->retry(0);
+            $request = Http::withUserAgent($this->userAgent())->timeout($this->timeoutOverride ?? (int) config('pal_content.image.external.timeout', 6))->retry(0);
 
             $token = $this->accessToken();
             if ($token !== null) {
@@ -342,6 +409,8 @@ class ConceptImageSearchService
             $response = $request->get((string) config(self::SEARCH_ENDPOINT_CONFIG, 'https://api.openverse.org/v1/images/'), $params);
 
             if (! $response->successful()) {
+                // 429 is the anonymous quota (20 a minute, 200 a day) and says how long to wait. Not cached: it says nothing about the query.
+                $note('http_error', $response->status(), 0, 0, $response->header('Retry-After') ?: null);
                 Log::info('[pal-image] Openverse search failed', ['status' => $response->status(), 'query' => $query]);
 
                 return [];
@@ -349,16 +418,22 @@ class ConceptImageSearchService
 
             $results = $response->json('results');
             if (! is_array($results)) {
+                $note('malformed', $response->status(), 0, 0);
+
                 return [];
             }
 
             $shaped = $this->shape($results);
+            $note('ok', $response->status(), count($results), count($shaped));
 
             Cache::put($cacheKey, $shaped, now()->addHours((int) config('pal_content.image.external.cache_hours', 720)));
 
             return $shaped;
         } catch (\Throwable $e) {
-            Log::info('[pal-image] Openverse search errored', ['message' => $e->getMessage(), 'query' => $query]);
+            // A timeout is the usual failure here. It is NOT "no image exists" and is reported as its own outcome.
+            $timedOut = str_contains($e->getMessage(), 'cURL error 28') || stripos($e->getMessage(), 'timed out') !== false;
+            $note($timedOut ? 'timeout' : 'error', null, 0, 0);
+            Log::info('[pal-image] Openverse search errored', ['message' => mb_substr((string) preg_replace('/\s*\(see https:.*$/s', '', $e->getMessage()), 0, 200), 'query' => $query]);
 
             return [];
         }
@@ -522,7 +597,9 @@ class ConceptImageSearchService
      */
     protected function userAgent(): string
     {
-        return 'EduERP-PAL/1.0 (+https://openverse.org concept-image search for a K-12 LMS)';
+        $configured = trim((string) config('pal_content.image.user_agent', ''));
+
+        return $configured !== '' ? $configured : 'EduERP-PAL/1.0 (+https://github.com/TrizERP/next_lms_erp; concept-image search for a K-12 LMS)';
     }
 
     /**

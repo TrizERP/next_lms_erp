@@ -20,6 +20,9 @@ class StoryPixelJudge
 {
     use ExtractsJson;
 
+    /** Marks a purpose as "check an ILLUSTRATION made for this scene" (an image model's picture), not a found photograph. */
+    public const AI_PREFIX = 'AI ILLUSTRATION: ';
+
     /** When set, a picture check never waits longer than the time left before this moment (a unix time). */
     public ?float $deadline = null;
 
@@ -86,17 +89,22 @@ class StoryPixelJudge
     /** @return array{ok:bool,shows:string,reason:string} */
     public function __invoke(string $bytes, string $mime, string $query, string $purpose, string $teaches): array
     {
+        $mode = str_starts_with($purpose, self::AI_PREFIX) ? 'ai' : (str_starts_with($purpose, \App\Services\StudyDeck\ImagePlanner::RELATED_PREFIX) ? 'related' : 'exact');
+        $purpose = preg_replace('/^(' . preg_quote(self::AI_PREFIX, '/') . '|' . preg_quote(\App\Services\StudyDeck\ImagePlanner::RELATED_PREFIX, '/') . ')/', '', $purpose);
+        $rules = match ($mode) {
+            'ai' => "Look at the picture itself and answer strictly. This is an ILLUSTRATION made by an image model for this scene (not a photograph). Reject it unless ALL of these are true:\n- it plainly depicts the situation described (the people, apparatus and setting the scene names, doing what the scene says);\n- it would help a student picture this scene (clear and uncluttered; no garbled or misspelt writing, no distorted hands or faces, no unrelated objects);\n- it contains nothing unsuitable for school.",
+            'related' => "Look at the picture itself and answer strictly. No picture of the exact scene was found, so a RELATED picture is acceptable. Reject it unless ALL of these are true:\n- it plainly shows the same kind of object, instrument, activity, phenomenon or environment as the subject named above (it need not be this exact scene);\n- it would help a student understand the idea behind this scene (a clear, ordinary, realistic view; not a logo, coat of arms, cartoon, map, screenshot, text-only page, collage or decorative texture);\n- it contains no watermark across the subject and nothing unsuitable for school.",
+            default => "Look at the picture itself and answer strictly. Reject it unless ALL of these are true:\n- it plainly shows the subject named above (the real thing, clearly visible and recognisable, not only something with a similar name);\n- it would help a student understand this scene (a clear, ordinary, realistic view; not a logo, coat of arms, cartoon, map, screenshot, text-only page, collage or decorative texture);\n- it contains no watermark across the subject and nothing unsuitable for school.",
+        };
+        $what = $mode === 'ai' ? 'an illustration' : 'a photograph';
         $prompt = <<<PROMPT
-You are checking a photograph for a school science lesson (students aged 14 to 15).
+You are checking {$what} for a school science lesson (students aged 14 to 15).
 
 The scene needs a picture of: "{$query}"
 The scene is about: {$purpose}
 It helps teach: {$teaches}
 
-Look at the picture itself and answer strictly. Reject it unless ALL of these are true:
-- it plainly shows the subject named above (the real thing, clearly visible and recognisable, not only something with a similar name);
-- it would help a student understand this scene (a clear, ordinary, realistic view; not a logo, coat of arms, cartoon, map, screenshot, text-only page, collage or decorative texture);
-- it contains no watermark across the subject and nothing unsuitable for school.
+{$rules}
 
 Also point out WHERE in the picture the thing that matters is: a rectangle around it as percentages of the picture's width and height (x and y are the top-left corner, w and h the size; all between 0 and 100), tight enough to be useful and not the whole picture unless nothing smaller makes sense. Name that part in at most 3 words (for example "Leaf veins"), and say in one short sentence what a student should notice there.
 
