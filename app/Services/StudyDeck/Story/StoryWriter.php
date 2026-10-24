@@ -32,6 +32,8 @@ class StoryWriter
     /** Source addresses of the photographs already used in this lesson, so no picture appears twice (kept across acts). */
     public array $usedImageUrls = [];
 
+    private ?float $pictureDeadline = null;
+
     /** The picture ladder for a run that asks for picture coverage (see StoryPictureCover); null leaves the normal step as it was. */
     public ?StoryPictureCover $cover = null;
 
@@ -444,7 +446,7 @@ class StoryWriter
             'topic' => (string) (($act['kind'] ?? '') === 'topic' ? ($act['title'] ?? '') : ($chapter['chapter_name'] ?? $chapter['name'] ?? '')),
         ];
 
-        return $this->cover->cover($interaction, $ctx, $this->usedImageUrls, $notes, $deadline);
+        return $this->cover->cover($interaction, $ctx, $this->usedImageUrls, $notes, $deadline ?? $this->pictureDeadline);
     }
 
     /** Counts of what the picture pass did (scenes searched, photographs and diagrams kept, scenes left without one). */
@@ -480,6 +482,7 @@ class StoryWriter
     /** The hard limit of a picture pass: no search, download or picture check starts after it. */
     public function setDeadline(?float $unixTime): void
     {
+        $this->pictureDeadline = $unixTime;
         $this->images?->withDeadline($unixTime);
     }
 

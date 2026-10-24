@@ -243,6 +243,8 @@ Route::post('lms-study-deck/pdf', [\App\Http\Controllers\api\lms\StudyDeckApiCon
 Route::post('lms-study-deck/image-urls', [\App\Http\Controllers\api\lms\StudyDeckApiController::class, 'imageUrls']);
 Route::get('study-deck/images/{id}', [\App\Http\Controllers\api\lms\StudyDeckImageController::class, 'show'])
     ->whereNumber('id')->middleware('signed:relative')->name('study-deck.image');
+// The Vocabulary Class flashcard deck a chapter's Classroom Resources list opens (read-only; see VocabularyClassApiController).
+Route::post('lms-vocabulary-class', [\App\Http\Controllers\api\lms\VocabularyClassApiController::class, 'show']);
 Route::post('lms-questions', [ApiLmsCourseController::class, 'getLmsQuestions']);
 Route::post('lms-question-bank', [ApiLmsCourseController::class, 'getQuestionBank']);
 Route::post('lms-question-bank/create', [ApiLmsCourseController::class, 'createQuestionBank']);

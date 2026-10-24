@@ -8,6 +8,7 @@ use App\Services\CoursePresentation\ModelAvailability;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Bus\UniqueLock;
 use Symfony\Component\Console\Output\BufferedOutput;
 
 /**
@@ -19,6 +20,8 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
 {
     /** @var array<int,array{0:string,1:array<string,mixed>}> every command the fake runner was asked to run */
     private array $commands = [];
+
+    private bool $progressWasPersistedDuringGeneration = false;
 
     protected function setUp(): void
     {
@@ -50,9 +53,11 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
             $this->commands[] = [$command, $args];
             if ($command === 'lms:generate-study-deck') {
                 $out->writeln('  plan     35 slides planned');
+                $bundle = $args['--out'];
+                $liveStatus = json_decode((string) file_get_contents(dirname($bundle) . '/status.json'), true);
+                $this->progressWasPersistedDuringGeneration = in_array('plan     35 slides planned', (array) ($liveStatus['log'] ?? []), true);
                 $out->writeln('Bundle: C:\\secret\\storage\\app\\somewhere');
                 $out->writeln($message !== '' ? $message : '  validate Validation passed');
-                $bundle = $args['--out'];
                 @mkdir($bundle, 0775, true);
                 file_put_contents($bundle . '/report.json', json_encode(['ok' => $reportOk, 'errors' => $reportOk ? [] : ['Numbers in slide text that are not in the chapter text: 124 (C:\\secret\\storage\\x)'], 'warnings' => ['w1'],
                     'stats' => ['slides' => 35, 'interactive_slides' => 33, 'concepts' => 42], 'teaching_method' => ['key' => $args['--teaching-method'], 'followed' => $followed, 'errors' => []]]));
@@ -154,6 +159,38 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
         $this->asTeacher()->getJson('/api/lms/course-presentation/draft?chapter_id=' . self::CHAPTER . '&run=../../x')->assertStatus(422);
     }
 
+    public function test_a_failed_run_can_be_reconciled_only_with_its_validated_stored_bundle(): void
+    {
+        $this->seedPilotChapter();
+        $this->seedStrategiesForGeneration();
+        $runs = $this->fake();
+        Bus::fake();
+        $this->fakeDeck = $this->deckWithCards(['Reading a map', 'Using a scale']) + ['chapter' => ['id' => self::CHAPTER]];
+
+        $run = $this->act('generate', 'inquiry_based')->assertStatus(202)->json('run.run');
+        $runs->execute(self::CHAPTER, self::TENANT, $run);
+        $bundle = storage_path($this->runDir) . '/chapter-' . self::CHAPTER . '/' . $run . '/bundle';
+        $statusPath = dirname($bundle) . '/status.json';
+        $status = json_decode((string) file_get_contents($statusPath), true);
+        $status['state'] = 'failed';
+        file_put_contents($statusPath, json_encode($status));
+
+        DB::table('content_master')->insert([
+            'id' => 778, 'standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER,
+            'sub_institute_id' => self::TENANT, 'content_category' => 'Classroom Presentation', 'title' => 'Course Presentation',
+            'filename' => 'study_deck_inquiry_based__reconciled.pptx', 'show_hide' => 1,
+        ]);
+
+        $wrong = $runs->reconcileStoredBundle(self::CHAPTER, self::TENANT, $run, 777, $bundle);
+        $this->assertFalse($wrong['ok']);
+        $this->assertSame('failed', $runs->read(self::CHAPTER, self::TENANT, $run)['state']);
+
+        $result = $runs->reconcileStoredBundle(self::CHAPTER, self::TENANT, $run, 778, $bundle);
+        $this->assertTrue($result['ok'], $result['message']);
+        $this->assertSame('stored', $result['status']['state']);
+        $this->assertSame(778, $result['status']['stored']['content_id']);
+    }
+
     public function test_meaningful_headings_that_contain_a_number_are_accepted(): void
     {
         $this->seedPilotChapter();
@@ -214,6 +251,7 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
         $gen = array_values(array_filter($this->commands, fn ($c) => $c[0] === 'lms:generate-study-deck'))[0][1];
         $this->assertSame('story_branching_scenario', $gen['--template']);
         $this->assertSame('experiential', $gen['--teaching-method']);
+        $this->assertArrayNotHasKey('--ai-scene-art', $gen, 'story coverage uses the bounded photo/diagram ladder, not per-scene image-model calls');
         $res = $this->asTeacher()->getJson('/api/lms/course-presentation/status?chapter_id=' . self::CHAPTER . '&run=' . $run)->assertOk();
         $this->assertSame('ready', $res->json('run.state'), 'a story that passes the story rules is held for review, not stored');
         $this->assertSame('branching_scenario', $res->json('run.format'));
@@ -318,6 +356,46 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
         $this->assertSame([], array_intersect(['tenant', 'user_id', 'log', 'chapter_id', 'bundle'], array_keys($res->json('run'))));
     }
 
+    public function test_progress_is_saved_while_the_generator_is_still_running(): void
+    {
+        $this->seedPilotChapter();
+        $this->seedStrategiesForGeneration();
+        $runs = $this->fake();
+        Bus::fake();
+
+        $run = $this->act('generate')->assertStatus(202)->json('run.run');
+        $runs->execute(self::CHAPTER, self::TENANT, $run);
+
+        $this->assertTrue($this->progressWasPersistedDuringGeneration);
+    }
+
+    public function test_an_abandoned_run_fails_and_no_longer_blocks_another_run(): void
+    {
+        $this->seedPilotChapter();
+        $this->seedStrategiesForGeneration();
+        $runs = $this->fake();
+        Bus::fake();
+
+        $run = $this->act('generate')->assertStatus(202)->json('run.run');
+        $job = new GenerateCoursePresentationJob(self::CHAPTER, self::TENANT, $run);
+        $uniqueLock = app(UniqueLock::class);
+        $uniqueLock->release($job);
+        $this->assertTrue($uniqueLock->acquire($job));
+        $path = storage_path($this->runDir) . '/chapter-' . self::CHAPTER . '/' . $run . '/status.json';
+        $status = json_decode((string) file_get_contents($path), true);
+        $status['state'] = 'running';
+        $status['updated_at'] = date('c', time() - 1860);
+        file_put_contents($path, json_encode($status));
+
+        $res = $this->asTeacher()->getJson('/api/lms/course-presentation/status?chapter_id=' . self::CHAPTER . '&run=' . $run)->assertOk();
+
+        $this->assertSame('failed', $res->json('run.state'));
+        $this->assertStringContainsString('stopped reporting progress', $res->json('run.error'));
+        $this->assertNull($runs->inFlight(self::CHAPTER, self::TENANT));
+        $this->assertTrue($uniqueLock->acquire($job), 'An abandoned run must release the job lock so a retry can be queued.');
+        $uniqueLock->release($job);
+    }
+
     public function test_generate_is_refused_when_no_model_is_reachable_and_says_so_without_naming_a_key(): void
     {
         $this->seedPilotChapter();
@@ -389,6 +467,31 @@ class CoursePresentationGenerationTest extends CoursePresentationTestCase
         $this->assertStringNotContainsString('study-deck/chapter-', $out, 'never into the folder of the earlier, unstored deck');
         $this->assertCount(1, $this->commands, 'generating does not store');
         $this->assertSame(0, DB::table('content_master')->count());
+    }
+
+    public function test_plan_failure_exposes_the_actual_generation_reason_instead_of_a_generic_message(): void
+    {
+        $this->seedPilotChapter();
+        $this->seedStrategiesForGeneration();
+        $runs = $this->fake(generateCode: 1, reportOk: false, message: "Slide plan is invalid after 4 repair attempts:\\n- Slide 29 carries more than 3 concepts; split it.\\n- The plan asks for 26 visuals; ask for at most 24.");
+        Bus::fake();
+        $run = $this->act('generate')->assertStatus(202)->json('run.run');
+        $runs->execute(self::CHAPTER, self::TENANT, $run);
+
+        $error = $this->asTeacher()->getJson('/api/lms/course-presentation/status?chapter_id=' . self::CHAPTER . '&run=' . $run)->assertOk()->json('run.error');
+        $this->assertStringContainsString('Slide 29 carries more than 3 concepts', $error);
+        $this->assertStringContainsString('26 visuals', $error);
+        $this->assertStringNotContainsString('Executor: gemini', $error);
+        $this->assertStringNotContainsString('C:\\secret', $error);
+    }
+
+    public function test_interactive_slides_generation_requires_both_concept_and_every_slide_images(): void
+    {
+        [$run] = $this->ready('inquiry_based');
+        [, $args] = $this->commands[array_key_last($this->commands)];
+        $this->assertTrue($args['--require-concept-visuals']);
+        $this->assertTrue($args['--require-every-slide-image']);
+        $this->assertSame(35, $args['--max-visuals']);
     }
 
     public function test_a_validated_draft_is_ready_with_an_outline_and_nothing_internal(): void

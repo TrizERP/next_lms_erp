@@ -191,10 +191,14 @@ final class StoryGraph
         if (empty($interaction['mission']['title']) || empty($interaction['mission']['body'])) {
             $errors[] = 'The story needs a mission (a title and what the learner is trying to do).';
         }
-        $pictures = array_sum(array_map(fn ($n) => (empty($n['image']) ? 0 : 1) + count((array) ($n['extra_images'] ?? [])), $nodes));
+        $pictures = array_sum(array_map(
+            fn ($n) => (!empty($config['image_coverage']) ? 0 : (empty($n['image']) ? 0 : 1)) + count((array) ($n['extra_images'] ?? [])),
+            $nodes
+        ));
         [$plo, $phi] = $config['images'];
         if ($pictures < $plo || $pictures > $phi) {
-            $errors[] = "The act has $pictures pictures; the template allows $plo to $phi per act.";
+            $what = !empty($config['image_coverage']) ? 'supporting pictures' : 'pictures';
+            $errors[] = "The act has $pictures $what; the template allows $plo to $phi per act.";
         }
         if (!empty($config['image_coverage'])) {
             foreach (self::bareNodes($interaction) as $id => $why) {

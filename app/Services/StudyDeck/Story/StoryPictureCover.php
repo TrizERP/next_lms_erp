@@ -265,6 +265,16 @@ final class StoryPictureCover
             return $generic;
         }
 
+        // A network search and the optional image model can both be unavailable. In that case, draw a real,
+        // topic-specific concept map from the chapter's own labels and store it through the normal image store.
+        // This is not a placeholder: every visible label is grounded in the chapter/act and the image explains
+        // how the scene relates to the lesson topic.
+        if (($diagram = $this->topicDiagram($title, $concepts, $ctx)) !== null) {
+            $this->log[$ref][] = 'topic: generated and stored a chapter-topic concept diagram';
+
+            return $this->label($diagram, self::TOPIC, $title, $ref);
+        }
+
         // 6: the labelled placeholder, only when asked for.
         if (!$this->allowPlaceholder) {
             $this->log[$ref][] = 'no real picture was available';
@@ -273,6 +283,41 @@ final class StoryPictureCover
         }
 
         return $this->label($this->images->placeholder($title, $concepts), self::PLACEHOLDER, $title, $ref);
+    }
+
+    /** @return array<string,mixed>|null a real, locally drawn and stored diagram grounded in the chapter topic */
+    private function topicDiagram(string $title, array $concepts, array $ctx): ?array
+    {
+        $topic = trim((string) ($ctx['topic'] ?? '')) ?: trim((string) ($ctx['chapter'] ?? '')) ?: $title;
+        $labels = array_values(array_unique(array_filter(array_map(
+            fn ($label) => trim((string) $label),
+            array_merge($concepts, [$ctx['chapter'] ?? '', $title])
+        ), fn ($label) => $label !== '' && mb_strtolower($label) !== mb_strtolower($topic))));
+        if (count($labels) < 2) {
+            $topicParts = preg_split('/\s*(?::|;|,|\band\b)\s*/iu', $topic, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $labels = array_values(array_unique(array_merge($labels, array_map('trim', $topicParts))));
+        }
+        $labels = array_slice($labels, 0, 6);
+        if (count($labels) < 2) {
+            return null;
+        }
+
+        $spec = [
+            'layout' => 'hub',
+            'title' => mb_substr($topic . ' — key ideas', 0, 70),
+            'center' => mb_substr($topic, 0, 70),
+            'nodes' => array_map(fn ($label) => mb_substr($label, 0, 70), $labels),
+        ];
+        try {
+            return $this->images->diagram($spec) + [
+                'role' => 'scene',
+                'caption' => 'Chapter-topic concept map: ' . $topic . '.',
+            ];
+        } catch (\Throwable $e) {
+            $this->log['topic_diagram'][] = 'could not draw/store a topic diagram: ' . $e->getMessage();
+
+            return null;
+        }
     }
 
     /**

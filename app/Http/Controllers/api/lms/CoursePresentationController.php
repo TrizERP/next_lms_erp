@@ -251,7 +251,7 @@ class CoursePresentationController extends Controller
             'format' => $s['format'] ?? 'interactive_slides',
             'created_at' => $s['created_at'],
             'progress' => array_slice($progress, -6),
-            'error' => $s['error'],
+            'error' => $s['error'] ?? null,
             'report' => $s['report'],
             // How much of the chapter's own concept list the draft teaches; `checked` is false when the list could not be read.
             'coverage' => $s['coverage'] ?? null,

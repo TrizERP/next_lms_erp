@@ -82,7 +82,8 @@ class DeckValidator
         $this->activityRules($deck, $eligible, $errors);
         $this->patternRules($deck, $errors);
         $this->interactionRules($deck, $errors, $warnings, InteractionPlanner::capsFor($map));
-        $this->imageRules($deck, $errors, $warnings, SlidePlanner::limits($map)['max_visuals']);
+        $requireEverySlideImage = !empty($map['limits']['require_every_slide_image']);
+        $this->imageRules($deck, $errors, $warnings, $requireEverySlideImage ? $max : SlidePlanner::limits($map)['max_visuals'], $requireEverySlideImage);
         $this->duplicateRules($deck, $errors);
         $this->markup($rendered['html'], $map, $deck, $errors);
         $this->grounding($rendered['html'], $deck, $context, $eligible, $errors, $warnings);
@@ -458,11 +459,14 @@ class DeckValidator
         }
     }
 
-    private function imageRules(array $deck, array &$errors, array &$warnings, int $maxVisuals = SlidePlanner::MAX_VISUALS): void
+    private function imageRules(array $deck, array &$errors, array &$warnings, int $maxVisuals = SlidePlanner::MAX_VISUALS, bool $requireEverySlide = false): void
     {
         $planned = 0;
         $missing = 0;
         foreach ($deck['slides'] as $s) {
+            if ($requireEverySlide && ($s['image'] ?? null) === null) {
+                $errors[] = "Slide {$s['n']}: a visible image is required on every slide.";
+            }
             if ($s['visual'] === null) {
                 continue;
             }
@@ -618,7 +622,7 @@ class DeckValidator
                 $errors[] = 'An image has no alt text.';
             }
         }
-        if (preg_match('/[\x{1F300}-\x{1FAFF}\x{2600}-\x{27BF}]/u', $html)) {
+        if (preg_match('/(?:\p{Emoji_Presentation}|\p{Extended_Pictographic}\x{FE0F})/u', $html)) {
             $errors[] = 'Contains emoji.';
         }
     }
@@ -706,6 +710,8 @@ class DeckValidator
             $text .= ' ' . $node->nodeValue;
         }
         $text .= $extraText;
+        // Numbered slide navigation is not a chapter fact and should not trip the grounding check.
+        $text = preg_replace('/\b(?:slide|step)\s+\d+\b/i', '', $text) ?? $text;
 
         preg_match_all('/\d+(?:[.,]\d+)?/u', $text, $nums);
         $badNumbers = [];

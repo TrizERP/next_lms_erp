@@ -13,6 +13,7 @@ use App\Services\StudyDeck\StudyDeckService;
 use App\Services\StudyDeck\StudyImageStores;
 use App\Services\StudyDeck\TeachingMethodProfile;
 use Illuminate\Console\Command;
+use RuntimeException;
 
 /**
  * Generate a classroom study deck for one chapter and write a REVIEW BUNDLE.
@@ -37,6 +38,7 @@ class GenerateStudyDeckCommand extends Command
         {--executor= : api | cli | gemini (cli is dev-only; gemini writes slides through the estate Gemini client and key pool; default from config claude.executor)}
         {--repair-rounds= : how many times a rejected slide plan is sent back to the model with its reasons (default 2, at most 6)}
         {--require-concept-visuals : every concept_intro / concept_visual slide must carry a picture or diagram (the plan is refused otherwise)}
+        {--require-every-slide-image : every slide must carry a readable picture or diagram}
         {--out= : bundle directory (default storage/app/study-deck/chapter-<id>)}
         {--teaching-method= : shape the deck for a teaching method (explicit_instruction, inquiry_based, problem_based, project_based, experiential, collaborative, socratic, flipped_classroom, differentiated_mastery, gamified); none keeps the default deck}
         {--template= : build the lesson with a reusable template instead of the slide planner (story_branching_scenario: a story with an act per topic, in the study-deck story player)}
@@ -155,6 +157,7 @@ class GenerateStudyDeckCommand extends Command
                     'questions_per_slide' => $this->option('per-slide') ?: null,
                     'max_visuals' => $this->option('max-visuals') ?: null,
                     'require_concept_visuals' => $this->option('require-concept-visuals') ? 1 : null,
+                    'require_every_slide_image' => $this->option('require-every-slide-image') ? 1 : null,
                     'repair_rounds' => $this->option('repair-rounds') !== null && $this->option('repair-rounds') !== '' ? (int) $this->option('repair-rounds') : null,
                     'require_concept_visuals' => $this->option('require-concept-visuals') ? 1 : null,
                     'repair_rounds' => $this->option('repair-rounds') !== null && $this->option('repair-rounds') !== '' ? (int) $this->option('repair-rounds') : null,
