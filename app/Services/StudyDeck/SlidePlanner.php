@@ -52,6 +52,8 @@ class SlidePlanner
 
     public const MAX_TAUGHT_PER_SLIDE = 2;
 
+    public const MAX_CONCEPTS_PER_SLIDE = 3;
+
     /**
      * The caps a run may raise (a chapter with many concepts and a bank to match, run with
      * `lms:generate-study-deck --max-practice --per-slide --max-visuals --max-scenarios`). The constants above are the defaults;
@@ -71,6 +73,7 @@ class SlidePlanner
             'max_scenarios' => max(0, (int) ($l['max_scenarios'] ?? InteractionPlanner::MAX_SCENARIOS)),
             // 1 = every concept-teaching slide (concept_intro, concept_visual) must carry a picture or diagram; 0 = pictures only where they earn a place.
             'require_concept_visuals' => (int) (!empty($l['require_concept_visuals'])),
+            'require_every_slide_image' => (int) (!empty($l['require_every_slide_image'])),
             // How many times a rejected plan is sent back with its reasons (the default is 2; a run on a weaker model may ask for more).
             'repair_rounds' => max(0, min(6, (int) ($l['repair_rounds'] ?? 2))),
         ];
@@ -103,12 +106,32 @@ class SlidePlanner
         for ($round = 1; $errors && $round <= $rounds; $round++) {
             $min = $map['target_slides']['min'];
             $max = $map['target_slides']['max'];
+            $plannedSlides = count((array) ($plan['slides'] ?? []));
+            $slideCountGuidance = $plannedSlides < $min
+                ? "Your previous plan has {$plannedSlides} slides, below the minimum {$min}; add at least " . ($min - $plannedSlides) . ' distinct, useful teaching slide(s). Use chapter-supported examples, relationships, misconceptions, guided inquiry or transfer/application; do not add filler or repeat a slide.'
+                : '';
+            $specificGuidance = [];
+            foreach ($errors as $error) {
+                if (preg_match('/Slide (\d+) carries more than (\d+) concepts; split it\./', $error, $match)) {
+                    $specificGuidance[] = "Split slide {$match[1]} into distinct slides, each listing no more than {$match[2]} concept_ids; preserve every concept and keep each concept taught.";
+                }
+                if (preg_match('/Slide (\d+) teaches (\d+) concepts; at most (\d+)/', $error, $match)) {
+                    $specificGuidance[] = "Split the teaching on slide {$match[1]} so no slide teaches more than {$match[3]} concepts; give each concept its own real explanation.";
+                }
+                if (preg_match('/needs at least (\d+) "scenario" slide\(s\); the plan has (\d+)/', $error, $match)) {
+                    $specificGuidance[] = "The teaching method requires at least {$match[1]} scenario slides and the rejected plan has only {$match[2]}. Add enough distinct slides with slide_type exactly \"scenario\", grounded in the chapter, and keep them in the required teaching-method order.";
+                }
+            }
             $retry = $prompt . "\n\nYour previous plan was rejected for these reasons:\n- "
                 . implode("\n- ", array_slice($errors, 0, 25))
+                . ($specificGuidance === [] ? '' : "\n\nSpecific corrections required:\n- " . implode("\n- ", array_unique($specificGuidance)))
                 . "\n\nReturn a corrected, COMPLETE plan as strictly valid JSON (every { closed by }, every [ by ], no trailing commas). "
                 . "Fixing one problem must not break another, so every rule still holds: "
                 . "between {$min} and {$max} slides in total, slide 1 has slide_type \"cover\" and no other slide does, every concept is in some slide's "
                 . 'taught_concept_ids, each question id is used at most once and at most ' . self::limits($map)['questions_per_slide'] . ' per slide. '
+                . $slideCountGuidance . ' '
+                . 'Follow every TEACHING METHOD order rule exactly for each concept: when a concept has both required types, put the earlier phase first. '
+                . 'In particular, if the error says scenario then concept_intro, move that concept\'s scenario slide before its concept_intro slide. '
                 . 'If you must cut slides, merge or remove practice or review slides, never the cover.';
             [$plan, $errors] = $this->read($this->ask($retry), $map, $eligible);
         }
@@ -171,7 +194,173 @@ class SlidePlanner
             return [[], ['Your reply was not valid JSON (' . json_last_error_msg() . '). Nested objects were probably left unclosed.']];
         }
 
+        $plan = $this->repairPlanStructure($plan, $map);
+        $plan = $this->makeDuplicateTitlesDistinct($plan, $map);
+
         return [$plan, $this->validate($plan, $map, $eligible)];
+    }
+
+    /**
+     * Apply safe structural repairs that preserve each slide's taught concepts.
+     *
+     * @param array<string,mixed> $plan
+     * @param array<string,mixed> $map
+     * @return array<string,mixed>
+     */
+    private function repairPlanStructure(array $plan, array $map): array
+    {
+        $slides = array_values((array) ($plan['slides'] ?? []));
+        foreach ($slides as $i => $slide) {
+            $ids = array_values(array_unique(array_map('intval', (array) ($slide['concept_ids'] ?? []))));
+            $taught = array_values(array_unique(array_map('intval', (array) ($slide['taught_concept_ids'] ?? []))));
+            if (count($ids) <= self::MAX_CONCEPTS_PER_SLIDE || count($taught) > self::MAX_CONCEPTS_PER_SLIDE) {
+                continue;
+            }
+
+            $kept = array_values(array_intersect($taught, $ids));
+            foreach ($ids as $id) {
+                if (count($kept) >= self::MAX_CONCEPTS_PER_SLIDE) {
+                    break;
+                }
+                if (!in_array($id, $kept, true)) {
+                    $kept[] = $id;
+                }
+            }
+            $slides[$i]['concept_ids'] = $kept;
+        }
+
+        $method = TeachingMethodProfile::get((string) ($map['teaching_method'] ?? ''));
+        $orders = (array) ($method['order'] ?? []);
+        if ($orders === [] || count($slides) < 2) {
+            $plan['slides'] = $slides;
+
+            return $plan;
+        }
+
+        $firstByType = [];
+        foreach ($slides as $i => $slide) {
+            $type = (string) ($slide['slide_type'] ?? '');
+            foreach (array_unique(array_map('intval', (array) ($slide['concept_ids'] ?? []))) as $id) {
+                $firstByType[$type][$id] ??= $i;
+            }
+        }
+
+        $edges = array_fill(0, count($slides), []);
+        $incoming = array_fill(0, count($slides), 0);
+        foreach ($orders as [$before, $after]) {
+            foreach ((array) ($firstByType[$before] ?? []) as $id => $from) {
+                $to = $firstByType[$after][$id] ?? null;
+                if ($to === null || $to === $from || isset($edges[$from][$to])) {
+                    continue;
+                }
+                $edges[$from][$to] = true;
+                $incoming[$to]++;
+            }
+        }
+
+        $available = [];
+        foreach ($incoming as $i => $count) {
+            if ($count === 0) {
+                $available[] = $i;
+            }
+        }
+        $ordered = [];
+        while ($available !== []) {
+            sort($available, SORT_NUMERIC);
+            $i = array_shift($available);
+            $ordered[] = $slides[$i];
+            foreach (array_keys($edges[$i]) as $to) {
+                if (--$incoming[$to] === 0) {
+                    $available[] = $to;
+                }
+            }
+        }
+        if (count($ordered) === count($slides)) {
+            $slides = $ordered;
+        }
+
+        $plan['slides'] = $slides;
+
+        return $plan;
+    }
+
+    /**
+     * Give repeated concept headings a useful, plan-backed distinction before validation.
+     *
+     * @param array<string,mixed> $plan
+     * @param array<string,mixed> $map
+     * @return array<string,mixed>
+     */
+    private function makeDuplicateTitlesDistinct(array $plan, array $map): array
+    {
+        $slides = (array) ($plan['slides'] ?? []);
+        $groups = [];
+        foreach ($slides as $i => $slide) {
+            $title = mb_strtolower(trim((string) ($slide['title'] ?? '')));
+            if ($title !== '') {
+                $groups[$title][] = $i;
+            }
+        }
+
+        $duplicates = [];
+        foreach ($groups as $indexes) {
+            if (count($indexes) > 1) {
+                foreach ($indexes as $i) {
+                    $duplicates[$i] = true;
+                }
+            }
+        }
+        if ($duplicates === []) {
+            return $plan;
+        }
+
+        $reserved = [];
+        foreach ($slides as $i => $slide) {
+            if (!isset($duplicates[$i])) {
+                $title = mb_strtolower(trim((string) ($slide['title'] ?? '')));
+                if ($title !== '') {
+                    $reserved[$title] = true;
+                }
+            }
+        }
+
+        $intents = [
+            'concept_visual' => 'Look closely',
+            'concept_intro' => 'Understand',
+            'worked_example' => 'Work through',
+            'relationship' => 'Connect',
+            'misconception' => 'Rethink',
+            'scenario' => 'Explore',
+            'recall' => 'Recall',
+            'practice' => 'Practice',
+            'application' => 'Apply',
+            'challenge' => 'Try',
+        ];
+        foreach ($duplicates as $i => $_) {
+            $slide = $slides[$i];
+            $type = (string) ($slide['slide_type'] ?? '');
+            $intent = $intents[$type] ?? ucfirst(str_replace('_', ' ', $type ?: 'Review'));
+            $ids = array_values(array_unique(array_map('intval', (array) ($slide['taught_concept_ids'] ?? []))));
+            if ($ids === []) {
+                $ids = array_values(array_unique(array_map('intval', (array) ($slide['concept_ids'] ?? []))));
+            }
+            $name = trim((string) ($map['concepts'][$ids[0] ?? 0]['name'] ?? ''));
+            $prefixWords = preg_split('/\s+/u', trim($intent), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $nameWords = preg_split('/\s+/u', $name, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+            $name = implode(' ', array_slice($nameWords, 0, max(1, 8 - count($prefixWords))));
+            $base = $name === '' ? $intent : $intent . ': ' . $name;
+            $candidate = $base;
+            $suffix = 2;
+            while (isset($reserved[mb_strtolower($candidate)])) {
+                $candidate = $base . ' ' . $suffix++;
+            }
+            $slides[$i]['title'] = $candidate;
+            $reserved[mb_strtolower($candidate)] = true;
+        }
+
+        $plan['slides'] = $slides;
+
+        return $plan;
     }
 
     private function ask(string $prompt): string
@@ -260,7 +449,7 @@ class SlidePlanner
             if ($ids === [] && in_array($type, self::NEEDS_CONCEPT, true)) {
                 $errors[] = "Slide $n is a $type slide and must list the concept_ids it is about (at least one).";
             }
-            if ($i > 0 && count($ids) > 3) {
+            if ($i > 0 && count($ids) > self::MAX_CONCEPTS_PER_SLIDE) {
                 $errors[] = "Slide $n carries more than 3 concepts; split it.";
             }
             foreach ($ids as $cid) {

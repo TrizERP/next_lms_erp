@@ -296,28 +296,60 @@ class ApiQuestionBankController extends Controller
         // extraction sidecar and therefore no catalogue code, so counting the
         // sidecar alone reported "Multiple Choice (0)" on a chapter holding
         // 125 MCQs. Fall back to the grading type for those.
-        $countRows = DB::table('lms_question_master as q')
+        // Count on the question's EFFECTIVE form.
+        // 1. Group legacy and extracted rows where format_code is null
+        $legacyRows = DB::table('lms_question_master as q')
             ->leftJoin('lms_question_extraction as x', 'x.question_id', '=', 'q.id')
             ->whereNull('q.deleted_at')
+            ->whereNull('q.question_format_code')
             ->tap(fn ($w) => $this->scoped($w, $request))
             ->select(
                 DB::raw(
-                    // The shared ladder (QuestionFormResolver): sidecar code,
-                    // then question_format_code (a teacher's pick or the
-                    // generator's), then the envelope's item_form, then the
-                    // tagger's g_qtype_code, then the coarse grading type.
                     QuestionFormResolver::sqlExpression('q', 'x.question_type_code') . ' as code'
                 ),
                 DB::raw('COUNT(*) as total'),
-                // Lets a catalogue-less code (below) still carry a real
-                // lms_question_type_id instead of leaving the Format dropdown
-                // unable to filter it under either Question Type.
                 DB::raw('MAX(q.question_type_id) as qtype_id')
             )
             ->groupBy('code')
             ->get();
-        $counts = $countRows->pluck('total', 'code');
-        $qtypeIdByCode = $countRows->pluck('qtype_id', 'code');
+        $counts = $legacyRows->pluck('total', 'code')->toArray();
+        $qtypeIdByCode = $legacyRows->pluck('qtype_id', 'code')->toArray();
+
+        // 2. Resolve interactive format rows
+        $formatRows = DB::table('lms_question_master as q')
+            ->leftJoin('lms_question_extraction as x', 'x.question_id', '=', 'q.id')
+            ->whereNull('q.deleted_at')
+            ->whereNotNull('q.question_format_code')
+            ->tap(fn ($w) => $this->scoped($w, $request))
+            ->get([
+                'q.id',
+                'q.question_format_code',
+                'q.answer',
+                'q.g_qtype_code',
+                'q.question_type_id',
+                'x.question_type_code as extraction_code'
+            ]);
+
+        $customLabels = [];
+        foreach ($formatRows as $r) {
+            $code = QuestionFormResolver::resolveFormatCode(
+                $r->question_format_code,
+                $r->answer,
+                $r->extraction_code,
+                $r->g_qtype_code,
+                $r->question_type_id == 1 ? 'mcq' : 'narrative'
+            );
+            $label = QuestionFormResolver::resolveDisplayLabel(
+                $r->question_format_code,
+                $r->answer,
+                $r->question_type_id == 1 ? 'multiple' : 'narrative',
+                null,
+                $r->extraction_code
+            );
+            $counts[$code] = ($counts[$code] ?? 0) + 1;
+            $customLabels[$code] = $label;
+            $qtypeIdByCode[$code] = $r->question_type_id;
+        }
 
         // LEFT from the catalogue, so every known form is listed even at zero:
         // a dropdown whose contents change per chapter is the thing being
@@ -335,9 +367,10 @@ class ApiQuestionBankController extends Controller
         $seen = [];
         foreach ($catalogue as $row) {
             $seen[$row->code] = true;
+            $label = $customLabels[$row->code] ?? $row->label;
             $out[] = [
                 'code' => $row->code,
-                'label' => $row->label,
+                'label' => $label,
                 'exam_section' => $row->exam_section,
                 'default_marks' => $row->default_marks,
                 'is_standard' => $row->is_standard,
@@ -357,7 +390,7 @@ class ApiQuestionBankController extends Controller
             }
             $out[] = [
                 'code' => $code,
-                'label' => ucwords(str_replace('_', ' ', (string) $code)),
+                'label' => $customLabels[$code] ?? ucwords(str_replace('_', ' ', (string) $code)),
                 'exam_section' => null,
                 'default_marks' => null,
                 'is_standard' => 0,
@@ -545,20 +578,19 @@ class ApiQuestionBankController extends Controller
             }
         }
 
-        // The rich form vocabulary. Accepts one code or a list, so the UI can
-        // offer multi-select without a second endpoint.
-        $codes = $request->input('question_type_code');
+        // The rich form vocabulary. Accepts one code/label or a list.
+        $codes = $request->input('question_type_code') ?? $request->input('question_type');
         if (is_string($codes) && $codes !== '' && strtolower($codes) !== 'all') {
             $codes = [$codes];
         }
         if (is_array($codes) && $codes !== []) {
-            // Match on the same three-tier resolution the counts use, or a
-            // chapter would offer "Very Short Answer (990)" and then return
-            // nothing when you picked it.
-            $query->whereIn(
-                DB::raw(QuestionFormResolver::sqlExpression('q', 'x.question_type_code')),
-                $codes
-            );
+            $query->where(function ($w) use ($codes) {
+                foreach ($codes as $code) {
+                    $w->orWhere(function ($sub) use ($code) {
+                        QuestionFormResolver::applyTypeFilter($sub, $code, 'q');
+                    });
+                }
+            });
         }
 
         // Provenance: extracted from a published book, or machine-generated.
@@ -682,6 +714,13 @@ class ApiQuestionBankController extends Controller
                 // the real form, so the UI can show "Assertion-Reason" while
                 // the runtime still knows it grades like an MCQ.
                 'question_type' => $isMcq ? 'MCQ' : 'Narrative',
+                'question_type_raw' => QuestionFormResolver::resolveDisplayLabel(
+                    $row->question_format_code ?? null,
+                    $envelope,
+                    $row->lms_question_type ?? null,
+                    null,
+                    $row->question_type_code ?? null
+                ),
                 'question_type_code' => $code,
                 'exam_section' => $row->exam_section ?? ($envelope['exam_section'] ?? null),
                 'item_number' => $row->item_number ?? ($envelope['item_number'] ?? null),
@@ -753,9 +792,19 @@ class ApiQuestionBankController extends Controller
      */
     private function readableModelAnswer(array $envelope, $raw): ?string
     {
+        $expected = $envelope['expected_response'] ?? null;
+        if (is_string($expected) && trim($expected) !== '') {
+            return trim($expected);
+        }
+
         $model = $envelope['model_answer'] ?? null;
         if (is_string($model) && trim($model) !== '') {
-            return $model;
+            return trim($model);
+        }
+
+        $ans = $envelope['answer'] ?? null;
+        if (is_string($ans) && trim($ans) !== '') {
+            return trim($ans);
         }
 
         if ($envelope !== []) {

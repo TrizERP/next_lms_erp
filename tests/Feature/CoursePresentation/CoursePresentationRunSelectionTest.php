@@ -153,6 +153,24 @@ class CoursePresentationRunSelectionTest extends CoursePresentationTestCase
         $this->assertSame($before, [file_get_contents($this->statusFile($slides)), file_get_contents($this->statusFile($story))], 'looking never changes a run');
     }
 
+    public function test_preflight_can_summarize_a_stored_run_without_an_error_field(): void
+    {
+        $choice = ['inquiry_based', 'branching_scenario'];
+        $run = $this->makeRun($choice, 'stored', '2026-10-21T11:17:50+05:30');
+        $path = $this->statusFile($run);
+        $status = json_decode((string) file_get_contents($path), true);
+        unset($status['error']);
+        $status['stored'] = ['deep_link' => '/student/study-deck/41675?content=61597', 'images' => ['referenced' => 65, 'linked' => 65]];
+        file_put_contents($path, json_encode($status));
+
+        $this->asTeacher()->getJson(self::BASE . 'preflight?' . $this->query($choice))
+            ->assertOk()
+            ->assertJsonPath('run.state', 'stored')
+            ->assertJsonPath('run.error', null)
+            ->assertJsonPath('run.stored.deep_link', '/student/study-deck/41675?content=61597')
+            ->assertJsonPath('run.stored.images.linked', 65);
+    }
+
     public function test_what_is_already_stored_is_listed_and_counted_only_under_its_own_format(): void
     {
         $row = ['standard_id' => self::STANDARD, 'subject_id' => self::SUBJECT, 'chapter_id' => self::CHAPTER, 'sub_institute_id' => self::TENANT, 'show_hide' => 1];

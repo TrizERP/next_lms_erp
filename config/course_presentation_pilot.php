@@ -186,8 +186,8 @@ return [
         'formats' => ['interactive_slides', 'branching_scenario'],
         // Slides: the most pictures/diagrams a deck may carry (every concept slide must have one; the default cap is 10).
         'max_visuals' => 24,
-        // How many times a rejected slide plan is sent back to the model with its reasons (the default elsewhere is 2).
-        'repair_rounds' => 4,
+        // Difficult chapter and teaching-method combinations may need the planner's full repair limit.
+        'repair_rounds' => 6,
         'run_dir' => 'app/course-presentation',
     ],
     // Where an earlier, unstored study-deck bundle of a chapter is looked for (read only, its report.json). Tests point it elsewhere.
