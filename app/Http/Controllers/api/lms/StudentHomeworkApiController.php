@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\api\lms;
 
 use App\Http\Controllers\Controller;
+use GenTux\Jwt\GetsJwtToken;
 use App\Jobs\EvaluateHomeworkSubmissionJob;
 use App\Models\student\studentHomeworkModel;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +18,32 @@ use App\Models\school_setup\subjectModel;
 
 class StudentHomeworkApiController extends Controller
 {
+    use GetsJwtToken;
+
+    /**
+     * The signed-in user as the token says, or nulls when there is no readable token.
+     * `is_student` is the claim the login put in the token, or a profile named Student.
+     *
+     * @return array{user_id:int,is_student:bool}
+     */
+    private function verifiedCaller(): array
+    {
+        try {
+            $payload = $this->jwtPayload();
+        } catch (\Throwable $e) {
+            return ['user_id' => 0, 'is_student' => false];
+        }
+
+        $profileName = ! empty($payload['user_profile_id'])
+            ? (string) DB::table('tbluserprofilemaster')->where('id', $payload['user_profile_id'])->value('name')
+            : '';
+
+        return [
+            'user_id' => (int) ($payload['id'] ?? 0),
+            'is_student' => (bool) ($payload['is_student'] ?? false) || strtolower(trim($profileName)) === 'student',
+        ];
+    }
+
     public function index(Request $request): JsonResponse
     {
         $sub_institute_id = $request->input('sub_institute_id');
@@ -48,8 +75,16 @@ class StudentHomeworkApiController extends Controller
             ->where('h.syear', $syear)
             ->where('h.type', $type);
 
-        if ($user_profile_name == "Student") {
-            $query->where('h.student_id', $user_id);
+        // Who is asking comes from the verified bearer token, never from the profile name
+        // or user id the client typed: a student only ever gets their own homework, whatever
+        // filters they send. The old check compared the client's string to "Student" exactly,
+        // so "STUDENT" skipped it and every standard's homework came back.
+        $caller = $this->verifiedCaller();
+        $isStudent = $caller['is_student']
+            || strtolower(trim((string) $user_profile_name)) === 'student';
+
+        if ($isStudent) {
+            $query->where('h.student_id', $caller['user_id'] ?: $user_id);
         } elseif ($user_profile_name == "Teacher") {
             $query->where(function ($q) use ($user_id, $syear, $sub_institute_id, $standard_id) {
                 $q->whereIn('h.standard_id', function ($sub_query) use ($user_id, $syear, $sub_institute_id) {
