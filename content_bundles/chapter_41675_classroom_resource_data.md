@@ -2335,7 +2335,7 @@ The following related classroom materials exist for Chapter 41675 under Tenant I
 | ID | Category | Title | Source | Sub-Institute |
 |---|---|---|---|---|
 | `61551` | Recorded Videos | Chapter 1: supporting scheme video | HES publisher material | 341 |
-| `61555` | Classroom Presentation | Chapter 1: poster SS1, Global Water Resources | HES publisher material | 341 |
+| `61555` | Educational Posters | Chapter 1: poster SS1, Global Water Resources | HES publisher material | 341 |
 | `61559` | Classroom Activity | Chapter 1: Student task cards (A1, B1) | HES publisher material | 341 |
 | `61560` | Worksheet | Chapter 1: Observation sheets (A1, B2) | HES publisher material | 341 |
 | `61566` | Classroom Activity | (whole unit): data collection and STEM sheets | HES publisher material | 341 |

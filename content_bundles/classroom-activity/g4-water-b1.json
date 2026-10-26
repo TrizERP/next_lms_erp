@@ -1,0 +1,93 @@
+{
+  "type": "classroom_activity",
+  "version": 1,
+  "key": "g4-water-b1",
+  "code": "B1",
+  "title": "Mapping water abundance and scarcity",
+  "scope": { "sub_institute_id": 341, "standard_id": 4258, "subject_id": 48385, "chapter_id": 41675 },
+  "links": {
+    "topic_id": 26315,
+    "concept_id": 46127,
+    "note": "Verified 2026-10-26: chapter 41675 (textbook extraction 858, page 5) lists B1 with data sheet G4_WATER_EO_DS_1 and task card STC_2 (the textbook prints G3_WATER_EO_STC_2; the supplied PDF prints G4_WATER_EO_STC_2). Linked to concept 46127 'Water-rich and water-poor countries' (topic 26315). content_master.topic_id stays empty so the card lists at chapter level."
+  },
+  "references": { "task_card": "G4_WATER_EO_STC_2", "data_sheet": "G4_WATER_EO_DS_1" },
+  "intro": {
+    "purpose": "Compare one water-rich and one water-poor country using a world map. Analyse the data given for each country, such as rainfall, water sources, and population. Discuss how these factors affect water availability.",
+    "objectives": [
+      { "text": "Compare one water-rich and one water-poor country using a world map and simple data.", "origin": "semantic_intelligence" },
+      { "text": "Explain how rainfall, water sources and population affect water availability.", "origin": "semantic_intelligence" },
+      { "text": "Understand why some places have plenty of water while others face shortages.", "origin": "textbook" }
+    ],
+    "materials": [
+      { "text": "A device with Google Earth", "origin": "task_card" },
+      { "text": "Your two country cards: one water-rich country and one water-poor country", "origin": "task_card" },
+      { "text": "The data sheet for each country (G4_WATER_EO_DS_1). It is not part of this activity, so ask your teacher for it.", "origin": "textbook" },
+      { "text": "The Reflection Questions your teacher gives you (step 7). They are not part of the task card.", "origin": "task_card" }
+    ],
+    "safety": [],
+    "duration": { "minutes": null, "note": "" }
+  },
+  "steps": [
+    { "n": 1, "id": "s1", "text": "Open Google Earth on your device." },
+    { "n": 2, "id": "s2", "text": "Search for both countries on your cards—one water-rich and one water-poor.", "uses": [{ "block": "countries", "group": "names" }] },
+    { "n": 3, "id": "s3", "text": "Zoom in and look for water bodies like rivers, lakes, or coastlines.", "uses": [{ "block": "countries", "group": "map", "rows": ["waterbodies"] }] },
+    { "n": 4, "id": "s4", "text": "Observe the landscape—is it green and forested, dry and desert-like, or mountainous?", "uses": [{ "block": "countries", "group": "map", "rows": ["landscape"] }] },
+    { "n": 5, "id": "s5", "text": "Read the information on both country cards carefully." },
+    {
+      "n": 6, "id": "s6",
+      "text": "With your group, compare these features:",
+      "items": ["Rainfall", "Water sources (rivers, lakes, glaciers, coastlines)", "Population", "Climate (hot/dry, cool/wet, etc.)", "Water availability"],
+      "uses": [{ "block": "countries", "group": "features" }]
+    },
+    { "n": 7, "id": "s7", "text": "Use the Reflection Questions to guide your discussion.", "uses": [{ "block": "discussion" }] },
+    {
+      "n": 8, "id": "s8",
+      "text": "Write a short group report titled: “Why [Country A] is Water-Rich and [Country B] is Water-Poor”",
+      "items": ["2–3 reasons why the first country has more water", "2–3 reasons why the second country has less water", "1 suggestion to help the water-poor country improve its water situation"],
+      "uses": [{ "block": "report" }]
+    },
+    { "n": 9, "id": "s9", "text": "Present your report to the class." },
+    { "n": 10, "id": "s10", "text": "Show your Google Earth map and point out water features." },
+    { "n": 11, "id": "s11", "text": "Highlight the key facts and differences between the two countries.", "uses": [{ "block": "countries", "group": "features", "readOnly": true }] }
+  ],
+  "blocks": [
+    {
+      "id": "countries",
+      "kind": "compare",
+      "title": "Country comparison",
+      "entities": [
+        { "id": "a", "label": "Country A", "role": "water-rich", "hint": "The water-rich country on your card" },
+        { "id": "b", "label": "Country B", "role": "water-poor", "hint": "The water-poor country on your card" }
+      ],
+      "rows": [
+        { "id": "waterbodies", "group": "map", "label": "Water bodies you found on the map (rivers, lakes, coastlines)" },
+        { "id": "landscape", "group": "map", "label": "Landscape", "options": ["Green and forested", "Dry and desert-like", "Mountainous", "Something else"] },
+        { "id": "rainfall", "group": "features", "label": "Rainfall" },
+        { "id": "sources", "group": "features", "label": "Water sources (rivers, lakes, glaciers, coastlines)" },
+        { "id": "population", "group": "features", "label": "Population" },
+        { "id": "climate", "group": "features", "label": "Climate (hot/dry, cool/wet, etc.)" },
+        { "id": "availability", "group": "features", "label": "Water availability" }
+      ]
+    },
+    {
+      "id": "discussion",
+      "kind": "notes",
+      "label": "Discussion notes",
+      "hint": "Write down the main points your group talks about."
+    },
+    {
+      "id": "report",
+      "kind": "report",
+      "title_template": "Why [Country A] is Water-Rich and [Country B] is Water-Poor",
+      "names_from": "countries",
+      "tokens": { "[Country A]": "a", "[Country B]": "b" },
+      "sections": [
+        { "id": "rich", "label": "Reasons why [Country A] has more water", "min": 2, "max": 3 },
+        { "id": "poor", "label": "Reasons why [Country B] has less water", "min": 2, "max": 3 },
+        { "id": "suggestion", "label": "One suggestion to help [Country B] improve its water situation", "min": 1, "max": 1 }
+      ]
+    }
+  ],
+  "reflection": [],
+  "source": { "file": "STC_EO_WATER_G4.pdf", "pages": "3-4", "textbook": "Chapter 1, page 5" }
+}

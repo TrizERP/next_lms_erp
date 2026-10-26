@@ -356,6 +356,26 @@ class ContentGenerationService
     }
 
     /**
+     * What a stored study-deck row was made as: its teaching method (named in the file name) and content format (told by the
+     * file-name prefix: a story lesson or a Classroom Presentation). The method is null when the name does not say, never
+     * guessed (a deck stored before methods were recorded has none). Null for every row that is not a study deck.
+     *
+     * @param array<string,mixed> $row a content_master row
+     * @return array{teaching_method:?string,content_format:string}|null
+     */
+    public static function studyDeckResource(array $row): ?array
+    {
+        if (!self::isStudyDeckFilename($row['filename'] ?? null)) {
+            return null;
+        }
+
+        return [
+            'teaching_method' => \App\Services\StudyDeck\StudyDeckPublisher::variantOf($row['filename']),
+            'content_format' => str_starts_with((string) $row['filename'], \App\Services\StudyDeck\Story\StoryTemplate::FILE_PREFIX) ? 'branching_scenario' : 'interactive_slides',
+        ];
+    }
+
+    /**
      * Where a study deck's player data lives: beside its presentation file, named after it.
      *
      * Deriving the path from the content_master row's own filename means no extra column,

@@ -245,6 +245,8 @@ Route::get('study-deck/images/{id}', [\App\Http\Controllers\api\lms\StudyDeckIma
     ->whereNumber('id')->middleware('signed:relative')->name('study-deck.image');
 // The Vocabulary Class flashcard deck a chapter's Classroom Resources list opens (read-only; see VocabularyClassApiController).
 Route::post('lms-vocabulary-class', [\App\Http\Controllers\api\lms\VocabularyClassApiController::class, 'show']);
+// The interactive Classroom Activity a chapter's Classroom Resources list opens (read-only; see ClassroomActivityApiController).
+Route::post('lms-classroom-activity', [\App\Http\Controllers\api\lms\ClassroomActivityApiController::class, 'show']);
 Route::post('lms-questions', [ApiLmsCourseController::class, 'getLmsQuestions']);
 Route::post('lms-question-bank', [ApiLmsCourseController::class, 'getQuestionBank']);
 Route::post('lms-question-bank/create', [ApiLmsCourseController::class, 'createQuestionBank']);
