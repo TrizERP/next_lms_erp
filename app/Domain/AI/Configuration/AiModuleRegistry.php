@@ -329,7 +329,10 @@ final class AiModuleRegistry
     /** @return array<int, string> The providers this module may use, best first. */
     public function offered(string $key): array
     {
-        return array_values((array) ($this->find($key)['offered'] ?? []));
+        $preferred = array_values((array) ($this->find($key)['offered'] ?? []));
+        $all = ['gemini', 'openai', 'openrouter', 'deepseek', 'groq', 'mistral', 'anthropic'];
+
+        return array_values(array_unique(array_merge($preferred, $all)));
     }
 
     public function isOffered(string $key, string $provider): bool

@@ -171,6 +171,8 @@ class AiConfigurationController extends AiController
                 }
             });
 
+            $this->resolver->flush($institute !== null ? (string) $institute : null);
+
             $this->audit->record('ai.configuration.reordered', $scope, [
                 'related_type' => 'ai_api_keys',
                 'message' => sprintf('Provider order set for %s.', $this->modules->label($data['ai_module'])),
@@ -313,11 +315,12 @@ class AiConfigurationController extends AiController
                 );
             }
 
-            // The provider is asked whether it accepts the key BEFORE anything is written: a key the
-            // provider refuses would otherwise sit in the table looking configured and fail at the
-            // moment a user asked a question. A provider that cannot be reached does not block the
-            // save — "could not check" is not "checked and refused" — and the status says so.
-            $credential = $this->checkCredential($data['provider'], $data['api_key']);
+            // The provider is asked whether it accepts the key AND has access to the model BEFORE anything is written
+            $credential = $this->checkCredential($data['provider'], $data['api_key'], $data['model']);
+
+            if ($data['model'] !== null) {
+                $this->models->ensure($data['provider'], $data['model'], $institute);
+            }
 
             $insert = [
                 'ai_module' => $data['ai_module'],
@@ -342,6 +345,8 @@ class AiConfigurationController extends AiController
             }
 
             $id = DB::table('ai_api_keys')->insertGetId($insert);
+
+            $this->resolver->flush($institute !== null ? (string) $institute : null);
 
             $this->recordChange('created', $id, $data, $scope, $request);
 
@@ -388,7 +393,12 @@ class AiConfigurationController extends AiController
                 ]);
             }
 
-            $credential = $data['api_key'] !== null ? $this->checkCredential($data['provider'], $data['api_key']) : null;
+            $keyToCheck = $data['api_key'] ?? $row->api_key;
+            $credential = $keyToCheck !== null ? $this->checkCredential($data['provider'], $keyToCheck, $data['model']) : null;
+
+            if ($data['model'] !== null) {
+                $this->models->ensure($data['provider'], $data['model'], $institute);
+            }
 
             $update = [
                 'ai_module' => $data['ai_module'],
@@ -409,6 +419,8 @@ class AiConfigurationController extends AiController
             }
 
             DB::table('ai_api_keys')->where('id', $id)->update($update);
+
+            $this->resolver->flush($institute !== null ? (string) $institute : null);
 
             $this->recordChange('updated', $id, $data, $scope, $request);
 
@@ -444,6 +456,8 @@ class AiConfigurationController extends AiController
                 'status' => 0,
                 'updated_at' => now(),
             ]);
+
+            $this->resolver->flush($institute !== null ? (string) $institute : null);
 
             $this->audit->record('ai.configuration.retired', $scope, [
                 'related_type' => 'ai_api_keys',
@@ -652,28 +666,34 @@ class AiConfigurationController extends AiController
         ];
     }
 
-    /**
-     * Ask the provider whether it accepts a key, refusing the save when it plainly does not.
-     *
-     * @return array{status:string, label:string, detail:string|null}
-     */
-    private function checkCredential(string $provider, ?string $apiKey): array
+    private function checkCredential(string $provider, ?string $apiKey, ?string $model = null): array
     {
         if ($apiKey === null) {
             return $this->credentials->inspect($provider, null);
         }
 
-        $verdict = $this->discovery->verify($provider, $apiKey, fresh: true);
-
-        if (($verdict['status'] ?? null) === 'invalid') {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'api_key' => [sprintf(
-                    '%s rejected this API key. Check that it is a %s key and that it has not been revoked.',
-                    $this->providers->label($provider),
-                    $this->providers->label($provider)
-                )],
-            ]);
+        if ($model !== null) {
+            $access = $this->discovery->verifyModelAccess($provider, $apiKey, $model);
+            if (! $access['ok']) {
+                $field = ($access['status'] === 'invalid_key') ? 'api_key' : 'model';
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    $field => [$access['message'] ?? sprintf('%s model access verification failed.', $this->providers->label($provider))],
+                ]);
+            }
+        } else {
+            $verdict = $this->discovery->verify($provider, $apiKey, fresh: true);
+            if (($verdict['status'] ?? null) === 'invalid') {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'api_key' => [sprintf(
+                        '%s rejected this API key. Check that it is a %s key and that it has not been revoked.',
+                        $this->providers->label($provider),
+                        $this->providers->label($provider)
+                    )],
+                ]);
+            }
         }
+
+        $verdict = $this->discovery->verify($provider, $apiKey, fresh: true);
 
         return $this->credentials->describe($verdict);
     }

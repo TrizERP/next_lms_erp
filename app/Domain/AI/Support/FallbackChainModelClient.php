@@ -335,7 +335,9 @@ final class FallbackChainModelClient implements ModelClient, SupportsVisionAnaly
 
         if ($status !== null) {
             if ($status === 400) {
-                return str_contains($message, 'API_KEY_INVALID');
+                return str_contains($message, 'API_KEY_INVALID')
+                    || stripos($message, 'api key') !== false
+                    || stripos($message, 'invalid key') !== false;
             }
 
             return in_array($status, [401, 402, 403, 404, 408, 429], true) || $status >= 500;
