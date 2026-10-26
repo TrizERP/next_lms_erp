@@ -36,6 +36,9 @@ class ImagePlanner
     /** The licence label of a picture taken from the chapter's own textbook (permitted for this project). Accepted by its exact name only. */
     public const TEXTBOOK_LICENCE = 'Publisher textbook (permitted for this project)';
 
+    /** Exact licence label for a manually selected image published under the Unsplash License. */
+    public const UNSPLASH_LICENCE = 'Unsplash License';
+
     /** Where a deck picture came from: a web search, the chapter's textbook, a drawn diagram, or nowhere (no suitable picture). */
     public const KIND_WEB = 'web';
     public const KIND_TEXTBOOK = 'textbook';
@@ -273,6 +276,44 @@ class ImagePlanner
         }
 
         return $out;
+    }
+
+    /** Fill gaps after the normal web, textbook and planned-diagram ladder, using the existing diagram renderer. */
+    public function fillMissingWithDiagrams(array $slides, array $map, array $images, ?callable $progress = null): array
+    {
+        foreach ($slides as $slide) {
+            $n = (int) ($slide['n'] ?? 0);
+            if ($n < 1 || (isset($images[$n]) && empty($images[$n]['missing']))) {
+                continue;
+            }
+            $name = trim((string) ($slide['title'] ?? 'Lesson image')) ?: 'Lesson image';
+            $conceptIds = array_values((array) ($slide['concept_ids'] ?? []));
+            $concept = (array) ($map['concepts'][(int) ($conceptIds[0] ?? 0)] ?? []);
+            $labels = array_values(array_unique(array_filter(array_map(fn ($value) => trim((string) $value), [
+                $concept['name'] ?? '',
+                $concept['key_idea'] ?? '',
+                ...array_map(fn ($id) => (string) ($map['concepts'][(int) $id]['name'] ?? ''), array_slice($conceptIds, 1)),
+                $name,
+            ]))));
+            while (count($labels) < 2) {
+                $labels[] = $name;
+            }
+            $labels = array_map(fn ($label) => mb_substr($label, 0, 65), array_slice($labels, 0, 6));
+            $spec = ['layout' => 'flow', 'title' => mb_substr($name, 0, 65), 'nodes' => $labels];
+            if (DiagramRenderer::problems($spec)) {
+                $labels = array_slice(array_values(array_filter(array_map(fn ($label) => trim(mb_substr((string) $label, 0, 65)), $labels))), 0, 6);
+                while (count($labels) < 2) {
+                    $labels[] = 'Learning idea';
+                }
+                $spec = ['layout' => 'flow', 'title' => 'Learning idea', 'nodes' => $labels];
+            }
+            $images[$n] = $this->diagram($spec) + ['purpose' => 'Generated educational diagram for ' . $name, 'source_kind' => 'generated_fallback'];
+            if ($progress) {
+                $progress($n);
+            }
+        }
+
+        return $images;
     }
 
     /**
@@ -1060,7 +1101,7 @@ class ImagePlanner
             return true;
         }
         // Two sources whose terms are not Creative Commons labels, accepted by their exact names (see NasaImageSearch and PexelsImageSearch).
-        if (in_array($licence, [\App\Services\PAL\Integration\NasaImageSearch::LICENCE, \App\Services\PAL\Integration\PexelsImageSearch::LICENCE], true)) {
+        if (in_array($licence, [\App\Services\PAL\Integration\NasaImageSearch::LICENCE, \App\Services\PAL\Integration\PexelsImageSearch::LICENCE, self::UNSPLASH_LICENCE], true)) {
             return true;
         }
         if ($licence === '' || stripos($licence, 'NC') !== false || stripos($licence, 'ND') !== false) {

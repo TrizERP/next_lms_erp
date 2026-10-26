@@ -6,6 +6,7 @@ use App\Domain\AI\Support\AiProviderException;
 use App\Domain\AI\Support\ImageGenerationResult;
 use App\Services\PAL\Integration\ConceptImageSearchService;
 use App\Services\QuestionGeneration\DragDrop\Contracts\DiagramImageStore;
+use App\Services\StudyDeck\Contracts\Completer;
 use App\Services\StudyDeck\Contracts\SourceImageCache;
 use App\Services\StudyDeck\ImagePlanner;
 use App\Services\StudyDeck\IsolatedImageDatabase;
@@ -13,6 +14,7 @@ use App\Services\StudyDeck\Story\SceneIllustrator;
 use App\Services\StudyDeck\Story\StoryGraph;
 use App\Services\StudyDeck\Story\StoryImageLibrary;
 use App\Services\StudyDeck\Story\StoryPictureCover;
+use App\Services\StudyDeck\Story\StoryWriter;
 use Tests\Unit\StudyDeck\Support\BootSafeTestCase;
 
 /**
@@ -262,6 +264,60 @@ class StoryPictureCoverTest extends BootSafeTestCase
         $this->assertSame('placeholder', $act['nodes'][0]['image']['match_level'], 'no relevance review and no picture check: nothing vouches for a related picture');
         $this->assertSame([], $search->calls, 'and no search was spent on it');
         $this->assertNull($library->missed('speed time'));
+    }
+
+    public function test_an_expired_writer_picture_deadline_skips_search_and_uses_a_grounded_diagram(): void
+    {
+        $search = $this->search(fn () => [[], null]);
+        $planner = $this->planner($search);
+        $completer = new class implements Completer {
+            public function complete(string $system, string $prompt, int $maxTokens = 16000): string
+            {
+                return '';
+            }
+        };
+        $writer = new StoryWriter($completer, $planner);
+        $writer->cover = $this->realOnlyCover($planner, new StoryImageLibrary());
+        $writer->useMap(['concepts' => [1 => ['name' => 'Speed and time']]]);
+        $writer->setDeadline(microtime(true) - 1);
+        $act = ['key' => 'a1', 'title' => 'Measurement', 'kind' => 'topic', 'required_ids' => [1]];
+        $context = ['chapter' => ['chapter_name' => 'Exploration science', 'subject_name' => 'Science']];
+        $notes = [];
+
+        $covered = $writer->coverInteraction($this->act(), $context, $act, ['image_coverage' => true], $notes);
+
+        $this->assertSame([], $search->calls);
+        $this->assertNotEmpty(array_filter($covered['nodes'], fn ($node) => in_array($node['kind'], ['scene', 'ending'], true) && !empty($node['image'])));
+    }
+
+    public function test_a_conceptless_final_scene_gets_a_grounded_diagram_from_chapter_title_parts(): void
+    {
+        $search = $this->search(fn () => [[], null]);
+        $cover = $this->realOnlyCover($this->planner($search), new StoryImageLibrary(null));
+        $act = $this->act();
+        foreach ($act['nodes'] as &$node) {
+            $node['concept_ids'] = [];
+        }
+        unset($node);
+        $ctx = [
+            'chapter' => 'Global water resources: Distribution and historical impact',
+            'subject' => 'EVS',
+            'topic' => 'Global water resources: Distribution and historical impact',
+            'concepts' => [],
+            'act_concepts' => [],
+        ];
+        $usedUrls = [];
+        $notes = [];
+
+        $covered = $cover->cover($act, $ctx, $usedUrls, $notes, microtime(true) - 1);
+
+        $this->assertSame([], $search->calls);
+        foreach ($covered['nodes'] as $node) {
+            if (in_array($node['kind'], [StoryGraph::SCENE, StoryGraph::ENDING], true)) {
+                $this->assertSame(StoryPictureCover::TOPIC, $node['image']['match_level']);
+                $this->assertSame('diagram', $node['image']['type']);
+            }
+        }
     }
 
     public function test_a_word_that_names_a_whole_subject_is_not_evidence_for_a_related_picture(): void
@@ -775,6 +831,28 @@ class StoryPictureCoverTest extends BootSafeTestCase
         foreach (['s1', 's2a', 's2b', 'e1'] as $id) {
             $this->assertStringContainsString("($id)", $text);
         }
+    }
+
+    public function test_required_scene_pictures_do_not_use_the_authored_visual_budget(): void
+    {
+        $picture = ['url' => 'study-deck-image:1', 'width' => 10, 'height' => 10, 'alt' => 'a picture'];
+        $act = $this->act(array_fill_keys(['s1', 's2a', 's2b', 'e1'], $picture));
+
+        $errors = StoryGraph::check($act, [1], ['image_coverage' => true, 'images' => [0, 2]] + $this->cfg())['errors'];
+
+        $this->assertSame([], array_filter($errors, fn ($error) => str_contains($error, 'pictures; the template allows')));
+    }
+
+    public function test_supporting_pictures_still_use_the_authored_visual_budget_when_coverage_is_on(): void
+    {
+        $picture = ['url' => 'study-deck-image:1', 'width' => 10, 'height' => 10, 'alt' => 'a picture'];
+        $act = $this->act(array_fill_keys(['s1', 's2a', 's2b', 'e1'], $picture));
+        $act['nodes'][0]['extra_images'] = [$picture, $picture];
+        $act['nodes'][2]['extra_images'] = [$picture, $picture];
+
+        $errors = StoryGraph::check($act, [1], ['image_coverage' => true, 'images' => [0, 2]] + $this->cfg())['errors'];
+
+        $this->assertContains('The act has 4 supporting pictures; the template allows 0 to 2 per act.', $errors);
     }
 
     public function test_a_decision_is_bare_only_when_a_path_reaches_it_before_any_picture(): void

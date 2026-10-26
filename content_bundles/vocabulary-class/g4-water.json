@@ -1,0 +1,80 @@
+{
+  "type": "vocabulary_class",
+  "version": 1,
+  "key": "g4-water",
+  "title": "Grade 4 water vocabulary",
+  "source": {
+    "file": "G4 VC water (1).pdf",
+    "note": "Terms, definitions and card numbers are copied from the PDF unchanged. The PDF has no pictures: each picture below is a curated Std 4 Water textbook picture chosen by what it shows (content_bundles/textbook-images/evs-std4-water.json). A term with no suitable picture has none.",
+    "omitted": [
+      {
+        "code": "G4_WATER_C3",
+        "sourceNumber": 3,
+        "term": "rainwater harvesting",
+        "reason": "The PDF prints the surface tension definition on this card, so it has no definition of its own. It is left out until the PDF is corrected."
+      }
+    ]
+  },
+  "scope": { "standard_id": 4258, "subject_id": 48385, "sub_institute_id": 341 },
+  "settings": { "interaction": "flashcards", "showProgress": true, "allowNavigation": true, "allowAnswerChecking": true },
+  "topics": [
+    {
+      "id": "g4-water-c1",
+      "code": "G4_WATER_C1",
+      "chapter_id": 41675,
+      "title": "Global water resources: Distribution and historical impact",
+      "cards": [
+        { "id": "g4-water-c1-glacier", "sourceNumber": 1, "term": "glacier", "definition": "A glacier is a large, slow-moving mass of ice formed from layers of compacted snow.", "image": null },
+        { "id": "g4-water-c1-aquifer", "sourceNumber": 2, "term": "aquifer", "definition": "An aquifer is a layer of rock or soil deep underground that holds water. This water can be taken out using wells and pumps.", "image": null },
+        { "id": "g4-water-c1-civilisation", "sourceNumber": 3, "term": "civilisation", "definition": "A civilisation is a large, organised group of people with cities, laws, farming, trade, and inventions like Ancient Egypt or the Indus Valley.", "image": { "file": "page_10_image_03.png", "alt": "A world map marking where early civilisations and early farming began along river valleys.", "caption": "Ancient river valley civilisations", "page": 10 } },
+        { "id": "g4-water-c1-irrigation", "sourceNumber": 4, "term": "irrigation", "definition": "Irrigation is a way of bringing water to crops using pipes, canals, or sprinklers to help plants grow, especially in dry places.", "image": { "file": "page_13_image_03.png", "alt": "A farm field of green crop rows being watered by sprinklers.", "caption": "Smart irrigation", "page": 13 } },
+        { "id": "g4-water-c1-migration", "sourceNumber": 5, "term": "migration", "definition": "Migration is the movement of people, animals, or birds from one place to another, often for food, shelter, breeding, or better living conditions.", "image": null },
+        { "id": "g4-water-c1-sanitation", "sourceNumber": 6, "term": "sanitation", "definition": "Sanitation means keeping our surroundings clean and healthy by properly removing waste, dirty water and preventing the spread of germs.", "image": null },
+        { "id": "g4-water-c1-contaminated", "sourceNumber": 7, "term": "contaminated", "definition": "Contaminated means polluted or made unsafe by harmful substances, germs, or waste.", "image": { "file": "page_26_image_02.png", "alt": "People standing in a river covered with white toxic foam.", "caption": "Chhat Puja in a polluted, toxic Yamuna river", "page": 26 } }
+      ]
+    },
+    {
+      "id": "g4-water-c2",
+      "code": "G4_WATER_C2",
+      "chapter_id": 41676,
+      "title": "Water's properties and its role in daily life",
+      "cards": [
+        { "id": "g4-water-c2-condensation", "sourceNumber": 1, "term": "condensation", "definition": "Condensation is when warm water vapour in the air cools down and changes back into water droplets like clouds in the sky or water on a cold glass.", "image": { "file": "page_20_image_04.png", "alt": "Thick white mist hanging over a dark green pine forest.", "caption": "Water vapour appears as mist in the forest", "page": 20 } },
+        { "id": "g4-water-c2-sublimation", "sourceNumber": 2, "term": "sublimation", "definition": "Sublimation is when ice or snow changes directly into water vapour can happen on mountain tops.", "image": { "file": "page_16_image_02.png", "alt": "A diagram of water as gas, liquid and solid with arrows labelled vaporization, condensation, sublimation, deposition, freezing and melting.", "caption": "States of water", "page": 16 } },
+        { "id": "g4-water-c2-surface-tension", "sourceNumber": 3, "term": "surface tension", "definition": "Surface tension is a special force on the top of water that holds the water together this is why small insects can walk on water!", "image": { "file": "page_16_image_04.png", "alt": "A water strider insect standing on the surface of a pond.", "caption": "Water strider, using surface tension to walk", "page": 16 } },
+        { "id": "g4-water-c2-cohesion-and-adhesion", "sourceNumber": 4, "term": "cohesion and adhesion", "definition": "Cohesion means water sticks to itself (like water droplets joining together), and adhesion means water sticks to other things (like water climbing up a plant stem).", "image": null },
+        { "id": "g4-water-c2-capillary-action", "sourceNumber": 5, "term": "capillary action", "definition": "Capillary action is the movement of liquid through narrow spaces or tiny tubes without being pushed by an outside force.", "image": null },
+        { "id": "g4-water-c2-density", "sourceNumber": 6, "term": "density", "definition": "Density is the amount of matter packed into a given space or volume.", "image": null },
+        { "id": "g4-water-c2-latent-heat", "sourceNumber": 7, "term": "latent heat", "definition": "Latent heat is the hidden heat water carries when it changes form for example, when water evaporates or when vapour turns back into water as rain.", "image": null }
+      ]
+    },
+    {
+      "id": "g4-water-c3",
+      "code": "G4_WATER_C3",
+      "chapter_id": 41677,
+      "title": "Water and climate: Change, impact, and action",
+      "cards": [
+        { "id": "g4-water-c3-climate-change", "sourceNumber": 1, "term": "climate change", "definition": "Climate change means big changes in weather patterns over a long time, often caused by pollution and too many greenhouse gases.", "image": { "file": "page_24_image_02.png", "alt": "Two satellite views of the Arctic, September 1984 and September 2016, the later one with much less white sea ice.", "caption": "Shrinking Arctic ice-cap", "page": 24 } },
+        { "id": "g4-water-c3-wetlands", "sourceNumber": 2, "term": "wetlands", "definition": "Wetlands are areas of land where water covers the soil or keeps it wet for most or all of the year, supporting special plants and animals.", "image": null },
+        { "id": "g4-water-c3-desalination", "sourceNumber": 4, "term": "desalination", "definition": "Desalination is the process of removing salt from seawater so it can be used for drinking and farming.", "image": null },
+        { "id": "g4-water-c3-drip-irrigation", "sourceNumber": 5, "term": "drip irrigation", "definition": "Drip irrigation is a method of supplying water slowly and directly to the roots of plants through small pipes or tubes.", "image": null }
+      ]
+    },
+    {
+      "id": "g4-water-c4",
+      "code": "G4_WATER_C4",
+      "chapter_id": 41678,
+      "title": "Life in water – Aquatic ecosystems and biodiversity",
+      "cards": [
+        { "id": "g4-water-c4-biodiversity", "sourceNumber": 1, "term": "biodiversity", "definition": "Biodiversity means having many different types of plants and animals living together in a habitat.", "image": { "file": "page_32_image_02.png", "alt": "A collage of four freshwater animals: an alligator, a trout, an otter and a frog.", "caption": "Freshwater aquatic animals", "page": 32 } },
+        { "id": "g4-water-c4-salinity", "sourceNumber": 2, "term": "salinity", "definition": "Salinity is the amount of dissolved salts present in water or soil.", "image": null },
+        { "id": "g4-water-c4-phytoplankton", "sourceNumber": 3, "term": "phytoplankton", "definition": "Phytoplankton are tiny plant-like organisms that live in water and make their own food using sunlight.", "image": { "file": "page_33_image_02.png", "alt": "A colourful drawing of many tiny floating plankton of different shapes in blue-green water.", "caption": "Phytoplanktons", "page": 33 } },
+        { "id": "g4-water-c4-decomposer", "sourceNumber": 4, "term": "decomposer", "definition": "A decomposer is a tiny organism like a fungus or bacteria that breaks down dead things and returns nutrients to the soil or water.", "image": null },
+        { "id": "g4-water-c4-food-web", "sourceNumber": 5, "term": "food web", "definition": "A food web shows how plants and animals are connected by what they eat like a big map of who eats whom in an ecosystem.", "image": { "file": "page_34_image_01.png", "alt": "An ocean food chain diagram from sunlight to phytoplankton, zooplankton, small fishes, tuna and a shark, with arrows showing the direction of energy.", "caption": "Movement of energy through different levels of food chain", "page": 34 } },
+        { "id": "g4-water-c4-buoyant", "sourceNumber": 6, "term": "buoyant", "definition": "Buoyant means able to float or rise in a liquid or gas because of an upward force.", "image": null },
+        { "id": "g4-water-c4-adaptation", "sourceNumber": 7, "term": "adaptation", "definition": "Adaptation is a special body part or behaviour that helps an animal or plant survive in its home like gills in fish or webbed feet in ducks.", "image": { "file": "page_35_image_05.png", "alt": "The head of a fish with its gill cover open, showing the red feathery gills inside.", "caption": "Gills filter oxygen from sea water", "page": 35 } },
+        { "id": "g4-water-c4-ecosystem", "sourceNumber": 8, "term": "ecosystem", "definition": "An ecosystem is a place where living things like animals and plants work together with non-living things like water, air, and soil.", "image": null }
+      ]
+    }
+  ]
+}

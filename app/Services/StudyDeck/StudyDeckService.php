@@ -146,6 +146,11 @@ class StudyDeckService
         $images = $this->imagePlanner->plan($plan['slides'], $content, function ($n, $r) use ($say) {
             $say('images', isset($r['missing']) ? "slide $n: none ({$r['missing']})" : "slide $n: " . (($r['type'] ?? 'photo') === 'diagram' ? 'drawn diagram' : $r['licence']));
         });
+        if (!empty($map['limits']['require_every_slide_image'])) {
+            $images = $this->imagePlanner->fillMissingWithDiagrams($plan['slides'], $map, $images, function ($n) use ($say) {
+                $say('images', "slide $n: generated fallback diagram");
+            });
+        }
 
         $say('interact', 'Stage 3: deciding which slides earn an interaction');
         $interactions = $this->interactionPlanner?->plan($context, $map, $plan, $content, $images, fn ($found, $total) => $say('interact', "$found interaction(s) so far")) ?? [];
@@ -176,24 +181,32 @@ class StudyDeckService
 
         // Picture coverage (a run that asks for it): every scene and ending ends with a picture of its own, by the ladder in StoryPictureCover.
         $cover = null;
+        $pictureDeadline = null;
         if (!empty($options['image_coverage'])) {
             $config['image_coverage'] = true;
             $config['images'] = [0, max(60, (int) ($config['images'][1] ?? 10))];   // a main picture per scene and ending, and room for supporting ones
+            $pictureDeadline = microtime(true) + max(1, (float) ($options['story_picture_seconds'] ?? 120));
+            $this->story->writer->setDeadline($pictureDeadline);
             $cover = $this->story->enableCoverage(
                 new Story\StoryImageLibrary($options['image_library'] ?? null),
                 !empty($options['ai_scene_art']) ? new Story\SceneIllustrator(null, (int) ($options['ai_scene_max'] ?? 60), 'gemini image model', 90, $options['tenant'] ?? null) : null,
                 !empty($options['allow_placeholder'])
             );
-            // The real pictures the last rung draws from are found NOW, so a run with no way to find one stops here and not after hours of writing.
+            // Preload optional topic-matched pictures. An empty pool must not block the scene-specific related/topic search ladder below;
+            // Gemini illustrations remain available as a later checked fallback.
             if ($cover !== null) {
                 $chapterRow = (array) ($context['chapter'] ?? []);
-                $generic = $cover->prepareGenericPool(['chapter' => (string) ($chapterRow['chapter_name'] ?? $chapterRow['name'] ?? ''), 'subject' => (string) ($chapterRow['subject_name'] ?? '')]);
+                $chapterName = (string) ($chapterRow['chapter_name'] ?? $chapterRow['name'] ?? '');
+                $topicQueries = array_map(fn ($topic) => (string) ($topic['name'] ?? ''), (array) ($context['topics'] ?? []));
+                $conceptQueries = array_map(fn ($concept) => (string) ($concept['name'] ?? ''), array_slice((array) ($context['concepts'] ?? []), 0, 8));
+                $generic = $cover->prepareGenericPool([
+                    'chapter' => $chapterName,
+                    'subject' => (string) ($chapterRow['subject_name'] ?? ''),
+                    'generic_queries' => array_values(array_unique(array_filter(array_merge($topicQueries, [$chapterName], $conceptQueries)))),
+                ], 4, $pictureDeadline);
                 $say('pictures', 'Generic educational pictures ready: ' . $generic);
-                if ($generic === 0 && empty($options['allow_placeholder'])) {
-                    throw new \RuntimeException('Picture coverage needs a real picture for every scene, and no generic educational picture could be found (is image search reachable and the picture check available?). Nothing was generated. Pass --allow-placeholder to accept labelled placeholders instead.');
-                }
             }
-            $say('pictures', 'Picture coverage on: exact, related, topic, reused' . ($cover?->illustrator() !== null ? ', AI-generated' : '') . ' and a labelled placeholder, in that order');
+            $say('pictures', 'Picture coverage on: exact, related, chapter-topic, textbook, reused, AI-generated when enabled, topic-matched fallback and an explicitly enabled placeholder');
         }
         $methodKey = is_string($method) ? $method : (isset($method['key']) ? (string) $method['key'] : null);
         if (isset($options['story_prebuilt'])) {
@@ -216,11 +229,12 @@ class StudyDeckService
             $this->story->writer->useMap($map);
             foreach ($story['acts'] as $ai => $a) {
                 $coverNotes = [];
-                $story['acts'][$ai]['interaction'] = $this->story->writer->coverInteraction($a['interaction'], $context, $a['act'], $config, $coverNotes);
+                $story['acts'][$ai]['interaction'] = $this->story->writer->coverInteraction($a['interaction'], $context, $a['act'], $config, $coverNotes, $pictureDeadline);
                 $story['notes'] = array_merge($story['notes'] ?? [], array_map(fn ($n) => 'Pictures: ' . $n, $coverNotes));
             }
             $cover->library()->save();
         }
+        $this->story->writer->setDeadline(null);
         ['plan' => $plan, 'content' => $content, 'images' => $images, 'interactions' => $interactions] = StoryLessonGenerator::assemble($context, $map, $story);
         $say('plan', count($plan['slides']) . ' slides assembled (' . count($story['acts']) . ' story acts)');
 
@@ -290,7 +304,9 @@ class StudyDeckService
             );
         }
 
-        return $this->finish($context, $selection, $eligible, $map, $plan, $saved['content'], $images, $interactions, $say);
+        $content = $this->contentGenerator->finalize($map, $plan, $saved['content']);
+
+        return $this->finish($context, $selection, $eligible, $map, $plan, $content, $images, $interactions, $say);
     }
 
     /**
@@ -316,6 +332,9 @@ class StudyDeckService
         $say('questions', sprintf('%d questions considered, %d excluded as not self-contained or unusable', count((array) $raw['questions']), count($selection['excluded'])));
 
         $map = $this->learningPlan->build($context, $eligible, (int) ($options['min_slides'] ?? 30), (int) ($options['max_slides'] ?? 35), (array) ($options['limits'] ?? []), $options['teaching_method'] ?? null);
+        if (!empty($options['require_every_slide_image'])) {
+            $map['limits']['require_every_slide_image'] = 1;
+        }
         $say('map', 'Learning map built' . ($map['warnings'] ? ' (' . count($map['warnings']) . ' warning(s))' : ''));
 
         return [$context, $selection, $eligible, $map];

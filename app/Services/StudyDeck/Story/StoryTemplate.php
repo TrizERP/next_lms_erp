@@ -113,7 +113,7 @@ final class StoryTemplate
             'variant_words' => [15, 90],
             // At least this many decisions of an act offer three or more plausible approaches (not a right and a wrong answer).
             'three_choice_min' => 2,
-            // Pictures an act may carry: a scene's main picture and up to two supporting ones (a photograph, a close-up, a drawn diagram).
+            // Authored visuals and supporting pictures per act. Main pictures added to meet image_coverage are required and do not use this budget.
             'images' => [0, 10],
             // When true (a run that asks for it), every scene and ending must carry its own picture and no reachable decision may render
             // without one (a decision shows the latest picture on the learner's path). Off here so a story without pictures stays valid.

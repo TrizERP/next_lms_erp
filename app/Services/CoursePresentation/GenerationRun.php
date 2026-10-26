@@ -29,6 +29,7 @@ use Symfony\Component\Console\Output\BufferedOutput;
 class GenerationRun
 {
     public const ACTIVE = ['queued', 'running', 'ready'];
+    private const STALE_AFTER_SECONDS = 1800;
 
     /**
      * @param Closure(string $command, array<string,mixed> $args, BufferedOutput $out):int|null $artisan the command runner (tests replace it)
@@ -67,7 +68,9 @@ class GenerationRun
         $data = is_file($path) ? json_decode((string) file_get_contents($path), true) : null;
 
         // A run is found only under its own chapter AND school.
-        return is_array($data) && (int) ($data['chapter_id'] ?? 0) === $chapterId && (int) ($data['tenant'] ?? 0) === $tenant ? $data : null;
+        return is_array($data) && (int) ($data['chapter_id'] ?? 0) === $chapterId && (int) ($data['tenant'] ?? 0) === $tenant
+            ? $this->failIfStale($data)
+            : null;
     }
 
     /** @param array<string,mixed> $data */
@@ -98,14 +101,43 @@ class GenerationRun
         $runs = [];
         foreach (glob($this->chapterDir($chapterId) . '/r*/status.json') ?: [] as $path) {
             $data = json_decode((string) file_get_contents($path), true);
-            if (!is_array($data) || (int) ($data['tenant'] ?? 0) !== $tenant || (int) ($data['chapter_id'] ?? 0) !== $chapterId || ($data['state'] ?? '') === 'discarded') {
+            if (!is_array($data) || !self::validId((string) ($data['run'] ?? '')) || (int) ($data['tenant'] ?? 0) !== $tenant || (int) ($data['chapter_id'] ?? 0) !== $chapterId || ($data['state'] ?? '') === 'discarded') {
                 continue;
             }
+            $data = $this->failIfStale($data);
             $runs[] = $data;
         }
         usort($runs, fn ($a, $b) => strcmp((string) $b['created_at'], (string) $a['created_at']));
 
         return $runs;
+    }
+
+    /** A worker that stopped updating a run must not leave it blocking this chapter forever. */
+    private function failIfStale(array $status): array
+    {
+        if (!in_array($status['state'] ?? '', ['queued', 'running'], true)) {
+            return $status;
+        }
+        $lastUpdate = strtotime((string) ($status['updated_at'] ?? $status['created_at'] ?? ''));
+        if ($lastUpdate === false || time() - $lastUpdate <= self::STALE_AFTER_SECONDS) {
+            return $status;
+        }
+
+        $wasQueued = $status['state'] === 'queued';
+        $status['state'] = 'failed';
+        $status['error'] = $wasQueued
+            ? 'The generation worker did not start within 30 minutes. Start a new draft.'
+            : 'Generation stopped reporting progress for more than 30 minutes. Start a new draft.';
+        $this->write($status);
+        app(\Illuminate\Bus\UniqueLock::class)->release(
+            new \App\Jobs\GenerateCoursePresentationJob(
+                (int) $status['chapter_id'],
+                (int) $status['tenant'],
+                (string) $status['run'],
+            ),
+        );
+
+        return $status;
     }
 
     /**
@@ -188,7 +220,28 @@ class GenerationRun
         $this->write($status);
 
         $bundle = $this->runDir($chapterId, $run) . '/bundle';
-        $out = new BufferedOutput();
+        $out = new class(function (string $message) use (&$status): void {
+            $lines = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $message) ?: [])));
+            if ($lines === []) {
+                return;
+            }
+            $status['log'] = array_slice(array_merge((array) ($status['log'] ?? []), $lines), -30);
+            $this->write($status);
+        }) extends BufferedOutput {
+            private Closure $onWrite;
+
+            public function __construct(Closure $onWrite)
+            {
+                parent::__construct();
+                $this->onWrite = $onWrite;
+            }
+
+            protected function doWrite(string $message, bool $newline): void
+            {
+                parent::doWrite($message, $newline);
+                ($this->onWrite)($message);
+            }
+        };
         try {
             // The story format is the same pipeline built with the story template; the teaching method shapes the story.
             $args = ['chapter' => $chapterId, '--tenant' => $tenant, '--out' => $bundle, '--teaching-method' => $status['method']];
@@ -197,7 +250,11 @@ class GenerationRun
             } else {
                 // Slides: every concept slide must show a picture or diagram, and the model is the configured Claude one or else Gemini.
                 $args['--require-concept-visuals'] = true;
-                $args['--max-visuals'] = (int) config('course_presentation_pilot.generation.max_visuals', 24);
+                $args['--require-every-slide-image'] = true;
+                // The request is capped at 35 meaningful slides. Allow enough visuals for every teaching slide
+                // (the planner limits itself to concept_intro/concept_visual slides); the final deck validator
+                // still rejects missing, unreadable or over-limit images.
+                $args['--max-visuals'] = 35;
                 $args['--repair-rounds'] = (int) config('course_presentation_pilot.generation.repair_rounds', 4);
                 $args['--executor'] = app(ModelAvailability::class)->slidesExecutor();
             }
@@ -207,10 +264,12 @@ class GenerationRun
             $out->writeln($e->getMessage());
         }
 
-        $status['log'] = array_slice(array_values(array_filter(array_map('trim', explode("\n", $out->fetch())))), -30);
+        $commandOutput = $out->fetch();
+        $status['log'] = array_slice(array_values(array_filter(array_map('trim', explode("\n", $commandOutput)))), -30);
         $report = is_file($bundle . '/report.json') ? json_decode((string) file_get_contents($bundle . '/report.json'), true) : null;
 
         $pictures = $code === 0 && is_array($report) && !empty($report['ok']) ? $this->imageReadiness->deckImages($bundle, $tenant) : null;
+        $missingSlideImages = $code === 0 && is_array($report) && !empty($report['ok']) && ($status['format'] ?? '') === 'interactive_slides' ? $this->slidesWithoutReadableImages($bundle, $tenant) : [];
 
         // The same presentation rules the source-driven preview is held to (repeated topic lists, empty or overfull slides,
         // unplayable interactions, unshowable pictures, concepts nobody teaches). Structural faults stop the draft; the rest are reported.
@@ -224,6 +283,9 @@ class GenerationRun
             // A deck whose pictures cannot be read would show broken-image placeholders: it is never offered for review.
             $status['state'] = 'failed';
             $status['error'] = sprintf('The draft names %d picture(s) that the library cannot give back (%d of %d are readable), so it was not offered for review.', $pictures['unreadable'], $pictures['resolved'], $pictures['referenced']);
+        } elseif ($missingSlideImages !== []) {
+            $status['state'] = 'failed';
+            $status['error'] = 'Every slide must have a readable image. The following slides have none: ' . implode(', ', array_slice($missingSlideImages, 0, 12)) . (count($missingSlideImages) > 12 ? ', and others' : '.') . ' Add a relevant image or a generated diagram and try again.';
         } elseif ($code === 0 && is_array($report) && !empty($report['ok']) && !empty($report['teaching_method']['followed'])) {
             $status['state'] = 'ready';
             $status['images'] = array_diff_key($pictures ?? [], ['ids' => 1]);
@@ -238,11 +300,50 @@ class GenerationRun
             $status['outline'] = $this->outline($bundle);
         } else {
             $status['state'] = 'failed';
-            $status['error'] = self::clean(is_array($report) && !empty($report['errors'])
+            $detail = is_array($report) && !empty($report['errors'])
                 ? 'The generated deck did not pass validation: ' . implode(' ', array_slice((array) $report['errors'], 0, 3))
-                : 'Generation did not finish. ' . (end($status['log']) ?: 'No details were recorded.'));
+                : $this->failureDetail($commandOutput);
+            $status['error'] = self::clean($detail);
         }
         $this->write($status);
+    }
+
+    /** Keep the actionable exception/validation text without repeating the progress log in the error alert. */
+    private function failureDetail(string $output): string
+    {
+        $lines = array_values(array_filter(array_map('trim', preg_split('/\r\n|\r|\n/', $output) ?: [])));
+        $lines = array_values(array_filter($lines, fn ($line) => !preg_match('/^(Executor:|Gemini model:|(?:load|context|questions|map|plan|content|images|interact|activities|validate)\s+)/i', $line)));
+        $detail = trim(implode("\n", $lines));
+        if ($detail === '') {
+            $detail = end($lines) ?: 'The generation command did not complete and returned no details.';
+        }
+
+        return $detail;
+    }
+
+    /** Slide numbers with no image address that resolves to a readable image in this school. */
+    private function slidesWithoutReadableImages(string $bundle, int $tenant): array
+    {
+        $deck = is_file($bundle . '/deck.json') ? json_decode((string) file_get_contents($bundle . '/deck.json'), true) : null;
+        if (!is_array($deck)) {
+            return [];
+        }
+        $ids = [];
+        foreach ((array) ($deck['slides'] ?? []) as $slide) {
+            if (($id = StudyDeckImages::idFromRef($slide['image']['url'] ?? null)) !== null) {
+                $ids[$id] = $id;
+            }
+        }
+        $metas = (new StudyDeckImages())->visibleMetas(array_values($ids), $tenant);
+        $bad = [];
+        foreach ((array) ($deck['slides'] ?? []) as $slide) {
+            $id = StudyDeckImages::idFromRef($slide['image']['url'] ?? null);
+            $meta = $id === null ? null : ($metas[$id] ?? null);
+            if (!is_array($meta) || (int) ($meta['width'] ?? 0) < 1 || (int) ($meta['height'] ?? 0) < 1 || (int) ($meta['bytes'] ?? 0) < 1) {
+                $bad[] = (int) ($slide['n'] ?? 0);
+            }
+        }
+        return $bad;
     }
 
     /**
@@ -272,7 +373,9 @@ class GenerationRun
         ];
         $blocking = [];
         $advice = [];
-        foreach ((new PresentationQuality())->check($deck, $source === null ? null : array_keys($source), $source ?? []) as $p) {
+        $map = is_file($bundle . '/learning-map.json') ? json_decode((string) file_get_contents($bundle . '/learning-map.json'), true) : null;
+        $storyConfig = is_array($map) && is_array($map['story_config'] ?? null) ? $map['story_config'] : null;
+        foreach ((new PresentationQuality($storyConfig))->check($deck, $source === null ? null : array_keys($source), $source ?? []) as $p) {
             if (in_array($p['code'], ['repeated_index', 'empty_slide', 'broken_interaction', 'bad_image', 'missing_concept', 'generic_label', 'broken_story'], true)) {
                 $blocking[] = $p;
             } else {
@@ -393,6 +496,82 @@ class GenerationRun
         $ok = count($linked) === count($wanted);
 
         return ['ok' => true, 'message' => $ok ? 'Stored.' : sprintf('Stored, but %d of %d pictures are not linked to the stored deck. Ask an administrator to check them before the library is cleaned up.', count($wanted) - count($linked), count($wanted)), 'status' => $status];
+    }
+
+    /**
+     * Reconcile a run after its reviewed, repaired bundle was stored with lms:store-study-deck outside the approval endpoint.
+     *
+     * @return array{ok:bool,message:string,status:?array<string,mixed>}
+     */
+    public function reconcileStoredBundle(int $chapterId, int $tenant, string $run, int $contentId, string $bundle): array
+    {
+        $status = $this->read($chapterId, $tenant, $run);
+        if ($status === null) {
+            return ['ok' => false, 'message' => 'That draft was not found.', 'status' => null];
+        }
+        if ($status['state'] === 'stored') {
+            return (int) ($status['stored']['content_id'] ?? 0) === $contentId
+                ? ['ok' => true, 'message' => 'This draft is already reconciled with its stored resource.', 'status' => $status]
+                : ['ok' => false, 'message' => 'This draft is already linked to a different stored resource.', 'status' => $status];
+        }
+        if (!in_array($status['state'], ['failed', 'ready'], true)) {
+            return ['ok' => false, 'message' => 'Only a failed or review-ready draft can be reconciled.', 'status' => $status];
+        }
+
+        $bundle = rtrim($bundle, '/\\');
+        $deck = is_file($bundle . '/deck.json') ? json_decode((string) file_get_contents($bundle . '/deck.json'), true) : null;
+        $report = is_file($bundle . '/report.json') ? json_decode((string) file_get_contents($bundle . '/report.json'), true) : null;
+        if (!is_array($deck) || !is_array($report) || empty($report['ok']) || (int) ($deck['chapter']['id'] ?? 0) !== $chapterId) {
+            return ['ok' => false, 'message' => 'The supplied bundle is not a validated deck for this chapter.', 'status' => $status];
+        }
+
+        $format = (string) ($status['format'] ?? 'interactive_slides');
+        $method = (string) ($status['method'] ?? '');
+        if (($format === 'branching_scenario') !== \App\Services\StudyDeck\Story\StoryTemplate::isStory($deck)
+            || (string) ($report['teaching_method']['key'] ?? '') !== $method
+            || empty($report['teaching_method']['followed'])) {
+            return ['ok' => false, 'message' => "The supplied bundle does not match this draft's format and teaching method.", 'status' => $status];
+        }
+
+        [$blocking, $advice] = $this->quality($bundle, $chapterId);
+        if ($blocking !== []) {
+            return ['ok' => false, 'message' => 'The supplied bundle does not meet the presentation quality rules.', 'status' => $status];
+        }
+
+        $row = $this->storedPresentation($chapterId, $tenant, $format, $method);
+        if ($row === null || (int) ($row['id'] ?? 0) !== $contentId) {
+            return ['ok' => false, 'message' => 'The stored resource does not match this draft.', 'status' => $status];
+        }
+
+        $imageReport = $this->imageReadiness->deckImages($bundle, $tenant);
+        $wanted = array_values((array) ($imageReport['ids'] ?? []));
+        if (($imageReport['unreadable'] ?? 0) > 0) {
+            return ['ok' => false, 'message' => 'The stored bundle still references unreadable pictures.', 'status' => $status];
+        }
+        $linked = $wanted === [] ? [] : array_values(array_intersect($wanted, (new StudyDeckImages())->linkedImageIds($contentId)));
+        if (count($linked) !== count($wanted)) {
+            return ['ok' => false, 'message' => 'The stored resource does not link every picture in the supplied bundle.', 'status' => $status];
+        }
+
+        $status['state'] = 'stored';
+        unset($status['error']);
+        $status['stored'] = [
+            'content_id' => $contentId,
+            'deep_link' => ContentGenerationService::studyDeckDeepLink($row),
+            'images' => ['referenced' => count($wanted), 'linked' => count($linked)],
+        ];
+        $status['report'] = [
+            'slides' => (int) ($report['stats']['slides'] ?? $deck['slide_count'] ?? 0),
+            'interactive_slides' => (int) ($report['stats']['interactive_slides'] ?? 0),
+            'concepts' => (int) ($report['stats']['concepts'] ?? 0),
+            'warnings' => count((array) ($report['warnings'] ?? [])),
+            'method_followed' => true,
+            'quality_notes' => count($advice),
+        ];
+        $status['outline'] = $this->outline($bundle);
+        $this->write($status);
+
+        return ['ok' => true, 'message' => 'Stored resource linked to the draft.', 'status' => $status];
     }
 
     public function discard(int $chapterId, int $tenant, string $run): ?array

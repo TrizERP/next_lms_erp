@@ -3,6 +3,7 @@
 namespace Tests\Unit\CoursePresentation;
 
 use App\Services\CoursePresentation\PresentationQuality;
+use App\Services\StudyDeck\Story\StoryTemplate;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -127,5 +128,28 @@ class PresentationQualityTest extends TestCase
         $found = array_values(array_filter((new PresentationQuality())->check($this->deck($slides, range(1, 7))), fn ($p) => $p['code'] === 'broken_interaction'));
 
         $this->assertSame([2, 3, 4, 5, 6], array_column($found, 'slide'));
+    }
+
+    public function test_required_story_scene_pictures_do_not_use_the_supporting_picture_budget(): void
+    {
+        $nodes = [];
+        for ($i = 1; $i <= 13; $i++) {
+            $nodes[] = [
+                'id' => 's' . $i, 'kind' => 'scene', 'title' => 'Scene ' . $i, 'body' => 'A scene.',
+                'choices' => [], 'image' => ['url' => 'image:' . $i, 'width' => 640, 'height' => 480, 'alt' => 'Scene ' . $i],
+            ];
+        }
+        $story = [
+            'template' => StoryTemplate::KEY, 'start' => 's1', 'mission' => ['title' => 'Mission', 'body' => 'Learn.'], 'nodes' => $nodes,
+        ];
+        $deck = $this->deck([$this->slide(1, ['interaction' => $story])], [1]);
+        $pictureErrors = fn (array $problems) => array_values(array_filter(
+            array_column($problems, 'message'),
+            fn ($message) => str_contains($message, 'pictures; the template allows')
+        ));
+
+        $this->assertNotEmpty($pictureErrors((new PresentationQuality())->check($deck)));
+        $config = array_replace(StoryTemplate::defaults(), ['images' => [0, 60], 'image_coverage' => true]);
+        $this->assertSame([], $pictureErrors((new PresentationQuality($config))->check($deck)));
     }
 }
