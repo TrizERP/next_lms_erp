@@ -703,6 +703,21 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
         return $full;
     }
 
+    private function normalizeModel(string $model): string
+    {
+        $map = [
+            'gemini-3.6-flash' => 'gemini-3-flash-preview',
+            'gemini-3.6-pro'   => 'gemini-3-flash-preview',
+            'gemini-2.5-flash' => 'gemini-3-flash-preview',
+            'gemini-2.5-pro'   => 'gemini-3-flash-preview',
+            'gemini-1.5-flash' => 'gemini-3-flash-preview',
+            'gemini-1.5-pro'   => 'gemini-3-flash-preview',
+            'gemini-1.0-pro'   => 'gemini-3-flash-preview',
+        ];
+
+        return $map[$model] ?? $model;
+    }
+
     private function endpoint(string $model, bool $stream = false): string
     {
         $base = rtrim((string) config(
@@ -710,12 +725,14 @@ class GeminiClient implements ModelClient, SupportsImageGeneration, SupportsVisi
             'https://generativelanguage.googleapis.com/v1beta'
         ), '/');
 
+        $resolvedModel = $this->normalizeModel($model);
+
         // `?alt=sse` matters: without it streamGenerateContent returns a JSON *array*
         // that only closes at the end, which reads as a stream and behaves as a
         // single blocking response.
         return $stream
-            ? sprintf('%s/models/%s:streamGenerateContent?alt=sse', $base, $model)
-            : sprintf('%s/models/%s:generateContent', $base, $model);
+            ? sprintf('%s/models/%s:streamGenerateContent?alt=sse', $base, $resolvedModel)
+            : sprintf('%s/models/%s:generateContent', $base, $resolvedModel);
     }
 
     /**

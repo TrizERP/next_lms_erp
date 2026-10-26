@@ -31,11 +31,10 @@ use Throwable;
  */
 class AiCompletionController extends AiController
 {
-    /** The modules the frontend's server routes may complete under. */
-    private const MODULES = ['recruitment_ai', 'knowledge_sop'];
-
-    public function __construct(private readonly AiModelClientFactory $clients)
-    {
+    public function __construct(
+        private readonly AiModelClientFactory $clients,
+        private readonly \App\Domain\AI\Configuration\AiModuleRegistry $modules,
+    ) {
     }
 
     public function complete(Request $request)
@@ -44,7 +43,7 @@ class AiCompletionController extends AiController
             $institute = $this->scope($request)->selectedInstituteId;
 
             $data = $request->validate([
-                'module' => ['required', 'string', Rule::in(self::MODULES)],
+                'module' => ['required', 'string', Rule::in($this->modules->keys())],
                 'messages' => ['required', 'array', 'min:1', 'max:8'],
                 'messages.*.role' => ['required', 'string', Rule::in(['system', 'user', 'assistant'])],
                 'messages.*.content' => ['required', 'string', 'max:80000'],

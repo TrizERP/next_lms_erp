@@ -48,6 +48,7 @@ final class ProviderCompatibility
         private readonly AiConfigurationResolver $resolver,
         private readonly SchemaCache $schema,
         private readonly ProviderFitRanker $ranker,
+        private readonly ModelRegistry $registry,
     ) {
     }
 
@@ -60,22 +61,26 @@ final class ProviderCompatibility
         $minOutput = $this->modules->minOutputTokens($moduleKey);
         $configured = $this->configuredRows($moduleKey, $subInstituteId);
 
-        // Capable providers, ordered for THIS module. Not-capable ones keep the catalogue order after them.
+        // Capable providers, ordered for THIS module.
+        $allProviders = $this->providers->keys();
         $capable = array_values(array_filter(
-            $this->providers->keys(),
+            $allProviders,
             fn (string $p) => $this->providers->isDriveable($p) && $this->capabilities->missing($p, $requires) === []
         ));
         $fit = array_flip($this->ranker->order($moduleKey, $capable, $subInstituteId));
 
+        // Incapable providers
+        $incapable = array_values(array_diff($allProviders, $capable));
+
+        // Capable providers first (ordered by fit), then incapable ones
+        $orderedProviders = array_merge(
+            $this->ranker->order($moduleKey, $capable, $subInstituteId),
+            $incapable
+        );
+
         $out = [];
 
-        // Only the providers this module lists — in its own order. Others are not shown at all.
-        $listed = array_values(array_filter(
-            $this->modules->offered($moduleKey),
-            fn (string $p) => $this->providers->exists($p)
-        ));
-
-        foreach ($listed as $order => $provider) {
+        foreach ($orderedProviders as $order => $provider) {
             $out[] = $this->evaluate($provider, $order, $fit[$provider] ?? null, $moduleKey, $requires, $minOutput, $configured, $subInstituteId, $live);
         }
 
@@ -113,8 +118,8 @@ final class ProviderCompatibility
         $minOutput = $this->modules->minOutputTokens($moduleKey);
         $out = [];
 
-        if (! $this->modules->isOffered($moduleKey, $provider)) {
-            return [['field' => 'provider', 'message' => sprintf('%s is not one of the providers offered for %s.', $this->providers->label($provider), $this->modules->label($moduleKey))]];
+        if (! $this->providers->exists($provider)) {
+            return [['field' => 'provider', 'message' => sprintf('%s is not a known provider on this platform.', $provider)]];
         }
 
         if (! $this->providers->isDriveable($provider)) {
@@ -133,19 +138,19 @@ final class ProviderCompatibility
         }
 
         if ($model !== null) {
-            $catalogued = null;
+            $modelMeta = $this->registry->find($provider, $model);
 
-            foreach ($this->models->forProvider($provider, $subInstituteId) as $row) {
-                if ($row['model_id'] === $model) {
-                    $catalogued = $row;
-                    break;
+            if ($modelMeta === null) {
+                foreach ($this->models->forProvider($provider, $subInstituteId) as $row) {
+                    if ($row['model_id'] === $model) {
+                        $modelMeta = $row;
+                        break;
+                    }
                 }
             }
 
-            if ($catalogued === null) {
-                $out[] = ['field' => 'model', 'message' => sprintf('%s is not a %s model in the catalogue.', $model, $this->providers->label($provider))];
-            } else {
-                foreach ($this->modelReasons($catalogued, null, $requires, $minOutput) as $reason) {
+            if ($modelMeta !== null) {
+                foreach ($this->modelReasons($modelMeta, null, $requires, $minOutput) as $reason) {
                     $out[] = ['field' => 'model', 'message' => $reason];
                 }
             }
@@ -257,27 +262,92 @@ final class ProviderCompatibility
             $byId[$row['id']] = $row;
         }
 
+        // Candidates:
+        // 1. Models from reliable registry
+        // 2. Models from database catalogue (ai_models)
+        // 3. Models from dynamic discovery
+        $candidates = [];
+
+        // First, add registered curated models
+        foreach ($this->registry->forProvider($provider) as $modelId => $reg) {
+            $candidates[$modelId] = array_merge(['id' => $modelId, 'model_id' => $modelId], $reg);
+        }
+
+        // Second, merge database catalogue rows
+        foreach ($this->models->forProvider($provider, $subInstituteId) as $cat) {
+            $mId = $cat['model_id'];
+            if (! isset($candidates[$mId])) {
+                $candidates[$mId] = $cat;
+            } else {
+                $candidates[$mId]['id'] = $cat['id'];
+                $candidates[$mId]['label'] = $cat['label'] ?? $candidates[$mId]['label'];
+                if (isset($cat['max_output_tokens']) && $cat['max_output_tokens'] > 0) {
+                    $candidates[$mId]['max_output_tokens'] = $cat['max_output_tokens'];
+                }
+            }
+        }
+
+        // Third, merge dynamically discovered models from provider
+        if ($discovered !== null) {
+            foreach ($discovered as $disc) {
+                $mId = $disc['id'];
+                if (! isset($candidates[$mId])) {
+                    $candidates[$mId] = [
+                        'id' => $mId,
+                        'model_id' => $mId,
+                        'label' => $disc['id'],
+                        'max_output_tokens' => $disc['max_output_tokens'] ?? null,
+                        'context_tokens' => $disc['context_tokens'] ?? null,
+                        'chat' => $disc['chat'] ?? true,
+                        'json' => $disc['structured_output'] ?? true,
+                        'vision' => $disc['vision_input'] ?? false,
+                        'embedding' => $disc['embedding'] ?? false,
+                        'image_output' => $disc['image_output'] ?? false,
+                    ];
+                } else {
+                    $candidates[$mId]['max_output_tokens'] = $disc['max_output_tokens'] ?? $candidates[$mId]['max_output_tokens'];
+                    $candidates[$mId]['context_tokens'] = $disc['context_tokens'] ?? ($candidates[$mId]['context_tokens'] ?? null);
+                    if (isset($disc['vision_input'])) {
+                        $candidates[$mId]['vision'] = $disc['vision_input'];
+                    }
+                }
+            }
+        }
+
         $out = [];
+        $order = 0;
 
-        foreach ($this->models->forProvider($provider, $subInstituteId) as $i => $model) {
-            $found = $byId[$model['model_id']] ?? null;
-            $reasons = $this->modelReasons($model, $found, $requires, $minOutput);
+        foreach ($candidates as $modelId => $cand) {
+            $found = $byId[$modelId] ?? null;
 
+            // If discovery ran and the provider did NOT list this model, and it's not a verified model, omit or flag
+            // Requirement 2: "The available models must be retrieved from the provider's actual supported models or a reliable model registry. Do not display unsupported models or assume that a model is available simply because its name exists in the codebase."
+            if ($discovered !== null && $found === null && ! isset($this->registry->forProvider($provider)[$modelId])) {
+                // If it's a legacy db row not found at provider and not in curated registry, skip it
+                continue;
+            }
+
+            $reasons = $this->modelReasons($cand, $found, $requires, $minOutput);
             if ($discovered !== null && $found === null) {
                 $reasons[] = 'The provider does not list this model for the stored key.';
             }
 
+            $enriched = $this->registry->enrich($provider, $cand);
+
             $out[] = [
-                'id' => $model['id'],
-                'model_id' => $model['model_id'],
-                'label' => $model['label'],
+                'id' => $cand['id'] ?? $modelId,
+                'model_id' => $modelId,
+                'label' => $enriched['label'],
+                'description' => $enriched['description'] ?? null,
+                'best_for' => $enriched['best_for'] ?? null,
+                'strengths' => $enriched['strengths'] ?? null,
+                'limitations' => $enriched['limitations'] ?? null,
                 'compatible' => $reasons === [],
-                // True only when the provider itself confirmed the model — not merely when the catalogue has it.
                 'verified' => $found !== null,
                 'reasons' => $reasons,
-                'max_output_tokens' => $found['max_output_tokens'] ?? $model['max_output_tokens'],
-                'context_tokens' => $found['context_tokens'] ?? null,
-                '_order' => $i,
+                'max_output_tokens' => $found['max_output_tokens'] ?? $enriched['max_output_tokens'] ?? null,
+                'context_tokens' => $found['context_tokens'] ?? $enriched['context_tokens'] ?? null,
+                '_order' => $order++,
             ];
         }
 
